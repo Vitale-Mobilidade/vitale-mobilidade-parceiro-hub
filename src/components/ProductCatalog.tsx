@@ -10,7 +10,7 @@ import { ShoppingCart } from 'lucide-react';
 interface Product {
   id: string;
   name: string;
-  type: 'bicicleta' | 'triciclo' | 'moto';
+  type: 'bicicleta' | 'triciclo' | 'moto' | 'autopropelido';
   needsCNH: boolean;
   description: string;
   image: string;
@@ -18,7 +18,7 @@ interface Product {
   margin: number;
   stock: number;
   brand: string;
-  category: 'passeio' | 'trabalho' | 'carga';
+  category: 'passeio' | 'trabalho' | 'carga' | 'delivery' | 'profissional';
 }
 
 const mockProducts: Product[] = [
@@ -73,6 +73,32 @@ const mockProducts: Product[] = [
     stock: 18,
     brand: 'WorkBike',
     category: 'trabalho'
+  },
+  {
+    id: '5',
+    name: 'Autopropelido Delivery',
+    type: 'autopropelido',
+    needsCNH: false,
+    description: 'Veículo autopropelido ideal para delivery com grande capacidade de carga.',
+    image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    price: 6800,
+    margin: 28,
+    stock: 12,
+    brand: 'DeliveryTech',
+    category: 'delivery'
+  },
+  {
+    id: '6',
+    name: 'Moto Profissional X1',
+    type: 'moto',
+    needsCNH: true,
+    description: 'Moto elétrica para uso profissional intenso com alta autonomia.',
+    image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    price: 12500,
+    margin: 30,
+    stock: 8,
+    brand: 'ProMoto',
+    category: 'profissional'
   }
 ];
 
@@ -118,11 +144,28 @@ const ProductCatalog = () => {
     applyFilters(typeFilter, cnhFilter, value);
   };
 
+  const clearFilters = () => {
+    setTypeFilter('all');
+    setCnhFilter('all');
+    setCategoryFilter('all');
+    setFilteredProducts(products);
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(price);
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels = {
+      'bicicleta': 'Bike Elétrica',
+      'triciclo': 'Triciclo',
+      'moto': 'Moto Elétrica',
+      'autopropelido': 'Autopropelido'
+    };
+    return labels[type as keyof typeof labels] || type;
   };
 
   return (
@@ -133,46 +176,63 @@ const ProductCatalog = () => {
             Catálogo de <span className="text-gradient-green">Produtos</span>
           </h2>
           <p className="text-xl text-gray-600">
-            Escolha entre bicicletas, triciclos e motos elétricas para seu negócio
+            Escolha entre bicicletas, triciclos, motos e autopropelidos para seu negócio
           </p>
         </div>
 
         {/* Filtros */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto">
-          <Select value={typeFilter} onValueChange={handleTypeFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tipo de Veículo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Tipos</SelectItem>
-              <SelectItem value="bicicleta">Bicicletas</SelectItem>
-              <SelectItem value="triciclo">Triciclos</SelectItem>
-              <SelectItem value="moto">Motos</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-4">
+            <Select value={typeFilter} onValueChange={handleTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo de Veículo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="bicicleta">Bike Elétrica</SelectItem>
+                <SelectItem value="triciclo">Triciclo</SelectItem>
+                <SelectItem value="moto">Moto Elétrica</SelectItem>
+                <SelectItem value="autopropelido">Autopropelido</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={cnhFilter} onValueChange={handleCnhFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="CNH Obrigatória" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">CNH - Todos</SelectItem>
-              <SelectItem value="no">Sem CNH</SelectItem>
-              <SelectItem value="yes">Com CNH</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={cnhFilter} onValueChange={handleCnhFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="CNH Obrigatória" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">CNH - Todos</SelectItem>
+                <SelectItem value="no">Sem CNH</SelectItem>
+                <SelectItem value="yes">Com CNH</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={categoryFilter} onValueChange={handleCategoryFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Categoria de Uso" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas Categorias</SelectItem>
-              <SelectItem value="passeio">Passeio</SelectItem>
-              <SelectItem value="trabalho">Trabalho</SelectItem>
-              <SelectItem value="carga">Carga</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={categoryFilter} onValueChange={handleCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Categoria de Uso" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Categorias</SelectItem>
+                <SelectItem value="passeio">Passeio</SelectItem>
+                <SelectItem value="trabalho">Trabalho</SelectItem>
+                <SelectItem value="carga">Carga</SelectItem>
+                <SelectItem value="delivery">Delivery</SelectItem>
+                <SelectItem value="profissional">Profissional</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              className="w-full"
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-gray-600">
+            Mostrando {filteredProducts.length} de {products.length} produtos
+          </div>
         </div>
 
         {/* Produtos */}
@@ -198,7 +258,11 @@ const ProductCatalog = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Tipo:</span>
-                    <span className="capitalize font-medium">{product.type}</span>
+                    <span className="font-medium">{getTypeLabel(product.type)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Categoria:</span>
+                    <span className="font-medium capitalize">{product.category}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Marca:</span>
@@ -206,7 +270,7 @@ const ProductCatalog = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Estoque:</span>
-                    <span className="font-medium">{product.stock} unidades</span>
+                    <span className="font-medium text-green-600">{product.stock} unidades</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Margem sugerida:</span>
@@ -241,6 +305,18 @@ const ProductCatalog = () => {
             </Card>
           ))}
         </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">Nenhum produto encontrado com os filtros selecionados.</p>
+            <Button 
+              onClick={clearFilters}
+              className="mt-4 bg-gradient-green hover:opacity-90 text-white"
+            >
+              Ver Todos os Produtos
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );
