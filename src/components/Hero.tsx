@@ -9,10 +9,10 @@ const Hero = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                <span className="text-gradient-green">Ganhe até 35%</span> de lucro vendendo veículos elétricos sustentáveis
+                <span className="text-gradient-green">Ganhe até 35%</span> de lucro revendendo veículos elétricos com entrega imediata
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
-                Seja um revendedor Vitale e ofereça mobilidade limpa ao seu cliente. Estoque nacional, pronta entrega, pedido mínimo de 3 unidades.
+                Traga inovação e sustentabilidade para seu negócio com veículos de alta demanda, sem burocracia e com margens atrativas.
               </p>
             </div>
             
@@ -22,7 +22,7 @@ const Hero = () => {
                 className="bg-gradient-green hover:opacity-90 text-white px-8 py-3 text-lg"
                 onClick={() => document.getElementById('seja-revendedor')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Seja um Revendedor
+                Quero ser um revendedor
               </Button>
               <Button 
                 variant="outline" 
