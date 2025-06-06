@@ -30,9 +30,8 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Parceiros</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><a href="#seja-revendedor" className="hover:text-white transition-colors">Seja Revendedor</a></li>
-              <li><a href="#area-parceiro" className="hover:text-white transition-colors">Área do Parceiro</a></li>
+              <li><a href="#consultoria" className="hover:text-white transition-colors">Consultoria</a></li>
               <li><a href="#calculadora" className="hover:text-white transition-colors">Calculadora</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Suporte</a></li>
             </ul>
           </div>
 

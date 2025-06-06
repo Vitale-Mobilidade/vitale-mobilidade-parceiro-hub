@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -10,8 +9,8 @@ const Header = () => {
   const navItems = [
     { name: 'Home', href: '#home' },
     { name: 'Catálogo', href: '#catalogo' },
-    { name: 'Consultoria', href: '#consultoria' },
     { name: 'Seja Revendedor', href: '#seja-revendedor' },
+    { name: 'Consultoria', href: '#consultoria' },
     { name: 'Calculadora', href: '#calculadora' },
   ];
 
