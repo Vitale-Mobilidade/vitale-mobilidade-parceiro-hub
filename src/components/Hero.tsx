@@ -1,9 +1,6 @@
-
 import { Button } from '@/components/ui/button';
-
 const Hero = () => {
-  return (
-    <section id="home" className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-green-50 to-white">
+  return <section id="home" className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-green-50 to-white">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
@@ -17,19 +14,14 @@ const Hero = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                className="bg-gradient-green hover:opacity-90 text-white px-8 py-3 text-lg"
-                onClick={() => document.getElementById('seja-revendedor')?.scrollIntoView({ behavior: 'smooth' })}
-              >
+              <Button size="lg" className="bg-gradient-green hover:opacity-90 text-white px-8 py-3 text-lg" onClick={() => document.getElementById('seja-revendedor')?.scrollIntoView({
+              behavior: 'smooth'
+            })}>
                 Quero ser um revendedor
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-3 text-lg"
-                onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
-              >
+              <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-3 text-lg" onClick={() => document.getElementById('catalogo')?.scrollIntoView({
+              behavior: 'smooth'
+            })}>
                 Ver Catálogo
               </Button>
             </div>
@@ -52,11 +44,7 @@ const Hero = () => {
           
           <div className="relative">
             <div className="bg-gradient-green rounded-3xl p-8 text-white">
-              <img 
-                src="https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                alt="Veículo elétrico sustentável" 
-                className="w-full h-64 object-cover rounded-2xl"
-              />
+              
               <div className="mt-6 space-y-2">
                 <h3 className="text-xl font-semibold">Mobilidade Sustentável</h3>
                 <p className="text-green-100">Bicicletas, triciclos e motos elétricas para todos os perfis de cliente.</p>
@@ -68,8 +56,6 @@ const Hero = () => {
       
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-green-100/50 to-transparent"></div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
