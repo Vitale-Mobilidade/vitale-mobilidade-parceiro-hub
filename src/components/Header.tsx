@@ -14,7 +14,7 @@ const Header = () => {
   const navItems = [
     { name: 'Home', href: '#home' },
     { name: 'Catálogo', href: '#catalogo' },
-    { name: 'Área do Parceiro', href: '#area-parceiro' },
+    { name: 'Consultoria', href: '#consultoria' },
     { name: 'Calculadora', href: '#calculadora' },
     { name: 'Seja Revendedor', href: '#seja-revendedor' },
   ];
