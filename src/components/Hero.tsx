@@ -1,9 +1,6 @@
-
 import { Button } from '@/components/ui/button';
-
 const Hero = () => {
-  return (
-    <section id="home" className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-green-50 to-white">
+  return <section id="home" className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-green-50 to-white">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
@@ -46,21 +43,13 @@ const Hero = () => {
           </div>
           
           <div className="relative">
-            <div className="bg-gradient-green rounded-3xl p-8 text-white">
-              
-              <div className="mt-6 space-y-2">
-                <h3 className="text-xl font-semibold">Mobilidade Sustentável</h3>
-                <p className="text-green-100">Bicicletas, triciclos e motos elétricas para todos os perfis de cliente.</p>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>
       
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-green-100/50 to-transparent"></div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
