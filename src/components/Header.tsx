@@ -2,21 +2,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, ShoppingCart } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { Menu } from 'lucide-react';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { items } = useCart();
-  
-  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
 
   const navItems = [
     { name: 'Home', href: '#home' },
     { name: 'Catálogo', href: '#catalogo' },
     { name: 'Consultoria', href: '#consultoria' },
-    { name: 'Calculadora', href: '#calculadora' },
     { name: 'Seja Revendedor', href: '#seja-revendedor' },
+    { name: 'Calculadora', href: '#calculadora' },
   ];
 
   return (
@@ -42,23 +38,8 @@ const Header = () => {
           ))}
         </nav>
 
-        {/* Cart Button */}
+        {/* Mobile Menu */}
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            className="relative"
-            onClick={() => document.getElementById('carrinho')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItemCount}
-              </span>
-            )}
-          </Button>
-
-          {/* Mobile Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="outline" size="sm">

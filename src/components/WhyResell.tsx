@@ -5,7 +5,7 @@ const WhyResell = () => {
   const benefits = [
     {
       icon: DollarSign,
-      title: 'Margem de até 35%',
+      title: 'Margem de até 50%',
       description: 'Lucre com uma das melhores margens do mercado de mobilidade elétrica'
     },
     {

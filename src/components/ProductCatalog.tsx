@@ -1,11 +1,9 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCart } from '@/hooks/useCart';
-import { ShoppingCart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Product {
   id: string;
@@ -14,7 +12,6 @@ interface Product {
   needsCNH: boolean;
   description: string;
   image: string;
-  price: number;
   margin: number;
   stock: number;
   brand: string;
@@ -29,7 +26,6 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Bicicleta elétrica ideal para deslocamentos urbanos com autonomia de 50km.',
     image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 2500,
     margin: 35,
     stock: 25,
     brand: 'EcoBike',
@@ -42,7 +38,6 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Triciclo elétrico para transporte de cargas com capacidade de 150kg.',
     image: 'https://images.unsplash.com/photo-1544191696-15693a5d302d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 4200,
     margin: 30,
     stock: 15,
     brand: 'CargoBike',
@@ -55,7 +50,6 @@ const mockProducts: Product[] = [
     needsCNH: true,
     description: 'Moto elétrica para cidade com velocidade máxima de 50km/h.',
     image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 8500,
     margin: 32,
     stock: 10,
     brand: 'ElectroMoto',
@@ -68,7 +62,6 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Bicicleta elétrica robusta para uso profissional e entregas.',
     image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 3200,
     margin: 33,
     stock: 18,
     brand: 'WorkBike',
@@ -81,7 +74,6 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Veículo autopropelido ideal para delivery com grande capacidade de carga.',
     image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 6800,
     margin: 28,
     stock: 12,
     brand: 'DeliveryTech',
@@ -94,7 +86,6 @@ const mockProducts: Product[] = [
     needsCNH: true,
     description: 'Moto elétrica para uso profissional intenso com alta autonomia.',
     image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    price: 12500,
     margin: 30,
     stock: 8,
     brand: 'ProMoto',
@@ -108,7 +99,6 @@ const ProductCatalog = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [cnhFilter, setCnhFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const { addItem } = useCart();
 
   const applyFilters = (type: string, cnh: string, category: string) => {
     let filtered = products;
@@ -149,13 +139,6 @@ const ProductCatalog = () => {
     setCnhFilter('all');
     setCategoryFilter('all');
     setFilteredProducts(products);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
   };
 
   const getTypeLabel = (type: string) => {
@@ -278,30 +261,6 @@ const ProductCatalog = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="p-6 pt-0">
-                <div className="w-full space-y-3">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{formatPrice(product.price)}</div>
-                    <div className="text-sm text-gray-500">Preço unitário</div>
-                  </div>
-                  <Button 
-                    className="w-full bg-gradient-green hover:opacity-90 text-white"
-                    onClick={() => addItem({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      image: product.image,
-                      type: product.type
-                    })}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Adicionar ao Pedido
-                  </Button>
-                  <p className="text-xs text-center text-gray-500">
-                    Pedido mínimo: 3 unidades
-                  </p>
-                </div>
-              </CardFooter>
             </Card>
           ))}
         </div>
