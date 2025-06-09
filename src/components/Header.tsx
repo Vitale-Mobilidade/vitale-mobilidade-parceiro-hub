@@ -6,12 +6,13 @@ import { Menu } from 'lucide-react';
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
-    { name: 'Home', href: '#home' },
-    { name: 'Catálogo', href: '#catalogo' },
-    { name: 'Seja Revendedor', href: '#seja-revendedor' },
-    { name: 'Consultoria', href: '#consultoria' },
-    { name: 'Calculadora', href: '#calculadora' },
+  const menuItems = [
+    { label: 'Home', href: '#home' },
+    { label: 'Como funciona', href: '#como-funciona' },
+    { label: 'Catálogo', href: '#catalogo' },
+    { label: 'Seja Revendedor', href: '#seja-revendedor' },
+    { label: 'Consultoria', href: '#consultoria' },
+    { label: 'Calculadora', href: '#calculadora' },
   ];
 
   return (
@@ -26,13 +27,13 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {navItems.map((item) => (
+          {menuItems.map((item) => (
             <a
-              key={item.name}
+              key={item.label}
               href={item.href}
               className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
             >
-              {item.name}
+              {item.label}
             </a>
           ))}
         </nav>
@@ -47,14 +48,14 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <div className="flex flex-col space-y-4 mt-8">
-                {navItems.map((item) => (
+                {menuItems.map((item) => (
                   <a
-                    key={item.name}
+                    key={item.label}
                     href={item.href}
                     className="text-lg font-medium text-gray-700 hover:text-primary transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    {item.name}
+                    {item.label}
                   </a>
                 ))}
               </div>
