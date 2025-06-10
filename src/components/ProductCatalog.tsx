@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +17,6 @@ interface Product {
   precoCompra: string;
   precoVenda: string;
   margem: number;
-  stock: number;
   brand: string;
   category: 'passeio' | 'trabalho' | 'carga' | 'delivery' | 'profissional';
 }
@@ -37,26 +35,24 @@ const mockProducts: Product[] = [
     precoCompra: 'R$7.425,00',
     precoVenda: 'R$10.023,00',
     margem: 35,
-    stock: 25,
     brand: 'Vitale',
     category: 'passeio'
   },
   {
     id: '2',
-    name: 'Triciclo Cargo Max',
-    type: 'triciclo',
+    name: 'FT-03 - 1000W',
+    type: 'bicicleta',
     needsCNH: false,
-    description: 'Triciclo elétrico para transporte de cargas com capacidade de 150kg.',
-    image: 'https://images.unsplash.com/photo-1544191696-15693a5d302d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    potencia: '750W',
-    bateria: '48V 12AH',
-    autonomia: 'Até 45km',
-    precoCompra: 'R$6.500,00',
-    precoVenda: 'R$8.450,00',
-    margem: 30,
-    stock: 15,
-    brand: 'CargoBike',
-    category: 'carga'
+    description: 'Bicicleta elétrica moderna com design esportivo e alta performance para passeio.',
+    image: '/lovable-uploads/c0a1a7fc-d741-40d7-865a-cef9e45295ad.png',
+    potencia: '1000W',
+    bateria: '48V 18AH',
+    autonomia: 'Até 60km',
+    precoCompra: 'R$7.830,00',
+    precoVenda: 'R$11.353,00',
+    margem: 45,
+    brand: 'Vitale',
+    category: 'passeio'
   },
   {
     id: '3',
@@ -71,7 +67,6 @@ const mockProducts: Product[] = [
     precoCompra: 'R$12.000,00',
     precoVenda: 'R$15.840,00',
     margem: 32,
-    stock: 10,
     brand: 'ElectroMoto',
     category: 'passeio'
   },
@@ -88,7 +83,6 @@ const mockProducts: Product[] = [
     precoCompra: 'R$8.200,00',
     precoVenda: 'R$10.906,00',
     margem: 33,
-    stock: 18,
     brand: 'WorkBike',
     category: 'trabalho'
   },
@@ -105,7 +99,6 @@ const mockProducts: Product[] = [
     precoCompra: 'R$15.000,00',
     precoVenda: 'R$19.200,00',
     margem: 28,
-    stock: 12,
     brand: 'DeliveryTech',
     category: 'delivery'
   },
@@ -122,7 +115,6 @@ const mockProducts: Product[] = [
     precoCompra: 'R$18.500,00',
     precoVenda: 'R$24.050,00',
     margem: 30,
-    stock: 8,
     brand: 'ProMoto',
     category: 'profissional'
   }
@@ -305,10 +297,6 @@ const ProductCatalog = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Margem sugerida:</span>
                     <span className="font-medium text-green-600">{product.margem}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Estoque:</span>
-                    <span className="font-medium text-green-600">{product.stock} unidades</span>
                   </div>
                 </div>
               </CardContent>

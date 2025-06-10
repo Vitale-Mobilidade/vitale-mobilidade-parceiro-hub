@@ -12,20 +12,41 @@ const ProfitCalculator = () => {
   const [monthlyUnits, setMonthlyUnits] = useState([5]);
 
   const products = {
-    'bike-urbana': {
-      name: 'Bicicleta elétrica urbana',
-      ticketMedio: 3500,
-      margem: 40
+    'v8-1000w': {
+      name: 'V8 - 1000W',
+      ticketMedio: 10023,
+      precoCompra: 7425,
+      margem: 35
     },
-    'scooter': {
-      name: 'Scooter elétrica',
-      ticketMedio: 6000,
+    'ft03-1000w': {
+      name: 'FT-03 - 1000W',
+      ticketMedio: 11353,
+      precoCompra: 7830,
       margem: 45
     },
-    'triciclo-carga': {
-      name: 'Triciclo de carga',
-      ticketMedio: 8000,
-      margem: 50
+    'moto-city': {
+      name: 'Moto Elétrica City',
+      ticketMedio: 15840,
+      precoCompra: 12000,
+      margem: 32
+    },
+    'ebike-trabalho': {
+      name: 'E-Bike Trabalho Plus',
+      ticketMedio: 10906,
+      precoCompra: 8200,
+      margem: 33
+    },
+    'autopropelido-delivery': {
+      name: 'Autopropelido Delivery',
+      ticketMedio: 19200,
+      precoCompra: 15000,
+      margem: 28
+    },
+    'moto-profissional': {
+      name: 'Moto Profissional X1',
+      ticketMedio: 24050,
+      precoCompra: 18500,
+      margem: 30
     }
   };
 
@@ -42,7 +63,7 @@ const ProfitCalculator = () => {
     const product = products[selectedProduct as keyof typeof products];
     const units = monthlyUnits[0];
     
-    const valorCompra = product.ticketMedio * (1 - product.margem / 100);
+    const valorCompra = product.precoCompra;
     const valorRevenda = product.ticketMedio;
     const lucroPorUnidade = valorRevenda - valorCompra;
     const lucroTotalMes = lucroPorUnidade * units;
@@ -90,7 +111,7 @@ const ProfitCalculator = () => {
                   <SelectContent>
                     {Object.entries(products).map(([key, product]) => (
                       <SelectItem key={key} value={key}>
-                        {product.name} (ticket médio: {formatCurrency(product.ticketMedio)}, margem: {product.margem}%)
+                        {product.name} (margem: {product.margem}%)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -160,7 +181,7 @@ const ProfitCalculator = () => {
                     </h3>
                     <p className="text-4xl font-bold">{formatCurrency(results.lucroTotalMes)}</p>
                     <p className="text-green-100 mt-2">
-                      Vendendo {monthlyUnits[0]} unidades de {results.product.name.toLowerCase()}
+                      Vendendo {monthlyUnits[0]} unidades de {results.product.name}
                     </p>
                   </CardContent>
                 </Card>
