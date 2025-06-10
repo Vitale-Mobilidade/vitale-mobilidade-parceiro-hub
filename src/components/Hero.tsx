@@ -2,6 +2,10 @@
 import { Button } from '@/components/ui/button';
 
 const Hero = () => {
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0ATenho%20interesse%20em%20comprar%203%20unidades%20para%20a%20minha%20loja.%20Voc%C3%AA%20pode%20me%20enviar%20o%20cat%C3%A1logo%20e%20as%20condi%C3%A7%C3%B5es%3F', '_blank');
+  };
+
   return (
     <section id="home" className="relative py-16 lg:py-24 overflow-hidden bg-gradient-to-br from-green-50 to-white">
       <div className="container mx-auto px-4">
@@ -18,9 +22,7 @@ const Hero = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-green hover:opacity-90 text-white px-8 py-4 text-lg font-semibold" onClick={() => document.getElementById('seja-revendedor')?.scrollIntoView({
-              behavior: 'smooth'
-            })}>
+              <Button size="lg" className="bg-gradient-green hover:opacity-90 text-white px-8 py-4 text-lg font-semibold" onClick={handleWhatsAppClick}>
                 Quero comprar da distribuidora Vitale
               </Button>
               <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 text-lg" onClick={() => document.getElementById('catalogo')?.scrollIntoView({

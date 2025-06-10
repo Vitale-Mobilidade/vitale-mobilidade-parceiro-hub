@@ -1,65 +1,16 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
 
 const ResellerForm = () => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    city: '',
-    state: '',
-    storeType: '',
-    interests: [] as string[],
-    observations: ''
-  });
-
-  const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
-  const storeTypes = ['Loja física', 'Online', 'Híbrida', 'Outro'];
-  const productInterests = ['Bike elétrica', 'Triciclo passeio', 'Triciclo carga', 'Motos elétricas', 'Autopropelidos'];
-
-  const handleInterestChange = (interest: string, checked: boolean) => {
-    if (checked) {
-      setFormData(prev => ({
-        ...prev,
-        interests: [...prev.interests, interest]
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        interests: prev.interests.filter(i => i !== interest)
-      }));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Cadastro enviado com sucesso!",
-      description: "Entraremos em contato em breve para apresentar as condições de parceria."
-    });
-    setFormData({
-      name: '',
-      email: '',
-      city: '',
-      state: '',
-      storeType: '',
-      interests: [],
-      observations: ''
-    });
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0ATenho%20interesse%20em%20comprar%203%20unidades%20para%20a%20minha%20loja.%20Voc%C3%AA%20pode%20me%20enviar%20o%20cat%C3%A1logo%20e%20as%20condi%C3%A7%C3%B5es%3F', '_blank');
   };
 
   return (
     <section id="seja-revendedor" className="py-12 md:py-20 bg-gradient-to-br from-green-50 to-white">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left side - Benefits */}
           <div className="space-y-6 order-2 lg:order-1">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center lg:text-left">
@@ -109,139 +60,31 @@ const ResellerForm = () => {
             </div>
           </div>
 
-          {/* Right side - Form */}
+          {/* Right side - Call to Action */}
           <Card className="shadow-xl w-full order-1 lg:order-2">
             <CardHeader className="bg-gradient-green text-white rounded-t-lg">
-              <CardTitle className="text-lg md:text-xl text-center">Cadastre-se como revendedor</CardTitle>
+              <CardTitle className="text-lg md:text-xl text-center">Torne-se um revendedor</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm md:text-base">Nome *</Label>
-                  <Input 
-                    id="name" 
-                    value={formData.name} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      name: e.target.value
-                    }))} 
-                    required 
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email" className="text-sm md:text-base">E-mail *</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      email: e.target.value
-                    }))} 
-                    required 
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city" className="text-sm md:text-base">Cidade *</Label>
-                    <Input 
-                      id="city" 
-                      value={formData.city} 
-                      onChange={e => setFormData(prev => ({
-                        ...prev,
-                        city: e.target.value
-                      }))} 
-                      required 
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="state" className="text-sm md:text-base">Estado *</Label>
-                    <Select 
-                      value={formData.state} 
-                      onValueChange={value => setFormData(prev => ({
-                        ...prev,
-                        state: value
-                      }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {estados.map(estado => (
-                          <SelectItem key={estado} value={estado}>{estado}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="storeType" className="text-sm md:text-base">Tipo de loja *</Label>
-                  <Select 
-                    value={formData.storeType} 
-                    onValueChange={value => setFormData(prev => ({
-                      ...prev,
-                      storeType: value
-                    }))}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {storeTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-sm md:text-base">Interesse em quais produtos? *</Label>
-                  <div className="grid grid-cols-1 gap-3 mt-2">
-                    {productInterests.map(interest => (
-                      <div key={interest} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={interest} 
-                          checked={formData.interests.includes(interest)} 
-                          onCheckedChange={checked => handleInterestChange(interest, !!checked)} 
-                        />
-                        <Label htmlFor={interest} className="text-sm flex-1">{interest}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="observations" className="text-sm md:text-base">Observações adicionais</Label>
-                  <Textarea 
-                    id="observations" 
-                    value={formData.observations} 
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      observations: e.target.value
-                    }))} 
-                    placeholder="Conte-nos mais sobre sua operação" 
-                    className="mt-1 min-h-[80px]"
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-green hover:opacity-90 text-white text-base md:text-lg py-3 mt-6"
-                >
-                  Quero me tornar um revendedor da Vitale
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  Nossa equipe entrará em contato em até 24 horas para apresentar as condições de parceria.
+            <CardContent className="p-6 md:p-8 text-center space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Pronto para começar a vender veículos elétricos?
+                </h3>
+                <p className="text-gray-600">
+                  Entre em contato conosco pelo WhatsApp e receba todas as informações sobre nossa parceria, catálogo completo e condições especiais para revendedores.
                 </p>
-              </form>
+              </div>
+
+              <Button 
+                onClick={handleWhatsAppClick}
+                className="w-full bg-gradient-green hover:opacity-90 text-white text-base md:text-lg py-4 mt-6"
+              >
+                Quero me tornar um revendedor da Vitale
+              </Button>
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Nossa equipe entrará em contato em até 24 horas para apresentar as condições de parceria.
+              </p>
             </CardContent>
           </Card>
         </div>

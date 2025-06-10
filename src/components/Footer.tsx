@@ -39,7 +39,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Contato</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>📧 contato@vitalemobilidade.com.br</li>
-              <li>📱 (11) 99999-9999</li>
+              <li>📱 (11) 96839-0253</li>
               <li>📍 São Paulo - SP</li>
               <li>🕒 Seg-Sex: 8h às 18h</li>
             </ul>
