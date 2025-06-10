@@ -12,7 +12,12 @@ interface Product {
   needsCNH: boolean;
   description: string;
   image: string;
-  margin: number;
+  potencia: string;
+  bateria: string;
+  autonomia: string;
+  precoCompra: string;
+  precoVenda: string;
+  margem: number;
   stock: number;
   brand: string;
   category: 'passeio' | 'trabalho' | 'carga' | 'delivery' | 'profissional';
@@ -21,14 +26,19 @@ interface Product {
 const mockProducts: Product[] = [
   {
     id: '1',
-    name: 'E-Bike Urban Pro',
+    name: 'V8 - 1000W',
     type: 'bicicleta',
     needsCNH: false,
-    description: 'Bicicleta elétrica ideal para deslocamentos urbanos com autonomia de 50km.',
-    image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 35,
+    description: 'Bicicleta elétrica ideal para passeio e trabalho com alta performance.',
+    image: '/lovable-uploads/d5742979-236c-4403-bb4f-54693b238724.png',
+    potencia: '1000W',
+    bateria: '48V 15AH',
+    autonomia: 'Até 60km',
+    precoCompra: 'R$7.425,00',
+    precoVenda: 'R$10.023,00',
+    margem: 35,
     stock: 25,
-    brand: 'EcoBike',
+    brand: 'Vitale',
     category: 'passeio'
   },
   {
@@ -38,7 +48,12 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Triciclo elétrico para transporte de cargas com capacidade de 150kg.',
     image: 'https://images.unsplash.com/photo-1544191696-15693a5d302d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 30,
+    potencia: '750W',
+    bateria: '48V 12AH',
+    autonomia: 'Até 45km',
+    precoCompra: 'R$6.500,00',
+    precoVenda: 'R$8.450,00',
+    margem: 30,
     stock: 15,
     brand: 'CargoBike',
     category: 'carga'
@@ -50,7 +65,12 @@ const mockProducts: Product[] = [
     needsCNH: true,
     description: 'Moto elétrica para cidade com velocidade máxima de 50km/h.',
     image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 32,
+    potencia: '2000W',
+    bateria: '60V 20AH',
+    autonomia: 'Até 70km',
+    precoCompra: 'R$12.000,00',
+    precoVenda: 'R$15.840,00',
+    margem: 32,
     stock: 10,
     brand: 'ElectroMoto',
     category: 'passeio'
@@ -62,7 +82,12 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Bicicleta elétrica robusta para uso profissional e entregas.',
     image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 33,
+    potencia: '1200W',
+    bateria: '48V 17AH',
+    autonomia: 'Até 65km',
+    precoCompra: 'R$8.200,00',
+    precoVenda: 'R$10.906,00',
+    margem: 33,
     stock: 18,
     brand: 'WorkBike',
     category: 'trabalho'
@@ -74,7 +99,12 @@ const mockProducts: Product[] = [
     needsCNH: false,
     description: 'Veículo autopropelido ideal para delivery com grande capacidade de carga.',
     image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 28,
+    potencia: '1500W',
+    bateria: '60V 25AH',
+    autonomia: 'Até 80km',
+    precoCompra: 'R$15.000,00',
+    precoVenda: 'R$19.200,00',
+    margem: 28,
     stock: 12,
     brand: 'DeliveryTech',
     category: 'delivery'
@@ -86,7 +116,12 @@ const mockProducts: Product[] = [
     needsCNH: true,
     description: 'Moto elétrica para uso profissional intenso com alta autonomia.',
     image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    margin: 30,
+    potencia: '3000W',
+    bateria: '72V 30AH',
+    autonomia: 'Até 100km',
+    precoCompra: 'R$18.500,00',
+    precoVenda: 'R$24.050,00',
+    margem: 30,
     stock: 8,
     brand: 'ProMoto',
     category: 'profissional'
@@ -248,16 +283,32 @@ const ProductCatalog = () => {
                     <span className="font-medium capitalize">{product.category}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Marca:</span>
-                    <span className="font-medium">{product.brand}</span>
+                    <span className="text-gray-500">Potência:</span>
+                    <span className="font-medium">{product.potencia}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Bateria:</span>
+                    <span className="font-medium">{product.bateria}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Autonomia:</span>
+                    <span className="font-medium">{product.autonomia}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Preço compra:</span>
+                    <span className="font-medium text-blue-600">{product.precoCompra}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Preço venda sugerido:</span>
+                    <span className="font-medium text-green-600">{product.precoVenda}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Margem sugerida:</span>
+                    <span className="font-medium text-green-600">{product.margem}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Estoque:</span>
                     <span className="font-medium text-green-600">{product.stock} unidades</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Margem sugerida:</span>
-                    <span className="font-medium text-green-600">{product.margin}%</span>
                   </div>
                 </div>
               </CardContent>
