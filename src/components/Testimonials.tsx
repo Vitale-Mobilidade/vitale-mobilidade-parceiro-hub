@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from '@/components/ui/card';
 const Testimonials = () => {
   const testimonials = [{
@@ -5,7 +6,7 @@ const Testimonials = () => {
     name: 'Marina Santos',
     storeType: 'Loja de Bicicletas',
     city: 'São Paulo - SP',
-    image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
     text: 'Consegui vender as 3 primeiras unidades em menos de 10 dias, com ótimo lucro e suporte da equipe. A margem realmente é atrativa!'
   }, {
     id: '2',
