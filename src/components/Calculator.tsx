@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,7 @@ const Calculator = () => {
     monthlyKm: '',
     fuelPrice: '',
     fuelConsumption: '',
-    electricRate: '',
+    electricRate: '0.03',
     combustionMaintenance: '',
     electricMaintenance: '',
     publicTransportCost: '',
@@ -210,7 +209,7 @@ const Calculator = () => {
                   type="number"
                   value={formData.ipvaAnnual}
                   onChange={(e) => setFormData(prev => ({ ...prev, ipvaAnnual: e.target.value }))}
-                  placeholder="Ex: 1200"
+                  placeholder="Ex: 2000"
                   className="mt-1"
                 />
               </div>
