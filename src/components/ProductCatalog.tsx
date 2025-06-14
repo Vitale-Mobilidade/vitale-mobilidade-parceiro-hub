@@ -32,8 +32,8 @@ const mockProducts: Product[] = [
     potencia: '1000W',
     bateria: '48V 15AH',
     autonomia: 'Até 60km',
-    precoCompra: 'R$7.425,00',
-    precoVenda: 'R$10.023,00',
+    precoCompra: 'R$7.280,00',
+    precoVenda: 'R$9.828,00',
     margem: 35,
     brand: 'Vitale',
     category: 'passeio'
@@ -69,54 +69,6 @@ const mockProducts: Product[] = [
     margem: 35,
     brand: 'Vitale',
     category: 'passeio'
-  },
-  {
-    id: '4',
-    name: 'E-Bike Trabalho Plus',
-    type: 'bicicleta',
-    needsCNH: false,
-    description: 'Bicicleta elétrica robusta para uso profissional e entregas.',
-    image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    potencia: '1200W',
-    bateria: '48V 17AH',
-    autonomia: 'Até 65km',
-    precoCompra: 'R$8.200,00',
-    precoVenda: 'R$10.906,00',
-    margem: 33,
-    brand: 'WorkBike',
-    category: 'trabalho'
-  },
-  {
-    id: '5',
-    name: 'Autopropelido Delivery',
-    type: 'autopropelido',
-    needsCNH: false,
-    description: 'Veículo autopropelido ideal para delivery com grande capacidade de carga.',
-    image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    potencia: '1500W',
-    bateria: '60V 25AH',
-    autonomia: 'Até 80km',
-    precoCompra: 'R$15.000,00',
-    precoVenda: 'R$19.200,00',
-    margem: 28,
-    brand: 'DeliveryTech',
-    category: 'delivery'
-  },
-  {
-    id: '6',
-    name: 'Moto Profissional X1',
-    type: 'moto',
-    needsCNH: true,
-    description: 'Moto elétrica para uso profissional intenso com alta autonomia.',
-    image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-    potencia: '3000W',
-    bateria: '72V 30AH',
-    autonomia: 'Até 100km',
-    precoCompra: 'R$18.500,00',
-    precoVenda: 'R$24.050,00',
-    margem: 30,
-    brand: 'ProMoto',
-    category: 'profissional'
   }
 ];
 
