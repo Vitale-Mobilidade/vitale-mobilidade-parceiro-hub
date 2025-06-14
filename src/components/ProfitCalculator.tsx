@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,10 +11,22 @@ const ProfitCalculator = () => {
   const [monthlyUnits, setMonthlyUnits] = useState([5]);
 
   const products = {
+    'j10-800w': {
+      name: 'J10 - 800W',
+      ticketMedio: 8312,
+      precoCompra: 6157,
+      margem: 35
+    },
+    'v8-mini-500w': {
+      name: 'V8 Mini - 500W',
+      ticketMedio: 8554,
+      precoCompra: 6336,
+      margem: 35
+    },
     'v8-1000w': {
       name: 'V8 - 1000W',
-      ticketMedio: 10023,
-      precoCompra: 7425,
+      ticketMedio: 9828,
+      precoCompra: 7280,
       margem: 35
     },
     'ft03-1000w': {
@@ -23,30 +34,6 @@ const ProfitCalculator = () => {
       ticketMedio: 11353,
       precoCompra: 7830,
       margem: 45
-    },
-    'moto-city': {
-      name: 'Moto Elétrica City',
-      ticketMedio: 15840,
-      precoCompra: 12000,
-      margem: 32
-    },
-    'ebike-trabalho': {
-      name: 'E-Bike Trabalho Plus',
-      ticketMedio: 10906,
-      precoCompra: 8200,
-      margem: 33
-    },
-    'autopropelido-delivery': {
-      name: 'Autopropelido Delivery',
-      ticketMedio: 19200,
-      precoCompra: 15000,
-      margem: 28
-    },
-    'moto-profissional': {
-      name: 'Moto Profissional X1',
-      ticketMedio: 24050,
-      precoCompra: 18500,
-      margem: 30
     }
   };
 

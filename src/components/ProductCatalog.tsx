@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,38 @@ interface Product {
 }
 
 const mockProducts: Product[] = [
+  {
+    id: '4',
+    name: 'J10 - 800W',
+    type: 'autopropelido',
+    needsCNH: false,
+    description: 'Autopropelido moderno e confortável, ideal para passeios urbanos com alta autonomia.',
+    image: '/lovable-uploads/629698fd-62e5-43d8-baaf-d8d515faf355.png',
+    potencia: '800W',
+    bateria: '48V 20AH',
+    autonomia: 'Até 50km',
+    precoCompra: 'R$6.157,00',
+    precoVenda: 'R$8.312,00',
+    margem: 35,
+    brand: 'Vitale',
+    category: 'passeio'
+  },
+  {
+    id: '3',
+    name: 'V8 Mini - 500W',
+    type: 'bicicleta',
+    needsCNH: false,
+    description: 'Bicicleta elétrica compacta e prática, ideal para passeios urbanos e mobilidade sustentável.',
+    image: '/lovable-uploads/38caca22-b777-4f1b-9754-6750aeacea1b.png',
+    potencia: '500W',
+    bateria: '30V 10AH',
+    autonomia: 'Até 30km',
+    precoCompra: 'R$6.336,00',
+    precoVenda: 'R$8.553,60',
+    margem: 35,
+    brand: 'Vitale',
+    category: 'passeio'
+  },
   {
     id: '1',
     name: 'V8 - 1000W',
@@ -51,22 +84,6 @@ const mockProducts: Product[] = [
     precoCompra: 'R$7.830,00',
     precoVenda: 'R$11.353,00',
     margem: 45,
-    brand: 'Vitale',
-    category: 'passeio'
-  },
-  {
-    id: '3',
-    name: 'V8 Mini - 500W',
-    type: 'bicicleta',
-    needsCNH: false,
-    description: 'Bicicleta elétrica compacta e prática, ideal para passeios urbanos e mobilidade sustentável.',
-    image: '/lovable-uploads/38caca22-b777-4f1b-9754-6750aeacea1b.png',
-    potencia: '500W',
-    bateria: '30V 10AH',
-    autonomia: 'Até 30km',
-    precoCompra: 'R$6.336,00',
-    precoVenda: 'R$8.553,60',
-    margem: 35,
     brand: 'Vitale',
     category: 'passeio'
   }
