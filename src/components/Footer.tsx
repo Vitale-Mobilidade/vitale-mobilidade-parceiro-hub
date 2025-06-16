@@ -1,4 +1,5 @@
 
+
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white py-8 sm:py-12">
@@ -38,7 +39,7 @@ const Footer = () => {
           <div className="text-center sm:text-left">
             <h4 className="font-semibold mb-4">Contato</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li className="break-words">📧 contato@vitalemobilidade.com.br</li>
+              <li className="break-words">📧 lucas.vitale@vitalemobilidade.com</li>
               <li>📱 (11) 96839-0253</li>
               <li>📍 São Paulo - SP</li>
               <li>🕒 Seg-Sex: 8h às 18h</li>
@@ -47,7 +48,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-sm text-gray-400">
-          <p>&copy; 2024 Vitale Mobilidade. Todos os direitos reservados.</p>
+          <p>&copy; 2025 Vitale Mobilidade. Todos os direitos reservados.</p>
           <p className="mt-2">Mobilidade sustentável para um futuro melhor.</p>
         </div>
       </div>
@@ -56,3 +57,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
