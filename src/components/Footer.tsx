@@ -1,5 +1,4 @@
 
-
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white py-8 sm:py-12">
@@ -7,9 +6,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           <div className="text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-green rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">V</span>
-              </div>
+              <img 
+                src="/lovable-uploads/d25498ea-45b8-4dca-a2c2-dcdb6a860b82.png" 
+                alt="Vitale Mobilidade" 
+                className="w-8 h-8"
+              />
               <span className="text-lg sm:text-xl font-bold">Vitale Mobilidade</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto sm:mx-0">
@@ -57,4 +58,3 @@ const Footer = () => {
 };
 
 export default Footer;
-

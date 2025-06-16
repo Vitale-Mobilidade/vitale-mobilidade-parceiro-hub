@@ -20,10 +20,12 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-green rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">V</span>
-            </div>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/d25498ea-45b8-4dca-a2c2-dcdb6a860b82.png" 
+              alt="Vitale Mobilidade" 
+              className="w-8 h-8 sm:w-10 sm:h-10"
+            />
             <span className="text-lg sm:text-xl font-bold text-primary">Vitale Mobilidade</span>
           </div>
 
