@@ -79,7 +79,7 @@ const ResellerForm = () => {
                 onClick={handleWhatsAppClick}
                 className="w-full bg-gradient-green hover:opacity-90 text-white text-sm sm:text-base md:text-lg py-3 sm:py-4 mt-6"
               >
-                Quero me tornar um revendedor da Vitale
+                Quero comprar da Distribuidora Vitale
               </Button>
 
               <p className="text-xs text-gray-500 text-center mt-4">

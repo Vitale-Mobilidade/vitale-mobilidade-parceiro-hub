@@ -27,7 +27,7 @@ const Hero = () => {
                 className="w-full sm:w-auto bg-gradient-green hover:opacity-90 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-semibold min-h-[44px]" 
                 onClick={handleWhatsAppClick}
               >
-                Quero comprar da distribuidora Vitale
+                Quero comprar da Distribuidora Vitale
               </Button>
               <Button 
                 variant="outline" 

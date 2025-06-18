@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +30,10 @@ const mockProducts: Product[] = [
     description: 'Autopropelido moderno e confortável, ideal para passeios urbanos com alta autonomia.',
     image: '/lovable-uploads/629698fd-62e5-43d8-baaf-d8d515faf355.png',
     potencia: '800W',
-    bateria: '48V 20AH',
+    bateria: '48V 25AH',
     autonomia: 'Até 50km',
-    precoCompra: 'R$6.157,00',
-    precoVenda: 'R$8.312,00',
+    precoCompra: 'R$5.805,00',
+    precoVenda: 'R$7.837,00',
     margem: 35,
     brand: 'Vitale',
     category: 'passeio'
@@ -45,9 +44,9 @@ const mockProducts: Product[] = [
     type: 'bicicleta',
     needsCNH: false,
     description: 'Bicicleta elétrica compacta e prática, ideal para passeios urbanos e mobilidade sustentável.',
-    image: '/lovable-uploads/38caca22-b777-4f1b-9754-6750aeacea1b.png',
+    image: '/lovable-uploads/1af88d62-6527-4a0f-b2b6-66ba99a4ea1d.png',
     potencia: '500W',
-    bateria: '30V 10AH',
+    bateria: '36V 10AH',
     autonomia: 'Até 30km',
     precoCompra: 'R$6.336,00',
     precoVenda: 'R$8.553,60',
