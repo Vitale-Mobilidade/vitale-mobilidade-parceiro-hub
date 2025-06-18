@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ interface Product {
   margem: number;
   brand: string;
   category: 'passeio' | 'trabalho' | 'carga' | 'delivery' | 'profissional';
+  precoNumerico: number;
 }
 
 const mockProducts: Product[] = [
@@ -36,7 +38,8 @@ const mockProducts: Product[] = [
     precoVenda: 'R$7.837,00',
     margem: 35,
     brand: 'Vitale',
-    category: 'passeio'
+    category: 'passeio',
+    precoNumerico: 5805
   },
   {
     id: '3',
@@ -52,7 +55,25 @@ const mockProducts: Product[] = [
     precoVenda: 'R$8.553,60',
     margem: 35,
     brand: 'Vitale',
-    category: 'passeio'
+    category: 'passeio',
+    precoNumerico: 6336
+  },
+  {
+    id: '5',
+    name: 'WD-2 - 800W',
+    type: 'autopropelido',
+    needsCNH: false,
+    description: 'Autopropelido versátil e elegante, perfeito para deslocamentos urbanos com conforto e estilo.',
+    image: '/lovable-uploads/afd25ae5-39df-4d35-9d74-9a90c7c41794.png',
+    potencia: '800W',
+    bateria: '60V 20AH',
+    autonomia: 'Até 50km',
+    precoCompra: 'R$6.750,00',
+    precoVenda: 'R$9.113,00',
+    margem: 35,
+    brand: 'Vitale',
+    category: 'passeio',
+    precoNumerico: 6750
   },
   {
     id: '1',
@@ -63,12 +84,30 @@ const mockProducts: Product[] = [
     image: '/lovable-uploads/d5742979-236c-4403-bb4f-54693b238724.png',
     potencia: '1000W',
     bateria: '48V 15AH',
-    autonomia: 'Até 60km',
+    autonomia: 'Até 50km',
     precoCompra: 'R$7.280,00',
     precoVenda: 'R$9.828,00',
     margem: 35,
     brand: 'Vitale',
-    category: 'passeio'
+    category: 'passeio',
+    precoNumerico: 7280
+  },
+  {
+    id: '6',
+    name: 'H9 - 1000W',
+    type: 'bicicleta',
+    needsCNH: false,
+    description: 'Bicicleta elétrica robusta e versátil, ideal para passeio e trabalho com alta durabilidade.',
+    image: '/lovable-uploads/d50d5ccd-1519-48c2-89fd-2e5eda7e1a29.png',
+    potencia: '1000W',
+    bateria: '48V 15AH',
+    autonomia: 'Até 50km',
+    precoCompra: 'R$7.280,00',
+    precoVenda: 'R$9.828,00',
+    margem: 35,
+    brand: 'Vitale',
+    category: 'passeio',
+    precoNumerico: 7280
   },
   {
     id: '2',
@@ -84,13 +123,14 @@ const mockProducts: Product[] = [
     precoVenda: 'R$11.353,00',
     margem: 45,
     brand: 'Vitale',
-    category: 'passeio'
+    category: 'passeio',
+    precoNumerico: 7830
   }
 ];
 
 const ProductCatalog = () => {
-  const [products] = useState<Product[]>(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts);
+  const [products] = useState<Product[]>(mockProducts.sort((a, b) => a.precoNumerico - b.precoNumerico));
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [cnhFilter, setCnhFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,8 +14,8 @@ const ProfitCalculator = () => {
   const products = {
     'j10-800w': {
       name: 'J10 - 800W',
-      ticketMedio: 8312,
-      precoCompra: 6157,
+      ticketMedio: 7837,
+      precoCompra: 5805,
       margem: 35
     },
     'v8-mini-500w': {
@@ -23,8 +24,20 @@ const ProfitCalculator = () => {
       precoCompra: 6336,
       margem: 35
     },
+    'wd2-800w': {
+      name: 'WD-2 - 800W',
+      ticketMedio: 9113,
+      precoCompra: 6750,
+      margem: 35
+    },
     'v8-1000w': {
       name: 'V8 - 1000W',
+      ticketMedio: 9828,
+      precoCompra: 7280,
+      margem: 35
+    },
+    'h9-1000w': {
+      name: 'H9 - 1000W',
       ticketMedio: 9828,
       precoCompra: 7280,
       margem: 35
