@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -47,6 +46,12 @@ const ProfitCalculator = () => {
       ticketMedio: 11353,
       precoCompra: 7830,
       margem: 45
+    },
+    'u3-1000w': {
+      name: 'U3 - 1000W',
+      ticketMedio: 13860,
+      precoCompra: 9900,
+      margem: 40
     }
   };
 

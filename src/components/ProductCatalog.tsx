@@ -125,6 +125,23 @@ const mockProducts: Product[] = [
     brand: 'Vitale',
     category: 'passeio',
     precoNumerico: 7830
+  },
+  {
+    id: '7',
+    name: 'U3 - 1000W',
+    type: 'autopropelido',
+    needsCNH: false,
+    description: 'Autopropelido focado para uso de trabalho com possibilidade de levar passageiro ou carga com o rack traseiro.',
+    image: '/lovable-uploads/592d7164-f66c-4433-b390-7386b4de539f.png',
+    potencia: '1000W',
+    bateria: '60V 30AH',
+    autonomia: 'Até 70km',
+    precoCompra: 'R$9.900,00',
+    precoVenda: 'R$13.860,00',
+    margem: 40,
+    brand: 'Vitale',
+    category: 'trabalho',
+    precoNumerico: 9900
   }
 ];
 
