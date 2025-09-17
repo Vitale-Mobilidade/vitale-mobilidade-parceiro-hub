@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 const Hero = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0ATenho%20interesse%20em%20comprar%203%20unidades%20para%20a%20minha%20loja.%20Voc%C3%AA%20pode%20me%20enviar%20o%20cat%C3%A1logo%20e%20as%20condi%C3%A7%C3%B5es%3F', '_blank');
+    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   return (
@@ -13,11 +13,11 @@ const Hero = () => {
           <div className="space-y-4 sm:space-y-6 md:space-y-8">
             <div className="space-y-3 sm:space-y-4 md:space-y-6">
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold leading-tight px-2">
-                <span className="text-gradient-green">Distribuidora</span> de veículos elétricos para lojistas
+                <span className="text-gradient-green">Consultoria Estratégica</span> em veículos elétricos
               </h1>
               <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-4xl mx-auto px-4">
-                Compre direto da Vitale Mobilidade e revenda com até <strong>50% de margem de lucro</strong>. 
-                Estoque nacional, pronta entrega e suporte especializado para lojistas que querem escalar suas vendas em mobilidade elétrica.
+                Ajudo lojistas e empresas a entrarem no mercado de veículos elétricos com <strong>segurança e lucratividade</strong>. 
+                Com 10 anos de experiência e participação em vendas que ultrapassam <strong>R$ 100 milhões</strong>, ofereço orientação prática para escolher fornecedores confiáveis e estruturar seu negócio.
               </p>
             </div>
             
@@ -27,7 +27,7 @@ const Hero = () => {
                 className="w-full sm:w-auto bg-gradient-green hover:opacity-90 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-semibold min-h-[44px]" 
                 onClick={handleWhatsAppClick}
               >
-                Quero comprar da Distribuidora Vitale
+                Agende uma consultoria
               </Button>
               <Button 
                 variant="outline" 
@@ -37,22 +37,22 @@ const Hero = () => {
                   behavior: 'smooth'
                 })}
               >
-                Ver Portfólio de Produtos
+                Conheça nossa rede de fornecedores
               </Button>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 pt-4 sm:pt-6 md:pt-8 max-w-3xl mx-auto px-4">
               <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">50%</div>
-                <div className="text-xs sm:text-sm text-gray-600">Margem de Lucro</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">10 anos</div>
+                <div className="text-xs sm:text-sm text-gray-600">de Experiência</div>
               </div>
               <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">Nacional</div>
-                <div className="text-xs sm:text-sm text-gray-600">Estoque Pronto</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">+100mi</div>
+                <div className="text-xs sm:text-sm text-gray-600">em Vendas</div>
               </div>
               <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">24h</div>
-                <div className="text-xs sm:text-sm text-gray-600">Pronta Entrega</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">Seguro</div>
+                <div className="text-xs sm:text-sm text-gray-600">e Lucrativo</div>
               </div>
             </div>
           </div>
