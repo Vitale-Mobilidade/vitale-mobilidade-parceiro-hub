@@ -1,14 +1,12 @@
 
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
-import HowItWorks from '@/components/HowItWorks';
-import ProductCatalog from '@/components/ProductCatalog';
-import ProfitCalculator from '@/components/ProfitCalculator';
-import ResellerForm from '@/components/ResellerForm';
+import AboutUs from '@/components/AboutUs';
+import Services from '@/components/Services';
+import HowICanHelp from '@/components/HowICanHelp';
+import SuccessCases from '@/components/SuccessCases';
+import ConsultationForm from '@/components/ConsultationForm';
 import Testimonials from '@/components/Testimonials';
-import WhyResell from '@/components/WhyResell';
-import Consultoria from '@/components/Consultoria';
-import Calculator from '@/components/Calculator';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -16,14 +14,12 @@ const Index = () => {
     <div className="min-h-screen bg-white">
       <Header />
       <Hero />
-      <HowItWorks />
-      <ProductCatalog />
-      <ProfitCalculator />
-      <ResellerForm />
+      <AboutUs />
+      <Services />
+      <HowICanHelp />
+      <SuccessCases />
+      <ConsultationForm />
       <Testimonials />
-      <WhyResell />
-      <Consultoria />
-      <Calculator />
       <Footer />
     </div>
   );
