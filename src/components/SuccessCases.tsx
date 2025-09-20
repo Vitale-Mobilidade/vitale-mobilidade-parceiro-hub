@@ -7,7 +7,7 @@ const SuccessCases = () => {
       title: "Expansão Nacional",
       challenge: "Expandir operação de veículos elétricos para novas capitais",
       solution: "Desenvolvimento de estratégia de expansão e estruturação de equipes locais",
-      result: "Operações implementadas com sucesso em 4 capitais: SP, Curitiba, Brasília e Rio de Janeiro"
+      result: "Operações implementadas com sucesso em território nacional com foco em grandes centros urbanos"
     },
     {
       icon: TrendingUp,

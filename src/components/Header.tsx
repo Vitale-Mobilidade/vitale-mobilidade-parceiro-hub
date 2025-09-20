@@ -9,11 +9,11 @@ const Header = () => {
 
   const menuItems = [
     { label: 'Home', href: '#home' },
-    { label: 'Como funciona', href: '#como-funciona' },
-    { label: 'Catálogo', href: '#catalogo' },
-    { label: 'Seja Revendedor', href: '#seja-revendedor' },
-    { label: 'Consultoria', href: '#consultoria' },
-    { label: 'Calculadora', href: '#calculadora' },
+    { label: 'Sobre', href: '#sobre' },
+    { label: 'Serviços', href: '#servicos' },
+    { label: 'Casos de Sucesso', href: '#casos-sucesso' },
+    { label: 'Conteúdo', href: '#conteudo' },
+    { label: 'Contato', href: '#contato' },
   ];
 
   return (

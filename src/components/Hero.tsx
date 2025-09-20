@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 const Hero = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20escolher%20os%20melhores%20fornecedores%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   return (
@@ -59,8 +59,8 @@ const Hero = () => {
                 <div className="text-xs sm:text-sm text-gray-600">Autoridade</div>
               </div>
               <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">4 Capitais</div>
-                <div className="text-xs sm:text-sm text-gray-600">Expansão</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">Expansão</div>
+                <div className="text-xs sm:text-sm text-gray-600">Operações</div>
               </div>
             </div>
           </div>

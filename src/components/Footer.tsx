@@ -14,35 +14,34 @@ const Footer = () => {
               <span className="text-base sm:text-lg md:text-xl font-bold">Vitale Mobilidade</span>
             </div>
             <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto sm:mx-0">
-              Distribuidora B2B de veículos elétricos sustentáveis. Conectando lojistas ao futuro da mobilidade.
+              Consultoria estratégica nacional em veículos elétricos. Ajudamos empresas a crescer no mercado com segurança.
             </p>
           </div>
 
           <div className="text-center sm:text-left">
-            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Produtos</h4>
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Serviços</h4>
             <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-400">
-              <li><a href="#catalogo" className="hover:text-white transition-colors">Bicicletas Elétricas</a></li>
-              <li><a href="#catalogo" className="hover:text-white transition-colors">Triciclos Elétricos</a></li>
-              <li><a href="#catalogo" className="hover:text-white transition-colors">Motos Elétricas</a></li>
-              <li><a href="#catalogo" className="hover:text-white transition-colors">Catálogo Completo</a></li>
+              <li><a href="#servicos" className="hover:text-white transition-colors">Diagnóstico de Mercado</a></li>
+              <li><a href="#servicos" className="hover:text-white transition-colors">Avaliação de Fornecedores</a></li>
+              <li><a href="#servicos" className="hover:text-white transition-colors">Estruturação Comercial</a></li>
+              <li><a href="#servicos" className="hover:text-white transition-colors">Treinamento de Equipes</a></li>
             </ul>
           </div>
 
           <div className="text-center sm:text-left">
-            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Parceiros</h4>
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Empresa</h4>
             <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-400">
-              <li><a href="#seja-revendedor" className="hover:text-white transition-colors">Seja Revendedor</a></li>
-              <li><a href="#consultoria" className="hover:text-white transition-colors">Consultoria</a></li>
-              <li><a href="#calculadora" className="hover:text-white transition-colors">Calculadora</a></li>
+              <li><a href="#sobre" className="hover:text-white transition-colors">Sobre Nós</a></li>
+              <li><a href="#casos-sucesso" className="hover:text-white transition-colors">Casos de Sucesso</a></li>
+              <li><a href="#conteudo" className="hover:text-white transition-colors">Conteúdo</a></li>
             </ul>
           </div>
 
           <div className="text-center sm:text-left">
             <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Contato</h4>
             <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-400">
-              <li className="break-words">📧 lucas.vitale@vitalemobilidade.com</li>
-              <li>📱 (11) 96839-0253</li>
-              <li>📍 São Paulo - SP</li>
+              <li>📱 (11) 98689-3890</li>
+              <li>📍 Atendimento Nacional</li>
               <li>🕒 Seg-Sex: 8h às 18h</li>
             </ul>
           </div>

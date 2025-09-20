@@ -6,7 +6,6 @@ import Services from '@/components/Services';
 import HowICanHelp from '@/components/HowICanHelp';
 import SuccessCases from '@/components/SuccessCases';
 import ConsultationForm from '@/components/ConsultationForm';
-import Testimonials from '@/components/Testimonials';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -19,7 +18,6 @@ const Index = () => {
       <HowICanHelp />
       <SuccessCases />
       <ConsultationForm />
-      <Testimonials />
       <Footer />
     </div>
   );

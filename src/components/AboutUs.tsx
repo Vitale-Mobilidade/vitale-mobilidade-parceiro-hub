@@ -3,7 +3,7 @@ import { TrendingUp, Users, MapPin, Trophy } from 'lucide-react';
 
 const AboutUs = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20conversar%20com%20voc%C3%AA%20sobre%20como%20posso%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20conversar%20com%20voc%C3%AA%20sobre%20como%20posso%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Pode%20me%20ajudar%3F', '_blank');
   };
 
   const achievements = [
@@ -19,8 +19,8 @@ const AboutUs = () => {
     },
     {
       icon: MapPin,
-      title: "Expansão para 4 capitais",
-      description: "São Paulo, Curitiba, Brasília e Rio de Janeiro"
+      title: "Experiência Nacional",
+      description: "Operações em todo território nacional"
     },
     {
       icon: Users,
@@ -54,9 +54,8 @@ const AboutUs = () => {
                   times B2B e digitais que revolucionaram a forma de vender mobilidade elétrica no país.
                 </p>
                 <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                  Minha expertise inclui a <strong>expansão de operações para 4 capitais</strong> (São Paulo, Curitiba, 
-                  Brasília e Rio de Janeiro), desenvolvimento de estratégias comerciais e criação de redes de 
-                  fornecedores confiáveis.
+                  Minha expertise inclui a <strong>expansão de operações em território nacional</strong>, desenvolvimento de estratégias comerciais e criação de redes de 
+                  fornecedores confiáveis em grandes centros urbanos.
                 </p>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { MessageCircle, Phone, Mail } from 'lucide-react';
 
 const ConsultationForm = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   const benefits = [
@@ -51,7 +51,7 @@ const ConsultationForm = () => {
               <ul className="text-sm text-gray-600 space-y-2">
                 <li>• 10 anos de experiência comprovada no setor</li>
                 <li>• Participação em mais de R$100 milhões em vendas</li>
-                <li>• Experiência nacional (4 capitais)</li>
+                <li>• Experiência nacional em grandes centros</li>
                 <li>• Rede de fornecedores testada e confiável</li>
                 <li>• Abordagem prática, não apenas teórica</li>
               </ul>
@@ -85,14 +85,10 @@ const ConsultationForm = () => {
 
                 <div className="text-center">
                   <p className="text-xs text-gray-500 mb-3">Ou entre em contato diretamente:</p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center items-center text-sm">
+                  <div className="flex justify-center items-center text-sm">
                     <div className="flex items-center space-x-2">
                       <Phone className="w-4 h-4 text-green-600" />
-                      <span className="text-gray-600">(11) 96839-0253</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Mail className="w-4 h-4 text-green-600" />
-                      <span className="text-gray-600">contato@vitalemobilidade.com</span>
+                      <span className="text-gray-600">(11) 98689-3890</span>
                     </div>
                   </div>
                 </div>
