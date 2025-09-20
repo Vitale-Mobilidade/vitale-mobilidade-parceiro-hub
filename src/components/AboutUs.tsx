@@ -1,102 +1,97 @@
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Users, MapPin, Trophy } from 'lucide-react';
+import { TrendingUp, Users, Building, Shield } from 'lucide-react';
 
 const AboutUs = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20conversar%20com%20voc%C3%AA%20sobre%20como%20posso%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entender%20como%20posso%20crescer%20no%20mercado%20de%20mobilidade%20el%C3%A9trica.%20Pode%20me%20ajudar%3F', '_blank');
   };
 
   const achievements = [
     {
       icon: TrendingUp,
-      title: "10 anos de experiência",
-      description: "Década de atuação no mercado de mobilidade elétrica"
+      title: "+10 anos",
+      description: "De experiência na linha de frente da mobilidade elétrica"
     },
     {
-      icon: Trophy,
-      title: "+R$100 milhões em vendas",
-      description: "Participação direta em vendas que ultrapassam R$100 milhões"
-    },
-    {
-      icon: MapPin,
-      title: "Experiência Nacional",
-      description: "Operações em todo território nacional"
+      icon: Building,
+      title: "+R$100 milhões",
+      description: "Movimentados em vendas ao longo da carreira"
     },
     {
       icon: Users,
-      title: "Liderança de equipes",
-      description: "Criação e gestão de times B2B e digitais"
+      title: "Expansão Nacional",
+      description: "Estruturação de operações no Brasil inteiro"
+    },
+    {
+      icon: Shield,
+      title: "B2B Expert",
+      description: "Especialista em frotas elétricas e parcerias estratégicas"
     }
   ];
 
   return (
-    <section id="sobre" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-white">
+    <section id="sobre" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
-              Sobre a <span className="text-gradient-green">Vitale Mobilidade</span>
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-4xl mx-auto px-4">
-              <strong>Transformamos conhecimento em resultados práticos para quem deseja crescer no mercado de veículos elétricos.</strong>
-            </p>
+          <div className="text-center mb-12 sm:mb-16">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-gray-900">
+              Quem somos
+            </h1>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-8 sm:mb-12">
-            <div className="space-y-4 sm:space-y-6">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-12 sm:mb-16">
+            <div className="space-y-6 sm:space-y-8 order-2 lg:order-1">
               <div className="prose prose-lg max-w-none">
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                  Com <strong>10 anos de experiência</strong> no setor de veículos elétricos, construí uma trajetória sólida 
-                  liderando equipes comerciais e expandindo operações para as principais capitais do Brasil.
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
+                  A <strong>Vitale Mobilidade nasceu para transformar experiência em estratégia</strong>. Após mais de 10 anos atuando na linha de frente da mobilidade elétrica no Brasil — movimentando mais de R$ 100 milhões em vendas e expandindo operações no Brasil inteiro — percebemos que muitos empreendedores e empresas ainda têm dúvidas na hora de escolher fornecedores, estruturar processos e crescer com segurança nesse mercado.
                 </p>
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                  Participei diretamente de vendas que <strong>ultrapassam R$100 milhões</strong>, criando e gerenciando 
-                  times B2B e digitais que revolucionaram a forma de vender mobilidade elétrica no país.
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
+                  Nossa <strong>missão é simples</strong>: compartilhar conhecimento prático para ajudar você a tomar decisões assertivas, reduzir riscos e acelerar seus resultados.
                 </p>
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                  Minha expertise inclui a <strong>expansão de operações em território nacional</strong>, desenvolvimento de estratégias comerciais e criação de redes de 
-                  fornecedores confiáveis em grandes centros urbanos.
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed font-medium">
+                  Acreditamos que a mobilidade elétrica é um caminho sem volta — e estamos aqui para garantir que você esteja à frente dessa transformação.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 order-1 lg:order-2">
               {achievements.map((achievement, index) => (
-                <div key={index} className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-100">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <achievement.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                <div key={index} className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100 hover:shadow-lg transition-shadow duration-300">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <achievement.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">{achievement.title}</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">{achievement.description}</p>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-2">{achievement.title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{achievement.description}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-100 p-6 sm:p-8 text-center">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">
-              Meus Diferenciais
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100 p-6 sm:p-8 lg:p-10 text-center">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">
+              Por que escolher a Vitale Mobilidade?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-10">
               <div className="text-center">
-                <h4 className="font-semibold text-gray-800 mb-2">Experiência Prática</h4>
-                <p className="text-sm text-gray-600">Vivência real no mercado, não apenas teoria</p>
+                <h3 className="text-lg font-bold text-gray-800 mb-3">Experiência Prática</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Vivência real no mercado, não apenas teoria. Conhecimento validado em campo.</p>
               </div>
               <div className="text-center">
-                <h4 className="font-semibold text-gray-800 mb-2">Networking Qualificado</h4>
-                <p className="text-sm text-gray-600">Rede de fornecedores confiáveis e testados</p>
+                <h3 className="text-lg font-bold text-gray-800 mb-3">Networking Qualificado</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Rede de fornecedores confiáveis e testados em todo o Brasil.</p>
               </div>
               <div className="text-center">
-                <h4 className="font-semibold text-gray-800 mb-2">Visão Estratégica</h4>
-                <p className="text-sm text-gray-600">Planejamento que evita erros e acelera resultados</p>
+                <h3 className="text-lg font-bold text-gray-800 mb-3">Visão Estratégica</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Planejamento que evita erros custosos e acelera seus resultados.</p>
               </div>
             </div>
             
             <Button 
               onClick={handleWhatsAppClick}
-              className="bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold"
+              size="lg"
+              className="bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Converse comigo e descubra como posso ajudar
+              Agende uma consultoria gratuita
             </Button>
           </div>
         </div>
