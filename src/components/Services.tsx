@@ -71,13 +71,6 @@ const Services = () => {
                   </div>
                   <p className="text-sm sm:text-base text-gray-600">{service.description}</p>
                 </div>
-                
-                <Button 
-                  onClick={handleWhatsAppClick}
-                  className="w-full bg-gradient-green hover:opacity-90 text-white text-sm sm:text-base py-3"
-                >
-                  Quero agendar consultoria
-                </Button>
               </CardContent>
             </Card>
           ))}
