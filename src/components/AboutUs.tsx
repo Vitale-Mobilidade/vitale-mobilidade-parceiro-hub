@@ -38,14 +38,34 @@ const AboutUs = () => {
     <section id="sobre" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-gray-900">
-              Quem somos
-            </h1>
-          </div>
+          {/* Desktop 50/50 Layout */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start mb-12 sm:mb-16">
+            {/* Left Column - Photo and LinkedIn Button */}
+            <div className="order-1 lg:order-1">
+              <div className="text-center lg:text-left">
+                <div className="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
+                  <img 
+                    src={lucasVitalePhoto} 
+                    alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <Button
+                  onClick={handleLinkedInClick}
+                  variant="outline"
+                  className="bg-white hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300 px-6 py-3 text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  <Linkedin className="w-5 h-5 mr-2" />
+                  Conheça o LinkedIn de Lucas Vitale
+                </Button>
+              </div>
+            </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-12 sm:mb-16">
-            <div className="space-y-6 sm:space-y-8 order-2 lg:order-1">
+            {/* Right Column - Title and Text */}
+            <div className="order-2 lg:order-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 text-gray-900 text-center lg:text-left">
+                Quem somos
+              </h1>
               <div className="prose prose-lg max-w-none">
                 <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
                   A <strong>Vitale Mobilidade</strong>, liderada por <strong>Lucas Vitale</strong>, <strong>nasceu para transformar experiência em estratégia</strong>. Após mais de 10 anos atuando na linha de frente da mobilidade elétrica no Brasil — movimentando mais de R$ 100 milhões em vendas e expandindo operações no Brasil inteiro — percebemos que muitos empreendedores e empresas ainda têm dúvidas na hora de escolher fornecedores, estruturar processos e crescer com segurança nesse mercado.
@@ -58,37 +78,20 @@ const AboutUs = () => {
                 </p>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-6 order-1 lg:order-2">
-              <div className="text-center">
-                <div className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 mx-auto mb-6 rounded-xl overflow-hidden shadow-lg">
-                  <img 
-                    src={lucasVitalePhoto} 
-                    alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <Button
-                  onClick={handleLinkedInClick}
-                  variant="outline"
-                  className="bg-white hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300 px-6 py-3 text-base font-semibold transition-all duration-300"
-                >
-                  <Linkedin className="w-5 h-5 mr-2" />
-                  Conheça o LinkedIn de Lucas Vitale
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 sm:gap-6">
-                {achievements.map((achievement, index) => (
-                  <div key={index} className="text-center p-4 sm:p-6 bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100 hover:shadow-lg transition-shadow duration-300">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                      <achievement.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                    </div>
-                    <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-2">{achievement.title}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{achievement.description}</p>
+          {/* Achievement Cards - Full Width 2x2 Grid */}
+          <div className="mb-12 sm:mb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
+              {achievements.map((achievement, index) => (
+                <div key={index} className="text-center p-6 sm:p-8 bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-md">
+                    <achievement.icon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                   </div>
-                ))}
-              </div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3">{achievement.title}</h3>
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{achievement.description}</p>
+                </div>
+              ))}
             </div>
           </div>
 
