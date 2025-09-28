@@ -90,7 +90,7 @@ const Services = () => {
               size="lg"
               className="bg-gradient-green hover:opacity-90 text-white px-8 py-4 text-base font-semibold"
             >
-              Agende uma consultoria gratuita
+              Agendar consultoria
             </Button>
           </div>
         </div>

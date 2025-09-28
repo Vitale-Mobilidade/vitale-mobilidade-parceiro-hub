@@ -4,11 +4,11 @@ import { MessageCircle, Phone, Mail } from 'lucide-react';
 
 const ConsultationForm = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   const benefits = [
-    "Diagnóstico gratuito do seu negócio",
+    "Diagnóstico completo do seu negócio",
     "Indicação de fornecedores confiáveis",
     "Estratégia personalizada para seu perfil",
     "Orientação para evitar erros comuns",
@@ -61,7 +61,7 @@ const ConsultationForm = () => {
           {/* Right side - Call to Action */}
           <Card className="shadow-xl w-full order-1 lg:order-2">
             <CardHeader className="bg-gradient-green text-white rounded-t-lg">
-              <CardTitle className="text-lg sm:text-xl text-center">Consultoria Gratuita</CardTitle>
+              <CardTitle className="text-lg sm:text-xl text-center">Consultoria Estratégica</CardTitle>
             </CardHeader>
             <CardContent className="p-6 sm:p-8 text-center space-y-6">
               <div className="space-y-4">
@@ -69,7 +69,7 @@ const ConsultationForm = () => {
                   Pronto para entrar no mercado de veículos elétricos?
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600">
-                  Agende uma conversa gratuita comigo e descubra como estruturar sua operação com segurança, 
+                  Agende uma conversa comigo e descubra como estruturar sua operação com segurança, 
                   evitar erros comuns e acelerar seus resultados no setor.
                 </p>
               </div>
@@ -80,7 +80,7 @@ const ConsultationForm = () => {
                   className="w-full bg-gradient-green hover:opacity-90 text-white text-sm sm:text-base md:text-lg py-3 sm:py-4"
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
-                  Agendar consultoria gratuita
+                  Agendar consultoria
                 </Button>
 
                 <div className="text-center">

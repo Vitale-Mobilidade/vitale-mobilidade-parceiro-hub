@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 const HowICanHelp = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511968390253?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   const steps = [
@@ -72,7 +72,7 @@ const HowICanHelp = () => {
               Pronto para começar?
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
-              O primeiro passo é uma conversa gratuita para entender seus objetivos e mostrar como posso ajudar 
+              O primeiro passo é uma conversa para entender seus objetivos e mostrar como posso ajudar 
               você a entrar no mercado de veículos elétricos com segurança e resultados.
             </p>
             <Button 
@@ -80,7 +80,7 @@ const HowICanHelp = () => {
               size="lg"
               className="bg-gradient-green hover:opacity-90 text-white px-8 py-4 text-base font-semibold"
             >
-              Agende uma consultoria gratuita
+              Agendar consultoria
             </Button>
           </div>
         </div>

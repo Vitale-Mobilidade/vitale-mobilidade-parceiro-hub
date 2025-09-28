@@ -3,7 +3,7 @@ import { TrendingUp, Users, Building, Shield } from 'lucide-react';
 
 const AboutUs = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20gratuita%20para%20entender%20como%20posso%20crescer%20no%20mercado%20de%20mobilidade%20el%C3%A9trica.%20Pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entender%20como%20posso%20crescer%20no%20mercado%20de%20mobilidade%20el%C3%A9trica.%20Pode%20me%20ajudar%3F', '_blank');
   };
 
   const achievements = [
@@ -91,7 +91,7 @@ const AboutUs = () => {
               size="lg"
               className="bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Agende uma consultoria gratuita
+              Agendar uma consultoria
             </Button>
           </div>
         </div>

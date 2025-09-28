@@ -7,6 +7,7 @@ import HowICanHelp from '@/components/HowICanHelp';
 import SuccessCases from '@/components/SuccessCases';
 import ConsultationForm from '@/components/ConsultationForm';
 import Footer from '@/components/Footer';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
 
 const Index = () => {
   return (
@@ -19,6 +20,7 @@ const Index = () => {
       <SuccessCases />
       <ConsultationForm />
       <Footer />
+      <WhatsAppFloat />
     </div>
   );
 };
