@@ -43,7 +43,7 @@ const AboutUs = () => {
             {/* Left Column - Photo and LinkedIn Button */}
             <div className="order-1 lg:order-1">
               <div className="text-center lg:text-left">
-                <div className="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
+                <div className="w-80 h-80 sm:w-96 sm:h-96 lg:w-[400px] lg:h-[400px] xl:w-[450px] xl:h-[450px] mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
                   <img 
                     src={lucasVitalePhoto} 
                     alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
@@ -62,7 +62,7 @@ const AboutUs = () => {
             </div>
 
             {/* Right Column - Title and Text */}
-            <div className="order-2 lg:order-2">
+            <div className="order-2 lg:order-2 flex flex-col justify-center">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 text-gray-900 text-center lg:text-left">
                 Quem somos
               </h1>
@@ -77,21 +77,6 @@ const AboutUs = () => {
                   Acreditamos que a mobilidade elétrica é um caminho sem volta — e estamos aqui para garantir que você esteja à frente dessa transformação.
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Achievement Cards - Full Width 2x2 Grid */}
-          <div className="mb-12 sm:mb-16">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
-              {achievements.map((achievement, index) => (
-                <div key={index} className="text-center p-6 sm:p-8 bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-md">
-                    <achievement.icon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3">{achievement.title}</h3>
-                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{achievement.description}</p>
-                </div>
-              ))}
             </div>
           </div>
 
