@@ -42,23 +42,23 @@ const Hero = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pt-4 sm:pt-6 md:pt-8 max-w-5xl mx-auto px-4">
-              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">+10 anos</div>
                 <div className="text-xs sm:text-sm text-gray-600">Experiência</div>
               </div>
-              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">+R$100mi</div>
                 <div className="text-xs sm:text-sm text-gray-600">em Vendas</div>
               </div>
-              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">Nacional</div>
                 <div className="text-xs sm:text-sm text-gray-600">Experiência</div>
               </div>
-              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">B2B</div>
                 <div className="text-xs sm:text-sm text-gray-600">Autoridade</div>
               </div>
-              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-3 sm:p-4 md:p-6 bg-white rounded-lg shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1 sm:mb-2">Expansão</div>
                 <div className="text-xs sm:text-sm text-gray-600">Operações</div>
               </div>
