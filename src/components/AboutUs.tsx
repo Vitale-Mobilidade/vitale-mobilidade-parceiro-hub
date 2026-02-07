@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Users, Building, Shield, Linkedin } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 import lucasVitalePhoto from '@/assets/lucas-vitale-photo.png';
 
 const AboutUs = () => {
@@ -11,39 +11,16 @@ const AboutUs = () => {
     window.open('https://www.linkedin.com/in/lucasvitale1/', '_blank');
   };
 
-  const achievements = [
-    {
-      icon: TrendingUp,
-      title: "+10 anos",
-      description: "De experiência na linha de frente da mobilidade elétrica"
-    },
-    {
-      icon: Building,
-      title: "+R$100 milhões",
-      description: "Movimentados em vendas ao longo da carreira"
-    },
-    {
-      icon: Users,
-      title: "Expansão Nacional",
-      description: "Estruturação de operações no Brasil inteiro"
-    },
-    {
-      icon: Shield,
-      title: "B2B Expert",
-      description: "Especialista em frotas elétricas e parcerias estratégicas"
-    }
-  ];
-
   return (
-    <section id="sobre" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+    <section id="sobre" className="py-16 sm:py-20 md:py-24 lg:py-28 xl:py-32 2xl:py-36 bg-background">
+      <div className="responsive-container">
+        <div className="max-w-7xl mx-auto">
           {/* Desktop 50/50 Layout */}
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start mb-12 sm:mb-16">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 xl:gap-20 2xl:gap-24 items-start mb-16 sm:mb-20 lg:mb-24">
             {/* Left Column - Photo and LinkedIn Button */}
             <div className="order-1 lg:order-1">
               <div className="text-center lg:text-left">
-                <div className="w-80 h-80 sm:w-96 sm:h-96 lg:w-[400px] lg:h-[400px] xl:w-[450px] xl:h-[450px] mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
+                <div className="w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] 2xl:w-[520px] 2xl:h-[520px] mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
                   <img 
                     src={lucasVitalePhoto} 
                     alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
@@ -53,7 +30,7 @@ const AboutUs = () => {
                 <Button
                   onClick={handleLinkedInClick}
                   variant="outline"
-                  className="bg-white hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300 px-6 py-3 text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="bg-background hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300 px-6 py-3 text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <Linkedin className="w-5 h-5 mr-2" />
                   Conheça o LinkedIn de Lucas Vitale
@@ -63,46 +40,46 @@ const AboutUs = () => {
 
             {/* Right Column - Title and Text */}
             <div className="order-2 lg:order-2 flex flex-col justify-center">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 text-gray-900 text-center lg:text-left">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl 2xl:text-[3.25rem] font-bold mb-6 sm:mb-8 lg:mb-10 text-foreground text-center lg:text-left">
                 Quem somos
               </h1>
               <div className="prose prose-lg max-w-none">
-                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
-                  A <strong>Vitale Mobilidade</strong>, liderada por <strong>Lucas Vitale</strong>, <strong>nasceu para transformar experiência em estratégia</strong>. Após mais de 10 anos atuando na linha de frente da mobilidade elétrica no Brasil — movimentando mais de R$ 100 milhões em vendas e expandindo operações no Brasil inteiro — percebemos que muitos empreendedores e empresas ainda têm dúvidas na hora de escolher fornecedores, estruturar processos e crescer com segurança nesse mercado.
+                <p className="text-base sm:text-lg md:text-xl lg:text-[1.375rem] xl:text-2xl text-muted-foreground leading-relaxed mb-6 lg:mb-8">
+                  A <strong className="text-foreground">Vitale Mobilidade</strong>, liderada por <strong className="text-foreground">Lucas Vitale</strong>, <strong className="text-foreground">nasceu para transformar experiência em estratégia</strong>. Após mais de 10 anos atuando na linha de frente da mobilidade elétrica no Brasil — movimentando mais de R$ 100 milhões em vendas e expandindo operações no Brasil inteiro — percebemos que muitos empreendedores e empresas ainda têm dúvidas na hora de escolher fornecedores, estruturar processos e crescer com segurança nesse mercado.
                 </p>
-                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
-                  Nossa <strong>missão é simples</strong>: compartilhar conhecimento prático para ajudar você a tomar decisões assertivas, reduzir riscos e acelerar seus resultados.
+                <p className="text-base sm:text-lg md:text-xl lg:text-[1.375rem] xl:text-2xl text-muted-foreground leading-relaxed mb-6 lg:mb-8">
+                  Nossa <strong className="text-foreground">missão é simples</strong>: compartilhar conhecimento prático para ajudar você a tomar decisões assertivas, reduzir riscos e acelerar seus resultados.
                 </p>
-                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed font-medium">
+                <p className="text-base sm:text-lg md:text-xl lg:text-[1.375rem] xl:text-2xl text-muted-foreground leading-relaxed font-medium">
                   Acreditamos que a mobilidade elétrica é um caminho sem volta — e estamos aqui para garantir que você esteja à frente dessa transformação.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100 p-6 sm:p-8 lg:p-10 text-center">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">
+          <div className="bg-gradient-to-br from-green-50 to-background rounded-2xl border border-green-100 p-8 sm:p-10 lg:p-12 xl:p-14 text-center">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 sm:mb-8 lg:mb-10">
               Por que escolher a Vitale Mobilidade?
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 mb-10 sm:mb-12 lg:mb-14">
               <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-800 mb-3">Experiência Prática</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Vivência real no mercado, não apenas teoria. Conhecimento validado em campo.</p>
+                <h3 className="text-lg lg:text-xl font-bold text-foreground mb-3 lg:mb-4">Experiência Prática</h3>
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">Vivência real no mercado, não apenas teoria. Conhecimento validado em campo.</p>
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-800 mb-3">Networking Qualificado</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Rede de fornecedores confiáveis e testados em todo o Brasil.</p>
+                <h3 className="text-lg lg:text-xl font-bold text-foreground mb-3 lg:mb-4">Networking Qualificado</h3>
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">Rede de fornecedores confiáveis e testados em todo o Brasil.</p>
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-800 mb-3">Visão Estratégica</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">Planejamento que evita erros custosos e acelera seus resultados.</p>
+                <h3 className="text-lg lg:text-xl font-bold text-foreground mb-3 lg:mb-4">Visão Estratégica</h3>
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">Planejamento que evita erros custosos e acelera seus resultados.</p>
               </div>
             </div>
             
             <Button 
               onClick={handleWhatsAppClick}
               size="lg"
-              className="bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-green hover:opacity-90 text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 text-base sm:text-lg lg:text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Agendar uma consultoria
             </Button>

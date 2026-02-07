@@ -33,69 +33,69 @@ const SuccessCases = () => {
   ];
 
   return (
-    <section id="casos-sucesso" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
+    <section id="casos-sucesso" className="py-16 sm:py-20 md:py-24 lg:py-28 xl:py-32 bg-muted/50">
+      <div className="responsive-container">
+        <div className="text-center mb-10 sm:mb-14 lg:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-4 sm:mb-6">
             Casos de <span className="text-gradient-green">Sucesso</span>
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto">
             Exemplos reais da minha experiência no mercado de veículos elétricos
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 max-w-7xl mx-auto">
           {cases.map((case_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow">
-              <div className="flex items-center mb-4 sm:mb-6">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-green rounded-full flex items-center justify-center mr-4">
-                  <case_.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+            <div key={index} className="bg-background rounded-xl shadow-lg p-6 sm:p-8 lg:p-10 hover:shadow-xl transition-shadow border border-border">
+              <div className="flex items-center mb-5 sm:mb-6 lg:mb-8">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-18 lg:h-18 bg-gradient-green rounded-full flex items-center justify-center mr-4 lg:mr-5">
+                  <case_.icon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800">{case_.title}</h3>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{case_.title}</h3>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-4 lg:space-y-5">
                 <div>
-                  <h4 className="font-semibold text-red-600 mb-2">Desafio:</h4>
-                  <p className="text-sm sm:text-base text-gray-700">{case_.challenge}</p>
+                  <h4 className="font-semibold text-red-600 mb-2 text-sm lg:text-base">Desafio:</h4>
+                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">{case_.challenge}</p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-blue-600 mb-2">Como a consultoria ajudou:</h4>
-                  <p className="text-sm sm:text-base text-gray-700">{case_.solution}</p>
+                  <h4 className="font-semibold text-blue-600 mb-2 text-sm lg:text-base">Como a consultoria ajudou:</h4>
+                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">{case_.solution}</p>
                 </div>
                 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-2">Resultado alcançado:</h4>
-                  <p className="text-sm sm:text-base text-green-700 font-medium">{case_.result}</p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 lg:p-5">
+                  <h4 className="font-semibold text-green-800 mb-2 text-sm lg:text-base">Resultado alcançado:</h4>
+                  <p className="text-sm sm:text-base lg:text-lg text-green-700 font-medium">{case_.result}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="text-center mt-8 sm:mt-12">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 max-w-4xl mx-auto">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-4">
+        <div className="text-center mt-12 sm:mt-16 lg:mt-20">
+          <div className="bg-background rounded-2xl shadow-lg p-8 sm:p-10 lg:p-12 max-w-6xl mx-auto border border-border">
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 lg:mb-8">
               Depoimentos de Clientes
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-              <blockquote className="bg-gray-50 p-4 sm:p-6 rounded-lg border-l-4 border-green-500">
-                <p className="text-sm sm:text-base text-gray-700 italic mb-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 text-left">
+              <blockquote className="bg-muted/50 p-6 sm:p-8 lg:p-10 rounded-xl border-l-4 border-green-500">
+                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-muted-foreground italic mb-4 lg:mb-5">
                   "A consultoria foi fundamental para estruturar nossa operação B2B. Os insights sobre fornecedores 
                   e estratégia comercial nos pouparam meses de tentativa e erro."
                 </p>
-                <footer className="text-sm font-semibold text-gray-800">
+                <footer className="text-sm lg:text-base font-semibold text-foreground">
                   — CEO de distribuidora, São Paulo
                 </footer>
               </blockquote>
               
-              <blockquote className="bg-gray-50 p-4 sm:p-6 rounded-lg border-l-4 border-green-500">
-                <p className="text-sm sm:text-base text-gray-700 italic mb-3">
+              <blockquote className="bg-muted/50 p-6 sm:p-8 lg:p-10 rounded-xl border-l-4 border-green-500">
+                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-muted-foreground italic mb-4 lg:mb-5">
                   "Conseguimos reduzir custos e aumentar nossa margem significativamente seguindo as orientações. 
                   O conhecimento de mercado fez toda a diferença."
                 </p>
-                <footer className="text-sm font-semibold text-gray-800">
+                <footer className="text-sm lg:text-base font-semibold text-foreground">
                   — Diretor comercial, Rio de Janeiro
                 </footer>
               </blockquote>

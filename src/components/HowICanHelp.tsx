@@ -30,35 +30,35 @@ const HowICanHelp = () => {
   ];
 
   return (
-    <section id="como-posso-ajudar" className="py-8 sm:py-12 md:py-16 lg:py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center mb-6 sm:mb-8 md:mb-12">
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 md:mb-6 px-2">
+    <section id="como-posso-ajudar" className="py-16 sm:py-20 md:py-24 lg:py-28 xl:py-32 bg-background">
+      <div className="responsive-container">
+        <div className="max-w-5xl mx-auto text-center mb-10 sm:mb-14 lg:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold mb-4 sm:mb-6 lg:mb-8">
             Como posso <span className="text-gradient-green">te ajudar</span>
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground">
             Processo estruturado para garantir seu sucesso no mercado de veículos elétricos
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto mb-8 sm:mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 max-w-6xl mx-auto mb-12 sm:mb-16 lg:mb-20">
           {steps.map((step, index) => (
-            <div key={index} className="flex items-start space-x-3 sm:space-x-4 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-100">
+            <div key={index} className="flex items-start space-x-4 sm:space-x-5 p-6 sm:p-8 lg:p-10 bg-gradient-to-br from-green-50 to-background rounded-xl border border-green-100 hover:shadow-lg transition-all duration-300">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-green rounded-full flex items-center justify-center">
-                  <step.icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-green rounded-full flex items-center justify-center">
+                  <step.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center mb-2">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold mr-3">
+                <div className="flex items-center mb-3 lg:mb-4">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 bg-primary text-white rounded-full flex items-center justify-center text-sm sm:text-base font-bold mr-3 lg:mr-4">
                     {index + 1}
                   </div>
-                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 leading-tight">
+                  <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-foreground leading-tight">
                     {step.title}
                   </h3>
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground leading-relaxed">
                   {step.description}
                 </p>
               </div>
@@ -67,18 +67,18 @@ const HowICanHelp = () => {
         </div>
 
         <div className="text-center">
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-lg border border-green-100 p-6 sm:p-8 max-w-2xl mx-auto">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-4">
+          <div className="bg-gradient-to-br from-green-50 to-background rounded-2xl border border-green-100 p-8 sm:p-10 lg:p-12 max-w-3xl mx-auto">
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-4 lg:mb-6">
               Pronto para começar?
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-6">
+            <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-muted-foreground mb-6 lg:mb-8">
               O primeiro passo é uma conversa para entender seus objetivos e mostrar como posso ajudar 
               você a entrar no mercado de veículos elétricos com segurança e resultados.
             </p>
             <Button 
               onClick={handleWhatsAppClick}
               size="lg"
-              className="bg-gradient-green hover:opacity-90 text-white px-8 py-4 text-base font-semibold"
+              className="bg-gradient-green hover:opacity-90 text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Agendar consultoria
             </Button>
