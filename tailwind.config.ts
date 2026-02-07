@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -11,14 +10,34 @@ export default {
 	],
 	prefix: "",
 	theme: {
+		screens: {
+			'sm': '640px',
+			'md': '768px',
+			'lg': '1024px',
+			'xl': '1280px',
+			'2xl': '1536px',
+			'3xl': '1920px',
+			'4xl': '2560px',
+		},
 		container: {
 			center: true,
-			padding: '2rem',
-			screens: {
-				'2xl': '1400px'
-			}
+			padding: {
+				DEFAULT: '1rem',
+				sm: '1.5rem',
+				md: '2rem',
+				lg: '2.5rem',
+				xl: '3rem',
+				'2xl': '4rem',
+			},
 		},
 		extend: {
+			maxWidth: {
+				'container-sm': '100%',
+				'container-md': '1100px',
+				'container-lg': '1280px',
+				'container-xl': '1440px',
+				'container-2xl': '1600px',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -104,6 +123,11 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
+			},
+			fontSize: {
+				'hero-sm': ['1.75rem', { lineHeight: '1.2' }],
+				'hero-md': ['2.75rem', { lineHeight: '1.15' }],
+				'hero-lg': ['3.5rem', { lineHeight: '1.1' }],
 			}
 		}
 	},
