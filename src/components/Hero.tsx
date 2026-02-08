@@ -42,27 +42,27 @@ const Hero = () => {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5 md:gap-6 lg:gap-8 pt-6 sm:pt-8 md:pt-10 lg:pt-12 max-w-6xl mx-auto">
-                <div className="text-center p-4 sm:p-5 md:p-6 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border border-border/50">
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-2">+10 anos</div>
-                  <div className="text-xs sm:text-sm md:text-base text-muted-foreground">Experiência</div>
-                </div>
-                <div className="text-center p-4 sm:p-5 md:p-6 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border border-border/50">
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-2">+R$100mi</div>
-                  <div className="text-xs sm:text-sm md:text-base text-muted-foreground">em Vendas</div>
-                </div>
-                <div className="text-center p-4 sm:p-5 md:p-6 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border border-border/50">
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-2">Nacional</div>
-                  <div className="text-xs sm:text-sm md:text-base text-muted-foreground">Experiência</div>
-                </div>
-                <div className="text-center p-4 sm:p-5 md:p-6 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border border-border/50">
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-2">B2B</div>
-                  <div className="text-xs sm:text-sm md:text-base text-muted-foreground">Autoridade</div>
-                </div>
-                <div className="text-center p-4 sm:p-5 md:p-6 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border border-border/50 col-span-2 sm:col-span-1">
-                  <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-2">Expansão</div>
-                  <div className="text-xs sm:text-sm md:text-base text-muted-foreground">Operações</div>
-                </div>
+              {/* Indicators Grid - Responsive and Premium */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-8 2xl:gap-10 pt-6 sm:pt-8 md:pt-10 lg:pt-12 xl:pt-14 2xl:pt-16 w-full">
+                {[
+                  { value: '+10 anos', label: 'Experiência' },
+                  { value: '+R$100mi', label: 'em Vendas' },
+                  { value: 'Nacional', label: 'Experiência' },
+                  { value: 'B2B', label: 'Autoridade' },
+                  { value: 'Expansão', label: 'Operações' },
+                ].map((item, index) => (
+                  <div 
+                    key={index}
+                    className="group text-center p-5 sm:p-6 md:p-7 lg:p-8 xl:p-9 2xl:p-10 bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-border/30 hover:border-primary/20 flex flex-col justify-center min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] xl:min-h-[200px]"
+                  >
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] xl:text-5xl 2xl:text-[3.25rem] font-bold text-primary mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {item.value}
+                    </div>
+                    <div className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-muted-foreground font-medium tracking-wide uppercase">
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
