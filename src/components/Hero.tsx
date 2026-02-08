@@ -45,20 +45,23 @@ const Hero = () => {
               {/* Indicators Grid - Responsive and Premium */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-8 2xl:gap-10 pt-6 sm:pt-8 md:pt-10 lg:pt-12 xl:pt-14 2xl:pt-16 w-full">
                 {[
-                  { value: '+10 anos', label: 'Experiência' },
-                  { value: '+R$100mi', label: 'em Vendas' },
-                  { value: 'Nacional', label: 'Experiência' },
-                  { value: 'B2B', label: 'Autoridade' },
-                  { value: 'Expansão', label: 'Operações' },
+                  { value: '+10', valueSuffix: 'anos', label: 'EXPERIÊNCIA' },
+                  { value: '+R$100mi', valueSuffix: '', label: 'EM VENDAS' },
+                  { value: 'Nacional', valueSuffix: '', label: 'EXPERIÊNCIA' },
+                  { value: 'B2B', valueSuffix: '', label: 'AUTORIDADE' },
+                  { value: 'Expansão', valueSuffix: '', label: 'OPERAÇÕES' },
                 ].map((item, index) => (
                   <div 
                     key={index}
                     className="group text-center p-5 sm:p-6 md:p-7 lg:p-8 xl:p-9 2xl:p-10 bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-border/30 hover:border-primary/20 flex flex-col justify-center min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] xl:min-h-[200px]"
                   >
-                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] xl:text-5xl 2xl:text-[3.25rem] font-bold text-primary mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] xl:text-5xl 2xl:text-[3.25rem] font-bold text-primary mb-1 group-hover:scale-110 transition-transform duration-300">
                       {item.value}
+                      {item.valueSuffix && (
+                        <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-[2.75rem]">{item.valueSuffix}</span>
+                      )}
                     </div>
-                    <div className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-muted-foreground font-medium tracking-wide uppercase">
+                    <div className="text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg text-muted-foreground font-medium tracking-widest mt-1 sm:mt-2">
                       {item.label}
                     </div>
                   </div>

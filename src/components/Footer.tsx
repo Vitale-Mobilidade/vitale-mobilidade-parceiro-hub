@@ -46,7 +46,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-800 mt-10 sm:mt-12 lg:mt-16 pt-8 sm:pt-10 lg:pt-12 text-center text-sm sm:text-base text-gray-400">
-          <p>&copy; 2025 Vitale Mobilidade. Todos os direitos reservados.</p>
+          <p>&copy; 2026 Vitale Mobilidade. Todos os direitos reservados.</p>
           <p className="mt-2">Mobilidade sustentável para um futuro melhor.</p>
         </div>
       </div>
