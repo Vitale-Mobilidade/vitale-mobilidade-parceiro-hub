@@ -43,7 +43,7 @@ const Hero = () => {
               </div>
               
               {/* Indicators Grid - Responsive and Premium */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-8 2xl:gap-10 pt-6 sm:pt-8 md:pt-10 lg:pt-12 xl:pt-14 2xl:pt-16 w-full">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-8 pt-6 sm:pt-8 md:pt-10 lg:pt-12 w-full">
                 {[
                   { value: '+10', valueSuffix: 'anos', label: 'EXPERIÊNCIA' },
                   { value: '+R$100mi', valueSuffix: '', label: 'EM VENDAS' },
@@ -53,15 +53,19 @@ const Hero = () => {
                 ].map((item, index) => (
                   <div 
                     key={index}
-                    className="group text-center p-5 sm:p-6 md:p-7 lg:p-8 xl:p-9 2xl:p-10 bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-border/30 hover:border-primary/20 flex flex-col justify-center min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] xl:min-h-[200px]"
+                    className="group text-center px-3 py-5 sm:px-4 sm:py-6 md:px-5 md:py-7 lg:px-6 lg:py-8 xl:px-8 xl:py-10 bg-white rounded-xl sm:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-border/30 hover:border-primary/20 flex flex-col items-center justify-center overflow-hidden"
                   >
-                    <div className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] xl:text-5xl 2xl:text-[3.25rem] font-bold text-primary mb-1 group-hover:scale-110 transition-transform duration-300">
-                      {item.value}
+                    <div className="flex flex-col items-center justify-center group-hover:scale-105 transition-transform duration-300 w-full">
+                      <span className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-primary leading-tight break-words text-center">
+                        {item.value}
+                      </span>
                       {item.valueSuffix && (
-                        <span className="block text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-[2.75rem]">{item.valueSuffix}</span>
+                        <span className="text-lg sm:text-xl md:text-xl lg:text-2xl xl:text-3xl font-bold text-primary leading-tight">
+                          {item.valueSuffix}
+                        </span>
                       )}
                     </div>
-                    <div className="text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg text-muted-foreground font-medium tracking-widest mt-1 sm:mt-2">
+                    <div className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-base text-muted-foreground font-medium tracking-wider mt-2 sm:mt-3 uppercase break-words text-center w-full">
                       {item.label}
                     </div>
                   </div>
