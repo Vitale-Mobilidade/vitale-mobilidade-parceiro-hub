@@ -20,11 +20,11 @@ const AboutUs = () => {
             {/* Left Column - Photo and LinkedIn Button */}
             <div className="order-1 lg:order-1">
               <div className="text-center lg:text-left">
-                <div className="w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] 2xl:w-[520px] 2xl:h-[520px] mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
+                <div className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-full mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
                   <img 
                     src={lucasVitalePhoto} 
                     alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain"
                   />
                 </div>
                 <Button
