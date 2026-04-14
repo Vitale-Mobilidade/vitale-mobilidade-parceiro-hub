@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, AlertTriangle, MessageCircle, Zap, Shield, Target, ArrowRight, Battery, Route, DollarSign, Bike } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 
-const WHATSAPP_QUIZ_URL = "https://wa.me/5511986893890?text=Fala%20Lucas%2C%20vim%20do%20quiz.%20Quero%20ajuda%20pra%20escolher%20minha%20bike%20ideal.";
-const WHATSAPP_URL = "https://wa.me/5511986893890?text=Oi,%20vim%20do%20site%20e%20quero%20ajuda%20para%20escolher%20minha%20bike%20elétrica";
-
-const CTAButton = ({ children, className = "", href = WHATSAPP_URL }: any) => (
+const CTAButton = ({ children, className = "", href }: any) => (
   <a href={href} target="_blank" rel="noopener noreferrer" className={`inline-block ${className}`}>
-    <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg font-bold px-8 sm:px-12 py-6 sm:py-7 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] bg-primary text-primary-foreground">
+    <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg font-bold px-8 py-6 rounded-xl shadow-lg bg-primary text-primary-foreground">
       <MessageCircle className="mr-2 h-5 w-5" />
       {children}
     </Button>
@@ -15,42 +12,12 @@ const CTAButton = ({ children, className = "", href = WHATSAPP_URL }: any) => (
 );
 
 const questions = [
-  {
-    id: 'uso',
-    emoji: '🚴',
-    title: 'Qual será o principal uso da sua bike elétrica?',
-    options: ['Trabalho (delivery / renda)', 'Locomoção diária (casa → trabalho)', 'Lazer / passeio'],
-  },
-  {
-    id: 'distancia',
-    emoji: '📏',
-    title: 'Quantos km você roda por dia?',
-    options: ['Até 10 km', '10 a 25 km', 'Mais de 25 km'],
-  },
-  {
-    id: 'trajeto',
-    emoji: '🛤️',
-    title: 'Como é o trajeto?',
-    options: ['Plano', 'Misto (subidas leves)', 'Muitas subidas'],
-  },
-  {
-    id: 'orcamento',
-    emoji: '💰',
-    title: 'Qual seu orçamento?',
-    options: ['Até R$5.000', 'R$5.000 a R$8.000', 'R$8.000+'],
-  },
-  {
-    id: 'experiencia',
-    emoji: '🔧',
-    title: 'Você já teve uma bike elétrica antes?',
-    options: ['Sim', 'Não'],
-  },
-  {
-    id: 'ajuda',
-    emoji: '🤝',
-    title: 'Quer ajuda personalizada pra escolher o modelo ideal?',
-    options: ['Sim, quero recomendação no WhatsApp', 'Prefiro ver opções sozinho'],
-  },
+  { id: 'uso', title: 'Qual será o principal uso da sua bike elétrica?', options: ['Trabalho (delivery / renda)', 'Locomoção diária', 'Lazer / passeio'] },
+  { id: 'distancia', title: 'Quantos km você roda por dia?', options: ['Até 10 km', '10 a 25 km', 'Mais de 25 km'] },
+  { id: 'trajeto', title: 'Como é o trajeto?', options: ['Plano', 'Misto', 'Muitas subidas'] },
+  { id: 'orcamento', title: 'Qual seu orçamento?', options: ['Até R$5.000', 'R$5.000 a R$8.000', 'R$8.000+'] },
+  { id: 'experiencia', title: 'Você já teve uma bike elétrica antes?', options: ['Sim', 'Não'] },
+  { id: 'ajuda', title: 'Quer ajuda personalizada?', options: ['Sim', 'Não'] },
 ];
 
 export default function EscolherBike() {
@@ -70,41 +37,39 @@ export default function EscolherBike() {
     }
   };
 
-  const wantsWhatsApp = answers.ajuda === 'Sim, quero recomendação no WhatsApp';
+  // 🔥 AQUI ESTÁ A MÁGICA (WHATSAPP COM RESPOSTAS)
+  const generateWhatsAppLink = () => {
+    const message = `
+Fala Lucas, vim do quiz.
+
+Minhas respostas:
+
+Uso: ${answers.uso || "-"}
+Distância: ${answers.distancia || "-"}
+Terreno: ${answers.trajeto || "-"}
+Orçamento: ${answers.orcamento || "-"}
+Experiência: ${answers.experiencia || "-"}
+
+Quero ajuda para escolher minha bike ideal.
+    `;
+
+    return `https://wa.me/5511986893890?text=${encodeURIComponent(message)}`;
+  };
 
   if (quizFinished) {
     return (
       <div className="min-h-screen flex items-center justify-center text-center px-6">
-        {wantsWhatsApp ? (
-          <div className="max-w-xl">
-            <h1 className="text-3xl font-bold mb-4">🔥 Já tenho uma recomendação ideal pra você</h1>
+        <div className="max-w-xl">
+          <h1 className="text-3xl font-bold mb-4">🔥 Já tenho uma recomendação ideal pra você</h1>
 
-            <p className="mb-6">Agora você pode seguir de duas formas:</p>
+          <p className="mb-6">
+            Agora me chama no WhatsApp que eu te explico exatamente qual modelo faz sentido — e quais evitar.
+          </p>
 
-            <div className="text-left mb-6">
-              <p>👉 Ver recomendações gerais (gratuito)</p>
-              <p>👉 Ou falar comigo e receber uma indicação exata, personalizada pro seu caso</p>
-            </div>
-
-            <p className="text-sm mb-6">
-              Na consultoria, eu te mostro exatamente qual modelo comprar, quais evitar e como economizar.
-            </p>
-
-            <CTAButton href={WHATSAPP_QUIZ_URL}>Falar com especialista</CTAButton>
-          </div>
-        ) : (
-          <div className="max-w-xl">
-            <h1 className="text-3xl font-bold mb-6">Você precisa de uma bike com:</h1>
-
-            <ul className="text-left mb-6">
-              <li>✔ Boa autonomia</li>
-              <li>✔ Motor compatível com seu uso</li>
-              <li>✔ Bateria de qualidade (ESSENCIAL)</li>
-            </ul>
-
-            <CTAButton href={WHATSAPP_QUIZ_URL}>Falar com especialista</CTAButton>
-          </div>
-        )}
+          <CTAButton href={generateWhatsAppLink()}>
+            Falar com especialista
+          </CTAButton>
+        </div>
       </div>
     );
   }
@@ -151,8 +116,16 @@ export default function EscolherBike() {
       <div className="bg-gray-100 p-4 rounded-lg mb-6 max-w-xl mx-auto">
         <p>💡 Você pode fazer o quiz gratuitamente.</p>
         <p>Se quiser ajuda completa, ofereço consultoria personalizada.</p>
-        <p className="font-bold mt-2">💰 Consultoria: R$XXX</p>
-        <p className="text-sm">(100% opcional)</p>
+
+        <p className="font-bold mt-3 text-lg">
+          💰 Consultoria: R$197
+        </p>
+
+        <p className="text-sm mt-2">
+          Inclui recomendação exata + o que evitar + economia na escolha
+        </p>
+
+        <p className="text-xs mt-2">(100% opcional)</p>
       </div>
 
       <Button onClick={() => setQuizStarted(true)}>
