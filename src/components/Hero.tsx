@@ -14,7 +14,7 @@ const Hero = () => {
             <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12">
               <div className="space-y-4 sm:space-y-6 md:space-y-8">
                 <h1 className="text-[1.625rem] sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl 2xl:text-[3.25rem] 3xl:text-[3.5rem] font-bold leading-tight">
-                  <span className="text-gradient-green">Consultoria em veículos elétricos:</span> escolha fornecedores confiáveis, evite erros e acelere seus resultados
+                  <span className="text-gradient-green">ConsultoriA em veículos elétricos:</span> escolha fornecedores confiáveis, evite erros e acelere seus resultados
                 </h1>
                 <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-[1.375rem] 2xl:text-2xl text-muted-foreground leading-relaxed max-w-5xl mx-auto">
                   <strong>10 anos de experiência no setor, mais de R$100 milhões em vendas e cases em todo o Brasil.</strong> 
