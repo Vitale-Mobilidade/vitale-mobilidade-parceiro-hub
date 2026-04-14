@@ -37,7 +37,6 @@ export default function EscolherBike() {
     }
   };
 
-  // 🔥 AQUI ESTÁ A MÁGICA (WHATSAPP COM RESPOSTAS)
   const generateWhatsAppLink = () => {
     const message = `
 Fala Lucas, vim do quiz.
@@ -101,32 +100,22 @@ Quero ajuda para escolher minha bike ideal.
 
   return (
     <div className="min-h-screen text-center px-6 py-20">
-      <h1 className="text-4xl font-bold mb-6">
-        Vai comprar uma bike elétrica? Descubra em 2 minutos qual modelo ideal — e evite jogar dinheiro fora
+      
+      <h1 className="text-4xl font-bold mb-4">
+        Vai comprar uma bike elétrica?
       </h1>
+
+      <h2 className="text-2xl font-semibold mb-6">
+        Descubra em 2 minutos qual modelo ideal — e evite jogar dinheiro fora
+      </h2>
 
       <p className="mb-4">
         A maioria das pessoas escolhe errado e só percebe depois.
       </p>
 
-      <p className="mb-4">
+      <p className="mb-8">
         +10 anos no mercado | +R$100 milhões vendidos
       </p>
-
-      <div className="bg-gray-100 p-4 rounded-lg mb-6 max-w-xl mx-auto">
-        <p>💡 Você pode fazer o quiz gratuitamente.</p>
-        <p>Se quiser ajuda completa, ofereço consultoria personalizada.</p>
-
-        <p className="font-bold mt-3 text-lg">
-          💰 Consultoria: R$197
-        </p>
-
-        <p className="text-sm mt-2">
-          Inclui recomendação exata + o que evitar + economia na escolha
-        </p>
-
-        <p className="text-xs mt-2">(100% opcional)</p>
-      </div>
 
       <Button onClick={() => setQuizStarted(true)}>
         👉 Começar agora
