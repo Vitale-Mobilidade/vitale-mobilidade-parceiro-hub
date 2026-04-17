@@ -13,9 +13,9 @@ const CTAButton = ({ children, className = "", href }: any) => (
 
 const questions = [
   { id: 'uso', title: 'Qual será o principal uso da sua bike elétrica?', options: ['Trabalho (delivery / renda)', 'Locomoção diária', 'Lazer / passeio'] },
-  { id: 'distancia', title: 'Quantos km você roda por dia?', options: ['Até 10 km', '10 a 25 km', 'Mais de 25 km'] },
+  { id: 'distancia', title: 'Quantos km você roda por dia?', options: ['Até 10 km', '10 a 25 km', '25 a 40 km', 'Mais de 40 km'] },
   { id: 'trajeto', title: 'Como é o trajeto?', options: ['Plano', 'Misto', 'Muitas subidas'] },
-  { id: 'orcamento', title: 'Qual seu orçamento?', options: ['Até R$5.000', 'R$5.000 a R$8.000', 'R$8.000+'] },
+  { id: 'orcamento', title: 'Qual seu orçamento?', options: ['Até R$7.000', 'R$7.000 a R$8.000', 'R$8.000+'] },
   { id: 'experiencia', title: 'Você já teve uma bike elétrica antes?', options: ['Sim', 'Não'] },
   { id: 'ajuda', title: 'Quer ajuda personalizada?', options: ['Sim', 'Não'] },
 ];
