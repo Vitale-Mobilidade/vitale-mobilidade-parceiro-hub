@@ -61,7 +61,7 @@ const ConsultationForm = () => {
           {/* Right side - Call to Action */}
           <Card className="shadow-xl w-full order-1 lg:order-2 border-border">
             <CardHeader className="bg-gradient-green text-white rounded-t-lg py-6 lg:py-8">
-              <CardTitle asChild className="text-xl sm:text-2xl lg:text-3xl text-center"><h3>Consultoria Estratégica</h3></CardTitle>
+              <CardTitle className="text-xl sm:text-2xl lg:text-3xl text-center">Consultoria Estratégica</CardTitle>
             </CardHeader>
             <CardContent className="p-6 sm:p-8 lg:p-10 text-center space-y-6 lg:space-y-8">
               <div className="space-y-4 lg:space-y-5">

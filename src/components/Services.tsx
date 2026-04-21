@@ -57,7 +57,7 @@ const Services = () => {
                 <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-18 lg:h-18 bg-gradient-green rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-5">
                   <service.icon className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 text-white" />
                 </div>
-                <CardTitle asChild className="text-lg sm:text-xl lg:text-2xl text-center"><h3>{service.title}</h3></CardTitle>
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl text-center">{service.title}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 sm:p-8 lg:p-10 flex flex-col h-full">
                 <div className="flex-1 space-y-4 lg:space-y-5 mb-6">
