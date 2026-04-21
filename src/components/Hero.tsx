@@ -23,22 +23,25 @@ const Hero = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center max-w-3xl mx-auto">
-                <Button 
-                  size="lg" 
-                  className="w-full sm:w-auto bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 md:px-10 py-4 sm:py-5 text-base sm:text-lg md:text-xl font-semibold min-h-[52px] shadow-lg hover:shadow-xl transition-all duration-300" 
-                  onClick={handleWhatsAppClick}
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full sm:w-auto bg-gradient-green hover:opacity-90 text-white px-6 sm:px-8 md:px-10 py-4 sm:py-5 text-base sm:text-lg md:text-xl font-semibold min-h-[52px] shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  Agende uma consultoria
+                  <a
+                    href="https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20escolher%20os%20melhores%20fornecedores%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F"
+                    onClick={(e) => { e.preventDefault(); handleWhatsAppClick(); }}
+                  >
+                    Agende uma consultoria
+                  </a>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary hover:text-white px-6 sm:px-8 md:px-10 py-4 sm:py-5 text-base sm:text-lg md:text-xl min-h-[52px] transition-all duration-300" 
-                  onClick={() => document.getElementById('servicos')?.scrollIntoView({
-                    behavior: 'smooth'
-                  })}
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary hover:text-white px-6 sm:px-8 md:px-10 py-4 sm:py-5 text-base sm:text-lg md:text-xl min-h-[52px] transition-all duration-300"
                 >
-                  Conheça nossos serviços
+                  <a href="#servicos">Conheça nossos serviços</a>
                 </Button>
               </div>
               

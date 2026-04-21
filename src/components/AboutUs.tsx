@@ -40,9 +40,9 @@ const AboutUs = () => {
 
             {/* Right Column - Title and Text */}
             <div className="order-2 lg:order-2 flex flex-col justify-center">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl 2xl:text-[3.25rem] font-bold mb-6 sm:mb-8 lg:mb-10 text-foreground text-center lg:text-left">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl 2xl:text-[3.25rem] font-bold mb-6 sm:mb-8 lg:mb-10 text-foreground text-center lg:text-left">
                 Quem somos
-              </h1>
+              </h2>
               <div className="prose prose-lg max-w-none">
                 <p className="text-base sm:text-lg md:text-xl lg:text-[1.375rem] xl:text-2xl text-muted-foreground leading-relaxed mb-6 lg:mb-8">
                   A <strong className="text-foreground">Vitale Mobilidade</strong>, liderada por <strong className="text-foreground">Lucas Vitale</strong>, <strong className="text-foreground">nasceu para transformar experiência em estratégia</strong>. Após mais de 10 anos atuando na linha de frente da mobilidade elétrica no Brasil — movimentando mais de R$ 100 milhões em vendas e expandindo operações no Brasil inteiro — percebemos que muitos empreendedores e empresas ainda têm dúvidas na hora de escolher fornecedores, estruturar processos e crescer com segurança nesse mercado.
@@ -58,9 +58,9 @@ const AboutUs = () => {
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-background rounded-2xl border border-green-100 p-8 sm:p-10 lg:p-12 xl:p-14 text-center">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 sm:mb-8 lg:mb-10">
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 sm:mb-8 lg:mb-10">
               Por que escolher a Vitale Mobilidade?
-            </h2>
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 mb-10 sm:mb-12 lg:mb-14">
               <div className="text-center">
                 <h3 className="text-lg lg:text-xl font-bold text-foreground mb-3 lg:mb-4">Experiência Prática</h3>
