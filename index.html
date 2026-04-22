@@ -81,11 +81,15 @@
       ]
     }
     </script>
+    <style>
+      .seo-fallback-sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+    </style>
   </head>
 
   <body>
     <div id="root">
       <!-- HTML inicial rastreável (substituído pelo app React após hidratação) -->
+      <div class="seo-fallback-sr-only" aria-hidden="true">
       <header>
         <a href="/" aria-label="Vitale Mobilidade - Página inicial">
           <img src="/lovable-uploads/d25498ea-45b8-4dca-a2c2-dcdb6a860b82.png" alt="Vitale Mobilidade - Consultoria em veículos elétricos" width="48" height="48" />
