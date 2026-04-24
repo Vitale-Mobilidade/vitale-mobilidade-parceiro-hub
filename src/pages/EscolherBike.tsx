@@ -233,6 +233,7 @@ export default function EscolherBike() {
         const result = await invokeQuizTrack({ action: "create_lead", lead: payload });
         if (!result?.success || !result?.lead_id) throw result;
         console.info("[quiz] Lead criado com sucesso:", { lead_id: result.lead_id });
+        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_started" });
         console.info("[quiz] Evento salvo com sucesso: quiz_started");
         setLeadId(result.lead_id);
       } catch (e) {
@@ -469,6 +470,7 @@ export default function EscolherBike() {
         console.info("[quiz] Tentando salvar quiz_completed no banco");
         console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_completed" });
         console.info("[quiz] Tentando salvar evento:", { event_name: "recommendation_generated" });
+        console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
         const result = await invokeQuizTrack({
           action: "complete_quiz",
           lead_id: activeLeadId,
@@ -476,10 +478,14 @@ export default function EscolherBike() {
           webhook_payload: webhookPayload,
           recommendation_event_payload: rawRecommendation,
         });
-        if (result?.db_error) throw result;
-        console.info("[quiz] quiz_completed salvo com sucesso");
-        console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_completed" });
-        console.info("[quiz] Evento salvo com sucesso:", { event_name: "recommendation_generated" });
+        if (result?.db_error) {
+          console.error("[quiz] Erro ao salvar quiz_completed no banco:", result.db_error, result);
+          queuePendingUpdate(updateData);
+        } else {
+          console.info("[quiz] quiz_completed salvo com sucesso");
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_completed" });
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "recommendation_generated" });
+        }
         if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed disparado com sucesso:", result.webhook.status, result.webhook);
         else console.error("[quiz] Erro ao disparar webhook quiz_completed:", result?.webhook ?? result);
       } catch (e) {
