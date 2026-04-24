@@ -173,6 +173,15 @@ export default function EscolherBike() {
     };
   }, []);
 
+  // Tenta sincronizar lead pendente quando muda fase ou step
+  useEffect(() => {
+    if (leadId) return;
+    if (phase !== "quiz" && phase !== "processing" && phase !== "result") return;
+    retryPendingLeadSync().then(syncedId => {
+      if (syncedId) setLeadId(syncedId);
+    }).catch(() => {});
+  }, [phase, stepIdx, leadId]);
+
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
