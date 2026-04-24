@@ -14,7 +14,242 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          field_label: string | null
+          field_name: string | null
+          field_value: string | null
+          id: string
+          lead_id: string | null
+          payload: Json | null
+          step: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          field_label?: string | null
+          field_name?: string | null
+          field_value?: string | null
+          id?: string
+          lead_id?: string | null
+          payload?: Json | null
+          step?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          field_label?: string | null
+          field_name?: string | null
+          field_value?: string | null
+          id?: string
+          lead_id?: string | null
+          payload?: Json | null
+          step?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_leads: {
+        Row: {
+          browser: string | null
+          budget_cluster: string | null
+          budget_range: string | null
+          budget_range_label: string | null
+          buy_click_count: number
+          clicked_at: string | null
+          clicked_bike_link: string | null
+          clicked_bike_name: string | null
+          clicked_bike_position: string | null
+          completed_at: string | null
+          completion_percentage: number
+          conversion_status: string | null
+          created_at: string
+          crm_webhook_status: string | null
+          current_step: number
+          daily_km_range: string | null
+          daily_km_range_label: string | null
+          device_type: string | null
+          distance_cluster: string | null
+          experience_cluster: string | null
+          had_ebike_before: string | null
+          had_ebike_before_label: string | null
+          id: string
+          intent_cluster: string | null
+          landing_path: string | null
+          last_interaction_at: string | null
+          last_webhook_sent_at: string | null
+          main_use: string | null
+          main_use_label: string | null
+          name: string | null
+          operating_system: string | null
+          phone: string | null
+          raw_answers_json: Json | null
+          raw_recommendation_json: Json | null
+          recommendation_profile: string | null
+          recommendation_reason: string | null
+          recommended_bike_1: string | null
+          recommended_bike_1_label: string | null
+          recommended_bike_1_link: string | null
+          recommended_bike_1_reason: string | null
+          recommended_bike_1_score: number | null
+          recommended_bike_2: string | null
+          recommended_bike_2_label: string | null
+          recommended_bike_2_link: string | null
+          recommended_bike_2_reason: string | null
+          recommended_bike_2_score: number | null
+          referrer: string | null
+          route_cluster: string | null
+          route_type: string | null
+          route_type_label: string | null
+          source_url: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          usage_cluster: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          webhook_error_message: string | null
+        }
+        Insert: {
+          browser?: string | null
+          budget_cluster?: string | null
+          budget_range?: string | null
+          budget_range_label?: string | null
+          buy_click_count?: number
+          clicked_at?: string | null
+          clicked_bike_link?: string | null
+          clicked_bike_name?: string | null
+          clicked_bike_position?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          conversion_status?: string | null
+          created_at?: string
+          crm_webhook_status?: string | null
+          current_step?: number
+          daily_km_range?: string | null
+          daily_km_range_label?: string | null
+          device_type?: string | null
+          distance_cluster?: string | null
+          experience_cluster?: string | null
+          had_ebike_before?: string | null
+          had_ebike_before_label?: string | null
+          id?: string
+          intent_cluster?: string | null
+          landing_path?: string | null
+          last_interaction_at?: string | null
+          last_webhook_sent_at?: string | null
+          main_use?: string | null
+          main_use_label?: string | null
+          name?: string | null
+          operating_system?: string | null
+          phone?: string | null
+          raw_answers_json?: Json | null
+          raw_recommendation_json?: Json | null
+          recommendation_profile?: string | null
+          recommendation_reason?: string | null
+          recommended_bike_1?: string | null
+          recommended_bike_1_label?: string | null
+          recommended_bike_1_link?: string | null
+          recommended_bike_1_reason?: string | null
+          recommended_bike_1_score?: number | null
+          recommended_bike_2?: string | null
+          recommended_bike_2_label?: string | null
+          recommended_bike_2_link?: string | null
+          recommended_bike_2_reason?: string | null
+          recommended_bike_2_score?: number | null
+          referrer?: string | null
+          route_cluster?: string | null
+          route_type?: string | null
+          route_type_label?: string | null
+          source_url?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          usage_cluster?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          webhook_error_message?: string | null
+        }
+        Update: {
+          browser?: string | null
+          budget_cluster?: string | null
+          budget_range?: string | null
+          budget_range_label?: string | null
+          buy_click_count?: number
+          clicked_at?: string | null
+          clicked_bike_link?: string | null
+          clicked_bike_name?: string | null
+          clicked_bike_position?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          conversion_status?: string | null
+          created_at?: string
+          crm_webhook_status?: string | null
+          current_step?: number
+          daily_km_range?: string | null
+          daily_km_range_label?: string | null
+          device_type?: string | null
+          distance_cluster?: string | null
+          experience_cluster?: string | null
+          had_ebike_before?: string | null
+          had_ebike_before_label?: string | null
+          id?: string
+          intent_cluster?: string | null
+          landing_path?: string | null
+          last_interaction_at?: string | null
+          last_webhook_sent_at?: string | null
+          main_use?: string | null
+          main_use_label?: string | null
+          name?: string | null
+          operating_system?: string | null
+          phone?: string | null
+          raw_answers_json?: Json | null
+          raw_recommendation_json?: Json | null
+          recommendation_profile?: string | null
+          recommendation_reason?: string | null
+          recommended_bike_1?: string | null
+          recommended_bike_1_label?: string | null
+          recommended_bike_1_link?: string | null
+          recommended_bike_1_reason?: string | null
+          recommended_bike_1_score?: number | null
+          recommended_bike_2?: string | null
+          recommended_bike_2_label?: string | null
+          recommended_bike_2_link?: string | null
+          recommended_bike_2_reason?: string | null
+          recommended_bike_2_score?: number | null
+          referrer?: string | null
+          route_cluster?: string | null
+          route_type?: string | null
+          route_type_label?: string | null
+          source_url?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          usage_cluster?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          webhook_error_message?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
