@@ -286,7 +286,7 @@ export default function EscolherBike() {
           />
           <div className="mb-6">
             <Progress value={10} className="h-2" />
-            <p className="text-base text-muted-foreground mt-2 text-center">Etapa 1 de {STEPS.length + 1}</p>
+            <p className="text-base text-muted-foreground mt-2 text-center">Etapa inicial</p>
           </div>
           <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
           <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
