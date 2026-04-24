@@ -793,7 +793,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 }
 
 // ---------- Constants for secondary actions ----------
-const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/COLOCAR_LINK_DO_GRUPO_AQUI";
+const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 
 function OffersGroup({ leadId }: { leadId: string | null }) {
   const handleOffersGroup = () => {
