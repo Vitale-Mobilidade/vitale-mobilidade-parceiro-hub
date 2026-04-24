@@ -322,7 +322,7 @@ export default function EscolherBike() {
         <div className="max-w-3xl mx-auto px-4 py-8 lg:py-12">
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
-            <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+            <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
               <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("lead")} className="inline-flex items-center gap-1 hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
@@ -347,13 +347,13 @@ export default function EscolherBike() {
                   className="w-full text-left p-4 lg:p-5 border-2 border-border rounded-xl hover:border-primary hover:bg-primary/5 transition group"
                 >
                   <div className="font-semibold text-foreground group-hover:text-primary">{opt.label}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{opt.micro}</div>
+                  <div className="text-base text-muted-foreground mt-1">{opt.micro}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
+          <p className="text-center text-base text-muted-foreground mt-6">
             +10 anos no mercado · +R$100 milhões vendidos · Recomendação gratuita
           </p>
         </div>
@@ -368,7 +368,7 @@ export default function EscolherBike() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
           <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil de uso...</p>
-          <p className="text-sm text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
+          <p className="text-base text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
         </div>
       </main>
     );
@@ -513,15 +513,15 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-8">
           {profileSummary.map((p, i) => (
             <div key={i} className="bg-muted rounded-lg p-3 text-center">
-              <div className="text-xs text-muted-foreground">{p.label}</div>
-              <div className="text-sm font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
+              <div className="text-base text-muted-foreground">{p.label}</div>
+              <div className="text-base font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
             </div>
           ))}
         </div>
 
         {/* Recomendação principal */}
         <div className="bg-card border-2 border-primary rounded-2xl overflow-hidden shadow-lg mb-6">
-          <div className="bg-primary text-primary-foreground px-4 py-2 text-sm font-bold inline-block rounded-br-xl">
+          <div className="bg-primary text-primary-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
             ⭐ Melhor escolha para o seu perfil
           </div>
           <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-8">
@@ -538,7 +538,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <p className="text-muted-foreground mb-4">{recommendation.primary.shortDescription}</p>
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
+                  <li key={i} className="flex items-start gap-2 text-base">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-foreground">{s}</span>
                   </li>
@@ -546,8 +546,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </ul>
               {reasonPrimary && (
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5">
-                  <div className="text-xs font-bold text-primary mb-1">Por que recomendamos essa bike</div>
-                  <p className="text-sm text-foreground">{reasonPrimary}</p>
+                  <div className="text-base font-bold text-primary mb-1">Por que recomendamos essa bike</div>
+                  <p className="text-base text-foreground">{reasonPrimary}</p>
                 </div>
               )}
               <Button
@@ -560,7 +560,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               >
                 <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
               </Button>
-              <p className="text-xs text-center text-muted-foreground mt-2">
+              <p className="text-base text-center text-muted-foreground mt-2">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
             </div>
@@ -570,7 +570,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Segunda opção */}
         {recommendation.secondary && (
           <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
-            <div className="bg-muted text-foreground px-4 py-2 text-sm font-bold inline-block rounded-br-xl">
+            <div className="bg-muted text-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
               💡 Alternativa inteligente
             </div>
             <div className="grid lg:grid-cols-2 gap-6 p-6">
@@ -584,10 +584,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </div>
               <div>
                 <h3 className="text-xl lg:text-2xl font-bold text-foreground mb-2">{recommendation.secondary.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{recommendation.secondary.diferencial}</p>
+                <p className="text-base text-muted-foreground mb-3">{recommendation.secondary.diferencial}</p>
                 <ul className="space-y-1.5 mb-4">
                   {recommendation.secondary.strengths.slice(0, 3).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
+                    <li key={i} className="flex items-start gap-2 text-base">
                       <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <span className="text-foreground">{s}</span>
                     </li>
@@ -612,8 +612,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Comparação */}
         {recommendation.secondary && (
           <div className="bg-card border border-border rounded-xl p-5 mb-6">
-            <h3 className="font-bold text-foreground mb-3 text-sm">Comparação rápida</h3>
-            <div className="grid grid-cols-3 gap-2 text-xs lg:text-sm">
+            <h3 className="font-bold text-foreground mb-3 text-base">Comparação rápida</h3>
+            <div className="grid grid-cols-3 gap-2 text-base">
               <div></div>
               <div className="font-bold text-primary text-center">{recommendation.primary.name}</div>
               <div className="font-bold text-center">{recommendation.secondary.name}</div>
@@ -636,12 +636,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Educativo */}
         <div className="bg-muted rounded-xl p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária, do orçamento e do tipo de uso.
           </p>
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-base text-center text-muted-foreground">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
       </div>
