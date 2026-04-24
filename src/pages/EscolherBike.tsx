@@ -5,6 +5,8 @@ import { ArrowLeft, Award, Briefcase, Bike, Mountain, Route, Wallet, Check, Shop
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, type Answers } from "@/lib/quiz-engine";
 import { BIKES } from "@/data/bikes";
+import logo96 from "@/assets/logo-96.webp";
+import logo192 from "@/assets/logo-192.webp";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
