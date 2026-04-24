@@ -5,6 +5,12 @@ import { ArrowLeft, Award, Briefcase, Bike, Mountain, Route, Wallet, Check, Shop
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, type Answers } from "@/lib/quiz-engine";
 import { BIKES } from "@/data/bikes";
+import {
+  savePendingLead,
+  queuePendingUpdate,
+  queuePendingEvent,
+  retryPendingLeadSync,
+} from "@/lib/quiz-storage";
 import logo96 from "@/assets/logo-96.webp";
 import logo192 from "@/assets/logo-192.webp";
 
@@ -96,12 +102,32 @@ function getUTMs() {
   };
 }
 
-async function sendWebhook(payload: any) {
-  try {
-    await supabase.functions.invoke("quiz-webhook", { body: payload });
-  } catch (e) {
-    console.error("webhook error", e);
-  }
+function sendWebhook(payload: any, leadId?: string | null) {
+  // Fire-and-forget — nunca bloqueia o fluxo
+  (async () => {
+    try {
+      const { error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
+      if (error) throw error;
+    } catch (e) {
+      console.error("[quiz] Erro ao enviar webhook", e);
+      if (leadId) {
+        try {
+          await supabase.from("quiz_leads").update({
+            crm_webhook_status: "erro_webhook",
+            webhook_error_message: String((e as any)?.message ?? e).slice(0, 500),
+            last_webhook_sent_at: new Date().toISOString(),
+          } as any).eq("id", leadId);
+          await supabase.from("quiz_events").insert({
+            lead_id: leadId,
+            event_name: "webhook_error",
+            payload: { error: String((e as any)?.message ?? e), event: payload?.event_name },
+          });
+        } catch (logErr) {
+          console.error("[quiz] Erro ao registrar falha de webhook", logErr);
+        }
+      }
+    }
+  })();
 }
 
 function validatePhoneBR(p: string) {
@@ -127,6 +153,7 @@ export default function EscolherBike() {
   const [answers, setAnswers] = useState<Partial<Answers>>({});
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [leadId, setLeadId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const recommendation = useMemo(() => {
     if (Object.keys(answers).length === 5) return recommend(answers as Answers);
     return null;
@@ -145,6 +172,15 @@ export default function EscolherBike() {
       device_type, browser, operating_system,
     };
   }, []);
+
+  // Tenta sincronizar lead pendente quando muda fase ou step
+  useEffect(() => {
+    if (leadId) return;
+    if (phase !== "quiz" && phase !== "processing" && phase !== "result") return;
+    retryPendingLeadSync().then(syncedId => {
+      if (syncedId) setLeadId(syncedId);
+    }).catch(() => {});
+  }, [phase, stepIdx, leadId]);
 
   // ---------- Intro ----------
   if (phase === "intro") {
@@ -202,7 +238,9 @@ export default function EscolherBike() {
     const valid = name.trim().length >= 2 && validatePhoneBR(phone);
 
     const handleSubmit = async () => {
-      if (!valid) return;
+      if (!valid || submitting) return;
+      setSubmitting(true);
+
       const payload = {
         name: name.trim(),
         phone,
@@ -212,17 +250,36 @@ export default function EscolherBike() {
         started_at: new Date().toISOString(),
         ...baseLeadDataRef.current,
       };
-      const { data, error } = await supabase.from("quiz_leads").insert(payload).select("id").single();
-      if (error) { console.error(error); return; }
-      setLeadId(data.id);
 
-      await supabase.from("quiz_events").insert({
-        lead_id: data.id, event_name: "quiz_started", step: 0, payload,
-      });
+      try {
+        const { data, error } = await supabase
+          .from("quiz_leads")
+          .insert(payload as any)
+          .select("id")
+          .single();
 
-      sendWebhook({ event_name: "quiz_started", event_created_at: new Date().toISOString(), lead_id: data.id, ...payload });
-
-      setPhase("quiz");
+        if (error || !data) {
+          console.error("[quiz] Erro ao criar lead no banco. Fallback local ativado.", error);
+          savePendingLead(payload);
+        } else {
+          setLeadId(data.id);
+          supabase.from("quiz_events").insert({
+            lead_id: data.id, event_name: "quiz_started", step: 0, payload,
+          }).then(({ error: evErr }) => {
+            if (evErr) console.error("[quiz] Erro ao registrar evento quiz_started", evErr);
+          });
+          sendWebhook(
+            { event_name: "quiz_started", event_created_at: new Date().toISOString(), lead_id: data.id, ...payload },
+            data.id
+          );
+        }
+      } catch (e) {
+        console.error("[quiz] Exceção ao criar lead. Fallback local ativado.", e);
+        savePendingLead(payload);
+      } finally {
+        setSubmitting(false);
+        setPhase("quiz");
+      }
     };
 
     return (
@@ -238,7 +295,7 @@ export default function EscolherBike() {
           />
           <div className="mb-6">
             <Progress value={10} className="h-2" />
-            <p className="text-base text-muted-foreground mt-2 text-center">Etapa 1 de {STEPS.length + 1}</p>
+            <p className="text-base text-muted-foreground mt-2 text-center">Etapa inicial</p>
           </div>
           <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
           <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
@@ -259,8 +316,13 @@ export default function EscolherBike() {
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
-            <Button onClick={handleSubmit} disabled={!valid} data-event="quiz_started" className="w-full py-6 text-base font-bold">
-              Continuar
+            <Button
+              onClick={handleSubmit}
+              disabled={!valid || submitting}
+              data-event="quiz_started"
+              className="w-full py-6 text-base font-bold"
+            >
+              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>) : "Continuar"}
             </Button>
           </div>
         </div>
@@ -291,22 +353,49 @@ export default function EscolherBike() {
         last_interaction_at: new Date().toISOString(),
       };
 
-      if (leadId) {
-        await supabase.from("quiz_leads").update(updateData).eq("id", leadId);
-        await supabase.from("quiz_events").insert({
-          lead_id: leadId, event_name: "quiz_step_completed", step: stepIdx + 1,
-          field_name: step.key, field_value: opt.value, field_label: opt.label,
-        });
+      const eventData = {
+        event_name: "quiz_step_completed", step: stepIdx + 1,
+        field_name: step.key, field_value: opt.value, field_label: opt.label,
+      };
+
+      // Tenta sincronizar lead pendente antes (não bloqueante para UX)
+      let activeLeadId = leadId;
+      if (!activeLeadId) {
+        const synced = await retryPendingLeadSync().catch(() => null);
+        if (synced) {
+          activeLeadId = synced;
+          setLeadId(synced);
+        }
+      }
+
+      if (activeLeadId) {
+        try {
+          const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
+          if (upErr) {
+            console.error("[quiz] Erro ao atualizar resposta no banco. Fallback local ativado.", upErr);
+            queuePendingUpdate(updateData);
+          }
+          supabase.from("quiz_events").insert({ lead_id: activeLeadId, ...eventData }).then(({ error: evErr }) => {
+            if (evErr) console.error("[quiz] Erro ao registrar evento de etapa", evErr);
+          });
+        } catch (e) {
+          console.error("[quiz] Exceção em update de resposta. Fallback local ativado.", e);
+          queuePendingUpdate(updateData);
+        }
 
         sendWebhook({
           event_name: "quiz_step_completed",
           event_created_at: new Date().toISOString(),
-          lead_id: leadId, name, phone,
+          lead_id: activeLeadId, name, phone,
           ...newAnswers, ...newLabels,
           last_answer_field: step.key, last_answer_value: opt.value, last_answer_label: opt.label,
           current_step: stepIdx + 2, completion_percentage: completion, status: "incompleto",
           ...baseLeadDataRef.current,
-        });
+        }, activeLeadId);
+      } else {
+        // Sem lead_id: salvar tudo localmente
+        queuePendingUpdate(updateData);
+        queuePendingEvent(eventData);
       }
 
       if (isLast) {
@@ -401,19 +490,35 @@ export default function EscolherBike() {
       raw_recommendation_json: { primary: rec.primary.id, secondary: rec.secondary?.id, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore },
     };
 
-    if (leadId) {
-      await supabase.from("quiz_leads").update(updateData).eq("id", leadId);
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
-      });
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
-      });
+    // Tenta sincronizar antes de finalizar
+    let activeLeadId = leadId;
+    if (!activeLeadId) {
+      const synced = await retryPendingLeadSync().catch(() => null);
+      if (synced) { activeLeadId = synced; setLeadId(synced); }
+    }
+
+    if (activeLeadId) {
+      try {
+        const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
+        if (upErr) {
+          console.error("[quiz] Erro ao salvar resultado final no banco. Fallback local ativado.", upErr);
+          queuePendingUpdate(updateData);
+        }
+        supabase.from("quiz_events").insert({
+          lead_id: activeLeadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
+        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento quiz_completed", error); });
+        supabase.from("quiz_events").insert({
+          lead_id: activeLeadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
+        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento recommendation_generated", error); });
+      } catch (e) {
+        console.error("[quiz] Exceção ao finalizar quiz. Fallback local.", e);
+        queuePendingUpdate(updateData);
+      }
 
       sendWebhook({
         event_name: "quiz_completed",
         event_created_at: new Date().toISOString(),
-        lead_id: leadId, name, phone,
+        lead_id: activeLeadId, name, phone,
         ...finalAnswers, ...finalLabels,
         ...clusters,
         recommended_bike_1: rec.primary.id,
@@ -431,7 +536,9 @@ export default function EscolherBike() {
         completed_at: new Date().toISOString(),
         ...baseLeadDataRef.current,
         raw_answers_json: finalAnswers,
-      });
+      }, activeLeadId);
+    } else {
+      queuePendingUpdate(updateData);
     }
 
     setPhase("result");
@@ -457,38 +564,66 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonPrimary = buildPersonalizedCopy(answers, true);
   const reasonSecondary = recommendation.secondary ? buildPersonalizedCopy(answers, false) : null;
 
-  const handleBuy = async (bike: any, position: "principal" | "segunda_opcao") => {
-    if (leadId) {
-      const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
-      const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
-
-      await supabase.from("quiz_leads").update({
-        conversion_status,
-        clicked_bike_name: bike.name,
-        clicked_bike_position: position,
-        clicked_bike_link: bike.affiliateLink,
-        clicked_at: new Date().toISOString(),
-      }).eq("id", leadId);
-
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: eventName,
-        field_value: bike.id, field_label: bike.name,
-        payload: { position, link: bike.affiliateLink },
-      });
-
-      sendWebhook({
-        event_name: eventName,
-        event_created_at: new Date().toISOString(),
-        lead_id: leadId, name, phone,
-        ...answers, ...labels,
-        clicked_bike_name: bike.name,
-        clicked_bike_position: position,
-        clicked_bike_link: bike.affiliateLink,
-        conversion_status,
-        ...baseLeadData,
-      });
-    }
+  const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
+    // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
     window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
+
+    const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
+    const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
+
+    const clickUpdate = {
+      conversion_status,
+      clicked_bike_name: bike.name,
+      clicked_bike_position: position,
+      clicked_bike_link: bike.affiliateLink,
+      clicked_at: new Date().toISOString(),
+    };
+
+    // Disparar tudo em background — não bloquear
+    (async () => {
+      let activeLeadId = leadId;
+      if (!activeLeadId) {
+        const synced = await retryPendingLeadSync().catch(() => null);
+        if (synced) activeLeadId = synced;
+      }
+
+      if (activeLeadId) {
+        try {
+          const { error: upErr } = await supabase.from("quiz_leads").update(clickUpdate as any).eq("id", activeLeadId);
+          if (upErr) {
+            console.error("[quiz] Erro ao registrar clique. Fallback local ativado.", upErr);
+            queuePendingUpdate(clickUpdate);
+          }
+          supabase.from("quiz_events").insert({
+            lead_id: activeLeadId, event_name: eventName,
+            field_value: bike.id, field_label: bike.name,
+            payload: { position, link: bike.affiliateLink },
+          }).then(({ error }) => { if (error) console.error("[quiz] Erro evento de clique", error); });
+        } catch (e) {
+          console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
+          queuePendingUpdate(clickUpdate);
+        }
+
+        sendWebhook({
+          event_name: eventName,
+          event_created_at: new Date().toISOString(),
+          lead_id: activeLeadId, name, phone,
+          ...answers, ...labels,
+          clicked_bike_name: bike.name,
+          clicked_bike_position: position,
+          clicked_bike_link: bike.affiliateLink,
+          conversion_status,
+          ...baseLeadData,
+        }, activeLeadId);
+      } else {
+        queuePendingUpdate(clickUpdate);
+        queuePendingEvent({
+          event_name: eventName,
+          field_value: bike.id, field_label: bike.name,
+          payload: { position, link: bike.affiliateLink },
+        });
+      }
+    })();
   };
 
   const profileSummary = [
