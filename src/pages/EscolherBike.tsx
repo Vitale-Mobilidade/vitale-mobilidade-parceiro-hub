@@ -490,19 +490,35 @@ export default function EscolherBike() {
       raw_recommendation_json: { primary: rec.primary.id, secondary: rec.secondary?.id, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore },
     };
 
-    if (leadId) {
-      await supabase.from("quiz_leads").update(updateData).eq("id", leadId);
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
-      });
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
-      });
+    // Tenta sincronizar antes de finalizar
+    let activeLeadId = leadId;
+    if (!activeLeadId) {
+      const synced = await retryPendingLeadSync().catch(() => null);
+      if (synced) { activeLeadId = synced; setLeadId(synced); }
+    }
+
+    if (activeLeadId) {
+      try {
+        const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
+        if (upErr) {
+          console.error("[quiz] Erro ao salvar resultado final no banco. Fallback local ativado.", upErr);
+          queuePendingUpdate(updateData);
+        }
+        supabase.from("quiz_events").insert({
+          lead_id: activeLeadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
+        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento quiz_completed", error); });
+        supabase.from("quiz_events").insert({
+          lead_id: activeLeadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
+        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento recommendation_generated", error); });
+      } catch (e) {
+        console.error("[quiz] Exceção ao finalizar quiz. Fallback local.", e);
+        queuePendingUpdate(updateData);
+      }
 
       sendWebhook({
         event_name: "quiz_completed",
         event_created_at: new Date().toISOString(),
-        lead_id: leadId, name, phone,
+        lead_id: activeLeadId, name, phone,
         ...finalAnswers, ...finalLabels,
         ...clusters,
         recommended_bike_1: rec.primary.id,
@@ -520,7 +536,9 @@ export default function EscolherBike() {
         completed_at: new Date().toISOString(),
         ...baseLeadDataRef.current,
         raw_answers_json: finalAnswers,
-      });
+      }, activeLeadId);
+    } else {
+      queuePendingUpdate(updateData);
     }
 
     setPhase("result");
