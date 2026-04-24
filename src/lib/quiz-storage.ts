@@ -16,6 +16,7 @@ function safeParse<T>(raw: string | null, fallback: T): T {
 
 export function savePendingLead(payload: Record<string, any>) {
   try {
+    console.warn("[quiz] ATENÇÃO: fallback localStorage ativado porque o banco falhou", payload);
     localStorage.setItem(PENDING_KEY, JSON.stringify({ payload, createdAt: new Date().toISOString() }));
   } catch (e) {
     console.error("[quiz] Falha ao salvar pending lead em localStorage", e);
@@ -33,6 +34,7 @@ export function clearPendingLead() {
 
 export function queuePendingUpdate(update: Record<string, any>) {
   try {
+    console.warn("[quiz] ATENÇÃO: fallback localStorage ativado porque o banco falhou", update);
     const merged = { ...safeParse<Record<string, any>>(localStorage.getItem(PENDING_UPDATES_KEY), {}), ...update };
     localStorage.setItem(PENDING_UPDATES_KEY, JSON.stringify(merged));
   } catch (e) {
@@ -51,6 +53,7 @@ export function clearPendingUpdates() {
 
 export function queuePendingEvent(event: Record<string, any>) {
   try {
+    console.warn("[quiz] ATENÇÃO: fallback localStorage ativado porque o banco falhou", event);
     const list = safeParse<any[]>(localStorage.getItem(PENDING_EVENTS_KEY), []);
     list.push(event);
     localStorage.setItem(PENDING_EVENTS_KEY, JSON.stringify(list.slice(-50)));
