@@ -1,3 +1,6 @@
+import logo96 from '@/assets/logo-96.webp';
+import logo192 from '@/assets/logo-192.webp';
+
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white py-10 sm:py-12 md:py-16 lg:py-20">
@@ -6,8 +9,13 @@ const Footer = () => {
           <div className="text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 mb-4 lg:mb-5">
               <img
-                src="/lovable-uploads/d25498ea-45b8-4dca-a2c2-dcdb6a860b82.png"
+                src={logo96}
+                srcSet={`${logo96} 1x, ${logo192} 2x`}
                 alt="Vitale Mobilidade - Consultoria em veículos elétricos"
+                width={40}
+                height={40}
+                loading="lazy"
+                decoding="async"
                 className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10"
               />
               <span className="text-lg sm:text-xl lg:text-2xl font-bold">Vitale Mobilidade</span>
