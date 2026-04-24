@@ -1,7 +1,10 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2.95.0/cors";
-
 // Configurable CRM webhook URL
 const CRM_WEBHOOK_URL = "https://hook.us1.make.com/vvxovixmmoi4tip31x7bh3yd982xzqga";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,12 +20,11 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
-    const ok = res.ok;
     let bodyText = "";
     try { bodyText = await res.text(); } catch (_) {}
 
     return new Response(
-      JSON.stringify({ success: ok, status: res.status, body: bodyText.slice(0, 500) }),
+      JSON.stringify({ success: res.ok, status: res.status, body: bodyText.slice(0, 500) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: unknown) {
