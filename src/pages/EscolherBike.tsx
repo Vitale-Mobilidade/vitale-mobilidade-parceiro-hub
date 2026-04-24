@@ -92,26 +92,16 @@ function getUTMs() {
   };
 }
 
-function sendWebhook(payload: any, leadId?: string | null) {
-  // Fire-and-forget — nunca bloqueia o fluxo
-  (async () => {
-    try {
-      const { error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
-      if (error) throw error;
-      console.info("[quiz] Webhook enviado", payload?.event_name);
-    } catch (e) {
-      console.error("[quiz] Erro ao enviar webhook", e);
-      if (leadId) {
-        try {
-          await supabase.from("quiz_leads").update({
-            crm_webhook_status: "erro_webhook",
-            webhook_error_message: String((e as any)?.message ?? e).slice(0, 500),
-            last_webhook_sent_at: new Date().toISOString(),
-          } as any).eq("id", leadId);
-        } catch {}
-      }
-    }
-  })();
+async function invokeQuizTrack(body: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke("quiz-track", { body });
+  if (error) throw { invoke_error: error, response: data };
+  return data;
+}
+
+async function sendCompletedWebhookFallback(payload: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
+  if (error) throw { invoke_error: error, response: data };
+  return data;
 }
 
 function validatePhoneBR(p: string) {
@@ -125,8 +115,6 @@ function maskPhone(value: string) {
   if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
   return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
 }
-
-const ABANDON_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
 
 // ---------- Page ----------
 type Phase = "intro" | "lead" | "quiz" | "processing" | "result";
