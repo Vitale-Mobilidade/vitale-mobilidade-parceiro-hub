@@ -827,8 +827,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <div className="font-bold text-center">{recommendation.secondary.name}</div>
 
               <div className="text-muted-foreground">Autonomia</div>
-              <div className="text-center">~{recommendation.primary.autonomyKm} km</div>
-              <div className="text-center">~{recommendation.secondary.autonomyKm} km</div>
+              <div className="text-center">Até {recommendation.primary.autonomyKm} km</div>
+              <div className="text-center">Até {recommendation.secondary.autonomyKm} km</div>
+
+              <div className="text-muted-foreground">Capacidade</div>
+              <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
+              <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
 
               <div className="text-muted-foreground">Diferencial</div>
               <div className="text-center">{recommendation.primary.diferencial}</div>
@@ -850,10 +854,114 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
 
         {/* 8. Aviso ML */}
-        <p className="text-base text-center text-muted-foreground">
+        <p className="text-base text-center text-muted-foreground mb-10">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
+
+        {/* 9. Ações secundárias */}
+        <SecondaryActions
+          recommendation={recommendation}
+          leadId={leadId}
+          name={name}
+          phone={phone}
+        />
       </div>
     </main>
+  );
+}
+
+// ---------- Constants for secondary actions ----------
+const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/COLOCAR_LINK_DO_GRUPO_AQUI";
+
+function SecondaryActions({ recommendation, leadId, name, phone }: any) {
+  const handleRestart = () => {
+    if (leadId) {
+      supabase.from("quiz_events").insert({
+        lead_id: leadId, event_name: "quiz_restart_clicked",
+      }).then(({ error }) => {
+        if (error) console.error("[quiz] Erro evento quiz_restart_clicked", error);
+        else console.info("[quiz] Evento salvo: quiz_restart_clicked");
+      });
+    }
+    // Volta para intro mantendo dados já salvos no banco intactos
+    window.location.href = "/escolherbike";
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = typeof window !== "undefined" ? window.location.origin + "/escolherbike" : "";
+    const principal = recommendation.primary?.name ?? "";
+    const alternativa = recommendation.secondary?.name ?? "";
+    const msg = alternativa
+      ? `Fiz o quiz da Vitale Mobilidade e recebi uma recomendação de bike elétrica para o meu perfil: ${principal}. Também apareceu como alternativa: ${alternativa}. Dá uma olhada: ${url}`
+      : `Fiz o quiz da Vitale Mobilidade e recebi uma recomendação de bike elétrica para o meu perfil: ${principal}. Dá uma olhada: ${url}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+
+    if (leadId) {
+      supabase.from("quiz_events").insert({
+        lead_id: leadId, event_name: "result_shared_whatsapp",
+        payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id },
+      }).then(({ error }) => {
+        if (error) console.error("[quiz] Erro evento result_shared_whatsapp", error);
+        else console.info("[quiz] Evento salvo: result_shared_whatsapp");
+      });
+    }
+  };
+
+  const handleOffersGroup = () => {
+    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+    if (leadId) {
+      supabase.from("quiz_events").insert({
+        lead_id: leadId, event_name: "offers_group_clicked",
+      }).then(({ error }) => {
+        if (error) console.error("[quiz] Erro evento offers_group_clicked", error);
+        else console.info("[quiz] Evento salvo: offers_group_clicked");
+      });
+    }
+  };
+
+  return (
+    <section className="mt-6 border-t border-border pt-8">
+      <h3 className="text-lg font-semibold text-foreground text-center mb-1">Ainda quer comparar melhor?</h3>
+      <p className="text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
+
+      <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto mb-8">
+        <Button
+          onClick={handleRestart}
+          variant="outline"
+          data-event="quiz_restart_clicked"
+          className="w-full text-base font-medium py-5"
+        >
+          Refazer recomendação
+        </Button>
+        <Button
+          onClick={handleShareWhatsApp}
+          variant="outline"
+          data-event="result_shared_whatsapp"
+          className="w-full text-base font-medium py-5"
+        >
+          Compartilhar resultado
+        </Button>
+      </div>
+
+      {/* Grupo de ofertas — discreto */}
+      <div className="bg-muted/60 border border-border rounded-xl p-5 max-w-2xl mx-auto text-center">
+        <h4 className="text-base font-bold text-foreground mb-1">Vitale Mobilidade Ofertas</h4>
+        <p className="text-base text-muted-foreground mb-4">
+          Receba curadoria de bikes elétricas, alertas de boas oportunidades e modelos que fazem sentido para diferentes perfis de uso.
+        </p>
+        <Button
+          onClick={handleOffersGroup}
+          variant="secondary"
+          data-event="offers_group_clicked"
+          className="text-base font-medium"
+        >
+          Entrar no grupo de ofertas
+        </Button>
+        <p className="text-base text-muted-foreground mt-3">
+          Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
+        </p>
+      </div>
+    </section>
   );
 }
