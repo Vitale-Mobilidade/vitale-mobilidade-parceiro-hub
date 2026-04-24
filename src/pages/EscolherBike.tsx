@@ -5,6 +5,8 @@ import { ArrowLeft, Award, Briefcase, Bike, Mountain, Route, Wallet, Check, Shop
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, type Answers } from "@/lib/quiz-engine";
 import { BIKES } from "@/data/bikes";
+import logo96 from "@/assets/logo-96.webp";
+import logo192 from "@/assets/logo-192.webp";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
@@ -147,47 +149,48 @@ export default function EscolherBike() {
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-6 py-12 lg:py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-foreground">
-                Vai comprar uma bike elétrica?
-              </h1>
-              <h2 className="text-xl lg:text-2xl text-muted-foreground mb-6 font-medium">
-                Descubra em 2 minutos qual modelo ideal e evite jogar dinheiro fora
-              </h2>
-              <p className="text-base text-muted-foreground mb-2">
-                A maioria das pessoas escolhe errado e só percebe depois.
-              </p>
-              <div className="flex flex-wrap gap-3 my-6">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium">
-                  <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
-                </span>
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium">
-                  <Award className="h-4 w-4 text-primary" /> +R$100 milhões vendidos
-                </span>
-              </div>
-              <Button
-                size="lg"
-                onClick={() => setPhase("lead")}
-                data-event="quiz_start_click"
-                className="text-base font-bold px-8 py-6 rounded-xl shadow-lg w-full sm:w-auto"
-              >
-                Começar agora
-              </Button>
-              <p className="text-xs text-muted-foreground mt-3">
-                Recomendação gratuita baseada no seu uso, trajeto e orçamento.
-              </p>
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="container mx-auto px-6 py-12 lg:py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <img
+              src={logo96}
+              srcSet={`${logo96} 1x, ${logo192} 2x`}
+              width={96}
+              height={96}
+              alt="Vitale Mobilidade"
+              className="h-16 w-auto mx-auto mb-8"
+            />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
+              <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
             </div>
-            <div className="hidden lg:block">
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-primary/20 p-8 aspect-square flex items-center justify-center">
-                <img src={BIKES[3].image} alt="Bike elétrica" width={800} height={600} className="w-full h-auto object-contain drop-shadow-2xl" />
-              </div>
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-5 text-foreground">
+              Vai comprar uma bike elétrica?
+            </h1>
+            <h2 className="text-xl lg:text-2xl text-muted-foreground mb-5 font-medium">
+              Descubra em 2 minutos qual modelo ideal e evite jogar dinheiro fora
+            </h2>
+            <p className="text-base text-muted-foreground mb-8">
+              A maioria das pessoas escolhe errado e só percebe depois.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
+                <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
+                <Award className="h-4 w-4 text-primary" /> +R$100 milhões vendidos
+              </span>
             </div>
+            <Button
+              size="lg"
+              onClick={() => setPhase("lead")}
+              data-event="quiz_start_click"
+              className="text-base font-bold px-10 py-6 rounded-xl shadow-lg w-full sm:w-auto"
+            >
+              Começar agora
+            </Button>
+            <p className="text-base text-muted-foreground mt-4">
+              Recomendação gratuita baseada no seu uso, trajeto e orçamento.
+            </p>
           </div>
         </div>
       </main>
@@ -225,23 +228,35 @@ export default function EscolherBike() {
     return (
       <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-2 text-foreground">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
-          <p className="text-sm text-muted-foreground mb-6">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
+          <img
+            src={logo96}
+            srcSet={`${logo96} 1x, ${logo192} 2x`}
+            width={96}
+            height={96}
+            alt="Vitale Mobilidade"
+            className="h-12 w-auto mx-auto mb-6"
+          />
+          <div className="mb-6">
+            <Progress value={10} className="h-2" />
+            <p className="text-base text-muted-foreground mt-2 text-center">Etapa 1 de {STEPS.length + 1}</p>
+          </div>
+          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
+          <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Nome</label>
+              <label className="text-base font-medium mb-2 block">Nome</label>
               <input
                 type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder="Seu nome"
-                className="w-full p-3 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
+                className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">WhatsApp</label>
+              <label className="text-base font-medium mb-2 block">WhatsApp</label>
               <input
                 type="tel" value={phone} onChange={e => setPhone(maskPhone(e.target.value))}
                 placeholder="(11) 99999-9999" inputMode="numeric"
-                className="w-full p-3 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
+                className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
             <Button onClick={handleSubmit} disabled={!valid} data-event="quiz_started" className="w-full py-6 text-base font-bold">
@@ -307,7 +322,7 @@ export default function EscolherBike() {
         <div className="max-w-3xl mx-auto px-4 py-8 lg:py-12">
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
-            <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+            <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
               <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("lead")} className="inline-flex items-center gap-1 hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
@@ -332,13 +347,13 @@ export default function EscolherBike() {
                   className="w-full text-left p-4 lg:p-5 border-2 border-border rounded-xl hover:border-primary hover:bg-primary/5 transition group"
                 >
                   <div className="font-semibold text-foreground group-hover:text-primary">{opt.label}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{opt.micro}</div>
+                  <div className="text-base text-muted-foreground mt-1">{opt.micro}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
+          <p className="text-center text-base text-muted-foreground mt-6">
             +10 anos no mercado · +R$100 milhões vendidos · Recomendação gratuita
           </p>
         </div>
@@ -353,7 +368,7 @@ export default function EscolherBike() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
           <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil de uso...</p>
-          <p className="text-sm text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
+          <p className="text-base text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
         </div>
       </main>
     );
@@ -498,15 +513,15 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-8">
           {profileSummary.map((p, i) => (
             <div key={i} className="bg-muted rounded-lg p-3 text-center">
-              <div className="text-xs text-muted-foreground">{p.label}</div>
-              <div className="text-sm font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
+              <div className="text-base text-muted-foreground">{p.label}</div>
+              <div className="text-base font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
             </div>
           ))}
         </div>
 
         {/* Recomendação principal */}
         <div className="bg-card border-2 border-primary rounded-2xl overflow-hidden shadow-lg mb-6">
-          <div className="bg-primary text-primary-foreground px-4 py-2 text-sm font-bold inline-block rounded-br-xl">
+          <div className="bg-primary text-primary-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
             ⭐ Melhor escolha para o seu perfil
           </div>
           <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-8">
@@ -523,7 +538,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <p className="text-muted-foreground mb-4">{recommendation.primary.shortDescription}</p>
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
+                  <li key={i} className="flex items-start gap-2 text-base">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-foreground">{s}</span>
                   </li>
@@ -531,8 +546,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </ul>
               {reasonPrimary && (
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5">
-                  <div className="text-xs font-bold text-primary mb-1">Por que recomendamos essa bike</div>
-                  <p className="text-sm text-foreground">{reasonPrimary}</p>
+                  <div className="text-base font-bold text-primary mb-1">Por que recomendamos essa bike</div>
+                  <p className="text-base text-foreground">{reasonPrimary}</p>
                 </div>
               )}
               <Button
@@ -545,7 +560,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               >
                 <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
               </Button>
-              <p className="text-xs text-center text-muted-foreground mt-2">
+              <p className="text-base text-center text-muted-foreground mt-2">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
             </div>
@@ -555,7 +570,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Segunda opção */}
         {recommendation.secondary && (
           <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
-            <div className="bg-muted text-foreground px-4 py-2 text-sm font-bold inline-block rounded-br-xl">
+            <div className="bg-muted text-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
               💡 Alternativa inteligente
             </div>
             <div className="grid lg:grid-cols-2 gap-6 p-6">
@@ -569,10 +584,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </div>
               <div>
                 <h3 className="text-xl lg:text-2xl font-bold text-foreground mb-2">{recommendation.secondary.name}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{recommendation.secondary.diferencial}</p>
+                <p className="text-base text-muted-foreground mb-3">{recommendation.secondary.diferencial}</p>
                 <ul className="space-y-1.5 mb-4">
                   {recommendation.secondary.strengths.slice(0, 3).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
+                    <li key={i} className="flex items-start gap-2 text-base">
                       <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <span className="text-foreground">{s}</span>
                     </li>
@@ -597,8 +612,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Comparação */}
         {recommendation.secondary && (
           <div className="bg-card border border-border rounded-xl p-5 mb-6">
-            <h3 className="font-bold text-foreground mb-3 text-sm">Comparação rápida</h3>
-            <div className="grid grid-cols-3 gap-2 text-xs lg:text-sm">
+            <h3 className="font-bold text-foreground mb-3 text-base">Comparação rápida</h3>
+            <div className="grid grid-cols-3 gap-2 text-base">
               <div></div>
               <div className="font-bold text-primary text-center">{recommendation.primary.name}</div>
               <div className="font-bold text-center">{recommendation.secondary.name}</div>
@@ -621,12 +636,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         {/* Educativo */}
         <div className="bg-muted rounded-xl p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária, do orçamento e do tipo de uso.
           </p>
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-base text-center text-muted-foreground">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
       </div>
