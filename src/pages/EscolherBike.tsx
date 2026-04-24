@@ -821,7 +821,7 @@ function OffersGroup({ leadId }: { leadId: string | null }) {
       <Button
         onClick={handleOffersGroup}
         data-event="offers_group_clicked"
-        data_event="offers_group_clicked"
+        {...{ data_event: "offers_group_clicked" }}
         className="text-base font-bold py-6 px-8 rounded-xl shadow-md shadow-primary/20"
       >
         Entrar no grupo de ofertas
