@@ -559,39 +559,38 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
       if (activeLeadId) {
         try {
-          const { error: upErr } = await supabase.from("quiz_leads").update(clickUpdate as any).eq("id", activeLeadId);
-          if (upErr) {
-            console.error("[quiz] Erro ao registrar clique. Fallback local.", upErr);
-            queuePendingUpdate(clickUpdate);
-          } else {
-            console.info("[quiz] Clique registrado com sucesso", bike.name);
-          }
-          supabase.from("quiz_events").insert({
-            lead_id: activeLeadId, event_name: eventName,
-            field_value: bike.id, field_label: bike.name,
-            payload: { position, link: bike.affiliateLink },
-          }).then(({ error }) => {
-            if (error) console.error("[quiz] Erro evento de clique", error);
-            else console.info("[quiz] Evento salvo com sucesso:", eventName);
+          const webhookPayload = {
+            event_name: eventName,
+            event_created_at: new Date().toISOString(),
+            lead_id: activeLeadId, name, phone,
+            ...answers, ...labels,
+            clicked_bike_name: bike.name,
+            clicked_bike_position: position,
+            clicked_bike_link: bike.affiliateLink,
+            recommended_bike_1: recommendation.primary.id,
+            recommended_bike_2: recommendation.secondary?.id ?? null,
+            conversion_status,
+            ...baseLeadData,
+          };
+          const result = await invokeQuizTrack({
+            action: "buy_click",
+            lead_id: activeLeadId,
+            lead: clickUpdate,
+            event: {
+              event_name: eventName,
+              field_value: bike.id,
+              field_label: bike.name,
+              payload: { position, link: bike.affiliateLink },
+            },
+            webhook_payload: webhookPayload,
           });
+          if (!result?.success) throw result;
+          console.info("[quiz] Clique registrado com sucesso", bike.name);
+          console.info("[quiz] Evento salvo com sucesso:", eventName);
         } catch (e) {
           console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
           queuePendingUpdate(clickUpdate);
         }
-
-        sendWebhook({
-          event_name: eventName,
-          event_created_at: new Date().toISOString(),
-          lead_id: activeLeadId, name, phone,
-          ...answers, ...labels,
-          clicked_bike_name: bike.name,
-          clicked_bike_position: position,
-          clicked_bike_link: bike.affiliateLink,
-          recommended_bike_1: recommendation.primary.id,
-          recommended_bike_2: recommendation.secondary?.id ?? null,
-          conversion_status,
-          ...baseLeadData,
-        }, activeLeadId);
       } else {
         queuePendingUpdate(clickUpdate);
         queuePendingEvent({
