@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Award, Briefcase, Bike, Mountain, Route, Wallet, Check, ShoppingCart, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { recommend, computeClusters, buildPersonalizedCopy, type Answers } from "@/lib/quiz-engine";
-import { BIKES } from "@/data/bikes";
+import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
 import {
   savePendingLead,
   queuePendingUpdate,
   queuePendingEvent,
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
-import logo96 from "@/assets/logo-96.webp";
-import logo192 from "@/assets/logo-192.webp";
+import { VitaleBrand } from "@/components/VitaleBrand";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
@@ -72,14 +70,6 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
   },
 ];
 
-const STEP_ICONS: Record<StepKey, any> = {
-  main_use: Briefcase,
-  daily_km_range: Route,
-  route_type: Mountain,
-  budget_range: Wallet,
-  had_ebike_before: Bike,
-};
-
 // ---------- Helpers ----------
 function detectDevice() {
   if (typeof window === "undefined") return { device_type: "", browser: "", operating_system: "" };
@@ -108,6 +98,7 @@ function sendWebhook(payload: any, leadId?: string | null) {
     try {
       const { error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
       if (error) throw error;
+      console.info("[quiz] Webhook enviado", payload?.event_name);
     } catch (e) {
       console.error("[quiz] Erro ao enviar webhook", e);
       if (leadId) {
@@ -117,14 +108,7 @@ function sendWebhook(payload: any, leadId?: string | null) {
             webhook_error_message: String((e as any)?.message ?? e).slice(0, 500),
             last_webhook_sent_at: new Date().toISOString(),
           } as any).eq("id", leadId);
-          await supabase.from("quiz_events").insert({
-            lead_id: leadId,
-            event_name: "webhook_error",
-            payload: { error: String((e as any)?.message ?? e), event: payload?.event_name },
-          });
-        } catch (logErr) {
-          console.error("[quiz] Erro ao registrar falha de webhook", logErr);
-        }
+        } catch {}
       }
     }
   })();
@@ -142,6 +126,8 @@ function maskPhone(value: string) {
   return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
 }
 
+const ABANDON_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
+
 // ---------- Page ----------
 type Phase = "intro" | "lead" | "quiz" | "processing" | "result";
 
@@ -154,12 +140,19 @@ export default function EscolherBike() {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [leadId, setLeadId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
   const recommendation = useMemo(() => {
     if (Object.keys(answers).length === 5) return recommend(answers as Answers);
     return null;
   }, [answers]);
 
   const baseLeadDataRef = useRef<any>({});
+  const abandonTimerRef = useRef<number | null>(null);
+  const abandonSentRef = useRef(false);
+  const completedRef = useRef(false);
+  // Refs sempre atualizadas para uso dentro do timer
+  const stateRef = useRef({ leadId: null as string | null, name: "", phone: "", stepIdx: 0, answers: {} as Partial<Answers>, labels: {} as Record<string, string> });
+  useEffect(() => { stateRef.current = { leadId, name, phone, stepIdx, answers, labels }; }, [leadId, name, phone, stepIdx, answers, labels]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -182,33 +175,85 @@ export default function EscolherBike() {
     }).catch(() => {});
   }, [phase, stepIdx, leadId]);
 
+  // ---------- Timer de abandono ----------
+  function fireAbandonment() {
+    if (abandonSentRef.current || completedRef.current) return;
+    const s = stateRef.current;
+    if (!s.name || !s.phone) return;
+    if (!s.leadId) return;
+    abandonSentRef.current = true;
+
+    const completion = Math.round(((s.stepIdx) / STEPS.length) * 100);
+    const lastField = STEPS[Math.max(0, s.stepIdx - 1)]?.key;
+
+    const update = {
+      abandonment_webhook_sent: true,
+      abandoned_at: new Date().toISOString(),
+    };
+    supabase.from("quiz_leads").update(update as any).eq("id", s.leadId).then(({ error }) => {
+      if (error) console.error("[quiz] Erro ao marcar abandono no banco", error);
+    });
+
+    sendWebhook({
+      event_name: "quiz_abandoned",
+      event_created_at: new Date().toISOString(),
+      lead_id: s.leadId,
+      name: s.name, phone: s.phone,
+      status: "incompleto",
+      current_step: s.stepIdx + 1,
+      completion_percentage: completion,
+      last_answer_field: lastField,
+      ...s.answers, ...s.labels,
+      ...baseLeadDataRef.current,
+      started_at: baseLeadDataRef.current.started_at,
+    }, s.leadId);
+
+    console.info("[quiz] Webhook de abandono disparado");
+  }
+
+  function resetAbandonTimer() {
+    if (abandonSentRef.current || completedRef.current) return;
+    if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
+    abandonTimerRef.current = window.setTimeout(fireAbandonment, ABANDON_TIMEOUT_MS);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
+    };
+  }, []);
+
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="container mx-auto px-6 py-12 lg:py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <img
-              src={logo96}
-              srcSet={`${logo96} 1x, ${logo192} 2x`}
-              width={96}
-              height={96}
-              alt="Vitale Mobilidade"
-              className="h-16 w-auto mx-auto mb-8"
-            />
+            <div className="mb-8">
+              <VitaleBrand size="md" />
+            </div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
               <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-5 text-foreground">
               Vai comprar uma bike elétrica?
             </h1>
-            <h2 className="text-xl lg:text-2xl text-muted-foreground mb-5 font-medium">
-              Descubra em 2 minutos qual modelo ideal e evite jogar dinheiro fora
+            <h2 className="text-xl lg:text-2xl text-muted-foreground mb-8 font-medium">
+              Descubra em 2 minutos qual modelo ideal
+              <br />
+              e evite jogar dinheiro fora
             </h2>
-            <p className="text-base text-muted-foreground mb-8">
-              A maioria das pessoas escolhe errado e só percebe depois.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
+
+            <Button
+              size="lg"
+              onClick={() => setPhase("lead")}
+              data-event="quiz_start_click"
+              className="text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all w-full sm:w-auto bg-primary hover:bg-primary/90"
+            >
+              Começar agora
+            </Button>
+
+            <div className="flex flex-wrap justify-center gap-3 mt-10 mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
                 <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
               </span>
@@ -216,15 +261,8 @@ export default function EscolherBike() {
                 <Award className="h-4 w-4 text-primary" /> +R$100 milhões vendidos
               </span>
             </div>
-            <Button
-              size="lg"
-              onClick={() => setPhase("lead")}
-              data-event="quiz_start_click"
-              className="text-base font-bold px-10 py-6 rounded-xl shadow-lg w-full sm:w-auto"
-            >
-              Começar agora
-            </Button>
-            <p className="text-base text-muted-foreground mt-4">
+
+            <p className="text-base text-muted-foreground">
               Recomendação gratuita baseada no seu uso, trajeto e orçamento.
             </p>
           </div>
@@ -241,15 +279,20 @@ export default function EscolherBike() {
       if (!valid || submitting) return;
       setSubmitting(true);
 
+      const startedAt = new Date().toISOString();
+      baseLeadDataRef.current.started_at = startedAt;
+
       const payload = {
         name: name.trim(),
         phone,
         status: "incompleto",
         current_step: 1,
         completion_percentage: 10,
-        started_at: new Date().toISOString(),
+        started_at: startedAt,
         ...baseLeadDataRef.current,
       };
+
+      console.info("[quiz] Tentando criar lead no banco");
 
       try {
         const { data, error } = await supabase
@@ -262,14 +305,16 @@ export default function EscolherBike() {
           console.error("[quiz] Erro ao criar lead no banco. Fallback local ativado.", error);
           savePendingLead(payload);
         } else {
+          console.info("[quiz] Lead criado com sucesso", data.id);
           setLeadId(data.id);
           supabase.from("quiz_events").insert({
             lead_id: data.id, event_name: "quiz_started", step: 0, payload,
           }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao registrar evento quiz_started", evErr);
+            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
+            else console.info("[quiz] Evento salvo com sucesso: quiz_started");
           });
           sendWebhook(
-            { event_name: "quiz_started", event_created_at: new Date().toISOString(), lead_id: data.id, ...payload },
+            { event_name: "quiz_started", event_created_at: startedAt, lead_id: data.id, ...payload },
             data.id
           );
         }
@@ -279,20 +324,17 @@ export default function EscolherBike() {
       } finally {
         setSubmitting(false);
         setPhase("quiz");
+        // Inicia o timer de abandono assim que entra no quiz
+        setTimeout(() => resetAbandonTimer(), 50);
       }
     };
 
     return (
       <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full">
-          <img
-            src={logo96}
-            srcSet={`${logo96} 1x, ${logo192} 2x`}
-            width={96}
-            height={96}
-            alt="Vitale Mobilidade"
-            className="h-12 w-auto mx-auto mb-6"
-          />
+          <div className="text-center mb-6">
+            <VitaleBrand size="sm" />
+          </div>
           <div className="mb-6">
             <Progress value={10} className="h-2" />
             <p className="text-base text-muted-foreground mt-2 text-center">Etapa inicial</p>
@@ -333,10 +375,11 @@ export default function EscolherBike() {
   // ---------- Quiz ----------
   if (phase === "quiz") {
     const step = STEPS[stepIdx];
-    const Icon = STEP_ICONS[step.key];
     const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
     const handleAnswer = async (opt: Option) => {
+      resetAbandonTimer();
+
       const newAnswers = { ...answers, [step.key]: opt.value };
       const newLabels = { ...labels, [`${step.key}_label`]: opt.label };
       setAnswers(newAnswers);
@@ -358,7 +401,6 @@ export default function EscolherBike() {
         field_name: step.key, field_value: opt.value, field_label: opt.label,
       };
 
-      // Tenta sincronizar lead pendente antes (não bloqueante para UX)
       let activeLeadId = leadId;
       if (!activeLeadId) {
         const synced = await retryPendingLeadSync().catch(() => null);
@@ -369,31 +411,24 @@ export default function EscolherBike() {
       }
 
       if (activeLeadId) {
+        console.info("[quiz] Tentando salvar resposta no banco", step.key);
         try {
           const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
           if (upErr) {
-            console.error("[quiz] Erro ao atualizar resposta no banco. Fallback local ativado.", upErr);
+            console.error("[quiz] Erro ao salvar resposta", upErr);
             queuePendingUpdate(updateData);
+          } else {
+            console.info("[quiz] Resposta salva com sucesso", step.key);
           }
           supabase.from("quiz_events").insert({ lead_id: activeLeadId, ...eventData }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao registrar evento de etapa", evErr);
+            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
+            else console.info("[quiz] Evento salvo com sucesso: quiz_step_completed", step.key);
           });
         } catch (e) {
           console.error("[quiz] Exceção em update de resposta. Fallback local ativado.", e);
           queuePendingUpdate(updateData);
         }
-
-        sendWebhook({
-          event_name: "quiz_step_completed",
-          event_created_at: new Date().toISOString(),
-          lead_id: activeLeadId, name, phone,
-          ...newAnswers, ...newLabels,
-          last_answer_field: step.key, last_answer_value: opt.value, last_answer_label: opt.label,
-          current_step: stepIdx + 2, completion_percentage: completion, status: "incompleto",
-          ...baseLeadDataRef.current,
-        }, activeLeadId);
       } else {
-        // Sem lead_id: salvar tudo localmente
         queuePendingUpdate(updateData);
         queuePendingEvent(eventData);
       }
@@ -409,6 +444,9 @@ export default function EscolherBike() {
     return (
       <main className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8 lg:py-12">
+          <div className="flex justify-center mb-6">
+            <VitaleBrand size="sm" />
+          </div>
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
@@ -420,8 +458,8 @@ export default function EscolherBike() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 lg:p-10 shadow-sm">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-4">
-              <Icon className="h-6 w-6 text-primary" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-5">
+              <span className="text-base font-bold text-primary">Vitale Mobilidade</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-bold mb-8 text-foreground">{step.title}</h2>
             <div className="space-y-3">
@@ -465,10 +503,13 @@ export default function EscolherBike() {
 
   // ---------- Result ----------
   async function finishQuiz(finalAnswers: Answers, finalLabels: Record<string, string>) {
+    completedRef.current = true;
+    if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
+
     const rec = recommend(finalAnswers);
     const clusters = computeClusters(finalAnswers);
-    const reasonPrimary = buildPersonalizedCopy(finalAnswers, true);
-    const reasonSecondary = rec.secondary ? buildPersonalizedCopy(finalAnswers, false) : null;
+    const reasonPrimary = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
+    const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
 
     const updateData: any = {
       status: "completo",
@@ -487,10 +528,9 @@ export default function EscolherBike() {
       recommended_bike_2_link: rec.secondary?.affiliateLink ?? null,
       recommendation_reason: reasonPrimary,
       raw_answers_json: finalAnswers,
-      raw_recommendation_json: { primary: rec.primary.id, secondary: rec.secondary?.id, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore },
+      raw_recommendation_json: { primary: rec.primary.id, secondary: rec.secondary?.id, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore, budgetLimited: rec.budgetLimited },
     };
 
-    // Tenta sincronizar antes de finalizar
     let activeLeadId = leadId;
     if (!activeLeadId) {
       const synced = await retryPendingLeadSync().catch(() => null);
@@ -498,18 +538,27 @@ export default function EscolherBike() {
     }
 
     if (activeLeadId) {
+      console.info("[quiz] Salvando resultado final no banco");
       try {
         const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
         if (upErr) {
-          console.error("[quiz] Erro ao salvar resultado final no banco. Fallback local ativado.", upErr);
+          console.error("[quiz] Erro ao salvar resultado final no banco. Fallback local.", upErr);
           queuePendingUpdate(updateData);
+        } else {
+          console.info("[quiz] Resultado final salvo com sucesso");
         }
         supabase.from("quiz_events").insert({
           lead_id: activeLeadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
-        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento quiz_completed", error); });
+        }).then(({ error }) => {
+          if (error) console.error("[quiz] Erro ao salvar evento quiz_completed", error);
+          else console.info("[quiz] Evento salvo com sucesso: quiz_completed");
+        });
         supabase.from("quiz_events").insert({
           lead_id: activeLeadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
-        }).then(({ error }) => { if (error) console.error("[quiz] Erro evento recommendation_generated", error); });
+        }).then(({ error }) => {
+          if (error) console.error("[quiz] Erro evento recommendation_generated", error);
+          else console.info("[quiz] Evento salvo com sucesso: recommendation_generated");
+        });
       } catch (e) {
         console.error("[quiz] Exceção ao finalizar quiz. Fallback local.", e);
         queuePendingUpdate(updateData);
@@ -531,6 +580,7 @@ export default function EscolherBike() {
         recommended_bike_2_score: rec.secondaryScore ?? null,
         recommended_bike_2_reason: reasonSecondary,
         recommended_bike_2_link: rec.secondary?.affiliateLink ?? null,
+        conversion_status: "sem_clique",
         recommendation_reason: reasonPrimary,
         status: "completo", completion_percentage: 100,
         completed_at: new Date().toISOString(),
@@ -561,8 +611,8 @@ export default function EscolherBike() {
 
 // ---------- Result component ----------
 function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
-  const reasonPrimary = buildPersonalizedCopy(answers, true);
-  const reasonSecondary = recommendation.secondary ? buildPersonalizedCopy(answers, false) : null;
+  const reasonPrimary = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
+  const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
     // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
@@ -577,9 +627,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       clicked_bike_position: position,
       clicked_bike_link: bike.affiliateLink,
       clicked_at: new Date().toISOString(),
+      buy_click_count: undefined as any,
     };
 
-    // Disparar tudo em background — não bloquear
+    // Background — não bloqueia
     (async () => {
       let activeLeadId = leadId;
       if (!activeLeadId) {
@@ -591,14 +642,19 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         try {
           const { error: upErr } = await supabase.from("quiz_leads").update(clickUpdate as any).eq("id", activeLeadId);
           if (upErr) {
-            console.error("[quiz] Erro ao registrar clique. Fallback local ativado.", upErr);
+            console.error("[quiz] Erro ao registrar clique. Fallback local.", upErr);
             queuePendingUpdate(clickUpdate);
+          } else {
+            console.info("[quiz] Clique registrado com sucesso", bike.name);
           }
           supabase.from("quiz_events").insert({
             lead_id: activeLeadId, event_name: eventName,
             field_value: bike.id, field_label: bike.name,
             payload: { position, link: bike.affiliateLink },
-          }).then(({ error }) => { if (error) console.error("[quiz] Erro evento de clique", error); });
+          }).then(({ error }) => {
+            if (error) console.error("[quiz] Erro evento de clique", error);
+            else console.info("[quiz] Evento salvo com sucesso:", eventName);
+          });
         } catch (e) {
           console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
           queuePendingUpdate(clickUpdate);
@@ -612,6 +668,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           clicked_bike_name: bike.name,
           clicked_bike_position: position,
           clicked_bike_link: bike.affiliateLink,
+          recommended_bike_1: recommendation.primary.id,
+          recommended_bike_2: recommendation.secondary?.id ?? null,
           conversion_status,
           ...baseLeadData,
         }, activeLeadId);
@@ -637,24 +695,19 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8 lg:py-12">
+        <div className="flex justify-center mb-6">
+          <VitaleBrand size="sm" />
+        </div>
+
+        {/* 1. Título + 2. Subtítulo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-3">Sua bike elétrica ideal está aqui</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Com base no seu uso, trajeto, distância diária e orçamento, selecionamos as opções que fazem mais sentido para você.
+          <p className="text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+            Com base no seu perfil, selecionamos as opções que fazem mais sentido para você.
           </p>
         </div>
 
-        {/* Perfil */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-8">
-          {profileSummary.map((p, i) => (
-            <div key={i} className="bg-muted rounded-lg p-3 text-center">
-              <div className="text-base text-muted-foreground">{p.label}</div>
-              <div className="text-base font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Recomendação principal */}
+        {/* 3. Recomendação principal */}
         <div className="bg-card border-2 border-primary rounded-2xl overflow-hidden shadow-lg mb-6">
           <div className="bg-primary text-primary-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
             ⭐ Melhor escolha para o seu perfil
@@ -670,7 +723,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             </div>
             <div>
               <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{recommendation.primary.name}</h2>
-              <p className="text-muted-foreground mb-4">{recommendation.primary.shortDescription}</p>
+              <p className="text-base text-muted-foreground mb-4">{recommendation.primary.shortDescription}</p>
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-base">
@@ -691,7 +744,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 data-bike-name={recommendation.primary.name}
                 data-bike-position="principal"
                 size="lg"
-                className="w-full text-base font-bold py-6 rounded-xl shadow-lg"
+                className="w-full text-base font-bold py-6 rounded-xl shadow-lg shadow-primary/30"
               >
                 <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
               </Button>
@@ -702,13 +755,13 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         </div>
 
-        {/* Segunda opção */}
+        {/* 4. Alternativa inteligente */}
         {recommendation.secondary && (
-          <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
-            <div className="bg-muted text-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
+          <div className="bg-card border-2 border-primary/40 rounded-2xl overflow-hidden mb-6 shadow-md">
+            <div className="bg-primary/15 text-primary px-4 py-2 text-base font-bold inline-block rounded-br-xl">
               💡 Alternativa inteligente
             </div>
-            <div className="grid lg:grid-cols-2 gap-6 p-6">
+            <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-8">
               <div className="bg-muted rounded-xl p-4 flex items-center justify-center aspect-[4/3]">
                 <img
                   src={recommendation.secondary.image}
@@ -718,16 +771,22 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 />
               </div>
               <div>
-                <h3 className="text-xl lg:text-2xl font-bold text-foreground mb-2">{recommendation.secondary.name}</h3>
-                <p className="text-base text-muted-foreground mb-3">{recommendation.secondary.diferencial}</p>
-                <ul className="space-y-1.5 mb-4">
-                  {recommendation.secondary.strengths.slice(0, 3).map((s: string, i: number) => (
+                <h3 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{recommendation.secondary.name}</h3>
+                <p className="text-base text-muted-foreground mb-4">{recommendation.secondary.shortDescription}</p>
+                <ul className="space-y-2 mb-5">
+                  {recommendation.secondary.strengths.slice(0, 4).map((s: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-base">
                       <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <span className="text-foreground">{s}</span>
                     </li>
                   ))}
                 </ul>
+                {reasonSecondary && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5">
+                    <div className="text-base font-bold text-primary mb-1">Por que essa também faz sentido</div>
+                    <p className="text-base text-foreground">{reasonSecondary}</p>
+                  </div>
+                )}
                 <Button
                   onClick={() => handleBuy(recommendation.secondary, "segunda_opcao")}
                   data-event="secondary_option_clicked"
@@ -735,16 +794,32 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                   data-bike-position="segunda_opcao"
                   variant="outline"
                   size="lg"
-                  className="w-full font-bold py-5 rounded-xl border-2"
+                  className="w-full font-bold py-6 rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                 >
                   Ver essa opção
                 </Button>
+                <p className="text-base text-center text-muted-foreground mt-2">
+                  Você será direcionado para o Mercado Livre com o link oficial de compra.
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Comparação */}
+        {/* 5. Seu perfil analisado */}
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-foreground mb-4 text-center">Seu perfil analisado</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            {profileSummary.map((p, i) => (
+              <div key={i} className="bg-muted rounded-lg p-3 text-center">
+                <div className="text-base text-muted-foreground">{p.label}</div>
+                <div className="text-base font-semibold text-foreground mt-0.5 truncate">{p.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 6. Comparação rápida */}
         {recommendation.secondary && (
           <div className="bg-card border border-border rounded-xl p-5 mb-6">
             <h3 className="font-bold text-foreground mb-3 text-base">Comparação rápida</h3>
@@ -768,7 +843,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Educativo */}
+        {/* 7. Bloco educativo */}
         <div className="bg-muted rounded-xl p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
           <p className="text-base text-muted-foreground">
@@ -776,6 +851,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </p>
         </div>
 
+        {/* 8. Aviso ML */}
         <p className="text-base text-center text-muted-foreground">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>

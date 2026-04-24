@@ -60,6 +60,8 @@ export type Database = {
       }
       quiz_leads: {
         Row: {
+          abandoned_at: string | null
+          abandonment_webhook_sent: boolean
           browser: string | null
           budget_cluster: string | null
           budget_range: string | null
@@ -123,6 +125,8 @@ export type Database = {
           webhook_error_message: string | null
         }
         Insert: {
+          abandoned_at?: string | null
+          abandonment_webhook_sent?: boolean
           browser?: string | null
           budget_cluster?: string | null
           budget_range?: string | null
@@ -186,6 +190,8 @@ export type Database = {
           webhook_error_message?: string | null
         }
         Update: {
+          abandoned_at?: string | null
+          abandonment_webhook_sent?: boolean
           browser?: string | null
           budget_cluster?: string | null
           budget_range?: string | null
