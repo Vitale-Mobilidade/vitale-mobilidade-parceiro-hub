@@ -1,0 +1,152 @@
+import { BIKES, type Bike } from "@/data/bikes";
+
+export type Answers = {
+  main_use: string;
+  daily_km_range: string;
+  route_type: string;
+  budget_range: string;
+  had_ebike_before: string;
+};
+
+export type Labels = {
+  main_use_label: string;
+  daily_km_range_label: string;
+  route_type_label: string;
+  budget_range_label: string;
+  had_ebike_before_label: string;
+};
+
+export type Clusters = {
+  usage_cluster: string;
+  distance_cluster: string;
+  route_cluster: string;
+  budget_cluster: string;
+  experience_cluster: string;
+  intent_cluster: string;
+  recommendation_profile: string;
+};
+
+export function computeClusters(a: Answers): Clusters {
+  const usage_cluster =
+    a.main_use === "trabalho_delivery_renda" ? "uso_profissional" :
+    a.main_use === "locomocao_diaria" ? "uso_mobilidade" : "uso_lazer";
+
+  const distance_cluster =
+    a.daily_km_range === "ate_10_km" ? "baixa_distancia" :
+    a.daily_km_range === "10_25_km" ? "media_distancia" :
+    a.daily_km_range === "25_40_km" ? "alta_distancia" : "distancia_intensa";
+
+  const route_cluster =
+    a.route_type === "plano" ? "baixa_exigencia" :
+    a.route_type === "misto" ? "media_exigencia" : "alta_exigencia";
+
+  const budget_cluster =
+    a.budget_range === "ate_7000" ? "entrada" :
+    a.budget_range === "7000_8000" ? "intermediario" :
+    a.budget_range === "8000_10000" ? "avancado" : "premium";
+
+  const experience_cluster = a.had_ebike_before === "sim" ? "comprador_experiente" : "primeira_compra";
+
+  let intent_cluster = "intencao_padrao";
+  if (a.main_use === "trabalho_delivery_renda" && a.daily_km_range === "mais_40_km") intent_cluster = "alta_intencao_uso_profissional";
+  else if (a.main_use === "trabalho_delivery_renda" && a.daily_km_range === "25_40_km") intent_cluster = "media_alta_intencao_uso_profissional";
+  else if (a.main_use === "locomocao_diaria" && (a.budget_range === "8000_10000" || a.budget_range === "acima_10000")) intent_cluster = "alta_intencao_mobilidade";
+  else if (a.main_use === "lazer_passeio" && (a.budget_range === "8000_10000" || a.budget_range === "acima_10000")) intent_cluster = "alta_intencao_lazer";
+
+  let recommendation_profile = "urbano_equilibrado";
+  if (a.main_use === "trabalho_delivery_renda" && (a.daily_km_range === "mais_40_km" || a.daily_km_range === "25_40_km")) recommendation_profile = "profissional_alta_autonomia";
+  else if (a.route_type === "muitas_subidas") recommendation_profile = "subidas_potencia";
+  else if (a.main_use === "lazer_passeio") recommendation_profile = "lazer_versatil";
+  else if (a.budget_range === "ate_7000") recommendation_profile = "entrada_custo_beneficio";
+  else if (a.budget_range === "acima_10000") recommendation_profile = "premium_performance";
+
+  return { usage_cluster, distance_cluster, route_cluster, budget_cluster, experience_cluster, intent_cluster, recommendation_profile };
+}
+
+function scoreBike(bike: Bike, a: Answers): number {
+  let s = 0;
+
+  // Uso
+  if (a.main_use === "trabalho_delivery_renda") {
+    if (bike.id === "v8_pro_s") s += 50;
+    if (["v40_pro", "v10_max", "gt2000"].includes(bike.id)) s += 25;
+  }
+  if (a.main_use === "locomocao_diaria") {
+    if (["ft03", "v9_max", "v10_max", "v40_pro", "v8_pro"].includes(bike.id)) s += 30;
+  }
+  if (a.main_use === "lazer_passeio") {
+    if (["gt20", "v8_pro", "v40_pro", "gt2000"].includes(bike.id)) s += 30;
+  }
+
+  // Quilometragem
+  if (a.daily_km_range === "ate_10_km" && ["ft03", "v9_max", "v8_pro"].includes(bike.id)) s += 15;
+  if (a.daily_km_range === "10_25_km" && ["v9_max", "v10_max", "v40_pro", "v8_pro"].includes(bike.id)) s += 18;
+  if (a.daily_km_range === "25_40_km" && ["v40_pro", "v8_pro_s", "gt2000", "v10_max"].includes(bike.id)) s += 22;
+  if (a.daily_km_range === "mais_40_km") {
+    if (bike.id === "v8_pro_s") s += 40;
+    if (["gt2000", "v40_pro"].includes(bike.id)) s += 20;
+  }
+
+  // Trajeto
+  if (a.route_type === "plano" && ["ft03", "v9_max", "v8_pro"].includes(bike.id)) s += 12;
+  if (a.route_type === "misto" && ["v10_max", "v40_pro", "v8_pro", "gt20"].includes(bike.id)) s += 15;
+  if (a.route_type === "muitas_subidas") {
+    if (["v40_pro", "v8_pro_s"].includes(bike.id)) s += 25;
+    if (["v10_max", "gt2000"].includes(bike.id)) s += 18;
+    if (bike.id === "ft03") s -= 10;
+  }
+
+  // Orçamento (aderência forte)
+  if (bike.budgetTiers.includes(a.budget_range as any)) s += 30;
+  else {
+    // Penalidade se estiver muito fora
+    const order = ["ate_7000", "7000_8000", "8000_10000", "acima_10000"];
+    const userIdx = order.indexOf(a.budget_range);
+    const minBike = Math.min(...bike.budgetTiers.map(t => order.indexOf(t)));
+    const maxBike = Math.max(...bike.budgetTiers.map(t => order.indexOf(t)));
+    if (userIdx < minBike) s -= 25 * (minBike - userIdx); // acima do orçamento
+    else if (userIdx > maxBike) s -= 5 * (userIdx - maxBike); // abaixo (subdimensionada)
+  }
+
+  return s;
+}
+
+export function recommend(a: Answers): { primary: Bike; secondary?: Bike; primaryScore: number; secondaryScore?: number } {
+  const ranked = BIKES.map(b => ({ bike: b, score: scoreBike(b, a) }))
+    .sort((x, y) => y.score - x.score);
+
+  const primary = ranked[0];
+  // Segunda opção: melhor diferente que não seja praticamente a mesma
+  const secondary = ranked.find((r, i) => i > 0 && r.score > 0 && r.bike.id !== primary.bike.id);
+
+  return {
+    primary: primary.bike,
+    primaryScore: primary.score,
+    secondary: secondary?.bike,
+    secondaryScore: secondary?.score,
+  };
+}
+
+export function buildPersonalizedCopy(a: Answers, isPrimary: boolean): string {
+  const parts: string[] = [];
+
+  if (a.main_use === "trabalho_delivery_renda" && (a.daily_km_range === "mais_40_km" || a.daily_km_range === "25_40_km")) {
+    parts.push("Você vai usar a bike para trabalho e roda bastante por dia. A recomendação prioriza autonomia, resistência e menor risco de ficar sem bateria no meio da rotina.");
+  } else if (a.main_use === "locomocao_diaria") {
+    parts.push("Para deslocamento diário, a melhor escolha equilibra autonomia, conforto e segurança, sem exagerar no que você não precisa.");
+  } else if (a.main_use === "lazer_passeio") {
+    parts.push("Para lazer e passeio, a escolha ideal entrega conforto, estabilidade e prazer de uso, com estrutura robusta e boa autonomia.");
+  }
+
+  if (a.route_type === "muitas_subidas") {
+    parts.push("Como seu trajeto tem muitas subidas, priorizamos motor forte, estrutura adequada e freios confiáveis. Aqui, economizar demais pode sair caro.");
+  }
+
+  if (a.had_ebike_before === "nao" && isPrimary) {
+    parts.push("Como pode ser sua primeira bike elétrica, evitamos modelos que parecem bons no papel mas não fazem sentido para seu uso real.");
+  } else if (a.had_ebike_before === "sim" && isPrimary) {
+    parts.push("Como você já teve experiência, a recomendação considera critérios mais técnicos: autonomia, motor, freios e desempenho em trajetos exigentes.");
+  }
+
+  return parts.join(" ");
+}
