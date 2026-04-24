@@ -764,7 +764,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* 7. Bloco educativo */}
+        {/* 7. Grupo de ofertas */}
+        <OffersGroup leadId={leadId} />
+
+        {/* 8. Bloco educativo */}
         <div className="bg-muted rounded-xl p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
           <p className="text-base text-muted-foreground">
@@ -772,12 +775,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </p>
         </div>
 
-        {/* 8. Aviso ML */}
+        {/* 9. Aviso ML */}
         <p className="text-base text-center text-muted-foreground mb-10">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
 
-        {/* 9. Ações secundárias */}
+        {/* 10. Ações secundárias */}
         <SecondaryActions
           recommendation={recommendation}
           leadId={leadId}
