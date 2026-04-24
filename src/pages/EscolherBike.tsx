@@ -564,38 +564,66 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonPrimary = buildPersonalizedCopy(answers, true);
   const reasonSecondary = recommendation.secondary ? buildPersonalizedCopy(answers, false) : null;
 
-  const handleBuy = async (bike: any, position: "principal" | "segunda_opcao") => {
-    if (leadId) {
-      const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
-      const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
-
-      await supabase.from("quiz_leads").update({
-        conversion_status,
-        clicked_bike_name: bike.name,
-        clicked_bike_position: position,
-        clicked_bike_link: bike.affiliateLink,
-        clicked_at: new Date().toISOString(),
-      }).eq("id", leadId);
-
-      await supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: eventName,
-        field_value: bike.id, field_label: bike.name,
-        payload: { position, link: bike.affiliateLink },
-      });
-
-      sendWebhook({
-        event_name: eventName,
-        event_created_at: new Date().toISOString(),
-        lead_id: leadId, name, phone,
-        ...answers, ...labels,
-        clicked_bike_name: bike.name,
-        clicked_bike_position: position,
-        clicked_bike_link: bike.affiliateLink,
-        conversion_status,
-        ...baseLeadData,
-      });
-    }
+  const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
+    // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
     window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
+
+    const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
+    const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
+
+    const clickUpdate = {
+      conversion_status,
+      clicked_bike_name: bike.name,
+      clicked_bike_position: position,
+      clicked_bike_link: bike.affiliateLink,
+      clicked_at: new Date().toISOString(),
+    };
+
+    // Disparar tudo em background — não bloquear
+    (async () => {
+      let activeLeadId = leadId;
+      if (!activeLeadId) {
+        const synced = await retryPendingLeadSync().catch(() => null);
+        if (synced) activeLeadId = synced;
+      }
+
+      if (activeLeadId) {
+        try {
+          const { error: upErr } = await supabase.from("quiz_leads").update(clickUpdate as any).eq("id", activeLeadId);
+          if (upErr) {
+            console.error("[quiz] Erro ao registrar clique. Fallback local ativado.", upErr);
+            queuePendingUpdate(clickUpdate);
+          }
+          supabase.from("quiz_events").insert({
+            lead_id: activeLeadId, event_name: eventName,
+            field_value: bike.id, field_label: bike.name,
+            payload: { position, link: bike.affiliateLink },
+          }).then(({ error }) => { if (error) console.error("[quiz] Erro evento de clique", error); });
+        } catch (e) {
+          console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
+          queuePendingUpdate(clickUpdate);
+        }
+
+        sendWebhook({
+          event_name: eventName,
+          event_created_at: new Date().toISOString(),
+          lead_id: activeLeadId, name, phone,
+          ...answers, ...labels,
+          clicked_bike_name: bike.name,
+          clicked_bike_position: position,
+          clicked_bike_link: bike.affiliateLink,
+          conversion_status,
+          ...baseLeadData,
+        }, activeLeadId);
+      } else {
+        queuePendingUpdate(clickUpdate);
+        queuePendingEvent({
+          event_name: eventName,
+          field_value: bike.id, field_label: bike.name,
+          payload: { position, link: bike.affiliateLink },
+        });
+      }
+    })();
   };
 
   const profileSummary = [
