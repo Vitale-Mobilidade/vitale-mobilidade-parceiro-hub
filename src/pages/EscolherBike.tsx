@@ -795,15 +795,53 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 // ---------- Constants for secondary actions ----------
 const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/COLOCAR_LINK_DO_GRUPO_AQUI";
 
+function OffersGroup({ leadId }: { leadId: string | null }) {
+  const handleOffersGroup = () => {
+    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "offers_group_clicked" } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "offers_group_clicked" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", error }));
+    }
+  };
+
+  return (
+    <section className="bg-primary/10 border border-primary/30 rounded-xl p-6 lg:p-8 mb-6 text-center shadow-sm">
+      <h3 className="text-2xl font-bold text-foreground mb-2">Vitale Mobilidade Ofertas</h3>
+      <p className="text-lg font-medium text-foreground mb-4">Não perca boas oportunidades de bikes elétricas.</p>
+      <p className="text-base text-muted-foreground max-w-3xl mx-auto mb-4">
+        Entre no grupo para receber curadoria da Vitale Mobilidade com modelos que valem a pena, alertas de boas condições e oportunidades que podem fazer sentido para o seu perfil.
+      </p>
+      <p className="text-base text-foreground max-w-3xl mx-auto mb-6">
+        As melhores oportunidades costumam mudar rápido. O grupo ajuda você a acompanhar boas opções sem precisar pesquisar tudo do zero.
+      </p>
+      <Button
+        onClick={handleOffersGroup}
+        data-event="offers_group_clicked"
+        data_event="offers_group_clicked"
+        className="text-base font-bold py-6 px-8 rounded-xl shadow-md shadow-primary/20"
+      >
+        Entrar no grupo de ofertas
+      </Button>
+      <p className="text-base text-muted-foreground mt-4">
+        Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
+      </p>
+    </section>
+  );
+}
+
 function SecondaryActions({ recommendation, leadId, name, phone }: any) {
   const handleRestart = () => {
     if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "quiz_restart_clicked",
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento quiz_restart_clicked", error);
-        else console.info("[quiz] Evento salvo: quiz_restart_clicked");
-      });
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked" } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_restart_clicked" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", error }));
     }
     // Volta para intro mantendo dados já salvos no banco intactos
     window.location.href = "/escolherbike";
@@ -820,25 +858,12 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "result_shared_whatsapp",
-        payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id },
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento result_shared_whatsapp", error);
-        else console.info("[quiz] Evento salvo: result_shared_whatsapp");
-      });
-    }
-  };
-
-  const handleOffersGroup = () => {
-    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
-    if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "offers_group_clicked",
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento offers_group_clicked", error);
-        else console.info("[quiz] Evento salvo: offers_group_clicked");
-      });
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "result_shared_whatsapp", payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id } } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "result_shared_whatsapp" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", error }));
     }
   };
 
@@ -854,7 +879,7 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
           data-event="quiz_restart_clicked"
           className="w-full text-base font-medium py-5"
         >
-          Refazer recomendação
+          Faça o quiz novamente
         </Button>
         <Button
           onClick={handleShareWhatsApp}
@@ -866,24 +891,6 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
         </Button>
       </div>
 
-      {/* Grupo de ofertas — discreto */}
-      <div className="bg-muted/60 border border-border rounded-xl p-5 max-w-2xl mx-auto text-center">
-        <h4 className="text-base font-bold text-foreground mb-1">Vitale Mobilidade Ofertas</h4>
-        <p className="text-base text-muted-foreground mb-4">
-          Receba curadoria de bikes elétricas, alertas de boas oportunidades e modelos que fazem sentido para diferentes perfis de uso.
-        </p>
-        <Button
-          onClick={handleOffersGroup}
-          variant="secondary"
-          data-event="offers_group_clicked"
-          className="text-base font-medium"
-        >
-          Entrar no grupo de ofertas
-        </Button>
-        <p className="text-base text-muted-foreground mt-3">
-          Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
-        </p>
-      </div>
     </section>
   );
 }
