@@ -344,22 +344,49 @@ export default function EscolherBike() {
         last_interaction_at: new Date().toISOString(),
       };
 
-      if (leadId) {
-        await supabase.from("quiz_leads").update(updateData).eq("id", leadId);
-        await supabase.from("quiz_events").insert({
-          lead_id: leadId, event_name: "quiz_step_completed", step: stepIdx + 1,
-          field_name: step.key, field_value: opt.value, field_label: opt.label,
-        });
+      const eventData = {
+        event_name: "quiz_step_completed", step: stepIdx + 1,
+        field_name: step.key, field_value: opt.value, field_label: opt.label,
+      };
+
+      // Tenta sincronizar lead pendente antes (não bloqueante para UX)
+      let activeLeadId = leadId;
+      if (!activeLeadId) {
+        const synced = await retryPendingLeadSync().catch(() => null);
+        if (synced) {
+          activeLeadId = synced;
+          setLeadId(synced);
+        }
+      }
+
+      if (activeLeadId) {
+        try {
+          const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
+          if (upErr) {
+            console.error("[quiz] Erro ao atualizar resposta no banco. Fallback local ativado.", upErr);
+            queuePendingUpdate(updateData);
+          }
+          supabase.from("quiz_events").insert({ lead_id: activeLeadId, ...eventData }).then(({ error: evErr }) => {
+            if (evErr) console.error("[quiz] Erro ao registrar evento de etapa", evErr);
+          });
+        } catch (e) {
+          console.error("[quiz] Exceção em update de resposta. Fallback local ativado.", e);
+          queuePendingUpdate(updateData);
+        }
 
         sendWebhook({
           event_name: "quiz_step_completed",
           event_created_at: new Date().toISOString(),
-          lead_id: leadId, name, phone,
+          lead_id: activeLeadId, name, phone,
           ...newAnswers, ...newLabels,
           last_answer_field: step.key, last_answer_value: opt.value, last_answer_label: opt.label,
           current_step: stepIdx + 2, completion_percentage: completion, status: "incompleto",
           ...baseLeadDataRef.current,
-        });
+        }, activeLeadId);
+      } else {
+        // Sem lead_id: salvar tudo localmente
+        queuePendingUpdate(updateData);
+        queuePendingEvent(eventData);
       }
 
       if (isLast) {
