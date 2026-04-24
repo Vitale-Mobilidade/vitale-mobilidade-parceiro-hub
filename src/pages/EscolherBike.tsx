@@ -212,9 +212,8 @@ export default function EscolherBike() {
   }
 
   function resetAbandonTimer() {
-    if (abandonSentRef.current || completedRef.current) return;
-    if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
-    abandonTimerRef.current = window.setTimeout(fireAbandonment, ABANDON_TIMEOUT_MS);
+    // ⏸️ Webhook de abandono pausado temporariamente até garantirmos 100% de confiabilidade no fluxo completo.
+    return;
   }
 
   useEffect(() => {
