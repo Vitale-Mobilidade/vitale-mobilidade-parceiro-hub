@@ -135,12 +135,7 @@ export default function EscolherBike() {
   }, [answers]);
 
   const baseLeadDataRef = useRef<any>({});
-  const abandonTimerRef = useRef<number | null>(null);
-  const abandonSentRef = useRef(false);
   const completedRef = useRef(false);
-  // Refs sempre atualizadas para uso dentro do timer
-  const stateRef = useRef({ leadId: null as string | null, name: "", phone: "", stepIdx: 0, answers: {} as Partial<Answers>, labels: {} as Record<string, string> });
-  useEffect(() => { stateRef.current = { leadId, name, phone, stepIdx, answers, labels }; }, [leadId, name, phone, stepIdx, answers, labels]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -162,53 +157,6 @@ export default function EscolherBike() {
       if (syncedId) setLeadId(syncedId);
     }).catch(() => {});
   }, [phase, stepIdx, leadId]);
-
-  // ---------- Timer de abandono ----------
-  function fireAbandonment() {
-    if (abandonSentRef.current || completedRef.current) return;
-    const s = stateRef.current;
-    if (!s.name || !s.phone) return;
-    if (!s.leadId) return;
-    abandonSentRef.current = true;
-
-    const completion = Math.round(((s.stepIdx) / STEPS.length) * 100);
-    const lastField = STEPS[Math.max(0, s.stepIdx - 1)]?.key;
-
-    const update = {
-      abandonment_webhook_sent: true,
-      abandoned_at: new Date().toISOString(),
-    };
-    supabase.from("quiz_leads").update(update as any).eq("id", s.leadId).then(({ error }) => {
-      if (error) console.error("[quiz] Erro ao marcar abandono no banco", error);
-    });
-
-    sendWebhook({
-      event_name: "quiz_abandoned",
-      event_created_at: new Date().toISOString(),
-      lead_id: s.leadId,
-      name: s.name, phone: s.phone,
-      status: "incompleto",
-      current_step: s.stepIdx + 1,
-      completion_percentage: completion,
-      last_answer_field: lastField,
-      ...s.answers, ...s.labels,
-      ...baseLeadDataRef.current,
-      started_at: baseLeadDataRef.current.started_at,
-    }, s.leadId);
-
-    console.info("[quiz] Webhook de abandono disparado");
-  }
-
-  function resetAbandonTimer() {
-    // ⏸️ Webhook de abandono pausado temporariamente até garantirmos 100% de confiabilidade no fluxo completo.
-    return;
-  }
-
-  useEffect(() => {
-    return () => {
-      if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
-    };
-  }, []);
 
   // ---------- Intro ----------
   if (phase === "intro") {
