@@ -791,11 +791,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                   data-event="secondary_option_clicked"
                   data-bike-name={recommendation.secondary.name}
                   data-bike-position="segunda_opcao"
-                  variant="outline"
                   size="lg"
-                  className="w-full font-bold py-6 rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  className="w-full text-base font-bold py-6 rounded-xl shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  Ver essa opção
+                  <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
                 </Button>
                 <p className="text-base text-center text-muted-foreground mt-2">
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
