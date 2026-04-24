@@ -293,8 +293,6 @@ export default function EscolherBike() {
     const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
     const handleAnswer = async (opt: Option) => {
-      resetAbandonTimer();
-
       const newAnswers = { ...answers, [step.key]: opt.value };
       const newLabels = { ...labels, [`${step.key}_label`]: opt.label };
       setAnswers(newAnswers);
@@ -326,22 +324,18 @@ export default function EscolherBike() {
       }
 
       if (activeLeadId) {
-        console.info("[quiz] Tentando salvar resposta no banco", step.key);
+        console.info("[quiz] Tentando salvar resposta no banco:", { campo: step.key, valor: opt.value });
         try {
-          const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
-          if (upErr) {
-            console.error("[quiz] Erro ao salvar resposta", upErr);
-            queuePendingUpdate(updateData);
-          } else {
-            console.info("[quiz] Resposta salva com sucesso", step.key);
-          }
-          supabase.from("quiz_events").insert({ lead_id: activeLeadId, ...eventData }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
-            else console.info("[quiz] Evento salvo com sucesso: quiz_step_completed", step.key);
-          });
+          console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_step_completed" });
+          const result = await invokeQuizTrack({ action: "save_answer", lead_id: activeLeadId, lead: updateData, event: eventData });
+          if (!result?.success) throw result;
+          console.info("[quiz] Resposta salva com sucesso:", { campo: step.key, valor: opt.value });
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_step_completed" });
         } catch (e) {
-          console.error("[quiz] Exceção em update de resposta. Fallback local ativado.", e);
+          console.error("[quiz] Erro ao salvar resposta:", e);
+          console.error("[quiz] Erro ao salvar evento:", e);
           queuePendingUpdate(updateData);
+          queuePendingEvent(eventData);
         }
       } else {
         queuePendingUpdate(updateData);
