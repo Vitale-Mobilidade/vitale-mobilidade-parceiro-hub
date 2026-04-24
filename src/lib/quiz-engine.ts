@@ -1,4 +1,4 @@
-import { BIKES, type Bike } from "@/data/bikes";
+import { BIKES, BUDGET_MAX_PRICE, type Bike, type BudgetTier } from "@/data/bikes";
 
 export type Answers = {
   main_use: string;
@@ -111,23 +111,35 @@ function scoreBike(bike: Bike, a: Answers): number {
   return s;
 }
 
-export function recommend(a: Answers): { primary: Bike; secondary?: Bike; primaryScore: number; secondaryScore?: number } {
-  const ranked = BIKES.map(b => ({ bike: b, score: scoreBike(b, a) }))
+export function recommend(a: Answers): {
+  primary: Bike;
+  secondary?: Bike;
+  primaryScore: number;
+  secondaryScore?: number;
+  budgetLimited: boolean;
+} {
+  const maxPrice = BUDGET_MAX_PRICE[a.budget_range as BudgetTier] ?? 999999;
+  // Filtro RÍGIDO de orçamento — nunca recomenda acima do limite
+  const eligible = BIKES.filter(b => b.internalPrice <= maxPrice);
+  const pool = eligible.length > 0 ? eligible : BIKES;
+  const budgetLimited = eligible.length < BIKES.length;
+
+  const ranked = pool.map(b => ({ bike: b, score: scoreBike(b, a) }))
     .sort((x, y) => y.score - x.score);
 
   const primary = ranked[0];
-  // Segunda opção: melhor diferente que não seja praticamente a mesma
-  const secondary = ranked.find((r, i) => i > 0 && r.score > 0 && r.bike.id !== primary.bike.id);
+  const secondary = ranked.find((r, i) => i > 0 && r.bike.id !== primary.bike.id);
 
   return {
     primary: primary.bike,
     primaryScore: primary.score,
     secondary: secondary?.bike,
     secondaryScore: secondary?.score,
+    budgetLimited,
   };
 }
 
-export function buildPersonalizedCopy(a: Answers, isPrimary: boolean): string {
+export function buildPersonalizedCopy(a: Answers, isPrimary: boolean, budgetLimited = false): string {
   const parts: string[] = [];
 
   if (a.main_use === "trabalho_delivery_renda" && (a.daily_km_range === "mais_40_km" || a.daily_km_range === "25_40_km")) {
@@ -139,7 +151,7 @@ export function buildPersonalizedCopy(a: Answers, isPrimary: boolean): string {
   }
 
   if (a.route_type === "muitas_subidas") {
-    parts.push("Como seu trajeto tem muitas subidas, priorizamos motor forte, estrutura adequada e freios confiáveis. Aqui, economizar demais pode sair caro.");
+    parts.push("Como seu trajeto tem muitas subidas, priorizamos motor forte, estrutura adequada e freios confiáveis.");
   }
 
   if (a.had_ebike_before === "nao" && isPrimary) {
@@ -148,5 +160,22 @@ export function buildPersonalizedCopy(a: Answers, isPrimary: boolean): string {
     parts.push("Como você já teve experiência, a recomendação considera critérios mais técnicos: autonomia, motor, freios e desempenho em trajetos exigentes.");
   }
 
+  if (budgetLimited && isPrimary) {
+    parts.push("Dentro do orçamento informado, priorizamos a opção com melhor equilíbrio entre autonomia, segurança e risco menor de compra errada.");
+  }
+
   return parts.join(" ");
+}
+
+/**
+ * Copy específica para a alternativa, considerando se é mais barata ou mais cara.
+ */
+export function buildSecondaryCopy(primary: Bike, secondary: Bike): string {
+  if (secondary.internalPrice < primary.internalPrice) {
+    return "Essa opção aparece como alternativa porque entrega uma escolha mais econômica dentro do seu perfil, mantendo os critérios essenciais para o seu uso.";
+  }
+  if (secondary.internalPrice > primary.internalPrice) {
+    return "Essa opção aparece como alternativa porque entrega mais robustez e conforto, mantendo aderência ao orçamento informado.";
+  }
+  return "Essa opção aparece como alternativa porque também atende ao seu perfil dentro do orçamento informado, mas com um equilíbrio diferente entre conforto, autonomia e estrutura.";
 }
