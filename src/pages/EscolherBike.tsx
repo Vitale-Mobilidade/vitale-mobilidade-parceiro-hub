@@ -230,37 +230,17 @@ export default function EscolherBike() {
       console.info("[quiz] Tentando criar lead no banco");
 
       try {
-        const { data, error } = await supabase
-          .from("quiz_leads")
-          .insert(payload as any)
-          .select("id")
-          .single();
-
-        if (error || !data) {
-          console.error("[quiz] Erro ao criar lead no banco. Fallback local ativado.", error);
-          savePendingLead(payload);
-        } else {
-          console.info("[quiz] Lead criado com sucesso", data.id);
-          setLeadId(data.id);
-          supabase.from("quiz_events").insert({
-            lead_id: data.id, event_name: "quiz_started", step: 0, payload,
-          }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
-            else console.info("[quiz] Evento salvo com sucesso: quiz_started");
-          });
-          sendWebhook(
-            { event_name: "quiz_started", event_created_at: startedAt, lead_id: data.id, ...payload },
-            data.id
-          );
-        }
+        const result = await invokeQuizTrack({ action: "create_lead", lead: payload });
+        if (!result?.success || !result?.lead_id) throw result;
+        console.info("[quiz] Lead criado com sucesso:", { lead_id: result.lead_id });
+        console.info("[quiz] Evento salvo com sucesso: quiz_started");
+        setLeadId(result.lead_id);
       } catch (e) {
-        console.error("[quiz] Exceção ao criar lead. Fallback local ativado.", e);
+        console.error("[quiz] Erro ao criar lead no banco:", e);
         savePendingLead(payload);
       } finally {
         setSubmitting(false);
         setPhase("quiz");
-        // Inicia o timer de abandono assim que entra no quiz
-        setTimeout(() => resetAbandonTimer(), 50);
       }
     };
 
