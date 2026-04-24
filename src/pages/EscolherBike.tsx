@@ -5,6 +5,12 @@ import { ArrowLeft, Award, Briefcase, Bike, Mountain, Route, Wallet, Check, Shop
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, type Answers } from "@/lib/quiz-engine";
 import { BIKES } from "@/data/bikes";
+import {
+  savePendingLead,
+  queuePendingUpdate,
+  queuePendingEvent,
+  retryPendingLeadSync,
+} from "@/lib/quiz-storage";
 import logo96 from "@/assets/logo-96.webp";
 import logo192 from "@/assets/logo-192.webp";
 
