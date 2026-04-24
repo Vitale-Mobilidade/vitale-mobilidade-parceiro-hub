@@ -79,7 +79,7 @@ export async function retryPendingLeadSync(): Promise<string | null> {
   try {
     const { data, error } = await supabase
       .from("quiz_leads")
-      .insert(pending.payload)
+      .insert(pending.payload as any)
       .select("id")
       .single();
 
@@ -93,7 +93,7 @@ export async function retryPendingLeadSync(): Promise<string | null> {
     if (Object.keys(updates).length > 0) {
       const { error: upErr } = await supabase
         .from("quiz_leads")
-        .update(updates)
+        .update(updates as any)
         .eq("id", newLeadId);
       if (upErr) console.error("[quiz] Retry de updates falhou", upErr);
     }
