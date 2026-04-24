@@ -307,8 +307,13 @@ export default function EscolherBike() {
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
-            <Button onClick={handleSubmit} disabled={!valid} data-event="quiz_started" className="w-full py-6 text-base font-bold">
-              Continuar
+            <Button
+              onClick={handleSubmit}
+              disabled={!valid || submitting}
+              data-event="quiz_started"
+              className="w-full py-6 text-base font-bold"
+            >
+              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>) : "Continuar"}
             </Button>
           </div>
         </div>
