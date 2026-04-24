@@ -149,47 +149,48 @@ export default function EscolherBike() {
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-6 py-12 lg:py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-foreground">
-                Vai comprar uma bike elétrica?
-              </h1>
-              <h2 className="text-xl lg:text-2xl text-muted-foreground mb-6 font-medium">
-                Descubra em 2 minutos qual modelo ideal e evite jogar dinheiro fora
-              </h2>
-              <p className="text-base text-muted-foreground mb-2">
-                A maioria das pessoas escolhe errado e só percebe depois.
-              </p>
-              <div className="flex flex-wrap gap-3 my-6">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium">
-                  <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
-                </span>
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium">
-                  <Award className="h-4 w-4 text-primary" /> +R$100 milhões vendidos
-                </span>
-              </div>
-              <Button
-                size="lg"
-                onClick={() => setPhase("lead")}
-                data-event="quiz_start_click"
-                className="text-base font-bold px-8 py-6 rounded-xl shadow-lg w-full sm:w-auto"
-              >
-                Começar agora
-              </Button>
-              <p className="text-xs text-muted-foreground mt-3">
-                Recomendação gratuita baseada no seu uso, trajeto e orçamento.
-              </p>
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="container mx-auto px-6 py-12 lg:py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <img
+              src={logo96}
+              srcSet={`${logo96} 1x, ${logo192} 2x`}
+              width={96}
+              height={96}
+              alt="Vitale Mobilidade"
+              className="h-16 w-auto mx-auto mb-8"
+            />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
+              <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
             </div>
-            <div className="hidden lg:block">
-              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-primary/20 p-8 aspect-square flex items-center justify-center">
-                <img src={BIKES[3].image} alt="Bike elétrica" width={800} height={600} className="w-full h-auto object-contain drop-shadow-2xl" />
-              </div>
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-5 text-foreground">
+              Vai comprar uma bike elétrica?
+            </h1>
+            <h2 className="text-xl lg:text-2xl text-muted-foreground mb-5 font-medium">
+              Descubra em 2 minutos qual modelo ideal e evite jogar dinheiro fora
+            </h2>
+            <p className="text-base text-muted-foreground mb-8">
+              A maioria das pessoas escolhe errado e só percebe depois.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
+                <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
+              </span>
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
+                <Award className="h-4 w-4 text-primary" /> +R$100 milhões vendidos
+              </span>
             </div>
+            <Button
+              size="lg"
+              onClick={() => setPhase("lead")}
+              data-event="quiz_start_click"
+              className="text-base font-bold px-10 py-6 rounded-xl shadow-lg w-full sm:w-auto"
+            >
+              Começar agora
+            </Button>
+            <p className="text-base text-muted-foreground mt-4">
+              Recomendação gratuita baseada no seu uso, trajeto e orçamento.
+            </p>
           </div>
         </div>
       </main>
@@ -227,23 +228,35 @@ export default function EscolherBike() {
     return (
       <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-2 text-foreground">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
-          <p className="text-sm text-muted-foreground mb-6">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
+          <img
+            src={logo96}
+            srcSet={`${logo96} 1x, ${logo192} 2x`}
+            width={96}
+            height={96}
+            alt="Vitale Mobilidade"
+            className="h-12 w-auto mx-auto mb-6"
+          />
+          <div className="mb-6">
+            <Progress value={10} className="h-2" />
+            <p className="text-base text-muted-foreground mt-2 text-center">Etapa 1 de {STEPS.length + 1}</p>
+          </div>
+          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
+          <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Nome</label>
+              <label className="text-base font-medium mb-2 block">Nome</label>
               <input
                 type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder="Seu nome"
-                className="w-full p-3 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
+                className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">WhatsApp</label>
+              <label className="text-base font-medium mb-2 block">WhatsApp</label>
               <input
                 type="tel" value={phone} onChange={e => setPhone(maskPhone(e.target.value))}
                 placeholder="(11) 99999-9999" inputMode="numeric"
-                className="w-full p-3 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
+                className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
             </div>
             <Button onClick={handleSubmit} disabled={!valid} data-event="quiz_started" className="w-full py-6 text-base font-bold">
