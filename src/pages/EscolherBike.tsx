@@ -92,26 +92,16 @@ function getUTMs() {
   };
 }
 
-function sendWebhook(payload: any, leadId?: string | null) {
-  // Fire-and-forget — nunca bloqueia o fluxo
-  (async () => {
-    try {
-      const { error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
-      if (error) throw error;
-      console.info("[quiz] Webhook enviado", payload?.event_name);
-    } catch (e) {
-      console.error("[quiz] Erro ao enviar webhook", e);
-      if (leadId) {
-        try {
-          await supabase.from("quiz_leads").update({
-            crm_webhook_status: "erro_webhook",
-            webhook_error_message: String((e as any)?.message ?? e).slice(0, 500),
-            last_webhook_sent_at: new Date().toISOString(),
-          } as any).eq("id", leadId);
-        } catch {}
-      }
-    }
-  })();
+async function invokeQuizTrack(body: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke("quiz-track", { body });
+  if (error) throw { invoke_error: error, response: data };
+  return data;
+}
+
+async function sendCompletedWebhookFallback(payload: Record<string, any>) {
+  const { data, error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
+  if (error) throw { invoke_error: error, response: data };
+  return data;
 }
 
 function validatePhoneBR(p: string) {
@@ -125,8 +115,6 @@ function maskPhone(value: string) {
   if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
   return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
 }
-
-const ABANDON_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
 
 // ---------- Page ----------
 type Phase = "intro" | "lead" | "quiz" | "processing" | "result";
@@ -147,12 +135,7 @@ export default function EscolherBike() {
   }, [answers]);
 
   const baseLeadDataRef = useRef<any>({});
-  const abandonTimerRef = useRef<number | null>(null);
-  const abandonSentRef = useRef(false);
   const completedRef = useRef(false);
-  // Refs sempre atualizadas para uso dentro do timer
-  const stateRef = useRef({ leadId: null as string | null, name: "", phone: "", stepIdx: 0, answers: {} as Partial<Answers>, labels: {} as Record<string, string> });
-  useEffect(() => { stateRef.current = { leadId, name, phone, stepIdx, answers, labels }; }, [leadId, name, phone, stepIdx, answers, labels]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -174,53 +157,6 @@ export default function EscolherBike() {
       if (syncedId) setLeadId(syncedId);
     }).catch(() => {});
   }, [phase, stepIdx, leadId]);
-
-  // ---------- Timer de abandono ----------
-  function fireAbandonment() {
-    if (abandonSentRef.current || completedRef.current) return;
-    const s = stateRef.current;
-    if (!s.name || !s.phone) return;
-    if (!s.leadId) return;
-    abandonSentRef.current = true;
-
-    const completion = Math.round(((s.stepIdx) / STEPS.length) * 100);
-    const lastField = STEPS[Math.max(0, s.stepIdx - 1)]?.key;
-
-    const update = {
-      abandonment_webhook_sent: true,
-      abandoned_at: new Date().toISOString(),
-    };
-    supabase.from("quiz_leads").update(update as any).eq("id", s.leadId).then(({ error }) => {
-      if (error) console.error("[quiz] Erro ao marcar abandono no banco", error);
-    });
-
-    sendWebhook({
-      event_name: "quiz_abandoned",
-      event_created_at: new Date().toISOString(),
-      lead_id: s.leadId,
-      name: s.name, phone: s.phone,
-      status: "incompleto",
-      current_step: s.stepIdx + 1,
-      completion_percentage: completion,
-      last_answer_field: lastField,
-      ...s.answers, ...s.labels,
-      ...baseLeadDataRef.current,
-      started_at: baseLeadDataRef.current.started_at,
-    }, s.leadId);
-
-    console.info("[quiz] Webhook de abandono disparado");
-  }
-
-  function resetAbandonTimer() {
-    // ⏸️ Webhook de abandono pausado temporariamente até garantirmos 100% de confiabilidade no fluxo completo.
-    return;
-  }
-
-  useEffect(() => {
-    return () => {
-      if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
-    };
-  }, []);
 
   // ---------- Intro ----------
   if (phase === "intro") {
@@ -294,37 +230,18 @@ export default function EscolherBike() {
       console.info("[quiz] Tentando criar lead no banco");
 
       try {
-        const { data, error } = await supabase
-          .from("quiz_leads")
-          .insert(payload as any)
-          .select("id")
-          .single();
-
-        if (error || !data) {
-          console.error("[quiz] Erro ao criar lead no banco. Fallback local ativado.", error);
-          savePendingLead(payload);
-        } else {
-          console.info("[quiz] Lead criado com sucesso", data.id);
-          setLeadId(data.id);
-          supabase.from("quiz_events").insert({
-            lead_id: data.id, event_name: "quiz_started", step: 0, payload,
-          }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
-            else console.info("[quiz] Evento salvo com sucesso: quiz_started");
-          });
-          sendWebhook(
-            { event_name: "quiz_started", event_created_at: startedAt, lead_id: data.id, ...payload },
-            data.id
-          );
-        }
+        const result = await invokeQuizTrack({ action: "create_lead", lead: payload });
+        if (!result?.success || !result?.lead_id) throw result;
+        console.info("[quiz] Lead criado com sucesso:", { lead_id: result.lead_id });
+        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_started" });
+        console.info("[quiz] Evento salvo com sucesso: quiz_started");
+        setLeadId(result.lead_id);
       } catch (e) {
-        console.error("[quiz] Exceção ao criar lead. Fallback local ativado.", e);
+        console.error("[quiz] Erro ao criar lead no banco:", e);
         savePendingLead(payload);
       } finally {
         setSubmitting(false);
         setPhase("quiz");
-        // Inicia o timer de abandono assim que entra no quiz
-        setTimeout(() => resetAbandonTimer(), 50);
       }
     };
 
@@ -377,8 +294,6 @@ export default function EscolherBike() {
     const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
     const handleAnswer = async (opt: Option) => {
-      resetAbandonTimer();
-
       const newAnswers = { ...answers, [step.key]: opt.value };
       const newLabels = { ...labels, [`${step.key}_label`]: opt.label };
       setAnswers(newAnswers);
@@ -410,22 +325,18 @@ export default function EscolherBike() {
       }
 
       if (activeLeadId) {
-        console.info("[quiz] Tentando salvar resposta no banco", step.key);
+        console.info("[quiz] Tentando salvar resposta no banco:", { campo: step.key, valor: opt.value });
         try {
-          const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
-          if (upErr) {
-            console.error("[quiz] Erro ao salvar resposta", upErr);
-            queuePendingUpdate(updateData);
-          } else {
-            console.info("[quiz] Resposta salva com sucesso", step.key);
-          }
-          supabase.from("quiz_events").insert({ lead_id: activeLeadId, ...eventData }).then(({ error: evErr }) => {
-            if (evErr) console.error("[quiz] Erro ao salvar evento", evErr);
-            else console.info("[quiz] Evento salvo com sucesso: quiz_step_completed", step.key);
-          });
+          console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_step_completed" });
+          const result = await invokeQuizTrack({ action: "save_answer", lead_id: activeLeadId, lead: updateData, event: eventData });
+          if (!result?.success) throw result;
+          console.info("[quiz] Resposta salva com sucesso:", { campo: step.key, valor: opt.value });
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_step_completed" });
         } catch (e) {
-          console.error("[quiz] Exceção em update de resposta. Fallback local ativado.", e);
+          console.error("[quiz] Erro ao salvar resposta:", e);
+          console.error("[quiz] Erro ao salvar evento:", e);
           queuePendingUpdate(updateData);
+          queuePendingEvent(eventData);
         }
       } else {
         queuePendingUpdate(updateData);
@@ -503,17 +414,21 @@ export default function EscolherBike() {
   // ---------- Result ----------
   async function finishQuiz(finalAnswers: Answers, finalLabels: Record<string, string>) {
     completedRef.current = true;
-    if (abandonTimerRef.current) window.clearTimeout(abandonTimerRef.current);
+    console.info("[quiz] Tentando finalizar quiz");
 
     const rec = recommend(finalAnswers);
     const clusters = computeClusters(finalAnswers);
     const reasonPrimary = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
     const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
+    const completedAt = new Date().toISOString();
+    const rawRecommendation = { primary: rec.primary.id, secondary: rec.secondary?.id ?? null, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore ?? null, budgetLimited: rec.budgetLimited };
 
     const updateData: any = {
       status: "completo",
+      current_step: STEPS.length + 1,
       completion_percentage: 100,
-      completed_at: new Date().toISOString(),
+      completed_at: completedAt,
+      last_interaction_at: completedAt,
       ...clusters,
       recommended_bike_1: rec.primary.id,
       recommended_bike_1_label: rec.primary.name,
@@ -527,7 +442,7 @@ export default function EscolherBike() {
       recommended_bike_2_link: rec.secondary?.affiliateLink ?? null,
       recommendation_reason: reasonPrimary,
       raw_answers_json: finalAnswers,
-      raw_recommendation_json: { primary: rec.primary.id, secondary: rec.secondary?.id, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore, budgetLimited: rec.budgetLimited },
+      raw_recommendation_json: rawRecommendation,
     };
 
     let activeLeadId = leadId;
@@ -536,58 +451,63 @@ export default function EscolherBike() {
       if (synced) { activeLeadId = synced; setLeadId(synced); }
     }
 
+    const webhookPayload = {
+      event_name: "quiz_completed",
+      event_created_at: completedAt,
+      lead_id: activeLeadId,
+      name,
+      phone,
+      ...baseLeadDataRef.current,
+      ...updateData,
+      ...finalAnswers,
+      ...finalLabels,
+      conversion_status: "sem_clique",
+    };
+    console.info("[quiz] Payload quiz_completed montado:", webhookPayload);
+
     if (activeLeadId) {
-      console.info("[quiz] Salvando resultado final no banco");
       try {
-        const { error: upErr } = await supabase.from("quiz_leads").update(updateData).eq("id", activeLeadId);
-        if (upErr) {
-          console.error("[quiz] Erro ao salvar resultado final no banco. Fallback local.", upErr);
+        console.info("[quiz] Tentando salvar quiz_completed no banco");
+        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_completed" });
+        console.info("[quiz] Tentando salvar evento:", { event_name: "recommendation_generated" });
+        console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
+        const result = await invokeQuizTrack({
+          action: "complete_quiz",
+          lead_id: activeLeadId,
+          lead: updateData,
+          webhook_payload: webhookPayload,
+          recommendation_event_payload: rawRecommendation,
+        });
+        if (result?.db_error) {
+          console.error("[quiz] Erro ao salvar quiz_completed no banco:", result.db_error, result);
           queuePendingUpdate(updateData);
         } else {
-          console.info("[quiz] Resultado final salvo com sucesso");
+          console.info("[quiz] quiz_completed salvo com sucesso");
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_completed" });
+          console.info("[quiz] Evento salvo com sucesso:", { event_name: "recommendation_generated" });
         }
-        supabase.from("quiz_events").insert({
-          lead_id: activeLeadId, event_name: "quiz_completed", step: STEPS.length, payload: updateData,
-        }).then(({ error }) => {
-          if (error) console.error("[quiz] Erro ao salvar evento quiz_completed", error);
-          else console.info("[quiz] Evento salvo com sucesso: quiz_completed");
-        });
-        supabase.from("quiz_events").insert({
-          lead_id: activeLeadId, event_name: "recommendation_generated", payload: { primary: rec.primary.id, secondary: rec.secondary?.id },
-        }).then(({ error }) => {
-          if (error) console.error("[quiz] Erro evento recommendation_generated", error);
-          else console.info("[quiz] Evento salvo com sucesso: recommendation_generated");
-        });
+        if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed disparado com sucesso:", result.webhook.status, result.webhook);
+        else console.error("[quiz] Erro ao disparar webhook quiz_completed:", result?.webhook ?? result);
       } catch (e) {
-        console.error("[quiz] Exceção ao finalizar quiz. Fallback local.", e);
+        console.error("[quiz] Erro ao salvar quiz_completed no banco:", e);
         queuePendingUpdate(updateData);
+        console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
+        try {
+          const fallback = await sendCompletedWebhookFallback(webhookPayload);
+          console.info("[quiz] Webhook quiz_completed disparado com sucesso:", fallback?.status ?? fallback, fallback);
+        } catch (webhookError) {
+          console.error("[quiz] Erro ao disparar webhook quiz_completed:", webhookError);
+        }
       }
-
-      sendWebhook({
-        event_name: "quiz_completed",
-        event_created_at: new Date().toISOString(),
-        lead_id: activeLeadId, name, phone,
-        ...finalAnswers, ...finalLabels,
-        ...clusters,
-        recommended_bike_1: rec.primary.id,
-        recommended_bike_1_label: rec.primary.name,
-        recommended_bike_1_score: rec.primaryScore,
-        recommended_bike_1_reason: reasonPrimary,
-        recommended_bike_1_link: rec.primary.affiliateLink,
-        recommended_bike_2: rec.secondary?.id ?? null,
-        recommended_bike_2_label: rec.secondary?.name ?? null,
-        recommended_bike_2_score: rec.secondaryScore ?? null,
-        recommended_bike_2_reason: reasonSecondary,
-        recommended_bike_2_link: rec.secondary?.affiliateLink ?? null,
-        conversion_status: "sem_clique",
-        recommendation_reason: reasonPrimary,
-        status: "completo", completion_percentage: 100,
-        completed_at: new Date().toISOString(),
-        ...baseLeadDataRef.current,
-        raw_answers_json: finalAnswers,
-      }, activeLeadId);
     } else {
       queuePendingUpdate(updateData);
+      console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
+      try {
+        const fallback = await sendCompletedWebhookFallback(webhookPayload);
+        console.info("[quiz] Webhook quiz_completed disparado com sucesso:", fallback?.status ?? fallback, fallback);
+      } catch (webhookError) {
+        console.error("[quiz] Erro ao disparar webhook quiz_completed:", webhookError);
+      }
     }
 
     setPhase("result");
@@ -639,39 +559,38 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
       if (activeLeadId) {
         try {
-          const { error: upErr } = await supabase.from("quiz_leads").update(clickUpdate as any).eq("id", activeLeadId);
-          if (upErr) {
-            console.error("[quiz] Erro ao registrar clique. Fallback local.", upErr);
-            queuePendingUpdate(clickUpdate);
-          } else {
-            console.info("[quiz] Clique registrado com sucesso", bike.name);
-          }
-          supabase.from("quiz_events").insert({
-            lead_id: activeLeadId, event_name: eventName,
-            field_value: bike.id, field_label: bike.name,
-            payload: { position, link: bike.affiliateLink },
-          }).then(({ error }) => {
-            if (error) console.error("[quiz] Erro evento de clique", error);
-            else console.info("[quiz] Evento salvo com sucesso:", eventName);
+          const webhookPayload = {
+            event_name: eventName,
+            event_created_at: new Date().toISOString(),
+            lead_id: activeLeadId, name, phone,
+            ...answers, ...labels,
+            clicked_bike_name: bike.name,
+            clicked_bike_position: position,
+            clicked_bike_link: bike.affiliateLink,
+            recommended_bike_1: recommendation.primary.id,
+            recommended_bike_2: recommendation.secondary?.id ?? null,
+            conversion_status,
+            ...baseLeadData,
+          };
+          const result = await invokeQuizTrack({
+            action: "buy_click",
+            lead_id: activeLeadId,
+            lead: clickUpdate,
+            event: {
+              event_name: eventName,
+              field_value: bike.id,
+              field_label: bike.name,
+              payload: { position, link: bike.affiliateLink },
+            },
+            webhook_payload: webhookPayload,
           });
+          if (!result?.success) throw result;
+          console.info("[quiz] Clique registrado com sucesso", bike.name);
+          console.info("[quiz] Evento salvo com sucesso:", eventName);
         } catch (e) {
           console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
           queuePendingUpdate(clickUpdate);
         }
-
-        sendWebhook({
-          event_name: eventName,
-          event_created_at: new Date().toISOString(),
-          lead_id: activeLeadId, name, phone,
-          ...answers, ...labels,
-          clicked_bike_name: bike.name,
-          clicked_bike_position: position,
-          clicked_bike_link: bike.affiliateLink,
-          recommended_bike_1: recommendation.primary.id,
-          recommended_bike_2: recommendation.secondary?.id ?? null,
-          conversion_status,
-          ...baseLeadData,
-        }, activeLeadId);
       } else {
         queuePendingUpdate(clickUpdate);
         queuePendingEvent({
@@ -845,7 +764,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* 7. Bloco educativo */}
+        {/* 7. Grupo de ofertas */}
+        <OffersGroup leadId={leadId} />
+
+        {/* 8. Bloco educativo */}
         <div className="bg-muted rounded-xl p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
           <p className="text-base text-muted-foreground">
@@ -853,12 +775,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </p>
         </div>
 
-        {/* 8. Aviso ML */}
+        {/* 9. Aviso ML */}
         <p className="text-base text-center text-muted-foreground mb-10">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
 
-        {/* 9. Ações secundárias */}
+        {/* 10. Ações secundárias */}
         <SecondaryActions
           recommendation={recommendation}
           leadId={leadId}
@@ -873,15 +795,53 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 // ---------- Constants for secondary actions ----------
 const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/COLOCAR_LINK_DO_GRUPO_AQUI";
 
+function OffersGroup({ leadId }: { leadId: string | null }) {
+  const handleOffersGroup = () => {
+    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "offers_group_clicked" } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "offers_group_clicked" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", error }));
+    }
+  };
+
+  return (
+    <section className="bg-primary/10 border border-primary/30 rounded-xl p-6 lg:p-8 mb-6 text-center shadow-sm">
+      <h3 className="text-2xl font-bold text-foreground mb-2">Vitale Mobilidade Ofertas</h3>
+      <p className="text-lg font-medium text-foreground mb-4">Não perca boas oportunidades de bikes elétricas.</p>
+      <p className="text-base text-muted-foreground max-w-3xl mx-auto mb-4">
+        Entre no grupo para receber curadoria da Vitale Mobilidade com modelos que valem a pena, alertas de boas condições e oportunidades que podem fazer sentido para o seu perfil.
+      </p>
+      <p className="text-base text-foreground max-w-3xl mx-auto mb-6">
+        As melhores oportunidades costumam mudar rápido. O grupo ajuda você a acompanhar boas opções sem precisar pesquisar tudo do zero.
+      </p>
+      <Button
+        onClick={handleOffersGroup}
+        data-event="offers_group_clicked"
+        {...{ data_event: "offers_group_clicked" }}
+        className="text-base font-bold py-6 px-8 rounded-xl shadow-md shadow-primary/20"
+      >
+        Entrar no grupo de ofertas
+      </Button>
+      <p className="text-base text-muted-foreground mt-4">
+        Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
+      </p>
+    </section>
+  );
+}
+
 function SecondaryActions({ recommendation, leadId, name, phone }: any) {
   const handleRestart = () => {
     if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "quiz_restart_clicked",
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento quiz_restart_clicked", error);
-        else console.info("[quiz] Evento salvo: quiz_restart_clicked");
-      });
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked" } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_restart_clicked" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", error }));
     }
     // Volta para intro mantendo dados já salvos no banco intactos
     window.location.href = "/escolherbike";
@@ -898,25 +858,12 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "result_shared_whatsapp",
-        payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id },
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento result_shared_whatsapp", error);
-        else console.info("[quiz] Evento salvo: result_shared_whatsapp");
-      });
-    }
-  };
-
-  const handleOffersGroup = () => {
-    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
-    if (leadId) {
-      supabase.from("quiz_events").insert({
-        lead_id: leadId, event_name: "offers_group_clicked",
-      }).then(({ error }) => {
-        if (error) console.error("[quiz] Erro evento offers_group_clicked", error);
-        else console.info("[quiz] Evento salvo: offers_group_clicked");
-      });
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "result_shared_whatsapp", payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id } } })
+        .then((result) => {
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "result_shared_whatsapp" });
+        })
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", error }));
     }
   };
 
@@ -932,7 +879,7 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
           data-event="quiz_restart_clicked"
           className="w-full text-base font-medium py-5"
         >
-          Refazer recomendação
+          Faça o quiz novamente
         </Button>
         <Button
           onClick={handleShareWhatsApp}
@@ -944,24 +891,6 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
         </Button>
       </div>
 
-      {/* Grupo de ofertas — discreto */}
-      <div className="bg-muted/60 border border-border rounded-xl p-5 max-w-2xl mx-auto text-center">
-        <h4 className="text-base font-bold text-foreground mb-1">Vitale Mobilidade Ofertas</h4>
-        <p className="text-base text-muted-foreground mb-4">
-          Receba curadoria de bikes elétricas, alertas de boas oportunidades e modelos que fazem sentido para diferentes perfis de uso.
-        </p>
-        <Button
-          onClick={handleOffersGroup}
-          variant="secondary"
-          data-event="offers_group_clicked"
-          className="text-base font-medium"
-        >
-          Entrar no grupo de ofertas
-        </Button>
-        <p className="text-base text-muted-foreground mt-3">
-          Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
-        </p>
-      </div>
     </section>
   );
 }
