@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Linkedin } from 'lucide-react';
-import lucasVitalePhoto from '@/assets/lucas-vitale-photo.png';
+import lucasVitale560 from '@/assets/lucas-vitale-560.webp';
+import lucasVitale880 from '@/assets/lucas-vitale-880.webp';
 
 const AboutUs = () => {
   const handleWhatsAppClick = () => {
@@ -21,9 +22,15 @@ const AboutUs = () => {
             <div className="order-1 lg:order-1">
               <div className="text-center lg:text-left">
                 <div className="w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-full mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
-                  <img 
-                    src={lucasVitalePhoto} 
-                    alt="Lucas Vitale - Fundador da Vitale Mobilidade" 
+                  <img
+                    src={lucasVitale560}
+                    srcSet={`${lucasVitale560} 560w, ${lucasVitale880} 880w`}
+                    sizes="(max-width: 1024px) 90vw, 440px"
+                    alt="Lucas Vitale - Fundador da Vitale Mobilidade, especialista em consultoria de veículos elétricos"
+                    width={560}
+                    height={560}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-auto object-contain"
                   />
                 </div>

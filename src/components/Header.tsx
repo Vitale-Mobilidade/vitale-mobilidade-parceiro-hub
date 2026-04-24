@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
+import logo96 from '@/assets/logo-96.webp';
+import logo192 from '@/assets/logo-192.webp';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,9 +22,14 @@ const Header = () => {
       <div className="responsive-container">
         <div className="flex h-16 sm:h-18 lg:h-20 items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <img 
-              src="/lovable-uploads/d25498ea-45b8-4dca-a2c2-dcdb6a860b82.png" 
-              alt="Vitale Mobilidade" 
+            <img
+              src={logo96}
+              srcSet={`${logo96} 1x, ${logo192} 2x`}
+              alt="Vitale Mobilidade - Consultoria em veículos elétricos"
+              width={44}
+              height={44}
+              decoding="async"
+              fetchPriority="high"
               className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11"
             />
             <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary truncate">Vitale Mobilidade</span>
