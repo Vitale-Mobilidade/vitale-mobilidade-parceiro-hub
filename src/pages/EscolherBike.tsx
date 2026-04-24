@@ -229,7 +229,9 @@ export default function EscolherBike() {
     const valid = name.trim().length >= 2 && validatePhoneBR(phone);
 
     const handleSubmit = async () => {
-      if (!valid) return;
+      if (!valid || submitting) return;
+      setSubmitting(true);
+
       const payload = {
         name: name.trim(),
         phone,
@@ -239,17 +241,36 @@ export default function EscolherBike() {
         started_at: new Date().toISOString(),
         ...baseLeadDataRef.current,
       };
-      const { data, error } = await supabase.from("quiz_leads").insert(payload).select("id").single();
-      if (error) { console.error(error); return; }
-      setLeadId(data.id);
 
-      await supabase.from("quiz_events").insert({
-        lead_id: data.id, event_name: "quiz_started", step: 0, payload,
-      });
+      try {
+        const { data, error } = await supabase
+          .from("quiz_leads")
+          .insert(payload as any)
+          .select("id")
+          .single();
 
-      sendWebhook({ event_name: "quiz_started", event_created_at: new Date().toISOString(), lead_id: data.id, ...payload });
-
-      setPhase("quiz");
+        if (error || !data) {
+          console.error("[quiz] Erro ao criar lead no banco. Fallback local ativado.", error);
+          savePendingLead(payload);
+        } else {
+          setLeadId(data.id);
+          supabase.from("quiz_events").insert({
+            lead_id: data.id, event_name: "quiz_started", step: 0, payload,
+          }).then(({ error: evErr }) => {
+            if (evErr) console.error("[quiz] Erro ao registrar evento quiz_started", evErr);
+          });
+          sendWebhook(
+            { event_name: "quiz_started", event_created_at: new Date().toISOString(), lead_id: data.id, ...payload },
+            data.id
+          );
+        }
+      } catch (e) {
+        console.error("[quiz] Exceção ao criar lead. Fallback local ativado.", e);
+        savePendingLead(payload);
+      } finally {
+        setSubmitting(false);
+        setPhase("quiz");
+      }
     };
 
     return (
