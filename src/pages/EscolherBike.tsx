@@ -102,12 +102,32 @@ function getUTMs() {
   };
 }
 
-async function sendWebhook(payload: any) {
-  try {
-    await supabase.functions.invoke("quiz-webhook", { body: payload });
-  } catch (e) {
-    console.error("webhook error", e);
-  }
+function sendWebhook(payload: any, leadId?: string | null) {
+  // Fire-and-forget — nunca bloqueia o fluxo
+  (async () => {
+    try {
+      const { error } = await supabase.functions.invoke("quiz-webhook", { body: payload });
+      if (error) throw error;
+    } catch (e) {
+      console.error("[quiz] Erro ao enviar webhook", e);
+      if (leadId) {
+        try {
+          await supabase.from("quiz_leads").update({
+            crm_webhook_status: "erro_webhook",
+            webhook_error_message: String((e as any)?.message ?? e).slice(0, 500),
+            last_webhook_sent_at: new Date().toISOString(),
+          } as any).eq("id", leadId);
+          await supabase.from("quiz_events").insert({
+            lead_id: leadId,
+            event_name: "webhook_error",
+            payload: { error: String((e as any)?.message ?? e), event: payload?.event_name },
+          });
+        } catch (logErr) {
+          console.error("[quiz] Erro ao registrar falha de webhook", logErr);
+        }
+      }
+    }
+  })();
 }
 
 function validatePhoneBR(p: string) {
