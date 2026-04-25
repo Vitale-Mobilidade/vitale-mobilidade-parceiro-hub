@@ -640,7 +640,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               event_name: eventName,
               field_value: bike.id,
               field_label: bike.name,
-              payload: { position, link: bike.affiliateLink },
+              payload: { position, link: bike.affiliateLink, ...baseLeadData },
             },
             webhook_payload: webhookPayload,
           });
