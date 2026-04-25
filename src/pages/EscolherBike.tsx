@@ -93,6 +93,61 @@ function getUTMs() {
   };
 }
 
+function extractDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function detectTrafficOrigin(utms: Record<string, string | null>, referrer: string | null) {
+  const referrer_domain = extractDomain(referrer);
+  const utm_source = utms.utm_source || null;
+  const utm_medium = utms.utm_medium || null;
+
+  let detected_source: string;
+  if (utm_source) {
+    detected_source = utm_source;
+  } else if (referrer_domain && /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(referrer_domain)) {
+    detected_source = "youtube";
+  } else if (referrer_domain && /(^|\.)instagram\.com$/.test(referrer_domain)) {
+    detected_source = "instagram";
+  } else if (referrer_domain && /(^|\.)tiktok\.com$/.test(referrer_domain)) {
+    detected_source = "tiktok";
+  } else if (referrer_domain && /(^|\.)google\./.test(referrer_domain)) {
+    detected_source = "google";
+  } else if (referrer_domain) {
+    detected_source = referrer_domain;
+  } else {
+    detected_source = "direct_unknown";
+  }
+
+  let detected_medium: string;
+  if (utm_medium) {
+    detected_medium = utm_medium;
+  } else if (detected_source === "youtube") {
+    detected_medium = "organic_referral";
+  } else if (detected_source === "instagram" || detected_source === "tiktok") {
+    detected_medium = "social_referral";
+  } else if (detected_source === "google") {
+    detected_medium = "organic_search_or_referral";
+  } else if (detected_source === "direct_unknown") {
+    detected_medium = "direct_or_app";
+  } else {
+    detected_medium = "referral";
+  }
+
+  return {
+    referrer_domain,
+    detected_source,
+    detected_medium,
+    traffic_origin: `${detected_source} / ${detected_medium}`,
+  };
+}
+
 async function invokeQuizTrack(body: Record<string, any>) {
   const { data, error } = await supabase.functions.invoke("quiz-track", { body });
   if (error) throw { invoke_error: error, response: data };
