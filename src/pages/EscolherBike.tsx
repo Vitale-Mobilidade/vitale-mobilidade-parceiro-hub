@@ -975,10 +975,15 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 // ---------- Specialist WhatsApp block ----------
 const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
 
-function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation }: any) {
+function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData }: any) {
   const handleSpecialist = () => {
+    const trimmedName = (name ?? "").trim();
+    const identification = trimmedName
+      ? `sou o ${trimmedName}`
+      : "sou uma pessoa que veio do quiz";
+
     const lines = [
-      "Fala Lucas, vim do quiz.",
+      `Fala Lucas, ${identification} e vim do quiz.`,
       "",
       "Minhas respostas:",
       "",
@@ -1019,6 +1024,7 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation 
         recommended_bike_2_label: recommendation?.secondary?.name,
         whatsapp_phone: SPECIALIST_WHATSAPP_PHONE,
         whatsapp_message: message,
+        ...(baseLeadData ?? {}),
       };
       invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "specialist_whatsapp_clicked", payload } })
         .then((result) => {
