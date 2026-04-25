@@ -196,11 +196,15 @@ export default function EscolherBike() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { device_type, browser, operating_system } = detectDevice();
+    const utms = getUTMs();
+    const referrer = document.referrer || null;
+    const traffic = detectTrafficOrigin(utms as Record<string, string | null>, referrer);
     baseLeadDataRef.current = {
       source_url: window.location.href,
       landing_path: window.location.pathname,
-      referrer: document.referrer || null,
-      ...getUTMs(),
+      referrer,
+      ...utms,
+      ...traffic,
       device_type, browser, operating_system,
     };
   }, []);
