@@ -825,8 +825,15 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Grupo de ofertas */}
-        <OffersGroup leadId={leadId} />
+        {/* Falar com especialista */}
+        <SpecialistBlock
+          leadId={leadId}
+          name={name}
+          phone={phone}
+          answers={answers}
+          labels={labels}
+          recommendation={recommendation}
+        />
 
         {/* Bloco educativo */}
         <div className="bg-muted rounded-[18px] p-5 mb-4">
