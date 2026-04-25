@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award } from "lucide-react";
@@ -610,52 +611,64 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     { label: "Experiência", value: labels.had_ebike_before_label },
   ];
 
+  // Sticky CTA visibility (mobile only)
+  const [showSticky, setShowSticky] = useState(false);
+  const primaryCardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = primaryCardRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8 lg:py-12">
-        <div className="flex justify-center mb-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
+        <div className="flex justify-center mb-5">
           <VitaleBrand size="sm" />
         </div>
 
-        {/* 1. Título + 2. Subtítulo */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-3">Sua bike elétrica ideal está aqui</h1>
-          <p className="text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
+        {/* Título + Subtítulo */}
+        <div className="text-center mb-7">
+          <h1 className="text-[28px] leading-tight sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">
+            Sua bike elétrica ideal está aqui
+          </h1>
+          <p className="text-[15px] sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Com base no seu perfil, selecionamos as opções que fazem mais sentido para você.
           </p>
         </div>
 
-        {/* 3. Recomendação principal */}
-        <div className="bg-card border-2 border-primary rounded-2xl overflow-hidden shadow-lg mb-6">
+        {/* Recomendação principal */}
+        <div ref={primaryCardRef} className="bg-card border-2 border-primary rounded-[18px] overflow-hidden shadow-lg mb-5">
           <div className="bg-primary text-primary-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
             ⭐ Melhor escolha para o seu perfil
           </div>
-          <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-8">
-            <div className="bg-muted rounded-xl p-4 flex items-center justify-center aspect-[4/3]">
+          <div className="grid lg:grid-cols-2 gap-5 lg:gap-6 p-4 sm:p-6 lg:p-8">
+            <div className="bg-muted rounded-[14px] p-3 sm:p-4 flex items-center justify-center">
               <img
                 src={recommendation.primary.image}
                 alt={`Bike elétrica ${recommendation.primary.name}`}
                 width={800} height={600} loading="lazy"
-                className="w-full h-full object-contain"
+                className="w-full h-auto object-contain max-h-[260px] lg:max-h-none lg:aspect-[4/3]"
               />
             </div>
             <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{recommendation.primary.name}</h2>
-              <p className="text-base text-muted-foreground mb-4">{recommendation.primary.shortDescription}</p>
+              <h2 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.primary.name}</h2>
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-4 leading-relaxed">{recommendation.primary.shortDescription}</p>
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-base">
+                  <li key={i} className="flex items-start gap-2 text-[15px] sm:text-base">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-foreground">{s}</span>
                   </li>
                 ))}
               </ul>
-              {reasonPrimary && (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5">
-                  <div className="text-base font-bold text-primary mb-1">Por que recomendamos essa bike</div>
-                  <p className="text-base text-foreground">{reasonPrimary}</p>
-                </div>
-              )}
+
+              {/* CTA antes da explicação */}
               <Button
                 onClick={() => handleBuy(recommendation.primary, "principal")}
                 data-event="buy_button_clicked"
@@ -666,45 +679,44 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               >
                 <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
               </Button>
-              <p className="text-base text-center text-muted-foreground mt-2">
+              <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
+
+              {reasonPrimary && (
+                <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />
+              )}
             </div>
           </div>
         </div>
 
-        {/* 4. Alternativa inteligente */}
+        {/* Alternativa inteligente */}
         {recommendation.secondary && (
-          <div className="bg-card border-2 border-primary/40 rounded-2xl overflow-hidden mb-6 shadow-md">
+          <div className="bg-card border-2 border-primary/40 rounded-[18px] overflow-hidden mb-5 shadow-md">
             <div className="bg-primary/15 text-primary px-4 py-2 text-base font-bold inline-block rounded-br-xl">
               💡 Alternativa inteligente
             </div>
-            <div className="grid lg:grid-cols-2 gap-6 p-6 lg:p-8">
-              <div className="bg-muted rounded-xl p-4 flex items-center justify-center aspect-[4/3]">
+            <div className="grid lg:grid-cols-2 gap-5 lg:gap-6 p-4 sm:p-6 lg:p-8">
+              <div className="bg-muted rounded-[14px] p-3 sm:p-4 flex items-center justify-center">
                 <img
                   src={recommendation.secondary.image}
                   alt={`Bike elétrica ${recommendation.secondary.name}`}
                   width={800} height={600} loading="lazy"
-                  className="w-full h-full object-contain"
+                  className="w-full h-auto object-contain max-h-[260px] lg:max-h-none lg:aspect-[4/3]"
                 />
               </div>
               <div>
-                <h3 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{recommendation.secondary.name}</h3>
-                <p className="text-base text-muted-foreground mb-4">{recommendation.secondary.shortDescription}</p>
+                <h3 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.secondary.name}</h3>
+                <p className="text-[15px] sm:text-base text-muted-foreground mb-4 leading-relaxed">{recommendation.secondary.shortDescription}</p>
                 <ul className="space-y-2 mb-5">
                   {recommendation.secondary.strengths.slice(0, 4).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-base">
+                    <li key={i} className="flex items-start gap-2 text-[15px] sm:text-base">
                       <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <span className="text-foreground">{s}</span>
                     </li>
                   ))}
                 </ul>
-                {reasonSecondary && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5">
-                    <div className="text-base font-bold text-primary mb-1">Por que essa também faz sentido</div>
-                    <p className="text-base text-foreground">{reasonSecondary}</p>
-                  </div>
-                )}
+
                 <Button
                   onClick={() => handleBuy(recommendation.secondary, "segunda_opcao")}
                   data-event="secondary_option_clicked"
@@ -715,18 +727,34 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
                 </Button>
-                <p className="text-base text-center text-muted-foreground mt-2">
+                <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
                 </p>
+
+                {reasonSecondary && (
+                  <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* 5. Seu perfil analisado */}
+        {/* Seu perfil analisado — lista compacta no mobile, grid no desktop */}
         <div className="mb-6">
           <h3 className="text-xl font-bold text-foreground mb-4 text-center">Seu perfil analisado</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+
+          {/* Mobile: lista única */}
+          <div className="lg:hidden bg-muted rounded-[18px] p-4 divide-y divide-border/60">
+            {profileSummary.map((p, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                <span className="text-[15px] text-muted-foreground flex-shrink-0">{p.label}</span>
+                <span className="text-[15px] font-semibold text-foreground text-right">{p.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: grid */}
+          <div className="hidden lg:grid grid-cols-5 gap-2">
             {profileSummary.map((p, i) => (
               <div key={i} className="bg-muted rounded-lg p-3 text-center">
                 <div className="text-base text-muted-foreground">{p.label}</div>
@@ -736,51 +764,84 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         </div>
 
-        {/* 6. Comparação rápida */}
+        {/* Comparação rápida */}
         {recommendation.secondary && (
-          <div className="bg-card border border-border rounded-xl p-5 mb-6">
-            <h3 className="font-bold text-foreground mb-3 text-base">Comparação rápida</h3>
-            <div className="grid grid-cols-3 gap-2 text-base">
-              <div></div>
-              <div className="font-bold text-primary text-center">{recommendation.primary.name}</div>
-              <div className="font-bold text-center">{recommendation.secondary.name}</div>
+          <div className="mb-6">
+            <h3 className="font-bold text-foreground mb-4 text-lg text-center lg:text-left">Comparação rápida</h3>
 
-              <div className="text-muted-foreground">Autonomia</div>
-              <div className="text-center">Até {recommendation.primary.autonomyKm} km</div>
-              <div className="text-center">Até {recommendation.secondary.autonomyKm} km</div>
+            {/* Mobile: cards empilhados */}
+            <div className="grid gap-4 lg:hidden">
+              {[recommendation.primary, recommendation.secondary].map((bike: any, idx: number) => (
+                <div key={idx} className="bg-card border border-border rounded-[18px] p-4">
+                  <div className={`text-[15px] font-bold mb-3 ${idx === 0 ? "text-primary" : "text-foreground"}`}>
+                    {bike.name}
+                  </div>
+                  <dl className="space-y-2 text-[15px]">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Autonomia</dt>
+                      <dd className="text-foreground text-right">Até {bike.autonomyKm} km</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Capacidade</dt>
+                      <dd className="text-foreground text-right">{bike.capacity} {bike.capacity === 1 ? "pessoa" : "pessoas"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground flex-shrink-0">Diferencial</dt>
+                      <dd className="text-foreground text-right">{bike.diferencial}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground flex-shrink-0">Indicada para</dt>
+                      <dd className="text-foreground text-right">{bike.perfilIndicado}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
+            </div>
 
-              <div className="text-muted-foreground">Capacidade</div>
-              <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
-              <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
+            {/* Desktop: tabela */}
+            <div className="hidden lg:block bg-card border border-border rounded-xl p-5">
+              <div className="grid grid-cols-3 gap-2 text-base">
+                <div></div>
+                <div className="font-bold text-primary text-center">{recommendation.primary.name}</div>
+                <div className="font-bold text-center">{recommendation.secondary.name}</div>
 
-              <div className="text-muted-foreground">Diferencial</div>
-              <div className="text-center">{recommendation.primary.diferencial}</div>
-              <div className="text-center">{recommendation.secondary.diferencial}</div>
+                <div className="text-muted-foreground">Autonomia</div>
+                <div className="text-center">Até {recommendation.primary.autonomyKm} km</div>
+                <div className="text-center">Até {recommendation.secondary.autonomyKm} km</div>
 
-              <div className="text-muted-foreground">Indicada para</div>
-              <div className="text-center">{recommendation.primary.perfilIndicado}</div>
-              <div className="text-center">{recommendation.secondary.perfilIndicado}</div>
+                <div className="text-muted-foreground">Capacidade</div>
+                <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
+                <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
+
+                <div className="text-muted-foreground">Diferencial</div>
+                <div className="text-center">{recommendation.primary.diferencial}</div>
+                <div className="text-center">{recommendation.secondary.diferencial}</div>
+
+                <div className="text-muted-foreground">Indicada para</div>
+                <div className="text-center">{recommendation.primary.perfilIndicado}</div>
+                <div className="text-center">{recommendation.secondary.perfilIndicado}</div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* 7. Grupo de ofertas */}
+        {/* Grupo de ofertas */}
         <OffersGroup leadId={leadId} />
 
-        {/* 8. Bloco educativo */}
-        <div className="bg-muted rounded-xl p-5 mb-4">
-          <h3 className="font-bold text-foreground mb-2">Por que não recomendamos só pela ficha técnica?</h3>
-          <p className="text-base text-muted-foreground">
+        {/* Bloco educativo */}
+        <div className="bg-muted rounded-[18px] p-5 mb-4">
+          <h3 className="font-bold text-foreground mb-2 text-base">Por que não recomendamos só pela ficha técnica?</h3>
+          <p className="text-[15px] sm:text-base text-muted-foreground leading-relaxed">
             Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária, do orçamento e do tipo de uso.
           </p>
         </div>
 
-        {/* 9. Aviso ML */}
-        <p className="text-base text-center text-muted-foreground mb-10">
+        {/* Aviso ML */}
+        <p className="text-[14px] sm:text-base text-center text-muted-foreground mb-8 leading-relaxed">
           Valores, disponibilidade e condições podem variar no Mercado Livre.
         </p>
 
-        {/* 10. Ações secundárias */}
+        {/* Ações secundárias */}
         <SecondaryActions
           recommendation={recommendation}
           leadId={leadId}
@@ -788,7 +849,59 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           phone={phone}
         />
       </div>
+
+      {/* Sticky CTA mobile */}
+      {showSticky && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-4 py-3">
+          <div className="flex items-center gap-3 max-w-md mx-auto">
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] text-muted-foreground leading-tight">Recomendada</div>
+              <div className="text-[15px] font-bold text-foreground truncate leading-tight">{recommendation.primary.name}</div>
+            </div>
+            <Button
+              onClick={() => handleBuy(recommendation.primary, "principal")}
+              className="flex-shrink-0 h-12 px-5 rounded-xl text-[15px] font-bold"
+            >
+              <ShoppingCart className="mr-1.5 h-4 w-4" /> Comprar
+            </Button>
+          </div>
+        </div>
+      )}
     </main>
+  );
+}
+
+// ---------- Reason block (collapsible on mobile) ----------
+function ReasonBlock({ title, text }: { title: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  const isLong = text.length > 160;
+
+  return (
+    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-5">
+      <div className="text-[15px] sm:text-base font-bold text-primary mb-1">{title}</div>
+
+      {/* Mobile: clamp + toggle */}
+      <div className="lg:hidden">
+        <Collapsible open={open} onOpenChange={setOpen}>
+          {!open && (
+            <p className="text-[15px] text-foreground leading-relaxed line-clamp-4">{text}</p>
+          )}
+          <CollapsibleContent>
+            <p className="text-[15px] text-foreground leading-relaxed">{text}</p>
+          </CollapsibleContent>
+          {isLong && (
+            <CollapsibleTrigger asChild>
+              <button className="mt-2 text-[14px] font-semibold text-primary underline-offset-2 hover:underline">
+                {open ? "Ver menos" : "Ler análise completa"}
+              </button>
+            </CollapsibleTrigger>
+          )}
+        </Collapsible>
+      </div>
+
+      {/* Desktop: texto completo */}
+      <p className="hidden lg:block text-base text-foreground leading-relaxed">{text}</p>
+    </div>
   );
 }
 
@@ -809,24 +922,25 @@ function OffersGroup({ leadId }: { leadId: string | null }) {
   };
 
   return (
-    <section className="bg-primary/10 border border-primary/30 rounded-xl p-6 lg:p-8 mb-6 text-center shadow-sm">
-      <h3 className="text-2xl font-bold text-foreground mb-2">Vitale Mobilidade Ofertas</h3>
-      <p className="text-lg font-medium text-foreground mb-4">Não perca boas oportunidades de bikes elétricas.</p>
-      <p className="text-base text-muted-foreground max-w-3xl mx-auto mb-4">
-        Entre no grupo para receber curadoria da Vitale Mobilidade com modelos que valem a pena, alertas de boas condições e oportunidades que podem fazer sentido para o seu perfil.
+    <section className="bg-primary/10 border border-primary/30 rounded-[18px] p-5 sm:p-6 lg:p-8 mb-6 text-center shadow-sm">
+      <h3 className="text-[22px] sm:text-2xl font-bold text-foreground mb-2 leading-tight">Vitale Mobilidade Ofertas</h3>
+      <p className="text-[16px] sm:text-lg font-medium text-foreground mb-4 leading-snug">
+        Não perca boas oportunidades de bikes elétricas.
       </p>
-      <p className="text-base text-foreground max-w-3xl mx-auto mb-6">
-        As melhores oportunidades costumam mudar rápido. O grupo ajuda você a acompanhar boas opções sem precisar pesquisar tudo do zero.
+      <p className="text-[15px] sm:text-base text-muted-foreground max-w-3xl mx-auto mb-4 leading-relaxed">
+        Receba alertas de modelos que valem a pena, boas condições e oportunidades selecionadas pela Vitale Mobilidade.
+      </p>
+      <p className="text-[15px] sm:text-base text-foreground max-w-3xl mx-auto mb-6 leading-relaxed">
+        As melhores oportunidades mudam rápido. O grupo ajuda você a acompanhar sem precisar pesquisar tudo do zero.
       </p>
       <Button
         onClick={handleOffersGroup}
         data-event="offers_group_clicked"
-        {...{ data_event: "offers_group_clicked" }}
-        className="text-base font-bold py-6 px-8 rounded-xl shadow-md shadow-primary/20"
+        className="w-full sm:w-auto min-h-[48px] text-base font-bold py-4 px-8 rounded-xl shadow-md shadow-primary/20"
       >
         Entrar no grupo de ofertas
       </Button>
-      <p className="text-base text-muted-foreground mt-4">
+      <p className="text-[14px] sm:text-base text-muted-foreground mt-4 leading-relaxed">
         Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
       </p>
     </section>
@@ -870,14 +984,14 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
   return (
     <section className="mt-6 border-t border-border pt-8">
       <h3 className="text-lg font-semibold text-foreground text-center mb-1">Ainda quer comparar melhor?</h3>
-      <p className="text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
+      <p className="text-[15px] sm:text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
 
-      <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto mb-8">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2.5 sm:gap-3 max-w-2xl mx-auto mb-8">
         <Button
           onClick={handleRestart}
           variant="outline"
           data-event="quiz_restart_clicked"
-          className="w-full text-base font-medium py-5"
+          className="w-full min-h-[46px] text-base font-semibold rounded-xl bg-background"
         >
           Faça o quiz novamente
         </Button>
@@ -885,12 +999,11 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
           onClick={handleShareWhatsApp}
           variant="outline"
           data-event="result_shared_whatsapp"
-          className="w-full text-base font-medium py-5"
+          className="w-full min-h-[46px] text-base font-semibold rounded-xl bg-background"
         >
           Compartilhar resultado
         </Button>
       </div>
-
     </section>
   );
 }
