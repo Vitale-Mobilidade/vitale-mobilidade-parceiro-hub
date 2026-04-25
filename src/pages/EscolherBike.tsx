@@ -922,24 +922,25 @@ function OffersGroup({ leadId }: { leadId: string | null }) {
   };
 
   return (
-    <section className="bg-primary/10 border border-primary/30 rounded-xl p-6 lg:p-8 mb-6 text-center shadow-sm">
-      <h3 className="text-2xl font-bold text-foreground mb-2">Vitale Mobilidade Ofertas</h3>
-      <p className="text-lg font-medium text-foreground mb-4">Não perca boas oportunidades de bikes elétricas.</p>
-      <p className="text-base text-muted-foreground max-w-3xl mx-auto mb-4">
-        Entre no grupo para receber curadoria da Vitale Mobilidade com modelos que valem a pena, alertas de boas condições e oportunidades que podem fazer sentido para o seu perfil.
+    <section className="bg-primary/10 border border-primary/30 rounded-[18px] p-5 sm:p-6 lg:p-8 mb-6 text-center shadow-sm">
+      <h3 className="text-[22px] sm:text-2xl font-bold text-foreground mb-2 leading-tight">Vitale Mobilidade Ofertas</h3>
+      <p className="text-[16px] sm:text-lg font-medium text-foreground mb-4 leading-snug">
+        Não perca boas oportunidades de bikes elétricas.
       </p>
-      <p className="text-base text-foreground max-w-3xl mx-auto mb-6">
-        As melhores oportunidades costumam mudar rápido. O grupo ajuda você a acompanhar boas opções sem precisar pesquisar tudo do zero.
+      <p className="text-[15px] sm:text-base text-muted-foreground max-w-3xl mx-auto mb-4 leading-relaxed">
+        Receba alertas de modelos que valem a pena, boas condições e oportunidades selecionadas pela Vitale Mobilidade.
+      </p>
+      <p className="text-[15px] sm:text-base text-foreground max-w-3xl mx-auto mb-6 leading-relaxed">
+        As melhores oportunidades mudam rápido. O grupo ajuda você a acompanhar sem precisar pesquisar tudo do zero.
       </p>
       <Button
         onClick={handleOffersGroup}
         data-event="offers_group_clicked"
-        {...{ data_event: "offers_group_clicked" }}
-        className="text-base font-bold py-6 px-8 rounded-xl shadow-md shadow-primary/20"
+        className="w-full sm:w-auto min-h-[48px] text-base font-bold py-4 px-8 rounded-xl shadow-md shadow-primary/20"
       >
         Entrar no grupo de ofertas
       </Button>
-      <p className="text-base text-muted-foreground mt-4">
+      <p className="text-[14px] sm:text-base text-muted-foreground mt-4 leading-relaxed">
         Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
       </p>
     </section>
