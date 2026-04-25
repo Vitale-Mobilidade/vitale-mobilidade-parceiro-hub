@@ -79,6 +79,8 @@ export type Database = {
           current_step: number
           daily_km_range: string | null
           daily_km_range_label: string | null
+          detected_medium: string | null
+          detected_source: string | null
           device_type: string | null
           distance_cluster: string | null
           experience_cluster: string | null
@@ -109,12 +111,14 @@ export type Database = {
           recommended_bike_2_reason: string | null
           recommended_bike_2_score: number | null
           referrer: string | null
+          referrer_domain: string | null
           route_cluster: string | null
           route_type: string | null
           route_type_label: string | null
           source_url: string | null
           started_at: string | null
           status: string
+          traffic_origin: string | null
           updated_at: string
           usage_cluster: string | null
           utm_campaign: string | null
@@ -144,6 +148,8 @@ export type Database = {
           current_step?: number
           daily_km_range?: string | null
           daily_km_range_label?: string | null
+          detected_medium?: string | null
+          detected_source?: string | null
           device_type?: string | null
           distance_cluster?: string | null
           experience_cluster?: string | null
@@ -174,12 +180,14 @@ export type Database = {
           recommended_bike_2_reason?: string | null
           recommended_bike_2_score?: number | null
           referrer?: string | null
+          referrer_domain?: string | null
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
           source_url?: string | null
           started_at?: string | null
           status?: string
+          traffic_origin?: string | null
           updated_at?: string
           usage_cluster?: string | null
           utm_campaign?: string | null
@@ -209,6 +217,8 @@ export type Database = {
           current_step?: number
           daily_km_range?: string | null
           daily_km_range_label?: string | null
+          detected_medium?: string | null
+          detected_source?: string | null
           device_type?: string | null
           distance_cluster?: string | null
           experience_cluster?: string | null
@@ -239,12 +249,14 @@ export type Database = {
           recommended_bike_2_reason?: string | null
           recommended_bike_2_score?: number | null
           referrer?: string | null
+          referrer_domain?: string | null
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
           source_url?: string | null
           started_at?: string | null
           status?: string
+          traffic_origin?: string | null
           updated_at?: string
           usage_cluster?: string | null
           utm_campaign?: string | null

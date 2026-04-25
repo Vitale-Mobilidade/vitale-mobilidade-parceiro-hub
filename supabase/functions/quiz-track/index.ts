@@ -18,11 +18,13 @@ const leadFields = [
   "recommendation_reason", "conversion_status", "clicked_bike_name", "clicked_bike_position", "clicked_bike_link", "clicked_at",
   "buy_click_count", "crm_webhook_status", "last_webhook_sent_at", "webhook_error_message", "raw_answers_json", "raw_recommendation_json",
   "name", "phone", "source_url", "landing_path", "referrer", "utm_source",
+  "referrer_domain", "detected_source", "detected_medium", "traffic_origin",
 ] as const;
 
 const eventNames = new Set([
   "quiz_started", "quiz_step_completed", "quiz_completed", "recommendation_generated",
   "buy_button_clicked", "secondary_option_clicked", "quiz_restart_clicked", "result_shared_whatsapp", "offers_group_clicked",
+  "specialist_whatsapp_clicked",
 ]);
 
 const BodySchema = z.object({

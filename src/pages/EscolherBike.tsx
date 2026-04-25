@@ -93,6 +93,61 @@ function getUTMs() {
   };
 }
 
+function extractDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function detectTrafficOrigin(utms: Record<string, string | null>, referrer: string | null) {
+  const referrer_domain = extractDomain(referrer);
+  const utm_source = utms.utm_source || null;
+  const utm_medium = utms.utm_medium || null;
+
+  let detected_source: string;
+  if (utm_source) {
+    detected_source = utm_source;
+  } else if (referrer_domain && /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(referrer_domain)) {
+    detected_source = "youtube";
+  } else if (referrer_domain && /(^|\.)instagram\.com$/.test(referrer_domain)) {
+    detected_source = "instagram";
+  } else if (referrer_domain && /(^|\.)tiktok\.com$/.test(referrer_domain)) {
+    detected_source = "tiktok";
+  } else if (referrer_domain && /(^|\.)google\./.test(referrer_domain)) {
+    detected_source = "google";
+  } else if (referrer_domain) {
+    detected_source = referrer_domain;
+  } else {
+    detected_source = "direct_unknown";
+  }
+
+  let detected_medium: string;
+  if (utm_medium) {
+    detected_medium = utm_medium;
+  } else if (detected_source === "youtube") {
+    detected_medium = "organic_referral";
+  } else if (detected_source === "instagram" || detected_source === "tiktok") {
+    detected_medium = "social_referral";
+  } else if (detected_source === "google") {
+    detected_medium = "organic_search_or_referral";
+  } else if (detected_source === "direct_unknown") {
+    detected_medium = "direct_or_app";
+  } else {
+    detected_medium = "referral";
+  }
+
+  return {
+    referrer_domain,
+    detected_source,
+    detected_medium,
+    traffic_origin: `${detected_source} / ${detected_medium}`,
+  };
+}
+
 async function invokeQuizTrack(body: Record<string, any>) {
   const { data, error } = await supabase.functions.invoke("quiz-track", { body });
   if (error) throw { invoke_error: error, response: data };
@@ -141,11 +196,15 @@ export default function EscolherBike() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { device_type, browser, operating_system } = detectDevice();
+    const utms = getUTMs();
+    const referrer = document.referrer || null;
+    const traffic = detectTrafficOrigin(utms as Record<string, string | null>, referrer);
     baseLeadDataRef.current = {
       source_url: window.location.href,
       landing_path: window.location.pathname,
-      referrer: document.referrer || null,
-      ...getUTMs(),
+      referrer,
+      ...utms,
+      ...traffic,
       device_type, browser, operating_system,
     };
   }, []);
@@ -581,7 +640,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               event_name: eventName,
               field_value: bike.id,
               field_label: bike.name,
-              payload: { position, link: bike.affiliateLink },
+              payload: { position, link: bike.affiliateLink, ...baseLeadData },
             },
             webhook_payload: webhookPayload,
           });
@@ -833,6 +892,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           answers={answers}
           labels={labels}
           recommendation={recommendation}
+          baseLeadData={baseLeadData}
         />
 
         {/* Bloco educativo */}
@@ -915,10 +975,15 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 // ---------- Specialist WhatsApp block ----------
 const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
 
-function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation }: any) {
+function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData }: any) {
   const handleSpecialist = () => {
+    const trimmedName = (name ?? "").trim();
+    const identification = trimmedName
+      ? `sou o ${trimmedName}`
+      : "sou uma pessoa que veio do quiz";
+
     const lines = [
-      "Fala Lucas, vim do quiz.",
+      `Fala Lucas, ${identification} e vim do quiz.`,
       "",
       "Minhas respostas:",
       "",
@@ -959,6 +1024,7 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation 
         recommended_bike_2_label: recommendation?.secondary?.name,
         whatsapp_phone: SPECIALIST_WHATSAPP_PHONE,
         whatsapp_message: message,
+        ...(baseLeadData ?? {}),
       };
       invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "specialist_whatsapp_clicked", payload } })
         .then((result) => {
