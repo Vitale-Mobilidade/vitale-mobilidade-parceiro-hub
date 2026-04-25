@@ -912,43 +912,90 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
   );
 }
 
-// ---------- Constants for secondary actions ----------
-const VITALE_OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
+// ---------- Specialist WhatsApp block ----------
+const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
 
-function OffersGroup({ leadId }: { leadId: string | null }) {
-  const handleOffersGroup = () => {
-    window.open(VITALE_OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation }: any) {
+  const handleSpecialist = () => {
+    const lines = [
+      "Fala Lucas, vim do quiz.",
+      "",
+      "Minhas respostas:",
+      "",
+      `Uso: ${labels?.main_use_label ?? "-"}`,
+      `Distância: ${labels?.daily_km_range_label ?? "-"}`,
+      `Terreno: ${labels?.route_type_label ?? "-"}`,
+      `Orçamento: ${labels?.budget_range_label ?? "-"}`,
+      `Experiência: ${labels?.had_ebike_before_label ?? "-"}`,
+      "",
+      `Bike recomendada: ${recommendation?.primary?.name ?? "-"}`,
+    ];
+    if (recommendation?.secondary?.name) {
+      lines.push(`Alternativa: ${recommendation.secondary.name}`);
+    }
+    lines.push("", "Quero ajuda para escolher minha bike ideal.");
+
+    const message = lines.join("\n");
+    const url = `https://wa.me/${SPECIALIST_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "offers_group_clicked" } })
+      const payload = {
+        name,
+        phone,
+        main_use: answers?.main_use,
+        main_use_label: labels?.main_use_label,
+        daily_km_range: answers?.daily_km_range,
+        daily_km_range_label: labels?.daily_km_range_label,
+        route_type: answers?.route_type,
+        route_type_label: labels?.route_type_label,
+        budget_range: answers?.budget_range,
+        budget_range_label: labels?.budget_range_label,
+        had_ebike_before: answers?.had_ebike_before,
+        had_ebike_before_label: labels?.had_ebike_before_label,
+        recommended_bike_1: recommendation?.primary?.id,
+        recommended_bike_1_label: recommendation?.primary?.name,
+        recommended_bike_2: recommendation?.secondary?.id,
+        recommended_bike_2_label: recommendation?.secondary?.name,
+        whatsapp_phone: SPECIALIST_WHATSAPP_PHONE,
+        whatsapp_message: message,
+      };
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "specialist_whatsapp_clicked", payload } })
         .then((result) => {
-          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", result });
-          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "offers_group_clicked" });
+          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "specialist_whatsapp_clicked", result });
+          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "specialist_whatsapp_clicked" });
         })
-        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "offers_group_clicked", error }));
+        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "specialist_whatsapp_clicked", error }));
     }
   };
 
   return (
-    <section className="bg-primary/10 border border-primary/30 rounded-[18px] p-5 sm:p-6 lg:p-8 mb-6 text-center shadow-sm">
-      <h3 className="text-[22px] sm:text-2xl font-bold text-foreground mb-2 leading-tight">Vitale Mobilidade Ofertas</h3>
-      <p className="text-[16px] sm:text-lg font-medium text-foreground mb-4 leading-snug">
-        Não perca boas oportunidades de bikes elétricas.
+    <section
+      className="rounded-[18px] p-5 sm:p-6 mb-6 border-2"
+      style={{ backgroundColor: "#DCFCE7", borderColor: "#16A34A" }}
+    >
+      <h3 className="text-[20px] sm:text-2xl font-bold mb-1.5 leading-tight" style={{ color: "#15803D" }}>
+        Ainda está em dúvida?
+      </h3>
+      <p className="text-[16px] sm:text-lg font-semibold text-foreground mb-3 leading-snug">
+        Fale com um especialista antes de comprar.
       </p>
-      <p className="text-[15px] sm:text-base text-muted-foreground max-w-3xl mx-auto mb-4 leading-relaxed">
-        Receba alertas de modelos que valem a pena, boas condições e oportunidades selecionadas pela Vitale Mobilidade.
+      <p className="text-[15px] sm:text-base text-foreground/80 mb-3 leading-relaxed">
+        Se você quer confirmar se a recomendação faz sentido para o seu uso, envie suas respostas para a Vitale Mobilidade e receba uma orientação mais segura antes de decidir.
       </p>
-      <p className="text-[15px] sm:text-base text-foreground max-w-3xl mx-auto mb-6 leading-relaxed">
-        As melhores oportunidades mudam rápido. O grupo ajuda você a acompanhar sem precisar pesquisar tudo do zero.
+      <p className="text-[14px] sm:text-[15px] text-foreground/70 mb-4 leading-relaxed">
+        A mensagem já vai com seu perfil do quiz preenchido, para facilitar a análise.
       </p>
       <Button
-        onClick={handleOffersGroup}
-        data-event="offers_group_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-base font-bold py-4 px-8 rounded-xl shadow-md shadow-primary/20"
+        onClick={handleSpecialist}
+        data-event="specialist_whatsapp_clicked"
+        className="w-full sm:w-auto min-h-[48px] text-[16px] font-bold py-3 px-6 rounded-xl text-white"
+        style={{ backgroundColor: "#16A34A" }}
       >
-        Entrar no grupo de ofertas
+        Falar com especialista
       </Button>
-      <p className="text-[14px] sm:text-base text-muted-foreground mt-4 leading-relaxed">
-        Grupo informativo. As compras continuam sendo feitas pelo Mercado Livre.
+      <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
+        Você será direcionado para o WhatsApp da Vitale Mobilidade.
       </p>
     </section>
   );
