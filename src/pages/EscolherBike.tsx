@@ -984,14 +984,14 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
   return (
     <section className="mt-6 border-t border-border pt-8">
       <h3 className="text-lg font-semibold text-foreground text-center mb-1">Ainda quer comparar melhor?</h3>
-      <p className="text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
+      <p className="text-[15px] sm:text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
 
-      <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto mb-8">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2.5 sm:gap-3 max-w-2xl mx-auto mb-8">
         <Button
           onClick={handleRestart}
           variant="outline"
           data-event="quiz_restart_clicked"
-          className="w-full text-base font-medium py-5"
+          className="w-full min-h-[46px] text-base font-semibold rounded-xl bg-background"
         >
           Faça o quiz novamente
         </Button>
@@ -999,12 +999,11 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
           onClick={handleShareWhatsApp}
           variant="outline"
           data-event="result_shared_whatsapp"
-          className="w-full text-base font-medium py-5"
+          className="w-full min-h-[46px] text-base font-semibold rounded-xl bg-background"
         >
           Compartilhar resultado
         </Button>
       </div>
-
     </section>
   );
 }
