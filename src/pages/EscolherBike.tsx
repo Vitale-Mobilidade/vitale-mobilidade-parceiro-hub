@@ -892,6 +892,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           answers={answers}
           labels={labels}
           recommendation={recommendation}
+          baseLeadData={baseLeadData}
         />
 
         {/* Bloco educativo */}
