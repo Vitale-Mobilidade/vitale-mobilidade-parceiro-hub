@@ -1126,6 +1126,7 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
         })
         .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", error }));
     }
+    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
     // Volta para intro mantendo dados já salvos no banco intactos
     window.location.href = "/escolherbike";
   };
