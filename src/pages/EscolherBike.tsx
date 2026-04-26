@@ -935,6 +935,53 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         </div>
       )}
+
+      {/* Floating WhatsApp — only on result screen */}
+      <FloatingSpecialistWhatsApp
+        name={name}
+        phone={phone}
+        answers={answers}
+        labels={labels}
+        recommendation={recommendation}
+        baseLeadData={baseLeadData}
+        leadId={leadId}
+        liftedAboveStickyBar={showSticky}
+        onTrack={({ whatsapp_phone, whatsapp_message, source }) => {
+          if (!leadId) return;
+          const payload = {
+            name,
+            phone,
+            main_use: answers?.main_use,
+            main_use_label: labels?.main_use_label,
+            daily_km_range: answers?.daily_km_range,
+            daily_km_range_label: labels?.daily_km_range_label,
+            route_type: answers?.route_type,
+            route_type_label: labels?.route_type_label,
+            budget_range: answers?.budget_range,
+            budget_range_label: labels?.budget_range_label,
+            had_ebike_before: answers?.had_ebike_before,
+            had_ebike_before_label: labels?.had_ebike_before_label,
+            recommended_bike_1: recommendation?.primary?.id,
+            recommended_bike_1_label: recommendation?.primary?.name,
+            recommended_bike_2: recommendation?.secondary?.id,
+            recommended_bike_2_label: recommendation?.secondary?.name,
+            whatsapp_phone,
+            whatsapp_message,
+            source,
+            ...(baseLeadData ?? {}),
+          };
+          invokeQuizTrack({
+            action: "save_event",
+            lead_id: leadId,
+            event: { event_name: "floating_specialist_whatsapp_clicked", payload },
+          })
+            .then((result) => {
+              if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "floating_specialist_whatsapp_clicked", result });
+              else console.info("[quiz] Evento salvo com sucesso:", { event_name: "floating_specialist_whatsapp_clicked" });
+            })
+            .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "floating_specialist_whatsapp_clicked", error }));
+        }}
+      />
     </main>
   );
 }
