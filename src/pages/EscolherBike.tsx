@@ -571,6 +571,7 @@ export default function EscolherBike() {
       }
     }
 
+    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
     setPhase("result");
   }
 
