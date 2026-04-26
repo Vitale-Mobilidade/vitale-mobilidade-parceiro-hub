@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 const SPECIALIST_PHONE = "5511986893890";
-const HIDE_BUBBLE_KEY = "vitale_hide_floating_whatsapp_bubble";
-const BUBBLE_AUTO_HIDE_MS = 7000;
+const DISMISS_BUBBLE_KEY = "vitale_dismissed_floating_whatsapp_bubble";
+const BUBBLE_VISIBLE_MS = 7000;
+const BUBBLE_HIDDEN_MS = 15000;
 
 interface Props {
   name?: string;
