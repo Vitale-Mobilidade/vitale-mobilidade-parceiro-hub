@@ -12,6 +12,7 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
+import { FloatingSpecialistWhatsApp } from "@/components/FloatingSpecialistWhatsApp";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
