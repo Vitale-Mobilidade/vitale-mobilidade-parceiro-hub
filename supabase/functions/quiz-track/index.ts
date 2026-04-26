@@ -24,7 +24,7 @@ const leadFields = [
 const eventNames = new Set([
   "quiz_started", "quiz_step_completed", "quiz_completed", "recommendation_generated",
   "buy_button_clicked", "secondary_option_clicked", "quiz_restart_clicked", "result_shared_whatsapp", "offers_group_clicked",
-  "specialist_whatsapp_clicked",
+  "specialist_whatsapp_clicked", "floating_specialist_whatsapp_clicked",
 ]);
 
 const BodySchema = z.object({
