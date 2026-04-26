@@ -106,7 +106,7 @@ export function FloatingSpecialistWhatsApp({
         }
       `}</style>
       <div className="flex flex-col items-end gap-2">
-        {!bubbleHidden && (
+        {bubbleVisible && !bubbleDismissedByUser && (
           <div className="relative bg-white rounded-2xl shadow-lg border border-black/5 pl-4 pr-7 py-2.5 max-w-[240px]">
             <button
               type="button"
