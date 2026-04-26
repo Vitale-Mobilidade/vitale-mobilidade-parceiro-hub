@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 const SPECIALIST_PHONE = "5511986893890";
-const HIDE_BUBBLE_KEY = "vitale_hide_floating_whatsapp_bubble";
-const BUBBLE_AUTO_HIDE_MS = 7000;
+const DISMISS_BUBBLE_KEY = "vitale_dismissed_floating_whatsapp_bubble";
+const BUBBLE_VISIBLE_MS = 7000;
+const BUBBLE_HIDDEN_MS = 15000;
 
 interface Props {
   name?: string;
@@ -24,30 +25,40 @@ export function FloatingSpecialistWhatsApp({
   liftedAboveStickyBar,
   onTrack,
 }: Props) {
-  const [bubbleHidden, setBubbleHidden] = useState<boolean>(() => {
+  const [bubbleDismissedByUser, setBubbleDismissedByUser] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
-      return sessionStorage.getItem(HIDE_BUBBLE_KEY) === "true";
+      return sessionStorage.getItem(DISMISS_BUBBLE_KEY) === "true";
     } catch {
       return false;
     }
   });
+  const [bubbleVisible, setBubbleVisible] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem(DISMISS_BUBBLE_KEY) !== "true";
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
-    if (bubbleHidden) return;
+    if (bubbleDismissedByUser) return;
+    const delay = bubbleVisible ? BUBBLE_VISIBLE_MS : BUBBLE_HIDDEN_MS;
     const t = window.setTimeout(() => {
-      setBubbleHidden(true);
-    }, BUBBLE_AUTO_HIDE_MS);
+      setBubbleVisible((v) => !v);
+    }, delay);
     return () => window.clearTimeout(t);
-  }, [bubbleHidden]);
+  }, [bubbleVisible, bubbleDismissedByUser]);
 
   const handleCloseBubble = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     e.preventDefault();
     try {
-      sessionStorage.setItem(HIDE_BUBBLE_KEY, "true");
+      sessionStorage.setItem(DISMISS_BUBBLE_KEY, "true");
     } catch {}
-    setBubbleHidden(true);
+    setBubbleDismissedByUser(true);
+    setBubbleVisible(false);
   };
 
   const handleClick = () => {
@@ -95,7 +106,7 @@ export function FloatingSpecialistWhatsApp({
         }
       `}</style>
       <div className="flex flex-col items-end gap-2">
-        {!bubbleHidden && (
+        {bubbleVisible && !bubbleDismissedByUser && (
           <div className="relative bg-white rounded-2xl shadow-lg border border-black/5 pl-4 pr-7 py-2.5 max-w-[240px]">
             <button
               type="button"
