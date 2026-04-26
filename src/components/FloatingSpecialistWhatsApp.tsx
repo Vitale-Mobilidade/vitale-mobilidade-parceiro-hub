@@ -25,30 +25,40 @@ export function FloatingSpecialistWhatsApp({
   liftedAboveStickyBar,
   onTrack,
 }: Props) {
-  const [bubbleHidden, setBubbleHidden] = useState<boolean>(() => {
+  const [bubbleDismissedByUser, setBubbleDismissedByUser] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
-      return sessionStorage.getItem(HIDE_BUBBLE_KEY) === "true";
+      return sessionStorage.getItem(DISMISS_BUBBLE_KEY) === "true";
     } catch {
       return false;
     }
   });
+  const [bubbleVisible, setBubbleVisible] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem(DISMISS_BUBBLE_KEY) !== "true";
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
-    if (bubbleHidden) return;
+    if (bubbleDismissedByUser) return;
+    const delay = bubbleVisible ? BUBBLE_VISIBLE_MS : BUBBLE_HIDDEN_MS;
     const t = window.setTimeout(() => {
-      setBubbleHidden(true);
-    }, BUBBLE_AUTO_HIDE_MS);
+      setBubbleVisible((v) => !v);
+    }, delay);
     return () => window.clearTimeout(t);
-  }, [bubbleHidden]);
+  }, [bubbleVisible, bubbleDismissedByUser]);
 
   const handleCloseBubble = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     e.preventDefault();
     try {
-      sessionStorage.setItem(HIDE_BUBBLE_KEY, "true");
+      sessionStorage.setItem(DISMISS_BUBBLE_KEY, "true");
     } catch {}
-    setBubbleHidden(true);
+    setBubbleDismissedByUser(true);
+    setBubbleVisible(false);
   };
 
   const handleClick = () => {
