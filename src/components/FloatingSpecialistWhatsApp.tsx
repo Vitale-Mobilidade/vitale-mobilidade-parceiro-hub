@@ -42,6 +42,14 @@ export function FloatingSpecialistWhatsApp({
     }
   });
 
+  const resultKey = `${recommendation?.primary?.id ?? ""}-${recommendation?.secondary?.id ?? ""}`;
+  useEffect(() => {
+    try { sessionStorage.removeItem(DISMISS_BUBBLE_KEY); } catch {}
+    setBubbleDismissedByUser(false);
+    setBubbleVisible(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultKey]);
+
   useEffect(() => {
     if (bubbleDismissedByUser) return;
     const delay = bubbleVisible ? BUBBLE_VISIBLE_MS : BUBBLE_HIDDEN_MS;
