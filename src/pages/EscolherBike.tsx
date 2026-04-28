@@ -917,6 +917,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           leadId={leadId}
           name={name}
           phone={phone}
+          baseLeadData={baseLeadData}
         />
       </div>
 
