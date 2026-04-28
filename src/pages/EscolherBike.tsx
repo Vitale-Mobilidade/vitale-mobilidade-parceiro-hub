@@ -374,6 +374,7 @@ export default function EscolherBike() {
       const eventData = {
         event_name: "quiz_step_completed", step: stepIdx + 1,
         field_name: step.key, field_value: opt.value, field_label: opt.label,
+        payload: { field_name: step.key, field_value: opt.value, field_label: opt.label, ...baseLeadDataRef.current },
       };
 
       let activeLeadId = leadId;
