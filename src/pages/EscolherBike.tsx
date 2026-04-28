@@ -132,7 +132,7 @@ function detectTrafficOrigin(utms: Record<string, string | null>, referrer: stri
   } else if (detected_source === "youtube") {
     detected_medium = "organic_referral";
   } else if (detected_source === "instagram" || detected_source === "tiktok") {
-    detected_medium = "social_referral";
+    detected_medium = "social_bio";
   } else if (detected_source === "google") {
     detected_medium = "organic_search_or_referral";
   } else if (detected_source === "direct_unknown") {
