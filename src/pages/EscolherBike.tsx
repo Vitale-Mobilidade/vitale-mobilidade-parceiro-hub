@@ -1118,10 +1118,10 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
   );
 }
 
-function SecondaryActions({ recommendation, leadId, name, phone }: any) {
+function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData }: any) {
   const handleRestart = () => {
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked" } })
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked", payload: { ...(baseLeadData ?? {}) } } })
         .then((result) => {
           if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", result });
           else console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_restart_clicked" });
@@ -1144,7 +1144,7 @@ function SecondaryActions({ recommendation, leadId, name, phone }: any) {
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "result_shared_whatsapp", payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id } } })
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "result_shared_whatsapp", payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id, ...(baseLeadData ?? {}) } } })
         .then((result) => {
           if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", result });
           else console.info("[quiz] Evento salvo com sucesso:", { event_name: "result_shared_whatsapp" });
