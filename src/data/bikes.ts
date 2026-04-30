@@ -101,7 +101,7 @@ export const BIKES: Bike[] = [
     shortDescription: "Bike 1000W Fat Tire com suspensão, alarme e NFC, robusta e confortável.",
     image: v8pro,
     affiliateLink: "https://meli.la/1Arqegn",
-    internalPrice: 8415,
+    internalPrice: 8018,
     capacity: 2,
     autonomyKm: 50,
     bestFor: ["urbano", "lazer", "locomocao_diaria"],
