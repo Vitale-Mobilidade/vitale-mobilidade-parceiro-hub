@@ -573,6 +573,17 @@ export default function EscolherBike() {
     }
 
     try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
+
+    // GTM dataLayer: lead capturado ao concluir o quiz
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_lead",
+        form_name: "escolherbike",
+        lead_type: "quiz_recommendation",
+      });
+    } catch {}
+
     setPhase("result");
   }
 
