@@ -90,6 +90,16 @@ export function FloatingSpecialistWhatsApp({
     lines.push("", "Quero ajuda para escolher minha bike ideal.");
     const message = lines.join("\n");
     const url = `https://wa.me/${SPECIALIST_PHONE}?text=${encodeURIComponent(message)}`;
+
+    // GTM dataLayer: clique no WhatsApp (antes de abrir)
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_click_whatsapp",
+        button_location: "escolherbike",
+      });
+    } catch {}
+
     window.open(url, "_blank", "noopener,noreferrer");
 
     onTrack?.({
