@@ -574,7 +574,7 @@ export default function EscolherBike() {
 
     try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
 
-    // GTM dataLayer: lead capturado ao concluir o quiz
+    // GTM dataLayer: lead capturado ao concluir o quiz (ANTES de mostrar o resultado)
     try {
       (window as any).dataLayer = (window as any).dataLayer || [];
       (window as any).dataLayer.push({
@@ -582,7 +582,10 @@ export default function EscolherBike() {
         form_name: "escolherbike",
         lead_type: "quiz_recommendation",
       });
-    } catch {}
+      console.log("[GTM] event_lead pushed", (window as any).dataLayer);
+    } catch (e) {
+      console.error("[GTM] event_lead push failed", e);
+    }
 
     setPhase("result");
   }
@@ -607,7 +610,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonPrimary = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
-  const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
+  const handleBuy = (bike: any, position: "principal" | "segunda_opcao", e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
     // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
     try {
       (window as any).dataLayer = (window as any).dataLayer || [];
@@ -616,10 +621,15 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         product_name: bike.name,
         product_url: bike.affiliateLink,
       });
-    } catch {}
+      console.log("[GTM] event_click_buy pushed", { product_name: bike.name });
+    } catch (err) {
+      console.error("[GTM] event_click_buy push failed", err);
+    }
 
-    // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
-    window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
+    // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
+    setTimeout(() => {
+      window.location.href = bike.affiliateLink;
+    }, 300);
 
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
     const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
@@ -1082,9 +1092,14 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
         event: "event_click_whatsapp",
         button_location: "escolherbike",
       });
-    } catch {}
+      console.log("[GTM] event_click_whatsapp pushed (specialist block)");
+    } catch (err) {
+      console.error("[GTM] event_click_whatsapp push failed", err);
+    }
 
-    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => {
+      window.location.href = url;
+    }, 300);
 
     if (leadId) {
       const payload = {

@@ -98,15 +98,20 @@ export function FloatingSpecialistWhatsApp({
         event: "event_click_whatsapp",
         button_location: "escolherbike",
       });
-    } catch {}
-
-    window.open(url, "_blank", "noopener,noreferrer");
+      console.log("[GTM] event_click_whatsapp pushed (floating)");
+    } catch (err) {
+      console.error("[GTM] event_click_whatsapp push failed", err);
+    }
 
     onTrack?.({
       whatsapp_phone: SPECIALIST_PHONE,
       whatsapp_message: message,
       source: "floating_button",
     });
+
+    setTimeout(() => {
+      window.location.href = url;
+    }, 300);
   };
 
   const mobileBottom = liftedAboveStickyBar ? "104px" : "18px";
