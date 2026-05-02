@@ -763,7 +763,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
               {/* CTA antes da explicação */}
               <Button
-                onClick={() => handleBuy(recommendation.primary, "principal")}
+                onClick={(e) => handleBuy(recommendation.primary, "principal", e)}
                 data-event="buy_button_clicked"
                 data-bike-name={recommendation.primary.name}
                 data-bike-position="principal"
@@ -811,7 +811,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 </ul>
 
                 <Button
-                  onClick={() => handleBuy(recommendation.secondary, "segunda_opcao")}
+                  onClick={(e) => handleBuy(recommendation.secondary, "segunda_opcao", e)}
                   data-event="secondary_option_clicked"
                   data-bike-name={recommendation.secondary.name}
                   data-bike-position="segunda_opcao"
@@ -961,7 +961,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <div className="text-[15px] font-bold text-foreground truncate leading-tight">{recommendation.primary.name}</div>
             </div>
             <Button
-              onClick={() => handleBuy(recommendation.primary, "principal")}
+              onClick={(e) => handleBuy(recommendation.primary, "principal", e)}
               className="flex-shrink-0 h-12 px-5 rounded-xl text-[15px] font-bold"
             >
               <ShoppingCart className="mr-1.5 h-4 w-4" /> Comprar
