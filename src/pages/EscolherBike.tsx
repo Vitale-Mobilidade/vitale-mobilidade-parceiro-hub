@@ -573,6 +573,17 @@ export default function EscolherBike() {
     }
 
     try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
+
+    // GTM dataLayer: lead capturado ao concluir o quiz
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_lead",
+        form_name: "escolherbike",
+        lead_type: "quiz_recommendation",
+      });
+    } catch {}
+
     setPhase("result");
   }
 
@@ -597,6 +608,16 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
+    // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_click_buy",
+        product_name: bike.name,
+        product_url: bike.affiliateLink,
+      });
+    } catch {}
+
     // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
     window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
 
@@ -1053,6 +1074,16 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
 
     const message = lines.join("\n");
     const url = `https://wa.me/${SPECIALIST_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+
+    // GTM dataLayer: clique no WhatsApp (antes de abrir)
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_click_whatsapp",
+        button_location: "escolherbike",
+      });
+    } catch {}
+
     window.open(url, "_blank", "noopener,noreferrer");
 
     if (leadId) {
