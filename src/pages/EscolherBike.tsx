@@ -1074,6 +1074,16 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
 
     const message = lines.join("\n");
     const url = `https://wa.me/${SPECIALIST_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+
+    // GTM dataLayer: clique no WhatsApp (antes de abrir)
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_click_whatsapp",
+        button_location: "escolherbike",
+      });
+    } catch {}
+
     window.open(url, "_blank", "noopener,noreferrer");
 
     if (leadId) {
