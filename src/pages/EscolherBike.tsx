@@ -608,6 +608,16 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao") => {
+    // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: "event_click_buy",
+        product_name: bike.name,
+        product_url: bike.affiliateLink,
+      });
+    } catch {}
+
     // Abrir link IMEDIATAMENTE (evita popup blocker e garante conversão)
     window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
 
