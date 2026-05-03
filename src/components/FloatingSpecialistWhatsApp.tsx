@@ -110,7 +110,7 @@ export function FloatingSpecialistWhatsApp({
     });
 
     setTimeout(() => {
-      window.location.href = url;
+      window.open(url, "_blank", "noopener,noreferrer");
     }, 300);
   };
 
