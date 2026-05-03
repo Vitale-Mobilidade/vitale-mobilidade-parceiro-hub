@@ -628,7 +628,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
     // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
     setTimeout(() => {
-      window.location.href = bike.affiliateLink;
+      window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
     }, 300);
 
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
@@ -1098,7 +1098,7 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
     }
 
     setTimeout(() => {
-      window.location.href = url;
+      window.open(url, "_blank", "noopener,noreferrer");
     }, 300);
 
     if (leadId) {
