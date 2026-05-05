@@ -332,60 +332,17 @@ export default function EscolherBike() {
     const step = STEPS[stepIdx];
     const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
-    const handleAnswer = async (opt: Option) => {
+    const handleAnswer = (opt: Option) => {
       const newAnswers = { ...answers, [step.key]: opt.value };
       const newLabels = { ...labels, [`${step.key}_label`]: opt.label };
       setAnswers(newAnswers);
       setLabels(newLabels);
 
       const isLast = stepIdx === STEPS.length - 1;
-      const completion = Math.round(((stepIdx + 1) / STEPS.length) * 100);
-
-      const updateData: any = {
-        [step.key]: opt.value,
-        [`${step.key}_label`]: opt.label,
-        current_step: stepIdx + 2,
-        completion_percentage: completion,
-        last_interaction_at: new Date().toISOString(),
-      };
-
-      const eventData = {
-        event_name: "quiz_step_completed", step: stepIdx + 1,
-        field_name: step.key, field_value: opt.value, field_label: opt.label,
-        payload: { field_name: step.key, field_value: opt.value, field_label: opt.label, ...baseLeadDataRef.current },
-      };
-
-      let activeLeadId = leadId;
-      if (!activeLeadId) {
-        const synced = await retryPendingLeadSync().catch(() => null);
-        if (synced) {
-          activeLeadId = synced;
-          setLeadId(synced);
-        }
-      }
-
-      if (activeLeadId) {
-        console.info("[quiz] Tentando salvar resposta no banco:", { campo: step.key, valor: opt.value });
-        try {
-          console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_step_completed" });
-          const result = await invokeQuizTrack({ action: "save_answer", lead_id: activeLeadId, lead: updateData, event: eventData });
-          if (!result?.success) throw result;
-          console.info("[quiz] Resposta salva com sucesso:", { campo: step.key, valor: opt.value });
-          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_step_completed" });
-        } catch (e) {
-          console.error("[quiz] Erro ao salvar resposta:", e);
-          console.error("[quiz] Erro ao salvar evento:", e);
-          queuePendingUpdate(updateData);
-          queuePendingEvent(eventData);
-        }
-      } else {
-        queuePendingUpdate(updateData);
-        queuePendingEvent(eventData);
-      }
 
       if (isLast) {
-        setPhase("processing");
-        setTimeout(() => finishQuiz(newAnswers as Answers, newLabels), 1800);
+        // Vai para a captura de nome/telefone (lead ainda não existe no banco)
+        setPhase("lead");
       } else {
         setStepIdx(stepIdx + 1);
       }
