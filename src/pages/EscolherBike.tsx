@@ -262,43 +262,19 @@ export default function EscolherBike() {
     );
   }
 
-  // ---------- Lead capture ----------
+  // ---------- Lead capture (AFTER quiz, before result) ----------
   if (phase === "lead") {
     const valid = name.trim().length >= 2 && validatePhoneBR(phone);
+    const phoneInvalid = phone.length > 0 && !validatePhoneBR(phone);
 
     const handleSubmit = async () => {
       if (!valid || submitting) return;
       setSubmitting(true);
-
-      const startedAt = new Date().toISOString();
-      baseLeadDataRef.current.started_at = startedAt;
-
-      const payload = {
-        name: name.trim(),
-        phone,
-        status: "incompleto",
-        current_step: 1,
-        completion_percentage: 10,
-        started_at: startedAt,
-        ...baseLeadDataRef.current,
-      };
-
-      console.info("[quiz] Tentando criar lead no banco");
-
-      try {
-        const result = await invokeQuizTrack({ action: "create_lead", lead: payload });
-        if (!result?.success || !result?.lead_id) throw result;
-        console.info("[quiz] Lead criado com sucesso:", { lead_id: result.lead_id });
-        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_started" });
-        console.info("[quiz] Evento salvo com sucesso: quiz_started");
-        setLeadId(result.lead_id);
-      } catch (e) {
-        console.error("[quiz] Erro ao criar lead no banco:", e);
-        savePendingLead(payload);
-      } finally {
-        setSubmitting(false);
-        setPhase("quiz");
-      }
+      setPhase("processing");
+      // Pequeno delay UX para a tela de processamento aparecer
+      setTimeout(() => {
+        finishQuiz(answers as Answers, labels).finally(() => setSubmitting(false));
+      }, 100);
     };
 
     return (
@@ -308,11 +284,13 @@ export default function EscolherBike() {
             <VitaleBrand size="sm" />
           </div>
           <div className="mb-6">
-            <Progress value={10} className="h-2" />
-            <p className="text-base text-muted-foreground mt-2 text-center">Etapa inicial</p>
+            <Progress value={95} className="h-2" />
+            <p className="text-base text-muted-foreground mt-2 text-center">Último passo</p>
           </div>
-          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
-          <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
+          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Sua recomendação está pronta</h2>
+          <p className="text-base text-muted-foreground mb-6 text-center">
+            Preencha seus dados para liberar o resultado da bike ideal para o seu perfil.
+          </p>
           <div className="space-y-4">
             <div>
               <label className="text-base font-medium mb-2 block">Nome</label>
@@ -329,14 +307,19 @@ export default function EscolherBike() {
                 placeholder="(11) 99999-9999" inputMode="numeric"
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
+              {phoneInvalid && (
+                <p className="text-sm text-destructive mt-2">
+                  Informe um WhatsApp válido para receber sua recomendação.
+                </p>
+              )}
             </div>
             <Button
               onClick={handleSubmit}
               disabled={!valid || submitting}
-              data-event="quiz_started"
+              data-event="lead_capture_submitted"
               className="w-full py-6 text-base font-bold"
             >
-              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>) : "Continuar"}
+              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando recomendação...</>) : "Ver minha recomendação"}
             </Button>
           </div>
         </div>
