@@ -357,7 +357,7 @@ export default function EscolherBike() {
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
-              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("lead")} className="inline-flex items-center gap-1 hover:text-foreground">
+              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro")} className="inline-flex items-center gap-1 hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <span>Pergunta {stepIdx + 1} de {STEPS.length}</span>
