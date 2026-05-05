@@ -192,6 +192,7 @@ export default function EscolherBike() {
   }, [answers]);
 
   const baseLeadDataRef = useRef<any>({});
+  const startedAtRef = useRef<string | null>(null);
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -209,15 +210,6 @@ export default function EscolherBike() {
       device_type, browser, operating_system,
     };
   }, []);
-
-  // Tenta sincronizar lead pendente quando muda fase ou step
-  useEffect(() => {
-    if (leadId) return;
-    if (phase !== "quiz" && phase !== "processing" && phase !== "result") return;
-    retryPendingLeadSync().then(syncedId => {
-      if (syncedId) setLeadId(syncedId);
-    }).catch(() => {});
-  }, [phase, stepIdx, leadId]);
 
   // ---------- Intro ----------
   if (phase === "intro") {
@@ -242,7 +234,10 @@ export default function EscolherBike() {
 
             <Button
               size="lg"
-              onClick={() => setPhase("lead")}
+              onClick={() => {
+                startedAtRef.current = new Date().toISOString();
+                setPhase("quiz");
+              }}
               data-event="quiz_start_click"
               className="text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all w-full sm:w-auto bg-primary hover:bg-primary/90"
             >
@@ -267,43 +262,19 @@ export default function EscolherBike() {
     );
   }
 
-  // ---------- Lead capture ----------
+  // ---------- Lead capture (AFTER quiz, before result) ----------
   if (phase === "lead") {
     const valid = name.trim().length >= 2 && validatePhoneBR(phone);
+    const phoneInvalid = phone.length > 0 && !validatePhoneBR(phone);
 
     const handleSubmit = async () => {
       if (!valid || submitting) return;
       setSubmitting(true);
-
-      const startedAt = new Date().toISOString();
-      baseLeadDataRef.current.started_at = startedAt;
-
-      const payload = {
-        name: name.trim(),
-        phone,
-        status: "incompleto",
-        current_step: 1,
-        completion_percentage: 10,
-        started_at: startedAt,
-        ...baseLeadDataRef.current,
-      };
-
-      console.info("[quiz] Tentando criar lead no banco");
-
-      try {
-        const result = await invokeQuizTrack({ action: "create_lead", lead: payload });
-        if (!result?.success || !result?.lead_id) throw result;
-        console.info("[quiz] Lead criado com sucesso:", { lead_id: result.lead_id });
-        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_started" });
-        console.info("[quiz] Evento salvo com sucesso: quiz_started");
-        setLeadId(result.lead_id);
-      } catch (e) {
-        console.error("[quiz] Erro ao criar lead no banco:", e);
-        savePendingLead(payload);
-      } finally {
-        setSubmitting(false);
-        setPhase("quiz");
-      }
+      setPhase("processing");
+      // Pequeno delay UX para a tela de processamento aparecer
+      setTimeout(() => {
+        finishQuiz(answers as Answers, labels).finally(() => setSubmitting(false));
+      }, 100);
     };
 
     return (
@@ -313,11 +284,13 @@ export default function EscolherBike() {
             <VitaleBrand size="sm" />
           </div>
           <div className="mb-6">
-            <Progress value={10} className="h-2" />
-            <p className="text-base text-muted-foreground mt-2 text-center">Etapa inicial</p>
+            <Progress value={95} className="h-2" />
+            <p className="text-base text-muted-foreground mt-2 text-center">Último passo</p>
           </div>
-          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Antes de recomendar sua bike ideal, me diga com quem estou falando</h2>
-          <p className="text-base text-muted-foreground mb-6 text-center">Assim conseguimos salvar sua recomendação e melhorar sua experiência.</p>
+          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Sua recomendação está pronta</h2>
+          <p className="text-base text-muted-foreground mb-6 text-center">
+            Preencha seus dados para liberar o resultado da bike ideal para o seu perfil.
+          </p>
           <div className="space-y-4">
             <div>
               <label className="text-base font-medium mb-2 block">Nome</label>
@@ -334,14 +307,19 @@ export default function EscolherBike() {
                 placeholder="(11) 99999-9999" inputMode="numeric"
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
+              {phoneInvalid && (
+                <p className="text-sm text-destructive mt-2">
+                  Informe um WhatsApp válido para receber sua recomendação.
+                </p>
+              )}
             </div>
             <Button
               onClick={handleSubmit}
               disabled={!valid || submitting}
-              data-event="quiz_started"
+              data-event="lead_capture_submitted"
               className="w-full py-6 text-base font-bold"
             >
-              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>) : "Continuar"}
+              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando recomendação...</>) : "Ver minha recomendação"}
             </Button>
           </div>
         </div>
@@ -354,60 +332,17 @@ export default function EscolherBike() {
     const step = STEPS[stepIdx];
     const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
-    const handleAnswer = async (opt: Option) => {
+    const handleAnswer = (opt: Option) => {
       const newAnswers = { ...answers, [step.key]: opt.value };
       const newLabels = { ...labels, [`${step.key}_label`]: opt.label };
       setAnswers(newAnswers);
       setLabels(newLabels);
 
       const isLast = stepIdx === STEPS.length - 1;
-      const completion = Math.round(((stepIdx + 1) / STEPS.length) * 100);
-
-      const updateData: any = {
-        [step.key]: opt.value,
-        [`${step.key}_label`]: opt.label,
-        current_step: stepIdx + 2,
-        completion_percentage: completion,
-        last_interaction_at: new Date().toISOString(),
-      };
-
-      const eventData = {
-        event_name: "quiz_step_completed", step: stepIdx + 1,
-        field_name: step.key, field_value: opt.value, field_label: opt.label,
-        payload: { field_name: step.key, field_value: opt.value, field_label: opt.label, ...baseLeadDataRef.current },
-      };
-
-      let activeLeadId = leadId;
-      if (!activeLeadId) {
-        const synced = await retryPendingLeadSync().catch(() => null);
-        if (synced) {
-          activeLeadId = synced;
-          setLeadId(synced);
-        }
-      }
-
-      if (activeLeadId) {
-        console.info("[quiz] Tentando salvar resposta no banco:", { campo: step.key, valor: opt.value });
-        try {
-          console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_step_completed" });
-          const result = await invokeQuizTrack({ action: "save_answer", lead_id: activeLeadId, lead: updateData, event: eventData });
-          if (!result?.success) throw result;
-          console.info("[quiz] Resposta salva com sucesso:", { campo: step.key, valor: opt.value });
-          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_step_completed" });
-        } catch (e) {
-          console.error("[quiz] Erro ao salvar resposta:", e);
-          console.error("[quiz] Erro ao salvar evento:", e);
-          queuePendingUpdate(updateData);
-          queuePendingEvent(eventData);
-        }
-      } else {
-        queuePendingUpdate(updateData);
-        queuePendingEvent(eventData);
-      }
 
       if (isLast) {
-        setPhase("processing");
-        setTimeout(() => finishQuiz(newAnswers as Answers, newLabels), 1800);
+        // Vai para a captura de nome/telefone (lead ainda não existe no banco)
+        setPhase("lead");
       } else {
         setStepIdx(stepIdx + 1);
       }
@@ -422,7 +357,7 @@ export default function EscolherBike() {
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
-              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("lead")} className="inline-flex items-center gap-1 hover:text-foreground">
+              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro")} className="inline-flex items-center gap-1 hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <span>Pergunta {stepIdx + 1} de {STEPS.length}</span>
@@ -466,8 +401,8 @@ export default function EscolherBike() {
       <main className="min-h-screen flex items-center justify-center px-6 bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
-          <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil de uso...</p>
-          <p className="text-base text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
+          <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</p>
+          <p className="text-base text-muted-foreground">Estamos cruzando uso, trajeto, distância e orçamento para recomendar a melhor opção.</p>
         </div>
       </main>
     );
@@ -475,22 +410,43 @@ export default function EscolherBike() {
 
   // ---------- Result ----------
   async function finishQuiz(finalAnswers: Answers, finalLabels: Record<string, string>) {
+    if (completedRef.current) return;
     completedRef.current = true;
-    console.info("[quiz] Tentando finalizar quiz");
+    console.info("[quiz] Criando lead após respostas");
 
     const rec = recommend(finalAnswers);
     const clusters = computeClusters(finalAnswers);
     const reasonPrimary = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
     const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
+    const startedAt = startedAtRef.current ?? new Date().toISOString();
     const completedAt = new Date().toISOString();
     const rawRecommendation = { primary: rec.primary.id, secondary: rec.secondary?.id ?? null, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore ?? null, budgetLimited: rec.budgetLimited };
 
-    const updateData: any = {
+    // Respostas + labels coletadas localmente
+    const answersFlat: Record<string, any> = {
+      main_use: finalAnswers.main_use,
+      main_use_label: finalLabels.main_use_label,
+      daily_km_range: finalAnswers.daily_km_range,
+      daily_km_range_label: finalLabels.daily_km_range_label,
+      route_type: finalAnswers.route_type,
+      route_type_label: finalLabels.route_type_label,
+      budget_range: finalAnswers.budget_range,
+      budget_range_label: finalLabels.budget_range_label,
+      had_ebike_before: finalAnswers.had_ebike_before,
+      had_ebike_before_label: finalLabels.had_ebike_before_label,
+    };
+
+    const fullLeadPayload: Record<string, any> = {
+      name: name.trim(),
+      phone,
       status: "completo",
       current_step: STEPS.length + 1,
       completion_percentage: 100,
+      started_at: startedAt,
       completed_at: completedAt,
       last_interaction_at: completedAt,
+      ...baseLeadDataRef.current,
+      ...answersFlat,
       ...clusters,
       recommended_bike_1: rec.primary.id,
       recommended_bike_1_label: rec.primary.name,
@@ -507,74 +463,19 @@ export default function EscolherBike() {
       raw_recommendation_json: rawRecommendation,
     };
 
-    let activeLeadId = leadId;
-    if (!activeLeadId) {
-      const synced = await retryPendingLeadSync().catch(() => null);
-      if (synced) { activeLeadId = synced; setLeadId(synced); }
+    let activeLeadId: string | null = null;
+    try {
+      const result = await invokeQuizTrack({ action: "create_lead", lead: fullLeadPayload });
+      if (!result?.success || !result?.lead_id) throw result;
+      activeLeadId = result.lead_id;
+      setLeadId(activeLeadId);
+      console.info("[quiz] Lead completo criado com sucesso", { lead_id: activeLeadId });
+    } catch (e) {
+      console.error("[quiz] Erro ao criar lead completo", e);
+      savePendingLead(fullLeadPayload);
     }
 
-    const webhookPayload = {
-      event_name: "quiz_completed",
-      event_created_at: completedAt,
-      lead_id: activeLeadId,
-      name,
-      phone,
-      ...baseLeadDataRef.current,
-      ...updateData,
-      ...finalAnswers,
-      ...finalLabels,
-      conversion_status: "sem_clique",
-    };
-    console.info("[quiz] Payload quiz_completed montado:", webhookPayload);
-
-    if (activeLeadId) {
-      try {
-        console.info("[quiz] Tentando salvar quiz_completed no banco");
-        console.info("[quiz] Tentando salvar evento:", { event_name: "quiz_completed" });
-        console.info("[quiz] Tentando salvar evento:", { event_name: "recommendation_generated" });
-        console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
-        const result = await invokeQuizTrack({
-          action: "complete_quiz",
-          lead_id: activeLeadId,
-          lead: updateData,
-          webhook_payload: webhookPayload,
-          recommendation_event_payload: rawRecommendation,
-        });
-        if (result?.db_error) {
-          console.error("[quiz] Erro ao salvar quiz_completed no banco:", result.db_error, result);
-          queuePendingUpdate(updateData);
-        } else {
-          console.info("[quiz] quiz_completed salvo com sucesso");
-          console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_completed" });
-          console.info("[quiz] Evento salvo com sucesso:", { event_name: "recommendation_generated" });
-        }
-        if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed disparado com sucesso:", result.webhook.status, result.webhook);
-        else console.error("[quiz] Erro ao disparar webhook quiz_completed:", result?.webhook ?? result);
-      } catch (e) {
-        console.error("[quiz] Erro ao salvar quiz_completed no banco:", e);
-        queuePendingUpdate(updateData);
-        console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
-        try {
-          const fallback = await sendCompletedWebhookFallback(webhookPayload);
-          console.info("[quiz] Webhook quiz_completed disparado com sucesso:", fallback?.status ?? fallback, fallback);
-        } catch (webhookError) {
-          console.error("[quiz] Erro ao disparar webhook quiz_completed:", webhookError);
-        }
-      }
-    } else {
-      queuePendingUpdate(updateData);
-      console.info("[quiz] Tentando disparar webhook quiz_completed para Make");
-      try {
-        const fallback = await sendCompletedWebhookFallback(webhookPayload);
-        console.info("[quiz] Webhook quiz_completed disparado com sucesso:", fallback?.status ?? fallback, fallback);
-      } catch (webhookError) {
-        console.error("[quiz] Erro ao disparar webhook quiz_completed:", webhookError);
-      }
-    }
-
-    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
-
-    // GTM dataLayer: lead capturado ao concluir o quiz (ANTES de mostrar o resultado)
+    // GTM dataLayer: lead capturado (antes do resultado)
     try {
       (window as any).dataLayer = (window as any).dataLayer || [];
       (window as any).dataLayer.push({
@@ -582,10 +483,88 @@ export default function EscolherBike() {
         form_name: "escolherbike",
         lead_type: "quiz_recommendation",
       });
-      console.log("[GTM] event_lead pushed", (window as any).dataLayer);
+      console.log("[GTM] event_lead pushed");
     } catch (e) {
       console.error("[GTM] event_lead push failed", e);
     }
+
+    const webhookPayload = {
+      event_name: "quiz_completed",
+      event_created_at: completedAt,
+      lead_id: activeLeadId,
+      ...fullLeadPayload,
+      conversion_status: "sem_clique",
+    };
+
+    if (activeLeadId) {
+      // Salvar eventos retroativos em lote (quiz_step_completed por resposta)
+      console.info("[quiz] Salvando eventos retroativos");
+      try {
+        await Promise.all(
+          STEPS.map((s, idx) => {
+            const value = (finalAnswers as any)[s.key];
+            const label = finalLabels[`${s.key}_label`];
+            return invokeQuizTrack({
+              action: "save_event",
+              lead_id: activeLeadId,
+              event: {
+                event_name: "quiz_step_completed",
+                step: idx + 1,
+                field_name: s.key,
+                field_value: value,
+                field_label: label,
+                payload: {
+                  field_name: s.key, field_value: value, field_label: label,
+                  ...baseLeadDataRef.current,
+                  ...answersFlat,
+                },
+              },
+            }).catch((err) => console.error("[quiz] Erro evento retroativo", s.key, err));
+          })
+        );
+        console.info("[quiz] Eventos retroativos salvos");
+      } catch (e) {
+        console.error("[quiz] Erro ao salvar eventos retroativos", e);
+      }
+
+      // Salva quiz_completed + recommendation_generated + dispara webhook via complete_quiz
+      console.info("[quiz] Disparando webhook quiz_completed");
+      try {
+        const result = await invokeQuizTrack({
+          action: "complete_quiz",
+          lead_id: activeLeadId,
+          lead: {
+            status: "completo",
+            completion_percentage: 100,
+            completed_at: completedAt,
+            last_interaction_at: completedAt,
+          },
+          webhook_payload: webhookPayload,
+          recommendation_event_payload: rawRecommendation,
+        });
+        if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed enviado com sucesso", result.webhook.status);
+        else console.error("[quiz] Erro ao enviar webhook quiz_completed", result?.webhook ?? result);
+      } catch (e) {
+        console.error("[quiz] Erro ao enviar webhook quiz_completed", e);
+        try {
+          const fb = await sendCompletedWebhookFallback(webhookPayload);
+          console.info("[quiz] Webhook quiz_completed enviado com sucesso (fallback)", fb?.status ?? fb);
+        } catch (we) {
+          console.error("[quiz] Erro ao enviar webhook quiz_completed (fallback)", we);
+        }
+      }
+    } else {
+      // Sem lead_id — tenta apenas o webhook direto para não perder a venda
+      console.info("[quiz] Disparando webhook quiz_completed (sem lead_id)");
+      try {
+        const fb = await sendCompletedWebhookFallback(webhookPayload);
+        console.info("[quiz] Webhook quiz_completed enviado com sucesso (fallback)", fb?.status ?? fb);
+      } catch (we) {
+        console.error("[quiz] Erro ao enviar webhook quiz_completed", we);
+      }
+    }
+
+    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
 
     setPhase("result");
   }
