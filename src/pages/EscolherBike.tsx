@@ -234,7 +234,10 @@ export default function EscolherBike() {
 
             <Button
               size="lg"
-              onClick={() => setPhase("lead")}
+              onClick={() => {
+                startedAtRef.current = new Date().toISOString();
+                setPhase("quiz");
+              }}
               data-event="quiz_start_click"
               className="text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all w-full sm:w-auto bg-primary hover:bg-primary/90"
             >
