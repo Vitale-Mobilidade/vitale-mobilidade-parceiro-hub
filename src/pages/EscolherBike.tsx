@@ -192,6 +192,7 @@ export default function EscolherBike() {
   }, [answers]);
 
   const baseLeadDataRef = useRef<any>({});
+  const startedAtRef = useRef<string | null>(null);
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -209,15 +210,6 @@ export default function EscolherBike() {
       device_type, browser, operating_system,
     };
   }, []);
-
-  // Tenta sincronizar lead pendente quando muda fase ou step
-  useEffect(() => {
-    if (leadId) return;
-    if (phase !== "quiz" && phase !== "processing" && phase !== "result") return;
-    retryPendingLeadSync().then(syncedId => {
-      if (syncedId) setLeadId(syncedId);
-    }).catch(() => {});
-  }, [phase, stepIdx, leadId]);
 
   // ---------- Intro ----------
   if (phase === "intro") {
