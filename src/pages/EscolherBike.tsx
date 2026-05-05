@@ -401,8 +401,8 @@ export default function EscolherBike() {
       <main className="min-h-screen flex items-center justify-center px-6 bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
-          <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil de uso...</p>
-          <p className="text-base text-muted-foreground">Comparando autonomia, potência, trajeto e orçamento...</p>
+          <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</p>
+          <p className="text-base text-muted-foreground">Estamos cruzando uso, trajeto, distância e orçamento para recomendar a melhor opção.</p>
         </div>
       </main>
     );
