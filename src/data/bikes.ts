@@ -40,7 +40,7 @@ export const BIKES: Bike[] = [
     name: "FT03",
     shortDescription: "Bike elétrica 1000W, até 60 km de autonomia, ideal para uso urbano individual.",
     image: ft03,
-    affiliateLink: "https://meli.la/1uzrUcC",
+    affiliateLink: "https://meli.la/2y7TYaH",
     internalPrice: 6620,
     capacity: 1,
     autonomyKm: 60,
