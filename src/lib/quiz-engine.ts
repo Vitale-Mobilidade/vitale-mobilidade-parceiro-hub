@@ -68,32 +68,32 @@ function scoreBike(bike: Bike, a: Answers): number {
 
   // Uso
   if (a.main_use === "trabalho_delivery_renda") {
-    if (bike.id === "v8_pro_s") s += 50;
+    if (["v8_pro_s", "v29_pro", "v35"].includes(bike.id)) s += 50;
     if (["v40_pro", "v10_max", "gt2000"].includes(bike.id)) s += 25;
   }
   if (a.main_use === "locomocao_diaria") {
-    if (["ft03", "v9_max", "v10_max", "v40_pro", "v8_pro"].includes(bike.id)) s += 30;
+    if (["ft03", "v20_mini", "v9_max", "v10_max", "v40_pro", "v8_pro", "v29_pro", "v35"].includes(bike.id)) s += 30;
   }
   if (a.main_use === "lazer_passeio") {
     if (["gt20", "v8_pro", "v40_pro", "gt2000"].includes(bike.id)) s += 30;
   }
 
   // Quilometragem
-  if (a.daily_km_range === "ate_10_km" && ["ft03", "v9_max", "v8_pro"].includes(bike.id)) s += 15;
-  if (a.daily_km_range === "10_25_km" && ["v9_max", "v10_max", "v40_pro", "v8_pro"].includes(bike.id)) s += 18;
-  if (a.daily_km_range === "25_40_km" && ["v40_pro", "v8_pro_s", "gt2000", "v10_max"].includes(bike.id)) s += 22;
+  if (a.daily_km_range === "ate_10_km" && ["ft03", "v20_mini", "v9_max", "v8_pro"].includes(bike.id)) s += 15;
+  if (a.daily_km_range === "10_25_km" && ["v9_max", "v10_max", "v40_pro", "v8_pro", "v20_mini"].includes(bike.id)) s += 18;
+  if (a.daily_km_range === "25_40_km" && ["v40_pro", "v8_pro_s", "v29_pro", "v35", "gt2000", "v10_max"].includes(bike.id)) s += 22;
   if (a.daily_km_range === "mais_40_km") {
-    if (bike.id === "v8_pro_s") s += 40;
+    if (["v8_pro_s", "v29_pro", "v35"].includes(bike.id)) s += 40;
     if (["gt2000", "v40_pro"].includes(bike.id)) s += 20;
   }
 
   // Trajeto
-  if (a.route_type === "plano" && ["ft03", "v9_max", "v8_pro"].includes(bike.id)) s += 12;
-  if (a.route_type === "misto" && ["v10_max", "v40_pro", "v8_pro", "gt20"].includes(bike.id)) s += 15;
+  if (a.route_type === "plano" && ["ft03", "v20_mini", "v9_max", "v8_pro"].includes(bike.id)) s += 12;
+  if (a.route_type === "misto" && ["v10_max", "v40_pro", "v8_pro", "gt20", "v29_pro", "v35"].includes(bike.id)) s += 15;
   if (a.route_type === "muitas_subidas") {
-    if (["v40_pro", "v8_pro_s"].includes(bike.id)) s += 25;
-    if (["v10_max", "gt2000"].includes(bike.id)) s += 18;
-    if (bike.id === "ft03") s -= 10;
+    if (["v40_pro", "v8_pro_s", "v29_pro"].includes(bike.id)) s += 25;
+    if (["v10_max", "gt2000", "v35"].includes(bike.id)) s += 18;
+    if (["ft03", "v20_mini"].includes(bike.id)) s -= 10;
   }
 
   // Orçamento (aderência forte)
