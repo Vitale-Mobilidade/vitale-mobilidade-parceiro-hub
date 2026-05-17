@@ -882,7 +882,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
 
           {/* Desktop: grid */}
-          <div className="hidden lg:grid grid-cols-5 gap-2">
+          <div className="hidden lg:grid grid-cols-7 gap-2">
             {profileSummary.map((p, i) => (
               <div key={i} className="bg-muted rounded-lg p-3 text-center">
                 <div className="text-base text-muted-foreground">{p.label}</div>
