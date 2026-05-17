@@ -266,6 +266,34 @@ export default function EscolherBike() {
               Começar agora
             </Button>
 
+            <div className="mt-5">
+              <p className="text-base text-muted-foreground mb-1.5">
+                Prefere ver as ofertas direto no Mercado Livre?
+              </p>
+              <a
+                href={AFFILIATE_LIST_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-event="affiliate_list_clicked"
+                onClick={() => {
+                  try {
+                    const payload = {
+                      source: "intro_secondary_cta",
+                      ...baseLeadDataRef.current,
+                    };
+                    (window as any).dataLayer = (window as any).dataLayer || [];
+                    (window as any).dataLayer.push({ event: "affiliate_list_clicked", ...payload });
+                    console.info("[quiz] affiliate_list_clicked", payload);
+                  } catch (err) {
+                    console.error("[quiz] affiliate_list_clicked tracking failed", err);
+                  }
+                }}
+                className="inline-block text-base font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                Ver lista de bikes em promoção
+              </a>
+            </div>
+
             <div className="flex flex-wrap justify-center gap-3 mt-10 mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
                 <Award className="h-4 w-4 text-primary" /> +10 anos no mercado
