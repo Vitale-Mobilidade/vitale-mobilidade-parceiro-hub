@@ -647,9 +647,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const mainActionClickedRef = useRef(false);
   const [mainActionClicked, setMainActionClicked] = useState(false);
   const [showPrimaryOfferPopup, setShowPrimaryOfferPopup] = useState(false);
-  const [showOffersGroupPopup, setShowOffersGroupPopup] = useState(false);
   const offerPopupDecidedRef = useRef(false);
-  const offersGroupDecidedRef = useRef(false);
   const resultMountedAtRef = useRef<number>(Date.now());
 
   const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
@@ -788,8 +786,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     shown: "vitale_primary_offer_popup_shown",
     dismissed: "vitale_primary_offer_popup_dismissed",
     clicked: "vitale_primary_offer_popup_clicked",
-    groupShown: "vitale_offers_post_click_popup_shown",
-    groupDismissed: "vitale_offers_post_click_popup_dismissed",
   };
   const ssGet = (k: string) => {
     try { return sessionStorage.getItem(k) === "true"; } catch { return false; }
@@ -845,30 +841,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- Offers group popup (after external click + return) ----
-  useEffect(() => {
-    const onFocus = () => {
-      if (!mainActionClickedRef.current) return;
-      if (offersGroupDecidedRef.current) return;
-      if (ssGet(SS_KEYS.groupShown) || ssGet(SS_KEYS.groupDismissed)) return;
-      offersGroupDecidedRef.current = true;
-      trackEvent("result_tab_refocused_after_external_click");
-      window.setTimeout(() => {
-        ssSet(SS_KEYS.groupShown);
-        setShowOffersGroupPopup(true);
-        trackEvent("offers_post_click_popup_viewed");
-      }, 4000);
-    };
-    const onVis = () => { if (document.visibilityState === "visible") onFocus(); };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handlePrimaryOfferClick = () => {
     ssSet(SS_KEYS.clicked);
     markMainActionClicked();
@@ -886,16 +858,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     ssSet(SS_KEYS.dismissed);
     trackEvent("primary_offer_popup_dismissed");
     setShowPrimaryOfferPopup(false);
-  };
-  const handleOffersGroupClick = () => {
-    trackEvent("offers_post_click_popup_clicked");
-    window.open(OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
-    setShowOffersGroupPopup(false);
-  };
-  const handleOffersGroupDismiss = () => {
-    ssSet(SS_KEYS.groupDismissed);
-    trackEvent("offers_post_click_popup_dismissed");
-    setShowOffersGroupPopup(false);
   };
 
   return (
@@ -1228,23 +1190,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-      {/* Offers group popup (after external click & return) */}
-      {showOffersGroupPopup && (
-        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={handleOffersGroupDismiss}>
-          <div className="bg-background rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-foreground mb-2">Ainda comparando?</h3>
-            <p className="text-base text-muted-foreground mb-5 leading-relaxed">
-              Entre no grupo Vitale Mobilidade Ofertas e acompanhe quando aparecer uma boa condição para sua próxima bike elétrica. Enviamos ofertas, vídeos novos e alertas de modelos que valem olhar antes de comprar.
-            </p>
-            <Button onClick={handleOffersGroupClick} className="w-full py-5 text-base font-bold mb-2" style={{ backgroundColor: "#16A34A" }}>
-              Entrar no grupo de ofertas
-            </Button>
-            <Button onClick={handleOffersGroupDismiss} variant="outline" className="w-full py-4 text-base font-semibold">
-              Continuar vendo minha recomendação
-            </Button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
