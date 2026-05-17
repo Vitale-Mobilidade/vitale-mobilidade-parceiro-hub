@@ -643,6 +643,35 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonPrimary = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
+  // ---- Popup tracking state ----
+  const mainActionClickedRef = useRef(false);
+  const [mainActionClicked, setMainActionClicked] = useState(false);
+  const [showPrimaryOfferPopup, setShowPrimaryOfferPopup] = useState(false);
+  const [showOffersGroupPopup, setShowOffersGroupPopup] = useState(false);
+  const offerPopupDecidedRef = useRef(false);
+  const offersGroupDecidedRef = useRef(false);
+  const resultMountedAtRef = useRef<number>(Date.now());
+
+  const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
+    const finalPayload = { ...(baseLeadData ?? {}), ...payload };
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: event_name, ...finalPayload });
+    } catch {}
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name, payload: finalPayload } }).catch((e) =>
+        console.error("[quiz] track event failed", event_name, e)
+      );
+    }
+  };
+
+  const markMainActionClicked = () => {
+    if (!mainActionClickedRef.current) {
+      mainActionClickedRef.current = true;
+      setMainActionClicked(true);
+    }
+  };
+
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao", e?: React.MouseEvent) => {
     if (e) e.preventDefault();
 
