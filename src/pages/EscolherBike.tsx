@@ -15,7 +15,7 @@ import { VitaleBrand } from "@/components/VitaleBrand";
 import { FloatingSpecialistWhatsApp } from "@/components/FloatingSpecialistWhatsApp";
 
 // ---------- Quiz config ----------
-type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
+type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
 
 interface Option {
   value: string;
@@ -53,6 +53,25 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
   {
+    key: "rider_capacity_need", field: "rider_capacity_need",
+    title: "A bike será usada por quantas pessoas?",
+    options: [
+      { value: "apenas_1_pessoa", label: "Só eu", micro: "Melhor para quem vai usar sozinho e quer uma escolha mais simples e racional." },
+      { value: "garupa_as_vezes", label: "Eu e garupa às vezes", micro: "Indicado para quem pode levar outra pessoa ocasionalmente." },
+      { value: "garupa_frequente", label: "Eu e garupa com frequência", micro: "Prioriza modelos com estrutura para 2 pessoas e mais conforto." },
+    ],
+  },
+  {
+    key: "weight_range", field: "weight_range",
+    title: "Qual faixa de peso aproximada a bike precisa suportar?",
+    options: [
+      { value: "ate_80kg", label: "Até 80 kg", micro: "Uso leve, com menor exigência estrutural." },
+      { value: "80_100kg", label: "80 a 100 kg", micro: "Faixa comum para uso urbano e deslocamento diário." },
+      { value: "100_120kg", label: "100 a 120 kg", micro: "Prioriza estrutura, estabilidade e segurança." },
+      { value: "acima_120kg", label: "Acima de 120 kg", micro: "Prioriza modelos mais robustos e capacidade superior." },
+    ],
+  },
+  {
     key: "budget_range", field: "budget_range",
     title: "Qual seu orçamento?",
     options: [
@@ -71,6 +90,9 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
 ];
+
+const AFFILIATE_LIST_URL = "https://meli.la/2y7TYaH";
+const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t";
 
 // ---------- Helpers ----------
 function detectDevice() {
