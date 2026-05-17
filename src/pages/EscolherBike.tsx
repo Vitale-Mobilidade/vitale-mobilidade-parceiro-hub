@@ -1173,6 +1173,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         leadId={leadId}
         liftedAboveStickyBar={showSticky}
         onTrack={({ whatsapp_phone, whatsapp_message, source }) => {
+          markMainActionClicked();
           if (!leadId) return;
           const payload = {
             name,
