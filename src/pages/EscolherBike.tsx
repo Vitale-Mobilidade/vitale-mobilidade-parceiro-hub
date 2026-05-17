@@ -841,30 +841,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- Offers group popup (after external click + return) ----
-  useEffect(() => {
-    const onFocus = () => {
-      if (!mainActionClickedRef.current) return;
-      if (offersGroupDecidedRef.current) return;
-      if (ssGet(SS_KEYS.groupShown) || ssGet(SS_KEYS.groupDismissed)) return;
-      offersGroupDecidedRef.current = true;
-      trackEvent("result_tab_refocused_after_external_click");
-      window.setTimeout(() => {
-        ssSet(SS_KEYS.groupShown);
-        setShowOffersGroupPopup(true);
-        trackEvent("offers_post_click_popup_viewed");
-      }, 4000);
-    };
-    const onVis = () => { if (document.visibilityState === "visible") onFocus(); };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handlePrimaryOfferClick = () => {
     ssSet(SS_KEYS.clicked);
     markMainActionClicked();
@@ -882,16 +858,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     ssSet(SS_KEYS.dismissed);
     trackEvent("primary_offer_popup_dismissed");
     setShowPrimaryOfferPopup(false);
-  };
-  const handleOffersGroupClick = () => {
-    trackEvent("offers_post_click_popup_clicked");
-    window.open(OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
-    setShowOffersGroupPopup(false);
-  };
-  const handleOffersGroupDismiss = () => {
-    ssSet(SS_KEYS.groupDismissed);
-    trackEvent("offers_post_click_popup_dismissed");
-    setShowOffersGroupPopup(false);
   };
 
   return (
