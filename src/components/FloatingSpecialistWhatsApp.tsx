@@ -81,6 +81,8 @@ export function FloatingSpecialistWhatsApp({
     lines.push(`Uso: ${labels?.main_use_label ?? "-"}`);
     lines.push(`Distância: ${labels?.daily_km_range_label ?? "-"}`);
     lines.push(`Terreno: ${labels?.route_type_label ?? "-"}`);
+    lines.push(`Uso com garupa: ${labels?.rider_capacity_need_label ?? "-"}`);
+    lines.push(`Peso aproximado: ${labels?.weight_range_label ?? "-"}`);
     lines.push(`Orçamento: ${labels?.budget_range_label ?? "-"}`);
     lines.push(`Experiência: ${labels?.had_ebike_before_label ?? "-"}`);
     lines.push("", `Bike recomendada: ${recommendation?.primary?.name ?? "-"}`);
