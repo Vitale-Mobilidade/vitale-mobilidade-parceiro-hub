@@ -947,6 +947,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
                 <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
 
+                <div className="text-muted-foreground">Peso suportado</div>
+                <div className="text-center">Até {recommendation.primary.weightSupportKg} kg</div>
+                <div className="text-center">Até {recommendation.secondary.weightSupportKg} kg</div>
+
                 <div className="text-muted-foreground">Diferencial</div>
                 <div className="text-center">{recommendation.primary.diferencial}</div>
                 <div className="text-center">{recommendation.secondary.diferencial}</div>
