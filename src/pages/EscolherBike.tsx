@@ -733,6 +733,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     { label: "Uso", value: labels.main_use_label },
     { label: "Distância", value: labels.daily_km_range_label },
     { label: "Trajeto", value: labels.route_type_label },
+    { label: "Garupa", value: labels.rider_capacity_need_label },
+    { label: "Peso", value: labels.weight_range_label },
     { label: "Orçamento", value: labels.budget_range_label },
     { label: "Experiência", value: labels.had_ebike_before_label },
   ];
