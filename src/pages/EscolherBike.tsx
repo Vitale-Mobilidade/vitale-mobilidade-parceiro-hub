@@ -1140,6 +1140,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           name={name}
           phone={phone}
           baseLeadData={baseLeadData}
+          onMainAction={markMainActionClicked}
         />
       </div>
 
