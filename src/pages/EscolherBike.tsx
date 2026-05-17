@@ -674,6 +674,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao", e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    markMainActionClicked();
 
     // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
     try {
