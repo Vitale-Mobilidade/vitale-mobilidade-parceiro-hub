@@ -209,7 +209,7 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
 
   const recommendation = useMemo(() => {
-    if (Object.keys(answers).length === 5) return recommend(answers as Answers);
+    if (Object.keys(answers).length === STEPS.length) return recommend(answers as Answers);
     return null;
   }, [answers]);
 
