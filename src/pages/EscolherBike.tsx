@@ -786,8 +786,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     shown: "vitale_primary_offer_popup_shown",
     dismissed: "vitale_primary_offer_popup_dismissed",
     clicked: "vitale_primary_offer_popup_clicked",
-    groupShown: "vitale_offers_post_click_popup_shown",
-    groupDismissed: "vitale_offers_post_click_popup_dismissed",
   };
   const ssGet = (k: string) => {
     try { return sessionStorage.getItem(k) === "true"; } catch { return false; }
