@@ -783,7 +783,121 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     return () => observer.disconnect();
   }, []);
 
-  return (
+  // ---- Primary offer popup (ML) ----
+  const SS_KEYS = {
+    shown: "vitale_primary_offer_popup_shown",
+    dismissed: "vitale_primary_offer_popup_dismissed",
+    clicked: "vitale_primary_offer_popup_clicked",
+    groupShown: "vitale_offers_post_click_popup_shown",
+    groupDismissed: "vitale_offers_post_click_popup_dismissed",
+  };
+  const ssGet = (k: string) => {
+    try { return sessionStorage.getItem(k) === "true"; } catch { return false; }
+  };
+  const ssSet = (k: string) => {
+    try { sessionStorage.setItem(k, "true"); } catch {}
+  };
+
+  const tryShowPrimaryOffer = () => {
+    if (offerPopupDecidedRef.current) return;
+    if (mainActionClickedRef.current) return;
+    if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
+    offerPopupDecidedRef.current = true;
+    ssSet(SS_KEYS.shown);
+    setShowPrimaryOfferPopup(true);
+    trackEvent("primary_offer_popup_viewed", {
+      recommended_bike_1: recommendation?.primary?.id,
+      recommended_bike_1_label: recommendation?.primary?.name,
+    });
+  };
+
+  useEffect(() => {
+    // 30s timer
+    const t = window.setTimeout(() => {
+      // mobile: also require scroll past primary card
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+      if (isMobile) {
+        const el = primaryCardRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom > 0) return; // didn't scroll past
+        }
+      }
+      tryShowPrimaryOffer();
+    }, 30000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // desktop exit-intent
+    const onMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 0) {
+        if (window.innerWidth >= 1024) {
+          // require result visible at least 8s for exit intent
+          if (Date.now() - resultMountedAtRef.current < 8000) return;
+          tryShowPrimaryOffer();
+        }
+      }
+    };
+    document.addEventListener("mouseleave", onMouseLeave);
+    return () => document.removeEventListener("mouseleave", onMouseLeave);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- Offers group popup (after external click + return) ----
+  useEffect(() => {
+    const onFocus = () => {
+      if (!mainActionClickedRef.current) return;
+      if (offersGroupDecidedRef.current) return;
+      if (ssGet(SS_KEYS.groupShown) || ssGet(SS_KEYS.groupDismissed)) return;
+      offersGroupDecidedRef.current = true;
+      trackEvent("result_tab_refocused_after_external_click");
+      window.setTimeout(() => {
+        ssSet(SS_KEYS.groupShown);
+        setShowOffersGroupPopup(true);
+        trackEvent("offers_post_click_popup_viewed");
+      }, 4000);
+    };
+    const onVis = () => { if (document.visibilityState === "visible") onFocus(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePrimaryOfferClick = () => {
+    ssSet(SS_KEYS.clicked);
+    markMainActionClicked();
+    const bike = recommendation.primary;
+    trackEvent("primary_offer_popup_clicked", {
+      recommended_bike_1: bike.id,
+      recommended_bike_1_label: bike.name,
+      recommended_bike_1_link: bike.affiliateLink,
+    });
+    // also fire normal buy tracking
+    handleBuy(bike, "principal");
+    setShowPrimaryOfferPopup(false);
+  };
+  const handlePrimaryOfferDismiss = () => {
+    ssSet(SS_KEYS.dismissed);
+    trackEvent("primary_offer_popup_dismissed");
+    setShowPrimaryOfferPopup(false);
+  };
+  const handleOffersGroupClick = () => {
+    trackEvent("offers_post_click_popup_clicked");
+    window.open(OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+    setShowOffersGroupPopup(false);
+  };
+  const handleOffersGroupDismiss = () => {
+    ssSet(SS_KEYS.groupDismissed);
+    trackEvent("offers_post_click_popup_dismissed");
+    setShowOffersGroupPopup(false);
+  };
+
     <main className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
         <div className="flex justify-center mb-5">
