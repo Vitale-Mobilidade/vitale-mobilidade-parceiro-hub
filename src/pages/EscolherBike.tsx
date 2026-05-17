@@ -898,6 +898,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     setShowOffersGroupPopup(false);
   };
 
+  return (
     <main className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
         <div className="flex justify-center mb-5">
