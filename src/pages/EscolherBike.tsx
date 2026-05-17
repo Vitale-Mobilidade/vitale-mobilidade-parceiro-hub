@@ -647,9 +647,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const mainActionClickedRef = useRef(false);
   const [mainActionClicked, setMainActionClicked] = useState(false);
   const [showPrimaryOfferPopup, setShowPrimaryOfferPopup] = useState(false);
-  const [showOffersGroupPopup, setShowOffersGroupPopup] = useState(false);
   const offerPopupDecidedRef = useRef(false);
-  const offersGroupDecidedRef = useRef(false);
   const resultMountedAtRef = useRef<number>(Date.now());
 
   const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
