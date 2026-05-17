@@ -1416,7 +1416,7 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
   );
 }
 
-function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData }: any) {
+function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, onMainAction }: any) {
   const handleRestart = () => {
     if (leadId) {
       invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked", payload: { ...(baseLeadData ?? {}) } } })
