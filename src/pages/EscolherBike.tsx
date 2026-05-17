@@ -916,6 +916,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                       <dd className="text-foreground text-right">{bike.capacity} {bike.capacity === 1 ? "pessoa" : "pessoas"}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Peso suportado</dt>
+                      <dd className="text-foreground text-right">Até {bike.weightSupportKg} kg</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
                       <dt className="text-muted-foreground flex-shrink-0">Diferencial</dt>
                       <dd className="text-foreground text-right">{bike.diferencial}</dd>
                     </div>
