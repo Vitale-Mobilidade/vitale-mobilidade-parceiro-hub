@@ -1432,6 +1432,7 @@ function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, o
   };
 
   const handleShareWhatsApp = () => {
+    onMainAction?.();
     const url = typeof window !== "undefined" ? window.location.origin + "/escolherbike" : "";
     const principal = recommendation.primary?.name ?? "";
     const alternativa = recommendation.secondary?.name ?? "";
