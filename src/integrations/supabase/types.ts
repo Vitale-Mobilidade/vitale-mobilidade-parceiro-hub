@@ -95,6 +95,7 @@ export type Database = {
           main_use_label: string | null
           name: string | null
           operating_system: string | null
+          passenger_cluster: string | null
           phone: string | null
           raw_answers_json: Json | null
           raw_recommendation_json: Json | null
@@ -112,6 +113,8 @@ export type Database = {
           recommended_bike_2_score: number | null
           referrer: string | null
           referrer_domain: string | null
+          rider_capacity_need: string | null
+          rider_capacity_need_label: string | null
           route_cluster: string | null
           route_type: string | null
           route_type_label: string | null
@@ -127,6 +130,9 @@ export type Database = {
           utm_source: string | null
           utm_term: string | null
           webhook_error_message: string | null
+          weight_cluster: string | null
+          weight_range: string | null
+          weight_range_label: string | null
         }
         Insert: {
           abandoned_at?: string | null
@@ -164,6 +170,7 @@ export type Database = {
           main_use_label?: string | null
           name?: string | null
           operating_system?: string | null
+          passenger_cluster?: string | null
           phone?: string | null
           raw_answers_json?: Json | null
           raw_recommendation_json?: Json | null
@@ -181,6 +188,8 @@ export type Database = {
           recommended_bike_2_score?: number | null
           referrer?: string | null
           referrer_domain?: string | null
+          rider_capacity_need?: string | null
+          rider_capacity_need_label?: string | null
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
@@ -196,6 +205,9 @@ export type Database = {
           utm_source?: string | null
           utm_term?: string | null
           webhook_error_message?: string | null
+          weight_cluster?: string | null
+          weight_range?: string | null
+          weight_range_label?: string | null
         }
         Update: {
           abandoned_at?: string | null
@@ -233,6 +245,7 @@ export type Database = {
           main_use_label?: string | null
           name?: string | null
           operating_system?: string | null
+          passenger_cluster?: string | null
           phone?: string | null
           raw_answers_json?: Json | null
           raw_recommendation_json?: Json | null
@@ -250,6 +263,8 @@ export type Database = {
           recommended_bike_2_score?: number | null
           referrer?: string | null
           referrer_domain?: string | null
+          rider_capacity_need?: string | null
+          rider_capacity_need_label?: string | null
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
@@ -265,6 +280,9 @@ export type Database = {
           utm_source?: string | null
           utm_term?: string | null
           webhook_error_message?: string | null
+          weight_cluster?: string | null
+          weight_range?: string | null
+          weight_range_label?: string | null
         }
         Relationships: []
       }

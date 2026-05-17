@@ -15,7 +15,7 @@ import { VitaleBrand } from "@/components/VitaleBrand";
 import { FloatingSpecialistWhatsApp } from "@/components/FloatingSpecialistWhatsApp";
 
 // ---------- Quiz config ----------
-type StepKey = "main_use" | "daily_km_range" | "route_type" | "budget_range" | "had_ebike_before";
+type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
 
 interface Option {
   value: string;
@@ -53,6 +53,25 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
   {
+    key: "rider_capacity_need", field: "rider_capacity_need",
+    title: "A bike será usada por quantas pessoas?",
+    options: [
+      { value: "apenas_1_pessoa", label: "Só eu", micro: "Melhor para quem vai usar sozinho e quer uma escolha mais simples e racional." },
+      { value: "garupa_as_vezes", label: "Eu e garupa às vezes", micro: "Indicado para quem pode levar outra pessoa ocasionalmente." },
+      { value: "garupa_frequente", label: "Eu e garupa com frequência", micro: "Prioriza modelos com estrutura para 2 pessoas e mais conforto." },
+    ],
+  },
+  {
+    key: "weight_range", field: "weight_range",
+    title: "Qual faixa de peso aproximada a bike precisa suportar?",
+    options: [
+      { value: "ate_80kg", label: "Até 80 kg", micro: "Uso leve, com menor exigência estrutural." },
+      { value: "80_100kg", label: "80 a 100 kg", micro: "Faixa comum para uso urbano e deslocamento diário." },
+      { value: "100_120kg", label: "100 a 120 kg", micro: "Prioriza estrutura, estabilidade e segurança." },
+      { value: "acima_120kg", label: "Acima de 120 kg", micro: "Prioriza modelos mais robustos e capacidade superior." },
+    ],
+  },
+  {
     key: "budget_range", field: "budget_range",
     title: "Qual seu orçamento?",
     options: [
@@ -71,6 +90,9 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
 ];
+
+const AFFILIATE_LIST_URL = "https://meli.la/2y7TYaH";
+const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t";
 
 // ---------- Helpers ----------
 function detectDevice() {
@@ -187,7 +209,7 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
 
   const recommendation = useMemo(() => {
-    if (Object.keys(answers).length === 5) return recommend(answers as Answers);
+    if (Object.keys(answers).length === STEPS.length) return recommend(answers as Answers);
     return null;
   }, [answers]);
 
@@ -243,6 +265,34 @@ export default function EscolherBike() {
             >
               Começar agora
             </Button>
+
+            <div className="mt-5">
+              <p className="text-base text-muted-foreground mb-1.5">
+                Prefere ver as ofertas direto no Mercado Livre?
+              </p>
+              <a
+                href={AFFILIATE_LIST_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-event="affiliate_list_clicked"
+                onClick={() => {
+                  try {
+                    const payload = {
+                      source: "intro_secondary_cta",
+                      ...baseLeadDataRef.current,
+                    };
+                    (window as any).dataLayer = (window as any).dataLayer || [];
+                    (window as any).dataLayer.push({ event: "affiliate_list_clicked", ...payload });
+                    console.info("[quiz] affiliate_list_clicked", payload);
+                  } catch (err) {
+                    console.error("[quiz] affiliate_list_clicked tracking failed", err);
+                  }
+                }}
+                className="inline-block text-base font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                Ver lista de bikes em promoção
+              </a>
+            </div>
 
             <div className="flex flex-wrap justify-center gap-3 mt-10 mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
@@ -430,6 +480,10 @@ export default function EscolherBike() {
       daily_km_range_label: finalLabels.daily_km_range_label,
       route_type: finalAnswers.route_type,
       route_type_label: finalLabels.route_type_label,
+      rider_capacity_need: finalAnswers.rider_capacity_need,
+      rider_capacity_need_label: finalLabels.rider_capacity_need_label,
+      weight_range: finalAnswers.weight_range,
+      weight_range_label: finalLabels.weight_range_label,
       budget_range: finalAnswers.budget_range,
       budget_range_label: finalLabels.budget_range_label,
       had_ebike_before: finalAnswers.had_ebike_before,
@@ -589,8 +643,38 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const reasonPrimary = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
+  // ---- Popup tracking state ----
+  const mainActionClickedRef = useRef(false);
+  const [mainActionClicked, setMainActionClicked] = useState(false);
+  const [showPrimaryOfferPopup, setShowPrimaryOfferPopup] = useState(false);
+  const [showOffersGroupPopup, setShowOffersGroupPopup] = useState(false);
+  const offerPopupDecidedRef = useRef(false);
+  const offersGroupDecidedRef = useRef(false);
+  const resultMountedAtRef = useRef<number>(Date.now());
+
+  const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
+    const finalPayload = { ...(baseLeadData ?? {}), ...payload };
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: event_name, ...finalPayload });
+    } catch {}
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name, payload: finalPayload } }).catch((e) =>
+        console.error("[quiz] track event failed", event_name, e)
+      );
+    }
+  };
+
+  const markMainActionClicked = () => {
+    if (!mainActionClickedRef.current) {
+      mainActionClickedRef.current = true;
+      setMainActionClicked(true);
+    }
+  };
+
   const handleBuy = (bike: any, position: "principal" | "segunda_opcao", e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    markMainActionClicked();
 
     // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
     try {
@@ -679,6 +763,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     { label: "Uso", value: labels.main_use_label },
     { label: "Distância", value: labels.daily_km_range_label },
     { label: "Trajeto", value: labels.route_type_label },
+    { label: "Garupa", value: labels.rider_capacity_need_label },
+    { label: "Peso", value: labels.weight_range_label },
     { label: "Orçamento", value: labels.budget_range_label },
     { label: "Experiência", value: labels.had_ebike_before_label },
   ];
@@ -696,6 +782,121 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // ---- Primary offer popup (ML) ----
+  const SS_KEYS = {
+    shown: "vitale_primary_offer_popup_shown",
+    dismissed: "vitale_primary_offer_popup_dismissed",
+    clicked: "vitale_primary_offer_popup_clicked",
+    groupShown: "vitale_offers_post_click_popup_shown",
+    groupDismissed: "vitale_offers_post_click_popup_dismissed",
+  };
+  const ssGet = (k: string) => {
+    try { return sessionStorage.getItem(k) === "true"; } catch { return false; }
+  };
+  const ssSet = (k: string) => {
+    try { sessionStorage.setItem(k, "true"); } catch {}
+  };
+
+  const tryShowPrimaryOffer = () => {
+    if (offerPopupDecidedRef.current) return;
+    if (mainActionClickedRef.current) return;
+    if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
+    offerPopupDecidedRef.current = true;
+    ssSet(SS_KEYS.shown);
+    setShowPrimaryOfferPopup(true);
+    trackEvent("primary_offer_popup_viewed", {
+      recommended_bike_1: recommendation?.primary?.id,
+      recommended_bike_1_label: recommendation?.primary?.name,
+    });
+  };
+
+  useEffect(() => {
+    // 30s timer
+    const t = window.setTimeout(() => {
+      // mobile: also require scroll past primary card
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+      if (isMobile) {
+        const el = primaryCardRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom > 0) return; // didn't scroll past
+        }
+      }
+      tryShowPrimaryOffer();
+    }, 30000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // desktop exit-intent
+    const onMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 0) {
+        if (window.innerWidth >= 1024) {
+          // require result visible at least 8s for exit intent
+          if (Date.now() - resultMountedAtRef.current < 8000) return;
+          tryShowPrimaryOffer();
+        }
+      }
+    };
+    document.addEventListener("mouseleave", onMouseLeave);
+    return () => document.removeEventListener("mouseleave", onMouseLeave);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- Offers group popup (after external click + return) ----
+  useEffect(() => {
+    const onFocus = () => {
+      if (!mainActionClickedRef.current) return;
+      if (offersGroupDecidedRef.current) return;
+      if (ssGet(SS_KEYS.groupShown) || ssGet(SS_KEYS.groupDismissed)) return;
+      offersGroupDecidedRef.current = true;
+      trackEvent("result_tab_refocused_after_external_click");
+      window.setTimeout(() => {
+        ssSet(SS_KEYS.groupShown);
+        setShowOffersGroupPopup(true);
+        trackEvent("offers_post_click_popup_viewed");
+      }, 4000);
+    };
+    const onVis = () => { if (document.visibilityState === "visible") onFocus(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePrimaryOfferClick = () => {
+    ssSet(SS_KEYS.clicked);
+    markMainActionClicked();
+    const bike = recommendation.primary;
+    trackEvent("primary_offer_popup_clicked", {
+      recommended_bike_1: bike.id,
+      recommended_bike_1_label: bike.name,
+      recommended_bike_1_link: bike.affiliateLink,
+    });
+    // also fire normal buy tracking
+    handleBuy(bike, "principal");
+    setShowPrimaryOfferPopup(false);
+  };
+  const handlePrimaryOfferDismiss = () => {
+    ssSet(SS_KEYS.dismissed);
+    trackEvent("primary_offer_popup_dismissed");
+    setShowPrimaryOfferPopup(false);
+  };
+  const handleOffersGroupClick = () => {
+    trackEvent("offers_post_click_popup_clicked");
+    window.open(OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
+    setShowOffersGroupPopup(false);
+  };
+  const handleOffersGroupDismiss = () => {
+    ssSet(SS_KEYS.groupDismissed);
+    trackEvent("offers_post_click_popup_dismissed");
+    setShowOffersGroupPopup(false);
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -730,7 +931,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             </div>
             <div>
               <h2 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.primary.name}</h2>
-              <p className="text-[15px] sm:text-base text-muted-foreground mb-4 leading-relaxed">{recommendation.primary.shortDescription}</p>
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.primary.shortDescription}</p>
+              <BikeSpecsRow bike={recommendation.primary} />
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-[15px] sm:text-base">
@@ -779,7 +981,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </div>
               <div>
                 <h3 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.secondary.name}</h3>
-                <p className="text-[15px] sm:text-base text-muted-foreground mb-4 leading-relaxed">{recommendation.secondary.shortDescription}</p>
+                <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.secondary.shortDescription}</p>
+                <BikeSpecsRow bike={recommendation.secondary} />
                 <ul className="space-y-2 mb-5">
                   {recommendation.secondary.strengths.slice(0, 4).map((s: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-[15px] sm:text-base">
@@ -826,7 +1029,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
 
           {/* Desktop: grid */}
-          <div className="hidden lg:grid grid-cols-5 gap-2">
+          <div className="hidden lg:grid grid-cols-7 gap-2">
             {profileSummary.map((p, i) => (
               <div key={i} className="bg-muted rounded-lg p-3 text-center">
                 <div className="text-base text-muted-foreground">{p.label}</div>
@@ -858,6 +1061,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                       <dd className="text-foreground text-right">{bike.capacity} {bike.capacity === 1 ? "pessoa" : "pessoas"}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Peso suportado</dt>
+                      <dd className="text-foreground text-right">Até {bike.weightSupportKg} kg</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
                       <dt className="text-muted-foreground flex-shrink-0">Diferencial</dt>
                       <dd className="text-foreground text-right">{bike.diferencial}</dd>
                     </div>
@@ -885,6 +1092,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
                 <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
 
+                <div className="text-muted-foreground">Peso suportado</div>
+                <div className="text-center">Até {recommendation.primary.weightSupportKg} kg</div>
+                <div className="text-center">Até {recommendation.secondary.weightSupportKg} kg</div>
+
                 <div className="text-muted-foreground">Diferencial</div>
                 <div className="text-center">{recommendation.primary.diferencial}</div>
                 <div className="text-center">{recommendation.secondary.diferencial}</div>
@@ -906,6 +1117,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           labels={labels}
           recommendation={recommendation}
           baseLeadData={baseLeadData}
+          onMainAction={markMainActionClicked}
         />
 
         {/* Bloco educativo */}
@@ -928,6 +1140,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           name={name}
           phone={phone}
           baseLeadData={baseLeadData}
+          onMainAction={markMainActionClicked}
         />
       </div>
 
@@ -960,6 +1173,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         leadId={leadId}
         liftedAboveStickyBar={showSticky}
         onTrack={({ whatsapp_phone, whatsapp_message, source }) => {
+          markMainActionClicked();
           if (!leadId) return;
           const payload = {
             name,
@@ -995,9 +1209,65 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "floating_specialist_whatsapp_clicked", error }));
         }}
       />
+
+      {/* Primary offer popup (Mercado Livre) */}
+      {showPrimaryOfferPopup && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={handlePrimaryOfferDismiss}>
+          <div className="bg-background rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-foreground mb-2">Veja o preço atual da sua bike recomendada</h3>
+            <p className="text-base text-muted-foreground mb-5 leading-relaxed">
+              A {recommendation.primary.name} foi selecionada com base no seu uso, trajeto e orçamento. Confira a oferta no Mercado Livre antes de decidir.
+            </p>
+            <Button onClick={handlePrimaryOfferClick} className="w-full py-5 text-base font-bold mb-2">
+              <ShoppingCart className="mr-2 h-5 w-5" /> Ver oferta no Mercado Livre
+            </Button>
+            <Button onClick={handlePrimaryOfferDismiss} variant="outline" className="w-full py-4 text-base font-semibold">
+              Continuar vendo recomendação
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Offers group popup (after external click & return) */}
+      {showOffersGroupPopup && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={handleOffersGroupDismiss}>
+          <div className="bg-background rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-foreground mb-2">Ainda comparando?</h3>
+            <p className="text-base text-muted-foreground mb-5 leading-relaxed">
+              Entre no grupo Vitale Mobilidade Ofertas e acompanhe quando aparecer uma boa condição para sua próxima bike elétrica. Enviamos ofertas, vídeos novos e alertas de modelos que valem olhar antes de comprar.
+            </p>
+            <Button onClick={handleOffersGroupClick} className="w-full py-5 text-base font-bold mb-2" style={{ backgroundColor: "#16A34A" }}>
+              Entrar no grupo de ofertas
+            </Button>
+            <Button onClick={handleOffersGroupDismiss} variant="outline" className="w-full py-4 text-base font-semibold">
+              Continuar vendo minha recomendação
+            </Button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+
+// ---------- Bike specs row ----------
+function BikeSpecsRow({ bike }: { bike: any }) {
+  return (
+    <div className="flex flex-wrap gap-2 mb-4 text-[13px] sm:text-sm">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-foreground font-medium">
+        Autonomia até {bike.autonomyKm} km
+      </span>
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-foreground font-medium">
+        {bike.capacity === 1 ? "1 pessoa" : "2 pessoas"}
+      </span>
+      {bike.weightSupportKg && (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-foreground font-medium">
+          Até {bike.weightSupportKg} kg
+        </span>
+      )}
+    </div>
+  );
+}
+
 
 // ---------- Reason block (collapsible on mobile) ----------
 function ReasonBlock({ title, text }: { title: string; text: string }) {
@@ -1036,8 +1306,9 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 // ---------- Specialist WhatsApp block ----------
 const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
 
-function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData }: any) {
+function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData, onMainAction }: any) {
   const handleSpecialist = () => {
+    onMainAction?.();
     const trimmedName = (name ?? "").trim();
     const identification = trimmedName
       ? `sou o ${trimmedName}`
@@ -1051,6 +1322,8 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
       `Uso: ${labels?.main_use_label ?? "-"}`,
       `Distância: ${labels?.daily_km_range_label ?? "-"}`,
       `Terreno: ${labels?.route_type_label ?? "-"}`,
+      `Uso com garupa: ${labels?.rider_capacity_need_label ?? "-"}`,
+      `Peso aproximado: ${labels?.weight_range_label ?? "-"}`,
       `Orçamento: ${labels?.budget_range_label ?? "-"}`,
       `Experiência: ${labels?.had_ebike_before_label ?? "-"}`,
       "",
@@ -1143,7 +1416,7 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
   );
 }
 
-function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData }: any) {
+function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, onMainAction }: any) {
   const handleRestart = () => {
     if (leadId) {
       invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked", payload: { ...(baseLeadData ?? {}) } } })
@@ -1159,6 +1432,7 @@ function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData }:
   };
 
   const handleShareWhatsApp = () => {
+    onMainAction?.();
     const url = typeof window !== "undefined" ? window.location.origin + "/escolherbike" : "";
     const principal = recommendation.primary?.name ?? "";
     const alternativa = recommendation.secondary?.name ?? "";

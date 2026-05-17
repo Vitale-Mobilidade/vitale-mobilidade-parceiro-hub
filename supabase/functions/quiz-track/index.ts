@@ -11,8 +11,10 @@ const leadFields = [
   "utm_medium", "utm_campaign", "utm_content", "utm_term", "device_type", "browser", "operating_system",
   "status", "current_step", "completion_percentage", "started_at", "completed_at", "last_interaction_at",
   "main_use", "main_use_label", "daily_km_range", "daily_km_range_label", "route_type", "route_type_label",
+  "rider_capacity_need", "rider_capacity_need_label", "weight_range", "weight_range_label",
   "budget_range", "budget_range_label", "had_ebike_before", "had_ebike_before_label", "usage_cluster",
-  "distance_cluster", "route_cluster", "budget_cluster", "experience_cluster", "intent_cluster", "recommendation_profile",
+  "distance_cluster", "route_cluster", "passenger_cluster", "weight_cluster",
+  "budget_cluster", "experience_cluster", "intent_cluster", "recommendation_profile",
   "recommended_bike_1", "recommended_bike_1_label", "recommended_bike_1_score", "recommended_bike_1_reason", "recommended_bike_1_link",
   "recommended_bike_2", "recommended_bike_2_label", "recommended_bike_2_score", "recommended_bike_2_reason", "recommended_bike_2_link",
   "recommendation_reason", "conversion_status", "clicked_bike_name", "clicked_bike_position", "clicked_bike_link", "clicked_at",
@@ -25,6 +27,10 @@ const eventNames = new Set([
   "quiz_started", "quiz_step_completed", "quiz_completed", "recommendation_generated",
   "buy_button_clicked", "secondary_option_clicked", "quiz_restart_clicked", "result_shared_whatsapp", "offers_group_clicked",
   "specialist_whatsapp_clicked", "floating_specialist_whatsapp_clicked",
+  "affiliate_list_clicked",
+  "primary_offer_popup_viewed", "primary_offer_popup_clicked", "primary_offer_popup_dismissed", "primary_offer_popup_returned",
+  "offers_post_click_popup_viewed", "offers_post_click_popup_clicked", "offers_post_click_popup_dismissed", "offers_post_click_popup_returned",
+  "result_tab_refocused_after_external_click",
 ]);
 
 const BodySchema = z.object({
