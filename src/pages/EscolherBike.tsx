@@ -1190,23 +1190,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-      {/* Offers group popup (after external click & return) */}
-      {showOffersGroupPopup && (
-        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={handleOffersGroupDismiss}>
-          <div className="bg-background rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-foreground mb-2">Ainda comparando?</h3>
-            <p className="text-base text-muted-foreground mb-5 leading-relaxed">
-              Entre no grupo Vitale Mobilidade Ofertas e acompanhe quando aparecer uma boa condição para sua próxima bike elétrica. Enviamos ofertas, vídeos novos e alertas de modelos que valem olhar antes de comprar.
-            </p>
-            <Button onClick={handleOffersGroupClick} className="w-full py-5 text-base font-bold mb-2" style={{ backgroundColor: "#16A34A" }}>
-              Entrar no grupo de ofertas
-            </Button>
-            <Button onClick={handleOffersGroupDismiss} variant="outline" className="w-full py-4 text-base font-semibold">
-              Continuar vendo minha recomendação
-            </Button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
