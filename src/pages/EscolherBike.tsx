@@ -786,7 +786,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             </div>
             <div>
               <h2 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.primary.name}</h2>
-              <p className="text-[15px] sm:text-base text-muted-foreground mb-4 leading-relaxed">{recommendation.primary.shortDescription}</p>
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.primary.shortDescription}</p>
+              <BikeSpecsRow bike={recommendation.primary} />
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-[15px] sm:text-base">
