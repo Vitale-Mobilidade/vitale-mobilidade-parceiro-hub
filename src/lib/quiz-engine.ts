@@ -4,6 +4,8 @@ export type Answers = {
   main_use: string;
   daily_km_range: string;
   route_type: string;
+  rider_capacity_need: string;
+  weight_range: string;
   budget_range: string;
   had_ebike_before: string;
 };
@@ -12,6 +14,8 @@ export type Labels = {
   main_use_label: string;
   daily_km_range_label: string;
   route_type_label: string;
+  rider_capacity_need_label: string;
+  weight_range_label: string;
   budget_range_label: string;
   had_ebike_before_label: string;
 };
@@ -20,6 +24,8 @@ export type Clusters = {
   usage_cluster: string;
   distance_cluster: string;
   route_cluster: string;
+  passenger_cluster: string;
+  weight_cluster: string;
   budget_cluster: string;
   experience_cluster: string;
   intent_cluster: string;
@@ -39,6 +45,17 @@ export function computeClusters(a: Answers): Clusters {
   const route_cluster =
     a.route_type === "plano" ? "baixa_exigencia" :
     a.route_type === "misto" ? "media_exigencia" : "alta_exigencia";
+
+  const passenger_cluster =
+    a.rider_capacity_need === "apenas_1_pessoa" ? "solo" :
+    a.rider_capacity_need === "garupa_as_vezes" ? "occasional_passenger" :
+    a.rider_capacity_need === "garupa_frequente" ? "frequent_passenger" : "solo";
+
+  const weight_cluster =
+    a.weight_range === "ate_80kg" ? "light" :
+    a.weight_range === "80_100kg" ? "medium" :
+    a.weight_range === "100_120kg" ? "heavy" :
+    a.weight_range === "acima_120kg" ? "extra_heavy" : "medium";
 
   const budget_cluster =
     a.budget_range === "ate_7000" ? "entrada" :
@@ -60,7 +77,7 @@ export function computeClusters(a: Answers): Clusters {
   else if (a.budget_range === "ate_7000") recommendation_profile = "entrada_custo_beneficio";
   else if (a.budget_range === "acima_10000") recommendation_profile = "premium_performance";
 
-  return { usage_cluster, distance_cluster, route_cluster, budget_cluster, experience_cluster, intent_cluster, recommendation_profile };
+  return { usage_cluster, distance_cluster, route_cluster, passenger_cluster, weight_cluster, budget_cluster, experience_cluster, intent_cluster, recommendation_profile };
 }
 
 function scoreBike(bike: Bike, a: Answers): number {
@@ -75,7 +92,7 @@ function scoreBike(bike: Bike, a: Answers): number {
     if (["ft03", "v20_mini", "v9_max", "v10_max", "v40_pro", "v8_pro", "v29_pro", "v35"].includes(bike.id)) s += 30;
   }
   if (a.main_use === "lazer_passeio") {
-    if (["gt20", "v8_pro", "v40_pro", "gt2000"].includes(bike.id)) s += 30;
+    if (["ouxi_gt20", "v8_pro", "v40_pro", "gt2000", "coswheel_gt20"].includes(bike.id)) s += 30;
   }
 
   // Quilometragem
@@ -84,28 +101,55 @@ function scoreBike(bike: Bike, a: Answers): number {
   if (a.daily_km_range === "25_40_km" && ["v40_pro", "v8_pro_s", "v29_pro", "v35", "gt2000", "v10_max"].includes(bike.id)) s += 22;
   if (a.daily_km_range === "mais_40_km") {
     if (["v8_pro_s", "v29_pro", "v35"].includes(bike.id)) s += 40;
-    if (["gt2000", "v40_pro"].includes(bike.id)) s += 20;
+    if (["ft03", "gt2000", "coswheel_gt20"].includes(bike.id)) s += 18;
+    if (["v40_pro"].includes(bike.id)) s += 12;
   }
 
   // Trajeto
   if (a.route_type === "plano" && ["ft03", "v20_mini", "v9_max", "v8_pro"].includes(bike.id)) s += 12;
-  if (a.route_type === "misto" && ["v10_max", "v40_pro", "v8_pro", "gt20", "v29_pro", "v35"].includes(bike.id)) s += 15;
+  if (a.route_type === "misto" && ["v10_max", "v40_pro", "v8_pro", "ouxi_gt20", "v29_pro", "v35"].includes(bike.id)) s += 15;
   if (a.route_type === "muitas_subidas") {
     if (["v40_pro", "v8_pro_s", "v29_pro"].includes(bike.id)) s += 25;
     if (["v10_max", "gt2000", "v35"].includes(bike.id)) s += 18;
     if (["ft03", "v20_mini"].includes(bike.id)) s -= 10;
   }
 
+  // Garupa
+  if (a.rider_capacity_need === "apenas_1_pessoa") {
+    // modelos de 1 pessoa pontuam um pouco; sem penalizar 2 pessoas
+    if (bike.capacity === 1) s += 8;
+  } else if (a.rider_capacity_need === "garupa_as_vezes") {
+    if (bike.capacity === 2) s += 18;
+    if (bike.capacity === 1) s -= 15;
+  } else if (a.rider_capacity_need === "garupa_frequente") {
+    if (bike.capacity === 2) s += 30;
+    if (bike.capacity === 1) s -= 40;
+    // priorizar peso suportado maior
+    if (bike.weightSupportKg >= 150) s += 10;
+  }
+
+  // Peso
+  if (a.weight_range === "80_100kg") {
+    if (bike.weightSupportKg >= 120) s += 5;
+  } else if (a.weight_range === "100_120kg") {
+    if (bike.weightSupportKg >= 150) s += 18;
+    else if (bike.weightSupportKg >= 120) s += 8;
+    else s -= 20;
+  } else if (a.weight_range === "acima_120kg") {
+    if (bike.weightSupportKg >= 165) s += 25;
+    else if (bike.weightSupportKg >= 150) s += 18;
+    else s -= 60; // forte penalização — só recomendar se não houver alternativa
+  }
+
   // Orçamento (aderência forte)
   if (bike.budgetTiers.includes(a.budget_range as any)) s += 30;
   else {
-    // Penalidade se estiver muito fora
     const order = ["ate_7000", "7000_8000", "8000_10000", "acima_10000"];
     const userIdx = order.indexOf(a.budget_range);
     const minBike = Math.min(...bike.budgetTiers.map(t => order.indexOf(t)));
     const maxBike = Math.max(...bike.budgetTiers.map(t => order.indexOf(t)));
-    if (userIdx < minBike) s -= 25 * (minBike - userIdx); // acima do orçamento
-    else if (userIdx > maxBike) s -= 5 * (userIdx - maxBike); // abaixo (subdimensionada)
+    if (userIdx < minBike) s -= 25 * (minBike - userIdx);
+    else if (userIdx > maxBike) s -= 5 * (userIdx - maxBike);
   }
 
   return s;
@@ -152,6 +196,18 @@ export function buildPersonalizedCopy(a: Answers, isPrimary: boolean, budgetLimi
 
   if (a.route_type === "muitas_subidas") {
     parts.push("Como seu trajeto tem muitas subidas, priorizamos motor forte, estrutura adequada e freios confiáveis.");
+  }
+
+  if (a.rider_capacity_need === "garupa_frequente") {
+    parts.push("Como você vai usar a bike com garupa com frequência, priorizamos modelos com estrutura para 2 pessoas e maior peso suportado.");
+  } else if (a.rider_capacity_need === "garupa_as_vezes") {
+    parts.push("Como você pode levar garupa às vezes, priorizamos modelos preparados para 2 pessoas.");
+  }
+
+  if (a.weight_range === "acima_120kg") {
+    parts.push("Considerando a faixa de peso informada, priorizamos modelos mais robustos com maior capacidade de carga.");
+  } else if (a.weight_range === "100_120kg") {
+    parts.push("Considerando a faixa de peso informada, priorizamos modelos com estrutura, estabilidade e segurança adequadas.");
   }
 
   if (a.had_ebike_before === "nao" && isPrimary) {
