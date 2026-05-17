@@ -1306,8 +1306,9 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 // ---------- Specialist WhatsApp block ----------
 const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
 
-function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData }: any) {
+function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData, onMainAction }: any) {
   const handleSpecialist = () => {
+    onMainAction?.();
     const trimmedName = (name ?? "").trim();
     const identification = trimmedName
       ? `sou o ${trimmedName}`
@@ -1321,6 +1322,8 @@ function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation,
       `Uso: ${labels?.main_use_label ?? "-"}`,
       `Distância: ${labels?.daily_km_range_label ?? "-"}`,
       `Terreno: ${labels?.route_type_label ?? "-"}`,
+      `Uso com garupa: ${labels?.rider_capacity_need_label ?? "-"}`,
+      `Peso aproximado: ${labels?.weight_range_label ?? "-"}`,
       `Orçamento: ${labels?.budget_range_label ?? "-"}`,
       `Experiência: ${labels?.had_ebike_before_label ?? "-"}`,
       "",
