@@ -1117,6 +1117,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           labels={labels}
           recommendation={recommendation}
           baseLeadData={baseLeadData}
+          onMainAction={markMainActionClicked}
         />
 
         {/* Bloco educativo */}
