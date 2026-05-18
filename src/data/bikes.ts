@@ -76,7 +76,7 @@ export const BIKES: Bike[] = [
   {
     id: "v9_max",
     name: "V9 Max",
-    shortDescription: "Bike elétrica 1000W urbana, com garupa, NFC, alarme, setas e boa estrutura por um preço mais acessível.",
+    shortDescription: "Bike elétrica 1000W urbana com garupa, NFC, alarme, setas e estrutura robusta. Lançamento 2026 com bom desempenho e preço competitivo.",
     image: v9max,
     affiliateLink: "https://meli.la/2HcYrAj",
     internalPrice: 6899,
@@ -84,7 +84,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 50,
     bestFor: ["urbano", "locomocao_diaria"],
-    strengths: ["Motor 1000W", "Autonomia até 50 km", "Suporta 2 pessoas", "Freios hidráulicos", "Alarme integrado", "Chave NFC", "Setas dianteiras e traseiras"],
+    strengths: ["Motor 1000W", "Autonomia até 60 km", "Suporta 2 pessoas", "Freios hidráulicos", "Alarme integrado", "Chave NFC", "Setas dianteiras e traseiras"],
     budgetTiers: ["ate_7000", "7000_8000"],
     diferencial: "Boa estrutura com garupa e preço competitivo",
     perfilIndicado: "Locomoção diária, passeio, garupa e uso urbano",
