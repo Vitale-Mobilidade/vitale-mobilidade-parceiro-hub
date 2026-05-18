@@ -108,7 +108,7 @@ export const BIKES: Bike[] = [
   {
     id: "v40_pro",
     name: "V40 Pro",
-    shortDescription: "Bike elétrica 1000W completa, com boa estrutura urbana, NFC, alarme, trava e suporte para garupa.",
+    shortDescription: "Lançamento 2026 – bike elétrica 1000W completa com bateria 48V 18Ah, trava na roda, NFC, alarme e pedal de apoio para garupa. Conforto, segurança e desempenho superiores.",
     image: v40pro,
     affiliateLink: "https://meli.la/32KAToh",
     internalPrice: 8180,
@@ -116,9 +116,9 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 50,
     bestFor: ["urbano", "misto", "subidas"],
-    strengths: ["Motor 1000W", "Autonomia até 50 km", "Bateria 48V 18Ah", "Freios hidráulicos", "Marchas Shimano", "NFC, alarme e trava", "Pedal de apoio para garupa"],
+    strengths: ["Motor 1000W", "Autonomia até 60 km", "Bateria 48V 18Ah", "Freios hidráulicos", "Marchas Shimano", "NFC, alarme e trava", "Pedal de apoio para garupa"],
     budgetTiers: ["8000_10000"],
-    diferencial: "Modelo mais completo com tecnologia, segurança e conforto",
+    diferencial: "Modelo completo com bateria maior, tecnologia e segurança",
     perfilIndicado: "Uso urbano, passeio, garupa e quem quer uma bike mais completa",
   },
   {
