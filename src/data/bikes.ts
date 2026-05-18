@@ -172,7 +172,7 @@ export const BIKES: Bike[] = [
   {
     id: "v35",
     name: "V35",
-    shortDescription: "Bike elétrica 1000W com duas baterias, boa autonomia, estrutura robusta e cesto central.",
+    shortDescription: "Bike elétrica 1000W com duas baterias 48V 15.6Ah, autonomia de até 120 km, estrutura robusta e cesto central. Conforto, praticidade e desempenho para uso intenso.",
     image: v35,
     affiliateLink: "https://meli.la/1t8phJ6",
     internalPrice: 9249,
@@ -180,7 +180,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 100,
     bestFor: ["trabalho", "delivery", "longa_distancia", "urbano"],
-    strengths: ["Motor 1000W", "Duas baterias", "Autonomia até 100 km", "Freios hidráulicos", "Cesto central", "Suporta 2 pessoas"],
+    strengths: ["Motor 1000W", "Duas baterias 48V 15.6Ah", "Autonomia até 120 km", "Freios hidráulicos", "Cesto central", "Suporta 2 pessoas"],
     budgetTiers: ["8000_10000"],
     diferencial: "Duas baterias com cesto central e boa estrutura urbana",
     perfilIndicado: "Deslocamentos longos, uso urbano intenso e quem quer mais praticidade",
