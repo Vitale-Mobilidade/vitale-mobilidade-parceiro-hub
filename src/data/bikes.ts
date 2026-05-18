@@ -92,7 +92,7 @@ export const BIKES: Bike[] = [
   {
     id: "v10_max",
     name: "V10 Max",
-    shortDescription: "Bike elétrica 1000W com boa estrutura urbana, garupa, marchas Shimano e desempenho em subidas.",
+    shortDescription: "Lançamento 2026 – bike elétrica 1000W com motor forte, garupa, marchas Shimano e excelente desempenho em subidas. Ideal para quem busca potência e praticidade.",
     image: v10max,
     affiliateLink: "https://meli.la/24A8tp5",
     internalPrice: 8199,
@@ -100,7 +100,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 50,
     bestFor: ["urbano", "locomocao_diaria", "misto"],
-    strengths: ["Motor 1000W", "Autonomia até 50 km", "Marchas Shimano", "Freios hidráulicos", "Pedal de apoio para garupa", "Boa em subidas"],
+    strengths: ["Motor 1000W", "Autonomia até 60 km", "Marchas Shimano", "Freios hidráulicos", "Pedal de apoio para garupa", "Boa em subidas"],
     budgetTiers: ["8000_10000"],
     diferencial: "Equilíbrio entre potência, conforto e uso com garupa",
     perfilIndicado: "Locomoção diária, passeio, garupa e trajetos urbanos mistos",
