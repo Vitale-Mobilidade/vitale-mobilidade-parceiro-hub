@@ -124,7 +124,7 @@ export const BIKES: Bike[] = [
   {
     id: "v8_pro",
     name: "V8 Pro",
-    shortDescription: "Bike elétrica 1000W robusta, com suspensão, freios hidráulicos e proposta confortável para cidade.",
+    shortDescription: "Bike elétrica 1000W robusta com suspensão dianteira e traseira, freios hidráulicos e cabos internos. Conforto, estabilidade e ótimo desempenho urbano.",
     image: v8pro,
     affiliateLink: "https://meli.la/1Arqegn",
     internalPrice: 8414,
@@ -132,9 +132,9 @@ export const BIKES: Bike[] = [
     weightSupportKg: 120,
     autonomyKm: 50,
     bestFor: ["urbano", "lazer", "locomocao_diaria"],
-    strengths: ["Motor 1000W", "Autonomia até 50 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat", "Visual robusto"],
+    strengths: ["Motor 1000W", "Autonomia até 50 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat 20 x 4", "Cabos internos", "Alarme e trava"],
     budgetTiers: ["8000_10000"],
-    diferencial: "Visual robusto com boa estrutura urbana",
+    diferencial: "Visual robusto com dupla suspensão e acabamento refinado",
     perfilIndicado: "Locomoção diária, passeio e uso urbano com mais conforto",
   },
   {
