@@ -188,7 +188,7 @@ export const BIKES: Bike[] = [
   {
     id: "v8_pro_s",
     name: "V8 Pro S",
-    shortDescription: "Bike elétrica 1000W com duas baterias, indicada para quem roda bastante e precisa de mais autonomia.",
+    shortDescription: "Bike elétrica 1000W com duas baterias 48V 15Ah, suspensão traseira dupla e autonomia estendida. Indicada para quem roda bastante e precisa de mais alcance e conforto.",
     image: v8pros,
     affiliateLink: "https://meli.la/2PRbRTw",
     internalPrice: 9303,
@@ -196,7 +196,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 120,
     autonomyKm: 100,
     bestFor: ["trabalho", "delivery", "longa_distancia"],
-    strengths: ["Motor 1000W", "Duas baterias", "Autonomia até 100 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat 20 x 4", "Cartão NFC"],
+    strengths: ["Motor 1000W", "Duas baterias 48V 15Ah", "Autonomia até 120 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat 20 x 4", "Cartão NFC"],
     budgetTiers: ["8000_10000"],
     diferencial: "Duas baterias e mais autonomia para rotina pesada",
     perfilIndicado: "Trabalho, delivery, deslocamentos longos e uso intenso",
