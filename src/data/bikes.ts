@@ -140,7 +140,7 @@ export const BIKES: Bike[] = [
   {
     id: "ouxi_gt20",
     name: "Ouxi GT20",
-    shortDescription: "Bike elétrica 1000W com pneus fat, suspensão, freios hidráulicos e proposta para cidade, lazer e terrenos irregulares.",
+    shortDescription: "Bike elétrica 1000W com pneus fat, suspensão dupla, freios hidráulicos e versatilidade para cidade, lazer e terrenos irregulares. Pedal assistido e acelerador removível.",
     image: gt20,
     affiliateLink: "https://meli.la/1mBhFrn",
     internalPrice: 8423,
@@ -148,7 +148,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 50,
     bestFor: ["lazer", "passeio", "off_road"],
-    strengths: ["Motor 1000W", "Autonomia até 50 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat 20 x 4", "Câmbio Shimano"],
+    strengths: ["Motor 1000W", "Autonomia até 50 km", "Freios hidráulicos", "Suspensão dianteira e traseira", "Pneus fat 20 x 4", "Câmbio Shimano", "Pedal assistido + acelerador"],
     budgetTiers: ["8000_10000"],
     diferencial: "Versatilidade para cidade, lazer e terrenos irregulares",
     perfilIndicado: "Uso urbano, lazer, trajetos mistos e terrenos irregulares",
