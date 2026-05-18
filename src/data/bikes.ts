@@ -204,7 +204,7 @@ export const BIKES: Bike[] = [
   {
     id: "gt2000",
     name: "GT2000",
-    shortDescription: "Bike elétrica 1000W de aro maior, com proposta forte para quem quer presença, conforto e autonomia.",
+    shortDescription: "Bike elétrica 1000W de aro 24 com bateria de 30Ah, velocidade de até 50 km/h e proposta robusta. Presença forte, conforto e autonomia para quem quer se destacar.",
     image: gt2000,
     affiliateLink: "https://meli.la/1rSknG4",
     internalPrice: 10976,
@@ -212,7 +212,7 @@ export const BIKES: Bike[] = [
     weightSupportKg: 150,
     autonomyKm: 60,
     bestFor: ["performance", "longa_distancia"],
-    strengths: ["Motor 1000W", "Autonomia até 60 km", "Bateria 30Ah", "Aro 24", "Suporta até 150 kg", "Boa para uso individual"],
+    strengths: ["Motor 1000W", "Autonomia até 60 km", "Bateria 30Ah", "Aro 24", "Suporta até 150 kg", "Velocidade até 50 km/h"],
     budgetTiers: ["acima_10000"],
     diferencial: "Aro maior, bateria forte e proposta robusta para uso individual",
     perfilIndicado: "Quem quer uma elétrica maior, forte e com boa presença na rua",
