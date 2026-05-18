@@ -220,7 +220,7 @@ export const BIKES: Bike[] = [
   {
     id: "coswheel_gt20",
     name: "Coswheel GT20",
-    shortDescription: "Bike elétrica premium estilo moto elétrica, com motor forte, bateria 48V 20Ah, pneus fat e alta presença visual.",
+    shortDescription: "Bike elétrica premium estilo moto com motor 1500W, bateria 48V 20Ah certificada UL, pneus fat 20 x 4 e suspensão dupla. Alto desempenho, visual imponente e autonomia de longo alcance.",
     image: coswheelGt20,
     affiliateLink: "https://meli.la/1VNfe6A",
     internalPrice: 20900,
@@ -228,9 +228,9 @@ export const BIKES: Bike[] = [
     weightSupportKg: 165,
     autonomyKm: 60,
     bestFor: ["premium", "performance"],
-    strengths: ["Motor 1000W", "Autonomia até 60 km", "Bateria 48V 20Ah", "Pneus fat 20 x 4", "Freios hidráulicos", "Suspensão dupla", "Visual premium"],
+    strengths: ["Motor 1500W", "Autonomia até 150 km", "Bateria 48V 20Ah UL", "Pneus fat 20 x 4", "Freios hidráulicos", "Suspensão dupla", "Visual premium"],
     budgetTiers: ["acima_10000"],
-    diferencial: "Visual premium, construção forte e proposta mais exclusiva",
+    diferencial: "Visual premium, motor 1500W e construção exclusiva",
     perfilIndicado: "Quem busca uma elétrica premium, forte, com visual diferenciado e maior presença",
   },
 ];
