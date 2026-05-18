@@ -44,7 +44,7 @@ export const BIKES: Bike[] = [
   {
     id: "ft03",
     name: "FT03",
-    shortDescription: "Bike elétrica 1000W para uso urbano individual, com boa autonomia e proposta racional de custo benefício.",
+    shortDescription: "Bike elétrica 1000W para uso urbano individual. Motor forte, freios hidráulicos, quadro de alumínio e excelente custo-benefício para quem quer economia no dia a dia.",
     image: ft03,
     affiliateLink: "https://meli.la/2BLHybP",
     internalPrice: 6466,
@@ -52,9 +52,9 @@ export const BIKES: Bike[] = [
     weightSupportKg: 120,
     autonomyKm: 60,
     bestFor: ["urbano", "locomocao_diaria"],
-    strengths: ["Motor 1000W", "Autonomia até 60 km", "Freios hidráulicos", "Quadro em alumínio", "Boa para uso individual"],
+    strengths: ["Motor 1000W com bom torque", "Autonomia até 60 km", "Freios hidráulicos dianteiro e traseiro", "Quadro em liga de alumínio", "Aro 20 com estabilidade e agilidade"],
     budgetTiers: ["ate_7000"],
-    diferencial: "Custo benefício para uso urbano individual",
+    diferencial: "Custo-benefício para uso urbano individual",
     perfilIndicado: "Uso urbano, primeira bike elétrica e locomoção diária individual",
   },
   {
