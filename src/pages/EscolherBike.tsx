@@ -687,7 +687,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       console.error("[GTM] event_click_buy push failed", err);
     }
 
-
     // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
     setTimeout(() => {
       window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
