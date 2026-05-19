@@ -687,6 +687,22 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       console.error("[GTM] event_click_buy push failed", err);
     }
 
+    // Meta Pixel: InitiateCheckout (antes do redirect, com eventID para deduplicação)
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") {
+        const eventID = `ic_${bike.id}_${Date.now()}`;
+        fbq("track", "InitiateCheckout", {
+          content_name: bike.name,
+          content_category: "Bike Elétrica",
+          destination: "mercadolivre",
+        }, { eventID });
+        console.log("[FBQ] InitiateCheckout", { content_name: bike.name, eventID });
+      }
+    } catch (err) {
+      console.error("[FBQ] InitiateCheckout failed", err);
+    }
+
     // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
     setTimeout(() => {
       window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
