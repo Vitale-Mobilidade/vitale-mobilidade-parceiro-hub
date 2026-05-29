@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -232,6 +234,43 @@ export default function EscolherBike() {
       device_type, browser, operating_system,
     };
   }, []);
+
+  // Per-route SEO head (set on mount, restore on unmount)
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "Quiz: descubra sua bike elétrica ideal | Vitale Mobilidade";
+
+    const setMeta = (selector: string, create: () => HTMLElement, value: string) => {
+      let el = document.head.querySelector(selector) as HTMLElement | null;
+      const prev = el?.getAttribute(selector.includes('name=') ? 'content' : selector.includes('property=') ? 'content' : 'href') ?? null;
+      const created = !el;
+      if (!el) { el = create(); document.head.appendChild(el); }
+      if (el.tagName === 'META') el.setAttribute('content', value);
+      else el.setAttribute('href', value);
+      return () => {
+        if (created) el!.remove();
+        else if (prev !== null) {
+          if (el!.tagName === 'META') el!.setAttribute('content', prev);
+          else el!.setAttribute('href', prev);
+        }
+      };
+    };
+
+    const restorers = [
+      setMeta('meta[name="description"]', () => { const m = document.createElement('meta'); m.setAttribute('name','description'); return m; }, "Responda 7 perguntas e receba a recomendação de bike elétrica ideal para seu uso, trajeto e orçamento. Curadoria da Vitale Mobilidade."),
+      setMeta('link[rel="canonical"]', () => { const l = document.createElement('link'); l.setAttribute('rel','canonical'); return l; }, "https://vitalemobilidade.com/escolherbike"),
+      setMeta('meta[property="og:url"]', () => { const m = document.createElement('meta'); m.setAttribute('property','og:url'); return m; }, "https://vitalemobilidade.com/escolherbike"),
+      setMeta('meta[property="og:title"]', () => { const m = document.createElement('meta'); m.setAttribute('property','og:title'); return m; }, "Quiz: descubra sua bike elétrica ideal"),
+      setMeta('meta[property="og:description"]', () => { const m = document.createElement('meta'); m.setAttribute('property','og:description'); return m; }, "Quiz rápido para encontrar a bike elétrica certa para você, com curadoria da Vitale Mobilidade."),
+    ];
+
+    return () => {
+      document.title = prevTitle;
+      restorers.forEach(r => r());
+    };
+  }, []);
+
+
 
   // ---------- Intro ----------
   if (phase === "intro") {
@@ -862,6 +901,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   return (
     <main className="min-h-screen bg-background">
+
+
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
         <div className="flex justify-center mb-5">
           <VitaleBrand size="sm" />
