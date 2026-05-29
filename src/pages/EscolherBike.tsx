@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -862,6 +864,15 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   return (
     <main className="min-h-screen bg-background">
+      <Helmet>
+        <title>Quiz: descubra sua bike elétrica ideal | Vitale Mobilidade</title>
+        <meta name="description" content="Responda 7 perguntas e receba a recomendação de bike elétrica ideal para o seu uso, trajeto e orçamento. Curadoria da Vitale Mobilidade." />
+        <link rel="canonical" href="https://vitalemobilidade.com/escolherbike" />
+        <meta property="og:url" content="https://vitalemobilidade.com/escolherbike" />
+        <meta property="og:title" content="Quiz: descubra sua bike elétrica ideal" />
+        <meta property="og:description" content="Quiz rápido para encontrar a bike elétrica certa para você, com curadoria da Vitale Mobilidade." />
+      </Helmet>
+
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
         <div className="flex justify-center mb-5">
           <VitaleBrand size="sm" />
