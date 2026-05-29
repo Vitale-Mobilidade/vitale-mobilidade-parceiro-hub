@@ -1,0 +1,10 @@
+# Vitale Mobilidade
+
+> Consultoria estratégica em veículos elétricos no Brasil. Mais de 10 anos de experiência ajudando empresas e empreendedores a escolher fornecedores confiáveis e estruturar operações B2B/B2C no mercado de mobilidade elétrica.
+
+A Vitale Mobilidade, liderada por Lucas Vitale, oferece diagnóstico de mercado, avaliação de fornecedores, estruturação comercial B2B/B2C/B2B2C e treinamento de equipes. Contato exclusivo via WhatsApp (11) 98689-3890.
+
+## Pages
+
+- [Home](/): Visão geral da consultoria, serviços, casos de sucesso e FAQ.
+- [Escolher Bike](/escolherbike): Ferramenta interativa que recomenda a bike elétrica ideal a partir de um quiz com perfil de uso, trajeto e orçamento.
