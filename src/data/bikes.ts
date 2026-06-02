@@ -47,7 +47,7 @@ export const BIKES: Bike[] = [
     shortDescription: "Bike elétrica 1000W para uso urbano individual. Motor forte, freios hidráulicos, quadro de alumínio e excelente custo-benefício para quem quer economia no dia a dia.",
     image: ft03,
     affiliateLink: "https://meli.la/2K4MCXZ",
-    internalPrice: 6299,
+    internalPrice: 6343,
     capacity: 1,
     weightSupportKg: 120,
     autonomyKm: 60,
