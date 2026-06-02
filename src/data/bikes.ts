@@ -175,7 +175,7 @@ export const BIKES: Bike[] = [
     shortDescription: "Bike elétrica 1000W com duas baterias 48V 15.6Ah, autonomia de até 120 km, estrutura robusta e cesto central. Conforto, praticidade e desempenho para uso intenso.",
     image: v35,
     affiliateLink: "https://meli.la/2jn5JSE",
-    internalPrice: 10890,
+    internalPrice: 11990,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 100,
