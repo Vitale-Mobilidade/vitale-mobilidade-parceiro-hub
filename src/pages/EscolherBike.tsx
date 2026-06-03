@@ -278,8 +278,8 @@ export default function EscolherBike() {
       <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="container mx-auto px-6 py-12 lg:py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="mb-8">
-              <VitaleBrand size="md" />
+            <div className="mb-8 flex justify-center">
+              <VitaleBrand variant="cover" size="md" />
             </div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
               <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
