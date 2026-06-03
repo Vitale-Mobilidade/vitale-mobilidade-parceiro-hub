@@ -10,7 +10,7 @@ interface VitaleBrandProps {
 /**
  * Marca Vitale Mobilidade.
  * - variant="cover": banner com bikes (usado na capa/intro).
- * - variant="logo" (default): logo discreto (200px) para uso interno no quiz.
+ * - variant="logo" (default): logo discreto (160px) para uso interno no quiz.
  */
 export function VitaleBrand({ variant = "logo", size = "md", className = "" }: VitaleBrandProps) {
   if (variant === "cover") {
@@ -35,12 +35,12 @@ export function VitaleBrand({ variant = "logo", size = "md", className = "" }: V
     <img
       src={logoAsset.url}
       alt="Vitale Mobilidade"
-      width={200}
-      height={62}
+      width={160}
+      height={50}
       loading="eager"
       decoding="async"
       className={`h-auto mx-auto opacity-90 ${className}`}
-      style={{ width: 200, maxWidth: "100%" }}
+      style={{ width: 160, maxWidth: "100%" }}
     />
   );
 }
