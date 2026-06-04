@@ -206,7 +206,7 @@ export const BIKES: Bike[] = [
     name: "GT2000",
     shortDescription: "Bike elétrica 1000W de aro 24 com bateria de 30Ah, velocidade de até 50 km/h e proposta robusta. Presença forte, conforto e autonomia para quem quer se destacar.",
     image: gt2000,
-    affiliateLink: "https://meli.la/1xCFCbh",
+    affiliateLink: "https://meli.la/2qiDb3C",
     internalPrice: 10349,
     capacity: 1,
     weightSupportKg: 150,
