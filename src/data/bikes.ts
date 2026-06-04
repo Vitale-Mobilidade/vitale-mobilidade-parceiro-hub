@@ -142,7 +142,7 @@ export const BIKES: Bike[] = [
     name: "Ouxi GT20",
     shortDescription: "Bike elétrica 1000W com pneus fat, suspensão dupla, freios hidráulicos e versatilidade para cidade, lazer e terrenos irregulares. Pedal assistido e acelerador removível.",
     image: gt20,
-    affiliateLink: "https://meli.la/2VX3kyV",
+    affiliateLink: "https://meli.la/2mTotmX",
     internalPrice: 7700,
     capacity: 2,
     weightSupportKg: 150,
