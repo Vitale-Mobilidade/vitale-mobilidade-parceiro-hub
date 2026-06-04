@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      integration_logs: {
+        Row: {
+          attempt: number | null
+          created_at: string
+          destination: string
+          error_message: string | null
+          event_name: string
+          http_status: number | null
+          id: string
+          lead_id: string | null
+          request_payload: Json | null
+          response_payload: string | null
+          status: string
+        }
+        Insert: {
+          attempt?: number | null
+          created_at?: string
+          destination: string
+          error_message?: string | null
+          event_name: string
+          http_status?: number | null
+          id?: string
+          lead_id?: string | null
+          request_payload?: Json | null
+          response_payload?: string | null
+          status: string
+        }
+        Update: {
+          attempt?: number | null
+          created_at?: string
+          destination?: string
+          error_message?: string | null
+          event_name?: string
+          http_status?: number | null
+          id?: string
+          lead_id?: string | null
+          request_payload?: Json | null
+          response_payload?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_events: {
         Row: {
           created_at: string
@@ -129,7 +179,13 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
+          webhook_attempts: number
           webhook_error_message: string | null
+          webhook_last_attempt_at: string | null
+          webhook_last_error: string | null
+          webhook_last_response: string | null
+          webhook_sent_at: string | null
+          webhook_status: string | null
           weight_cluster: string | null
           weight_range: string | null
           weight_range_label: string | null
@@ -204,7 +260,13 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          webhook_attempts?: number
           webhook_error_message?: string | null
+          webhook_last_attempt_at?: string | null
+          webhook_last_error?: string | null
+          webhook_last_response?: string | null
+          webhook_sent_at?: string | null
+          webhook_status?: string | null
           weight_cluster?: string | null
           weight_range?: string | null
           weight_range_label?: string | null
@@ -279,7 +341,13 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          webhook_attempts?: number
           webhook_error_message?: string | null
+          webhook_last_attempt_at?: string | null
+          webhook_last_error?: string | null
+          webhook_last_response?: string | null
+          webhook_sent_at?: string | null
+          webhook_status?: string | null
           weight_cluster?: string | null
           weight_range?: string | null
           weight_range_label?: string | null
