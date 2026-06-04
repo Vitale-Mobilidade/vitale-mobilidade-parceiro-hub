@@ -1,6 +1,7 @@
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
 const CRM_WEBHOOK_URL = "https://hook.us1.make.com/vvxovixmmoi4tip31x7bh3yd982xzqga";
+const WEBHOOK_DESTINATION = "make_webhook";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,8 @@ const leadFields = [
   "buy_click_count", "crm_webhook_status", "last_webhook_sent_at", "webhook_error_message", "raw_answers_json", "raw_recommendation_json",
   "name", "phone", "source_url", "landing_path", "referrer", "utm_source",
   "referrer_domain", "detected_source", "detected_medium", "traffic_origin",
+  "webhook_status", "webhook_attempts", "webhook_sent_at", "webhook_last_attempt_at",
+  "webhook_last_error", "webhook_last_response",
 ] as const;
 
 const eventNames = new Set([
@@ -85,10 +88,15 @@ async function dbFetch(path: string, init: RequestInit) {
 }
 
 async function insertLead(lead: Record<string, unknown>) {
+  const payload = pickLeadFields(lead);
+  // Quando o lead já chega com nome+telefone, marca pendente de envio ao Make.
+  if (payload.name && payload.phone && payload.webhook_status === undefined) {
+    payload.webhook_status = "pending";
+  }
   const rows = await dbFetch("quiz_leads?select=id", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify(pickLeadFields(lead)),
+    body: JSON.stringify(payload),
   });
   return Array.isArray(rows) ? rows[0]?.id as string | undefined : undefined;
 }
@@ -101,6 +109,27 @@ async function updateLead(leadId: string, lead: Record<string, unknown>) {
   });
 }
 
+async function patchLeadRaw(leadId: string, patch: Record<string, unknown>) {
+  await dbFetch(`quiz_leads?id=eq.${leadId}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(patch),
+  });
+}
+
+async function rpcIncrementAttempts(leadId: string): Promise<number> {
+  // PostgREST não suporta incremento atômico via PATCH; lemos e gravamos.
+  const rows = await dbFetch(`quiz_leads?id=eq.${leadId}&select=webhook_attempts`, { method: "GET" });
+  const current = Array.isArray(rows) && rows[0]?.webhook_attempts ? Number(rows[0].webhook_attempts) : 0;
+  const next = current + 1;
+  await patchLeadRaw(leadId, {
+    webhook_attempts: next,
+    webhook_status: "sending",
+    webhook_last_attempt_at: new Date().toISOString(),
+  });
+  return next;
+}
+
 async function insertEvent(event: Record<string, unknown>, leadId?: string | null) {
   await dbFetch("quiz_events", {
     method: "POST",
@@ -109,14 +138,98 @@ async function insertEvent(event: Record<string, unknown>, leadId?: string | nul
   });
 }
 
+async function insertIntegrationLog(entry: Record<string, unknown>) {
+  try {
+    await dbFetch("integration_logs", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(entry),
+    });
+  } catch (e) {
+    console.error("[integration_logs] insert failed", e instanceof Error ? e.message : e);
+  }
+}
+
 async function sendCrmWebhook(payload: Record<string, unknown>) {
-  const res = await fetch(CRM_WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(CRM_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const body = await res.text().catch(() => "");
+    return { success: res.ok, status: res.status, body: body.slice(0, 2000) };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Dispara o webhook do Make pelo backend, atualiza o quiz_leads
+ * (webhook_status, attempts, timestamps, erro/resposta) e grava em integration_logs.
+ * Esta função NUNCA depende de evento de browser. Sempre tenta enviar.
+ */
+async function fireWebhookForLead(
+  leadId: string,
+  basePayload: Record<string, unknown>,
+  eventName: string,
+) {
+  // 1) Marca como "sending" e incrementa attempts.
+  let attempt = 0;
+  try {
+    attempt = await rpcIncrementAttempts(leadId);
+  } catch (e) {
+    console.error("[webhook] failed to mark sending", e);
+  }
+
+  // 2) Garante que o id do Lovable está no payload (campo LeadID Lovable para o Zoho).
+  const payload = {
+    ...basePayload,
+    id: leadId,
+    lead_id: leadId,
+    "LeadID Lovable": leadId,
+    event: { event_name: eventName },
+  };
+
+  let result: { success: boolean; status?: number; body?: string; error?: string };
+  try {
+    const r = await sendCrmWebhook(payload);
+    result = r;
+  } catch (e) {
+    result = { success: false, error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // 3) Atualiza o lead com o desfecho.
+  const nowIso = new Date().toISOString();
+  const patch: Record<string, unknown> = {
+    webhook_status: result.success ? "sent" : "failed",
+    webhook_last_response: result.body ?? null,
+    webhook_last_error: result.success ? null : (result.error ?? `HTTP ${result.status}`),
+    crm_webhook_status: result.success ? "enviado" : "erro_webhook",
+    last_webhook_sent_at: nowIso,
+    webhook_error_message: result.success ? null : (result.error ?? `HTTP ${result.status}`)?.toString().slice(0, 500),
+  };
+  if (result.success) patch.webhook_sent_at = nowIso;
+
+  await patchLeadRaw(leadId, patch).catch((e) => console.error("[webhook] failed to patch lead outcome", e));
+
+  // 4) Loga a tentativa.
+  await insertIntegrationLog({
+    lead_id: leadId,
+    event_name: eventName,
+    destination: WEBHOOK_DESTINATION,
+    status: result.success ? "success" : "failed",
+    http_status: result.status ?? null,
+    attempt,
+    request_payload: payload,
+    response_payload: result.body ?? null,
+    error_message: result.success ? null : (result.error ?? `HTTP ${result.status}`),
   });
-  const body = await res.text().catch(() => "");
-  return { success: res.ok, status: res.status, body: body.slice(0, 1000) };
+
+  return { ...result, attempt };
 }
 
 Deno.serve(async (req) => {
@@ -162,30 +275,17 @@ Deno.serve(async (req) => {
     }
 
     if (action === "complete_quiz") {
+      // 1) Atualiza o lead e marca como pendente de envio.
       try {
-        await updateLead(lead_id, lead);
+        await updateLead(lead_id, { ...lead, webhook_status: "pending" });
         await insertEvent({ event_name: "quiz_completed", step: 5, payload: webhook_payload ?? lead }, lead_id);
         await insertEvent({ event_name: "recommendation_generated", payload: recommendation_event_payload ?? null }, lead_id);
       } catch (error) {
         dbError = error instanceof Error ? error.message : String(error);
       }
 
-      try {
-        webhook = await sendCrmWebhook(webhook_payload ?? lead);
-        await updateLead(lead_id, {
-          crm_webhook_status: webhook.success ? "enviado" : "erro_webhook",
-          last_webhook_sent_at: new Date().toISOString(),
-          webhook_error_message: webhook.success ? null : JSON.stringify(webhook).slice(0, 500),
-        }).catch(() => undefined);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        webhook = { success: false, error: message };
-        await updateLead(lead_id, {
-          crm_webhook_status: "erro_webhook",
-          last_webhook_sent_at: new Date().toISOString(),
-          webhook_error_message: message.slice(0, 500),
-        }).catch(() => undefined);
-      }
+      // 2) Dispara webhook pelo backend, registrando status e log.
+      webhook = await fireWebhookForLead(lead_id, webhook_payload ?? lead, "quiz_completed");
 
       return new Response(JSON.stringify({ success: !dbError && !!webhook?.success, lead_id, db_error: dbError, webhook }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -199,8 +299,28 @@ Deno.serve(async (req) => {
       } catch (error) {
         dbError = error instanceof Error ? error.message : String(error);
       }
-      try { webhook = await sendCrmWebhook(webhook_payload ?? { event_name: event.event_name, lead_id }); }
-      catch (error) { webhook = { success: false, error: error instanceof Error ? error.message : String(error) }; }
+      try {
+        const r = await sendCrmWebhook(webhook_payload ?? { event_name: event.event_name, lead_id, id: lead_id, "LeadID Lovable": lead_id });
+        webhook = r;
+        await insertIntegrationLog({
+          lead_id,
+          event_name: typeof event.event_name === "string" ? event.event_name : "buy_click",
+          destination: WEBHOOK_DESTINATION,
+          status: r.success ? "success" : "failed",
+          http_status: r.status ?? null,
+          attempt: null,
+          request_payload: webhook_payload ?? null,
+          response_payload: r.body ?? null,
+          error_message: r.success ? null : `HTTP ${r.status}`,
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        webhook = { success: false, error: msg };
+        await insertIntegrationLog({
+          lead_id, event_name: "buy_click", destination: WEBHOOK_DESTINATION,
+          status: "failed", error_message: msg,
+        });
+      }
       return new Response(JSON.stringify({ success: !dbError && !!webhook?.success, lead_id, db_error: dbError, webhook }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
