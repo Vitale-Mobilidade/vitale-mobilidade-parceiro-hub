@@ -275,10 +275,10 @@ export default function EscolherBike() {
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <div className="container mx-auto px-6 py-12 lg:py-16">
+      <main className="min-h-screen bg-background flex items-start sm:items-center justify-center">
+        <div className="container mx-auto px-6 pt-4 pb-10 sm:py-12 lg:py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="mb-8 flex justify-center">
+            <div className="mb-6 flex justify-center">
               <VitaleBrand variant="cover" size="md" />
             </div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
@@ -300,38 +300,10 @@ export default function EscolherBike() {
                 setPhase("quiz");
               }}
               data-event="quiz_start_click"
-              className="text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all w-full sm:w-auto bg-primary hover:bg-primary/90"
+              className="cta-pulse text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto bg-primary hover:bg-primary/90"
             >
               Começar agora
             </Button>
-
-            <div className="mt-5">
-              <p className="text-base text-muted-foreground mb-1.5">
-                Prefere ver as ofertas direto no Mercado Livre?
-              </p>
-              <a
-                href={AFFILIATE_LIST_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-event="affiliate_list_clicked"
-                onClick={() => {
-                  try {
-                    const payload = {
-                      source: "intro_secondary_cta",
-                      ...baseLeadDataRef.current,
-                    };
-                    (window as any).dataLayer = (window as any).dataLayer || [];
-                    (window as any).dataLayer.push({ event: "affiliate_list_clicked", ...payload });
-                    console.info("[quiz] affiliate_list_clicked", payload);
-                  } catch (err) {
-                    console.error("[quiz] affiliate_list_clicked tracking failed", err);
-                  }
-                }}
-                className="inline-block text-base font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
-              >
-                Ver lista de bikes em promoção
-              </a>
-            </div>
 
             <div className="flex flex-wrap justify-center gap-3 mt-10 mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-base font-medium">
