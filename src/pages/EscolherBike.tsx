@@ -453,6 +453,9 @@ export default function EscolherBike() {
                 </p>
               )}
             </div>
+            {submitError && (
+              <p className="text-sm text-destructive text-center">{submitError}</p>
+            )}
             <Button
               onClick={handleSubmit}
               disabled={!valid || submitting}
@@ -461,6 +464,7 @@ export default function EscolherBike() {
             >
               {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando recomendação...</>) : "Ver minha recomendação"}
             </Button>
+
           </div>
         </div>
       </main>
