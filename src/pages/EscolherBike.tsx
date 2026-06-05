@@ -584,6 +584,7 @@ export default function EscolherBike() {
       had_ebike_before_label: finalLabels.had_ebike_before_label,
     };
 
+    const submittedAt = completedAt;
     const fullLeadPayload: Record<string, any> = {
       name: name.trim(),
       phone,
@@ -592,6 +593,7 @@ export default function EscolherBike() {
       completion_percentage: 100,
       started_at: startedAt,
       completed_at: completedAt,
+      submitted_at: submittedAt,
       last_interaction_at: completedAt,
       ...baseLeadDataRef.current,
       ...answersFlat,
@@ -612,6 +614,7 @@ export default function EscolherBike() {
     };
 
     let activeLeadId: string | null = null;
+    let createError: unknown = null;
     try {
       const result = await invokeQuizTrack({ action: "create_lead", lead: fullLeadPayload });
       if (!result?.success || !result?.lead_id) throw result;
@@ -619,19 +622,64 @@ export default function EscolherBike() {
       setLeadId(activeLeadId);
       console.info("[quiz] Lead completo criado com sucesso", { lead_id: activeLeadId });
     } catch (e) {
+      createError = e;
       console.error("[quiz] Erro ao criar lead completo", e);
       savePendingLead(fullLeadPayload);
+
+      // Retry automático único antes de mostrar erro
+      try {
+        const retry = await invokeQuizTrack({ action: "create_lead", lead: fullLeadPayload });
+        if (retry?.success && retry?.lead_id) {
+          activeLeadId = retry.lead_id;
+          setLeadId(activeLeadId);
+          createError = null;
+          console.info("[quiz] Lead criado no retry", { lead_id: activeLeadId });
+        }
+      } catch (re) {
+        console.error("[quiz] Retry de create_lead também falhou", re);
+      }
     }
 
-    // GTM dataLayer: lead capturado (antes do resultado)
+    // ❌ Se falhou em criar o lead: NÃO disparar event_lead, voltar p/ formulário com erro.
+    if (!activeLeadId) {
+      completedRef.current = false;
+      setSubmitError("Não conseguimos enviar seus dados. Verifique sua conexão e tente novamente.");
+      setPhase("lead");
+      console.error("[quiz] event_lead BLOQUEADO — sem lead_id confirmado", createError);
+      return;
+    }
+
+    // ✅ Lead criado com sucesso. Disparar event_lead p/ Meta/GTM uma única vez por lead_id.
     try {
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).dataLayer.push({
-        event: "event_lead",
-        form_name: "escolherbike",
-        lead_type: "quiz_recommendation",
-      });
-      console.log("[GTM] event_lead pushed");
+      const flagKey = EVENT_LEAD_FLAG_PREFIX + activeLeadId;
+      const alreadySent = (() => { try { return localStorage.getItem(flagKey) === "true"; } catch { return false; } })();
+      if (alreadySent) {
+        console.info("[GTM] event_lead bloqueado por dedup", activeLeadId);
+      } else {
+        const t = baseLeadDataRef.current || {};
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push({
+          event: "event_lead",
+          lead_id: activeLeadId,
+          event_id: activeLeadId,
+          form_name: "escolherbike",
+          lead_type: "quiz_recommendation",
+          utm_source: t.utm_source || null,
+          utm_medium: t.utm_medium || null,
+          utm_campaign: t.utm_campaign || null,
+          utm_content: t.utm_content || null,
+          utm_term: t.utm_term || null,
+          fbclid: t.fbclid || null,
+          gclid: t.gclid || null,
+          traffic_origin: t.traffic_origin || null,
+          source_url: window.location.href,
+          landing_page: t.landing_page || null,
+          referrer: document.referrer || null,
+          device_type: t.device_type || null,
+        });
+        try { localStorage.setItem(flagKey, "true"); } catch {}
+        console.log("[GTM] event_lead pushed", { lead_id: activeLeadId });
+      }
     } catch (e) {
       console.error("[GTM] event_lead push failed", e);
     }
@@ -640,77 +688,69 @@ export default function EscolherBike() {
       event_name: "quiz_completed",
       event_created_at: completedAt,
       lead_id: activeLeadId,
+      "LeadID Lovable": activeLeadId,
       ...fullLeadPayload,
       conversion_status: "sem_clique",
     };
 
-    if (activeLeadId) {
-      // Salvar eventos retroativos em lote (quiz_step_completed por resposta)
-      console.info("[quiz] Salvando eventos retroativos");
-      try {
-        await Promise.all(
-          STEPS.map((s, idx) => {
-            const value = (finalAnswers as any)[s.key];
-            const label = finalLabels[`${s.key}_label`];
-            return invokeQuizTrack({
-              action: "save_event",
-              lead_id: activeLeadId,
-              event: {
-                event_name: "quiz_step_completed",
-                step: idx + 1,
-                field_name: s.key,
-                field_value: value,
-                field_label: label,
-                payload: {
-                  field_name: s.key, field_value: value, field_label: label,
-                  ...baseLeadDataRef.current,
-                  ...answersFlat,
-                },
+    // Salvar eventos retroativos em lote (quiz_step_completed por resposta)
+    console.info("[quiz] Salvando eventos retroativos");
+    try {
+      await Promise.all(
+        STEPS.map((s, idx) => {
+          const value = (finalAnswers as any)[s.key];
+          const label = finalLabels[`${s.key}_label`];
+          return invokeQuizTrack({
+            action: "save_event",
+            lead_id: activeLeadId,
+            event: {
+              event_name: "quiz_step_completed",
+              step: idx + 1,
+              field_name: s.key,
+              field_value: value,
+              field_label: label,
+              payload: {
+                field_name: s.key, field_value: value, field_label: label,
+                ...baseLeadDataRef.current,
+                ...answersFlat,
               },
-            }).catch((err) => console.error("[quiz] Erro evento retroativo", s.key, err));
-          })
-        );
-        console.info("[quiz] Eventos retroativos salvos");
-      } catch (e) {
-        console.error("[quiz] Erro ao salvar eventos retroativos", e);
-      }
+            },
+          }).catch((err) => console.error("[quiz] Erro evento retroativo", s.key, err));
+        })
+      );
+      console.info("[quiz] Eventos retroativos salvos");
+    } catch (e) {
+      console.error("[quiz] Erro ao salvar eventos retroativos", e);
+    }
 
-      // Salva quiz_completed + recommendation_generated + dispara webhook via complete_quiz
-      console.info("[quiz] Disparando webhook quiz_completed");
-      try {
-        const result = await invokeQuizTrack({
-          action: "complete_quiz",
-          lead_id: activeLeadId,
-          lead: {
-            status: "completo",
-            completion_percentage: 100,
-            completed_at: completedAt,
-            last_interaction_at: completedAt,
-          },
-          webhook_payload: webhookPayload,
-          recommendation_event_payload: rawRecommendation,
-        });
-        if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed enviado com sucesso", result.webhook.status);
-        else console.error("[quiz] Erro ao enviar webhook quiz_completed", result?.webhook ?? result);
-      } catch (e) {
-        console.error("[quiz] Erro ao enviar webhook quiz_completed", e);
-        try {
-          const fb = await sendCompletedWebhookFallback(webhookPayload);
-          console.info("[quiz] Webhook quiz_completed enviado com sucesso (fallback)", fb?.status ?? fb);
-        } catch (we) {
-          console.error("[quiz] Erro ao enviar webhook quiz_completed (fallback)", we);
-        }
-      }
-    } else {
-      // Sem lead_id — tenta apenas o webhook direto para não perder a venda
-      console.info("[quiz] Disparando webhook quiz_completed (sem lead_id)");
+    // Salva quiz_completed + recommendation_generated + dispara webhook via complete_quiz
+    console.info("[quiz] Disparando webhook quiz_completed");
+    try {
+      const result = await invokeQuizTrack({
+        action: "complete_quiz",
+        lead_id: activeLeadId,
+        lead: {
+          status: "completo",
+          completion_percentage: 100,
+          completed_at: completedAt,
+          submitted_at: submittedAt,
+          last_interaction_at: completedAt,
+        },
+        webhook_payload: webhookPayload,
+        recommendation_event_payload: rawRecommendation,
+      });
+      if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed enviado com sucesso", result.webhook.status);
+      else console.error("[quiz] Erro ao enviar webhook quiz_completed", result?.webhook ?? result);
+    } catch (e) {
+      console.error("[quiz] Erro ao enviar webhook quiz_completed", e);
       try {
         const fb = await sendCompletedWebhookFallback(webhookPayload);
         console.info("[quiz] Webhook quiz_completed enviado com sucesso (fallback)", fb?.status ?? fb);
       } catch (we) {
-        console.error("[quiz] Erro ao enviar webhook quiz_completed", we);
+        console.error("[quiz] Erro ao enviar webhook quiz_completed (fallback)", we);
       }
     }
+
 
     try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
 
