@@ -134,6 +134,10 @@ export type Database = {
           device_type: string | null
           distance_cluster: string | null
           experience_cluster: string | null
+          fbclid: string | null
+          first_seen_at: string | null
+          first_url: string | null
+          gclid: string | null
           had_ebike_before: string | null
           had_ebike_before_label: string | null
           id: string
@@ -171,9 +175,11 @@ export type Database = {
           source_url: string | null
           started_at: string | null
           status: string
+          submitted_at: string | null
           traffic_origin: string | null
           updated_at: string
           usage_cluster: string | null
+          user_agent: string | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -215,6 +221,10 @@ export type Database = {
           device_type?: string | null
           distance_cluster?: string | null
           experience_cluster?: string | null
+          fbclid?: string | null
+          first_seen_at?: string | null
+          first_url?: string | null
+          gclid?: string | null
           had_ebike_before?: string | null
           had_ebike_before_label?: string | null
           id?: string
@@ -252,9 +262,11 @@ export type Database = {
           source_url?: string | null
           started_at?: string | null
           status?: string
+          submitted_at?: string | null
           traffic_origin?: string | null
           updated_at?: string
           usage_cluster?: string | null
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -296,6 +308,10 @@ export type Database = {
           device_type?: string | null
           distance_cluster?: string | null
           experience_cluster?: string | null
+          fbclid?: string | null
+          first_seen_at?: string | null
+          first_url?: string | null
+          gclid?: string | null
           had_ebike_before?: string | null
           had_ebike_before_label?: string | null
           id?: string
@@ -333,9 +349,11 @@ export type Database = {
           source_url?: string | null
           started_at?: string | null
           status?: string
+          submitted_at?: string | null
           traffic_origin?: string | null
           updated_at?: string
           usage_cluster?: string | null
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
