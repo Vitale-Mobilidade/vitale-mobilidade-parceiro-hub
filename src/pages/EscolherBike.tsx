@@ -269,6 +269,8 @@ export default function EscolherBike() {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [leadId, setLeadId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
 
   const recommendation = useMemo(() => {
     if (Object.keys(answers).length === STEPS.length) return recommend(answers as Answers);
