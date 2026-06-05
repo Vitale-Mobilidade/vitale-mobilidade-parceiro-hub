@@ -198,50 +198,40 @@ function extractDomain(url: string | null | undefined): string | null {
   }
 }
 
-function detectTrafficOrigin(utms: Record<string, string | null>, referrer: string | null) {
+const META_SOURCE_RE = /(facebook|^fb$|meta|instagram|^ig$)/i;
+const META_REFERRER_RE = /(^|\.)(facebook\.com|instagram\.com|l\.facebook\.com|lm\.facebook\.com|m\.facebook\.com)$/i;
+
+function detectTrafficOrigin(
+  tracking: { utm_source: string | null; utm_medium: string | null; fbclid: string | null },
+  referrer: string | null,
+) {
   const referrer_domain = extractDomain(referrer);
-  const utm_source = utms.utm_source || null;
-  const utm_medium = utms.utm_medium || null;
+  const utm_source = tracking.utm_source;
+  const utm_medium = tracking.utm_medium;
 
-  let detected_source: string;
-  if (utm_source) {
-    detected_source = utm_source;
-  } else if (referrer_domain && /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(referrer_domain)) {
-    detected_source = "youtube";
-  } else if (referrer_domain && /(^|\.)instagram\.com$/.test(referrer_domain)) {
-    detected_source = "instagram";
-  } else if (referrer_domain && /(^|\.)tiktok\.com$/.test(referrer_domain)) {
-    detected_source = "tiktok";
-  } else if (referrer_domain && /(^|\.)google\./.test(referrer_domain)) {
-    detected_source = "google";
+  // Classificação principal solicitada (Meta-aware)
+  let traffic_origin: string;
+  if (utm_source && META_SOURCE_RE.test(utm_source)) {
+    traffic_origin = "meta";
+  } else if (tracking.fbclid) {
+    traffic_origin = "meta";
+  } else if (referrer_domain && META_REFERRER_RE.test(referrer_domain)) {
+    traffic_origin = "meta_referral";
+  } else if (utm_source) {
+    traffic_origin = utm_source;
   } else if (referrer_domain) {
-    detected_source = referrer_domain;
+    traffic_origin = `referral:${referrer_domain}`;
   } else {
-    detected_source = "direct_unknown";
+    traffic_origin = "direct_or_unknown";
   }
 
-  let detected_medium: string;
-  if (utm_medium) {
-    detected_medium = utm_medium;
-  } else if (detected_source === "youtube") {
-    detected_medium = "organic_referral";
-  } else if (detected_source === "instagram" || detected_source === "tiktok") {
-    detected_medium = "social_bio";
-  } else if (detected_source === "google") {
-    detected_medium = "organic_search_or_referral";
-  } else if (detected_source === "direct_unknown") {
-    detected_medium = "direct_or_app";
-  } else {
-    detected_medium = "referral";
-  }
+  // Compatibilidade com os campos antigos
+  const detected_source = utm_source || (tracking.fbclid ? "meta" : referrer_domain || "direct_unknown");
+  const detected_medium = utm_medium || (traffic_origin.startsWith("meta") ? "paid_social" : referrer_domain ? "referral" : "direct_or_app");
 
-  return {
-    referrer_domain,
-    detected_source,
-    detected_medium,
-    traffic_origin: `${detected_source} / ${detected_medium}`,
-  };
+  return { referrer_domain, detected_source, detected_medium, traffic_origin };
 }
+
 
 async function invokeQuizTrack(body: Record<string, any>) {
   const { data, error } = await supabase.functions.invoke("quiz-track", { body });
