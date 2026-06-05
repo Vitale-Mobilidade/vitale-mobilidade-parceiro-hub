@@ -110,7 +110,7 @@ export const BIKES: Bike[] = [
     name: "V40 Pro",
     shortDescription: "Lançamento 2026 – bike elétrica 1000W completa com bateria 48V 18Ah, trava na roda, NFC, alarme e pedal de apoio para garupa. Conforto, segurança e desempenho superiores.",
     image: v40pro,
-    affiliateLink: "https://meli.la/2AAh92z",
+    affiliateLink: "https://meli.la/2YSVbMJ",
     internalPrice: 7760,
     capacity: 2,
     weightSupportKg: 150,
