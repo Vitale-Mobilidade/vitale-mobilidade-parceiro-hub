@@ -126,7 +126,7 @@ export const BIKES: Bike[] = [
     name: "V8 Pro",
     shortDescription: "Bike elétrica 1000W robusta com suspensão dianteira e traseira, freios hidráulicos e cabos internos. Conforto, estabilidade e ótimo desempenho urbano.",
     image: v8pro,
-    affiliateLink: "https://meli.la/2aNm5oD",
+    affiliateLink: "https://meli.la/1V8v8c3",
     internalPrice: 7600,
     capacity: 2,
     weightSupportKg: 120,
