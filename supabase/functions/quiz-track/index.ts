@@ -24,6 +24,7 @@ const leadFields = [
   "referrer_domain", "detected_source", "detected_medium", "traffic_origin",
   "webhook_status", "webhook_attempts", "webhook_sent_at", "webhook_last_attempt_at",
   "webhook_last_error", "webhook_last_response",
+  "fbclid", "gclid", "first_url", "first_seen_at", "submitted_at", "user_agent",
 ] as const;
 
 const eventNames = new Set([
