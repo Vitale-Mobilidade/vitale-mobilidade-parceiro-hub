@@ -404,12 +404,18 @@ export default function EscolherBike() {
     const handleSubmit = async () => {
       if (!valid || submitting) return;
       setSubmitting(true);
+      setSubmitError(null);
+      // Reset trava de "completed" para permitir retry após erro
+      completedRef.current = false;
       setPhase("processing");
       // Pequeno delay UX para a tela de processamento aparecer
       setTimeout(() => {
-        finishQuiz(answers as Answers, labels).finally(() => setSubmitting(false));
+        finishQuiz(answers as Answers, labels)
+          .catch(() => {})
+          .finally(() => setSubmitting(false));
       }, 100);
     };
+
 
     return (
       <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
