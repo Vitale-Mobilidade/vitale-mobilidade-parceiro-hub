@@ -106,17 +106,87 @@ function detectDevice() {
   return { device_type, browser, operating_system };
 }
 
-function getUTMs() {
-  if (typeof window === "undefined") return {};
+const TRACKING_STORAGE_KEY = "vitale_quiz_tracking_v1";
+const EVENT_LEAD_FLAG_PREFIX = "vitale_event_lead_sent_";
+
+type StoredTracking = {
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  referrer: string | null;
+  landing_page: string | null;
+  first_url: string | null;
+  first_seen_at: string | null;
+};
+
+function getUrlParams() {
+  if (typeof window === "undefined") return {} as Record<string, string | null>;
   const p = new URLSearchParams(window.location.search);
+  const get = (k: string) => {
+    const v = p.get(k);
+    return v && v.trim().length > 0 ? v : null;
+  };
   return {
-    utm_source: p.get("utm_source") || null,
-    utm_medium: p.get("utm_medium") || null,
-    utm_campaign: p.get("utm_campaign") || null,
-    utm_content: p.get("utm_content") || null,
-    utm_term: p.get("utm_term") || null,
+    utm_source: get("utm_source"),
+    utm_medium: get("utm_medium"),
+    utm_campaign: get("utm_campaign"),
+    utm_content: get("utm_content"),
+    utm_term: get("utm_term"),
+    fbclid: get("fbclid"),
+    gclid: get("gclid"),
   };
 }
+
+function readStoredTracking(): Partial<StoredTracking> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(TRACKING_STORAGE_KEY) || sessionStorage.getItem(TRACKING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function persistTracking(t: StoredTracking) {
+  if (typeof window === "undefined") return;
+  try {
+    const json = JSON.stringify(t);
+    localStorage.setItem(TRACKING_STORAGE_KEY, json);
+    sessionStorage.setItem(TRACKING_STORAGE_KEY, json);
+  } catch {}
+}
+
+/**
+ * Captura UTMs+fbclid+gclid da URL e mescla com o que já estava salvo,
+ * SEM sobrescrever valores existentes com vazio. Persiste em local+sessionStorage.
+ */
+function captureAndPersistTracking(): StoredTracking {
+  const stored = readStoredTracking();
+  const url = getUrlParams();
+  const referrer = (typeof document !== "undefined" ? document.referrer : "") || stored.referrer || null;
+  const landing_page = stored.landing_page || (typeof window !== "undefined" ? window.location.pathname : null);
+  const first_url = stored.first_url || (typeof window !== "undefined" ? window.location.href : null);
+  const first_seen_at = stored.first_seen_at || new Date().toISOString();
+
+  const merged: StoredTracking = {
+    utm_source: (url.utm_source ?? stored.utm_source) || null,
+    utm_medium: (url.utm_medium ?? stored.utm_medium) || null,
+    utm_campaign: (url.utm_campaign ?? stored.utm_campaign) || null,
+    utm_content: (url.utm_content ?? stored.utm_content) || null,
+    utm_term: (url.utm_term ?? stored.utm_term) || null,
+    fbclid: (url.fbclid ?? stored.fbclid) || null,
+    gclid: (url.gclid ?? stored.gclid) || null,
+    referrer,
+    landing_page,
+    first_url,
+    first_seen_at,
+  };
+  persistTracking(merged);
+  return merged;
+}
+
 
 function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
