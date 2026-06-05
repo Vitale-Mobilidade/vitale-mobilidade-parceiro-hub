@@ -282,18 +282,29 @@ export default function EscolherBike() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { device_type, browser, operating_system } = detectDevice();
-    const utms = getUTMs();
-    const referrer = document.referrer || null;
-    const traffic = detectTrafficOrigin(utms as Record<string, string | null>, referrer);
+    const tracking = captureAndPersistTracking();
+    const referrer = document.referrer || tracking.referrer || null;
+    const traffic = detectTrafficOrigin(tracking, referrer);
     baseLeadDataRef.current = {
       source_url: window.location.href,
       landing_path: window.location.pathname,
+      landing_page: tracking.landing_page,
+      first_url: tracking.first_url,
+      first_seen_at: tracking.first_seen_at,
       referrer,
-      ...utms,
+      user_agent: navigator.userAgent,
+      utm_source: tracking.utm_source,
+      utm_medium: tracking.utm_medium,
+      utm_campaign: tracking.utm_campaign,
+      utm_content: tracking.utm_content,
+      utm_term: tracking.utm_term,
+      fbclid: tracking.fbclid,
+      gclid: tracking.gclid,
       ...traffic,
       device_type, browser, operating_system,
     };
   }, []);
+
 
   // Per-route SEO head (set on mount, restore on unmount)
   useEffect(() => {
