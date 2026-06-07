@@ -124,8 +124,9 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const limit = Math.min(Math.max(Number(body.limit) || 25, 1), 200);
 
-    // Inclui: pending, failed, NULL, vazio. webhook_attempts < MAX ou NULL.
-    const filter = `and=(or(webhook_status.is.null,webhook_status.eq.pending,webhook_status.eq.failed),or(webhook_attempts.is.null,webhook_attempts.lt.${MAX_ATTEMPTS}))` +
+    // Inclui: pending, failed, NULL. webhook_attempts < MAX (default 0 cobre nulls historicos).
+    const filter = `or=(webhook_status.is.null,webhook_status.eq.pending,webhook_status.eq.failed)` +
+      `&webhook_attempts=lt.${MAX_ATTEMPTS}` +
       `&name=not.is.null&phone=not.is.null` +
       `&order=webhook_last_attempt_at.asc.nullsfirst&limit=${limit}&select=*`;
 
