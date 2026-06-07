@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
       results.push({ lead_id: lead.id, attempt: nextAttempt, success: r.success, status: r.status, error: r.error });
     }
 
-    return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
+    return new Response(JSON.stringify({ success: true, processed: results.length, found: leads.length, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
