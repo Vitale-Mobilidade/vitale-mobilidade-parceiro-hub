@@ -124,12 +124,20 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const limit = Math.min(Math.max(Number(body.limit) || 25, 1), 200);
 
-    const filter = `or=(webhook_status.eq.pending,webhook_status.eq.failed)` +
-      `&webhook_attempts=lt.${MAX_ATTEMPTS}` +
-      `&name=not.is.null&phone=not.is.null` +
+    // Busca em duas passadas (PostgREST tem peculiaridades com is.null dentro de or=).
+    const baseTail = `&webhook_attempts=lt.${MAX_ATTEMPTS}&name=not.is.null&phone=not.is.null` +
       `&order=webhook_last_attempt_at.asc.nullsfirst&limit=${limit}&select=*`;
-
-    const leads: any[] = (await dbFetch(`quiz_leads?${filter}`, { method: "GET" })) ?? [];
+    const [nulls, pendingFailed] = await Promise.all([
+      dbFetch(`quiz_leads?webhook_status=is.null${baseTail}`, { method: "GET" }) as Promise<any[]>,
+      dbFetch(`quiz_leads?webhook_status=in.(pending,failed)${baseTail}`, { method: "GET" }) as Promise<any[]>,
+    ]);
+    const seen = new Set<string>();
+    const leads: any[] = [];
+    for (const l of [...(nulls ?? []), ...(pendingFailed ?? [])]) {
+      if (l && !seen.has(l.id)) { seen.add(l.id); leads.push(l); }
+      if (leads.length >= limit) break;
+    }
+    console.log(`[quiz-reprocess] found ${leads.length} (nulls=${nulls?.length ?? 0}, pf=${pendingFailed?.length ?? 0})`);
 
     const results: any[] = [];
     for (const lead of leads) {
@@ -175,7 +183,7 @@ Deno.serve(async (req) => {
       results.push({ lead_id: lead.id, attempt: nextAttempt, success: r.success, status: r.status, error: r.error });
     }
 
-    return new Response(JSON.stringify({ success: true, processed: results.length, results }), {
+    return new Response(JSON.stringify({ success: true, processed: results.length, found: leads.length, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
