@@ -124,20 +124,14 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const limit = Math.min(Math.max(Number(body.limit) || 25, 1), 200);
 
-    // Busca em duas passadas (PostgREST tem peculiaridades com is.null dentro de or=).
-    const baseTail = `&webhook_attempts=lt.${MAX_ATTEMPTS}&name=not.is.null&phone=not.is.null` +
+    // Após a conciliação histórica de 2026-06-07, NÃO buscamos mais webhook_status IS NULL.
+    // Todo lead completo deve estar em um dos status finais. Só reprocessamos os três
+    // status abaixo. reconciled_from_crm, excluded_test_lead e sent NUNCA são reprocessados.
+    const tail = `&webhook_attempts=lt.${MAX_ATTEMPTS}&name=not.is.null&phone=not.is.null` +
+      `&webhook_status=in.(pending,failed,ready_to_reprocess)` +
       `&order=webhook_last_attempt_at.asc.nullsfirst&limit=${limit}&select=*`;
-    const [nulls, pendingFailed] = await Promise.all([
-      dbFetch(`quiz_leads?webhook_status=is.null${baseTail}`, { method: "GET" }) as Promise<any[]>,
-      dbFetch(`quiz_leads?webhook_status=in.(pending,failed)${baseTail}`, { method: "GET" }) as Promise<any[]>,
-    ]);
-    const seen = new Set<string>();
-    const leads: any[] = [];
-    for (const l of [...(nulls ?? []), ...(pendingFailed ?? [])]) {
-      if (l && !seen.has(l.id)) { seen.add(l.id); leads.push(l); }
-      if (leads.length >= limit) break;
-    }
-    console.log(`[quiz-reprocess] found ${leads.length} (nulls=${nulls?.length ?? 0}, pf=${pendingFailed?.length ?? 0})`);
+    const leads = (await dbFetch(`quiz_leads?${tail.slice(1)}`, { method: "GET" })) as any[] ?? [];
+    console.log(`[quiz-reprocess] found ${leads.length}`);
 
     const results: any[] = [];
     for (const lead of leads) {
