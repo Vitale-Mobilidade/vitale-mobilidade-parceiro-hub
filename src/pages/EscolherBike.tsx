@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
+import { getPurchaseLink, isMetaTraffic } from "@/data/bikes";
 import {
   savePendingLead,
   queuePendingUpdate,
