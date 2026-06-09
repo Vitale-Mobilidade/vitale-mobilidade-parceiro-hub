@@ -19,6 +19,7 @@ const leadFields = [
   "recommended_bike_1", "recommended_bike_1_label", "recommended_bike_1_score", "recommended_bike_1_reason", "recommended_bike_1_link",
   "recommended_bike_2", "recommended_bike_2_label", "recommended_bike_2_score", "recommended_bike_2_reason", "recommended_bike_2_link",
   "recommendation_reason", "conversion_status", "clicked_bike_name", "clicked_bike_position", "clicked_bike_link", "clicked_at",
+  "purchase_link_used", "link_group_used", "bike_model_clicked",
   "buy_click_count", "crm_webhook_status", "last_webhook_sent_at", "webhook_error_message", "raw_answers_json", "raw_recommendation_json",
   "name", "phone", "source_url", "landing_path", "referrer", "utm_source",
   "referrer_domain", "detected_source", "detected_medium", "traffic_origin",

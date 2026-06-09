@@ -18,7 +18,15 @@ export interface Bike {
   name: string;
   shortDescription: string;
   image: string;
+  /**
+   * Link de afiliado padrão (Vitale) — mantido como alias de linkVitale
+   * para retrocompatibilidade com o restante do código.
+   */
   affiliateLink: string;
+  /** Link para tráfego orgânico, YouTube, Google, Instagram orgânico, direto, indicações etc. */
+  linkVitale: string;
+  /** Link para tráfego pago da Meta Ads (Facebook/Instagram). */
+  linkMeta: string;
   /** Preço interno (NÃO exibir na interface) — usado apenas pela engine */
   internalPrice: number;
   capacity: 1 | 2;
@@ -46,6 +54,8 @@ export const BIKES: Bike[] = [
     name: "FT03",
     shortDescription: "Bike elétrica 1000W para uso urbano individual. Motor forte, freios hidráulicos, quadro de alumínio e excelente custo-benefício para quem quer economia no dia a dia.",
     image: ft03,
+    linkVitale: "https://meli.la/2rxARqN",
+    linkMeta: "https://meli.la/1Bu3eju",
     affiliateLink: "https://meli.la/2rxARqN",
     internalPrice: 6343,
     capacity: 1,
@@ -62,8 +72,10 @@ export const BIKES: Bike[] = [
     name: "V20 Mini",
     shortDescription: "Bike elétrica compacta 750W com design moderno, pneus fat 16 x 4, suspensão e freios hidráulicos duplos. Ideal para mobilidade urbana com estilo, tecnologia e segurança.",
     image: v20mini,
-    affiliateLink: "https://meli.la/1rLmRDG",
-    internalPrice: 6400,
+    linkVitale: "https://meli.la/2PzxMD6",
+    linkMeta: "https://meli.la/26nXQq7",
+    affiliateLink: "https://meli.la/2PzxMD6",
+    internalPrice: 6200,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 50,
@@ -78,8 +90,10 @@ export const BIKES: Bike[] = [
     name: "V9 Max",
     shortDescription: "Bike elétrica 1000W urbana com garupa, NFC, alarme, setas e estrutura robusta. Lançamento 2026 com bom desempenho e preço competitivo.",
     image: v9max,
+    linkVitale: "https://meli.la/1wSq3ib",
+    linkMeta: "https://meli.la/1mi1q2j",
     affiliateLink: "https://meli.la/1wSq3ib",
-    internalPrice: 7649,
+    internalPrice: 8100,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 50,
@@ -94,14 +108,16 @@ export const BIKES: Bike[] = [
     name: "V10 Max",
     shortDescription: "Lançamento 2026 – bike elétrica 1000W com motor forte, garupa, marchas Shimano e excelente desempenho em subidas. Ideal para quem busca potência e praticidade.",
     image: v10max,
+    linkVitale: "https://meli.la/1v4UePs",
+    linkMeta: "https://meli.la/1CCHGMm",
     affiliateLink: "https://meli.la/1v4UePs",
-    internalPrice: 7379,
+    internalPrice: 8199,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 50,
     bestFor: ["urbano", "locomocao_diaria", "misto"],
     strengths: ["Motor 1000W", "Autonomia até 60 km", "Marchas Shimano", "Freios hidráulicos", "Pedal de apoio para garupa", "Boa em subidas"],
-    budgetTiers: ["ate_7000"],
+    budgetTiers: ["8000_10000"],
     diferencial: "Equilíbrio entre potência, conforto e uso com garupa",
     perfilIndicado: "Locomoção diária, passeio, garupa e trajetos urbanos mistos",
   },
@@ -110,6 +126,8 @@ export const BIKES: Bike[] = [
     name: "V40 Pro",
     shortDescription: "Lançamento 2026 – bike elétrica 1000W completa com bateria 48V 18Ah, trava na roda, NFC, alarme e pedal de apoio para garupa. Conforto, segurança e desempenho superiores.",
     image: v40pro,
+    linkVitale: "https://meli.la/2YSVbMJ",
+    linkMeta: "https://meli.la/2VDjPCQ",
     affiliateLink: "https://meli.la/2YSVbMJ",
     internalPrice: 7826,
     capacity: 2,
@@ -126,6 +144,8 @@ export const BIKES: Bike[] = [
     name: "V8 Pro",
     shortDescription: "Bike elétrica 1000W robusta com suspensão dianteira e traseira, freios hidráulicos e cabos internos. Conforto, estabilidade e ótimo desempenho urbano.",
     image: v8pro,
+    linkVitale: "https://meli.la/1V8v8c3",
+    linkMeta: "https://meli.la/2wqF1wL",
     affiliateLink: "https://meli.la/1V8v8c3",
     internalPrice: 7600,
     capacity: 2,
@@ -142,6 +162,8 @@ export const BIKES: Bike[] = [
     name: "Ouxi GT20",
     shortDescription: "Bike elétrica 1000W com pneus fat, suspensão dupla, freios hidráulicos e versatilidade para cidade, lazer e terrenos irregulares. Pedal assistido e acelerador removível.",
     image: gt20,
+    linkVitale: "https://meli.la/2mTotmX",
+    linkMeta: "https://meli.la/11bjzGC",
     affiliateLink: "https://meli.la/2mTotmX",
     internalPrice: 7700,
     capacity: 2,
@@ -158,6 +180,8 @@ export const BIKES: Bike[] = [
     name: "V29 Pro",
     shortDescription: "Lançamento 2026 – bike elétrica 1000W com bateria dupla 48V 15.6Ah cada, autonomia de até 120 km e estrutura completa para garupa. Iluminação LED com setas e acionamento NFC.",
     image: v29pro,
+    linkVitale: "https://meli.la/1FDq1i5",
+    linkMeta: "https://meli.la/1FDq1i5",
     affiliateLink: "https://meli.la/1FDq1i5",
     internalPrice: 8490,
     capacity: 2,
@@ -174,8 +198,10 @@ export const BIKES: Bike[] = [
     name: "V35",
     shortDescription: "Bike elétrica 1000W com duas baterias 48V 15.6Ah, autonomia de até 120 km, estrutura robusta e cesto central. Conforto, praticidade e desempenho para uso intenso.",
     image: v35,
-    affiliateLink: "https://meli.la/1dfcxW8",
-    internalPrice: 9024,
+    linkVitale: "https://meli.la/23VTgCa",
+    linkMeta: "https://meli.la/2f8zMpw",
+    affiliateLink: "https://meli.la/23VTgCa",
+    internalPrice: 8839,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 100,
@@ -190,6 +216,8 @@ export const BIKES: Bike[] = [
     name: "V8 Pro S",
     shortDescription: "Bike elétrica 1000W com duas baterias 48V 15Ah, suspensão traseira dupla e autonomia estendida. Indicada para quem roda bastante e precisa de mais alcance e conforto.",
     image: v8pros,
+    linkVitale: "https://meli.la/14FNcw3",
+    linkMeta: "https://meli.la/2PadTso",
     affiliateLink: "https://meli.la/14FNcw3",
     internalPrice: 9200,
     capacity: 2,
@@ -206,8 +234,10 @@ export const BIKES: Bike[] = [
     name: "GT2000",
     shortDescription: "Bike elétrica 1000W de aro 24 com bateria de 30Ah, velocidade de até 50 km/h e proposta robusta. Presença forte, conforto e autonomia para quem quer se destacar.",
     image: gt2000,
-    affiliateLink: "https://meli.la/2qiDb3C",
-    internalPrice: 10349,
+    linkVitale: "https://meli.la/1xCFCbh",
+    linkMeta: "https://meli.la/1Qz2zGD",
+    affiliateLink: "https://meli.la/1xCFCbh",
+    internalPrice: 10699,
     capacity: 1,
     weightSupportKg: 150,
     autonomyKm: 60,
@@ -222,6 +252,8 @@ export const BIKES: Bike[] = [
     name: "Coswheel GT20",
     shortDescription: "Bike elétrica premium estilo moto com motor 1500W, bateria 48V 20Ah certificada UL, pneus fat 20 x 4 e suspensão dupla. Alto desempenho, visual imponente e autonomia de longo alcance.",
     image: coswheelGt20,
+    linkVitale: "https://meli.la/1VNfe6A",
+    linkMeta: "https://meli.la/1XWY65V",
     affiliateLink: "https://meli.la/1VNfe6A",
     internalPrice: 20900,
     capacity: 1,
@@ -234,3 +266,56 @@ export const BIKES: Bike[] = [
     perfilIndicado: "Quem busca uma elétrica premium, forte, com visual diferenciado e maior presença",
   },
 ];
+
+// ---------- Meta vs Vitale link resolution ----------
+
+const META_UTM_TOKENS = /(^|[^a-z])(meta|facebook|fb|instagram|ig)([^a-z]|$)/i;
+
+/**
+ * Decide se o tráfego veio da Meta Ads (Facebook/Instagram pago)
+ * com base em UTMs, traffic_origin e fbclid. Case-insensitive.
+ */
+export function isMetaTraffic(tracking: {
+  utm_source?: string | null;
+  traffic_origin?: string | null;
+  fbclid?: string | null;
+} | null | undefined): boolean {
+  if (!tracking) return false;
+  const utm = (tracking.utm_source ?? "").toString().toLowerCase().trim();
+  if (utm && META_UTM_TOKENS.test(utm)) return true;
+  const origin = (tracking.traffic_origin ?? "").toString().toLowerCase().trim();
+  if (origin === "meta" || origin === "meta_referral") return true;
+  const fbclid = (tracking.fbclid ?? "").toString().trim();
+  if (fbclid.length > 0) return true;
+  return false;
+}
+
+/**
+ * Retorna { url, group } com o link de compra correto para a bike,
+ * conforme a origem do tráfego. Faz fallback seguro entre os dois links.
+ */
+export function getPurchaseLink(
+  bike: Pick<Bike, "linkVitale" | "linkMeta" | "affiliateLink" | "name" | "id">,
+  tracking: { utm_source?: string | null; traffic_origin?: string | null; fbclid?: string | null } | null | undefined,
+): { url: string; group: "meta" | "vitale" } {
+  const meta = isMetaTraffic(tracking);
+  const vitale = bike.linkVitale || bike.affiliateLink || "";
+  const metaLink = bike.linkMeta || "";
+
+  if (meta) {
+    if (metaLink) return { url: metaLink, group: "meta" };
+    if (vitale) {
+      console.warn("[purchase-link] linkMeta ausente — fallback para linkVitale", bike.id);
+      return { url: vitale, group: "vitale" };
+    }
+    console.error("[purchase-link] Nenhum link disponível para a bike", bike.id);
+    return { url: "", group: "meta" };
+  }
+  if (vitale) return { url: vitale, group: "vitale" };
+  if (metaLink) {
+    console.warn("[purchase-link] linkVitale ausente — fallback para linkMeta", bike.id);
+    return { url: metaLink, group: "meta" };
+  }
+  console.error("[purchase-link] Nenhum link disponível para a bike", bike.id);
+  return { url: "", group: "vitale" };
+}
