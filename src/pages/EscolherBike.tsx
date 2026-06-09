@@ -809,22 +809,43 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (e) e.preventDefault();
     markMainActionClicked();
 
+    // Resolve link conforme origem do tráfego (Meta Ads vs Vitale)
+    const t = baseLeadData ?? {};
+    const { url: purchaseLink, group: linkGroup } = getPurchaseLink(bike, {
+      utm_source: t.utm_source,
+      traffic_origin: t.traffic_origin,
+      fbclid: t.fbclid,
+    });
+    const clickedAt = new Date().toISOString();
+
     // GTM dataLayer: clique de compra (antes de abrir Mercado Livre)
     try {
       (window as any).dataLayer = (window as any).dataLayer || [];
       (window as any).dataLayer.push({
         event: "event_click_buy",
         product_name: bike.name,
-        product_url: bike.affiliateLink,
+        product_url: purchaseLink,
+        link_group_used: linkGroup,
+        purchase_link_used: purchaseLink,
+        bike_model_clicked: bike.name,
+        lead_id: leadId,
+        utm_source: t.utm_source || null,
+        utm_medium: t.utm_medium || null,
+        utm_campaign: t.utm_campaign || null,
+        utm_content: t.utm_content || null,
+        utm_term: t.utm_term || null,
+        fbclid: t.fbclid || null,
+        traffic_origin: t.traffic_origin || null,
       });
-      console.log("[GTM] event_click_buy pushed", { product_name: bike.name });
+      console.log("[GTM] event_click_buy pushed", { product_name: bike.name, link_group_used: linkGroup });
     } catch (err) {
       console.error("[GTM] event_click_buy push failed", err);
     }
 
     // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
     setTimeout(() => {
-      window.open(bike.affiliateLink, "_blank", "noopener,noreferrer");
+      if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
+      else console.error("[quiz] Sem link de compra disponível para", bike.id);
     }, 300);
 
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
@@ -834,8 +855,11 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       conversion_status,
       clicked_bike_name: bike.name,
       clicked_bike_position: position,
-      clicked_bike_link: bike.affiliateLink,
-      clicked_at: new Date().toISOString(),
+      clicked_bike_link: purchaseLink,
+      clicked_at: clickedAt,
+      bike_model_clicked: bike.name,
+      purchase_link_used: purchaseLink,
+      link_group_used: linkGroup,
       buy_click_count: undefined as any,
     };
 
@@ -851,12 +875,16 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         try {
           const webhookPayload = {
             event_name: eventName,
-            event_created_at: new Date().toISOString(),
+            event_created_at: clickedAt,
             lead_id: activeLeadId, name, phone,
             ...answers, ...labels,
             clicked_bike_name: bike.name,
             clicked_bike_position: position,
-            clicked_bike_link: bike.affiliateLink,
+            clicked_bike_link: purchaseLink,
+            bike_model_clicked: bike.name,
+            purchase_link_used: purchaseLink,
+            link_group_used: linkGroup,
+            clicked_at: clickedAt,
             recommended_bike_1: recommendation.primary.id,
             recommended_bike_2: recommendation.secondary?.id ?? null,
             conversion_status,
@@ -870,12 +898,19 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               event_name: eventName,
               field_value: bike.id,
               field_label: bike.name,
-              payload: { position, link: bike.affiliateLink, ...baseLeadData },
+              payload: {
+                position,
+                link: purchaseLink,
+                link_group_used: linkGroup,
+                purchase_link_used: purchaseLink,
+                bike_model_clicked: bike.name,
+                ...baseLeadData,
+              },
             },
             webhook_payload: webhookPayload,
           });
           if (!result?.success) throw result;
-          console.info("[quiz] Clique registrado com sucesso", bike.name);
+          console.info("[quiz] Clique registrado com sucesso", bike.name, "via", linkGroup);
           console.info("[quiz] Evento salvo com sucesso:", eventName);
         } catch (e) {
           console.error("[quiz] Exceção ao registrar clique. Fallback local.", e);
@@ -886,7 +921,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         queuePendingEvent({
           event_name: eventName,
           field_value: bike.id, field_label: bike.name,
-          payload: { position, link: bike.affiliateLink },
+          payload: { position, link: purchaseLink, link_group_used: linkGroup, bike_model_clicked: bike.name },
         });
       }
     })();
