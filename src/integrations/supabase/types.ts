@@ -112,6 +112,7 @@ export type Database = {
         Row: {
           abandoned_at: string | null
           abandonment_webhook_sent: boolean
+          bike_model_clicked: string | null
           browser: string | null
           budget_cluster: string | null
           budget_range: string | null
@@ -145,12 +146,14 @@ export type Database = {
           landing_path: string | null
           last_interaction_at: string | null
           last_webhook_sent_at: string | null
+          link_group_used: string | null
           main_use: string | null
           main_use_label: string | null
           name: string | null
           operating_system: string | null
           passenger_cluster: string | null
           phone: string | null
+          purchase_link_used: string | null
           raw_answers_json: Json | null
           raw_recommendation_json: Json | null
           recommendation_profile: string | null
@@ -199,6 +202,7 @@ export type Database = {
         Insert: {
           abandoned_at?: string | null
           abandonment_webhook_sent?: boolean
+          bike_model_clicked?: string | null
           browser?: string | null
           budget_cluster?: string | null
           budget_range?: string | null
@@ -232,12 +236,14 @@ export type Database = {
           landing_path?: string | null
           last_interaction_at?: string | null
           last_webhook_sent_at?: string | null
+          link_group_used?: string | null
           main_use?: string | null
           main_use_label?: string | null
           name?: string | null
           operating_system?: string | null
           passenger_cluster?: string | null
           phone?: string | null
+          purchase_link_used?: string | null
           raw_answers_json?: Json | null
           raw_recommendation_json?: Json | null
           recommendation_profile?: string | null
@@ -286,6 +292,7 @@ export type Database = {
         Update: {
           abandoned_at?: string | null
           abandonment_webhook_sent?: boolean
+          bike_model_clicked?: string | null
           browser?: string | null
           budget_cluster?: string | null
           budget_range?: string | null
@@ -319,12 +326,14 @@ export type Database = {
           landing_path?: string | null
           last_interaction_at?: string | null
           last_webhook_sent_at?: string | null
+          link_group_used?: string | null
           main_use?: string | null
           main_use_label?: string | null
           name?: string | null
           operating_system?: string | null
           passenger_cluster?: string | null
           phone?: string | null
+          purchase_link_used?: string | null
           raw_answers_json?: Json | null
           raw_recommendation_json?: Json | null
           recommendation_profile?: string | null
