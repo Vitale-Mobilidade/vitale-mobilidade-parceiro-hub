@@ -14,6 +14,7 @@ import v20ProAsset from "@/assets/bikes/v20-pro.png.asset.json";
 import honeywhaleS8Asset from "@/assets/bikes/honeywhale-s8.png.asset.json";
 import honeywhaleBw02Asset from "@/assets/bikes/honeywhale-bw02.png.asset.json";
 import f6ProSAsset from "@/assets/bikes/f6-pro-s.png.asset.json";
+import v8UltraAsset from "@/assets/bikes/v8-ultra.png.asset.json";
 
 export type BudgetTier = "ate_7000" | "7000_8000" | "8000_10000" | "acima_10000";
 
