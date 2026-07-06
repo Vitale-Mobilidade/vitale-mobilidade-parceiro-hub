@@ -22,6 +22,7 @@ const BikeCtxSchema = z.object({
   id: z.string(),
   name: z.string(),
   shortDescription: z.string().optional(),
+  fullDescription: z.string().optional(),
   autonomyKm: z.number().optional(),
   capacity: z.number().optional(),
   weightSupportKg: z.number().optional(),
