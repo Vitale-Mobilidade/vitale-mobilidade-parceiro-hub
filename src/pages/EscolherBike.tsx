@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -16,7 +16,10 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
-import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
+import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
+const LucasSDRWidget = lazy(() =>
+  import("@/components/LucasSDR/LucasSDRWidget").then((m) => ({ default: m.LucasSDRWidget }))
+);
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
@@ -273,6 +276,9 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const baseLeadDataRef = useRef<any>({});
+  const startedAtRef = useRef<string | null>(null);
+  const completedRef = useRef(false);
 
   const recommendation = useMemo(() => {
     if (Object.keys(answers).length === STEPS.length) {
@@ -290,9 +296,6 @@ export default function EscolherBike() {
     return null;
   }, [answers]);
 
-  const baseLeadDataRef = useRef<any>({});
-  const startedAtRef = useRef<string | null>(null);
-  const completedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1353,65 +1356,79 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-      {/* SDR IA Lucas — substitui o botão flutuante de WhatsApp no /escolherbike */}
-      <LucasSDRWidget
-        ctx={{
-          leadId,
-          name,
-          phone,
-          answers,
-          labels,
-          clusters: recommendation?.clusters,
-          recommendation: {
-            primary: recommendation.primary,
-            secondary: recommendation.secondary,
-            reasonPrimary,
-            reasonSecondary: reasonSecondary ?? undefined,
-          },
-          origin: {
-            utm_source: baseLeadData?.utm_source,
-            utm_medium: baseLeadData?.utm_medium,
-            utm_campaign: baseLeadData?.utm_campaign,
-            utm_content: baseLeadData?.utm_content,
-            utm_term: baseLeadData?.utm_term,
-            traffic_origin: baseLeadData?.traffic_origin,
-            fbclid: baseLeadData?.fbclid,
-            source_bike_interest: recommendation?.sourceInterest?.interest,
-            source_bike_interest_label: recommendation?.sourceInterest?.label,
-            first_url: baseLeadData?.first_url,
-            source_url: baseLeadData?.source_url,
-          },
-          baseLeadData,
-        }}
-        liftedAboveStickyBar={showSticky}
-        buyClicked={mainActionClicked}
-        onBuyLink={(bikeId) => {
-          const bike = [recommendation.primary, recommendation.secondary]
-            .concat([])
-            .find((b: any) => b?.id === bikeId);
-          const target = bike ?? { id: bikeId, name: bikeId } as any;
-          // Reaproveita o mesmo fluxo de compra (mesmo lead, mesmo tracking, mesmo webhook).
-          handleBuy(target, target?.id === recommendation.primary?.id ? "principal" : "segunda_opcao");
-        }}
-        onEvent={(event_name, payload) => {
-          if (!leadId) return;
-          const enriched = {
-            ...(baseLeadData ?? {}),
-            ...(payload ?? {}),
-            recommended_bike_1: recommendation?.primary?.id,
-            recommended_bike_2: recommendation?.secondary?.id,
-          };
-          try {
-            (window as any).dataLayer = (window as any).dataLayer || [];
-            (window as any).dataLayer.push({ event: event_name, ...enriched });
-          } catch {}
-          invokeQuizTrack({
-            action: "save_event",
-            lead_id: leadId,
-            event: { event_name, payload: enriched },
-          }).catch((e) => console.error("[quiz] sdr event failed", event_name, e));
-        }}
-      />
+      {/* SDR IA Lucas — substitui o botão flutuante de WhatsApp no /escolherbike.
+          Isolado por ErrorBoundary + Suspense: falhas aqui NUNCA derrubam a página do quiz. */}
+      {leadId && recommendation?.primary && (
+        <LucasSDRErrorBoundary>
+          <Suspense fallback={null}>
+            <LucasSDRWidget
+              ctx={{
+                leadId,
+                name,
+                phone,
+                answers: answers ?? {},
+                labels: labels ?? {},
+                clusters: recommendation?.clusters,
+                recommendation: {
+                  primary: recommendation?.primary ?? null,
+                  secondary: recommendation?.secondary ?? null,
+                  reasonPrimary,
+                  reasonSecondary: reasonSecondary ?? undefined,
+                },
+                origin: {
+                  utm_source: baseLeadData?.utm_source,
+                  utm_medium: baseLeadData?.utm_medium,
+                  utm_campaign: baseLeadData?.utm_campaign,
+                  utm_content: baseLeadData?.utm_content,
+                  utm_term: baseLeadData?.utm_term,
+                  traffic_origin: baseLeadData?.traffic_origin,
+                  fbclid: baseLeadData?.fbclid,
+                  source_bike_interest: recommendation?.sourceInterest?.interest,
+                  source_bike_interest_label: recommendation?.sourceInterest?.label,
+                  first_url: baseLeadData?.first_url,
+                  source_url: baseLeadData?.source_url,
+                },
+                baseLeadData,
+              }}
+              liftedAboveStickyBar={showSticky}
+              buyClicked={mainActionClicked}
+              onBuyLink={(bikeId) => {
+                try {
+                  const bike = [recommendation?.primary, recommendation?.secondary]
+                    .find((b: any) => b?.id === bikeId);
+                  if (!bike) return;
+                  handleBuy(bike, bike?.id === recommendation?.primary?.id ? "principal" : "segunda_opcao");
+                } catch (e) {
+                  console.error("[sdr] onBuyLink failed", e);
+                }
+              }}
+              onEvent={(event_name, payload) => {
+                try {
+                  if (!leadId) return;
+                  const enriched = {
+                    ...(baseLeadData ?? {}),
+                    ...(payload ?? {}),
+                    recommended_bike_1: recommendation?.primary?.id,
+                    recommended_bike_2: recommendation?.secondary?.id,
+                  };
+                  try {
+                    (window as any).dataLayer = (window as any).dataLayer || [];
+                    (window as any).dataLayer.push({ event: event_name, ...enriched });
+                  } catch {}
+                  invokeQuizTrack({
+                    action: "save_event",
+                    lead_id: leadId,
+                    event: { event_name, payload: enriched },
+                  }).catch((e) => console.error("[quiz] sdr event failed", event_name, e));
+                } catch (e) {
+                  console.error("[sdr] onEvent failed", e);
+                }
+              }}
+            />
+          </Suspense>
+        </LucasSDRErrorBoundary>
+      )}
+
 
       {/* Primary offer popup (Mercado Livre) */}
       {showPrimaryOfferPopup && (
