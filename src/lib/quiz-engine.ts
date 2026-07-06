@@ -286,3 +286,20 @@ export function buildSecondaryCopy(primary: Bike, secondary: Bike): string {
   }
   return "Essa opção aparece como alternativa porque também atende ao seu perfil dentro do orçamento informado, mas com um equilíbrio diferente entre conforto, autonomia e estrutura.";
 }
+
+/**
+ * Frase adicional (natural) quando o interesse de origem influenciou a
+ * recomendação. NUNCA menciona UTM, algoritmo, pontuação ou bônus.
+ * Retorna string vazia quando não há nada a adicionar.
+ */
+export function buildSourceInterestCopy(
+  sourceBikeName: string | null | undefined,
+  recommendedBikeId: string,
+  sourceBikeId: string | null | undefined,
+): string {
+  if (!sourceBikeName || !sourceBikeId) return "";
+  if (recommendedBikeId === sourceBikeId) {
+    return `Como você chegou ao quiz por um conteúdo sobre a ${sourceBikeName} e ela também se encaixa no seu orçamento e perfil de uso, ela ganhou prioridade na recomendação.`;
+  }
+  return `Você chegou ao quiz por um conteúdo sobre a ${sourceBikeName}. Como outra opção apresentou melhor aderência ao seu orçamento e às suas respostas, priorizamos um modelo semelhante que atende melhor ao seu perfil.`;
+}
