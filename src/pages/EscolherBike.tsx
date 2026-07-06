@@ -16,7 +16,10 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
-import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
+import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
+const LucasSDRWidget = lazy(() =>
+  import("@/components/LucasSDR/LucasSDRWidget").then((m) => ({ default: m.LucasSDRWidget }))
+);
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
