@@ -827,7 +827,12 @@ export default function EscolherBike() {
 
 // ---------- Result component ----------
 function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
-  const reasonPrimary = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
+  const basePrimaryCopy = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
+  const sourceInterest = recommendation.sourceInterest;
+  const sourceCopyPrimary = sourceInterest
+    ? buildSourceInterestCopy(sourceInterest.label, recommendation.primary.id, sourceInterest.interest)
+    : "";
+  const reasonPrimary = sourceCopyPrimary ? `${sourceCopyPrimary} ${basePrimaryCopy}`.trim() : basePrimaryCopy;
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
   // ---- Popup tracking state ----
