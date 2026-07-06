@@ -175,6 +175,25 @@ export type Database = {
           route_cluster: string | null
           route_type: string | null
           route_type_label: string | null
+          sdr_affiliate_disclosure_shown: boolean | null
+          sdr_bike_list_link_clicked: boolean | null
+          sdr_bike_list_link_sent: boolean | null
+          sdr_conversation_started_at: string | null
+          sdr_conversation_status: string | null
+          sdr_conversation_summary: string | null
+          sdr_human_handoff_requested: boolean | null
+          sdr_intent_level: string | null
+          sdr_last_interaction_at: string | null
+          sdr_link_clicked: boolean | null
+          sdr_link_offered: boolean | null
+          sdr_link_sent: boolean | null
+          sdr_main_objection: string | null
+          sdr_main_objection_label: string | null
+          sdr_message_count: number | null
+          sdr_offers_group_link_clicked: boolean | null
+          sdr_offers_group_link_sent: boolean | null
+          sdr_preferred_bike: string | null
+          sdr_purchase_timing: string | null
           source_url: string | null
           started_at: string | null
           status: string
@@ -265,6 +284,25 @@ export type Database = {
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
+          sdr_affiliate_disclosure_shown?: boolean | null
+          sdr_bike_list_link_clicked?: boolean | null
+          sdr_bike_list_link_sent?: boolean | null
+          sdr_conversation_started_at?: string | null
+          sdr_conversation_status?: string | null
+          sdr_conversation_summary?: string | null
+          sdr_human_handoff_requested?: boolean | null
+          sdr_intent_level?: string | null
+          sdr_last_interaction_at?: string | null
+          sdr_link_clicked?: boolean | null
+          sdr_link_offered?: boolean | null
+          sdr_link_sent?: boolean | null
+          sdr_main_objection?: string | null
+          sdr_main_objection_label?: string | null
+          sdr_message_count?: number | null
+          sdr_offers_group_link_clicked?: boolean | null
+          sdr_offers_group_link_sent?: boolean | null
+          sdr_preferred_bike?: string | null
+          sdr_purchase_timing?: string | null
           source_url?: string | null
           started_at?: string | null
           status?: string
@@ -355,6 +393,25 @@ export type Database = {
           route_cluster?: string | null
           route_type?: string | null
           route_type_label?: string | null
+          sdr_affiliate_disclosure_shown?: boolean | null
+          sdr_bike_list_link_clicked?: boolean | null
+          sdr_bike_list_link_sent?: boolean | null
+          sdr_conversation_started_at?: string | null
+          sdr_conversation_status?: string | null
+          sdr_conversation_summary?: string | null
+          sdr_human_handoff_requested?: boolean | null
+          sdr_intent_level?: string | null
+          sdr_last_interaction_at?: string | null
+          sdr_link_clicked?: boolean | null
+          sdr_link_offered?: boolean | null
+          sdr_link_sent?: boolean | null
+          sdr_main_objection?: string | null
+          sdr_main_objection_label?: string | null
+          sdr_message_count?: number | null
+          sdr_offers_group_link_clicked?: boolean | null
+          sdr_offers_group_link_sent?: boolean | null
+          sdr_preferred_bike?: string | null
+          sdr_purchase_timing?: string | null
           source_url?: string | null
           started_at?: string | null
           status?: string

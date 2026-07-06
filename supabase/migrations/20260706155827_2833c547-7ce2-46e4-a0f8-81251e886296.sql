@@ -1,0 +1,21 @@
+
+ALTER TABLE public.quiz_leads
+  ADD COLUMN IF NOT EXISTS sdr_conversation_started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS sdr_last_interaction_at timestamptz,
+  ADD COLUMN IF NOT EXISTS sdr_message_count int DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS sdr_intent_level text,
+  ADD COLUMN IF NOT EXISTS sdr_preferred_bike text,
+  ADD COLUMN IF NOT EXISTS sdr_main_objection text,
+  ADD COLUMN IF NOT EXISTS sdr_main_objection_label text,
+  ADD COLUMN IF NOT EXISTS sdr_purchase_timing text,
+  ADD COLUMN IF NOT EXISTS sdr_link_offered boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_link_sent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_link_clicked boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_affiliate_disclosure_shown boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_offers_group_link_sent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_offers_group_link_clicked boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_bike_list_link_sent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_bike_list_link_clicked boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_human_handoff_requested boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sdr_conversation_summary text,
+  ADD COLUMN IF NOT EXISTS sdr_conversation_status text;
