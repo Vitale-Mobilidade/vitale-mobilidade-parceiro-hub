@@ -273,6 +273,9 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const baseLeadDataRef = useRef<any>({});
+  const startedAtRef = useRef<string | null>(null);
+  const completedRef = useRef(false);
 
   const recommendation = useMemo(() => {
     if (Object.keys(answers).length === STEPS.length) {
@@ -290,9 +293,6 @@ export default function EscolherBike() {
     return null;
   }, [answers]);
 
-  const baseLeadDataRef = useRef<any>({});
-  const startedAtRef = useRef<string | null>(null);
-  const completedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
