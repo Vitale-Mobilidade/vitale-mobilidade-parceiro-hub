@@ -1,4 +1,8 @@
 import { BIKES, BUDGET_MAX_PRICE, type Bike, type BudgetTier } from "@/data/bikes";
+import {
+  computeSourceInterestBonuses,
+  type SourceBikeInterest,
+} from "@/lib/source-bike-interest";
 
 export type Answers = {
   main_use: string;
@@ -155,24 +159,67 @@ function scoreBike(bike: Bike, a: Answers): number {
   return s;
 }
 
-export function recommend(a: Answers): {
+export type RecommendResult = {
   primary: Bike;
   secondary?: Bike;
   primaryScore: number;
   secondaryScore?: number;
   budgetLimited: boolean;
-} {
+  /** Score original (antes de qualquer bônus por interesse de origem). */
+  baseScores: Record<string, number>;
+  /** Bônus aplicado por bike (apenas as que receberam). */
+  sourceInterestBonuses: Record<string, number>;
+  /** Score final = base + bonus. */
+  finalScores: Record<string, number>;
+  /** True quando o bônus mudou a ordem de recomendação. */
+  sourceInterestInfluencedRanking: boolean;
+};
+
+export function recommend(
+  a: Answers,
+  sourceInterest?: SourceBikeInterest | null,
+): RecommendResult {
   const maxPrice = BUDGET_MAX_PRICE[a.budget_range as BudgetTier] ?? 999999;
   // Filtro RÍGIDO de orçamento — nunca recomenda acima do limite
   const eligible = BIKES.filter(b => b.internalPrice <= maxPrice);
   const pool = eligible.length > 0 ? eligible : BIKES;
   const budgetLimited = eligible.length < BIKES.length;
 
-  const ranked = pool.map(b => ({ bike: b, score: scoreBike(b, a) }))
+  // 1) Pontuação normal (base)
+  const baseRanked = pool.map(b => ({ bike: b, score: scoreBike(b, a) }))
+    .sort((x, y) => y.score - x.score);
+  const baseScores: Record<string, number> = {};
+  for (const r of baseRanked) baseScores[r.bike.id] = r.score;
+  const baseOrder = baseRanked.map(r => r.bike.id);
+
+  // 2) Bônus por interesse de origem (apenas para bikes elegíveis; e só se
+  //    a origem for elegível para receber bônus — gating por YouTube).
+  let sourceInterestBonuses: Record<string, number> = {};
+  if (sourceInterest && sourceInterest.shouldApplyBonus && sourceInterest.matches.length > 0) {
+    sourceInterestBonuses = computeSourceInterestBonuses(
+      sourceInterest.matches,
+      pool.map(b => b.id),
+    );
+  }
+
+  // 3) Ordenação final
+  const finalScores: Record<string, number> = { ...baseScores };
+  for (const id of Object.keys(sourceInterestBonuses)) {
+    if (finalScores[id] !== undefined) {
+      finalScores[id] = finalScores[id] + sourceInterestBonuses[id];
+    }
+  }
+  const ranked = pool
+    .map(b => ({ bike: b, score: finalScores[b.id] ?? 0 }))
     .sort((x, y) => y.score - x.score);
 
   const primary = ranked[0];
   const secondary = ranked.find((r, i) => i > 0 && r.bike.id !== primary.bike.id);
+
+  const finalOrder = ranked.map(r => r.bike.id);
+  const sourceInterestInfluencedRanking =
+    Object.keys(sourceInterestBonuses).length > 0 &&
+    (baseOrder[0] !== finalOrder[0] || baseOrder[1] !== finalOrder[1]);
 
   return {
     primary: primary.bike,
@@ -180,6 +227,10 @@ export function recommend(a: Answers): {
     secondary: secondary?.bike,
     secondaryScore: secondary?.score,
     budgetLimited,
+    baseScores,
+    sourceInterestBonuses,
+    finalScores,
+    sourceInterestInfluencedRanking,
   };
 }
 
@@ -234,4 +285,21 @@ export function buildSecondaryCopy(primary: Bike, secondary: Bike): string {
     return "Essa opção aparece como alternativa porque entrega mais robustez e conforto, mantendo aderência ao orçamento informado.";
   }
   return "Essa opção aparece como alternativa porque também atende ao seu perfil dentro do orçamento informado, mas com um equilíbrio diferente entre conforto, autonomia e estrutura.";
+}
+
+/**
+ * Frase adicional (natural) quando o interesse de origem influenciou a
+ * recomendação. NUNCA menciona UTM, algoritmo, pontuação ou bônus.
+ * Retorna string vazia quando não há nada a adicionar.
+ */
+export function buildSourceInterestCopy(
+  sourceBikeName: string | null | undefined,
+  recommendedBikeId: string,
+  sourceBikeId: string | null | undefined,
+): string {
+  if (!sourceBikeName || !sourceBikeId) return "";
+  if (recommendedBikeId === sourceBikeId) {
+    return `Como você chegou ao quiz por um conteúdo sobre a ${sourceBikeName} e ela também se encaixa no seu orçamento e perfil de uso, ela ganhou prioridade na recomendação.`;
+  }
+  return `Você chegou ao quiz por um conteúdo sobre a ${sourceBikeName}. Como outra opção apresentou melhor aderência ao seu orçamento e às suas respostas, priorizamos um modelo semelhante que atende melhor ao seu perfil.`;
 }
