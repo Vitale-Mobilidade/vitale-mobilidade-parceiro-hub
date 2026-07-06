@@ -250,7 +250,7 @@ export const BIKES: Bike[] = [
     id: "gt2000",
     name: "GT2000",
     shortDescription: "Bike elétrica 1000W de aro 24 com bateria de 30Ah, velocidade de até 50 km/h e proposta robusta. Presença forte, conforto e autonomia para quem quer se destacar.",
-    fullDescription: "Bicicleta Elétrica WANSHIDA GT2000 – motor 1000W, bateria íon de lítio 30Ah, velocidade até 50 km/h, autonomia até 60 km, aro 24, peso 37 kg, suporta até 150 kg. Combina robustez e conforto, ideal para deslocamentos diários ou aventuras nos finais de semana.",
+    fullDescription: "A Bicicleta Elétrica WANSHIDA GT2000 é opção para quem busca potência e performance. Motor 1000W, velocidade até 50 km/h, experiência de ciclismo ágil e emocionante. Bateria íon de lítio 30Ah para autonomia prolongada. Suporta até 150 kg, aro 24 para condução suave em diversos terrenos, peso ~37 kg. Autonomia até 60 km, capacidade individual. Ideal para deslocamentos diários ou aventuras de fim de semana. Garantia: 3 meses. Atenção — o produto vai pré-montado em caixa de papelão; para montar é preciso instalar rodas, freios, guidão, cestinha, ligação das baterias e alguns componentes elétricos. Recomenda-se fortemente que a montagem seja feita por um profissional para não perder a garantia. A correta montagem é essencial para a segurança. Antes do primeiro uso, carregue por pelo menos 8 horas.",
     image: gt2000,
     linkVitale: "https://meli.la/2PgtQC7",
     linkMeta: "https://meli.la/1vWYKsq",
