@@ -35,6 +35,7 @@ function buildCatalog(ctx: SDRContext) {
     id: b.id,
     name: b.name,
     shortDescription: b.shortDescription,
+    fullDescription: b.fullDescription,
     autonomyKm: b.autonomyKm,
     capacity: b.capacity,
     weightSupportKg: b.weightSupportKg,

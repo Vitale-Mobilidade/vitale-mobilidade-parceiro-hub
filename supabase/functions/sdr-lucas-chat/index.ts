@@ -22,6 +22,7 @@ const BikeCtxSchema = z.object({
   id: z.string(),
   name: z.string(),
   shortDescription: z.string().optional(),
+  fullDescription: z.string().optional(),
   autonomyKm: z.number().optional(),
   capacity: z.number().optional(),
   weightSupportKg: z.number().optional(),
@@ -149,6 +150,7 @@ function buildContextBlock(ctx: z.infer<typeof BodySchema>["context"]) {
         b.perfilIndicado ? `perfil="${b.perfilIndicado}"` : "",
       ].filter(Boolean).join(", ");
       parts.push(`- ${bits}`);
+      if (b.fullDescription) parts.push(`  detalhes: ${b.fullDescription.slice(0, 900)}`);
     }
   }
   if (ctx.affiliate_disclosure_shown) {
