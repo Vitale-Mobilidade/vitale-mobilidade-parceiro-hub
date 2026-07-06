@@ -36,6 +36,14 @@ const eventNames = new Set([
   "primary_offer_popup_viewed", "primary_offer_popup_clicked", "primary_offer_popup_dismissed", "primary_offer_popup_returned",
   "offers_post_click_popup_viewed", "offers_post_click_popup_clicked", "offers_post_click_popup_dismissed", "offers_post_click_popup_returned",
   "result_tab_refocused_after_external_click",
+  // SDR IA "Lucas"
+  "sdr_invite_viewed", "sdr_auto_open_scheduled", "sdr_auto_opened", "sdr_auto_open_cancelled",
+  "sdr_opened_manually", "sdr_closed_by_user", "sdr_quick_question_clicked",
+  "sdr_message_sent", "sdr_response_received", "sdr_comparison_requested",
+  "sdr_high_intent_detected", "sdr_link_offered", "sdr_link_sent",
+  "sdr_purchase_link_clicked", "sdr_offers_group_link_sent", "sdr_offers_group_link_clicked",
+  "sdr_bike_list_link_sent", "sdr_bike_list_link_clicked",
+  "sdr_human_handoff_requested", "sdr_conversation_closed",
 ]);
 
 const BodySchema = z.object({
