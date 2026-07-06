@@ -1,4 +1,8 @@
 import { BIKES, BUDGET_MAX_PRICE, type Bike, type BudgetTier } from "@/data/bikes";
+import {
+  computeSourceInterestBonuses,
+  type SourceBikeInterest,
+} from "@/lib/source-bike-interest";
 
 export type Answers = {
   main_use: string;
