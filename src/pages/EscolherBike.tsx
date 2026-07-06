@@ -275,7 +275,18 @@ export default function EscolherBike() {
 
 
   const recommendation = useMemo(() => {
-    if (Object.keys(answers).length === STEPS.length) return recommend(answers as Answers);
+    if (Object.keys(answers).length === STEPS.length) {
+      const t = baseLeadDataRef.current || {};
+      const sourceInterest = detectSourceBikeInterest({
+        utm_content: t.utm_content ?? null,
+        utm_source: t.utm_source ?? null,
+        traffic_origin: t.traffic_origin ?? null,
+        source_url: typeof window !== "undefined" ? window.location.href : null,
+        first_url: t.first_url ?? null,
+      });
+      const rec = recommend(answers as Answers, sourceInterest);
+      return { ...rec, sourceInterest };
+    }
     return null;
   }, [answers]);
 
