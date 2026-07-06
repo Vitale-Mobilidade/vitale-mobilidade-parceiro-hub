@@ -560,13 +560,48 @@ export default function EscolherBike() {
     completedRef.current = true;
     console.info("[quiz] Criando lead após respostas");
 
-    const rec = recommend(finalAnswers);
+    // --- Sinal de interesse de origem (bike do vídeo/UTM) ---
+    const trackingForInterest = {
+      utm_content: baseLeadDataRef.current?.utm_content ?? null,
+      utm_source: baseLeadDataRef.current?.utm_source ?? null,
+      traffic_origin: baseLeadDataRef.current?.traffic_origin ?? null,
+      source_url: typeof window !== "undefined" ? window.location.href : null,
+      first_url: baseLeadDataRef.current?.first_url ?? null,
+    };
+    const sourceInterest = detectSourceBikeInterest(trackingForInterest);
+
+    const rec = recommend(finalAnswers, sourceInterest);
     const clusters = computeClusters(finalAnswers);
-    const reasonPrimary = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
+
+    const sourceCopyPrimary = buildSourceInterestCopy(
+      sourceInterest.label,
+      rec.primary.id,
+      sourceInterest.interest,
+    );
+    const basePrimaryCopy = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
+    const reasonPrimary = sourceCopyPrimary
+      ? `${sourceCopyPrimary} ${basePrimaryCopy}`.trim()
+      : basePrimaryCopy;
     const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
+
     const startedAt = startedAtRef.current ?? new Date().toISOString();
     const completedAt = new Date().toISOString();
-    const rawRecommendation = { primary: rec.primary.id, secondary: rec.secondary?.id ?? null, primaryScore: rec.primaryScore, secondaryScore: rec.secondaryScore ?? null, budgetLimited: rec.budgetLimited };
+    const rawRecommendation = {
+      primary: rec.primary.id,
+      secondary: rec.secondary?.id ?? null,
+      primaryScore: rec.primaryScore,
+      secondaryScore: rec.secondaryScore ?? null,
+      budgetLimited: rec.budgetLimited,
+      sourceBikeInterest: sourceInterest.interest,
+      sourceBikeInterestLabel: sourceInterest.label,
+      sourceBikeMatches: sourceInterest.matches,
+      sourceBikeDetectionSource: sourceInterest.detectionSource,
+      sourceBikeBonusApplied: rec.sourceInterestBonuses,
+      baseScores: rec.baseScores,
+      sourceInterestBonuses: rec.sourceInterestBonuses,
+      finalScores: rec.finalScores,
+      sourceInterestInfluencedRanking: rec.sourceInterestInfluencedRanking,
+    };
 
     // Respostas + labels coletadas localmente
     const answersFlat: Record<string, any> = {
@@ -611,6 +646,11 @@ export default function EscolherBike() {
       recommended_bike_2_reason: reasonSecondary,
       recommended_bike_2_link: rec.secondary?.affiliateLink ?? null,
       recommendation_reason: reasonPrimary,
+      source_bike_interest: sourceInterest.interest,
+      source_bike_interest_label: sourceInterest.label,
+      source_bike_interest_matches: sourceInterest.matches,
+      source_bike_bonus_applied: rec.sourceInterestBonuses,
+      source_bike_detection_source: sourceInterest.detectionSource,
       raw_answers_json: finalAnswers,
       raw_recommendation_json: rawRecommendation,
     };
