@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MessagesSquare, X } from "lucide-react";
 import { LucasChatPanel } from "./LucasChatPanel";
 import type { SDRContext } from "./types";
+import { setChatOpen } from "@/lib/lucas-chat-bus";
 
 const INVITE_DELAY_MS = 5000;
 const AUTO_OPEN_DELAY_DESKTOP_MS = 15000;
@@ -10,13 +12,10 @@ const SESSION_FLAG_PREFIX = "sdr_lucas_session_";
 
 interface Props {
   ctx: SDRContext;
-  /** Handler que reaproveita o fluxo de compra existente (mesmo lead, mesmo tracking). */
   onBuyLink: (bikeId: string, source: "sdr_chat") => void;
-  /** Envia evento de tracking para o quiz-track (mesmo lead). */
   onEvent: (name: string, payload?: Record<string, any>) => void;
-  /** Se o CTA de compra sticky mobile está visível, sobe o botão. */
+  /** Kept for API compatibility — não é mais usado para reposicionar verticalmente. */
   liftedAboveStickyBar?: boolean;
-  /** Sinaliza que o usuário clicou em "Comprar aqui" — cancela auto-open. */
   buyClicked?: boolean;
 }
 
@@ -28,7 +27,6 @@ function isMobile() {
 function sessionKey(leadId: string | null, kind: string) {
   return `${SESSION_FLAG_PREFIX}${leadId ?? "anon"}_${kind}`;
 }
-
 function readFlag(leadId: string | null, kind: string) {
   if (typeof window === "undefined") return false;
   try { return sessionStorage.getItem(sessionKey(leadId, kind)) === "true"; } catch { return false; }
@@ -38,7 +36,7 @@ function writeFlag(leadId: string | null, kind: string) {
   try { sessionStorage.setItem(sessionKey(leadId, kind), "true"); } catch {}
 }
 
-export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, buyClicked }: Props) {
+export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
   const [open, setOpen] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteDismissed, setInviteDismissed] = useState(() => readFlag(ctx.leadId, "invite_dismissed"));
@@ -47,7 +45,12 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
   );
   const inviteViewedRef = useRef(false);
 
-  // Bubble aparece 5s após montar
+  // Sincroniza estado global chat-aberto para outros overlays da página.
+  useEffect(() => {
+    setChatOpen(open);
+    return () => { if (open) setChatOpen(false); };
+  }, [open]);
+
   useEffect(() => {
     if (inviteDismissed) return;
     const t = window.setTimeout(() => {
@@ -60,7 +63,6 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
     return () => window.clearTimeout(t);
   }, [inviteDismissed, onEvent]);
 
-  // Auto-open agendado
   useEffect(() => {
     if (autoOpenBlocked || open) return;
     const delay = isMobile() ? AUTO_OPEN_DELAY_MOBILE_MS : AUTO_OPEN_DELAY_DESKTOP_MS;
@@ -71,7 +73,6 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
         onEvent("sdr_auto_open_cancelled", { reason: "user_action" });
         return;
       }
-      // Não abre se um input estiver em foco
       const active = document.activeElement as HTMLElement | null;
       const focusedInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA");
       if (focusedInput) { onEvent("sdr_auto_open_cancelled", { reason: "input_focused" }); return; }
@@ -84,7 +85,6 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoOpenBlocked, buyClicked, ctx.leadId]);
 
-  // Cancela auto-open se comprou
   useEffect(() => {
     if (buyClicked && !autoOpenBlocked) {
       setAutoOpenBlocked(true);
@@ -119,45 +119,60 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
     onEvent("sdr_purchase_link_clicked", { bike_for_link: bikeId });
   }, [onBuyLink, onEvent]);
 
-  const mobileBottom = liftedAboveStickyBar ? "104px" : "18px";
+  // Portal para o document.body — evita que transform/overflow em qualquer
+  // ancestral influencie a posição `fixed` do botão / painel.
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (typeof document !== "undefined") setPortalTarget(document.body);
+  }, []);
+  if (!portalTarget) return null;
 
-  return (
+  const fabStyle: React.CSSProperties = {
+    position: "fixed",
+    right: "max(12px, env(safe-area-inset-right))",
+    bottom: "max(12px, env(safe-area-inset-bottom))",
+    zIndex: 9998,
+  };
+  const inviteWrapStyle: React.CSSProperties = {
+    position: "fixed",
+    right: "max(12px, env(safe-area-inset-right))",
+    bottom: "calc(max(12px, env(safe-area-inset-bottom)) + 68px)",
+    zIndex: 9997,
+    maxWidth: 260,
+  };
+
+  return createPortal(
     <>
-      {/* Botão flutuante */}
-      <div
-        className="fixed right-4 sm:right-6 z-[60]"
-        style={{ bottom: mobileBottom }}
-      >
-        <style>{`
-          @media (min-width: 1024px) { .lucas-sdr-fab { bottom: 24px !important; right: 24px !important; } }
-        `}</style>
-        <div className="lucas-sdr-fab flex flex-col items-end gap-2">
-          {showInvite && !open && (
-            <div className="relative bg-white rounded-2xl shadow-lg border border-black/5 pl-4 pr-8 py-2.5 max-w-[260px]">
-              <button
-                type="button"
-                onClick={() => openChat("invite")}
-                className="flex flex-col items-start text-left"
-                aria-label="Abrir chat com o Lucas"
-              >
-                <span className="text-[13px] font-semibold text-foreground leading-tight">Ainda em dúvida?</span>
-                <span className="text-[13px] text-foreground/80 leading-tight">
-                  Fale com o Lucas e entenda qual bike faz mais sentido para você.
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={dismissInvite}
-                aria-label="Fechar convite"
-                className="absolute top-1 right-1 flex items-center justify-center rounded-full hover:bg-gray-100"
-                style={{ width: 22, height: 22 }}
-              >
-                <X size={14} />
-              </button>
+      {!open && (
+        <>
+          {showInvite && (
+            <div style={inviteWrapStyle}>
+              <div className="relative bg-white rounded-2xl shadow-lg border border-black/5 pl-4 pr-8 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => openChat("invite")}
+                  className="flex flex-col items-start text-left"
+                  aria-label="Abrir chat com o Lucas"
+                >
+                  <span className="text-[13px] font-semibold text-foreground leading-tight">Ainda em dúvida?</span>
+                  <span className="text-[13px] text-foreground/80 leading-tight">
+                    Fale com o Lucas e entenda qual bike faz mais sentido para você.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={dismissInvite}
+                  aria-label="Fechar convite"
+                  className="absolute top-1 right-1 flex items-center justify-center rounded-full hover:bg-gray-100"
+                  style={{ width: 22, height: 22 }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           )}
 
-          {!open && (
+          <div style={fabStyle}>
             <button
               type="button"
               onClick={() => openChat("button")}
@@ -171,22 +186,28 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
                 Falar com o<br />Lucas
               </span>
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
-      {/* Painel */}
       {open && (
         <>
-          {/* Overlay só em mobile */}
           <div
-            className="fixed inset-0 z-[70] bg-black/30 sm:hidden"
+            className="sm:hidden"
             onClick={closeChat}
             aria-hidden="true"
+            style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.3)" }}
           />
           <div
-            className="fixed z-[75] left-2 right-2 bottom-2 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[400px]"
-            style={{ maxWidth: "calc(100vw - 16px)" }}
+            style={{
+              position: "fixed",
+              right: "max(12px, env(safe-area-inset-right))",
+              bottom: "max(12px, env(safe-area-inset-bottom))",
+              left: "auto",
+              zIndex: 9999,
+              width: "min(calc(100vw - 24px), 420px)",
+              maxHeight: "min(72dvh, 620px)",
+            }}
           >
             <LucasChatPanel
               ctx={ctx}
@@ -197,7 +218,8 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, liftedAboveStickyBar, 
           </div>
         </>
       )}
-    </>
+    </>,
+    portalTarget,
   );
 }
 
