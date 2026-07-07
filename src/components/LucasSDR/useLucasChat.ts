@@ -207,10 +207,12 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
         content: resp.reply,
         createdAt: Date.now(),
         bikeForLink: resp.offer_link ? (resp.bike_for_link ?? null) : null,
+        secondaryBikeForLink: resp.offer_link ? (resp.secondary_bike_for_link ?? null) : null,
         showAffiliateDisclosure: showAffiliate && !!resp.offer_link,
         offerGroup: !!resp.offer_group,
         offerList: !!resp.offer_list,
         offerHandoff: !!resp.offer_handoff,
+        offerConsultoria: !!resp.offer_consultoria,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
