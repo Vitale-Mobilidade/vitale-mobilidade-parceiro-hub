@@ -81,7 +81,7 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
     setMessages([{ id: uid(), role: "assistant", content: text, createdAt: Date.now() }]);
   }, [ctx.recommendation?.primary?.name, ctx.recommendation?.secondary?.name, messages.length]);
 
-  const sendMessage = useCallback(async (userText: string, meta?: { isQuickReply?: boolean; label?: string }) => {
+  const sendMessage = useCallback(async (userText: string, meta?: { isQuickReply?: boolean; label?: string; forceIntent?: "buy_primary" | "buy_secondary" | "compare" | "doubts" }) => {
     const trimmed = userText.trim();
     if (!trimmed) return;
 
@@ -98,6 +98,42 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
     if (!startedRef.current) {
       startedRef.current = true;
       opts.onEvent?.("sdr_conversation_closed", { started_at: new Date().toISOString(), phase: "started" });
+    }
+
+    // ---- Short-circuit: intenção de compra clara ----
+    // Detecta padrões inequívocos e responde IMEDIATAMENTE com os botões de compra,
+    // sem esperar a IA. Isso garante o comportamento comercial mesmo em rate limit.
+    const primary = ctx.recommendation?.primary;
+    const secondary = ctx.recommendation?.secondary;
+    const purchaseIntentShort = detectPurchaseIntent(trimmed, meta?.forceIntent);
+    if (purchaseIntentShort && primary) {
+      const wantsSecondary = purchaseIntentShort === "buy_secondary" && !!secondary;
+      const bikePrimary = wantsSecondary ? secondary! : primary;
+      const bikeSecondary = wantsSecondary ? primary : secondary;
+      const introLine = wantsSecondary
+        ? `A ${bikePrimary.name} é uma boa escolha se você prioriza ${bikePrimary.diferencial?.toLowerCase() ?? "essa proposta"}.`
+        : `Perfeito. Pelo seu perfil, a ${bikePrimary.name} é a escolha que eu faria.`;
+      const showAff = !affiliateShownRef.current;
+      if (showAff && leadId) {
+        affiliateShownRef.current = true;
+        try { sessionStorage.setItem(AFF_FLAG_PREFIX + leadId, "true"); } catch {}
+      }
+      const assistantMsg: SDRMessage = {
+        id: uid(), role: "assistant", createdAt: Date.now(),
+        content: introLine,
+        bikeForLink: bikePrimary.id,
+        secondaryBikeForLink: bikeSecondary?.id ?? null,
+        showAffiliateDisclosure: showAff,
+        quickReplies: [
+          { label: "Ainda tenho uma dúvida", text: "Ainda tenho uma dúvida antes de comprar." },
+          { label: "Falar com especialista", text: "Quero falar com um especialista." },
+        ],
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setStatus("idle");
+      opts.onEvent?.("sdr_purchase_intent_detected", { via: "client_short_circuit", bike_for_link: bikePrimary.id });
+      opts.onEvent?.("sdr_link_offered", { bike_for_link: bikePrimary.id });
+      return;
     }
 
     const history = [...messages, userMsg]
