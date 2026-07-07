@@ -72,11 +72,11 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
     const secondary = ctx.recommendation?.secondary?.name;
     let text = "";
     if (primary && secondary) {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas e te ajudar a escolher a bike ideal para o seu uso — a resenha aqui é 100% gratuita.\n\nVi que o quiz indicou a ${primary} e a ${secondary}. Você ainda está pesquisando ou já quer comprar uma bike agora?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale.\n\nO quiz indicou a ${primary} e a ${secondary} para o seu perfil.\n\nVocê quer comprar agora ou comparar rapidamente antes de decidir?`;
     } else if (primary) {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas e te ajudar a escolher a bike ideal para o seu uso — a resenha aqui é 100% gratuita.\n\nVi que o quiz indicou a ${primary}. Você ainda está pesquisando ou já quer comprar uma bike agora?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale.\n\nO quiz indicou a ${primary} para o seu perfil.\n\nVocê quer comprar agora ou tirar alguma dúvida antes?`;
     } else {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas sobre bikes elétricas. Como posso te ajudar?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Como posso te ajudar com sua escolha?`;
     }
     setMessages([{ id: uid(), role: "assistant", content: text, createdAt: Date.now() }]);
   }, [ctx.recommendation?.primary?.name, ctx.recommendation?.secondary?.name, messages.length]);
