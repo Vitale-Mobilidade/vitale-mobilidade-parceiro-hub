@@ -7,14 +7,18 @@ export interface SDRMessage {
   role: SDRRole;
   content: string;
   createdAt: number;
-  /** Se a resposta do assistente veio com uma bike sugerida para link. */
+  /** Bike principal para botão de compra. */
   bikeForLink?: string | null;
-  /** Se deve mostrar aviso de afiliado logo antes do botão. */
+  /** Bike secundária opcional para mostrar como alternativa. */
+  secondaryBikeForLink?: string | null;
   showAffiliateDisclosure?: boolean;
-  /** Ações auxiliares que o painel deve renderizar embaixo da mensagem. */
   offerGroup?: boolean;
   offerList?: boolean;
   offerHandoff?: boolean;
+  /** Renderiza CTA de consultoria paga. */
+  offerConsultoria?: boolean;
+  /** Quick replies contextuais a mostrar depois desta mensagem. */
+  quickReplies?: { label: string; text: string }[];
 }
 
 export interface SDRApiResponse {
@@ -29,7 +33,9 @@ export interface SDRApiResponse {
   offer_group?: boolean;
   offer_list?: boolean;
   offer_handoff?: boolean;
+  offer_consultoria?: boolean;
   bike_for_link?: string | null;
+  secondary_bike_for_link?: string | null;
   show_affiliate_disclosure?: boolean;
 }
 
@@ -49,3 +55,4 @@ export interface SDRContext {
   origin?: Record<string, any>;
   baseLeadData?: Record<string, any>;
 }
+
