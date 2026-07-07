@@ -528,7 +528,15 @@ export default function EscolherBike() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-5">
               <span className="text-base font-bold text-primary">Vitale Mobilidade</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-8 text-foreground">{step.title}</h2>
+            <h2 className="text-2xl lg:text-3xl font-bold mb-3 text-foreground">{step.title}</h2>
+            {step.key === "weight_range" && (
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-6 leading-relaxed">
+                {answers.rider_capacity_need === "garupa_as_vezes" || answers.rider_capacity_need === "garupa_frequente"
+                  ? "Considere o peso total: o seu peso + o peso da garupa."
+                  : "Considere o seu peso somado ao peso da garupa, caso você pretenda levar outra pessoa."}
+              </p>
+            )}
+            <div className="mb-2" />
             <div className="space-y-3">
               {step.options.map(opt => (
                 <button
