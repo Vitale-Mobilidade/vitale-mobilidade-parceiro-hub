@@ -305,6 +305,10 @@ Deno.serve(async (req) => {
     structured.bike_for_link = null;
     structured.offer_link = false;
   }
+  if (structured.secondary_bike_for_link && !catalogIds.has(structured.secondary_bike_for_link)) {
+    console.warn("[sdr-lucas] secondary_bike_for_link inválido, ignorando", structured.secondary_bike_for_link);
+    structured.secondary_bike_for_link = null;
+  }
 
   // Persist SDR fields if lead exists
   if (lead_id) {
