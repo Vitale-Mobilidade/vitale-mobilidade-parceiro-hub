@@ -44,6 +44,9 @@ const eventNames = new Set([
   "sdr_purchase_link_clicked", "sdr_offers_group_link_sent", "sdr_offers_group_link_clicked",
   "sdr_bike_list_link_sent", "sdr_bike_list_link_clicked",
   "sdr_human_handoff_requested", "sdr_conversation_closed",
+  "sdr_consultoria_offered", "sdr_purchase_intent_detected",
+  // Consultoria paga e grupo de ofertas
+  "consultoria_cta_clicked", "whatsapp_group_clicked",
 ]);
 
 const BodySchema = z.object({
