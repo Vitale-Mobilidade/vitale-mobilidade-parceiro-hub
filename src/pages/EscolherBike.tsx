@@ -70,7 +70,7 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
   },
   {
     key: "weight_range", field: "weight_range",
-    title: "Qual faixa de peso aproximada a bike precisa suportar?",
+    title: "Qual faixa de peso total a bike precisa suportar?",
     options: [
       { value: "ate_80kg", label: "Até 80 kg", micro: "Uso leve, com menor exigência estrutural." },
       { value: "80_100kg", label: "80 a 100 kg", micro: "Faixa comum para uso urbano e deslocamento diário." },
