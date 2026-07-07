@@ -11,6 +11,18 @@ function uid() {
   return `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Detecta intenção clara de compra na frase do usuário. */
+function detectPurchaseIntent(text: string, forced?: "buy_primary" | "buy_secondary" | "compare" | "doubts") {
+  if (forced === "buy_primary") return "buy_primary" as const;
+  if (forced === "buy_secondary") return "buy_secondary" as const;
+  if (forced === "compare" || forced === "doubts") return null;
+  const t = text.toLowerCase();
+  const secondaryRe = /(segunda|alternativa|a outra|outra opção|a 2|a segunda)/;
+  const buyRe = /(quero comprar|comprar agora|onde compro|me manda o link|manda o link|qual o link|vou comprar|quero essa|quero a principal|quero a primeira|quero a segunda|como faço para comprar|quanto custa|onde encontro|qual você compraria|já decidi|vou fechar|comprar a recomendada|onde comprar)/;
+  if (buyRe.test(t)) return secondaryRe.test(t) ? "buy_secondary" as const : "buy_primary" as const;
+  return null;
+}
+
 function loadPersisted(leadId: string | null): SDRMessage[] {
   if (!leadId || typeof window === "undefined") return [];
   try {
