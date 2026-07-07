@@ -17,6 +17,7 @@ import {
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
 import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
+import { isChatCoolingDown, onChatChanged } from "@/lib/lucas-chat-bus";
 const LucasSDRWidget = lazy(() =>
   import("@/components/LucasSDR/LucasSDRWidget").then((m) => ({ default: m.LucasSDRWidget }))
 );
