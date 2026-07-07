@@ -1082,6 +1082,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fecha imediatamente qualquer popup promocional se o chat abrir.
+  useEffect(() => {
+    const off = onChatChanged((open) => {
+      if (open) setShowPrimaryOfferPopup(false);
+    });
+    return off;
+  }, []);
+
   const handlePrimaryOfferClick = () => {
     ssSet(SS_KEYS.clicked);
     markMainActionClicked();
