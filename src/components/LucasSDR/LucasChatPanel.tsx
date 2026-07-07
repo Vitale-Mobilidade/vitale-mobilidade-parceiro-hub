@@ -1,33 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, ShoppingCart, Users, ListChecks, User, CalendarClock } from "lucide-react";
+import { Send, X, ShoppingCart, Users, ListChecks, MessageCircle, User } from "lucide-react";
 import { BIKES, getPurchaseLink } from "@/data/bikes";
 import { useLucasChat } from "./useLucasChat";
 import type { SDRContext, SDRMessage } from "./types";
 
-const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
+const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t";
 const BIKE_LIST_URL = "https://meli.la/2y7TYaH";
 const SPECIALIST_PHONE = "5511986893890";
-const CONSULTORIA_URL = "https://pay.kiwify.com.br/kPXb3Ni";
 
-type QuickReply = { label: string; text: string; intent?: "buy_primary" | "buy_secondary" | "compare" | "doubts" };
+const QUICK_REPLIES_INITIAL: { label: string; text: string }[] = [
+  { label: "Quero comprar agora", text: "Quero comprar agora." },
+  { label: "Ainda estou pesquisando", text: "Ainda estou pesquisando." },
+];
 
-function buildInitialQuickReplies(ctx: SDRContext): QuickReply[] {
-  const primaryName = ctx.recommendation?.primary?.name;
-  const secondaryName = ctx.recommendation?.secondary?.name;
-  const opts: QuickReply[] = [];
-  if (primaryName) opts.push({ label: `Comprar a ${primaryName}`, text: `Quero comprar a ${primaryName} agora.`, intent: "buy_primary" });
-  if (secondaryName) opts.push({ label: "Comparar as duas", text: "Compare as duas bikes recomendadas para mim.", intent: "compare" });
-  opts.push({ label: "Ainda tenho uma dúvida", text: "Ainda tenho uma dúvida antes de decidir.", intent: "doubts" });
-  return opts;
-}
-
-const DOUBT_QUICK_REPLIES: QuickReply[] = [
-  { label: "Aguenta meu peso e garupa?", text: "Ela aguenta bem meu peso e garupa?" },
-  { label: "Autonomia é suficiente?", text: "A autonomia é suficiente para o meu uso?" },
-  { label: "Vai bem em subidas?", text: "Ela vai bem em subidas?" },
-  { label: "Qual tem melhor custo-benefício?", text: "Qual delas tem melhor custo-benefício para o meu perfil?" },
-  { label: "Falar com especialista", text: "Quero falar com um especialista." },
+const QUICK_REPLIES_RESEARCH: { label: string; text: string }[] = [
+  { label: "Por que essa bike?", text: "Por que essa bike foi recomendada para mim?" },
+  { label: "Comparar as opções", text: "Compare as bikes recomendadas para mim." },
+  { label: "Autonomia e bateria", text: "Como é a autonomia e a bateria?" },
+  { label: "Garupa e peso", text: "Ela serve para levar garupa e para o meu peso?" },
+  { label: "Preço e compra", text: "Como funciona o preço e a compra?" },
 ];
 
 function buildHandoffLink(ctx: SDRContext, preferredBike?: string | null) {
@@ -78,15 +70,14 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
     setTimeout(() => inputRef.current?.focus(), 30);
   };
 
-  const handleQuick = (q: QuickReply) => {
+  const handleQuick = (text: string, label: string) => {
     if (status === "sending") return;
-    sendMessage(q.text, { isQuickReply: true, label: q.label, forceIntent: q.intent });
+    sendMessage(text, { isQuickReply: true, label });
     setTimeout(() => inputRef.current?.focus(), 30);
   };
 
   const handleGroupClick = () => {
     onEvent("sdr_offers_group_link_clicked");
-    onEvent("whatsapp_group_clicked", { source: "sdr_chat", group_url: OFFERS_GROUP_URL, clicked_at: new Date().toISOString() });
     window.open(OFFERS_GROUP_URL, "_blank", "noopener,noreferrer");
   };
   const handleListClick = () => {
@@ -97,30 +88,18 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
     onEvent("sdr_human_handoff_requested", { preferred_bike: bike });
     window.open(buildHandoffLink(ctx, bike), "_blank", "noopener,noreferrer");
   };
-  const handleConsultoria = () => {
-    onEvent("consultoria_cta_clicked", {
-      source: "sdr_chat",
-      checkout_url: CONSULTORIA_URL,
-      clicked_at: new Date().toISOString(),
-      recommended_bike_1: ctx.recommendation?.primary?.id,
-      recommended_bike_2: ctx.recommendation?.secondary?.id,
-    });
-    window.open(CONSULTORIA_URL, "_blank", "noopener,noreferrer");
-  };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const showInitialQuickReplies = messages.length <= 1 && status !== "sending";
-  const contextualQuickReplies = (lastAssistant?.quickReplies?.length ? lastAssistant.quickReplies : null);
-
-  const initialReplies = showInitialQuickReplies ? buildInitialQuickReplies(ctx) : [];
 
   return (
     <div
-      className="flex flex-col bg-background rounded-2xl shadow-2xl border border-border overflow-hidden w-full h-full"
+      className="flex flex-col bg-background rounded-2xl shadow-2xl border border-border overflow-hidden w-full"
+      style={{ maxHeight: "min(75vh, 640px)" }}
       role="dialog"
       aria-label="Assistente virtual Lucas"
     >
-      <header className="flex items-center gap-3 px-4 py-3 bg-primary text-primary-foreground flex-shrink-0">
+      <header className="flex items-center gap-3 px-4 py-3 bg-primary text-primary-foreground">
         <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg">L</div>
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-semibold leading-tight">Lucas</div>
@@ -136,11 +115,7 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
         </button>
       </header>
 
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-muted/30"
-        style={{ overscrollBehavior: "contain" }}
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-muted/30">
         {messages.map((m) => (
           <MessageBubble
             key={m.id}
@@ -149,7 +124,6 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
             onGroupClick={handleGroupClick}
             onListClick={handleListClick}
             onHandoff={() => handleHandoff(m.bikeForLink)}
-            onConsultoria={handleConsultoria}
           />
         ))}
         {status === "sending" && (
@@ -164,14 +138,28 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
         )}
       </div>
 
-      {(initialReplies.length > 0 || contextualQuickReplies) && status !== "sending" && (
-        <div className="px-3 py-2 border-t border-border bg-background flex gap-2 overflow-x-auto flex-shrink-0">
-          {(initialReplies.length > 0 ? initialReplies : contextualQuickReplies!).map((q) => (
+      {showInitialQuickReplies && (
+        <div className="px-3 py-2 border-t border-border bg-background flex flex-wrap gap-2">
+          {QUICK_REPLIES_INITIAL.map((q) => (
             <button
               key={q.label}
               type="button"
-              onClick={() => handleQuick(q)}
-              className="text-[13px] whitespace-nowrap px-3 py-1.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 flex-shrink-0"
+              onClick={() => handleQuick(q.text, q.label)}
+              className="text-[13px] px-3 py-1.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10"
+            >
+              {q.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {!showInitialQuickReplies && messages.length <= 3 && status !== "sending" && (
+        <div className="px-3 py-2 border-t border-border bg-background flex flex-wrap gap-2">
+          {QUICK_REPLIES_RESEARCH.map((q) => (
+            <button
+              key={q.label}
+              type="button"
+              onClick={() => handleQuick(q.text, q.label)}
+              className="text-[12px] px-2.5 py-1 rounded-full border border-border text-foreground/80 hover:bg-muted"
             >
               {q.label}
             </button>
@@ -179,7 +167,7 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-border bg-background flex-shrink-0">
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-border bg-background">
         <textarea
           ref={inputRef}
           value={input}
@@ -207,18 +195,15 @@ function MessageBubble({
   onGroupClick,
   onListClick,
   onHandoff,
-  onConsultoria,
 }: {
   message: SDRMessage;
   onBuyLink: (bikeId: string) => void;
   onGroupClick: () => void;
   onListClick: () => void;
   onHandoff: () => void;
-  onConsultoria: () => void;
 }) {
   const isUser = message.role === "user";
   const bike = message.bikeForLink ? BIKES.find((b) => b.id === message.bikeForLink) : null;
-  const bikeSec = message.secondaryBikeForLink ? BIKES.find((b) => b.id === message.secondaryBikeForLink) : null;
 
   return (
     <div className={isUser ? "flex justify-end" : "flex gap-2"}>
@@ -247,29 +232,11 @@ function MessageBubble({
               onClick={() => onBuyLink(bike.id)}
               className="w-full h-11 rounded-xl text-[14px] font-semibold"
             >
-              <ShoppingCart className="mr-2 h-4 w-4" /> Comprar {bike.name}
+              <ShoppingCart className="mr-2 h-4 w-4" /> Ver {bike.name} no Mercado Livre
             </Button>
-            {bikeSec && (
-              <Button
-                variant="outline"
-                onClick={() => onBuyLink(bikeSec.id)}
-                className="w-full h-10 rounded-xl text-[13px] font-semibold"
-              >
-                Ver {bikeSec.name}
-              </Button>
-            )}
           </div>
         )}
 
-        {!isUser && message.offerConsultoria && (
-          <Button
-            onClick={onConsultoria}
-            className="w-full h-11 rounded-xl text-[13px] font-semibold"
-            variant="secondary"
-          >
-            <CalendarClock className="mr-2 h-4 w-4" /> Agendar consultoria de 30 min · R$ 297
-          </Button>
-        )}
         {!isUser && message.offerGroup && (
           <Button variant="outline" onClick={onGroupClick} className="w-full h-10 rounded-xl text-[13px] font-semibold">
             <Users className="mr-2 h-4 w-4" /> Entrar no grupo de ofertas
