@@ -17,6 +17,7 @@ import {
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
 import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
+import { isChatCoolingDown, onChatChanged } from "@/lib/lucas-chat-bus";
 const LucasSDRWidget = lazy(() =>
   import("@/components/LucasSDR/LucasSDRWidget").then((m) => ({ default: m.LucasSDRWidget }))
 );
@@ -70,7 +71,7 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
   },
   {
     key: "weight_range", field: "weight_range",
-    title: "Qual faixa de peso aproximada a bike precisa suportar?",
+    title: "Qual faixa de peso total a bike precisa suportar?",
     options: [
       { value: "ate_80kg", label: "Até 80 kg", micro: "Uso leve, com menor exigência estrutural." },
       { value: "80_100kg", label: "80 a 100 kg", micro: "Faixa comum para uso urbano e deslocamento diário." },
@@ -528,7 +529,15 @@ export default function EscolherBike() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-5">
               <span className="text-base font-bold text-primary">Vitale Mobilidade</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-8 text-foreground">{step.title}</h2>
+            <h2 className="text-2xl lg:text-3xl font-bold mb-3 text-foreground">{step.title}</h2>
+            {step.key === "weight_range" && (
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-6 leading-relaxed">
+                {answers.rider_capacity_need === "garupa_as_vezes" || answers.rider_capacity_need === "garupa_frequente"
+                  ? "Considere o peso total: o seu peso + o peso da garupa."
+                  : "Considere o seu peso somado ao peso da garupa, caso você pretenda levar outra pessoa."}
+              </p>
+            )}
+            <div className="mb-2" />
             <div className="space-y-3">
               {step.options.map(opt => (
                 <button
@@ -1028,6 +1037,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (offerPopupDecidedRef.current) return;
     if (mainActionClickedRef.current) return;
     if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
+    // Não sobrepõe o chat do Lucas nem abre logo depois de fechá-lo.
+    if (isChatCoolingDown(15000)) return;
     offerPopupDecidedRef.current = true;
     ssSet(SS_KEYS.shown);
     setShowPrimaryOfferPopup(true);
@@ -1069,6 +1080,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     document.addEventListener("mouseleave", onMouseLeave);
     return () => document.removeEventListener("mouseleave", onMouseLeave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fecha imediatamente qualquer popup promocional se o chat abrir.
+  useEffect(() => {
+    const off = onChatChanged((open) => {
+      if (open) setShowPrimaryOfferPopup(false);
+    });
+    return off;
   }, []);
 
   const handlePrimaryOfferClick = () => {
@@ -1302,7 +1321,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Falar com especialista */}
+        {/* Consultoria paga */}
         <SpecialistBlock
           leadId={leadId}
           name={name}
@@ -1312,6 +1331,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           recommendation={recommendation}
           baseLeadData={baseLeadData}
           onMainAction={markMainActionClicked}
+        />
+
+        {/* Grupo de ofertas WhatsApp */}
+        <OffersGroupBlock
+          leadId={leadId}
+          name={name}
+          phone={phone}
+          baseLeadData={baseLeadData}
         />
 
         {/* Bloco educativo */}
@@ -1506,118 +1533,117 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
   );
 }
 
-// ---------- Specialist WhatsApp block ----------
-const SPECIALIST_WHATSAPP_PHONE = "5511986893890";
+// ---------- Paid consultation block ----------
+const CONSULTORIA_URL = "https://pay.kiwify.com.br/kPXb3Ni";
+const OFFERS_GROUP_WA_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 
-function SpecialistBlock({ leadId, name, phone, answers, labels, recommendation, baseLeadData, onMainAction }: any) {
-  const handleSpecialist = () => {
+function SpecialistBlock({ leadId, name, phone, recommendation, baseLeadData, onMainAction }: any) {
+  const handleConsultoria = () => {
     onMainAction?.();
-    const trimmedName = (name ?? "").trim();
-    const identification = trimmedName
-      ? `sou o ${trimmedName}`
-      : "sou uma pessoa que veio do quiz";
-
-    const lines = [
-      `Fala Lucas, ${identification} e vim do quiz.`,
-      "",
-      "Minhas respostas:",
-      "",
-      `Uso: ${labels?.main_use_label ?? "-"}`,
-      `Distância: ${labels?.daily_km_range_label ?? "-"}`,
-      `Terreno: ${labels?.route_type_label ?? "-"}`,
-      `Uso com garupa: ${labels?.rider_capacity_need_label ?? "-"}`,
-      `Peso aproximado: ${labels?.weight_range_label ?? "-"}`,
-      `Orçamento: ${labels?.budget_range_label ?? "-"}`,
-      `Experiência: ${labels?.had_ebike_before_label ?? "-"}`,
-      "",
-      `Bike recomendada: ${recommendation?.primary?.name ?? "-"}`,
-    ];
-    if (recommendation?.secondary?.name) {
-      lines.push(`Alternativa: ${recommendation.secondary.name}`);
-    }
-    lines.push("", "Quero ajuda para escolher minha bike ideal.");
-
-    const message = lines.join("\n");
-    const url = `https://wa.me/${SPECIALIST_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-
-    // GTM dataLayer: clique no WhatsApp (antes de abrir)
+    const clickedAt = new Date().toISOString();
+    const t = baseLeadData ?? {};
+    const payload = {
+      lead_id: leadId,
+      name,
+      phone,
+      utm_source: t.utm_source ?? null,
+      utm_medium: t.utm_medium ?? null,
+      utm_campaign: t.utm_campaign ?? null,
+      traffic_origin: t.traffic_origin ?? null,
+      recommended_bike_1: recommendation?.primary?.id ?? null,
+      recommended_bike_2: recommendation?.secondary?.id ?? null,
+      clicked_at: clickedAt,
+      checkout_url: CONSULTORIA_URL,
+      ...t,
+    };
     try {
       (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).dataLayer.push({
-        event: "event_click_whatsapp",
-        button_location: "escolherbike",
-      });
-      console.log("[GTM] event_click_whatsapp pushed (specialist block)");
-    } catch (err) {
-      console.error("[GTM] event_click_whatsapp push failed", err);
-    }
-
-    setTimeout(() => {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }, 300);
-
+      (window as any).dataLayer.push({ event: "consultoria_cta_clicked", ...payload });
+    } catch {}
     if (leadId) {
-      const payload = {
-        name,
-        phone,
-        main_use: answers?.main_use,
-        main_use_label: labels?.main_use_label,
-        daily_km_range: answers?.daily_km_range,
-        daily_km_range_label: labels?.daily_km_range_label,
-        route_type: answers?.route_type,
-        route_type_label: labels?.route_type_label,
-        budget_range: answers?.budget_range,
-        budget_range_label: labels?.budget_range_label,
-        had_ebike_before: answers?.had_ebike_before,
-        had_ebike_before_label: labels?.had_ebike_before_label,
-        recommended_bike_1: recommendation?.primary?.id,
-        recommended_bike_1_label: recommendation?.primary?.name,
-        recommended_bike_2: recommendation?.secondary?.id,
-        recommended_bike_2_label: recommendation?.secondary?.name,
-        whatsapp_phone: SPECIALIST_WHATSAPP_PHONE,
-        whatsapp_message: message,
-        ...(baseLeadData ?? {}),
-      };
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "specialist_whatsapp_clicked", payload } })
-        .then((result) => {
-          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "specialist_whatsapp_clicked", result });
-          else console.info("[quiz] Evento salvo com sucesso:", { event_name: "specialist_whatsapp_clicked" });
-        })
-        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "specialist_whatsapp_clicked", error }));
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "consultoria_cta_clicked", payload } })
+        .catch((e) => console.error("[quiz] Erro ao salvar evento consultoria_cta_clicked", e));
     }
+    setTimeout(() => window.open(CONSULTORIA_URL, "_blank", "noopener,noreferrer"), 200);
   };
 
   return (
-    <section
-      className="rounded-[18px] p-5 sm:p-6 mb-6 border-2"
-      style={{ backgroundColor: "#DCFCE7", borderColor: "#16A34A" }}
-    >
-      <h3 className="text-[20px] sm:text-2xl font-bold mb-1.5 leading-tight" style={{ color: "#15803D" }}>
-        Ainda está em dúvida?
+    <section className="rounded-[18px] p-5 sm:p-6 mb-6 border-2 border-primary/30 bg-primary/5">
+      <h3 className="text-[20px] sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
+        Ainda não se sente seguro para escolher?
       </h3>
-      <p className="text-[16px] sm:text-lg font-semibold text-foreground mb-3 leading-snug">
-        Fale com um especialista antes de comprar.
+      <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
+        Converse por 30 minutos com um especialista em mobilidade elétrica e descubra qual bike realmente faz sentido para o seu uso.
       </p>
-      <p className="text-[15px] sm:text-base text-foreground/80 mb-3 leading-relaxed">
-        Se você quer confirmar se a recomendação faz sentido para o seu uso, envie suas respostas para a Vitale Mobilidade e receba uma orientação mais segura antes de decidir.
-      </p>
-      <p className="text-[14px] sm:text-[15px] text-foreground/70 mb-4 leading-relaxed">
-        A mensagem já vai com seu perfil do quiz preenchido, para facilitar a análise.
+      <p className="text-[14px] sm:text-[15px] text-foreground/75 mb-4 leading-relaxed">
+        A consultoria é indicada para quem ainda está dividido entre modelos, tem dúvidas sobre peso, garupa, autonomia, subidas ou quer evitar uma compra errada. Você recebe uma orientação individual com base na sua rotina, orçamento e necessidade real.
       </p>
       <Button
-        onClick={handleSpecialist}
-        data-event="specialist_whatsapp_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[16px] font-bold py-3 px-6 rounded-xl text-white"
-        style={{ backgroundColor: "#16A34A" }}
+        onClick={handleConsultoria}
+        data-event="consultoria_cta_clicked"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
       >
-        Falar com especialista
+        Agendar consultoria por R$ 297
       </Button>
       <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
-        Você será direcionado para o WhatsApp da Vitale Mobilidade.
+        Atendimento individual de 30 minutos com especialista da Vitale Mobilidade.
       </p>
     </section>
   );
 }
+
+// ---------- WhatsApp offers group block ----------
+function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
+  const handleClick = () => {
+    const clickedAt = new Date().toISOString();
+    const t = baseLeadData ?? {};
+    const payload = {
+      lead_id: leadId,
+      name,
+      phone,
+      utm_source: t.utm_source ?? null,
+      utm_medium: t.utm_medium ?? null,
+      utm_campaign: t.utm_campaign ?? null,
+      traffic_origin: t.traffic_origin ?? null,
+      clicked_at: clickedAt,
+      group_url: OFFERS_GROUP_WA_URL,
+      ...t,
+    };
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: "whatsapp_group_clicked", ...payload });
+    } catch {}
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "whatsapp_group_clicked", payload } })
+        .catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_group_clicked", e));
+    }
+    setTimeout(() => window.open(OFFERS_GROUP_WA_URL, "_blank", "noopener,noreferrer"), 200);
+  };
+
+  return (
+    <section className="rounded-[18px] p-5 mb-6 border border-border bg-muted/40">
+      <h3 className="text-[17px] sm:text-lg font-bold text-foreground mb-1.5 leading-tight">
+        Quer acompanhar novas ofertas?
+      </h3>
+      <p className="text-[14px] sm:text-[15px] text-foreground/75 mb-3 leading-relaxed">
+        Entre no grupo de ofertas da Vitale Mobilidade e receba promoções, mudanças de preço e oportunidades de bikes elétricas no Mercado Livre.
+      </p>
+      <Button
+        onClick={handleClick}
+        variant="outline"
+        data-event="whatsapp_group_clicked"
+        className="w-full sm:w-auto min-h-[44px] text-[14px] font-semibold py-2.5 px-5 rounded-xl"
+      >
+        Entrar no grupo de ofertas
+      </Button>
+      <p className="text-[12.5px] text-foreground/55 mt-2 leading-relaxed">
+        Grupo focado em ofertas. Você pode sair quando quiser.
+      </p>
+    </section>
+  );
+}
+
+
 
 function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, onMainAction }: any) {
   const handleRestart = () => {

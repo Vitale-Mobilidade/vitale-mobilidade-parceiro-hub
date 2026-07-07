@@ -11,6 +11,18 @@ function uid() {
   return `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Detecta intenção clara de compra na frase do usuário. */
+function detectPurchaseIntent(text: string, forced?: "buy_primary" | "buy_secondary" | "compare" | "doubts") {
+  if (forced === "buy_primary") return "buy_primary" as const;
+  if (forced === "buy_secondary") return "buy_secondary" as const;
+  if (forced === "compare" || forced === "doubts") return null;
+  const t = text.toLowerCase();
+  const secondaryRe = /(segunda|alternativa|a outra|outra opção|a 2|a segunda)/;
+  const buyRe = /(quero comprar|comprar agora|onde compro|me manda o link|manda o link|qual o link|vou comprar|quero essa|quero a principal|quero a primeira|quero a segunda|como faço para comprar|quanto custa|onde encontro|qual você compraria|já decidi|vou fechar|comprar a recomendada|onde comprar)/;
+  if (buyRe.test(t)) return secondaryRe.test(t) ? "buy_secondary" as const : "buy_primary" as const;
+  return null;
+}
+
 function loadPersisted(leadId: string | null): SDRMessage[] {
   if (!leadId || typeof window === "undefined") return [];
   try {
@@ -72,16 +84,16 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
     const secondary = ctx.recommendation?.secondary?.name;
     let text = "";
     if (primary && secondary) {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas e te ajudar a escolher a bike ideal para o seu uso — a resenha aqui é 100% gratuita.\n\nVi que o quiz indicou a ${primary} e a ${secondary}. Você ainda está pesquisando ou já quer comprar uma bike agora?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale.\n\nO quiz indicou a ${primary} e a ${secondary} para o seu perfil.\n\nVocê quer comprar agora ou comparar rapidamente antes de decidir?`;
     } else if (primary) {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas e te ajudar a escolher a bike ideal para o seu uso — a resenha aqui é 100% gratuita.\n\nVi que o quiz indicou a ${primary}. Você ainda está pesquisando ou já quer comprar uma bike agora?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale.\n\nO quiz indicou a ${primary} para o seu perfil.\n\nVocê quer comprar agora ou tirar alguma dúvida antes?`;
     } else {
-      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Estou aqui para tirar suas dúvidas sobre bikes elétricas. Como posso te ajudar?`;
+      text = `Oi, eu sou o Lucas, assistente virtual da Vitale. Como posso te ajudar com sua escolha?`;
     }
     setMessages([{ id: uid(), role: "assistant", content: text, createdAt: Date.now() }]);
   }, [ctx.recommendation?.primary?.name, ctx.recommendation?.secondary?.name, messages.length]);
 
-  const sendMessage = useCallback(async (userText: string, meta?: { isQuickReply?: boolean; label?: string }) => {
+  const sendMessage = useCallback(async (userText: string, meta?: { isQuickReply?: boolean; label?: string; forceIntent?: "buy_primary" | "buy_secondary" | "compare" | "doubts" }) => {
     const trimmed = userText.trim();
     if (!trimmed) return;
 
@@ -98,6 +110,42 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
     if (!startedRef.current) {
       startedRef.current = true;
       opts.onEvent?.("sdr_conversation_closed", { started_at: new Date().toISOString(), phase: "started" });
+    }
+
+    // ---- Short-circuit: intenção de compra clara ----
+    // Detecta padrões inequívocos e responde IMEDIATAMENTE com os botões de compra,
+    // sem esperar a IA. Isso garante o comportamento comercial mesmo em rate limit.
+    const primary = ctx.recommendation?.primary;
+    const secondary = ctx.recommendation?.secondary;
+    const purchaseIntentShort = detectPurchaseIntent(trimmed, meta?.forceIntent);
+    if (purchaseIntentShort && primary) {
+      const wantsSecondary = purchaseIntentShort === "buy_secondary" && !!secondary;
+      const bikePrimary = wantsSecondary ? secondary! : primary;
+      const bikeSecondary = wantsSecondary ? primary : secondary;
+      const introLine = wantsSecondary
+        ? `A ${bikePrimary.name} é uma boa escolha se você prioriza ${bikePrimary.diferencial?.toLowerCase() ?? "essa proposta"}.`
+        : `Perfeito. Pelo seu perfil, a ${bikePrimary.name} é a escolha que eu faria.`;
+      const showAff = !affiliateShownRef.current;
+      if (showAff && leadId) {
+        affiliateShownRef.current = true;
+        try { sessionStorage.setItem(AFF_FLAG_PREFIX + leadId, "true"); } catch {}
+      }
+      const assistantMsg: SDRMessage = {
+        id: uid(), role: "assistant", createdAt: Date.now(),
+        content: introLine,
+        bikeForLink: bikePrimary.id,
+        secondaryBikeForLink: bikeSecondary?.id ?? null,
+        showAffiliateDisclosure: showAff,
+        quickReplies: [
+          { label: "Ainda tenho uma dúvida", text: "Ainda tenho uma dúvida antes de comprar." },
+          { label: "Falar com especialista", text: "Quero falar com um especialista." },
+        ],
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setStatus("idle");
+      opts.onEvent?.("sdr_purchase_intent_detected", { via: "client_short_circuit", bike_for_link: bikePrimary.id });
+      opts.onEvent?.("sdr_link_offered", { bike_for_link: bikePrimary.id });
+      return;
     }
 
     const history = [...messages, userMsg]
@@ -171,10 +219,12 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
         content: resp.reply,
         createdAt: Date.now(),
         bikeForLink: resp.offer_link ? (resp.bike_for_link ?? null) : null,
+        secondaryBikeForLink: resp.offer_link ? (resp.secondary_bike_for_link ?? null) : null,
         showAffiliateDisclosure: showAffiliate && !!resp.offer_link,
         offerGroup: !!resp.offer_group,
         offerList: !!resp.offer_list,
         offerHandoff: !!resp.offer_handoff,
+        offerConsultoria: !!resp.offer_consultoria,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
