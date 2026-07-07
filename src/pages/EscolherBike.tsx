@@ -1321,7 +1321,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Falar com especialista */}
+        {/* Consultoria paga */}
         <SpecialistBlock
           leadId={leadId}
           name={name}
@@ -1331,6 +1331,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           recommendation={recommendation}
           baseLeadData={baseLeadData}
           onMainAction={markMainActionClicked}
+        />
+
+        {/* Grupo de ofertas WhatsApp */}
+        <OffersGroupBlock
+          leadId={leadId}
+          name={name}
+          phone={phone}
+          baseLeadData={baseLeadData}
         />
 
         {/* Bloco educativo */}
