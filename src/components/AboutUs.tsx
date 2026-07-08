@@ -5,7 +5,7 @@ import lucasVitale880 from '@/assets/lucas-vitale-880.webp';
 
 const AboutUs = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entender%20como%20posso%20crescer%20no%20mercado%20de%20mobilidade%20el%C3%A9trica.%20Pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511998693904?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entender%20como%20posso%20crescer%20no%20mercado%20de%20mobilidade%20el%C3%A9trica.%20Pode%20me%20ajudar%3F', '_blank');
   };
 
   const handleLinkedInClick = () => {

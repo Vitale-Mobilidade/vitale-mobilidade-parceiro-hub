@@ -30,7 +30,7 @@ const FAQ = () => {
     },
     {
       q: 'Como agendar uma consultoria?',
-      a: 'O agendamento é feito diretamente pelo WhatsApp (11) 98689-3890. Basta enviar uma mensagem informando seu objetivo para receber o retorno e iniciar o diagnóstico.',
+      a: 'O agendamento é feito diretamente pelo WhatsApp (11) 99869-3904. Basta enviar uma mensagem informando seu objetivo para receber o retorno e iniciar o diagnóstico.',
     },
   ];
 
