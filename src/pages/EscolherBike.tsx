@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, buildSourceInterestCopy, type Answers } from "@/lib/quiz-engine";
 import { detectSourceBikeInterest } from "@/lib/source-bike-interest";
@@ -16,11 +16,6 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
-import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
-import { isChatCoolingDown, onChatChanged } from "@/lib/lucas-chat-bus";
-const LucasSDRWidget = lazy(() =>
-  import("@/components/LucasSDR/LucasSDRWidget").then((m) => ({ default: m.LucasSDRWidget }))
-);
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
