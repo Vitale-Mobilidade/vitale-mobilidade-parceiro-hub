@@ -54,8 +54,8 @@ const Footer = () => {
             <h3 className="font-semibold mb-4 lg:mb-5 text-base sm:text-lg">Contato</h3>
             <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-400">
               <li>
-                <a href="https://wa.me/5511986893890" className="hover:text-white transition-colors">
-                  📱 WhatsApp (11) 98689-3890
+                <a href="https://wa.me/5511998693904" className="hover:text-white transition-colors">
+                  📱 WhatsApp (11) 99869-3904
                 </a>
               </li>
               <li>📍 Atendimento Nacional — Brasil</li>

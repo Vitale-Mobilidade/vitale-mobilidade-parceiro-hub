@@ -7,7 +7,7 @@ import type { SDRContext, SDRMessage } from "./types";
 
 const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 const BIKE_LIST_URL = "https://meli.la/2y7TYaH";
-const SPECIALIST_PHONE = "5511986893890";
+const SPECIALIST_PHONE = "5511998693904";
 const CONSULTORIA_URL = "https://pay.kiwify.com.br/kPXb3Ni";
 
 type QuickReply = { label: string; text: string; intent?: "buy_primary" | "buy_secondary" | "compare" | "doubts" };

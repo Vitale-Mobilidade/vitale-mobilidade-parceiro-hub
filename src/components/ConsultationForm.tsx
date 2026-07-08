@@ -4,7 +4,7 @@ import { MessageCircle, Phone } from 'lucide-react';
 
 const ConsultationForm = () => {
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/5511986893890?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
+    window.open('https://wa.me/5511998693904?text=Ol%C3%A1%2C%0A%0AGostaria%20de%20agendar%20uma%20consultoria%20para%20entrar%20no%20mercado%20de%20ve%C3%ADculos%20el%C3%A9tricos.%20Voc%C3%AA%20pode%20me%20ajudar%3F', '_blank');
   };
 
   const benefits = [
@@ -88,7 +88,7 @@ const ConsultationForm = () => {
                   <div className="flex justify-center items-center text-sm lg:text-base">
                     <div className="flex items-center space-x-2">
                       <Phone className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />
-                      <span className="text-muted-foreground">(11) 98689-3890</span>
+                      <span className="text-muted-foreground">(11) 99869-3904</span>
                     </div>
                   </div>
                 </div>

@@ -22,7 +22,7 @@ const faqJsonLd = {
     { "@type": "Question", "name": "A Vitale Mobilidade vende veículos elétricos?", "acceptedAnswer": { "@type": "Answer", "text": "Não. Atuamos exclusivamente como consultoria estratégica. Indicamos fornecedores testados e ajudamos a estruturar a operação, mas não comercializamos veículos." } },
     { "@type": "Question", "name": "Quais áreas a consultoria cobre?", "acceptedAnswer": { "@type": "Answer", "text": "Diagnóstico de mercado, avaliação e curadoria de fornecedores, estruturação comercial B2B/B2C/B2B2C, precificação, canais de distribuição e treinamento de equipes." } },
     { "@type": "Question", "name": "Quanto tempo dura uma consultoria?", "acceptedAnswer": { "@type": "Answer", "text": "Depende do escopo. Existem desde diagnósticos pontuais até acompanhamentos contínuos durante a implementação da estratégia, ajustados ao perfil de cada cliente." } },
-    { "@type": "Question", "name": "Como agendar uma consultoria?", "acceptedAnswer": { "@type": "Answer", "text": "O agendamento é feito diretamente pelo WhatsApp (11) 98689-3890. Basta enviar uma mensagem informando seu objetivo para receber o retorno e iniciar o diagnóstico." } }
+    { "@type": "Question", "name": "Como agendar uma consultoria?", "acceptedAnswer": { "@type": "Answer", "text": "O agendamento é feito diretamente pelo WhatsApp (11) 99869-3904. Basta enviar uma mensagem informando seu objetivo para receber o retorno e iniciar o diagnóstico." } }
   ]
 };
 
