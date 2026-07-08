@@ -1312,6 +1312,19 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         )}
 
         {/* Consultoria paga */}
+        {/* Falar com a Vitale no WhatsApp — leva o resultado do quiz */}
+        <VitaleWhatsAppBlock
+          leadId={leadId}
+          name={name}
+          phone={phone}
+          answers={answers}
+          labels={labels}
+          recommendation={recommendation}
+          baseLeadData={baseLeadData}
+          onMainAction={markMainActionClicked}
+        />
+
+        {/* Consultoria paga */}
         <SpecialistBlock
           leadId={leadId}
           name={name}
@@ -1330,6 +1343,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           phone={phone}
           baseLeadData={baseLeadData}
         />
+
 
         {/* Bloco educativo */}
         <div className="bg-muted rounded-[18px] p-5 mb-4">
