@@ -1373,78 +1373,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-      {/* SDR IA Lucas — substitui o botão flutuante de WhatsApp no /escolherbike.
-          Isolado por ErrorBoundary + Suspense: falhas aqui NUNCA derrubam a página do quiz. */}
-      {leadId && recommendation?.primary && (
-        <LucasSDRErrorBoundary>
-          <Suspense fallback={null}>
-            <LucasSDRWidget
-              ctx={{
-                leadId,
-                name,
-                phone,
-                answers: answers ?? {},
-                labels: labels ?? {},
-                clusters: recommendation?.clusters,
-                recommendation: {
-                  primary: recommendation?.primary ?? null,
-                  secondary: recommendation?.secondary ?? null,
-                  reasonPrimary,
-                  reasonSecondary: reasonSecondary ?? undefined,
-                },
-                origin: {
-                  utm_source: baseLeadData?.utm_source,
-                  utm_medium: baseLeadData?.utm_medium,
-                  utm_campaign: baseLeadData?.utm_campaign,
-                  utm_content: baseLeadData?.utm_content,
-                  utm_term: baseLeadData?.utm_term,
-                  traffic_origin: baseLeadData?.traffic_origin,
-                  fbclid: baseLeadData?.fbclid,
-                  source_bike_interest: recommendation?.sourceInterest?.interest,
-                  source_bike_interest_label: recommendation?.sourceInterest?.label,
-                  first_url: baseLeadData?.first_url,
-                  source_url: baseLeadData?.source_url,
-                },
-                baseLeadData,
-              }}
-              liftedAboveStickyBar={showSticky}
-              buyClicked={mainActionClicked}
-              onBuyLink={(bikeId) => {
-                try {
-                  const bike = [recommendation?.primary, recommendation?.secondary]
-                    .find((b: any) => b?.id === bikeId);
-                  if (!bike) return;
-                  handleBuy(bike, bike?.id === recommendation?.primary?.id ? "principal" : "segunda_opcao");
-                } catch (e) {
-                  console.error("[sdr] onBuyLink failed", e);
-                }
-              }}
-              onEvent={(event_name, payload) => {
-                try {
-                  if (!leadId) return;
-                  const enriched = {
-                    ...(baseLeadData ?? {}),
-                    ...(payload ?? {}),
-                    recommended_bike_1: recommendation?.primary?.id,
-                    recommended_bike_2: recommendation?.secondary?.id,
-                  };
-                  try {
-                    (window as any).dataLayer = (window as any).dataLayer || [];
-                    (window as any).dataLayer.push({ event: event_name, ...enriched });
-                  } catch {}
-                  invokeQuizTrack({
-                    action: "save_event",
-                    lead_id: leadId,
-                    event: { event_name, payload: enriched },
-                  }).catch((e) => console.error("[quiz] sdr event failed", event_name, e));
-                } catch (e) {
-                  console.error("[sdr] onEvent failed", e);
-                }
-              }}
-            />
-          </Suspense>
-        </LucasSDRErrorBoundary>
-      )}
+
+
 
 
       {/* Primary offer popup (Mercado Livre) */}
