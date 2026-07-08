@@ -1526,6 +1526,111 @@ function SpecialistBlock({ leadId, name, phone, recommendation, baseLeadData, on
   );
 }
 
+// ---------- Falar com a Vitale no WhatsApp (leva o resultado do quiz) ----------
+const VITALE_WHATSAPP_PHONE = "5511998693904";
+
+function buildVitaleWhatsAppMessage({
+  name,
+  labels,
+  recommendation,
+}: {
+  name?: string | null;
+  labels?: Record<string, string> | null;
+  recommendation: any;
+}) {
+  const fb = (v?: string | null) => {
+    const s = (v ?? "").toString().trim();
+    if (!s) return "Não informado";
+    if (/^(undefined|null|n\/a|enter your)/i.test(s)) return "Não informado";
+    return s;
+  };
+  const trimmedName = (name ?? "").trim();
+  const greeting = trimmedName
+    ? `Fala Lucas, sou o ${trimmedName} e vim do quiz.`
+    : "Fala Lucas, vim do quiz.";
+  const lines: string[] = [
+    greeting,
+    "",
+    "Minhas respostas:",
+    `Uso: ${fb(labels?.main_use_label)}`,
+    `Distância: ${fb(labels?.daily_km_range_label)}`,
+    `Terreno: ${fb(labels?.route_type_label)}`,
+    `Uso com garupa: ${fb(labels?.rider_capacity_need_label)}`,
+    `Peso aproximado: ${fb(labels?.weight_range_label)}`,
+    `Orçamento: ${fb(labels?.budget_range_label)}`,
+    `Experiência: ${fb(labels?.had_ebike_before_label)}`,
+    "",
+    `Bike recomendada: ${fb(recommendation?.primary?.name)}`,
+  ];
+  if (recommendation?.secondary?.name) {
+    lines.push(`Alternativa: ${recommendation.secondary.name}`);
+  }
+  lines.push("", "Quero ajuda para escolher minha bike ideal.");
+  return lines.join("\n");
+}
+
+function VitaleWhatsAppBlock({
+  leadId, name, phone, labels, recommendation, baseLeadData, onMainAction,
+}: any) {
+  const handleClick = () => {
+    onMainAction?.();
+    const message = buildVitaleWhatsAppMessage({ name, labels, recommendation });
+    const waUrl = `https://wa.me/${VITALE_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    const clickedAt = new Date().toISOString();
+    const t = baseLeadData ?? {};
+    const payload = {
+      lead_id: leadId,
+      name,
+      phone,
+      recommended_bike_1: recommendation?.primary?.id ?? null,
+      recommended_bike_1_label: recommendation?.primary?.name ?? null,
+      recommended_bike_2: recommendation?.secondary?.id ?? null,
+      recommended_bike_2_label: recommendation?.secondary?.name ?? null,
+      utm_source: t.utm_source ?? null,
+      utm_medium: t.utm_medium ?? null,
+      utm_campaign: t.utm_campaign ?? null,
+      utm_content: t.utm_content ?? null,
+      utm_term: t.utm_term ?? null,
+      traffic_origin: t.traffic_origin ?? null,
+      source_url: typeof window !== "undefined" ? window.location.href : null,
+      clicked_at: clickedAt,
+      whatsapp_number: VITALE_WHATSAPP_PHONE,
+      whatsapp_message: message,
+      ...t,
+    };
+    try {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({ event: "whatsapp_specialist_clicked", ...payload });
+    } catch {}
+    if (leadId) {
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "whatsapp_specialist_clicked", payload } })
+        .catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_specialist_clicked", e));
+    }
+    setTimeout(() => window.open(waUrl, "_blank", "noopener,noreferrer"), 200);
+  };
+
+  return (
+    <section className="rounded-[18px] p-5 sm:p-6 mb-6 border-2 border-primary/30 bg-primary/5">
+      <h3 className="text-[20px] sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
+        Ainda quer ajuda para escolher?
+      </h3>
+      <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
+        Envie seu resultado para a Vitale Mobilidade e receba uma orientação mais segura antes de comprar.
+      </p>
+      <Button
+        onClick={handleClick}
+        data-event="whatsapp_specialist_clicked"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+      >
+        <MessageCircle className="mr-2 h-5 w-5" /> Falar com a Vitale no WhatsApp
+      </Button>
+      <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
+        A mensagem já vai com suas respostas e bikes recomendadas.
+      </p>
+    </section>
+  );
+}
+
 // ---------- WhatsApp offers group block ----------
 function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
   const handleClick = () => {
@@ -1555,27 +1660,27 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
   };
 
   return (
-    <section className="rounded-[18px] p-5 mb-6 border border-border bg-muted/40">
-      <h3 className="text-[17px] sm:text-lg font-bold text-foreground mb-1.5 leading-tight">
+    <section className="rounded-[18px] p-5 sm:p-6 mb-6 border-2 border-primary/30 bg-primary/5">
+      <h3 className="text-[20px] sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
         Quer acompanhar novas ofertas?
       </h3>
-      <p className="text-[14px] sm:text-[15px] text-foreground/75 mb-3 leading-relaxed">
+      <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
         Entre no grupo de ofertas da Vitale Mobilidade e receba promoções, mudanças de preço e oportunidades de bikes elétricas no Mercado Livre.
       </p>
       <Button
         onClick={handleClick}
-        variant="outline"
         data-event="whatsapp_group_clicked"
-        className="w-full sm:w-auto min-h-[44px] text-[14px] font-semibold py-2.5 px-5 rounded-xl"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
       >
-        Entrar no grupo de ofertas
+        <Users className="mr-2 h-5 w-5" /> Entrar no grupo de ofertas
       </Button>
-      <p className="text-[12.5px] text-foreground/55 mt-2 leading-relaxed">
+      <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
         Grupo focado em ofertas. Você pode sair quando quiser.
       </p>
     </section>
   );
 }
+
 
 
 
