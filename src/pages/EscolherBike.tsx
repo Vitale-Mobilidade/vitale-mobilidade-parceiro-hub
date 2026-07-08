@@ -1032,8 +1032,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (offerPopupDecidedRef.current) return;
     if (mainActionClickedRef.current) return;
     if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
-    // Não sobrepõe o chat do Lucas nem abre logo depois de fechá-lo.
-    if (isChatCoolingDown(15000)) return;
+
+
     offerPopupDecidedRef.current = true;
     ssSet(SS_KEYS.shown);
     setShowPrimaryOfferPopup(true);
@@ -1077,13 +1077,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fecha imediatamente qualquer popup promocional se o chat abrir.
-  useEffect(() => {
-    const off = onChatChanged((open) => {
-      if (open) setShowPrimaryOfferPopup(false);
-    });
-    return off;
-  }, []);
+
+
 
   const handlePrimaryOfferClick = () => {
     ssSet(SS_KEYS.clicked);
