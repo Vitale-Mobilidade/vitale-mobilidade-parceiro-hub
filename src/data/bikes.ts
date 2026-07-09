@@ -444,8 +444,8 @@ export function getPurchaseLink(
   tracking: { utm_source?: string | null; traffic_origin?: string | null; fbclid?: string | null } | null | undefined,
 ): { url: string; group: "meta" | "vitale" } {
   const meta = isMetaTraffic(tracking);
-  const vitale = bike.linkVitale || bike.affiliateLink || "";
-  const metaLink = bike.linkMeta || "";
+  const vitale = sanitizeMeliLink(bike.linkVitale || bike.affiliateLink || "");
+  const metaLink = sanitizeMeliLink(bike.linkMeta || "");
 
   if (meta) {
     if (metaLink) return { url: metaLink, group: "meta" };
