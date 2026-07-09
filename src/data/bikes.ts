@@ -381,6 +381,37 @@ export const BIKES: Bike[] = [
   },
 ];
 
+// ---------- Link sanitization / validation ----------
+
+const MELI_LINK_RE = /^https:\/\/meli\.la\/[A-Za-z0-9]+$/;
+
+/** Remove espaços, quebras de linha, tabs e caracteres invisíveis do link. */
+export function sanitizeMeliLink(url: string): string {
+  if (!url) return "";
+  return url
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\r\n\t]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+/** Sanitiza e valida contra ^https:\/\/meli\.la\/[A-Za-z0-9]+$ — loga erro se inválido. */
+export function sanitizeAndValidateMeliLink(url: string, ctx = ""): string {
+  const clean = sanitizeMeliLink(url);
+  if (!MELI_LINK_RE.test(clean)) {
+    console.error(`[bikes] Link Mercado Livre inválido${ctx ? ` (${ctx})` : ""}: "${url}"`);
+    return clean;
+  }
+  return clean;
+}
+
+// Sanitiza no boot para garantir que nenhum link chegue à UI/webhook com sujeira.
+for (const b of BIKES) {
+  b.linkVitale = sanitizeAndValidateMeliLink(b.linkVitale, `${b.id}.linkVitale`);
+  b.linkMeta = sanitizeAndValidateMeliLink(b.linkMeta, `${b.id}.linkMeta`);
+  b.affiliateLink = sanitizeAndValidateMeliLink(b.affiliateLink, `${b.id}.affiliateLink`);
+}
+
 // ---------- Meta vs Vitale link resolution ----------
 
 const META_UTM_TOKENS = /(^|[^a-z])(meta|facebook|fb|instagram|ig)([^a-z]|$)/i;
