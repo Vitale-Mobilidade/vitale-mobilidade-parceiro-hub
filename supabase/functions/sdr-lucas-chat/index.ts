@@ -150,9 +150,8 @@ function buildContextBlock(ctx: z.infer<typeof BodySchema>["context"]) {
     parts.push(`Recomendação secundária: ${ctx.recommendation.secondary.name} (id=${ctx.recommendation.secondary.id}).`);
     if (ctx.recommendation.reasonSecondary) parts.push(`Motivo: ${ctx.recommendation.reasonSecondary}`);
   }
-  if (ctx.origin?.traffic_origin) parts.push(`Origem do tráfego: ${ctx.origin.traffic_origin}`);
-  if (ctx.origin?.utm_content) parts.push(`utm_content: ${ctx.origin.utm_content}`);
-  if (ctx.origin?.source_bike_interest_label) parts.push(`Interesse identificado na origem: ${ctx.origin.source_bike_interest_label}`);
+  // Origem/UTM/interesse por vídeo NÃO são enviados ao modelo — nunca podem
+  // aparecer na resposta ao usuário.
 
   if (ctx.catalog?.length) {
     parts.push("\nCatálogo oficial de bikes (use APENAS estes dados):");
