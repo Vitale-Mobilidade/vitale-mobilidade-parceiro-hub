@@ -1394,6 +1394,32 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
+      {/* Assistente virtual Lucas — flutuante, canto inferior direito */}
+      <LucasSDRWidget
+        ctx={{
+          leadId,
+          name,
+          phone,
+          answers,
+          labels,
+          recommendation: {
+            primary: recommendation.primary,
+            secondary: recommendation.secondary,
+            reasonPrimary,
+            reasonSecondary: reasonSecondary ?? undefined,
+          },
+        } satisfies SDRContext}
+        buyClicked={mainActionClicked}
+        onBuyLink={(bikeId) => {
+          const bike = [recommendation.primary, recommendation.secondary].find((b: any) => b?.id === bikeId);
+          if (bike) {
+            const position = bike.id === recommendation.primary.id ? "principal" : "segunda_opcao";
+            handleBuy(bike, position);
+          }
+        }}
+        onEvent={(name, payload) => trackEvent(name, payload ?? {})}
+      />
+
     </main>
   );
 }
