@@ -163,14 +163,42 @@ async function insertIntegrationLog(entry: Record<string, unknown>) {
   }
 }
 
+/**
+ * Remove qualquer caractere não numérico do telefone.
+ * Aplica-se APENAS ao payload enviado ao Make/CRM — não altera o valor salvo no banco.
+ * Exemplo: "(11) 97669-1684" -> "11976691684"
+ */
+export function cleanPhoneForWebhook(phone: unknown): string {
+  if (phone === null || phone === undefined) return "";
+  return String(phone).replace(/\D/g, "");
+}
+
+function sanitizePayloadPhones(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...payload };
+  if (out.phone !== undefined && out.phone !== null) {
+    out.phone = cleanPhoneForWebhook(out.phone);
+  }
+  // Alguns campos aninhados comuns
+  for (const k of ["lead", "contact", "user"] as const) {
+    const nested = out[k];
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      const n = { ...(nested as Record<string, unknown>) };
+      if (n.phone !== undefined && n.phone !== null) n.phone = cleanPhoneForWebhook(n.phone);
+      out[k] = n;
+    }
+  }
+  return out;
+}
+
 async function sendCrmWebhook(payload: Record<string, unknown>) {
+  const cleaned = sanitizePayloadPhones(payload);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const res = await fetch(CRM_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(cleaned),
       signal: controller.signal,
     });
     const body = await res.text().catch(() => "");
@@ -237,7 +265,7 @@ async function fireWebhookForLead(
     status: result.success ? "success" : "failed",
     http_status: result.status ?? null,
     attempt,
-    request_payload: payload,
+    request_payload: sanitizePayloadPhones(payload),
     response_payload: result.body ?? null,
     error_message: result.success ? null : (result.error ?? `HTTP ${result.status}`),
   });
@@ -322,7 +350,7 @@ Deno.serve(async (req) => {
           status: r.success ? "success" : "failed",
           http_status: r.status ?? null,
           attempt: null,
-          request_payload: webhook_payload ?? null,
+          request_payload: webhook_payload ? sanitizePayloadPhones(webhook_payload) : null,
           response_payload: r.body ?? null,
           error_message: r.success ? null : `HTTP ${r.status}`,
         });

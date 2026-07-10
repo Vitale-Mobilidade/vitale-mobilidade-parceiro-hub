@@ -74,7 +74,7 @@ function buildPayload(lead: Record<string, any>) {
     created_at: lead.created_at,
     updated_at: lead.updated_at,
     name: lead.name,
-    phone: lead.phone,
+    phone: lead.phone ? String(lead.phone).replace(/\D/g, "") : lead.phone,
     answers: {
       principal_use: lead.main_use,
       principal_use_label: lead.main_use_label,
