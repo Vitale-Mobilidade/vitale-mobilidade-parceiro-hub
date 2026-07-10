@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Send, X, ShoppingCart, Users, ListChecks, User, CalendarClock } from "lucide-react";
 import { BIKES, getPurchaseLink } from "@/data/bikes";
+import { sanitizeAssistantText } from "@/lib/lucas-sanitize";
 import { useLucasChat } from "./useLucasChat";
 import type { SDRContext, SDRMessage } from "./types";
 
