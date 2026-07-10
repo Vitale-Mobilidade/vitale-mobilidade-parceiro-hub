@@ -1024,7 +1024,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (offerPopupDecidedRef.current) return;
     if (mainActionClickedRef.current) return;
     if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
-
+    // Coordenação com o chat do Lucas: se estiver aberto ou tiver fechado
+    // há pouco tempo, o popup não pode competir.
+    if (isChatOpen() || isChatCoolingDown(15000)) return;
 
     offerPopupDecidedRef.current = true;
     ssSet(SS_KEYS.shown);
@@ -1035,39 +1037,41 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     });
   };
 
+  // Popup de SAÍDA — desktop apenas.
+  // Não abre por tempo, scroll, mouse parado ou mouse no meio da página.
+  // Só dispara quando o cursor sai pela borda superior (clientY <= 12) ou
+  // quando a aba perde foco/visibilidade após o resultado ter sido visto por
+  // pelo menos 8s.
   useEffect(() => {
-    // 30s timer
-    const t = window.setTimeout(() => {
-      // mobile: also require scroll past primary card
-      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
-      if (isMobile) {
-        const el = primaryCardRef.current;
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.bottom > 0) return; // didn't scroll past
-        }
-      }
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 1024) return; // mobile: sem popup de saída
+
+    const canTrigger = () => Date.now() - resultMountedAtRef.current >= 8000;
+
+    const onMouseOut = (e: MouseEvent) => {
+      // Verdadeiro exit-intent: cursor cruza a borda superior da viewport.
+      // `relatedTarget` é null quando o mouse sai da janela.
+      const to = (e.relatedTarget as Node | null) ?? (e as any).toElement ?? null;
+      if (to) return;
+      if (e.clientY > 12) return;
+      if (!canTrigger()) return;
       tryShowPrimaryOffer();
-    }, 30000);
-    return () => window.clearTimeout(t);
+    };
+
+    document.addEventListener("mouseout", onMouseOut);
+    return () => document.removeEventListener("mouseout", onMouseOut);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Se o chat abrir enquanto o popup estiver aberto, fecha o popup.
   useEffect(() => {
-    // desktop exit-intent
-    const onMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0) {
-        if (window.innerWidth >= 1024) {
-          // require result visible at least 8s for exit intent
-          if (Date.now() - resultMountedAtRef.current < 8000) return;
-          tryShowPrimaryOffer();
-        }
-      }
+    if (!showPrimaryOfferPopup) return;
+    const handler = () => {
+      if (isChatOpen()) setShowPrimaryOfferPopup(false);
     };
-    document.addEventListener("mouseleave", onMouseLeave);
-    return () => document.removeEventListener("mouseleave", onMouseLeave);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    window.addEventListener("lucas-chat-changed", handler);
+    return () => window.removeEventListener("lucas-chat-changed", handler);
+  }, [showPrimaryOfferPopup]);
 
 
 
