@@ -265,7 +265,7 @@ async function fireWebhookForLead(
     status: result.success ? "success" : "failed",
     http_status: result.status ?? null,
     attempt,
-    request_payload: payload,
+    request_payload: sanitizePayloadPhones(payload),
     response_payload: result.body ?? null,
     error_message: result.success ? null : (result.error ?? `HTTP ${result.status}`),
   });
