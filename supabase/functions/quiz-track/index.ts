@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
           status: r.success ? "success" : "failed",
           http_status: r.status ?? null,
           attempt: null,
-          request_payload: webhook_payload ?? null,
+          request_payload: webhook_payload ? sanitizePayloadPhones(webhook_payload) : null,
           response_payload: r.body ?? null,
           error_message: r.success ? null : `HTTP ${r.status}`,
         });
