@@ -200,7 +200,8 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
                   reasonSecondary: ctx.recommendation.reasonSecondary,
                 }
               : undefined,
-            origin: ctx.origin,
+            // origin removida propositalmente: a IA não deve receber nem
+            // mencionar UTM/campanha/conteúdo/anúncio/vídeo/origem do lead.
             catalog: buildCatalog(ctx),
             affiliate_disclosure_shown: affiliateShownRef.current,
           },
