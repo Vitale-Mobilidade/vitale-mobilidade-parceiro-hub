@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, buildSourceInterestCopy, type Answers } from "@/lib/quiz-engine";
+import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
+import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
+import type { SDRContext } from "@/components/LucasSDR/types";
+import { isChatOpen, isChatCoolingDown } from "@/lib/lucas-chat-bus";
 import { detectSourceBikeInterest } from "@/lib/source-bike-interest";
 import { getPurchaseLink, isMetaTraffic } from "@/data/bikes";
 import {
