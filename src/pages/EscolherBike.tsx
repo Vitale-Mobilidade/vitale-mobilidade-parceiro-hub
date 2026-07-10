@@ -1631,7 +1631,7 @@ function VitaleWhatsAppBlock({
       <Button
         onClick={handleClick}
         data-event="whatsapp_specialist_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
       >
         <MessageCircle className="mr-2 h-5 w-5" /> Falar com a Vitale no WhatsApp
       </Button>
@@ -1681,7 +1681,7 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
       <Button
         onClick={handleClick}
         data-event="whatsapp_group_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
       >
         <Users className="mr-2 h-5 w-5" /> Entrar no grupo de ofertas
       </Button>
