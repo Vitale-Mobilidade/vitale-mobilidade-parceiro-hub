@@ -163,14 +163,42 @@ async function insertIntegrationLog(entry: Record<string, unknown>) {
   }
 }
 
+/**
+ * Remove qualquer caractere não numérico do telefone.
+ * Aplica-se APENAS ao payload enviado ao Make/CRM — não altera o valor salvo no banco.
+ * Exemplo: "(11) 97669-1684" -> "11976691684"
+ */
+export function cleanPhoneForWebhook(phone: unknown): string {
+  if (phone === null || phone === undefined) return "";
+  return String(phone).replace(/\D/g, "");
+}
+
+function sanitizePayloadPhones(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...payload };
+  if (out.phone !== undefined && out.phone !== null) {
+    out.phone = cleanPhoneForWebhook(out.phone);
+  }
+  // Alguns campos aninhados comuns
+  for (const k of ["lead", "contact", "user"] as const) {
+    const nested = out[k];
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      const n = { ...(nested as Record<string, unknown>) };
+      if (n.phone !== undefined && n.phone !== null) n.phone = cleanPhoneForWebhook(n.phone);
+      out[k] = n;
+    }
+  }
+  return out;
+}
+
 async function sendCrmWebhook(payload: Record<string, unknown>) {
+  const cleaned = sanitizePayloadPhones(payload);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const res = await fetch(CRM_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(cleaned),
       signal: controller.signal,
     });
     const body = await res.text().catch(() => "");
