@@ -218,7 +218,7 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
       const assistantMsg: SDRMessage = {
         id: uid(),
         role: "assistant",
-        content: resp.reply,
+        content: sanitizeAssistantText(resp.reply),
         createdAt: Date.now(),
         bikeForLink: resp.offer_link ? (resp.bike_for_link ?? null) : null,
         secondaryBikeForLink: resp.offer_link ? (resp.secondary_bike_for_link ?? null) : null,
