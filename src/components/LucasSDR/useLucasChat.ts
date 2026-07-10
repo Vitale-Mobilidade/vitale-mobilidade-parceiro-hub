@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BIKES } from "@/data/bikes";
+import { sanitizeAssistantText } from "@/lib/lucas-sanitize";
 import type { SDRApiResponse, SDRContext, SDRMessage } from "./types";
 
 const STORAGE_PREFIX = "sdr_lucas_thread_";
