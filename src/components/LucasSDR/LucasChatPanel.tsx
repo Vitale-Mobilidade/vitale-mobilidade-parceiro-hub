@@ -234,7 +234,7 @@ function MessageBubble({
               : "bg-background text-foreground px-3.5 py-2 rounded-2xl rounded-bl-md text-[14px] leading-relaxed whitespace-pre-wrap border border-border"
           }
         >
-          {message.content}
+          {isUser ? message.content : sanitizeAssistantText(message.content)}
         </div>
 
         {!isUser && bike && (
