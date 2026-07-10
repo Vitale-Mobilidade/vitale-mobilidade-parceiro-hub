@@ -1307,18 +1307,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Consultoria paga */}
-        {/* Falar com a Vitale no WhatsApp — leva o resultado do quiz */}
-        <VitaleWhatsAppBlock
-          leadId={leadId}
-          name={name}
-          phone={phone}
-          answers={answers}
-          labels={labels}
-          recommendation={recommendation}
-          baseLeadData={baseLeadData}
-          onMainAction={markMainActionClicked}
-        />
+        {/* Consultoria paga (WhatsApp direto removido — fluxo por outro canal) */}
 
         {/* Consultoria paga */}
         <SpecialistBlock
