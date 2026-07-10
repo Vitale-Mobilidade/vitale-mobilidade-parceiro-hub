@@ -594,15 +594,8 @@ export default function EscolherBike() {
     const rec = recommend(finalAnswers, sourceInterest);
     const clusters = computeClusters(finalAnswers);
 
-    const sourceCopyPrimary = buildSourceInterestCopy(
-      sourceInterest.label,
-      rec.primary.id,
-      sourceInterest.interest,
-    );
     const basePrimaryCopy = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
-    const reasonPrimary = sourceCopyPrimary
-      ? `${sourceCopyPrimary} ${basePrimaryCopy}`.trim()
-      : basePrimaryCopy;
+    const reasonPrimary = basePrimaryCopy;
     const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
 
     const startedAt = startedAtRef.current ?? new Date().toISOString();
