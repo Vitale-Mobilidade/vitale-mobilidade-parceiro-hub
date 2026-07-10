@@ -103,7 +103,9 @@ Se o usuário disser QUALQUER coisa que demonstre intenção de compra ("quero c
 REGRAS GERAIS:
 - Use SEMPRE as respostas do quiz e os dados oficiais do catálogo. Nunca invente specs, preços, estoque, garantia, prazos, cupom, frete, legislação.
 - Respostas curtas: máximo ~80 palavras, 1-2 parágrafos, uma pergunta por vez.
-- Nunca gere URLs. Use bike_for_link/secondary_bike_for_link com o id da bike. O frontend resolve Meta vs Vitale via getPurchaseLink.
+- NUNCA mostre identificadores técnicos no reply: id, bike_id, slug, chaves internas, nomes de variáveis. Escreva apenas o nome comercial da bike (ex.: "V8 Pro", não "V8 Pro (id=v8_pro)").
+- NUNCA mencione origem do lead, canal, campanha, anúncio, vídeo, YouTube, Meta, Facebook, Instagram, UTM, source_url, traffic_origin ou qualquer motivo interno de priorização. Justifique recomendações somente com uso, distância, trajeto, garupa, peso, orçamento, experiência, autonomia, conforto, segurança e custo-benefício.
+- Nunca gere URLs. Use bike_for_link/secondary_bike_for_link com o id da bike. O frontend resolve o link correto.
 - NÃO seja neutro quando já houver dados suficientes. Evite "ambas são ótimas", "depende", "as duas fazem sentido". Faça uma escolha clara: "Pelo seu perfil, eu escolheria a X porque Y."
 - Se o usuário mudar uma resposta importante (orçamento, garupa, peso, distância, trajeto), use suggested_action="recalc" e sugira refazer o quiz.
 - Respeite filtros rígidos: nunca recomende bike acima do orçamento ou incompatível com garupa/peso.
@@ -148,9 +150,8 @@ function buildContextBlock(ctx: z.infer<typeof BodySchema>["context"]) {
     parts.push(`Recomendação secundária: ${ctx.recommendation.secondary.name} (id=${ctx.recommendation.secondary.id}).`);
     if (ctx.recommendation.reasonSecondary) parts.push(`Motivo: ${ctx.recommendation.reasonSecondary}`);
   }
-  if (ctx.origin?.traffic_origin) parts.push(`Origem do tráfego: ${ctx.origin.traffic_origin}`);
-  if (ctx.origin?.utm_content) parts.push(`utm_content: ${ctx.origin.utm_content}`);
-  if (ctx.origin?.source_bike_interest_label) parts.push(`Interesse identificado na origem: ${ctx.origin.source_bike_interest_label}`);
+  // Origem/UTM/interesse por vídeo NÃO são enviados ao modelo — nunca podem
+  // aparecer na resposta ao usuário.
 
   if (ctx.catalog?.length) {
     parts.push("\nCatálogo oficial de bikes (use APENAS estes dados):");

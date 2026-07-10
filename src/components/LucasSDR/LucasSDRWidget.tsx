@@ -125,6 +125,63 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
   useEffect(() => {
     if (typeof document !== "undefined") setPortalTarget(document.body);
   }, []);
+
+  // ---- Mobile visualViewport tracking (corrige teclado / URL bar) ----
+  const [vv, setVv] = useState(() => ({
+    height: typeof window !== "undefined" ? window.innerHeight : 800,
+    offsetTop: 0,
+    keyboardOpen: false,
+  }));
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const viewport = window.visualViewport;
+    const update = () => {
+      const h = viewport?.height ?? window.innerHeight;
+      const offsetTop = viewport?.offsetTop ?? 0;
+      const keyboardOpen = window.innerHeight - h > 150;
+      setVv({ height: h, offsetTop, keyboardOpen });
+      document.documentElement.style.setProperty("--visual-viewport-height", `${h}px`);
+      document.documentElement.style.setProperty("--visual-viewport-offset-top", `${offsetTop}px`);
+    };
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  // ---- Scroll lock (mobile only) enquanto o chat estiver aberto ----
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!open) return;
+    if (!isMobile()) return;
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [open]);
+
   if (!portalTarget) return null;
 
   const fabStyle: React.CSSProperties = {
@@ -140,6 +197,28 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
     zIndex: 9997,
     maxWidth: 260,
   };
+
+  const mobileNow = typeof window !== "undefined" && window.innerWidth < 640;
+  const panelStyle: React.CSSProperties = mobileNow
+    ? {
+        position: "fixed",
+        left: 12,
+        right: 12,
+        top: `calc(${vv.offsetTop}px + 12px)`,
+        height: `${Math.max(vv.height - (vv.keyboardOpen ? 16 : 24), 320)}px`,
+        maxHeight: `calc(${vv.height}px - ${vv.keyboardOpen ? 16 : 24}px)`,
+        zIndex: 9999,
+        boxSizing: "border-box",
+      }
+    : {
+        position: "fixed",
+        right: "max(12px, env(safe-area-inset-right))",
+        bottom: "max(12px, env(safe-area-inset-bottom))",
+        left: "auto",
+        zIndex: 9999,
+        width: "min(calc(100vw - 24px), 420px)",
+        maxHeight: "min(72dvh, 620px)",
+      };
 
   return createPortal(
     <>
@@ -193,22 +272,11 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
       {open && (
         <>
           <div
-            className="sm:hidden"
             onClick={closeChat}
             aria-hidden="true"
-            style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.3)" }}
+            style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.35)" }}
           />
-          <div
-            style={{
-              position: "fixed",
-              right: "max(12px, env(safe-area-inset-right))",
-              bottom: "max(12px, env(safe-area-inset-bottom))",
-              left: "auto",
-              zIndex: 9999,
-              width: "min(calc(100vw - 24px), 420px)",
-              maxHeight: "min(72dvh, 620px)",
-            }}
-          >
+          <div style={panelStyle}>
             <LucasChatPanel
               ctx={ctx}
               onClose={closeChat}

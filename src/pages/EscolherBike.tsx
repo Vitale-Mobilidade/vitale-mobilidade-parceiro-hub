@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, buildSourceInterestCopy, type Answers } from "@/lib/quiz-engine";
+import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
+import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
+import type { SDRContext } from "@/components/LucasSDR/types";
+import { isChatOpen, isChatCoolingDown } from "@/lib/lucas-chat-bus";
 import { detectSourceBikeInterest } from "@/lib/source-bike-interest";
 import { getPurchaseLink, isMetaTraffic } from "@/data/bikes";
 import {
@@ -591,15 +594,8 @@ export default function EscolherBike() {
     const rec = recommend(finalAnswers, sourceInterest);
     const clusters = computeClusters(finalAnswers);
 
-    const sourceCopyPrimary = buildSourceInterestCopy(
-      sourceInterest.label,
-      rec.primary.id,
-      sourceInterest.interest,
-    );
     const basePrimaryCopy = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
-    const reasonPrimary = sourceCopyPrimary
-      ? `${sourceCopyPrimary} ${basePrimaryCopy}`.trim()
-      : basePrimaryCopy;
+    const reasonPrimary = basePrimaryCopy;
     const reasonSecondary = rec.secondary ? buildSecondaryCopy(rec.primary, rec.secondary) : null;
 
     const startedAt = startedAtRef.current ?? new Date().toISOString();
@@ -835,11 +831,7 @@ export default function EscolherBike() {
 // ---------- Result component ----------
 function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
   const basePrimaryCopy = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
-  const sourceInterest = recommendation.sourceInterest;
-  const sourceCopyPrimary = sourceInterest
-    ? buildSourceInterestCopy(sourceInterest.label, recommendation.primary.id, sourceInterest.interest)
-    : "";
-  const reasonPrimary = sourceCopyPrimary ? `${sourceCopyPrimary} ${basePrimaryCopy}`.trim() : basePrimaryCopy;
+  const reasonPrimary = basePrimaryCopy;
   const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
 
   // ---- Popup tracking state ----
@@ -1032,7 +1024,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (offerPopupDecidedRef.current) return;
     if (mainActionClickedRef.current) return;
     if (ssGet(SS_KEYS.shown) || ssGet(SS_KEYS.dismissed) || ssGet(SS_KEYS.clicked)) return;
-
+    // Coordenação com o chat do Lucas: se estiver aberto ou tiver fechado
+    // há pouco tempo, o popup não pode competir.
+    if (isChatOpen() || isChatCoolingDown(15000)) return;
 
     offerPopupDecidedRef.current = true;
     ssSet(SS_KEYS.shown);
@@ -1043,39 +1037,41 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     });
   };
 
+  // Popup de SAÍDA — desktop apenas.
+  // Não abre por tempo, scroll, mouse parado ou mouse no meio da página.
+  // Só dispara quando o cursor sai pela borda superior (clientY <= 12) ou
+  // quando a aba perde foco/visibilidade após o resultado ter sido visto por
+  // pelo menos 8s.
   useEffect(() => {
-    // 30s timer
-    const t = window.setTimeout(() => {
-      // mobile: also require scroll past primary card
-      const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
-      if (isMobile) {
-        const el = primaryCardRef.current;
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.bottom > 0) return; // didn't scroll past
-        }
-      }
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 1024) return; // mobile: sem popup de saída
+
+    const canTrigger = () => Date.now() - resultMountedAtRef.current >= 8000;
+
+    const onMouseOut = (e: MouseEvent) => {
+      // Verdadeiro exit-intent: cursor cruza a borda superior da viewport.
+      // `relatedTarget` é null quando o mouse sai da janela.
+      const to = (e.relatedTarget as Node | null) ?? (e as any).toElement ?? null;
+      if (to) return;
+      if (e.clientY > 12) return;
+      if (!canTrigger()) return;
       tryShowPrimaryOffer();
-    }, 30000);
-    return () => window.clearTimeout(t);
+    };
+
+    document.addEventListener("mouseout", onMouseOut);
+    return () => document.removeEventListener("mouseout", onMouseOut);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Se o chat abrir enquanto o popup estiver aberto, fecha o popup.
   useEffect(() => {
-    // desktop exit-intent
-    const onMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0) {
-        if (window.innerWidth >= 1024) {
-          // require result visible at least 8s for exit intent
-          if (Date.now() - resultMountedAtRef.current < 8000) return;
-          tryShowPrimaryOffer();
-        }
-      }
+    if (!showPrimaryOfferPopup) return;
+    const handler = () => {
+      if (isChatOpen()) setShowPrimaryOfferPopup(false);
     };
-    document.addEventListener("mouseleave", onMouseLeave);
-    return () => document.removeEventListener("mouseleave", onMouseLeave);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    window.addEventListener("lucas-chat-changed", handler);
+    return () => window.removeEventListener("lucas-chat-changed", handler);
+  }, [showPrimaryOfferPopup]);
 
 
 
@@ -1311,18 +1307,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Consultoria paga */}
-        {/* Falar com a Vitale no WhatsApp — leva o resultado do quiz */}
-        <VitaleWhatsAppBlock
-          leadId={leadId}
-          name={name}
-          phone={phone}
-          answers={answers}
-          labels={labels}
-          recommendation={recommendation}
-          baseLeadData={baseLeadData}
-          onMainAction={markMainActionClicked}
-        />
+        {/* Consultoria paga (WhatsApp direto removido — fluxo por outro canal) */}
 
         {/* Consultoria paga */}
         <SpecialistBlock
@@ -1408,6 +1393,32 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         </div>
       )}
+
+      {/* Assistente virtual Lucas — flutuante, canto inferior direito */}
+      <LucasSDRWidget
+        ctx={{
+          leadId,
+          name,
+          phone,
+          answers,
+          labels,
+          recommendation: {
+            primary: recommendation.primary,
+            secondary: recommendation.secondary,
+            reasonPrimary,
+            reasonSecondary: reasonSecondary ?? undefined,
+          },
+        } satisfies SDRContext}
+        buyClicked={mainActionClicked}
+        onBuyLink={(bikeId) => {
+          const bike = [recommendation.primary, recommendation.secondary].find((b: any) => b?.id === bikeId);
+          if (bike) {
+            const position = bike.id === recommendation.primary.id ? "principal" : "segunda_opcao";
+            handleBuy(bike, position);
+          }
+        }}
+        onEvent={(name, payload) => trackEvent(name, payload ?? {})}
+      />
 
     </main>
   );
@@ -1620,7 +1631,7 @@ function VitaleWhatsAppBlock({
       <Button
         onClick={handleClick}
         data-event="whatsapp_specialist_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
       >
         <MessageCircle className="mr-2 h-5 w-5" /> Falar com a Vitale no WhatsApp
       </Button>
@@ -1670,7 +1681,7 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
       <Button
         onClick={handleClick}
         data-event="whatsapp_group_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
       >
         <Users className="mr-2 h-5 w-5" /> Entrar no grupo de ofertas
       </Button>

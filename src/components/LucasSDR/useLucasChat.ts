@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BIKES } from "@/data/bikes";
+import { sanitizeAssistantText } from "@/lib/lucas-sanitize";
 import type { SDRApiResponse, SDRContext, SDRMessage } from "./types";
 
 const STORAGE_PREFIX = "sdr_lucas_thread_";
@@ -200,7 +201,8 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
                   reasonSecondary: ctx.recommendation.reasonSecondary,
                 }
               : undefined,
-            origin: ctx.origin,
+            // origin removida propositalmente: a IA não deve receber nem
+            // mencionar UTM/campanha/conteúdo/anúncio/vídeo/origem do lead.
             catalog: buildCatalog(ctx),
             affiliate_disclosure_shown: affiliateShownRef.current,
           },
@@ -216,7 +218,7 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
       const assistantMsg: SDRMessage = {
         id: uid(),
         role: "assistant",
-        content: resp.reply,
+        content: sanitizeAssistantText(resp.reply),
         createdAt: Date.now(),
         bikeForLink: resp.offer_link ? (resp.bike_for_link ?? null) : null,
         secondaryBikeForLink: resp.offer_link ? (resp.secondary_bike_for_link ?? null) : null,
