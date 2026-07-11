@@ -200,24 +200,45 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
 
   const mobileNow = typeof window !== "undefined" && window.innerWidth < 640;
   const panelStyle: React.CSSProperties = mobileNow
-    ? {
-        position: "fixed",
-        left: 12,
-        right: 12,
-        top: `calc(${vv.offsetTop}px + 12px)`,
-        height: `${Math.max(vv.height - (vv.keyboardOpen ? 16 : 24), 320)}px`,
-        maxHeight: `calc(${vv.height}px - ${vv.keyboardOpen ? 16 : 24}px)`,
-        zIndex: 9999,
-        boxSizing: "border-box",
-      }
+    ? vv.keyboardOpen
+      ? {
+          position: "fixed",
+          left: 12,
+          right: 12,
+          top: `calc(${vv.offsetTop}px + 8px)`,
+          bottom: "auto",
+          maxHeight: `${Math.max(vv.height - 16, 280)}px`,
+          zIndex: 9999,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }
+      : {
+          position: "fixed",
+          left: 12,
+          right: 12,
+          bottom: "max(12px, env(safe-area-inset-bottom))",
+          maxHeight: "calc(100dvh - 24px)",
+          zIndex: 9999,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxSizing: "border-box",
+        }
     : {
         position: "fixed",
-        right: "max(12px, env(safe-area-inset-right))",
-        bottom: "max(12px, env(safe-area-inset-bottom))",
+        right: 24,
+        bottom: 24,
         left: "auto",
+        top: "auto",
+        width: 420,
+        maxHeight: "calc(100vh - 48px)",
         zIndex: 9999,
-        width: "min(calc(100vw - 24px), 420px)",
-        maxHeight: "min(72dvh, 620px)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        boxSizing: "border-box",
       };
 
   return createPortal(
