@@ -66,6 +66,15 @@ async function sendWebhook(payload: Record<string, unknown>) {
   }
 }
 
+function formatPhoneForWebhook(phone: unknown): string {
+  if (phone === null || phone === undefined) return "";
+  let digits = String(phone).replace(/\D/g, "");
+  if ((digits.length === 13 || digits.length === 12) && digits.startsWith("55")) digits = digits.slice(2);
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return String(phone);
+}
+
 function buildPayload(lead: Record<string, any>) {
   return {
     id: lead.id,
@@ -74,7 +83,7 @@ function buildPayload(lead: Record<string, any>) {
     created_at: lead.created_at,
     updated_at: lead.updated_at,
     name: lead.name,
-    phone: lead.phone ? String(lead.phone).replace(/\D/g, "") : lead.phone,
+    phone: lead.phone ? formatPhoneForWebhook(lead.phone) : lead.phone,
     answers: {
       principal_use: lead.main_use,
       principal_use_label: lead.main_use_label,

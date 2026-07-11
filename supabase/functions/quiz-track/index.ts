@@ -164,26 +164,37 @@ async function insertIntegrationLog(entry: Record<string, unknown>) {
 }
 
 /**
- * Remove qualquer caractere não numérico do telefone.
+ * Formata o telefone para o padrão brasileiro visual usado pelo Make (módulo Phone number):
+ *   (11) 97669-1684  para celular (11 dígitos)
+ *   (11) 3456-7890   para fixo (10 dígitos)
  * Aplica-se APENAS ao payload enviado ao Make/CRM — não altera o valor salvo no banco.
- * Exemplo: "(11) 97669-1684" -> "11976691684"
+ * Se vier com prefixo internacional 55, ele é removido.
+ * Se não for possível formatar, retorna a string original.
  */
-export function cleanPhoneForWebhook(phone: unknown): string {
+export function formatPhoneForWebhook(phone: unknown): string {
   if (phone === null || phone === undefined) return "";
-  return String(phone).replace(/\D/g, "");
+  let digits = String(phone).replace(/\D/g, "");
+  if (digits.length === 13 && digits.startsWith("55")) digits = digits.slice(2);
+  if (digits.length === 12 && digits.startsWith("55")) digits = digits.slice(2);
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return String(phone);
 }
 
 function sanitizePayloadPhones(payload: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...payload };
   if (out.phone !== undefined && out.phone !== null) {
-    out.phone = cleanPhoneForWebhook(out.phone);
+    out.phone = formatPhoneForWebhook(out.phone);
   }
-  // Alguns campos aninhados comuns
   for (const k of ["lead", "contact", "user"] as const) {
     const nested = out[k];
     if (nested && typeof nested === "object" && !Array.isArray(nested)) {
       const n = { ...(nested as Record<string, unknown>) };
-      if (n.phone !== undefined && n.phone !== null) n.phone = cleanPhoneForWebhook(n.phone);
+      if (n.phone !== undefined && n.phone !== null) n.phone = formatPhoneForWebhook(n.phone);
       out[k] = n;
     }
   }
