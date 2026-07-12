@@ -249,16 +249,14 @@ async function sendCompletedWebhookFallback(payload: Record<string, any>) {
   return data;
 }
 
+import { validateBrazilianWhatsApp, formatBrazilianPhoneMask } from "@/lib/validate-whatsapp";
+
 function validatePhoneBR(p: string) {
-  const digits = p.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 13;
+  return validateBrazilianWhatsApp(p).isValid;
 }
 
 function maskPhone(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return d;
-  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
-  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  return formatBrazilianPhoneMask(value);
 }
 
 // ---------- Page ----------
