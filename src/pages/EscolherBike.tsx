@@ -634,9 +634,11 @@ export default function EscolherBike() {
     };
 
     const submittedAt = completedAt;
+    const phoneValidation = validateBrazilianWhatsApp(phone);
     const fullLeadPayload: Record<string, any> = {
       name: name.trim(),
-      phone,
+      phone: phoneValidation.isValid ? phoneValidation.formattedPhone : phone,
+      phone_digits: phoneValidation.isValid ? phoneValidation.normalizedPhone : phone.replace(/\D/g, ""),
       status: "completo",
       current_step: STEPS.length + 1,
       completion_percentage: 100,
