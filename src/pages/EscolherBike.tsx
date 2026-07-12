@@ -462,7 +462,7 @@ export default function EscolherBike() {
               />
               {phoneInvalid && (
                 <p className="text-sm text-destructive mt-2">
-                  Informe um WhatsApp válido para receber sua recomendação.
+                  Informe um WhatsApp válido para concluir sua inscrição.
                 </p>
               )}
             </div>
