@@ -1307,20 +1307,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Consultoria paga (WhatsApp direto removido — fluxo por outro canal) */}
-
-        {/* Consultoria paga */}
-        <SpecialistBlock
-          leadId={leadId}
-          name={name}
-          phone={phone}
-          answers={answers}
-          labels={labels}
-          recommendation={recommendation}
-          baseLeadData={baseLeadData}
-          onMainAction={markMainActionClicked}
-        />
-
         {/* Grupo de ofertas WhatsApp */}
         <OffersGroupBlock
           leadId={leadId}
@@ -1479,63 +1465,8 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 }
 
 // ---------- Paid consultation block ----------
-const CONSULTORIA_URL = "https://pay.kiwify.com.br/kPXb3Ni";
 const OFFERS_GROUP_WA_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 
-function SpecialistBlock({ leadId, name, phone, recommendation, baseLeadData, onMainAction }: any) {
-  const handleConsultoria = () => {
-    onMainAction?.();
-    const clickedAt = new Date().toISOString();
-    const t = baseLeadData ?? {};
-    const payload = {
-      lead_id: leadId,
-      name,
-      phone,
-      utm_source: t.utm_source ?? null,
-      utm_medium: t.utm_medium ?? null,
-      utm_campaign: t.utm_campaign ?? null,
-      traffic_origin: t.traffic_origin ?? null,
-      recommended_bike_1: recommendation?.primary?.id ?? null,
-      recommended_bike_2: recommendation?.secondary?.id ?? null,
-      clicked_at: clickedAt,
-      checkout_url: CONSULTORIA_URL,
-      ...t,
-    };
-    try {
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).dataLayer.push({ event: "consultoria_cta_clicked", ...payload });
-    } catch {}
-    if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "consultoria_cta_clicked", payload } })
-        .catch((e) => console.error("[quiz] Erro ao salvar evento consultoria_cta_clicked", e));
-    }
-    setTimeout(() => window.open(CONSULTORIA_URL, "_blank", "noopener,noreferrer"), 200);
-  };
-
-  return (
-    <section className="rounded-[18px] p-5 sm:p-6 mb-6 border-2 border-primary/30 bg-primary/5">
-      <h3 className="text-[20px] sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
-        Ainda não se sente seguro para escolher?
-      </h3>
-      <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
-        Converse por 30 minutos com um especialista em mobilidade elétrica e descubra qual bike realmente faz sentido para o seu uso.
-      </p>
-      <p className="text-[14px] sm:text-[15px] text-foreground/75 mb-4 leading-relaxed">
-        A consultoria é indicada para quem ainda está dividido entre modelos, tem dúvidas sobre peso, garupa, autonomia, subidas ou quer evitar uma compra errada. Você recebe uma orientação individual com base na sua rotina, orçamento e necessidade real.
-      </p>
-      <Button
-        onClick={handleConsultoria}
-        data-event="consultoria_cta_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
-      >
-        Agendar consultoria por R$ 297
-      </Button>
-      <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
-        Atendimento individual de 30 minutos com especialista da Vitale Mobilidade.
-      </p>
-    </section>
-  );
-}
 
 // ---------- Falar com a Vitale no WhatsApp (leva o resultado do quiz) ----------
 const VITALE_WHATSAPP_PHONE = "5511998693904";

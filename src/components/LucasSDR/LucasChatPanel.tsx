@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, ShoppingCart, Users, ListChecks, User, CalendarClock } from "lucide-react";
+import { Send, X, ShoppingCart, Users, ListChecks, User } from "lucide-react";
 import { BIKES, getPurchaseLink } from "@/data/bikes";
 import { sanitizeAssistantText } from "@/lib/lucas-sanitize";
 import { useLucasChat } from "./useLucasChat";
@@ -9,7 +9,7 @@ import type { SDRContext, SDRMessage } from "./types";
 const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 const BIKE_LIST_URL = "https://meli.la/2y7TYaH";
 const SPECIALIST_PHONE = "5511998693904";
-const CONSULTORIA_URL = "https://pay.kiwify.com.br/kPXb3Ni";
+
 
 type QuickReply = { label: string; text: string; intent?: "buy_primary" | "buy_secondary" | "compare" | "doubts" };
 
@@ -98,16 +98,6 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
     onEvent("sdr_human_handoff_requested", { preferred_bike: bike });
     window.open(buildHandoffLink(ctx, bike), "_blank", "noopener,noreferrer");
   };
-  const handleConsultoria = () => {
-    onEvent("consultoria_cta_clicked", {
-      source: "sdr_chat",
-      checkout_url: CONSULTORIA_URL,
-      clicked_at: new Date().toISOString(),
-      recommended_bike_1: ctx.recommendation?.primary?.id,
-      recommended_bike_2: ctx.recommendation?.secondary?.id,
-    });
-    window.open(CONSULTORIA_URL, "_blank", "noopener,noreferrer");
-  };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const showInitialQuickReplies = messages.length <= 1 && status !== "sending";
@@ -150,7 +140,6 @@ export function LucasChatPanel({ ctx, onClose, onBuyLink, onEvent }: Props) {
             onGroupClick={handleGroupClick}
             onListClick={handleListClick}
             onHandoff={() => handleHandoff(m.bikeForLink)}
-            onConsultoria={handleConsultoria}
           />
         ))}
         {status === "sending" && (
@@ -208,14 +197,12 @@ function MessageBubble({
   onGroupClick,
   onListClick,
   onHandoff,
-  onConsultoria,
 }: {
   message: SDRMessage;
   onBuyLink: (bikeId: string) => void;
   onGroupClick: () => void;
   onListClick: () => void;
   onHandoff: () => void;
-  onConsultoria: () => void;
 }) {
   const isUser = message.role === "user";
   const bike = message.bikeForLink ? BIKES.find((b) => b.id === message.bikeForLink) : null;
@@ -262,15 +249,6 @@ function MessageBubble({
           </div>
         )}
 
-        {!isUser && message.offerConsultoria && (
-          <Button
-            onClick={onConsultoria}
-            className="w-full h-11 rounded-xl text-[13px] font-semibold"
-            variant="secondary"
-          >
-            <CalendarClock className="mr-2 h-4 w-4" /> Agendar consultoria de 30 min · R$ 297
-          </Button>
-        )}
         {!isUser && message.offerGroup && (
           <Button variant="outline" onClick={onGroupClick} className="w-full h-10 rounded-xl text-[13px] font-semibold">
             <Users className="mr-2 h-4 w-4" /> Entrar no grupo de ofertas

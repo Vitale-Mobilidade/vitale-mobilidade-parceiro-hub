@@ -15,8 +15,6 @@ export interface SDRMessage {
   offerGroup?: boolean;
   offerList?: boolean;
   offerHandoff?: boolean;
-  /** Renderiza CTA de consultoria paga. */
-  offerConsultoria?: boolean;
   /** Quick replies contextuais a mostrar depois desta mensagem. */
   quickReplies?: { label: string; text: string }[];
 }
