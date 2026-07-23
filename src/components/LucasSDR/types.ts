@@ -15,8 +15,6 @@ export interface SDRMessage {
   offerGroup?: boolean;
   offerList?: boolean;
   offerHandoff?: boolean;
-  /** Renderiza CTA de consultoria paga. */
-  offerConsultoria?: boolean;
   /** Quick replies contextuais a mostrar depois desta mensagem. */
   quickReplies?: { label: string; text: string }[];
 }
@@ -33,7 +31,6 @@ export interface SDRApiResponse {
   offer_group?: boolean;
   offer_list?: boolean;
   offer_handoff?: boolean;
-  offer_consultoria?: boolean;
   bike_for_link?: string | null;
   secondary_bike_for_link?: string | null;
   show_affiliate_disclosure?: boolean;

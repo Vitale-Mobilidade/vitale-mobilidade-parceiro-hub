@@ -226,7 +226,6 @@ export function useLucasChat(ctx: SDRContext, opts: { onEvent?: (name: string, p
         offerGroup: !!resp.offer_group,
         offerList: !!resp.offer_list,
         offerHandoff: !!resp.offer_handoff,
-        offerConsultoria: !!resp.offer_consultoria,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
