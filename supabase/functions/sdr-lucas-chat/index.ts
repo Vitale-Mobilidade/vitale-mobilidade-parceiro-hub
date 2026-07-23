@@ -70,14 +70,12 @@ type SdrResponse = {
     | "offer_group"
     | "offer_list"
     | "offer_handoff"
-    | "offer_consultoria"
     | "recalc"
     | null;
   offer_link?: boolean;
   offer_group?: boolean;
   offer_list?: boolean;
   offer_handoff?: boolean;
-  offer_consultoria?: boolean;
   bike_for_link?: string | null;
   secondary_bike_for_link?: string | null;
   show_affiliate_disclosure?: boolean;
