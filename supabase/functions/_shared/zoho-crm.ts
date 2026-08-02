@@ -303,14 +303,19 @@ export async function findExistingLead(
     if (byLeadId) return { id: byLeadId, matched_by: "lead_id" };
   }
   if (email) {
-    const byEmail = await searchLeadId(`(Email:equals:${email})`);
+    const byEmail = await searchLeadId(`(Email:equals:${email})`).catch(() => null);
     if (byEmail) return { id: byEmail, matched_by: "email" };
   }
   if (phone.digits) {
-    const variants = [phone.formatted, phone.digits, phone.e164];
+    // ATENÇÃO: o formato "(11) 99999-9999" contém parênteses, que quebram a
+    // sintaxe de criteria do Zoho (INVALID_QUERY). Por isso o valor formatado
+    // é sempre enviado entre aspas duplas.
+    const variants = [phone.digits, phone.e164, `"${phone.formatted}"`, `"${phone.e164}"`];
     for (const v of variants) {
-      const found = await searchLeadId(`(Phone:equals:${v})`);
+      const found = await searchLeadId(`(Phone:equals:${v})`).catch(() => null);
       if (found) return { id: found, matched_by: "phone" };
+      const mobile = await searchLeadId(`(Mobile:equals:${v})`).catch(() => null);
+      if (mobile) return { id: mobile, matched_by: "phone" };
     }
   }
   return { id: null, matched_by: null };
