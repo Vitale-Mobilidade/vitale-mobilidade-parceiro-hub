@@ -211,10 +211,19 @@ export function mapLeadToZoho(payload: Record<string, any>, eventName?: string):
 
   record.Lead_da_Empresa = LEAD_DA_EMPRESA;
 
+  // Slugs derivam SEMPRE do último segmento do link correspondente.
+  const slug1 = slugFromLink(record.Rec_bike_1_link, record.bike1_slug);
+  const slug2 = slugFromLink(record.Rec_bike_2_link, record.bike2_slug);
+  if (slug1 !== undefined) record.bike1_slug = slug1; else delete record.bike1_slug;
+  if (slug2 !== undefined) record.bike2_slug = slug2; else delete record.bike2_slug;
+
   const resolvedEvent = eventName
     ?? (firstDefined(payload, ["event.event_name", "event_name"]) as string | undefined);
   const status = resolvedEvent ? statusDoLeadForEvent(resolvedEvent) : null;
   if (status) record.Status_do_Lead = status;
+
+  // Data_de_formul_rio: apenas na conclusão do quiz (clique nunca altera).
+  if (resolvedEvent === "quiz_completed") record.Data_de_formul_rio = saoPauloTimestamp();
 
   // Guarda final: nunca enviar API name fora da lista permitida.
   for (const key of Object.keys(record)) {
