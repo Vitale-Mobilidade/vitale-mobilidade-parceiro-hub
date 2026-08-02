@@ -141,19 +141,18 @@ export const LEAD_DA_EMPRESA = "Vitale Mobilidade";
 
 /** Conjunto fechado de API names permitidos — nada fora disso é enviado. */
 export const ALLOWED_ZOHO_FIELDS = new Set<string>([
-  "Last_Name", "First_Name", "Email", "Phone",
+  "Last_Name", "First_Name", "Email", "Phone", "Mobile", "Link_whatsapp",
   ...Object.keys(ZOHO_FIELD_MAP),
   "Status_do_Lead", "Lead_da_Empresa",
 ]);
 
 /**
- * Status_do_Lead (campo específico do quiz, NÃO usar Lead_Status):
- *   tag "Quiz completo" => "Completou Quiz"
- *   tag "Clicou botão"  => "Clicou botão comprar ML"
+ * Status_do_Lead (campo específico do quiz, NÃO usar Lead_Status).
+ * Conclusão do quiz => "Novo Lead". Cliques NÃO alteram o status
+ * (o clique apenas acrescenta a tag "Clicou botão comprar ML").
  */
 export function statusDoLeadForEvent(eventName: string): string | null {
-  if (eventName === "quiz_completed") return "Completou Quiz";
-  if (eventName.includes("click")) return "Clicou botão comprar ML";
+  if (eventName === "quiz_completed") return "Novo Lead";
   return null;
 }
 
@@ -163,16 +162,27 @@ export interface MappedLead {
   phone: NormalizedPhone;
 }
 
+export function whatsappLink(phone: NormalizedPhone): string {
+  if (!phone.digits) return "";
+  return `https://wa.me/55${phone.digits}`;
+}
+
 export function mapLeadToZoho(payload: Record<string, any>, eventName?: string): MappedLead {
   const email = normalizeEmail(firstDefined(payload, ["email", "lead.email", "contact.email"]));
-  const phone = normalizePhone(firstDefined(payload, ["phone", "lead.phone", "contact.phone"]));
+  const phone = normalizePhone(
+    firstDefined(payload, ["phone", "phone_digits", "lead.phone", "contact.phone"]),
+  );
   const { first, last } = splitName(firstDefined(payload, ["name", "lead.name", "full_name"]));
 
   const record: Record<string, unknown> = {};
   record.Last_Name = last;
   if (first) record.First_Name = first;
   if (email) record.Email = email;
-  if (phone.digits) record.Phone = phone.formatted;
+  if (phone.digits) {
+    record.Phone = phone.formatted;
+    record.Mobile = phone.formatted;
+    record.Link_whatsapp = whatsappLink(phone);
+  }
 
   for (const [apiName, sources] of Object.entries(ZOHO_FIELD_MAP)) {
     const value = firstDefined(payload, sources);
@@ -398,12 +408,17 @@ export async function addLeadTags(leadId: string, tags: string[]): Promise<void>
   }
 }
 
-/** Tag padrão por evento do quiz. */
+export const TAG_QUIZ_COMPLETED = "completou quiz";
+export const TAG_BUY_CLICK = "Clicou botão comprar ML";
+
+/**
+ * Tag exata por evento do quiz. As tags antigas "Quiz Vitale" e
+ * "Quiz completo" foram removidas do fluxo.
+ */
 export function tagsForEvent(eventName: string): string[] {
-  const base = ["Quiz Vitale"];
-  if (eventName === "quiz_completed") return [...base, "Quiz completo"];
-  if (eventName.includes("click")) return [...base, "Clicou botão"];
-  return base;
+  if (eventName === "quiz_completed") return [TAG_QUIZ_COMPLETED];
+  if (eventName.includes("click")) return [TAG_BUY_CLICK];
+  return [];
 }
 
 export const CRM_DESTINATION = "zoho_crm";
