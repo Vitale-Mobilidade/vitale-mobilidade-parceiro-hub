@@ -374,7 +374,7 @@ export async function upsertZohoLead(
       zoho_id: zohoId,
       status: res.status,
       body: sanitizeText(text),
-      matched_by: existing.matched_by,
+      matched_by: matchedBy,
     };
   } catch (e) {
     const message = sanitizeText(e instanceof Error ? e.message : String(e), 500);
