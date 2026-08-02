@@ -386,10 +386,12 @@ export async function upsertZohoLead(
 export async function addLeadTags(leadId: string, tags: string[]): Promise<void> {
   const names = tags.filter(Boolean).join(",");
   if (!names) return;
+  // v6 exige body JSON mesmo com tag_names na query string.
   const res = await zohoFetch(
-    `/Leads/${leadId}/actions/add_tags?tag_names=${encodeURIComponent(names)}`,
-    { method: "POST" },
+    `/Leads/actions/add_tags?ids=${encodeURIComponent(leadId)}&tag_names=${encodeURIComponent(names)}&over_write=false`,
+    { method: "POST", body: JSON.stringify({ tags: tags.filter(Boolean).map((name) => ({ name })) }) },
   );
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Zoho add_tags failed [${res.status}]: ${sanitizeText(text, 300)}`);
