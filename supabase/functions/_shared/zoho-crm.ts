@@ -289,11 +289,19 @@ async function searchLeadId(criteria: string): Promise<string | null> {
   return typeof id === "string" ? id : null;
 }
 
-/** Procura lead existente priorizando Email e caindo para Phone normalizado. */
+/**
+ * Procura lead existente. Prioridade: LeadID_Lovable (chave estável do quiz),
+ * depois Email e por fim Phone normalizado.
+ */
 export async function findExistingLead(
   email: string,
   phone: NormalizedPhone,
-): Promise<{ id: string | null; matched_by: "email" | "phone" | null }> {
+  leadIdLovable?: string,
+): Promise<{ id: string | null; matched_by: "lead_id" | "email" | "phone" | null }> {
+  if (leadIdLovable) {
+    const byLeadId = await searchLeadId(`(LeadID_Lovable:equals:${leadIdLovable})`).catch(() => null);
+    if (byLeadId) return { id: byLeadId, matched_by: "lead_id" };
+  }
   if (email) {
     const byEmail = await searchLeadId(`(Email:equals:${email})`);
     if (byEmail) return { id: byEmail, matched_by: "email" };
