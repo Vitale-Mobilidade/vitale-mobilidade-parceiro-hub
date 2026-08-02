@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
     if (zohoConfigured()) {
       const zoho = await upsertZohoLead(payload, {
         tags: tagsForEvent(eventName),
+        eventName,
+    eventName,
         defaultLeadSource: "Quiz Escolher Bike",
       });
       if (zoho.success) {

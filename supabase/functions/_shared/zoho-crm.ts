@@ -302,6 +302,8 @@ export async function findExistingLead(
 
 export interface UpsertOptions {
   tags?: string[];
+  /** Nome do evento do quiz; define Status_do_Lead. */
+  eventName?: string;
   /** Marca o lead como origem do quiz caso o Zoho não tenha Lead_Source definido. */
   defaultLeadSource?: string;
 }
@@ -311,7 +313,7 @@ export async function upsertZohoLead(
   options: UpsertOptions = {},
 ): Promise<ZohoResult> {
   try {
-    const { record, email, phone } = mapLeadToZoho(payload);
+    const { record, email, phone } = mapLeadToZoho(payload, options.eventName);
     if (options.defaultLeadSource && !record.Lead_Source) record.Lead_Source = options.defaultLeadSource;
 
     const existing = await findExistingLead(email, phone);
