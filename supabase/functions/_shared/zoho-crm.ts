@@ -23,7 +23,7 @@ export interface ZohoResult {
   status?: number;
   body?: string;
   error?: string;
-  matched_by?: "email" | "phone" | null;
+  matched_by?: "lead_id" | "email" | "phone" | null;
 }
 
 export interface NormalizedPhone {
@@ -334,7 +334,8 @@ export async function upsertZohoLead(
     const { record, email, phone } = mapLeadToZoho(payload, options.eventName);
     if (options.defaultLeadSource && !record.Lead_Source) record.Lead_Source = options.defaultLeadSource;
 
-    const existing = await findExistingLead(email, phone);
+    const leadIdLovable = typeof record.LeadID_Lovable === "string" ? record.LeadID_Lovable : undefined;
+    const existing = await findExistingLead(email, phone, leadIdLovable);
 
     let matchedBy = existing.matched_by;
     let targetId = existing.id;
