@@ -143,8 +143,28 @@ export const LEAD_DA_EMPRESA = "Vitale Mobilidade";
 export const ALLOWED_ZOHO_FIELDS = new Set<string>([
   "Last_Name", "First_Name", "Email", "Phone", "Mobile", "Link_whatsapp",
   ...Object.keys(ZOHO_FIELD_MAP),
-  "Status_do_Lead", "Lead_da_Empresa",
+  "Status_do_Lead", "Lead_da_Empresa", "Data_de_formul_rio",
 ]);
+
+/** Data/hora atual em ISO8601 com offset de São Paulo (-03:00). */
+export function saoPauloTimestamp(date: Date = new Date()): string {
+  const shifted = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+  return `${shifted.toISOString().slice(0, 19)}-03:00`;
+}
+
+/**
+ * bike{n}_slug = último segmento do link da recomendação.
+ * Ignora query string, fragmento e barra final. Preserva o case.
+ */
+export function slugFromLink(link: unknown, fallback?: unknown): string | undefined {
+  if (typeof link === "string" && link.trim()) {
+    const cleaned = link.trim().split("#")[0].split("?")[0].replace(/\/+$/, "");
+    const segment = cleaned.split("/").pop() ?? "";
+    if (segment) return segment;
+  }
+  if (fallback !== undefined && fallback !== null && fallback !== "") return String(fallback);
+  return undefined;
+}
 
 /**
  * Status_do_Lead (campo específico do quiz, NÃO usar Lead_Status).
@@ -191,10 +211,19 @@ export function mapLeadToZoho(payload: Record<string, any>, eventName?: string):
 
   record.Lead_da_Empresa = LEAD_DA_EMPRESA;
 
+  // Slugs derivam SEMPRE do último segmento do link correspondente.
+  const slug1 = slugFromLink(record.Rec_bike_1_link, record.bike1_slug);
+  const slug2 = slugFromLink(record.Rec_bike_2_link, record.bike2_slug);
+  if (slug1 !== undefined) record.bike1_slug = slug1; else delete record.bike1_slug;
+  if (slug2 !== undefined) record.bike2_slug = slug2; else delete record.bike2_slug;
+
   const resolvedEvent = eventName
     ?? (firstDefined(payload, ["event.event_name", "event_name"]) as string | undefined);
   const status = resolvedEvent ? statusDoLeadForEvent(resolvedEvent) : null;
   if (status) record.Status_do_Lead = status;
+
+  // Data_de_formul_rio: apenas na conclusão do quiz (clique nunca altera).
+  if (resolvedEvent === "quiz_completed") record.Data_de_formul_rio = saoPauloTimestamp();
 
   // Guarda final: nunca enviar API name fora da lista permitida.
   for (const key of Object.keys(record)) {
