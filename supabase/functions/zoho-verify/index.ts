@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
         Principal_Uso: r.Principal_Uso ?? null,
         utm_campaign: r.utm_campaign ?? null,
         Status_do_Lead: r.Status_do_Lead ?? null,
+        Data_de_formul_rio: r.Data_de_formul_rio ?? null,
         Lead_da_Empresa: r.Lead_da_Empresa ?? null,
         Lead_Source: r.Lead_Source ?? null,
         LeadID_Lovable: r.LeadID_Lovable ?? null,
