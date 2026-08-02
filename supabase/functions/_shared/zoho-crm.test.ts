@@ -96,8 +96,8 @@ Deno.test("mapLeadToZoho mapeia apenas API names reais", () => {
   assertEquals(record.Raz_o_da_Rec_2, "mais robusta");
   assertEquals(record.Rec_bike_1_link, "https://meli.la/aaa");
   assertEquals(record.Rec_bike_2_link, "https://meli.la/bbb");
-  assertEquals(record.bike1_slug, "v20_pro");
-  assertEquals(record.bike2_slug, "v8_ultra");
+  assertEquals(record.bike1_slug, "aaa");
+  assertEquals(record.bike2_slug, "bbb");
   assertEquals(record.traffic_origin, "pago");
   assertEquals(record.utm_source, "meta");
   assertEquals(record.utm_medium, "cpc");
