@@ -1,4 +1,12 @@
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
+import {
+  CRM_DESTINATION,
+  makeFallbackEnabled,
+  sanitizeText,
+  tagsForEvent,
+  upsertZohoLead,
+  zohoConfigured,
+} from "../_shared/zoho-crm.ts";
 
 const CRM_WEBHOOK_URL = "https://hook.us1.make.com/vvxovixmmoi4tip31x7bh3yd982xzqga";
 const WEBHOOK_DESTINATION = "make_webhook";
@@ -201,7 +209,7 @@ function sanitizePayloadPhones(payload: Record<string, unknown>): Record<string,
   return out;
 }
 
-async function sendCrmWebhook(payload: Record<string, unknown>) {
+async function sendMakeWebhook(payload: Record<string, unknown>) {
   const cleaned = sanitizePayloadPhones(payload);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
@@ -217,6 +225,54 @@ async function sendCrmWebhook(payload: Record<string, unknown>) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * Envio primário: Zoho CRM (upsert idempotente em Leads).
+ * Fallback opcional para o Make apenas quando o Zoho falhar e
+ * CRM_FALLBACK_TO_MAKE estiver ligado.
+ */
+async function sendCrmWebhook(payload: Record<string, unknown>, eventName = "quiz_completed") {
+  const cleaned = sanitizePayloadPhones(payload);
+
+  if (!zohoConfigured()) {
+    const r = await sendMakeWebhook(cleaned);
+    return { ...r, destination: WEBHOOK_DESTINATION, zoho_action: null as string | null };
+  }
+
+  const zoho = await upsertZohoLead(cleaned, {
+    tags: tagsForEvent(eventName),
+    defaultLeadSource: "Quiz Escolher Bike",
+  });
+
+  if (zoho.success) {
+    return {
+      success: true,
+      status: zoho.status ?? 200,
+      body: sanitizeText(JSON.stringify({ action: zoho.action, zoho_id: zoho.zoho_id, matched_by: zoho.matched_by })),
+      destination: CRM_DESTINATION,
+      zoho_action: zoho.action ?? null,
+    };
+  }
+
+  if (makeFallbackEnabled()) {
+    const r = await sendMakeWebhook(cleaned);
+    return {
+      ...r,
+      destination: WEBHOOK_DESTINATION,
+      zoho_action: null as string | null,
+      error: r.success ? undefined : zoho.error,
+    };
+  }
+
+  return {
+    success: false,
+    status: zoho.status,
+    body: zoho.body,
+    error: zoho.error ?? "Zoho upsert failed",
+    destination: CRM_DESTINATION,
+    zoho_action: null as string | null,
+  };
 }
 
 /**
@@ -246,9 +302,9 @@ async function fireWebhookForLead(
     event: { event_name: eventName },
   };
 
-  let result: { success: boolean; status?: number; body?: string; error?: string };
+  let result: { success: boolean; status?: number; body?: string; error?: string; destination?: string };
   try {
-    const r = await sendCrmWebhook(payload);
+    const r = await sendCrmWebhook(payload, eventName);
     result = r;
   } catch (e) {
     result = { success: false, error: e instanceof Error ? e.message : String(e) };
@@ -272,7 +328,7 @@ async function fireWebhookForLead(
   await insertIntegrationLog({
     lead_id: leadId,
     event_name: eventName,
-    destination: WEBHOOK_DESTINATION,
+    destination: result.destination ?? CRM_DESTINATION,
     status: result.success ? "success" : "failed",
     http_status: result.status ?? null,
     attempt,
@@ -352,12 +408,16 @@ Deno.serve(async (req) => {
         dbError = error instanceof Error ? error.message : String(error);
       }
       try {
-        const r = await sendCrmWebhook(webhook_payload ?? { event_name: event.event_name, lead_id, id: lead_id, "LeadID Lovable": lead_id });
+        const buyEventName = typeof event.event_name === "string" ? event.event_name : "buy_button_clicked";
+        const r = await sendCrmWebhook(
+          webhook_payload ?? { event_name: buyEventName, lead_id, id: lead_id, "LeadID Lovable": lead_id },
+          buyEventName,
+        );
         webhook = r;
         await insertIntegrationLog({
           lead_id,
           event_name: typeof event.event_name === "string" ? event.event_name : "buy_click",
-          destination: WEBHOOK_DESTINATION,
+          destination: r.destination ?? CRM_DESTINATION,
           status: r.success ? "success" : "failed",
           http_status: r.status ?? null,
           attempt: null,
@@ -369,7 +429,7 @@ Deno.serve(async (req) => {
         const msg = error instanceof Error ? error.message : String(error);
         webhook = { success: false, error: msg };
         await insertIntegrationLog({
-          lead_id, event_name: "buy_click", destination: WEBHOOK_DESTINATION,
+          lead_id, event_name: "buy_click", destination: CRM_DESTINATION,
           status: "failed", error_message: msg,
         });
       }

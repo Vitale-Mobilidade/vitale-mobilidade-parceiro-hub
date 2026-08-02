@@ -2,6 +2,15 @@
 // e tem webhook_attempts < 5. Sempre pode ser chamada manualmente:
 //   POST /functions/v1/quiz-reprocess  { "limit": 50 }
 
+import {
+  CRM_DESTINATION,
+  makeFallbackEnabled,
+  sanitizeText,
+  tagsForEvent,
+  upsertZohoLead,
+  zohoConfigured,
+} from "../_shared/zoho-crm.ts";
+
 const CRM_WEBHOOK_URL = "https://hook.us1.make.com/vvxovixmmoi4tip31x7bh3yd982xzqga";
 const WEBHOOK_DESTINATION = "make_webhook";
 const MAX_ATTEMPTS = 5;
@@ -49,7 +58,7 @@ async function insertLog(entry: Record<string, unknown>) {
   }
 }
 
-async function sendWebhook(payload: Record<string, unknown>) {
+async function sendMakeWebhook(payload: Record<string, unknown>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -64,6 +73,39 @@ async function sendWebhook(payload: Record<string, unknown>) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** Envio primário ao Zoho CRM, com fallback opcional ao Make. */
+async function sendWebhook(payload: Record<string, unknown>, eventName = "quiz_completed") {
+  if (!zohoConfigured()) {
+    const r = await sendMakeWebhook(payload);
+    return { ...r, destination: WEBHOOK_DESTINATION, zoho_action: null as string | null };
+  }
+  const zoho = await upsertZohoLead(payload, {
+    tags: tagsForEvent(eventName),
+    defaultLeadSource: "Quiz Escolher Bike",
+  });
+  if (zoho.success) {
+    return {
+      success: true,
+      status: zoho.status ?? 200,
+      body: sanitizeText(JSON.stringify({ action: zoho.action, zoho_id: zoho.zoho_id, matched_by: zoho.matched_by })),
+      destination: CRM_DESTINATION,
+      zoho_action: zoho.action ?? null,
+    };
+  }
+  if (makeFallbackEnabled()) {
+    const r = await sendMakeWebhook(payload);
+    return { ...r, destination: WEBHOOK_DESTINATION, zoho_action: null as string | null, error: r.success ? undefined : zoho.error };
+  }
+  return {
+    success: false,
+    status: zoho.status,
+    body: zoho.body,
+    error: zoho.error ?? "Zoho upsert failed",
+    destination: CRM_DESTINATION,
+    zoho_action: null as string | null,
+  };
 }
 
 function formatPhoneForWebhook(phone: unknown): string {
@@ -152,10 +194,10 @@ Deno.serve(async (req) => {
         webhook_last_attempt_at: startedAt,
       });
 
-      let r: { success: boolean; status?: number; body?: string; error?: string };
+      let r: { success: boolean; status?: number; body?: string; error?: string; destination?: string };
       const payload = buildPayload(lead);
       try {
-        r = await sendWebhook(payload);
+        r = await sendWebhook(payload, "quiz_completed");
       } catch (e) {
         r = { success: false, error: e instanceof Error ? e.message : String(e) };
       }
@@ -174,7 +216,7 @@ Deno.serve(async (req) => {
       await insertLog({
         lead_id: lead.id,
         event_name: "quiz_completed",
-        destination: WEBHOOK_DESTINATION,
+        destination: r.destination ?? CRM_DESTINATION,
         status: r.success ? "success" : "failed",
         http_status: r.status ?? null,
         attempt: nextAttempt,
