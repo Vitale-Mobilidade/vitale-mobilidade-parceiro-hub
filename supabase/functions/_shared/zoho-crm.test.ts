@@ -107,7 +107,7 @@ Deno.test("mapLeadToZoho mapeia apenas API names reais", () => {
   assertEquals(record.source_url, "https://vitalemobilidade.com/escolher-bike");
   assertEquals(record.device_type1, "mobile");
   assertEquals(record.Lead_da_Empresa, "Vitale Mobilidade");
-  assertEquals(record.Status_do_Lead, "Completou Quiz");
+  assertEquals(record.Status_do_Lead, "Novo Lead");
   assertEquals(email, "lucas@vitale.com");
   assertEquals(phone.digits, "11986893890");
 });
@@ -138,13 +138,13 @@ Deno.test("mapLeadToZoho nunca envia API names inexistentes", () => {
     assertEquals(ALLOWED_ZOHO_FIELDS.has(key), true, `campo fora da lista permitida: ${key}`);
   }
 
-  assertEquals(record.Status_do_Lead, "Clicou botão comprar ML");
+  assertEquals("Status_do_Lead" in record, false);
   assertEquals("Lead_Status" in record, false);
 });
 
-Deno.test("statusDoLeadForEvent mapeia os dois estados do quiz", () => {
-  assertEquals(statusDoLeadForEvent("quiz_completed"), "Completou Quiz");
-  assertEquals(statusDoLeadForEvent("buy_button_clicked"), "Clicou botão comprar ML");
+Deno.test("statusDoLeadForEvent só define Novo Lead na conclusão", () => {
+  assertEquals(statusDoLeadForEvent("quiz_completed"), "Novo Lead");
+  assertEquals(statusDoLeadForEvent("buy_button_clicked"), null);
   assertEquals(statusDoLeadForEvent("quiz_started"), null);
 });
 
@@ -167,9 +167,111 @@ Deno.test("mapLeadToZoho lê payload aninhado do reprocess", () => {
   assertEquals(record.traffic_origin, "organico");
 });
 
-Deno.test("tagsForEvent devolve tags esperadas", () => {
-  assertEquals(tagsForEvent("quiz_completed"), ["Quiz Vitale", "Quiz completo"]);
-  assertEquals(tagsForEvent("buy_button_clicked"), ["Quiz Vitale", "Clicou botão"]);
+Deno.test("tagsForEvent devolve exatamente as tags corretas", () => {
+  assertEquals(tagsForEvent("quiz_completed"), ["completou quiz"]);
+  assertEquals(tagsForEvent("buy_button_clicked"), ["Clicou botão comprar ML"]);
+  assertEquals(tagsForEvent("secondary_option_clicked"), ["Clicou botão comprar ML"]);
+});
+
+// ------------------------------------------- fixture real anonimizada (prod)
+
+const REAL_PAYLOAD: Record<string, unknown> = {
+  id: "00000000-0000-4000-8000-000000000abc",
+  lead_id: "00000000-0000-4000-8000-000000000abc",
+  "LeadID Lovable": "00000000-0000-4000-8000-000000000abc",
+  name: "Fulano de Teste",
+  phone: "(11) 99992-7159",
+  phone_digits: "11999927159",
+  event_name: "quiz_completed",
+  event: { event_name: "quiz_completed" },
+  status: "completo",
+  main_use: "trabalho_delivery_renda",
+  main_use_label: "Trabalho, delivery ou renda",
+  daily_km_range: "ate_10_km",
+  daily_km_range_label: "Até 10 km",
+  route_type: "plano",
+  route_type_label: "Plano",
+  rider_capacity_need: "apenas_1_pessoa",
+  weight_range_label: "Até 80 kg",
+  budget_range_label: "Até R$7.000",
+  had_ebike_before_label: "Sim",
+  recommended_bike_1: "ft03",
+  recommended_bike_1_label: "FT03",
+  recommended_bike_1_link: "https://meli.la/2qUTUra",
+  recommended_bike_1_reason: "melhor equilíbrio",
+  recommended_bike_2: "v20_mini",
+  recommended_bike_2_label: "V20 Mini",
+  recommended_bike_2_link: "https://meli.la/2RBcChy",
+  recommended_bike_2_reason: "alternativa mais compacta",
+  utm_source: "youtube",
+  utm_medium: "video_description",
+  utm_campaign: "quiz_bike_eletrica",
+  utm_content: "as_5_bikes",
+  traffic_origin: "youtube",
+  source_url: "https://vitalemobilidade.com/escolherbike",
+  device_type: "desktop",
+};
+
+Deno.test("regressão: payload real preenche telefone, links, slugs e status", () => {
+  const { record, phone } = mapLeadToZoho(REAL_PAYLOAD);
+  assertEquals(phone.digits, "11999927159");
+  assertEquals(record.Phone, "(11) 99992-7159");
+  assertEquals(record.Mobile, "(11) 99992-7159");
+  assertEquals(record.Link_whatsapp, "https://wa.me/5511999927159");
+  assertEquals(record.First_Name, "Fulano de");
+  assertEquals(record.Last_Name, "Teste");
+  assertEquals(record.LeadID_Lovable, "00000000-0000-4000-8000-000000000abc");
+  assertEquals(record.Rec_Principal, "FT03");
+  assertEquals(record.Rec_secund_ria, "V20 Mini");
+  assertEquals(record.Raz_o_da_Recomenda_o, "melhor equilíbrio");
+  assertEquals(record.Raz_o_da_Rec_2, "alternativa mais compacta");
+  assertEquals(record.Rec_bike_1_link, "https://meli.la/2qUTUra");
+  assertEquals(record.Rec_bike_2_link, "https://meli.la/2RBcChy");
+  assertEquals(record.bike1_slug, "ft03");
+  assertEquals(record.bike2_slug, "v20_mini");
+  assertEquals(record.Principal_Uso, "Trabalho, delivery ou renda");
+  assertEquals(record.Km_s_por_dia, "Até 10 km");
+  assertEquals(record.Como_o_trajeto, "Plano");
+  assertEquals(record.Faixa_de_peso, "Até 80 kg");
+  assertEquals(record.Or_amento, "Até R$7.000");
+  assertEquals(record.J_teve_bike_el_trica_antes, "Sim");
+  assertEquals(record.utm_campaign, "quiz_bike_eletrica");
+  assertEquals(record.traffic_origin, "youtube");
+  assertEquals(record.device_type1, "desktop");
+  assertEquals(record.Status_do_Lead, "Novo Lead");
+  assertEquals(record.Lead_da_Empresa, "Vitale Mobilidade");
+});
+
+Deno.test("regressão: telefone só com dígitos também normaliza", () => {
+  const { record } = mapLeadToZoho({ name: "Ana", phone_digits: "5511999927159" });
+  assertEquals(record.Phone, "(11) 99992-7159");
+  assertEquals(record.Mobile, "(11) 99992-7159");
+  assertEquals(record.Link_whatsapp, "https://wa.me/5511999927159");
+});
+
+Deno.test("regressão: clique reaproveita o mesmo lead via LeadID_Lovable e só adiciona tag", async () => {
+  setupEnv();
+  const calls = await withFetch((url, init) => {
+    if (url.includes("LeadID_Lovable%3Aequals")) {
+      return new Response(JSON.stringify({ data: [{ id: "lead-real-1" }] }), { status: 200 });
+    }
+    if (url.includes("/search")) return new Response(null, { status: 204 });
+    if (init?.method === "PUT") {
+      return new Response(JSON.stringify({ data: [{ status: "success", details: { id: "lead-real-1" } }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({}), { status: 200 });
+  }, async () => {
+    const r = await upsertZohoLead(
+      { ...REAL_PAYLOAD, event: { event_name: "buy_button_clicked" }, event_name: "buy_button_clicked" },
+      { tags: tagsForEvent("buy_button_clicked"), eventName: "buy_button_clicked" },
+    );
+    assertEquals(r.success, true);
+    assertEquals(r.action, "updated");
+    assertEquals(r.zoho_id, "lead-real-1");
+    assertEquals(r.matched_by, "lead_id");
+  });
+  assertEquals(calls.some((c) => c.includes("tag_names=Clicou+bot%C3%A3o+comprar+ML") || c.includes("tag_names=Clicou%20bot%C3%A3o%20comprar%20ML")), true);
+  assertEquals(calls.some((c) => c.includes("Quiz+Vitale") || c.includes("Quiz%20Vitale")), false);
 });
 
 // -------------------------------------------------- dedupe / inserted-updated
