@@ -318,16 +318,35 @@ export async function upsertZohoLead(
 
     const existing = await findExistingLead(email, phone);
 
-    const method = existing.id ? "PUT" : "POST";
-    const path = existing.id ? `/Leads/${existing.id}` : "/Leads";
-    const res = await zohoFetch(path, {
-      method,
-      body: JSON.stringify({ data: [record], trigger: [] }),
-    });
-    const text = await res.text();
-    const json = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
-    const row = json?.data?.[0];
-    const ok = res.ok && row?.status === "success";
+    let matchedBy = existing.matched_by;
+    let targetId = existing.id;
+
+    const send = (id: string | null) =>
+      zohoFetch(id ? `/Leads/${id}` : "/Leads", {
+        method: id ? "PUT" : "POST",
+        body: JSON.stringify({ data: [record], trigger: [] }),
+      });
+
+    let res = await send(targetId);
+    let text = await res.text();
+    let json = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
+    let row = json?.data?.[0];
+    let ok = res.ok && row?.status === "success";
+
+    // O índice de busca do Zoho tem lag: um POST pode falhar com DUPLICATE_DATA
+    // mesmo quando a busca não encontrou o lead. Nesse caso, refaz como PUT.
+    const duplicateId = row?.code === "DUPLICATE_DATA"
+      ? (row?.details?.duplicate_record?.id as string | undefined)
+      : undefined;
+    if (!ok && !targetId && duplicateId) {
+      targetId = duplicateId;
+      matchedBy = row?.details?.api_name === "Phone" ? "phone" : "email";
+      res = await send(targetId);
+      text = await res.text();
+      json = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
+      row = json?.data?.[0];
+      ok = res.ok && row?.status === "success";
+    }
 
     if (!ok) {
       return {
@@ -335,12 +354,13 @@ export async function upsertZohoLead(
         status: res.status,
         body: sanitizeText(text),
         error: sanitizeText(row?.message ?? `HTTP ${res.status}`, 500),
-        matched_by: existing.matched_by,
+        matched_by: matchedBy,
       };
     }
 
-    const zohoId = (row?.details?.id as string | undefined) ?? existing.id ?? null;
-    const action: UpsertAction = existing.id ? "updated" : "inserted";
+    const zohoId = (row?.details?.id as string | undefined) ?? targetId ?? null;
+    const action: UpsertAction = targetId ? "updated" : "inserted";
+
 
     if (zohoId && options.tags?.length) {
       await addLeadTags(zohoId, options.tags).catch((e) =>
