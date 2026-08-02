@@ -143,8 +143,28 @@ export const LEAD_DA_EMPRESA = "Vitale Mobilidade";
 export const ALLOWED_ZOHO_FIELDS = new Set<string>([
   "Last_Name", "First_Name", "Email", "Phone", "Mobile", "Link_whatsapp",
   ...Object.keys(ZOHO_FIELD_MAP),
-  "Status_do_Lead", "Lead_da_Empresa",
+  "Status_do_Lead", "Lead_da_Empresa", "Data_de_formul_rio",
 ]);
+
+/** Data/hora atual em ISO8601 com offset de São Paulo (-03:00). */
+export function saoPauloTimestamp(date: Date = new Date()): string {
+  const shifted = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+  return `${shifted.toISOString().slice(0, 19)}-03:00`;
+}
+
+/**
+ * bike{n}_slug = último segmento do link da recomendação.
+ * Ignora query string, fragmento e barra final. Preserva o case.
+ */
+export function slugFromLink(link: unknown, fallback?: unknown): string | undefined {
+  if (typeof link === "string" && link.trim()) {
+    const cleaned = link.trim().split("#")[0].split("?")[0].replace(/\/+$/, "");
+    const segment = cleaned.split("/").pop() ?? "";
+    if (segment) return segment;
+  }
+  if (fallback !== undefined && fallback !== null && fallback !== "") return String(fallback);
+  return undefined;
+}
 
 /**
  * Status_do_Lead (campo específico do quiz, NÃO usar Lead_Status).
