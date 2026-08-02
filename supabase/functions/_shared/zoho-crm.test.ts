@@ -227,8 +227,8 @@ Deno.test("regressão: payload real preenche telefone, links, slugs e status", (
   assertEquals(record.Raz_o_da_Rec_2, "alternativa mais compacta");
   assertEquals(record.Rec_bike_1_link, "https://meli.la/2qUTUra");
   assertEquals(record.Rec_bike_2_link, "https://meli.la/2RBcChy");
-  assertEquals(record.bike1_slug, "ft03");
-  assertEquals(record.bike2_slug, "v20_mini");
+  assertEquals(record.bike1_slug, "2qUTUra");
+  assertEquals(record.bike2_slug, "2RBcChy");
   assertEquals(record.Principal_Uso, "Trabalho, delivery ou renda");
   assertEquals(record.Km_s_por_dia, "Até 10 km");
   assertEquals(record.Como_o_trajeto, "Plano");
@@ -240,6 +240,37 @@ Deno.test("regressão: payload real preenche telefone, links, slugs e status", (
   assertEquals(record.device_type1, "desktop");
   assertEquals(record.Status_do_Lead, "Novo Lead");
   assertEquals(record.Lead_da_Empresa, "Vitale Mobilidade");
+});
+
+// ------------------------------------------- Data_de_formul_rio e slugs
+
+Deno.test("slugFromLink extrai último segmento preservando case", () => {
+  assertEquals(slugFromLink("https://meli.la/2YSVbMJ"), "2YSVbMJ");
+  assertEquals(slugFromLink("https://meli.la/2aNm5oD"), "2aNm5oD");
+  assertEquals(slugFromLink("https://meli.la/2YSVbMJ/"), "2YSVbMJ");
+  assertEquals(slugFromLink("https://meli.la/2YSVbMJ?utm_source=x"), "2YSVbMJ");
+  assertEquals(slugFromLink("https://meli.la/2aNm5oD#frag"), "2aNm5oD");
+  assertEquals(slugFromLink("https://meli.la/2aNm5oD/?a=1#f"), "2aNm5oD");
+  assertEquals(slugFromLink("", "v20_pro"), "v20_pro");
+  assertEquals(slugFromLink(undefined, undefined), undefined);
+});
+
+Deno.test("Data_de_formul_rio é criada na conclusão com offset -03:00", () => {
+  const { record } = mapLeadToZoho({ name: "Ana", event_name: "quiz_completed" });
+  const value = record.Data_de_formul_rio as string;
+  assertEquals(typeof value, "string");
+  assertEquals(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-03:00$/.test(value), true);
+});
+
+Deno.test("segunda conclusão gera timestamp novo e clique não altera", async () => {
+  const first = mapLeadToZoho({ name: "Ana", event_name: "quiz_completed" }).record;
+  await new Promise((r) => setTimeout(r, 1100));
+  const second = mapLeadToZoho({ name: "Ana", event_name: "quiz_completed" }).record;
+  assertEquals(first.Data_de_formul_rio !== second.Data_de_formul_rio, true);
+
+  const click = mapLeadToZoho({ name: "Ana", event_name: "buy_button_click" }).record;
+  assertEquals(click.Data_de_formul_rio, undefined);
+  assertEquals(click.Status_do_Lead, undefined);
 });
 
 Deno.test("regressão: telefone só com dígitos também normaliza", () => {
