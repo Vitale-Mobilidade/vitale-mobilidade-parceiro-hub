@@ -109,34 +109,53 @@ export const ZOHO_FIELD_MAP: Record<string, string[]> = {
   Company: ["company"],
   Lead_Source: ["lead_source", "traffic_origin", "detected_source", "utm_source", "tracking.utm_source"],
   Lead_Status: ["lead_status"],
-  // Custom (API names criados no Zoho)
+  // Custom (API names reais do módulo Leads)
   LeadID_Lovable: ["LeadID Lovable", "lead_id", "id"],
-  Evento: ["event.event_name", "event_name"],
-  Uso_Principal: ["main_use_label", "answers.principal_use_label", "main_use", "answers.principal_use"],
-  Distancia_Diaria: ["daily_km_range_label", "answers.daily_distance_label", "daily_km_range"],
-  Tipo_de_Terreno: ["route_type_label", "answers.terrain_label", "route_type"],
-  Capacidade_Passageiro: ["rider_capacity_need_label", "answers.rider_capacity_need_label", "rider_capacity_need"],
-  Peso_Total: ["weight_range_label", "answers.weight_range_label", "weight_range"],
-  Orcamento: ["budget_range_label", "answers.budget_label", "budget_range"],
-  Experiencia_Ebike: ["had_ebike_before_label", "answers.experience_label", "had_ebike_before"],
-  Recomendacao_1: ["recommended_bike_1_label", "recommendations.primary_recommendation", "recommended_bike_1"],
-  Recomendacao_2: ["recommended_bike_2_label", "recommendations.secondary_recommendation", "recommended_bike_2"],
-  Motivo_Recomendacao_1: ["recommended_bike_1_reason", "recommendations.primary_reason"],
-  Motivo_Recomendacao_2: ["recommended_bike_2_reason", "recommendations.secondary_reason"],
-  Link_Recomendacao_1: ["recommended_bike_1_link", "recommendations.primary_link"],
-  Link_Recomendacao_2: ["recommended_bike_2_link", "recommendations.secondary_link"],
-  Bike_Clicada: ["clicked_bike_name", "bike_model_clicked"],
-  Link_Compra_Usado: ["purchase_link_used", "clicked_bike_link"],
-  Status_Conversao: ["conversion_status"],
-  Origem_Trafego: ["traffic_origin", "tracking.traffic_origin"],
-  UTM_Source: ["utm_source", "tracking.utm_source"],
-  UTM_Medium: ["utm_medium", "tracking.utm_medium"],
-  UTM_Campaign: ["utm_campaign", "tracking.utm_campaign"],
-  UTM_Content: ["utm_content", "tracking.utm_content"],
-  UTM_Term: ["utm_term", "tracking.utm_term"],
-  URL_Origem: ["source_url", "tracking.source_url", "first_url"],
-  Dispositivo: ["device_type", "tracking.device_type"],
+  Principal_Uso: ["main_use_label", "answers.principal_use_label", "main_use", "answers.principal_use"],
+  Km_s_por_dia: ["daily_km_range_label", "answers.daily_distance_label", "daily_km_range"],
+  Como_o_trajeto: ["route_type_label", "answers.terrain_label", "route_type"],
+  Uso_com_garupa: ["rider_capacity_need_label", "answers.rider_capacity_need_label", "rider_capacity_need"],
+  Faixa_de_peso: ["weight_range_label", "answers.weight_range_label", "weight_range"],
+  Or_amento: ["budget_range_label", "answers.budget_label", "budget_range"],
+  J_teve_bike_el_trica_antes: ["had_ebike_before_label", "answers.experience_label", "had_ebike_before"],
+  Rec_Principal: ["recommended_bike_1_label", "recommendations.primary_recommendation"],
+  Rec_secund_ria: ["recommended_bike_2_label", "recommendations.secondary_recommendation"],
+  Raz_o_da_Recomenda_o: ["recommended_bike_1_reason", "recommendations.primary_reason"],
+  Raz_o_da_Rec_2: ["recommended_bike_2_reason", "recommendations.secondary_reason"],
+  Rec_bike_1_link: ["recommended_bike_1_link", "recommendations.primary_link"],
+  Rec_bike_2_link: ["recommended_bike_2_link", "recommendations.secondary_link"],
+  bike1_slug: ["recommended_bike_1", "clusters.recommended_bike_1"],
+  bike2_slug: ["recommended_bike_2", "clusters.recommended_bike_2"],
+  traffic_origin: ["traffic_origin", "tracking.traffic_origin"],
+  utm_source: ["utm_source", "tracking.utm_source"],
+  utm_medium: ["utm_medium", "tracking.utm_medium"],
+  utm_campaign: ["utm_campaign", "tracking.utm_campaign"],
+  utm_content: ["utm_content", "tracking.utm_content"],
+  utm_term: ["utm_term", "tracking.utm_term"],
+  source_url: ["source_url", "tracking.source_url", "first_url"],
+  device_type1: ["device_type", "tracking.device_type"],
 };
+
+/** Empresa fixa gravada em todo lead do quiz. */
+export const LEAD_DA_EMPRESA = "Vitale Mobilidade";
+
+/** Conjunto fechado de API names permitidos — nada fora disso é enviado. */
+export const ALLOWED_ZOHO_FIELDS = new Set<string>([
+  "Last_Name", "First_Name", "Email", "Phone",
+  ...Object.keys(ZOHO_FIELD_MAP),
+  "Status_do_Lead", "Lead_da_Empresa",
+]);
+
+/**
+ * Status_do_Lead (campo específico do quiz, NÃO usar Lead_Status):
+ *   tag "Quiz completo" => "Completou Quiz"
+ *   tag "Clicou botão"  => "Clicou botão comprar ML"
+ */
+export function statusDoLeadForEvent(eventName: string): string | null {
+  if (eventName === "quiz_completed") return "Completou Quiz";
+  if (eventName.includes("click")) return "Clicou botão comprar ML";
+  return null;
+}
 
 export interface MappedLead {
   record: Record<string, unknown>;
@@ -144,7 +163,7 @@ export interface MappedLead {
   phone: NormalizedPhone;
 }
 
-export function mapLeadToZoho(payload: Record<string, any>): MappedLead {
+export function mapLeadToZoho(payload: Record<string, any>, eventName?: string): MappedLead {
   const email = normalizeEmail(firstDefined(payload, ["email", "lead.email", "contact.email"]));
   const phone = normalizePhone(firstDefined(payload, ["phone", "lead.phone", "contact.phone"]));
   const { first, last } = splitName(firstDefined(payload, ["name", "lead.name", "full_name"]));
@@ -160,8 +179,21 @@ export function mapLeadToZoho(payload: Record<string, any>): MappedLead {
     if (value !== undefined) record[apiName] = typeof value === "string" ? value : String(value);
   }
 
+  record.Lead_da_Empresa = LEAD_DA_EMPRESA;
+
+  const resolvedEvent = eventName
+    ?? (firstDefined(payload, ["event.event_name", "event_name"]) as string | undefined);
+  const status = resolvedEvent ? statusDoLeadForEvent(resolvedEvent) : null;
+  if (status) record.Status_do_Lead = status;
+
+  // Guarda final: nunca enviar API name fora da lista permitida.
+  for (const key of Object.keys(record)) {
+    if (!ALLOWED_ZOHO_FIELDS.has(key)) delete record[key];
+  }
+
   return { record, email, phone };
 }
+
 
 // --------------------------------------------------------------- token
 
