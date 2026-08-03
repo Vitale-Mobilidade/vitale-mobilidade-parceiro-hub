@@ -1498,7 +1498,7 @@ function VitaleWhatsAppBlock({
       utm_content: t.utm_content ?? null,
       utm_term: t.utm_term ?? null,
       traffic_origin: t.traffic_origin ?? null,
-      source_url: baseLeadDataRef.current?.source_url ?? null,
+      source_url: t.source_url ?? null,
       clicked_at: clickedAt,
       whatsapp_number: VITALE_WHATSAPP_PHONE,
       whatsapp_message: message,
