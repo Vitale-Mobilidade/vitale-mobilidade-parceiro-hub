@@ -119,7 +119,8 @@ function firstDefined(source: Record<string, any>, keys: string[]): unknown {
 export const ZOHO_FIELD_MAP: Record<string, string[]> = {
   // Standard
   Company: ["company"],
-  Lead_Source: ["lead_source", "traffic_origin", "detected_source", "utm_source", "tracking.utm_source"],
+  // Lead_Source deriva SOMENTE do utm_source real (nunca valor padrão).
+  Lead_Source: ["lead_source", "utm_source", "tracking.utm_source"],
   Lead_Status: ["lead_status"],
   // Custom (API names reais do módulo Leads)
   LeadID_Lovable: ["LeadID Lovable", "lead_id", "id"],
@@ -138,6 +139,7 @@ export const ZOHO_FIELD_MAP: Record<string, string[]> = {
   Rec_bike_2_link: ["recommended_bike_2_link", "recommendations.secondary_link"],
   bike1_slug: ["recommended_bike_1", "clusters.recommended_bike_1"],
   bike2_slug: ["recommended_bike_2", "clusters.recommended_bike_2"],
+  // traffic_origin deriva SOMENTE do utm_source real (ver guarda em mapLeadToZoho).
   traffic_origin: ["traffic_origin", "tracking.traffic_origin"],
   utm_source: ["utm_source", "tracking.utm_source"],
   utm_medium: ["utm_medium", "tracking.utm_medium"],
@@ -153,7 +155,7 @@ export const LEAD_DA_EMPRESA = "Vitale Mobilidade";
 
 /** Conjunto fechado de API names permitidos — nada fora disso é enviado. */
 export const ALLOWED_ZOHO_FIELDS = new Set<string>([
-  "Last_Name", "First_Name", "Email", "Phone", "Mobile", "Link_whatsapp",
+  "Last_Name", "Sobrenome", "Email", "Phone", "Mobile", "Link_whatsapp",
   ...Object.keys(ZOHO_FIELD_MAP),
   "Status_do_Lead", "Lead_da_Empresa", "Data_de_formul_rio",
 ]);
@@ -204,11 +206,11 @@ export function mapLeadToZoho(payload: Record<string, any>, eventName?: string):
   const phone = normalizePhone(
     firstDefined(payload, ["phone", "phone_digits", "lead.phone", "contact.phone"]),
   );
-  const { first, last } = splitName(firstDefined(payload, ["name", "lead.name", "full_name"]));
+  const { last, sobrenome } = splitName(firstDefined(payload, ["name", "lead.name", "full_name"]));
 
   const record: Record<string, unknown> = {};
   record.Last_Name = last;
-  if (first) record.First_Name = first;
+  if (sobrenome) record.Sobrenome = sobrenome;
   if (email) record.Email = email;
   if (phone.digits) {
     record.Phone = phone.formatted;
@@ -222,6 +224,16 @@ export function mapLeadToZoho(payload: Record<string, any>, eventName?: string):
   }
 
   record.Lead_da_Empresa = LEAD_DA_EMPRESA;
+
+  // Atribuição: sem utm_source real não existe traffic_origin nem Lead_Source.
+  // Campos ausentes não apagam a atribuição válida anterior no Zoho.
+  if (!record.utm_source) {
+    delete record.traffic_origin;
+    delete record.Lead_Source;
+  } else {
+    record.traffic_origin = record.utm_source;
+    record.Lead_Source = record.Lead_Source ?? record.utm_source;
+  }
 
   // Slugs derivam SEMPRE do último segmento do link correspondente.
   const slug1 = slugFromLink(record.Rec_bike_1_link, record.bike1_slug);
