@@ -202,39 +202,6 @@ function extractDomain(url: string | null | undefined): string | null {
   }
 }
 
-const META_SOURCE_RE = /(facebook|^fb$|meta|instagram|^ig$)/i;
-const META_REFERRER_RE = /(^|\.)(facebook\.com|instagram\.com|l\.facebook\.com|lm\.facebook\.com|m\.facebook\.com)$/i;
-
-function detectTrafficOrigin(
-  tracking: { utm_source: string | null; utm_medium: string | null; fbclid: string | null },
-  referrer: string | null,
-) {
-  const referrer_domain = extractDomain(referrer);
-  const utm_source = tracking.utm_source;
-  const utm_medium = tracking.utm_medium;
-
-  // Classificação principal solicitada (Meta-aware)
-  let traffic_origin: string;
-  if (utm_source && META_SOURCE_RE.test(utm_source)) {
-    traffic_origin = "meta";
-  } else if (tracking.fbclid) {
-    traffic_origin = "meta";
-  } else if (referrer_domain && META_REFERRER_RE.test(referrer_domain)) {
-    traffic_origin = "meta_referral";
-  } else if (utm_source) {
-    traffic_origin = utm_source;
-  } else if (referrer_domain) {
-    traffic_origin = `referral:${referrer_domain}`;
-  } else {
-    traffic_origin = "direct_or_unknown";
-  }
-
-  // Compatibilidade com os campos antigos
-  const detected_source = utm_source || (tracking.fbclid ? "meta" : referrer_domain || "direct_unknown");
-  const detected_medium = utm_medium || (traffic_origin.startsWith("meta") ? "paid_social" : referrer_domain ? "referral" : "direct_or_app");
-
-  return { referrer_domain, detected_source, detected_medium, traffic_origin };
-}
 
 
 async function invokeQuizTrack(body: Record<string, any>) {
