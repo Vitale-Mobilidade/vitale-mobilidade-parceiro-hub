@@ -102,7 +102,7 @@ Deno.test("mapLeadToZoho mapeia apenas API names reais", () => {
   assertEquals(record.Rec_bike_2_link, "https://meli.la/bbb");
   assertEquals(record.bike1_slug, "aaa");
   assertEquals(record.bike2_slug, "bbb");
-  assertEquals(record.traffic_origin, "pago");
+  assertEquals(record.traffic_origin, "meta"); // deriva do utm_source real
   assertEquals(record.utm_source, "meta");
   assertEquals(record.utm_medium, "cpc");
   assertEquals(record.utm_campaign, "quiz");
@@ -168,7 +168,7 @@ Deno.test("mapLeadToZoho lê payload aninhado do reprocess", () => {
   assertEquals(record.Or_amento, "Até 7 mil");
   assertEquals(record.Rec_Principal, "V8 Ultra");
   assertEquals(record.utm_campaign, "quiz");
-  assertEquals(record.traffic_origin, "organico");
+  assertEquals(record.traffic_origin, undefined); // sem utm_source real
 });
 
 Deno.test("tagsForEvent devolve exatamente as tags corretas", () => {
