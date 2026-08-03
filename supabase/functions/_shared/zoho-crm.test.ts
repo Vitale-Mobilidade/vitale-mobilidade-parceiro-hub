@@ -8,6 +8,8 @@ import {
   resetZohoTokenCache,
   sanitizeText,
   slugFromLink,
+  splitName,
+  ZOHO_FIELD_MAP,
   statusDoLeadForEvent,
   tagsForEvent,
   upsertZohoLead,
@@ -79,8 +81,9 @@ Deno.test("mapLeadToZoho mapeia apenas API names reais", () => {
     event: { event_name: "quiz_completed" },
   });
 
-  assertEquals(record.Last_Name, "Vitale");
-  assertEquals(record.First_Name, "Lucas");
+  assertEquals(record.Last_Name, "Lucas");
+  assertEquals(record.Sobrenome, "Vitale");
+  assertEquals("First_Name" in record, false);
   assertEquals(record.Email, "lucas@vitale.com");
   assertEquals(record.Phone, "(11) 98689-3890");
   assertEquals(record.LeadID_Lovable, "abc-123");
@@ -219,8 +222,8 @@ Deno.test("regressão: payload real preenche telefone, links, slugs e status", (
   assertEquals(record.Phone, "(11) 99992-7159");
   assertEquals(record.Mobile, "(11) 99992-7159");
   assertEquals(record.Link_whatsapp, "https://wa.me/5511999927159");
-  assertEquals(record.First_Name, "Fulano de");
-  assertEquals(record.Last_Name, "Teste");
+  assertEquals(record.Last_Name, "Fulano");
+  assertEquals(record.Sobrenome, "De Teste");
   assertEquals(record.LeadID_Lovable, "00000000-0000-4000-8000-000000000abc");
   assertEquals(record.Rec_Principal, "FT03");
   assertEquals(record.Rec_secund_ria, "V20 Mini");
@@ -238,6 +241,7 @@ Deno.test("regressão: payload real preenche telefone, links, slugs e status", (
   assertEquals(record.J_teve_bike_el_trica_antes, "Sim");
   assertEquals(record.utm_campaign, "quiz_bike_eletrica");
   assertEquals(record.traffic_origin, "youtube");
+  assertEquals(record.Lead_Source, "youtube");
   assertEquals(record.device_type1, "desktop");
   assertEquals(record.Status_do_Lead, "Novo Lead");
   assertEquals(record.Lead_da_Empresa, "Vitale Mobilidade");
@@ -422,4 +426,59 @@ Deno.test("upsertZohoLead faz retry apenas em 5xx e devolve erro final", async (
   // derruba o fluxo — o upsert segue e retorna erro final.
   assertEquals(searchCalls % 3, 0);
   assertEquals(searchCalls >= 3, true);
+});
+
+// ------------------------------------------------------------ nome/sobrenome
+
+Deno.test("splitName: 1, 2 e 4 termos, caixa mista e acentos", () => {
+  assertEquals(splitName("jOÃO dA siLVA souZA"), { last: "João", sobrenome: "Da Silva Souza" });
+  assertEquals(splitName("ANA"), { last: "Ana", sobrenome: "" });
+  assertEquals(splitName("maria   JOSÉ"), { last: "Maria", sobrenome: "José" });
+  assertEquals(splitName("  "), { last: "Lead sem nome", sobrenome: "" });
+});
+
+Deno.test("mapLeadToZoho grava Nome=primeiro termo e Sobrenome=restante", () => {
+  const { record } = mapLeadToZoho({ name: "jOÃO dA siLVA souZA" });
+  assertEquals(record.Last_Name, "João");
+  assertEquals(record.Sobrenome, "Da Silva Souza");
+  assertEquals("First_Name" in record, false);
+  const single = mapLeadToZoho({ name: "Joana" }).record;
+  assertEquals(single.Last_Name, "Joana");
+  assertEquals("Sobrenome" in single, false);
+});
+
+// ------------------------------------------------------------- atribuição
+
+Deno.test("UTMs reais são preservadas exatamente", () => {
+  const { record } = mapLeadToZoho({
+    name: "Ana",
+    utm_source: "CodexSrc",
+    utm_medium: "CodexMed",
+    utm_campaign: "CodexCamp_1600",
+    utm_content: "Conteudo Especial",
+    utm_term: "Bike+Teste",
+    source_url: "https://vitalemobilidade.com/escolherbike?utm_source=CodexSrc&utm_term=Bike%2BTeste",
+  });
+  assertEquals(record.utm_source, "CodexSrc");
+  assertEquals(record.utm_medium, "CodexMed");
+  assertEquals(record.utm_campaign, "CodexCamp_1600");
+  assertEquals(record.utm_content, "Conteudo Especial");
+  assertEquals(record.utm_term, "Bike+Teste");
+  assertEquals(record.traffic_origin, "CodexSrc");
+  assertEquals(record.Lead_Source, "CodexSrc");
+  assertEquals(String(record.source_url).includes("?utm_source=CodexSrc"), true);
+});
+
+Deno.test("sem utm_source não há traffic_origin, Lead_Source nem padrão youtube", () => {
+  const { record } = mapLeadToZoho({ name: "Ana", traffic_origin: "youtube", detected_source: "youtube" });
+  assertEquals("traffic_origin" in record, false);
+  assertEquals("Lead_Source" in record, false);
+  assertEquals(JSON.stringify(record).toLowerCase().includes("youtube"), false);
+});
+
+Deno.test("nenhum hardcode de campanha padrão no mapeamento", () => {
+  const raw = JSON.stringify(ZOHO_FIELD_MAP).toLowerCase();
+  for (const proibido of ["youtube", "video_description", "quiz_bike_eletrica", "as_5_bikes"]) {
+    assertEquals(raw.includes(proibido), false, proibido);
+  }
 });
