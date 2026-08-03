@@ -82,13 +82,25 @@ export function sanitizeText(text: unknown, max = 2000): string {
     .slice(0, max);
 }
 
-function splitName(fullName: unknown): { first: string; last: string } {
-  const name = String(fullName ?? "").trim().replace(/\s+/g, " ");
-  if (!name) return { first: "", last: "Lead sem nome" };
-  const parts = name.split(" ");
-  if (parts.length === 1) return { first: "", last: parts[0] };
-  return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
+/** Primeira letra maiúscula, restante minúsculo, preservando acentos. */
+function capitalizeWord(word: string): string {
+  if (!word) return "";
+  return word.charAt(0).toLocaleUpperCase("pt-BR") + word.slice(1).toLocaleLowerCase("pt-BR");
 }
+
+/**
+ * Layout REAL do Zoho:
+ * - "Nome" (Last_Name) recebe SOMENTE o primeiro termo do nome informado.
+ * - "Sobrenome" (campo customizado) recebe todos os termos restantes, na ordem.
+ * First_Name NÃO é enviado (evita duplicação no Full_Name).
+ */
+export function splitName(fullName: unknown): { last: string; sobrenome: string } {
+  const name = String(fullName ?? "").trim().replace(/\s+/g, " ");
+  if (!name) return { last: "Lead sem nome", sobrenome: "" };
+  const parts = name.split(" ").map(capitalizeWord);
+  return { last: parts[0], sobrenome: parts.slice(1).join(" ") };
+}
+
 
 function firstDefined(source: Record<string, any>, keys: string[]): unknown {
   for (const k of keys) {
