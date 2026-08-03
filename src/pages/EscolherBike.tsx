@@ -250,6 +250,7 @@ async function sendCompletedWebhookFallback(payload: Record<string, any>) {
 }
 
 import { validateBrazilianWhatsApp, formatBrazilianPhoneMask } from "@/lib/validate-whatsapp";
+import { captureQuizAttribution, attributionPayload } from "@/lib/quiz-attribution";
 
 function validatePhoneBR(p: string) {
   return validateBrazilianWhatsApp(p).isValid;
@@ -284,7 +285,7 @@ export default function EscolherBike() {
         utm_content: t.utm_content ?? null,
         utm_source: t.utm_source ?? null,
         traffic_origin: t.traffic_origin ?? null,
-        source_url: typeof window !== "undefined" ? window.location.href : null,
+        source_url: baseLeadDataRef.current?.source_url ?? null,
         first_url: t.first_url ?? null,
       });
       const rec = recommend(answers as Answers, sourceInterest);
@@ -298,24 +299,20 @@ export default function EscolherBike() {
     if (typeof window === "undefined") return;
     const { device_type, browser, operating_system } = detectDevice();
     const tracking = captureAndPersistTracking();
+    const attribution = captureQuizAttribution();
+    const attr = attributionPayload(attribution);
     const referrer = document.referrer || tracking.referrer || null;
-    const traffic = detectTrafficOrigin(tracking, referrer);
     baseLeadDataRef.current = {
-      source_url: window.location.href,
       landing_path: window.location.pathname,
       landing_page: tracking.landing_page,
-      first_url: tracking.first_url,
-      first_seen_at: tracking.first_seen_at,
+      first_url: attribution.source_url,
+      first_seen_at: attribution.entry_at ?? tracking.first_seen_at,
       referrer,
       user_agent: navigator.userAgent,
-      utm_source: tracking.utm_source,
-      utm_medium: tracking.utm_medium,
-      utm_campaign: tracking.utm_campaign,
-      utm_content: tracking.utm_content,
-      utm_term: tracking.utm_term,
       fbclid: tracking.fbclid,
       gclid: tracking.gclid,
-      ...traffic,
+      // Atribuição real da sessão: sem UTM na URL não há valor padrão.
+      ...attr,
       device_type, browser, operating_system,
     };
   }, []);
@@ -584,7 +581,7 @@ export default function EscolherBike() {
       utm_content: baseLeadDataRef.current?.utm_content ?? null,
       utm_source: baseLeadDataRef.current?.utm_source ?? null,
       traffic_origin: baseLeadDataRef.current?.traffic_origin ?? null,
-      source_url: typeof window !== "undefined" ? window.location.href : null,
+      source_url: baseLeadDataRef.current?.source_url ?? null,
       first_url: baseLeadDataRef.current?.first_url ?? null,
     };
     const sourceInterest = detectSourceBikeInterest(trackingForInterest);
@@ -728,7 +725,7 @@ export default function EscolherBike() {
           fbclid: t.fbclid || null,
           gclid: t.gclid || null,
           traffic_origin: t.traffic_origin || null,
-          source_url: window.location.href,
+          source_url: baseLeadDataRef.current?.source_url ?? null,
           landing_page: t.landing_page || null,
           referrer: document.referrer || null,
           device_type: t.device_type || null,
@@ -1534,7 +1531,7 @@ function VitaleWhatsAppBlock({
       utm_content: t.utm_content ?? null,
       utm_term: t.utm_term ?? null,
       traffic_origin: t.traffic_origin ?? null,
-      source_url: typeof window !== "undefined" ? window.location.href : null,
+      source_url: baseLeadDataRef.current?.source_url ?? null,
       clicked_at: clickedAt,
       whatsapp_number: VITALE_WHATSAPP_PHONE,
       whatsapp_message: message,

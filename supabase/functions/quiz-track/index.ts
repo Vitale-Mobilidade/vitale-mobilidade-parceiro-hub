@@ -243,7 +243,6 @@ async function sendCrmWebhook(payload: Record<string, unknown>, eventName = "qui
   const zoho = await upsertZohoLead(cleaned, {
     tags: tagsForEvent(eventName),
     eventName,
-    defaultLeadSource: "Quiz Escolher Bike",
   });
 
   if (zoho.success) {

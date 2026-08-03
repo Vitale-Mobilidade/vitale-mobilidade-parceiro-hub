@@ -84,7 +84,6 @@ async function sendWebhook(payload: Record<string, unknown>, eventName = "quiz_c
   const zoho = await upsertZohoLead(payload, {
     tags: tagsForEvent(eventName),
     eventName,
-    defaultLeadSource: "Quiz Escolher Bike",
   });
   if (zoho.success) {
     return {
