@@ -376,6 +376,23 @@ export async function findExistingLead(
 
 // --------------------------------------------------------------- upsert
 
+/**
+ * Gatilhos solicitados ao Zoho em TODA escrita de Lead (POST e PUT).
+ * Sem isso o Zoho grava o registro mas não executa os workflows configurados.
+ */
+export const ZOHO_WRITE_TRIGGER = ["workflow"] as const;
+
+/** Único ponto de montagem do corpo de criação/atualização de Leads. */
+export function buildLeadWritePayload(record: Record<string, unknown>) {
+  return { data: [record], trigger: [...ZOHO_WRITE_TRIGGER] };
+}
+
+export function buildLeadWriteBody(record: Record<string, unknown>): string {
+  return JSON.stringify(buildLeadWritePayload(record));
+}
+
+
+
 export interface UpsertOptions {
   tags?: string[];
   /** Nome do evento do quiz; define Status_do_Lead. */
@@ -398,7 +415,7 @@ export async function upsertZohoLead(
     const send = (id: string | null) =>
       zohoFetch(id ? `/Leads/${id}` : "/Leads", {
         method: id ? "PUT" : "POST",
-        body: JSON.stringify({ data: [record], trigger: [] }),
+        body: buildLeadWriteBody(record),
       });
 
     let res = await send(targetId);
