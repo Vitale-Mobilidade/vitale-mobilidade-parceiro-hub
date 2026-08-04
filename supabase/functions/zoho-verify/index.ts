@@ -27,11 +27,23 @@ async function token(): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const id = new URL(req.url).searchParams.get("id") ?? "";
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id") ?? "";
     if (!/^\d+$/.test(id)) throw new Error("invalid id");
     const domain = (Deno.env.get("ZOHO_API_DOMAIN") ?? "").replace(/\/+$/, "");
     const t = await token();
     const headers = { Authorization: `Zoho-oauthtoken ${t}` };
+
+    // Evidência de execução de workflow: timeline do registro.
+    if (url.searchParams.get("timeline") === "1") {
+      const res = await fetch(`${domain}/crm/v6/Leads/${id}/__timeline?per_page=50`, { headers });
+      const text = await res.text();
+      return new Response(
+        JSON.stringify({ status: res.status, timeline: sanitizeText(text, 12000) }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const [recRes, tagRes] = await Promise.all([
       fetch(`${domain}/crm/v6/Leads/${id}`, { headers }),
       fetch(`${domain}/crm/v6/Leads/${id}?fields=Tag`, { headers }),
