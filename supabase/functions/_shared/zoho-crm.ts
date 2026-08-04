@@ -398,7 +398,7 @@ export async function upsertZohoLead(
     const send = (id: string | null) =>
       zohoFetch(id ? `/Leads/${id}` : "/Leads", {
         method: id ? "PUT" : "POST",
-        body: JSON.stringify({ data: [record], trigger: [] }),
+        body: buildLeadWriteBody(record),
       });
 
     let res = await send(targetId);
