@@ -1,6 +1,8 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   ALLOWED_ZOHO_FIELDS,
+  buildLeadWriteBody,
+  buildLeadWritePayload,
   findExistingLead,
   mapLeadToZoho,
   normalizeEmail,
@@ -480,5 +482,127 @@ Deno.test("nenhum hardcode de campanha padrão no mapeamento", () => {
   const raw = JSON.stringify(ZOHO_FIELD_MAP).toLowerCase();
   for (const proibido of ["youtube", "video_description", "quiz_bike_eletrica", "as_5_bikes"]) {
     assertEquals(raw.includes(proibido), false, proibido);
+  }
+});
+
+// --------------------------------------------------- trigger: ["workflow"]
+
+function captureWrites(handler: Handler, fn: () => Promise<void>) {
+  const writes: { method: string; url: string; body: any }[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input.toString();
+    if (url.includes("/oauth/v2/token")) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ access_token: "tok", expires_in: 3600 }), { status: 200 }),
+      );
+    }
+    const method = init?.method ?? "GET";
+    if ((method === "POST" || method === "PUT") && /\/crm\/v6\/Leads(\/[^/?]+)?$/.test(url)) {
+      writes.push({ method, url, body: JSON.parse(String(init?.body ?? "{}")) });
+    } else if (method === "GET" || url.includes("/search")) {
+      writes.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : null });
+    }
+    return Promise.resolve(handler(url, init));
+  }) as typeof fetch;
+  return fn().finally(() => { globalThis.fetch = original; }).then(() => writes);
+}
+
+function assertTriggerAtRoot(body: any) {
+  assertEquals(body.trigger, ["workflow"]);
+  assertEquals(Array.isArray(body.data), true);
+  assertEquals("trigger" in body.data[0], false);
+}
+
+Deno.test("buildLeadWritePayload coloca trigger no nível raiz", () => {
+  const payload = buildLeadWritePayload({ Last_Name: "Ana" });
+  assertTriggerAtRoot(payload);
+  assertEquals(payload.data[0], { Last_Name: "Ana" });
+  assertEquals(JSON.parse(buildLeadWriteBody({ Last_Name: "Ana" })).trigger, ["workflow"]);
+});
+
+Deno.test("POST de criação envia trigger workflow", async () => {
+  setupEnv();
+  const writes = await captureWrites((url, init) => {
+    if (url.includes("/search")) return new Response(null, { status: 204 });
+    if (init?.method === "POST") {
+      return new Response(JSON.stringify({ data: [{ status: "success", details: { id: "n1" } }] }), { status: 201 });
+    }
+    return new Response(JSON.stringify({}), { status: 200 });
+  }, async () => {
+    const r = await upsertZohoLead({ name: "Ana Silva", email: "ana@x.com" }, { eventName: "quiz_completed" });
+    assertEquals(r.action, "inserted");
+  });
+  const posts = writes.filter((w) => w.method === "POST" && !w.url.includes("add_tags"));
+  assertEquals(posts.length, 1);
+  assertTriggerAtRoot(posts[0].body);
+});
+
+Deno.test("PUT de atualização (match por email) envia trigger workflow", async () => {
+  setupEnv();
+  const writes = await captureWrites((url, init) => {
+    if (url.includes("/search")) return new Response(JSON.stringify({ data: [{ id: "e9" }] }), { status: 200 });
+    if (init?.method === "PUT") {
+      return new Response(JSON.stringify({ data: [{ status: "success", details: { id: "e9" } }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({}), { status: 200 });
+  }, async () => {
+    const r = await upsertZohoLead({ name: "Ana Silva", email: "ana@x.com" }, { eventName: "quiz_completed" });
+    assertEquals(r.action, "updated");
+  });
+  const puts = writes.filter((w) => w.method === "PUT");
+  assertEquals(puts.length, 1);
+  assertTriggerAtRoot(puts[0].body);
+});
+
+Deno.test("PUT após DUPLICATE_DATA envia trigger workflow", async () => {
+  setupEnv();
+  const writes = await captureWrites((url, init) => {
+    if (url.includes("/search")) return new Response(null, { status: 204 });
+    if (init?.method === "POST" && url.endsWith("/Leads")) {
+      return new Response(JSON.stringify({
+        data: [{ status: "error", code: "DUPLICATE_DATA", details: { api_name: "Email", duplicate_record: { id: "dup-7" } } }],
+      }), { status: 202 });
+    }
+    if (init?.method === "PUT") {
+      return new Response(JSON.stringify({ data: [{ status: "success", details: { id: "dup-7" } }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({}), { status: 200 });
+  }, async () => {
+    const r = await upsertZohoLead({ name: "Ana Silva", email: "ana@x.com" }, { eventName: "quiz_completed" });
+    assertEquals(r.success, true);
+    assertEquals(r.zoho_id, "dup-7");
+  });
+  const puts = writes.filter((w) => w.method === "PUT");
+  assertEquals(puts.length, 1);
+  assertTriggerAtRoot(puts[0].body);
+  assertTriggerAtRoot(writes.find((w) => w.method === "POST" && w.url.endsWith("/Leads"))!.body);
+});
+
+Deno.test("clique de compra (reprocesso/tag) também envia trigger workflow", async () => {
+  setupEnv();
+  const writes = await captureWrites((url, init) => {
+    if (url.includes("/search")) return new Response(JSON.stringify({ data: [{ id: "e9" }] }), { status: 200 });
+    if (init?.method === "PUT") {
+      return new Response(JSON.stringify({ data: [{ status: "success", details: { id: "e9" } }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({}), { status: 200 });
+  }, async () => {
+    await upsertZohoLead({ name: "Ana Silva", email: "ana@x.com" }, {
+      eventName: "buy_button_click",
+      tags: tagsForEvent("buy_button_click"),
+    });
+  });
+  assertTriggerAtRoot(writes.find((w) => w.method === "PUT")!.body);
+});
+
+Deno.test("operações de leitura não enviam trigger", async () => {
+  setupEnv();
+  const writes = await captureWrites(() => new Response(null, { status: 204 }), async () => {
+    await findExistingLead("ana@x.com", normalizePhone("11986893890"));
+  });
+  for (const w of writes) {
+    assertEquals(w.method, "GET");
+    assertEquals(w.body, null);
   }
 });
