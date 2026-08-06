@@ -149,7 +149,7 @@ export const BIKES: Bike[] = [
     autonomyKm: 50,
     bestFor: ["urbano", "misto", "subidas"],
     strengths: ["Motor 1000W", "Autonomia até 60 km", "Bateria 48V 18Ah", "Freios hidráulicos", "Marchas Shimano", "NFC, alarme e trava", "Pedal de apoio para garupa"],
-    budgetTiers: ["7000_8000"],
+    budgetTiers: ["ate_7000"],
     diferencial: "Modelo completo com bateria maior, tecnologia e segurança",
     perfilIndicado: "Uso urbano, passeio, garupa e quem quer uma bike mais completa",
   },
