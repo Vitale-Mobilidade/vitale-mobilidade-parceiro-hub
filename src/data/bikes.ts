@@ -124,7 +124,7 @@ export const BIKES: Bike[] = [
     linkVitale: "https://meli.la/1jAmJne",
     linkMeta: "https://meli.la/1jAmJne",
     affiliateLink: "https://meli.la/1jAmJne",
-    internalPrice: 9122,
+    internalPrice: 10136,
     capacity: 2,
     weightSupportKg: 150,
     autonomyKm: 50,
