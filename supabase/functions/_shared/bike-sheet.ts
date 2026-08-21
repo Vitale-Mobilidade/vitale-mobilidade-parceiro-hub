@@ -134,6 +134,54 @@ export function parseVitaleLink(raw: string): string | null {
   return MELI_LINK_RE.test(clean) ? clean : null;
 }
 
+/** URL pública de imagem: apenas HTTPS. Retorna null se inválida. */
+export function parseImageUrl(raw: string): string | null {
+  const clean = String(raw ?? "").replace(/\s+/g, "").trim();
+  if (!clean) return null;
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(clean)) return null;
+  try {
+    const u = new URL(clean);
+    if (u.protocol !== "https:") return null;
+    if (!u.hostname.includes(".")) return null;
+    return clean;
+  } catch {
+    return null;
+  }
+}
+
+/** "150 kg" -> 150 | null (faixa plausível 40–400). */
+export function parseWeightSupportKg(raw: string): number | null {
+  if (raw == null) return null;
+  const match = String(raw).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const value = Math.round(Number(match[1]));
+  if (!Number.isFinite(value) || value < 40 || value > 400) return null;
+  return value;
+}
+
+/** Lista separada por vírgula / ponto-e-vírgula / barra / quebra de linha. */
+export function parseList(raw: string): string[] {
+  return String(raw ?? "")
+    .split(/[,;|\n\/]+/)
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .filter((s) => s.length > 0);
+}
+
+/** Coluna "Ativa": só desativa em valores negativos explícitos. */
+export function parseAtiva(raw: string): boolean {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (!text) return true;
+  return !/^(n|nao|não|no|false|0|inativa|inativo|off)$/.test(text);
+}
+
+/** ID estável a partir da coluna ID (se houver) ou do nome. */
+export function buildStableId(rawId: string, rawName: string): string | null {
+  const fromId = normalizeName(rawId);
+  if (fromId) return fromId;
+  const fromName = normalizeName(rawName);
+  return fromName || null;
+}
+
 /**
  * Versão curta e determinística da descrição (sem IA).
  * Usa as primeiras frases/linhas úteis até ~200 caracteres.
@@ -180,6 +228,8 @@ export function parseCsv(text: string): string[][] {
 
 // ---------------- Snapshot ----------------
 
+export type SnapshotBikeStatus = "eligible" | "draft" | "inactive";
+
 export interface SnapshotBike {
   id: string;
   name: string;
@@ -189,6 +239,21 @@ export interface SnapshotBike {
   capacity: 1 | 2;
   description: string;
   shortDescription: string;
+  /** true quando o modelo não existe no catálogo estático. */
+  isNew: boolean;
+  /** eligible = pode entrar no quiz; draft = falta dado; inactive = "Ativa" = não. */
+  status: SnapshotBikeStatus;
+  /** Lista legível do que falta para a bike nova ficar elegível. */
+  missingFields: string[];
+  line: number;
+  // --- Colunas opcionais (podem ainda não existir na planilha) ---
+  image?: string;
+  weightSupportKg?: number;
+  bestFor?: string[];
+  terrains?: string[];
+  strengths?: string[];
+  diferencial?: string;
+  perfilIndicado?: string;
 }
 
 export interface IgnoredRow {
@@ -202,9 +267,16 @@ export interface SnapshotResult {
   ignored: IgnoredRow[];
   recognizedCount: number;
   ignoredCount: number;
+  draftCount: number;
 }
 
 const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capacidade", "Descrição"];
+
+/** Colunas opcionais suportadas (futuras). */
+export const OPTIONAL_HEADERS = [
+  "ID", "Imagem", "Peso Suportado", "Usos", "Terrenos",
+  "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa",
+] as const;
 
 function headerIndex(headers: string[], name: string): number {
   const target = normalizeName(name);
@@ -222,6 +294,10 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     if (i < 0) throw new Error(`Coluna obrigatória ausente na planilha: ${h}`);
     idx[h] = i;
   }
+  const opt: Record<string, number> = {};
+  for (const h of OPTIONAL_HEADERS) opt[h] = headerIndex(headers, h);
+
+  const cell = (cells: string[], i: number) => (i >= 0 ? (cells[i] ?? "") : "");
 
   const bikes: SnapshotBike[] = [];
   const ignored: IgnoredRow[] = [];
@@ -233,24 +309,52 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const rawName = (cells[idx["Nome"]] ?? "").trim();
     if (!rawName) { ignored.push({ line, name: "", reason: "Nome vazio" }); continue; }
 
-    const id = resolveBikeId(rawName);
-    if (!id) { ignored.push({ line, name: rawName, reason: "Modelo desconhecido no catálogo" }); continue; }
+    const rawId = cell(cells, opt["ID"]).trim();
+    const knownId = resolveBikeId(rawId) ?? resolveBikeId(rawName);
+    const isNew = !knownId;
+    const id = knownId ?? buildStableId(rawId, rawName);
+    if (!id) { ignored.push({ line, name: rawName, reason: "Não foi possível derivar um ID estável" }); continue; }
     if (seen.has(id)) { ignored.push({ line, name: rawName, reason: "Linha duplicada para o mesmo modelo" }); continue; }
 
-    const link = parseVitaleLink(cells[idx["Link Vitale"]] ?? "");
+    const link = parseVitaleLink(cell(cells, idx["Link Vitale"]));
     if (!link) { ignored.push({ line, name: rawName, reason: "Link Vitale inválido" }); continue; }
 
-    const price = parseBrlPrice(cells[idx["Preço R$"]] ?? "");
+    const price = parseBrlPrice(cell(cells, idx["Preço R$"]));
     if (price == null) { ignored.push({ line, name: rawName, reason: "Preço inválido" }); continue; }
 
-    const autonomyKm = parseAutonomyKm(cells[idx["Autonomia"]] ?? "");
+    const autonomyKm = parseAutonomyKm(cell(cells, idx["Autonomia"]));
     if (autonomyKm == null) { ignored.push({ line, name: rawName, reason: "Autonomia inválida" }); continue; }
 
-    const capacity = parseCapacity(cells[idx["Capacidade"]] ?? "");
+    const capacity = parseCapacity(cell(cells, idx["Capacidade"]));
     if (capacity == null) { ignored.push({ line, name: rawName, reason: "Capacidade inválida" }); continue; }
 
-    const description = (cells[idx["Descrição"]] ?? "").trim();
+    const description = cell(cells, idx["Descrição"]).trim();
     if (!description) { ignored.push({ line, name: rawName, reason: "Descrição vazia" }); continue; }
+
+    // Colunas opcionais
+    const image = parseImageUrl(cell(cells, opt["Imagem"])) ?? undefined;
+    const weightSupportKg = parseWeightSupportKg(cell(cells, opt["Peso Suportado"])) ?? undefined;
+    const bestFor = parseList(cell(cells, opt["Usos"]));
+    const terrains = parseList(cell(cells, opt["Terrenos"]));
+    const strengths = parseList(cell(cells, opt["Pontos Fortes"]));
+    const diferencial = cell(cells, opt["Diferencial"]).replace(/\s+/g, " ").trim();
+    const perfilIndicado = cell(cells, opt["Perfil Indicado"]).replace(/\s+/g, " ").trim();
+    const ativa = parseAtiva(cell(cells, opt["Ativa"]));
+
+    // Bike nova precisa de metadados mínimos — nunca inventamos nada.
+    const missingFields: string[] = [];
+    if (isNew) {
+      if (!image) missingFields.push("Imagem (URL https)");
+      if (!weightSupportKg) missingFields.push("Peso Suportado");
+      if (bestFor.length === 0) missingFields.push("Usos");
+      if (terrains.length === 0) missingFields.push("Terrenos");
+    }
+
+    const status: SnapshotBikeStatus = !ativa
+      ? "inactive"
+      : missingFields.length > 0
+        ? "draft"
+        : "eligible";
 
     seen.add(id);
     bikes.push({
@@ -262,11 +366,29 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
       capacity,
       description,
       shortDescription: buildShortDescription(description),
+      isNew,
+      status,
+      missingFields,
+      line,
+      ...(image ? { image } : {}),
+      ...(weightSupportKg ? { weightSupportKg } : {}),
+      ...(bestFor.length ? { bestFor } : {}),
+      ...(terrains.length ? { terrains } : {}),
+      ...(strengths.length ? { strengths } : {}),
+      ...(diferencial ? { diferencial } : {}),
+      ...(perfilIndicado ? { perfilIndicado } : {}),
     });
   }
 
   bikes.sort((a, b) => a.id.localeCompare(b.id));
-  return { bikes, ignored, recognizedCount: bikes.length, ignoredCount: ignored.length };
+  const draftCount = bikes.filter((b) => b.status !== "eligible").length;
+  return {
+    bikes,
+    ignored,
+    recognizedCount: bikes.length,
+    ignoredCount: ignored.length,
+    draftCount,
+  };
 }
 
 /** Hash estável (FNV-1a hex) do conteúdo relevante do snapshot. */
