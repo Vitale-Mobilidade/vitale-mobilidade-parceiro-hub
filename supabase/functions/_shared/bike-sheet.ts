@@ -264,10 +264,15 @@ export interface IgnoredRow {
 
 export interface SnapshotResult {
   bikes: SnapshotBike[];
+  /** Erros estruturais de linha. Se houver qualquer um, o snapshot NÃO pode ser gravado. */
   ignored: IgnoredRow[];
   recognizedCount: number;
   ignoredCount: number;
   draftCount: number;
+  /** Linhas totalmente vazias (ex.: última linha do CSV) — ignoradas sem erro. */
+  blankCount: number;
+  /** false quando há qualquer erro estrutural: a sincronização deve ser abortada. */
+  valid: boolean;
 }
 
 const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capacidade", "Descrição"];
@@ -301,11 +306,15 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
 
   const bikes: SnapshotBike[] = [];
   const ignored: IgnoredRow[] = [];
+  let blankCount = 0;
   const seen = new Set<string>();
 
   for (let r = 1; r < rows.length; r++) {
     const cells = rows[r];
     const line = r + 1;
+    // Linha totalmente vazia (comum no fim do CSV): ignorada sem erro.
+    if (cells.every((c) => (c ?? "").trim() === "")) { blankCount++; continue; }
+
     const rawName = (cells[idx["Nome"]] ?? "").trim();
     if (!rawName) { ignored.push({ line, name: "", reason: "Nome vazio" }); continue; }
 
@@ -388,6 +397,8 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     recognizedCount: bikes.length,
     ignoredCount: ignored.length,
     draftCount,
+    blankCount,
+    valid: ignored.length === 0,
   };
 }
 
