@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      bike_catalog_snapshot: {
+        Row: {
+          content_hash: string | null
+          data: Json
+          id: string
+          ignored_count: number
+          recognized_count: number
+          updated_at: string
+        }
+        Insert: {
+          content_hash?: string | null
+          data?: Json
+          id?: string
+          ignored_count?: number
+          recognized_count?: number
+          updated_at?: string
+        }
+        Update: {
+          content_hash?: string | null
+          data?: Json
+          id?: string
+          ignored_count?: number
+          recognized_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bike_catalog_sync_state: {
+        Row: {
+          error_message: string | null
+          id: string
+          ignored_count: number
+          ignored_rows: Json
+          last_attempt_at: string | null
+          last_success_at: string | null
+          next_run_at: string
+          recognized_count: number
+          running_since: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          ignored_count?: number
+          ignored_rows?: Json
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          next_run_at?: string
+          recognized_count?: number
+          running_since?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          ignored_count?: number
+          ignored_rows?: Json
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          next_run_at?: string
+          recognized_count?: number
+          running_since?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
