@@ -134,6 +134,54 @@ export function parseVitaleLink(raw: string): string | null {
   return MELI_LINK_RE.test(clean) ? clean : null;
 }
 
+/** URL pública de imagem: apenas HTTPS. Retorna null se inválida. */
+export function parseImageUrl(raw: string): string | null {
+  const clean = String(raw ?? "").replace(/\s+/g, "").trim();
+  if (!clean) return null;
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(clean)) return null;
+  try {
+    const u = new URL(clean);
+    if (u.protocol !== "https:") return null;
+    if (!u.hostname.includes(".")) return null;
+    return clean;
+  } catch {
+    return null;
+  }
+}
+
+/** "150 kg" -> 150 | null (faixa plausível 40–400). */
+export function parseWeightSupportKg(raw: string): number | null {
+  if (raw == null) return null;
+  const match = String(raw).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const value = Math.round(Number(match[1]));
+  if (!Number.isFinite(value) || value < 40 || value > 400) return null;
+  return value;
+}
+
+/** Lista separada por vírgula / ponto-e-vírgula / barra / quebra de linha. */
+export function parseList(raw: string): string[] {
+  return String(raw ?? "")
+    .split(/[,;|\n\/]+/)
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .filter((s) => s.length > 0);
+}
+
+/** Coluna "Ativa": só desativa em valores negativos explícitos. */
+export function parseAtiva(raw: string): boolean {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (!text) return true;
+  return !/^(n|nao|não|no|false|0|inativa|inativo|off)$/.test(text);
+}
+
+/** ID estável a partir da coluna ID (se houver) ou do nome. */
+export function buildStableId(rawId: string, rawName: string): string | null {
+  const fromId = normalizeName(rawId);
+  if (fromId) return fromId;
+  const fromName = normalizeName(rawName);
+  return fromName || null;
+}
+
 /**
  * Versão curta e determinística da descrição (sem IA).
  * Usa as primeiras frases/linhas úteis até ~200 caracteres.
