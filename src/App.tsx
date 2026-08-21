@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import EscolherBike from "./pages/EscolherBike";
+import PainelBikes from "./pages/PainelBikes";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -8,6 +9,7 @@ const App = () => (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/escolherbike" element={<EscolherBike />} />
+      <Route path="/painel-bikes" element={<PainelBikes />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

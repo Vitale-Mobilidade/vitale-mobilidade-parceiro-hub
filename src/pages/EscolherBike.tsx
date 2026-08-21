@@ -19,6 +19,7 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
+import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
@@ -241,6 +242,11 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Catálogo dinâmico (planilha oficial via snapshot) com fallback estático.
+  const { catalog } = useBikeCatalog();
+  const catalogRef = useRef(catalog);
+  useEffect(() => { catalogRef.current = catalog; }, [catalog]);
+
   const baseLeadDataRef = useRef<any>({});
   const startedAtRef = useRef<string | null>(null);
   const completedRef = useRef(false);
@@ -255,11 +261,11 @@ export default function EscolherBike() {
         source_url: baseLeadDataRef.current?.source_url ?? null,
         first_url: t.first_url ?? null,
       });
-      const rec = recommend(answers as Answers, sourceInterest);
+      const rec = recommend(answers as Answers, sourceInterest, catalog);
       return { ...rec, sourceInterest };
     }
     return null;
-  }, [answers]);
+  }, [answers, catalog]);
 
 
   useEffect(() => {
@@ -553,7 +559,7 @@ export default function EscolherBike() {
     };
     const sourceInterest = detectSourceBikeInterest(trackingForInterest);
 
-    const rec = recommend(finalAnswers, sourceInterest);
+    const rec = recommend(finalAnswers, sourceInterest, catalogRef.current);
     const clusters = computeClusters(finalAnswers);
 
     const basePrimaryCopy = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
