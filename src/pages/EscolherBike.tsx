@@ -19,6 +19,7 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
+import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
@@ -558,7 +559,7 @@ export default function EscolherBike() {
     };
     const sourceInterest = detectSourceBikeInterest(trackingForInterest);
 
-    const rec = recommend(finalAnswers, sourceInterest);
+    const rec = recommend(finalAnswers, sourceInterest, catalogRef.current);
     const clusters = computeClusters(finalAnswers);
 
     const basePrimaryCopy = buildPersonalizedCopy(finalAnswers, true, rec.budgetLimited);
