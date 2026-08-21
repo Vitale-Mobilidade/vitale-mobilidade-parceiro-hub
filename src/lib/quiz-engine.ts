@@ -178,12 +178,15 @@ export type RecommendResult = {
 export function recommend(
   a: Answers,
   sourceInterest?: SourceBikeInterest | null,
+  /** Catálogo dinâmico (planilha). Sem ele, usa o catálogo estático. */
+  catalog?: Bike[] | null,
 ): RecommendResult {
+  const source = catalog && catalog.length > 0 ? catalog : BIKES;
   const maxPrice = BUDGET_MAX_PRICE[a.budget_range as BudgetTier] ?? 999999;
   // Filtro RÍGIDO de orçamento — nunca recomenda acima do limite
-  const eligible = BIKES.filter(b => b.internalPrice <= maxPrice);
-  const pool = eligible.length > 0 ? eligible : BIKES;
-  const budgetLimited = eligible.length < BIKES.length;
+  const eligible = source.filter(b => b.internalPrice <= maxPrice);
+  const pool = eligible.length > 0 ? eligible : source;
+  const budgetLimited = eligible.length < source.length;
 
   // 1) Pontuação normal (base)
   const baseRanked = pool.map(b => ({ bike: b, score: scoreBike(b, a) }))
