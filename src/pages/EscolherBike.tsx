@@ -241,6 +241,11 @@ export default function EscolherBike() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Catálogo dinâmico (planilha oficial via snapshot) com fallback estático.
+  const { catalog } = useBikeCatalog();
+  const catalogRef = useRef(catalog);
+  useEffect(() => { catalogRef.current = catalog; }, [catalog]);
+
   const baseLeadDataRef = useRef<any>({});
   const startedAtRef = useRef<string | null>(null);
   const completedRef = useRef(false);
@@ -255,11 +260,11 @@ export default function EscolherBike() {
         source_url: baseLeadDataRef.current?.source_url ?? null,
         first_url: t.first_url ?? null,
       });
-      const rec = recommend(answers as Answers, sourceInterest);
+      const rec = recommend(answers as Answers, sourceInterest, catalog);
       return { ...rec, sourceInterest };
     }
     return null;
-  }, [answers]);
+  }, [answers, catalog]);
 
 
   useEffect(() => {
