@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
       changed,
       recognized: result.recognizedCount,
       ignored: result.ignoredCount,
+      drafts: result.draftCount,
     });
   } catch (e) {
     const message = safeError(e);
