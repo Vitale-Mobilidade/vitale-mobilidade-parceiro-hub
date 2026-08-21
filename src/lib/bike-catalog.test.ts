@@ -79,24 +79,26 @@ describe("descrição curta determinística", () => {
 });
 
 describe("snapshot da planilha", () => {
-  it("reconhece linhas válidas e ignora desconhecidas, duplicadas e inválidas", () => {
+  it("reconhece válidas, rascunha desconhecidas e ignora duplicadas/inválidas", () => {
     const csv = [
       HEADER,
       row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00", "Até 60km", "1 pessoa"),
       row("Ouxi GT20 Pro", "https://meli.la/1pFywK4", "R$ 7.138,00"),
       row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"), // duplicada
-      row("Bike Fantasma", "https://meli.la/9999999", "R$ 1.000,00"), // desconhecida
+      row("Bike Fantasma", "https://meli.la/9999999", "R$ 1.000,00"), // nova sem metadados -> draft
       row("V35", "https://site-errado.com/x", "R$ 10.250,00"), // link inválido
       row("V29 Pro", "https://meli.la/1LP5i2E", "combinar"), // preço inválido
     ].join("\n");
 
     const res = buildSnapshotFromCsv(csv);
-    expect(res.recognizedCount).toBe(2);
-    expect(res.bikes.map((b) => b.id).sort()).toEqual(["ft03", "ouxi_gt20_pro"]);
-    expect(res.ignoredCount).toBe(4);
+    expect(res.bikes.map((b) => b.id).sort()).toEqual(["bike_fantasma", "ft03", "ouxi_gt20_pro"]);
+    expect(res.bikes.find((b) => b.id === "bike_fantasma")!.status).toBe("draft");
+    expect(res.draftCount).toBe(1);
+    // a linha nova em rascunho NÃO entra no quiz
+    expect(mergeCatalog(BIKES, res.bikes).some((b) => b.id === "bike_fantasma")).toBe(false);
+    expect(res.ignoredCount).toBe(3);
     expect(res.ignored.map((i) => i.reason)).toEqual([
       "Linha duplicada para o mesmo modelo",
-      "Modelo desconhecido no catálogo",
       "Link Vitale inválido",
       "Preço inválido",
     ]);
