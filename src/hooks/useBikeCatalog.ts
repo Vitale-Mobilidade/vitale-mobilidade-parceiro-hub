@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Bike } from "@/data/bikes";
 import {
+  buildCatalogRows,
   mergeCatalog,
+  type CatalogRow,
   STATIC_CATALOG,
   type CatalogSnapshot,
   type SyncState,
@@ -10,6 +12,8 @@ import {
 
 export interface BikeCatalogState {
   catalog: Bike[];
+  /** Linhas para o painel (inclui pendentes/inativas que não entram no quiz). */
+  rows: CatalogRow[];
   /** "sheet" quando veio do snapshot da planilha; "static" no fallback. */
   origin: "sheet" | "static";
   snapshotUpdatedAt: string | null;
@@ -20,6 +24,7 @@ export interface BikeCatalogState {
 
 export function useBikeCatalog(): BikeCatalogState {
   const [catalog, setCatalog] = useState<Bike[]>(STATIC_CATALOG);
+  const [rows, setRows] = useState<CatalogRow[]>(() => buildCatalogRows(STATIC_CATALOG, []));
   const [origin, setOrigin] = useState<"sheet" | "static">("static");
   const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
@@ -44,10 +49,12 @@ export function useBikeCatalog(): BikeCatalogState {
         const bikes = snapshot?.bikes;
         if (Array.isArray(bikes) && bikes.length > 0) {
           setCatalog(mergeCatalog(STATIC_CATALOG, bikes));
+          setRows(buildCatalogRows(STATIC_CATALOG, bikes));
           setOrigin("sheet");
           setSnapshotUpdatedAt(snapRes.data?.updated_at ?? null);
         } else {
           setCatalog(STATIC_CATALOG);
+          setRows(buildCatalogRows(STATIC_CATALOG, []));
           setOrigin("static");
           setSnapshotUpdatedAt(null);
         }
@@ -57,6 +64,7 @@ export function useBikeCatalog(): BikeCatalogState {
         if (!cancelled) {
           console.warn("[bike-catalog] fallback para catálogo estático", e);
           setCatalog(STATIC_CATALOG);
+          setRows(buildCatalogRows(STATIC_CATALOG, []));
           setOrigin("static");
         }
       } finally {
@@ -67,5 +75,5 @@ export function useBikeCatalog(): BikeCatalogState {
     return () => { cancelled = true; };
   }, [nonce]);
 
-  return { catalog, origin, snapshotUpdatedAt, syncState, loading, refresh };
+  return { catalog, rows, origin, snapshotUpdatedAt, syncState, loading, refresh };
 }
