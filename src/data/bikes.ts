@@ -43,10 +43,14 @@ export interface Bike {
   weightSupportKg: number;
   autonomyKm: number;
   bestFor: string[];
+  /** Terrenos indicados (planilha). Opcional — usado no score de bikes dinâmicas. */
+  terrains?: string[];
   strengths: string[];
   budgetTiers: BudgetTier[];
   diferencial: string;
   perfilIndicado: string;
+  /** true quando a bike veio somente da planilha (sem metadados estáticos). */
+  isDynamic?: boolean;
 }
 
 /** Limite máximo de preço por faixa de orçamento (uso interno) */
