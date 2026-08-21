@@ -69,6 +69,35 @@ Deno.serve(async (req) => {
     const csv = await res.text();
 
     const result = buildSnapshotFromCsv(csv);
+
+    // Atomicidade: qualquer erro estrutural de linha aborta a sincronização.
+    // O snapshot anterior permanece intacto e o quiz segue com ele.
+    if (!result.valid) {
+      const done = new Date();
+      const preview = result.ignored
+        .slice(0, 5)
+        .map((i) => `linha ${i.line}: ${i.reason}`)
+        .join("; ");
+      const message = `Planilha com ${result.ignored.length} linha(s) inválida(s) — snapshot anterior preservado (${preview})`.slice(0, 300);
+      await supabase.from("bike_catalog_sync_state").update({
+        status: "error",
+        error_message: message,
+        recognized_count: result.recognizedCount,
+        ignored_count: result.ignoredCount,
+        ignored_rows: result.ignored,
+        next_run_at: new Date(done.getTime() + RETRY_INTERVAL_MS).toISOString(),
+        running_since: null,
+        updated_at: done.toISOString(),
+      }).eq("id", "current");
+      return json({
+        ok: false,
+        snapshotWritten: false,
+        error: message,
+        recognized: result.recognizedCount,
+        ignored: result.ignoredCount,
+      }, 422);
+    }
+
     if (result.recognizedCount === 0) throw new Error("Nenhuma linha válida reconhecida na planilha");
 
     const hash = snapshotHash(result.bikes);
@@ -112,9 +141,11 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       changed,
+      snapshotWritten: changed,
       recognized: result.recognizedCount,
       ignored: result.ignoredCount,
       drafts: result.draftCount,
+      blank: result.blankCount,
     });
   } catch (e) {
     const message = safeError(e);

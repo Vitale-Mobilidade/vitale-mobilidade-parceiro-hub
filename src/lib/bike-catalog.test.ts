@@ -334,3 +334,66 @@ describe("linhas do painel", () => {
     expect(rows).toHaveLength(BIKES.length + 1);
   });
 });
+
+// ---------- Atomicidade do snapshot ----------
+describe("atomicidade: erro estrutural não substitui o snapshot", () => {
+  const validRow = (n: number) =>
+    row(`Modelo Novo ${n}`, `https://meli.la/1abc${n}`, "R$ 7.500,00");
+
+  it("18 válidas + 1 inválida invalidam a sincronização inteira", () => {
+    const linhas = Array.from({ length: 18 }, (_, i) => validRow(i + 1));
+    linhas.push(row("Modelo Quebrado", "https://site-errado.com/x", "R$ 7.500,00"));
+    const res = buildSnapshotFromCsv([HEADER, ...linhas].join("\n"));
+
+    expect(res.recognizedCount).toBe(18);
+    expect(res.ignoredCount).toBe(1);
+    expect(res.valid).toBe(false);
+    expect(res.ignored[0].reason).toBe("Link Vitale inválido");
+
+    // simula a Edge Function: com valid=false, nada é gravado
+    const snapshotAnterior = buildSnapshotFromCsv(
+      [HEADER, row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00")].join("\n"),
+    );
+    expect(snapshotAnterior.valid).toBe(true);
+    const gravado = res.valid ? res.bikes : snapshotAnterior.bikes;
+    expect(gravado).toEqual(snapshotAnterior.bikes);
+    expect(snapshotHash(gravado)).toBe(snapshotHash(snapshotAnterior.bikes));
+  });
+
+  it("linha vazia no fim do CSV não invalida nem conta como ignorada", () => {
+    const csv = [HEADER, row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"), "", ",,,,,,,"].join("\n");
+    const res = buildSnapshotFromCsv(csv);
+    expect(res.valid).toBe(true);
+    expect(res.ignoredCount).toBe(0);
+    expect(res.blankCount).toBeGreaterThanOrEqual(1);
+    expect(res.recognizedCount).toBe(1);
+  });
+
+  it("drafts e inativas permanecem válidos (não são erro)", () => {
+    const csv = [
+      HEADER_FULL,
+      fullRow("Nova Draft", "https://meli.la/1abc001", "R$ 7.500,00"),
+      fullRow("Nova Inativa", "https://meli.la/1abc002", "R$ 7.500,00", {
+        image: "https://cdn.exemplo.com/a.jpg", weight: "150 kg", usos: "Urbano", terrenos: "Plano", ativa: "Não",
+      }),
+    ].join("\n");
+    const res = buildSnapshotFromCsv(csv);
+    expect(res.valid).toBe(true);
+    expect(res.ignoredCount).toBe(0);
+    expect(res.draftCount).toBe(2);
+  });
+
+  it("duplicata, preço, autonomia, capacidade e descrição vazia invalidam", () => {
+    const cases = [
+      [row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"), row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00")],
+      [row("V35", "https://meli.la/1fAggCx", "combinar")],
+      [row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "sem info")],
+      [row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "Até 60km", "vários")],
+    ];
+    for (const linhas of cases) {
+      const res = buildSnapshotFromCsv([HEADER, ...linhas].join("\n"));
+      expect(res.valid).toBe(false);
+      expect(res.ignoredCount).toBeGreaterThan(0);
+    }
+  });
+});

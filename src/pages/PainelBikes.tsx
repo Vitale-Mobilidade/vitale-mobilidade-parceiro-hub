@@ -148,7 +148,17 @@ export default function PainelBikes() {
 
         {pendencias.length > 0 && (
           <section className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
-            <h2 className="text-base font-semibold text-foreground">Linhas ignoradas na planilha</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              {syncState?.status === "error"
+                ? "Linhas com problema na planilha — sincronização bloqueada"
+                : "Linhas ignoradas na planilha"}
+            </h2>
+            {syncState?.status === "error" && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nada foi substituído: o quiz continua usando o último catálogo válido. Corrija as
+                linhas abaixo na planilha e a próxima execução automática publica o catálogo.
+              </p>
+            )}
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {pendencias.map((p, i) => (
                 <li key={`${p.line}-${i}`}>

@@ -226,6 +226,31 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
 }
 
+/** Igual a parseCsv, mas preserva linhas totalmente vazias (para contá-las como blank). */
+export function parseCsvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  const src = String(text ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (src[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+      continue;
+    }
+    if (c === '"') { inQuotes = true; continue; }
+    if (c === ",") { row.push(field); field = ""; continue; }
+    if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; continue; }
+    field += c;
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 // ---------------- Snapshot ----------------
 
 export type SnapshotBikeStatus = "eligible" | "draft" | "inactive";
@@ -264,10 +289,15 @@ export interface IgnoredRow {
 
 export interface SnapshotResult {
   bikes: SnapshotBike[];
+  /** Erros estruturais de linha. Se houver qualquer um, o snapshot NÃO pode ser gravado. */
   ignored: IgnoredRow[];
   recognizedCount: number;
   ignoredCount: number;
   draftCount: number;
+  /** Linhas totalmente vazias (ex.: última linha do CSV) — ignoradas sem erro. */
+  blankCount: number;
+  /** false quando há qualquer erro estrutural: a sincronização deve ser abortada. */
+  valid: boolean;
 }
 
 const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capacidade", "Descrição"];
@@ -285,8 +315,8 @@ function headerIndex(headers: string[], name: string): number {
 
 /** Constrói o snapshot a partir do CSV cru. Lança erro só se o cabeçalho for inválido. */
 export function buildSnapshotFromCsv(csv: string): SnapshotResult {
-  const rows = parseCsv(csv);
-  if (rows.length < 2) throw new Error("Planilha vazia ou inacessível");
+  const rows = parseCsvRows(csv);
+  if (rows.filter((r) => r.some((c) => c.trim() !== "")).length < 2) throw new Error("Planilha vazia ou inacessível");
   const headers = rows[0];
   const idx: Record<string, number> = {};
   for (const h of REQUIRED_HEADERS) {
@@ -301,11 +331,15 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
 
   const bikes: SnapshotBike[] = [];
   const ignored: IgnoredRow[] = [];
+  let blankCount = 0;
   const seen = new Set<string>();
 
   for (let r = 1; r < rows.length; r++) {
     const cells = rows[r];
     const line = r + 1;
+    // Linha totalmente vazia (comum no fim do CSV): ignorada sem erro.
+    if (cells.every((c) => (c ?? "").trim() === "")) { blankCount++; continue; }
+
     const rawName = (cells[idx["Nome"]] ?? "").trim();
     if (!rawName) { ignored.push({ line, name: "", reason: "Nome vazio" }); continue; }
 
@@ -388,6 +422,8 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     recognizedCount: bikes.length,
     ignoredCount: ignored.length,
     draftCount,
+    blankCount,
+    valid: ignored.length === 0,
   };
 }
 
