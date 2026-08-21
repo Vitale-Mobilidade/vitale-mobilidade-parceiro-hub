@@ -194,7 +194,7 @@ describe("fallback da engine", () => {
       shortDescription: "x",
     })));
     const res = recommend(answers, null, dynamic);
-    expect(res.budgetLimited).toBe(false); // nenhuma elegível -> usa pool completo
+    expect(res.budgetLimited).toBe(true); // nenhuma elegível -> sinaliza limite e usa pool completo
     expect(res.primary.internalPrice).toBe(20000);
   });
 });
