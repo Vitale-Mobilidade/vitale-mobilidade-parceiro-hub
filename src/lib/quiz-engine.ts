@@ -84,8 +84,50 @@ export function computeClusters(a: Answers): Clusters {
   return { usage_cluster, distance_cluster, route_cluster, passenger_cluster, weight_cluster, budget_cluster, experience_cluster, intent_cluster, recommendation_profile };
 }
 
+const USE_KEYWORDS: Record<string, RegExp> = {
+  trabalho_delivery_renda: /trabalh|deliver|renda|profission|entrega/i,
+  locomocao_diaria: /locomo|urban|diari|di[áa]ri|trajeto|cidade|commut/i,
+  lazer_passeio: /lazer|passei|trilha|fim de semana|turismo/i,
+};
+
+const TERRAIN_KEYWORDS: Record<string, RegExp> = {
+  plano: /plano|asfalt|urban|liso/i,
+  misto: /mist|variad|urbano e|leve off/i,
+  muitas_subidas: /subid|ladeir|serra|morro|off.?road|aclive/i,
+};
+
+/**
+ * Score de bikes vindas somente da planilha (sem regras estáticas por id).
+ * Usa Usos, Terrenos, autonomia e peso suportado — nunca metadados inventados.
+ */
+function scoreDynamicAttributes(bike: Bike, a: Answers): number {
+  let s = 0;
+  const uses = (bike.bestFor ?? []).join(" | ");
+  const terrains = (bike.terrains ?? []).join(" | ");
+
+  const useRe = USE_KEYWORDS[a.main_use];
+  if (useRe && useRe.test(uses)) s += 30;
+
+  const terrainRe = TERRAIN_KEYWORDS[a.route_type];
+  if (terrainRe && terrainRe.test(terrains)) s += 15;
+  if (a.route_type === "muitas_subidas" && !TERRAIN_KEYWORDS.muitas_subidas.test(terrains)) s -= 10;
+
+  // Autonomia x quilometragem diária
+  const km = bike.autonomyKm ?? 0;
+  if (a.daily_km_range === "ate_10_km" && km >= 30) s += 12;
+  if (a.daily_km_range === "10_25_km" && km >= 40) s += 15;
+  if (a.daily_km_range === "25_40_km") s += km >= 60 ? 20 : -10;
+  if (a.daily_km_range === "mais_40_km") s += km >= 80 ? 30 : km >= 60 ? 12 : -25;
+
+  return s;
+}
+
 function scoreBike(bike: Bike, a: Answers): number {
   let s = 0;
+
+  if (bike.isDynamic) {
+    s += scoreDynamicAttributes(bike, a);
+  } else {
 
   // Uso
   if (a.main_use === "trabalho_delivery_renda") {
@@ -117,6 +159,9 @@ function scoreBike(bike: Bike, a: Answers): number {
     if (["v10_max", "gt2000", "v35"].includes(bike.id)) s += 18;
     if (["ft03", "v20_mini"].includes(bike.id)) s -= 10;
   }
+
+  }
+
 
   // Garupa
   if (a.rider_capacity_need === "apenas_1_pessoa") {
