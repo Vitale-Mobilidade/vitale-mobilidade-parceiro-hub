@@ -220,8 +220,8 @@ const fullRow = (
   extra: Partial<Record<"id" | "image" | "weight" | "usos" | "terrenos" | "fortes" | "dif" | "perfil" | "ativa", string>> = {},
 ) => [
   name, link, `"${price}"`, "Não tem", "Até 60km", "2 pessoas", '"Descrição completa."', "Não",
-  extra.id ?? "", extra.image ?? "", extra.weight ?? "", extra.usos ?? "", extra.terrenos ?? "",
-  extra.fortes ?? "", extra.dif ?? "", extra.perfil ?? "", extra.ativa ?? "",
+  extra.id ?? "", extra.image ?? "", extra.weight ?? "", `"${extra.usos ?? ""}"`, `"${extra.terrenos ?? ""}"`,
+  `"${extra.fortes ?? ""}"`, `"${extra.dif ?? ""}"`, `"${extra.perfil ?? ""}"`, extra.ativa ?? "",
 ].join(",");
 
 describe("parsers das colunas opcionais", () => {
