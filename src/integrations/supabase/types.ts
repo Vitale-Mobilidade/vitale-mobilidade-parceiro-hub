@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      bike_admin_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          bike_id: string | null
+          created_at: string
+          detail: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          bike_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          bike_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+        }
+        Relationships: []
+      }
+      bike_admin_overrides: {
+        Row: {
+          bike_id: string
+          created_at: string
+          eligible: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          eligible?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          eligible?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      bike_assets: {
+        Row: {
+          attempts: number
+          bike_id: string
+          bytes: number | null
+          checksum: string | null
+          content_type: string | null
+          created_at: string
+          downloaded_at: string | null
+          error_message: string | null
+          needs_review: boolean
+          public_url: string | null
+          source_url: string | null
+          status: string
+          storage_path: string | null
+          stored_source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          bike_id: string
+          bytes?: number | null
+          checksum?: string | null
+          content_type?: string | null
+          created_at?: string
+          downloaded_at?: string | null
+          error_message?: string | null
+          needs_review?: boolean
+          public_url?: string | null
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          stored_source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          bike_id?: string
+          bytes?: number | null
+          checksum?: string | null
+          content_type?: string | null
+          created_at?: string
+          downloaded_at?: string | null
+          error_message?: string | null
+          needs_review?: boolean
+          public_url?: string | null
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          stored_source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bike_catalog_snapshot: {
         Row: {
           content_hash: string | null
@@ -80,6 +185,165 @@ export type Database = {
           running_since?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      bike_panel_credentials: {
+        Row: {
+          created_at: string
+          hash_base64: string
+          id: string
+          iterations: number
+          salt_base64: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hash_base64: string
+          id?: string
+          iterations?: number
+          salt_base64: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hash_base64?: string
+          id?: string
+          iterations?: number
+          salt_base64?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bike_panel_login_attempts: {
+        Row: {
+          attempts: number
+          fingerprint: string
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          fingerprint: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          fingerprint?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bike_panel_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          last_seen_at: string
+          remember: boolean
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_seen_at?: string
+          remember?: boolean
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_seen_at?: string
+          remember?: boolean
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
+      }
+      bike_profile_jobs: {
+        Row: {
+          attempts: number
+          bike_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          locked_at: string | null
+          payload: Json | null
+          status: string
+          technical_hash: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          bike_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          locked_at?: string | null
+          payload?: Json | null
+          status?: string
+          technical_hash: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          bike_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          locked_at?: string | null
+          payload?: Json | null
+          status?: string
+          technical_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bike_profiles: {
+        Row: {
+          attempts: number
+          bike_id: string
+          created_at: string
+          data: Json | null
+          error_message: string | null
+          missing_fields: Json
+          model: string | null
+          status: string
+          technical_hash: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          bike_id: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          missing_fields?: Json
+          model?: string | null
+          status?: string
+          technical_hash: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          bike_id?: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          missing_fields?: Json
+          model?: string | null
+          status?: string
+          technical_hash?: string
+          updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -512,7 +776,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_quiz_catalog: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
