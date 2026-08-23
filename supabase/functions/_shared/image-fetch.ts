@@ -16,18 +16,28 @@ const FETCH_TIMEOUT_MS = 15_000;
 
 export class ImageDownloadError extends Error {}
 
-/** Resolve DNS (A + AAAA) e rejeita qualquer IP privado/reservado. Fail-closed. */
+/**
+ * Resolve DNS (A + AAAA) e rejeita qualquer IP privado/reservado.
+ * O Edge Runtime pode não permitir Deno.dns.resolve: nesse caso a validação
+ * de URL (sem IPs literais, sem hosts internos, apenas HTTPS) continua valendo
+ * e o fetch segue pela infraestrutura isolada do runtime. Registro resolvido
+ * para IP bloqueado SEMPRE rejeita; ausência total de registros também.
+ */
 async function resolveAndCheckHost(hostname: string): Promise<void> {
   // IPs literais já foram bloqueados por checkImageUrl.
   const families: Array<"A" | "AAAA"> = ["A", "AAAA"];
   let resolved = 0;
+  let apiUnavailable = false;
   for (const family of families) {
     let records: string[] = [];
     try {
       // @ts-ignore Deno global
       records = await Deno.dns.resolve(hostname, family);
-    } catch {
-      // Sem registros dessa família é aceitável; falha de resolução total é tratada abaixo.
+    } catch (err) {
+      const msg = String((err as Error)?.message ?? err);
+      if (/permission|notcapable|not supported|Requires/i.test(msg)) {
+        apiUnavailable = true;
+      }
       records = [];
     }
     for (const ip of records) {
@@ -37,7 +47,7 @@ async function resolveAndCheckHost(hostname: string): Promise<void> {
       }
     }
   }
-  if (resolved === 0) {
+  if (resolved === 0 && !apiUnavailable) {
     throw new ImageDownloadError("Falha ao resolver DNS do host");
   }
 }
