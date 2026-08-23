@@ -252,14 +252,15 @@ describe("parsers das colunas opcionais", () => {
 });
 
 describe("bikes novas: draft x elegível", () => {
-  it("marca como draft quando faltam imagem/peso/usos/terrenos", () => {
+  it("marca como draft quando falta a imagem (demais campos vêm do perfil IA)", () => {
     const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", { usos: "Urbano" })].join("\n");
     const res = buildSnapshotFromCsv(csv);
     const bike = res.bikes[0];
     expect(bike.id).toBe("nova_x9");
     expect(bike.isNew).toBe(true);
     expect(bike.status).toBe("draft");
-    expect(bike.missingFields).toEqual(["Imagem (URL https)", "Peso Suportado", "Terrenos"]);
+    // Só a imagem é exigida na planilha; peso/usos/terrenos são derivados pela IA.
+    expect(bike.missingFields).toEqual(["Imagem da Bike (URL https)"]);
     expect(res.draftCount).toBe(1);
     expect(mergeCatalog(BIKES, res.bikes)).toHaveLength(BIKES.length);
   });
@@ -329,7 +330,7 @@ describe("linhas do painel", () => {
     const outra = rows.find((r) => r.id === "v35")!;
     expect(ft03.state).toBe("eligible");
     expect(nova.state).toBe("draft");
-    expect(nova.missingFields.length).toBe(3);
+    expect(nova.missingFields.length).toBe(1); // apenas Imagem da Bike
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
   });
