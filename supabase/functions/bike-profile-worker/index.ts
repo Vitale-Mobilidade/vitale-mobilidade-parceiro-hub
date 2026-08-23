@@ -2,7 +2,7 @@
 // Nunca chama IA para as 19 bikes legadas. Circuit breaker para 402/403/401 com probe;
 // retry apenas para 429/5xx com backoff curto.
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { isLegacyBikeId } from "../_shared/bike-hash.ts";
+import { KNOWN_BIKE_IDS } from "../_shared/bike-sheet.ts";
 import {
   buildProfilePrompt,
   classifyAiError,

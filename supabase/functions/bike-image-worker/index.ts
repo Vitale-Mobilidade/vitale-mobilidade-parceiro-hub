@@ -1,9 +1,9 @@
 // bike-image-worker: baixa imagens da planilha para o bucket privado `bike-images`.
 // Idempotente, single-flight, lote pequeno, pausa automática após falhas consecutivas.
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { assetStorageKey, sha256Text } from "../_shared/bike-hash.ts";
+import { imageStorageKey } from "../_shared/bike-hash.ts";
 import { downloadImageSafely, ImageDownloadError, sha256Hex } from "../_shared/image-fetch.ts";
-import { checkImageUrl } from "../_shared/image-safety.ts";
+import { checkImageUrl, IMAGE_EXTENSION } from "../_shared/image-safety.ts";
 import {
   clearWorkerPause,
   ensureWorkerState,
@@ -106,8 +106,7 @@ async function processAsset(supabase: SupabaseClient, asset: AssetRow, publicBas
   try {
     const { bytes, contentType } = await downloadImageSafely(asset.source_url);
     const checksum = await sha256Hex(bytes);
-    const sourceHash = await sha256Text(asset.source_url);
-    const storagePath = assetStorageKey(bikeId, sourceHash, contentType);
+    const storagePath = imageStorageKey(bikeId, asset.source_url, IMAGE_EXTENSION[contentType]);
 
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(storagePath, bytes, {
       contentType,
