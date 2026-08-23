@@ -115,10 +115,6 @@ async function callAi(apiKey: string, bike: ProfilePromptBike): Promise<AiCallRe
 
 /** Lease do job: queued → processing (condicional). */
 async function claimJob(supabase: SupabaseClient, job: JobRow): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("bike_profiles_jobs_claim_guard" as never) // placeholder nunca usado
-    .select("*" as never);
-  void data; void error;
   const { data: claimed, error: claimErr } = await supabase
     .from("bike_profile_jobs")
     .update({ status: "processing", locked_at: new Date().toISOString(), error_message: null })
