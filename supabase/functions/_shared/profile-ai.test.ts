@@ -68,7 +68,7 @@ describe("validateAiProfile", () => {
       bestFor: ["urbano", "voar", "URBANO", "lazer_passeio", "subidas", "misto", "extra1", "extra2"],
       terrains: ["plano", "areia", "misto", "muitas_subidas", "off_road"],
     });
-    expect(v!.data.bestFor).toEqual(["urbano", "subidas"]);
+    expect(v!.data.bestFor).toEqual(["urbano", "lazer_passeio", "subidas", "misto"]);
     expect(v!.data.bestFor.every((b) => (BEST_FOR_ENUM as readonly string[]).includes(b))).toBe(true);
     expect(v!.data.terrains).toEqual(["plano", "misto", "muitas_subidas"]);
     expect(v!.data.terrains.every((t) => (TERRAINS_ENUM as readonly string[]).includes(t))).toBe(true);
@@ -85,10 +85,10 @@ describe("validateAiProfile", () => {
     const long = "x".repeat(200);
     const v = validateAiProfile({
       ...VALID_AI,
-      strengths: [" ok ", "ok", "a", long, long],
+      strengths: [" Motor forte ", "Motor forte", "a", long, long],
       diferencial: `  ${long}  `,
     });
-    expect(v!.data.strengths).toHaveLength(2); // "ok" dedup + long truncado
+    expect(v!.data.strengths).toHaveLength(2); // "Motor forte" dedup + long truncado
     expect(v!.data.strengths.every((s) => s.length <= 90)).toBe(true);
     expect(v!.data.diferencial.length).toBeLessThanOrEqual(240);
   });

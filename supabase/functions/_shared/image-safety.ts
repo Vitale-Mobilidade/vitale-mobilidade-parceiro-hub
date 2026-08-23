@@ -126,11 +126,6 @@ export function detectImageType(bytes: Uint8Array): AllowedImageType | null {
   return null;
 }
 
-/** Tamanho máximo de download (8 MB). */
-export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-/** Máximo de redirects seguidos. */
-export const MAX_REDIRECTS = 5;
-
 export const REDIRECT_STATUSES: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
 
 export function isRedirectStatus(status: number): boolean {
