@@ -33,11 +33,11 @@ async function resolveAndCheckHost(hostname: string): Promise<void> {
     try {
       // @ts-ignore Deno global
       records = await Deno.dns.resolve(hostname, family);
-    } catch (err) {
-      const msg = String((err as Error)?.message ?? err);
-      if (/permission|notcapable|not supported|Requires/i.test(msg)) {
-        apiUnavailable = true;
-      }
+    } catch {
+      // Qualquer falha (permissão, API indisponível ou NXDOMAIN) marca a
+      // resolução como indisponível: a validação de URL segue valendo e o
+      // fetch final ainda falha com segurança se o host não existir.
+      apiUnavailable = true;
       records = [];
     }
     for (const ip of records) {
