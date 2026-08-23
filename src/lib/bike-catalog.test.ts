@@ -146,6 +146,23 @@ describe("merge do catálogo", () => {
     expect(merged).toHaveLength(BIKES.length);
   });
 
+  it("imagem de bike legada: planilha/RPC só vence com imageReady; sem asset, mantém estática", () => {
+    const staticFt03 = BIKES.find((b) => b.id === "ft03")!;
+    // URL de imagem na planilha sem asset pronto → imagem estática preservada
+    const withoutAsset = mergeCatalog(BIKES, [{ ...snapshot[0], image: "https://cdn.exemplo.com/ft03.jpg" }]);
+    expect(withoutAsset.find((b) => b.id === "ft03")!.image).toBe(staticFt03.image);
+    // RPC com asset pronto (proxy) → imagem persistida vence
+    const withAsset = mergeCatalog(BIKES, [{
+      ...snapshot[0],
+      image: "https://backend.example/functions/v1/bike-image?id=ft03",
+      imageReady: true,
+    }]);
+    expect(withAsset.find((b) => b.id === "ft03")!.image)
+      .toBe("https://backend.example/functions/v1/bike-image?id=ft03");
+    // demais bikes intocadas
+    expect(withAsset.find((b) => b.id === "v35")!.image).toBe(BIKES.find((b) => b.id === "v35")!.image);
+  });
+
   it("ignora linhas desconhecidas, duplicadas e inválidas", () => {
     const merged = mergeCatalog(BIKES, [
       { ...snapshot[0], id: "modelo_inexistente" },

@@ -1,79 +1,88 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Bike } from "@/data/bikes";
 import {
   buildCatalogRows,
   mergeCatalog,
   type CatalogRow,
-  STATIC_CATALOG,
   type CatalogSnapshot,
-  type SyncState,
 } from "@/lib/bike-catalog";
+import { BIKES } from "@/data/bikes";
+import type { Bike } from "@/data/bikes";
 
-export interface BikeCatalogState {
+export type CatalogOrigin = "static" | "sheet";
+
+interface CatalogState {
   catalog: Bike[];
-  /** Linhas para o painel (inclui pendentes/inativas que não entram no quiz). */
   rows: CatalogRow[];
-  /** "sheet" quando veio do snapshot da planilha; "static" no fallback. */
-  origin: "sheet" | "static";
+  origin: CatalogOrigin;
   snapshotUpdatedAt: string | null;
-  syncState: SyncState | null;
   loading: boolean;
-  refresh: () => void;
 }
 
-export function useBikeCatalog(): BikeCatalogState {
-  const [catalog, setCatalog] = useState<Bike[]>(STATIC_CATALOG);
-  const [rows, setRows] = useState<CatalogRow[]>(() => buildCatalogRows(STATIC_CATALOG, []));
-  const [origin, setOrigin] = useState<"sheet" | "static">("static");
-  const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<string | null>(null);
-  const [syncState, setSyncState] = useState<SyncState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [nonce, setNonce] = useState(0);
+const STATIC_CATALOG = [...BIKES].sort((a, b) => a.internalPrice - b.internalPrice);
 
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+/**
+ * Catálogo do quiz:
+ * - Fonte principal: RPC `get_quiz_catalog` (somente elegíveis, com imagem
+ *   persistida via proxy e perfil IA quando ready).
+ * - Fallback: snapshot público `bike_catalog_snapshot` (merge com overrides).
+ * - Último recurso: catálogo estático embutido.
+ */
+export function useBikeCatalog(): CatalogState {
+  const [state, setState] = useState<CatalogState>({
+    catalog: STATIC_CATALOG,
+    rows: buildCatalogRows(STATIC_CATALOG, []),
+    origin: "static",
+    snapshotUpdatedAt: null,
+    loading: true,
+  });
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-
     (async () => {
       try {
-        const [snapRes, stateRes] = await Promise.all([
+        const [rpcRes, snapRes] = await Promise.all([
+          supabase.rpc("get_quiz_catalog"),
           supabase.from("bike_catalog_snapshot").select("data, updated_at").eq("id", "current").maybeSingle(),
-          supabase.from("bike_catalog_sync_state").select("*").eq("id", "current").maybeSingle(),
         ]);
         if (cancelled) return;
 
+        const rpcBikes = Array.isArray(rpcRes.data) ? (rpcRes.data as unknown[]) : [];
         const snapshot = (snapRes.data?.data ?? null) as CatalogSnapshot | null;
-        const bikes = snapshot?.bikes;
-        if (Array.isArray(bikes) && bikes.length > 0) {
-          setCatalog(mergeCatalog(STATIC_CATALOG, bikes));
-          setRows(buildCatalogRows(STATIC_CATALOG, bikes));
-          setOrigin("sheet");
-          setSnapshotUpdatedAt(snapRes.data?.updated_at ?? null);
-        } else {
-          setCatalog(STATIC_CATALOG);
-          setRows(buildCatalogRows(STATIC_CATALOG, []));
-          setOrigin("static");
-          setSnapshotUpdatedAt(null);
+        const rowsSource = Array.isArray(snapshot?.bikes) ? snapshot.bikes : [];
+
+        if (!rpcRes.error && rpcBikes.length > 0) {
+          const rpcIds = new Set(rpcBikes.map((b) => (b as { id?: string }).id));
+          const merged = mergeCatalog(STATIC_CATALOG, rpcBikes).filter((b) => rpcIds.has(b.id));
+          setState({
+            catalog: merged,
+            rows: buildCatalogRows(STATIC_CATALOG, rowsSource),
+            origin: "sheet",
+            snapshotUpdatedAt: snapRes.data?.updated_at ?? null,
+            loading: false,
+          });
+          return;
         }
 
-        if (stateRes.data) setSyncState(stateRes.data as unknown as SyncState);
-      } catch (e) {
-        if (!cancelled) {
-          console.warn("[bike-catalog] fallback para catálogo estático", e);
-          setCatalog(STATIC_CATALOG);
-          setRows(buildCatalogRows(STATIC_CATALOG, []));
-          setOrigin("static");
+        if (rowsSource.length > 0) {
+          setState({
+            catalog: mergeCatalog(STATIC_CATALOG, rowsSource),
+            rows: buildCatalogRows(STATIC_CATALOG, rowsSource),
+            origin: "sheet",
+            snapshotUpdatedAt: snapRes.data?.updated_at ?? null,
+            loading: false,
+          });
+          return;
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+      } catch {
+        // Fallback estático silencioso — o quiz nunca quebra.
       }
+      if (!cancelled) setState((s) => ({ ...s, loading: false }));
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-    return () => { cancelled = true; };
-  }, [nonce]);
-
-  return { catalog, rows, origin, snapshotUpdatedAt, syncState, loading, refresh };
+  return state;
 }

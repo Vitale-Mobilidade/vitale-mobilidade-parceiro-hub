@@ -30,6 +30,8 @@ export interface SnapshotBike {
   missingFields?: string[];
   line?: number;
   image?: string;
+  /** true somente quando o asset persistido está pronto (RPC); protege o fallback estático. */
+  imageReady?: boolean;
   weightSupportKg?: number;
   bestFor?: string[];
   terrains?: string[];
@@ -167,8 +169,9 @@ export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
       // linkMeta NUNCA é sobrescrito pela planilha
       linkMeta: bike.linkMeta,
       budgetTiers,
-      // Overrides opcionais só quando presentes na planilha
-      image: s.image || bike.image,
+      // Imagem da planilha só vence quando o asset persistido está ready (proxy).
+      // Sem asset pronto, a imagem estática atual é mantida.
+      image: s.imageReady && s.image ? s.image : bike.image,
       weightSupportKg: s.weightSupportKg ?? bike.weightSupportKg,
       bestFor: s.bestFor?.length ? s.bestFor : bike.bestFor,
       terrains: s.terrains?.length ? s.terrains : bike.terrains,

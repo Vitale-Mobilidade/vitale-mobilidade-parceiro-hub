@@ -125,3 +125,36 @@ export function detectImageType(bytes: Uint8Array): AllowedImageType | null {
   }
   return null;
 }
+
+export const REDIRECT_STATUSES: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
+
+export function isRedirectStatus(status: number): boolean {
+  return REDIRECT_STATUSES.has(status);
+}
+
+/**
+ * Normaliza e valida o Content-Type do cabeçalho.
+ * Retorna o tipo normalizado quando permitido (ou binário genérico, validável por magic bytes);
+ * null quando ausente ou fora da allowlist.
+ */
+export function normalizeContentType(header: string | null): string | null {
+  if (!header) return null;
+  const value = header.split(";")[0].trim().toLowerCase();
+  if ((ALLOWED_IMAGE_TYPES as readonly string[]).includes(value)) return value;
+  if (value === "application/octet-stream" || value === "binary/octet-stream") return value;
+  return null;
+}
+
+/** Verifica Content-Length declarado contra o limite (false quando ausente). */
+export function declaredSizeExceeds(header: string | null): boolean {
+  if (!header) return false;
+  const n = Number(header.trim());
+  return Number.isFinite(n) && n > MAX_IMAGE_BYTES;
+}
+
+/** bike_id seguro para query param / chave: apenas [a-z0-9_], até 64 chars. */
+export function sanitizeBikeId(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const id = raw.trim().toLowerCase();
+  return /^[a-z0-9_]{1,64}$/.test(id) ? id : null;
+}
