@@ -771,6 +771,102 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_events: {
+        Row: {
+          bike_id: string | null
+          created_at: string
+          detail: Json
+          event: string
+          id: string
+          worker: string
+        }
+        Insert: {
+          bike_id?: string | null
+          created_at?: string
+          detail?: Json
+          event: string
+          id?: string
+          worker: string
+        }
+        Update: {
+          bike_id?: string | null
+          created_at?: string
+          detail?: Json
+          event?: string
+          id?: string
+          worker?: string
+        }
+        Relationships: []
+      }
+      worker_runs: {
+        Row: {
+          created_at: string
+          failed: number
+          finished_at: string | null
+          id: string
+          note: string | null
+          processed: number
+          started_at: string
+          succeeded: number
+          worker: string
+        }
+        Insert: {
+          created_at?: string
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          note?: string | null
+          processed?: number
+          started_at?: string
+          succeeded?: number
+          worker: string
+        }
+        Update: {
+          created_at?: string
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          note?: string | null
+          processed?: number
+          started_at?: string
+          succeeded?: number
+          worker?: string
+        }
+        Relationships: []
+      }
+      worker_state: {
+        Row: {
+          consecutive_failures: number
+          last_run_at: string | null
+          paused_reason: string | null
+          resume_at: string | null
+          running_since: string | null
+          status: string
+          updated_at: string
+          worker: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          last_run_at?: string | null
+          paused_reason?: string | null
+          resume_at?: string | null
+          running_since?: string | null
+          status?: string
+          updated_at?: string
+          worker: string
+        }
+        Update: {
+          consecutive_failures?: number
+          last_run_at?: string | null
+          paused_reason?: string | null
+          resume_at?: string | null
+          running_since?: string | null
+          status?: string
+          updated_at?: string
+          worker?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
