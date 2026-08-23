@@ -43,6 +43,12 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** As 19 bikes legadas NUNCA passam pela IA. */
+const LEGACY_SET = new Set<string>(KNOWN_BIKE_IDS as readonly string[]);
+function isLegacyBikeId(bikeId: string): boolean {
+  return LEGACY_SET.has(bikeId);
+}
+
 interface JobRow {
   id: string;
   bike_id: string;
