@@ -30,6 +30,8 @@ export interface SnapshotBike {
   missingFields?: string[];
   line?: number;
   image?: string;
+  /** true somente quando o asset persistido está pronto (RPC); protege o fallback estático. */
+  imageReady?: boolean;
   weightSupportKg?: number;
   bestFor?: string[];
   terrains?: string[];
