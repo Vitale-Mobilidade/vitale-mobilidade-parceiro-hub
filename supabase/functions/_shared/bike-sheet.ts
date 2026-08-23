@@ -302,9 +302,9 @@ export interface SnapshotResult {
 
 const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capacidade", "Descrição"];
 
-/** Colunas opcionais suportadas (futuras). */
+/** Colunas opcionais suportadas. "Imagem da Bike" é o nome oficial; "Imagem" é alias. */
 export const OPTIONAL_HEADERS = [
-  "ID", "Imagem", "Peso Suportado", "Usos", "Terrenos",
+  "ID", "Imagem da Bike", "Imagem", "Peso Suportado", "Usos", "Terrenos",
   "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa",
 ] as const;
 
@@ -365,8 +365,9 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const description = cell(cells, idx["Descrição"]).trim();
     if (!description) { ignored.push({ line, name: rawName, reason: "Descrição vazia" }); continue; }
 
-    // Colunas opcionais
-    const image = parseImageUrl(cell(cells, opt["Imagem"])) ?? undefined;
+    // Colunas opcionais. Imagem: oficial "Imagem da Bike", alias "Imagem".
+    const imgIdx = opt["Imagem da Bike"] >= 0 ? opt["Imagem da Bike"] : opt["Imagem"];
+    const image = parseImageUrl(cell(cells, imgIdx)) ?? undefined;
     const weightSupportKg = parseWeightSupportKg(cell(cells, opt["Peso Suportado"])) ?? undefined;
     const bestFor = parseList(cell(cells, opt["Usos"]));
     const terrains = parseList(cell(cells, opt["Terrenos"]));
@@ -375,14 +376,10 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const perfilIndicado = cell(cells, opt["Perfil Indicado"]).replace(/\s+/g, " ").trim();
     const ativa = parseAtiva(cell(cells, opt["Ativa"]));
 
-    // Bike nova precisa de metadados mínimos — nunca inventamos nada.
+    // Bike nova só precisa da IMAGEM na planilha — peso/usos/terrenos/etc. são
+    // derivados pelo perfil técnico de IA (event-driven), nunca exigidos manualmente.
     const missingFields: string[] = [];
-    if (isNew) {
-      if (!image) missingFields.push("Imagem (URL https)");
-      if (!weightSupportKg) missingFields.push("Peso Suportado");
-      if (bestFor.length === 0) missingFields.push("Usos");
-      if (terrains.length === 0) missingFields.push("Terrenos");
-    }
+    if (isNew && !image) missingFields.push("Imagem da Bike (URL https)");
 
     const status: SnapshotBikeStatus = !ativa
       ? "inactive"
