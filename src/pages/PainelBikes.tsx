@@ -412,6 +412,14 @@ export default function PainelBikes() {
   const healthy = syncState?.status === "ok" && !syncState?.error_message;
   const pendencias = syncState?.ignored_rows ?? [];
 
+  // Alerta se a execução automática passou mais de 10 min do horário previsto.
+  const scheduleLate = useMemo(() => {
+    const t = syncState?.next_run_at ? new Date(syncState.next_run_at).getTime() : NaN;
+    if (Number.isNaN(t)) return false;
+    return Date.now() - t > 10 * 60 * 1000;
+  }, [syncState?.next_run_at]);
+
+
   const counts = useMemo(() => ({
     eligible: rows.filter((r) => r.eligible).length,
     notEligible: rows.filter((r) => !r.eligible).length,
