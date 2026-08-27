@@ -563,6 +563,14 @@ export default function PainelBikes() {
           </p>
         </section>
 
+        <SyncHistory
+          call={historyCall}
+          onUnauthorized={() => void logout(token)}
+          refreshKey={historyKey}
+        />
+
+
+
         {pendencias.length > 0 && (
           <section className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
             <h2 className="text-base font-semibold text-foreground">
