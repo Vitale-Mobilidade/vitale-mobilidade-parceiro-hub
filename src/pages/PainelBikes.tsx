@@ -492,11 +492,24 @@ export default function PainelBikes() {
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-2 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Execuções</p>
+            <p className="text-xs text-muted-foreground">
+              Agenda fixa: toda hora no minuto :07 (horário de Brasília). Sincronizar agora não adia a automática.
+            </p>
             <p>Última tentativa: <strong>{fmt(syncState?.last_attempt_at)}</strong></p>
-            <p>Última bem-sucedida: <strong>{fmt(syncState?.last_success_at)}</strong></p>
+            <p>
+              Última bem-sucedida: <strong>{fmt(syncState?.last_success_at)}</strong>{" "}
+              <span className="text-xs text-muted-foreground">({relativeTime(syncState?.last_success_at)})</span>
+            </p>
             <p>Próxima execução: <strong>{fmt(syncState?.next_run_at)}</strong></p>
             <p>Snapshot atualizado em: <strong>{fmt(data?.snapshot?.updated_at)}</strong></p>
+            {scheduleLate && (
+              <p className="flex items-center gap-2 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                A execução automática está atrasada mais de 10 minutos — use “Sincronizar agora”.
+              </p>
+            )}
           </div>
+
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-2 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Linhas</p>
