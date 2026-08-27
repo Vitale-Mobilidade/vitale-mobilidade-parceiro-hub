@@ -215,7 +215,74 @@ async function handleSyncNow(supabase: SupabaseClient, req: Request): Promise<Re
   return json(req, body, status);
 }
 
-async function handleSetEligibility(
+/**
+ * get-history — histórico auditável paginado.
+ * Retorna as execuções (automáticas e manuais, com sucesso ou erro), o diff por
+ * bike de cada uma e, na mesma janela de tempo, as mudanças de elegibilidade
+ * registradas em bike_admin_audit.
+ */
+async function handleGetHistory(
+  supabase: SupabaseClient,
+  req: Request,
+  body: { page?: unknown; pageSize?: unknown; origin?: unknown; status?: unknown },
+): Promise<Response> {
+  const page = Math.max(0, Math.min(500, Number(body.page) || 0));
+  const pageSize = Math.max(5, Math.min(50, Number(body.pageSize) || 20));
+  const origin = typeof body.origin === "string" ? body.origin : "all";
+  const status = typeof body.status === "string" ? body.status : "all";
+  const from = page * pageSize;
+
+  let q = supabase
+    .from("bike_sync_runs")
+    .select(
+      "id, origin, scheduled_for, started_at, finished_at, status, duration_ms, recognized_count, ignored_count, snapshot_written, changed_bikes, changed_fields, error_message, detail",
+      { count: "exact" },
+    )
+    .order("started_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+
+  if (origin === "auto" || origin === "manual") q = q.eq("origin", origin);
+  if (status === "error") q = q.eq("status", "error");
+  else if (status === "skipped") q = q.eq("status", "skipped");
+  else if (status === "changes") q = q.gt("changed_fields", 0);
+  else if (status === "ok") q = q.in("status", ["ok", "ok_no_changes"]);
+
+  const { data: runs, error, count } = await q;
+  if (error) {
+    console.error("[bike-panel] get-history:", safeError(error));
+    return json(req, { ok: false, error: "Falha ao carregar o histórico." }, 500);
+  }
+
+  const runList = runs ?? [];
+  const ids = runList.map((r) => r.id as string);
+  const [changesRes, auditRes] = await Promise.all([
+    ids.length
+      ? supabase
+          .from("bike_sync_changes")
+          .select("run_id, bike_id, bike_name, change_type, field, field_label, old_value, new_value")
+          .in("run_id", ids)
+          .order("bike_name", { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("bike_admin_audit")
+      .select("id, action, bike_id, detail, actor, created_at")
+      .eq("action", "set-eligibility")
+      .order("created_at", { ascending: false })
+      .limit(pageSize * 3),
+  ]);
+
+  return json(req, {
+    ok: true,
+    page,
+    pageSize,
+    total: count ?? runList.length,
+    runs: runList,
+    changes: changesRes.data ?? [],
+    eligibilityAudit: auditRes.data ?? [],
+  });
+}
+
+
   supabase: SupabaseClient,
   req: Request,
   body: { bikeId?: unknown; eligible?: unknown },
