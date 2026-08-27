@@ -351,6 +351,9 @@ Deno.serve(async (req) => {
         return await handleSyncNow(supabase, req);
       case "set-eligibility":
         return await handleSetEligibility(supabase, req, body);
+      case "get-history":
+        return await handleGetHistory(supabase, req, body);
+
       default:
         return json(req, { ok: false, error: "Ação desconhecida." }, 400);
     }
