@@ -31,12 +31,14 @@ import {
   type CatalogSnapshot,
   type SyncState,
 } from "@/lib/bike-catalog";
+import SyncHistory from "@/components/painel/SyncHistory";
 import {
   buildPanelRows,
   clearPanelSession,
   DEFAULT_SORT,
   nextSort,
   readPanelSession,
+  relativeTime,
   sortPanelRows,
   storePanelSession,
   type AssetRow,
@@ -47,6 +49,7 @@ import {
   type SortKey,
   type SortState,
 } from "@/lib/painel-bikes";
+
 
 const SHEET_PUBLIC_URL =
   "https://docs.google.com/spreadsheets/d/1gIzIM3YOsT3tXLkYGqJMsZ26oY_mOc10SLaT0hzKOkc/edit#gid=0";
