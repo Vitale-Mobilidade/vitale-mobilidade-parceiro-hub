@@ -272,6 +272,14 @@ export default function PainelBikes() {
   const [filter, setFilter] = useState<FilterKey>("todos");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+  const [historyKey, setHistoryKey] = useState(0);
+
+  const historyCall = useCallback(
+    <T,>(action: string, body: Record<string, unknown> = {}) =>
+      panelCall<T & Record<string, unknown>>(action, body, token ?? undefined) as Promise<{ status: number; data: T }>,
+    [token],
+  );
+
 
   useEffect(() => {
     document.title = "Painel do catálogo de bikes | Vitale Mobilidade";
