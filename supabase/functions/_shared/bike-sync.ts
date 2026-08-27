@@ -21,6 +21,14 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { buildSnapshotFromCsv, snapshotHash, SHEET_CSV_URL, type SnapshotBike } from "./bike-sheet.ts";
 import { technicalHash } from "./bike-hash.ts";
+import {
+  countChangedBikes,
+  currentScheduledSlot,
+  diffBikes,
+  DUE_TOLERANCE_MS,
+  nextScheduledRun,
+  type BikeFieldChange,
+} from "./bike-diff.ts";
 
 export const SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 export const RETRY_INTERVAL_MS = 15 * 60 * 1000; // backoff em caso de falha
@@ -39,8 +47,11 @@ export interface SyncOutcome {
   jobsCreated?: number;
   assetsQueued?: number;
   assetsReview?: number;
+  changedBikes?: number;
+  runId?: string;
   error?: string;
 }
+
 
 /** Mensagem de erro segura: sem tokens, sem payloads internos. */
 export function safeError(e: unknown): string {
