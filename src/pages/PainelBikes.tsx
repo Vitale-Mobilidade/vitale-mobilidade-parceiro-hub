@@ -31,12 +31,14 @@ import {
   type CatalogSnapshot,
   type SyncState,
 } from "@/lib/bike-catalog";
+import SyncHistory from "@/components/painel/SyncHistory";
 import {
   buildPanelRows,
   clearPanelSession,
   DEFAULT_SORT,
   nextSort,
   readPanelSession,
+  relativeTime,
   sortPanelRows,
   storePanelSession,
   type AssetRow,
@@ -47,6 +49,7 @@ import {
   type SortKey,
   type SortState,
 } from "@/lib/painel-bikes";
+
 
 const SHEET_PUBLIC_URL =
   "https://docs.google.com/spreadsheets/d/1gIzIM3YOsT3tXLkYGqJMsZ26oY_mOc10SLaT0hzKOkc/edit#gid=0";
@@ -269,6 +272,14 @@ export default function PainelBikes() {
   const [filter, setFilter] = useState<FilterKey>("todos");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+  const [historyKey, setHistoryKey] = useState(0);
+
+  const historyCall = useCallback(
+    <T,>(action: string, body: Record<string, unknown> = {}) =>
+      panelCall<T & Record<string, unknown>>(action, body, token ?? undefined) as Promise<{ status: number; data: T }>,
+    [token],
+  );
+
 
   useEffect(() => {
     document.title = "Painel do catálogo de bikes | Vitale Mobilidade";
@@ -357,6 +368,8 @@ export default function PainelBikes() {
         });
       }
       await loadData(token);
+      setHistoryKey((k) => k + 1);
+
     } catch {
       toast({ title: "Falha de conexão", description: "Não foi possível sincronizar.", variant: "destructive" });
     } finally {
@@ -394,6 +407,8 @@ export default function PainelBikes() {
       });
     } finally {
       setSavingId(null);
+      setHistoryKey((k) => k + 1);
+
     }
   };
 
@@ -408,6 +423,14 @@ export default function PainelBikes() {
   const origin: "sheet" | "static" = (data?.snapshot?.data?.bikes?.length ?? 0) > 0 ? "sheet" : "static";
   const healthy = syncState?.status === "ok" && !syncState?.error_message;
   const pendencias = syncState?.ignored_rows ?? [];
+
+  // Alerta se a execução automática passou mais de 10 min do horário previsto.
+  const scheduleLate = useMemo(() => {
+    const t = syncState?.next_run_at ? new Date(syncState.next_run_at).getTime() : NaN;
+    if (Number.isNaN(t)) return false;
+    return Date.now() - t > 10 * 60 * 1000;
+  }, [syncState?.next_run_at]);
+
 
   const counts = useMemo(() => ({
     eligible: rows.filter((r) => r.eligible).length,
@@ -492,11 +515,24 @@ export default function PainelBikes() {
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-2 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Execuções</p>
+            <p className="text-xs text-muted-foreground">
+              Agenda fixa: toda hora no minuto :07 (horário de Brasília). Sincronizar agora não adia a automática.
+            </p>
             <p>Última tentativa: <strong>{fmt(syncState?.last_attempt_at)}</strong></p>
-            <p>Última bem-sucedida: <strong>{fmt(syncState?.last_success_at)}</strong></p>
+            <p>
+              Última bem-sucedida: <strong>{fmt(syncState?.last_success_at)}</strong>{" "}
+              <span className="text-xs text-muted-foreground">({relativeTime(syncState?.last_success_at)})</span>
+            </p>
             <p>Próxima execução: <strong>{fmt(syncState?.next_run_at)}</strong></p>
             <p>Snapshot atualizado em: <strong>{fmt(data?.snapshot?.updated_at)}</strong></p>
+            {scheduleLate && (
+              <p className="flex items-center gap-2 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                A execução automática está atrasada mais de 10 minutos — use “Sincronizar agora”.
+              </p>
+            )}
           </div>
+
 
           <div className="rounded-xl border border-border bg-card p-5 space-y-2 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Linhas</p>
@@ -526,6 +562,14 @@ export default function PainelBikes() {
             aparecem abaixo do nome de cada bike quando disponíveis.
           </p>
         </section>
+
+        <SyncHistory
+          call={historyCall}
+          onUnauthorized={() => void logout(token)}
+          refreshKey={historyKey}
+        />
+
+
 
         {pendencias.length > 0 && (
           <section className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">

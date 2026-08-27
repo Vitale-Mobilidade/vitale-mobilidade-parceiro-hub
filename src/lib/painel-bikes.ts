@@ -244,3 +244,93 @@ export function clearPanelSession(storages: PanelStorages): void {
     s.removeItem(PANEL_EXPIRES_KEY);
   }
 }
+
+// ---------- Histórico de sincronizações ----------
+
+export interface SyncRunRow {
+  id: string;
+  origin: "auto" | "manual" | string;
+  scheduled_for: string | null;
+  started_at: string;
+  finished_at: string | null;
+  status: "ok" | "ok_no_changes" | "skipped" | "error" | "running" | string;
+  duration_ms: number | null;
+  recognized_count: number | null;
+  ignored_count: number | null;
+  snapshot_written: boolean;
+  changed_bikes: number;
+  changed_fields: number;
+  error_message: string | null;
+  detail?: Record<string, unknown> | null;
+}
+
+export interface SyncChangeRow {
+  run_id: string;
+  bike_id: string;
+  bike_name: string | null;
+  change_type: "new" | "updated" | "removed" | "inactivated" | "reactivated" | string;
+  field: string | null;
+  field_label: string | null;
+  old_value: string | null;
+  new_value: string | null;
+}
+
+export interface EligibilityAuditRow {
+  id: string;
+  bike_id: string | null;
+  detail: { eligible?: boolean } | null;
+  actor: string | null;
+  created_at: string;
+}
+
+export const RUN_STATUS_LABEL: Record<string, string> = {
+  ok: "Atualizado",
+  ok_no_changes: "Sem mudanças",
+  skipped: "Ignorada",
+  error: "Erro",
+  running: "Em andamento",
+};
+
+export const ORIGIN_LABEL: Record<string, string> = {
+  auto: "Automática",
+  manual: "Manual",
+};
+
+export const CHANGE_TYPE_LABEL: Record<string, string> = {
+  new: "Nova bike",
+  updated: "Alterada",
+  removed: "Removida",
+  inactivated: "Inativada",
+  reactivated: "Reativada",
+};
+
+/** Agrupa o diff plano por run_id, preservando a ordem recebida. */
+export function groupChangesByRun(changes: SyncChangeRow[]): Map<string, SyncChangeRow[]> {
+  const map = new Map<string, SyncChangeRow[]>();
+  for (const c of changes) {
+    const list = map.get(c.run_id);
+    if (list) list.push(c);
+    else map.set(c.run_id, [c]);
+  }
+  return map;
+}
+
+/** "há 3 min", "há 2 h", "agora". */
+export function relativeTime(value: string | null | undefined, now: Date = new Date()): string {
+  if (!value) return "—";
+  const t = new Date(value).getTime();
+  if (Number.isNaN(t)) return "—";
+  const diff = Math.max(0, now.getTime() - t);
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `há ${h} h`;
+  return `há ${Math.floor(h / 24)} d`;
+}
+
+/** Rótulo de mudança de elegibilidade no histórico unificado. */
+export function eligibilityLabel(eligible: boolean | undefined): string {
+  return eligible ? "Não elegível → Elegível" : "Elegível → Não elegível";
+}
+
