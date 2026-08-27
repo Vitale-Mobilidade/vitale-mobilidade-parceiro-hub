@@ -347,6 +347,110 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_sync_changes: {
+        Row: {
+          bike_id: string
+          bike_name: string | null
+          change_type: string
+          created_at: string
+          field: string | null
+          field_label: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          run_id: string
+        }
+        Insert: {
+          bike_id: string
+          bike_name?: string | null
+          change_type: string
+          created_at?: string
+          field?: string | null
+          field_label?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          run_id: string
+        }
+        Update: {
+          bike_id?: string
+          bike_name?: string | null
+          change_type?: string
+          created_at?: string
+          field?: string | null
+          field_label?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_sync_changes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "bike_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bike_sync_runs: {
+        Row: {
+          changed_bikes: number
+          changed_fields: number
+          created_at: string
+          detail: Json
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          ignored_count: number | null
+          origin: string
+          recognized_count: number | null
+          scheduled_for: string | null
+          snapshot_written: boolean
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          changed_bikes?: number
+          changed_fields?: number
+          created_at?: string
+          detail?: Json
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          ignored_count?: number | null
+          origin?: string
+          recognized_count?: number | null
+          scheduled_for?: string | null
+          snapshot_written?: boolean
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          changed_bikes?: number
+          changed_fields?: number
+          created_at?: string
+          detail?: Json
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          ignored_count?: number | null
+          origin?: string
+          recognized_count?: number | null
+          scheduled_for?: string | null
+          snapshot_written?: boolean
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
