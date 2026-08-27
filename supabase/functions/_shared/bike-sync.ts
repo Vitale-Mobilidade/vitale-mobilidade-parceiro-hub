@@ -200,15 +200,86 @@ async function kickWorkers(supabase: SupabaseClient, supabaseUrl: string, servic
   }
 }
 
+// ---------- Histórico auditável ----------
+
+type RunStatus = "ok" | "ok_no_changes" | "skipped" | "error";
+
+/** Abre a linha de histórico. Nunca lança: histórico não pode quebrar o sync. */
+async function startRun(
+  supabase: SupabaseClient,
+  origin: "auto" | "manual",
+  startedAt: Date,
+  scheduledFor: Date | null,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.from("bike_sync_runs").insert({
+      origin,
+      scheduled_for: scheduledFor ? scheduledFor.toISOString() : null,
+      started_at: startedAt.toISOString(),
+      status: "running",
+    }).select("id").maybeSingle();
+    if (error) throw error;
+    return (data as { id: string } | null)?.id ?? null;
+  } catch (e) {
+    console.error("[sync] histórico start:", safeError(e));
+    return null;
+  }
+}
+
+/** Fecha a linha de histórico e grava o diff. Nunca lança. */
+async function finishRun(
+  supabase: SupabaseClient,
+  runId: string | null,
+  startedAt: Date,
+  fields: {
+    status: RunStatus;
+    recognized?: number | null;
+    ignored?: number | null;
+    snapshotWritten?: boolean;
+    errorMessage?: string | null;
+    detail?: Record<string, unknown>;
+    changes?: BikeFieldChange[];
+  },
+): Promise<void> {
+  if (!runId) return;
+  const finishedAt = new Date();
+  const changes = fields.changes ?? [];
+  try {
+    await supabase.from("bike_sync_runs").update({
+      status: fields.status,
+      finished_at: finishedAt.toISOString(),
+      duration_ms: finishedAt.getTime() - startedAt.getTime(),
+      recognized_count: fields.recognized ?? null,
+      ignored_count: fields.ignored ?? null,
+      snapshot_written: fields.snapshotWritten ?? false,
+      changed_bikes: countChangedBikes(changes),
+      changed_fields: changes.length,
+      error_message: fields.errorMessage ?? null,
+      detail: fields.detail ?? {},
+    }).eq("id", runId);
+
+    if (changes.length > 0) {
+      await supabase.from("bike_sync_changes").insert(
+        changes.slice(0, 500).map((c) => ({ ...c, run_id: runId })),
+      );
+    }
+  } catch (e) {
+    console.error("[sync] histórico finish:", safeError(e));
+  }
+}
+
 /**
  * Executa a sincronização. Retorna { status, body } pronto para resposta HTTP.
- * force=true ignora o agendamento (uso exclusivo admin/service role).
+ * force=true ignora o agendamento (uso exclusivo admin/service role) e NUNCA
+ * adia a próxima execução automática (o next_run_at é sempre o próximo HH:07).
  */
 export async function runBikeCatalogSync(
   supabase: SupabaseClient,
   opts: { force: boolean; supabaseUrl: string; serviceKey: string },
 ): Promise<{ status: number; body: SyncOutcome }> {
   const now = new Date();
+  const origin: "auto" | "manual" = opts.force ? "manual" : "auto";
+  const scheduledFor = opts.force ? null : currentScheduledSlot(now);
   const lockCutoff = new Date(now.getTime() - LOCK_TIMEOUT_MS).toISOString();
 
   let lockQuery = supabase
@@ -222,11 +293,27 @@ export async function runBikeCatalogSync(
     .eq("id", "current")
     .or(`running_since.is.null,running_since.lt.${lockCutoff}`);
 
-  if (!opts.force) lockQuery = lockQuery.lte("next_run_at", now.toISOString());
+  // Tolerância: o cron pode chegar milissegundos antes do horário exato.
+  if (!opts.force) {
+    lockQuery = lockQuery.lte(
+      "next_run_at",
+      new Date(now.getTime() + DUE_TOLERANCE_MS).toISOString(),
+    );
+  }
 
   const { data: locked, error: lockError } = await lockQuery.select("id").maybeSingle();
   if (lockError) return { status: 500, body: { ok: false, error: safeError(lockError) } };
-  if (!locked) return { status: 200, body: { ok: true, skipped: true, reason: "not_due_or_running" } };
+  if (!locked) {
+    const runId = await startRun(supabase, origin, now, scheduledFor);
+    await finishRun(supabase, runId, now, {
+      status: "skipped",
+      errorMessage: null,
+      detail: { reason: "not_due_or_running" },
+    });
+    return { status: 200, body: { ok: true, skipped: true, reason: "not_due_or_running", runId: runId ?? undefined } };
+  }
+
+  const runId = await startRun(supabase, origin, now, scheduledFor);
 
   try {
     const controller = new AbortController();
@@ -249,10 +336,17 @@ export async function runBikeCatalogSync(
         recognized_count: result.recognizedCount,
         ignored_count: result.ignoredCount,
         ignored_rows: result.ignored,
-        next_run_at: new Date(done.getTime() + RETRY_INTERVAL_MS).toISOString(),
+        next_run_at: retryAt(done).toISOString(),
         running_since: null,
         updated_at: done.toISOString(),
       }).eq("id", "current");
+      await finishRun(supabase, runId, now, {
+        status: "error",
+        recognized: result.recognizedCount,
+        ignored: result.ignoredCount,
+        snapshotWritten: false,
+        errorMessage: message,
+      });
       return {
         status: 422,
         body: {
@@ -261,6 +355,7 @@ export async function runBikeCatalogSync(
           error: message,
           recognized: result.recognizedCount,
           ignored: result.ignoredCount,
+          runId: runId ?? undefined,
         },
       };
     }
@@ -270,15 +365,21 @@ export async function runBikeCatalogSync(
     const hash = snapshotHash(result.bikes);
     const { data: current } = await supabase
       .from("bike_catalog_snapshot")
-      .select("content_hash")
+      .select("content_hash, data")
       .eq("id", "current")
       .maybeSingle();
 
     let changed = false;
+    let changes: BikeFieldChange[] = [];
     let downstream: ReconcileResult = { jobsCreated: 0, assetsQueued: 0, assetsReview: 0, overridesCreated: 0 };
 
     if (current?.content_hash !== hash) {
       changed = true;
+      const previousBikes = Array.isArray((current?.data as { bikes?: unknown } | null)?.bikes)
+        ? ((current!.data as { bikes: SnapshotBike[] }).bikes)
+        : [];
+      changes = diffBikes(previousBikes, result.bikes);
+
       const { error: upErr } = await supabase.from("bike_catalog_snapshot").upsert({
         id: "current",
         data: {
@@ -300,7 +401,8 @@ export async function runBikeCatalogSync(
     await supabase.from("bike_catalog_sync_state").update({
       status: "ok",
       last_success_at: done.toISOString(),
-      next_run_at: new Date(done.getTime() + SYNC_INTERVAL_MS).toISOString(),
+      // Agenda fixa: próximo HH:07 (o trigger do banco normaliza igualmente).
+      next_run_at: nextScheduledRun(done).toISOString(),
       recognized_count: result.recognizedCount,
       ignored_count: result.ignoredCount,
       ignored_rows: result.ignored,
@@ -308,6 +410,21 @@ export async function runBikeCatalogSync(
       running_since: null,
       updated_at: done.toISOString(),
     }).eq("id", "current");
+
+    await finishRun(supabase, runId, now, {
+      status: changed ? "ok" : "ok_no_changes",
+      recognized: result.recognizedCount,
+      ignored: result.ignoredCount,
+      snapshotWritten: changed,
+      changes,
+      detail: {
+        drafts: result.draftCount,
+        blank: result.blankCount,
+        jobsCreated: downstream.jobsCreated,
+        assetsQueued: downstream.assetsQueued,
+        assetsReview: downstream.assetsReview,
+      },
+    });
 
     if (downstream.jobsCreated > 0 || downstream.assetsQueued > 0) {
       await kickWorkers(supabase, opts.supabaseUrl, opts.serviceKey);
@@ -326,6 +443,8 @@ export async function runBikeCatalogSync(
         jobsCreated: downstream.jobsCreated,
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
+        changedBikes: countChangedBikes(changes),
+        runId: runId ?? undefined,
       },
     };
   } catch (e) {
@@ -334,10 +453,19 @@ export async function runBikeCatalogSync(
     await supabase.from("bike_catalog_sync_state").update({
       status: "error",
       error_message: message,
-      next_run_at: new Date(done.getTime() + RETRY_INTERVAL_MS).toISOString(),
+      next_run_at: retryAt(done).toISOString(),
       running_since: null,
       updated_at: done.toISOString(),
     }).eq("id", "current");
-    return { status: 500, body: { ok: false, error: message } };
+    await finishRun(supabase, runId, now, { status: "error", errorMessage: message });
+    return { status: 500, body: { ok: false, error: message, runId: runId ?? undefined } };
   }
 }
+
+/** Retry curto após falha, nunca depois do próximo horário programado. */
+function retryAt(from: Date): Date {
+  const retry = new Date(from.getTime() + RETRY_INTERVAL_MS);
+  const scheduled = nextScheduledRun(from);
+  return retry.getTime() < scheduled.getTime() ? retry : scheduled;
+}
+
