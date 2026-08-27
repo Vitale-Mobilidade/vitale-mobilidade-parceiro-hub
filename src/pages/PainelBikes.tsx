@@ -407,6 +407,8 @@ export default function PainelBikes() {
       });
     } finally {
       setSavingId(null);
+      setHistoryKey((k) => k + 1);
+
     }
   };
 
