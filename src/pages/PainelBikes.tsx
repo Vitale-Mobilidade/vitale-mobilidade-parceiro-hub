@@ -368,6 +368,8 @@ export default function PainelBikes() {
         });
       }
       await loadData(token);
+      setHistoryKey((k) => k + 1);
+
     } catch {
       toast({ title: "Falha de conexão", description: "Não foi possível sincronizar.", variant: "destructive" });
     } finally {
