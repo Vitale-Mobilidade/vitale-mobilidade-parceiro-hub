@@ -282,8 +282,9 @@ async function handleGetHistory(
   });
 }
 
-
+async function handleSetEligibility(
   supabase: SupabaseClient,
+
   req: Request,
   body: { bikeId?: unknown; eligible?: unknown },
 ): Promise<Response> {
