@@ -1,8 +1,10 @@
-// bike-profile-worker: gera perfil técnico via Lovable AI SOMENTE para bikes novas.
-// Nunca chama IA para as 19 bikes legadas. Circuit breaker para 402/403/401 com probe;
-// retry apenas para 429/5xx com backoff curto.
+// bike-profile-worker: gera o perfil técnico via Lovable AI para os jobs enfileirados.
+// Os jobs são criados apenas quando id + Descrição mudam (technicalHash): preço,
+// link, Status e imagem nunca chegam aqui. As 19 bikes legadas recebem baseline
+// sem IA na sincronização; só uma mudança futura de Descrição enfileira job.
+// Circuit breaker para 402/403/401 com probe; retry apenas para 429/5xx.
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { KNOWN_BIKE_IDS } from "../_shared/bike-sheet.ts";
+
 import {
   buildProfilePrompt,
   classifyAiError,
@@ -43,11 +45,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** As 19 bikes legadas NUNCA passam pela IA. */
-const LEGACY_SET = new Set<string>(KNOWN_BIKE_IDS as readonly string[]);
-function isLegacyBikeId(bikeId: string): boolean {
-  return LEGACY_SET.has(bikeId);
-}
 
 interface JobRow {
   id: string;
@@ -153,13 +150,8 @@ async function processJob(
   apiKey: string,
   job: JobRow,
 ): Promise<"done" | "retry" | "failed" | "skipped" | "pause"> {
-  // Proteção absoluta: nunca IA para bike legada.
-  if (isLegacyBikeId(job.bike_id)) {
-    await supabase.from("bike_profile_jobs").update({ status: "skipped_legacy", locked_at: null }).eq("id", job.id);
-    return "skipped";
-  }
-
   // Idempotência: já existe perfil ready para este hash.
+
   const { data: existing } = await supabase
     .from("bike_profiles")
     .select("status")
@@ -281,9 +273,10 @@ Deno.serve(async (req: Request) => {
       .eq("status", "queued")
       .lt("attempts", PROFILE_MAX_ATTEMPTS)
       .order("created_at", { ascending: true })
-      .limit(batchSize + 8); // margem para pular legadas sem chamada extra
+      .limit(batchSize);
 
-    const eligibleJobs = ((jobs ?? []) as JobRow[]).filter((j) => !isLegacyBikeId(j.bike_id)).slice(0, batchSize);
+    const eligibleJobs = (jobs ?? []) as JobRow[];
+
 
     let paused = false;
     for (const job of eligibleJobs) {

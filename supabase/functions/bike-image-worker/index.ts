@@ -1,9 +1,12 @@
-// bike-image-worker: baixa imagens da planilha para o bucket privado `bike-images`.
-// Idempotente, single-flight, lote pequeno, pausa automática após falhas consecutivas.
+// bike-image-worker: persiste imagens das bikes no bucket privado `bike-images`.
+// Origem pode ser a URL direta da coluna "Imagem da Bike" ou a própria página do
+// Link Vitale (Mercado Livre), resolvida via og:image/JSON-LD — nunca por IA.
+// Idempotente por bike+origem, single-flight, lote pequeno, pausa após falhas.
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { imageStorageKey } from "../_shared/bike-hash.ts";
 import { downloadImageSafely, ImageDownloadError, sha256Hex } from "../_shared/image-fetch.ts";
 import { checkImageUrl, IMAGE_EXTENSION } from "../_shared/image-safety.ts";
+import { looksLikePageUrl, PageImageError, resolvePageImageUrl } from "../_shared/image-page.ts";
 import {
   clearWorkerPause,
   ensureWorkerState,
@@ -24,10 +27,12 @@ const TRANSIENT_PAUSE_MS = 15 * 60 * 1000;
 interface AssetRow {
   bike_id: string;
   source_url: string | null;
+  source_kind: string | null;
   stored_source_url: string | null;
   status: string;
   attempts: number;
 }
+
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -40,8 +45,10 @@ function json(body: Record<string, unknown>, status = 200): Response {
 
 function errMessage(err: unknown): string {
   if (err instanceof ImageDownloadError) return err.message;
+  if (err instanceof PageImageError) return err.message;
   return "Falha no download da imagem";
 }
+
 
 /** Trava por asset: pending → downloading (condicional, anti-corrida). */
 async function claimAsset(supabase: SupabaseClient, bikeId: string, attempts: number): Promise<boolean> {
@@ -104,9 +111,20 @@ async function processAsset(supabase: SupabaseClient, asset: AssetRow, publicBas
   }
 
   try {
-    const { bytes, contentType } = await downloadImageSafely(asset.source_url);
+    // Origem "page" (ou link sem extensão de imagem): resolve a imagem
+    // principal da página do produto antes de baixar o arquivo.
+    const isPage = asset.source_kind === "page" ||
+      (asset.source_kind !== "image" && looksLikePageUrl(asset.source_url));
+    const downloadUrl = isPage ? await resolvePageImageUrl(asset.source_url) : asset.source_url;
+    if (isPage) {
+      await recordWorkerEvent(supabase, WORKER, bikeId, "page_image_resolved", {
+        page: asset.source_url.slice(0, 200),
+      });
+    }
+
+    const { bytes, contentType } = await downloadImageSafely(downloadUrl);
     const checksum = await sha256Hex(bytes);
-    const storagePath = imageStorageKey(bikeId, asset.source_url, IMAGE_EXTENSION[contentType]);
+    const storagePath = imageStorageKey(bikeId, downloadUrl, IMAGE_EXTENSION[contentType]);
 
     const { error: upErr } = await supabase.storage.from(BUCKET).upload(storagePath, bytes, {
       contentType,
@@ -123,6 +141,7 @@ async function processAsset(supabase: SupabaseClient, asset: AssetRow, publicBas
       content_type: contentType,
       bytes: bytes.byteLength,
       checksum,
+      // Idempotência por bike + origem declarada na planilha.
       stored_source_url: asset.source_url,
       downloaded_at: new Date().toISOString(),
       error_message: null,
@@ -130,6 +149,7 @@ async function processAsset(supabase: SupabaseClient, asset: AssetRow, publicBas
     }).eq("bike_id", bikeId);
 
     await recordWorkerEvent(supabase, WORKER, bikeId, "image_ready", { bytes: bytes.byteLength, contentType });
+
     return "ready";
   } catch (err) {
     const message = errMessage(err);
@@ -170,7 +190,7 @@ Deno.serve(async (req: Request) => {
     // Assets elegíveis ao worker: pending com tentativas restantes.
     const { data: assets } = await supabase
       .from("bike_assets")
-      .select("bike_id, source_url, stored_source_url, status, attempts")
+      .select("bike_id, source_url, source_kind, stored_source_url, status, attempts")
       .eq("status", "pending")
       .lt("attempts", MAX_ATTEMPTS)
       .order("bike_id")
@@ -179,7 +199,7 @@ Deno.serve(async (req: Request) => {
     // Detecção de origem alterada em assets prontos (sem baixar nada).
     const { data: changed } = await supabase
       .from("bike_assets")
-      .select("bike_id, source_url, stored_source_url, status, attempts")
+      .select("bike_id, source_url, source_kind, stored_source_url, status, attempts")
       .eq("status", "ready")
       .eq("needs_review", false)
       .not("stored_source_url", "is", null)

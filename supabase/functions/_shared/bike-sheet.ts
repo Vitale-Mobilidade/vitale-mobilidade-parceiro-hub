@@ -174,6 +174,23 @@ export function parseAtiva(raw: string): boolean {
   return !/^(n|nao|não|no|false|0|inativa|inativo|off)$/.test(text);
 }
 
+/**
+ * Coluna oficial "Status" da planilha — fonte da elegibilidade.
+ * "Elegível" => true | "Não Elegível" => false | vazio/desconhecido => null.
+ * Normaliza acentos, caixa e espaços de forma segura (nunca assume elegível).
+ */
+export function parseSheetStatus(raw: string): boolean | null {
+  const key = normalizeName(raw);
+  if (!key) return null;
+  if (key === "elegivel" || key === "eleg_vel" || key === "sim") return true;
+  if (
+    key === "nao_elegivel" || key === "n_o_eleg_vel" || key === "inelegivel" ||
+    key === "nao" || key === "nao_elegive"
+  ) return false;
+  return null;
+}
+
+
 /** ID estável a partir da coluna ID (se houver) ou do nome. */
 export function buildStableId(rawId: string, rawName: string): string | null {
   const fromId = normalizeName(rawId);
@@ -266,11 +283,16 @@ export interface SnapshotBike {
   shortDescription: string;
   /** true quando o modelo não existe no catálogo estático. */
   isNew: boolean;
-  /** eligible = pode entrar no quiz; draft = falta dado; inactive = "Ativa" = não. */
+  /** eligible = linha completa; draft = pendente (não publicável); inactive = "Ativa" = não. */
   status: SnapshotBikeStatus;
-  /** Lista legível do que falta para a bike nova ficar elegível. */
+  /** Lista legível do que falta para a bike ficar publicável. */
   missingFields: string[];
   line: number;
+  /**
+   * Coluna Status da planilha (fonte oficial da elegibilidade).
+   * true = Elegível | false = Não Elegível | null = ausente/desconhecido.
+   */
+  sheetEligible: boolean | null;
   // --- Colunas opcionais (podem ainda não existir na planilha) ---
   image?: string;
   weightSupportKg?: number;
@@ -287,16 +309,29 @@ export interface IgnoredRow {
   reason: string;
 }
 
+/** Linha NOMEADA porém incompleta: nunca entra no quiz, sempre visível no painel. */
+export interface PendingRow {
+  id: string | null;
+  name: string;
+  line: number;
+  isNew: boolean;
+  missingFields: string[];
+  sheetEligible: boolean | null;
+}
+
 export interface SnapshotResult {
   bikes: SnapshotBike[];
-  /** Erros estruturais de linha. Se houver qualquer um, o snapshot NÃO pode ser gravado. */
+  /** Linhas nomeadas incompletas — pendentes, nunca bloqueiam as válidas. */
+  pending: PendingRow[];
+  /** Erros estruturais de linha (id indefinido/duplicado). Também não bloqueiam. */
   ignored: IgnoredRow[];
   recognizedCount: number;
+  pendingCount: number;
   ignoredCount: number;
   draftCount: number;
-  /** Linhas totalmente vazias (ex.: última linha do CSV) — ignoradas sem erro. */
+  /** Linhas sem Nome e sem dados — ignoradas sem erro. */
   blankCount: number;
-  /** false quando há qualquer erro estrutural: a sincronização deve ser abortada. */
+  /** Mantido por compatibilidade: linhas ruins nunca invalidam o snapshot. */
   valid: boolean;
 }
 
@@ -304,7 +339,7 @@ const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capa
 
 /** Colunas opcionais suportadas. "Imagem da Bike" é o nome oficial; "Imagem" é alias. */
 export const OPTIONAL_HEADERS = [
-  "ID", "Imagem da Bike", "Imagem", "Peso Suportado", "Usos", "Terrenos",
+  "ID", "Status", "Imagem da Bike", "Imagem", "Peso Suportado", "Usos", "Terrenos",
   "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa",
 ] as const;
 
@@ -313,7 +348,15 @@ function headerIndex(headers: string[], name: string): number {
   return headers.findIndex((h) => normalizeName(h) === target);
 }
 
-/** Constrói o snapshot a partir do CSV cru. Lança erro só se o cabeçalho for inválido. */
+/**
+ * Constrói o snapshot a partir do CSV cru.
+ *
+ * Regras:
+ *  - Linhas válidas SEMPRE são reconhecidas, independentemente de outras linhas ruins.
+ *  - Linha nomeada incompleta vira pendência explícita (campos faltantes listados).
+ *  - Linha sem Nome (mesmo com Status preenchido por validação/default) é vazia.
+ *  - Só o cabeçalho inválido lança erro.
+ */
 export function buildSnapshotFromCsv(csv: string): SnapshotResult {
   const rows = parseCsvRows(csv);
   if (rows.filter((r) => r.some((c) => c.trim() !== "")).length < 2) throw new Error("Planilha vazia ou inacessível");
@@ -328,8 +371,11 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
   for (const h of OPTIONAL_HEADERS) opt[h] = headerIndex(headers, h);
 
   const cell = (cells: string[], i: number) => (i >= 0 ? (cells[i] ?? "") : "");
+  const statusIdx = opt["Status"];
+  const hasStatusColumn = statusIdx >= 0;
 
   const bikes: SnapshotBike[] = [];
+  const pending: PendingRow[] = [];
   const ignored: IgnoredRow[] = [];
   let blankCount = 0;
   const seen = new Set<string>();
@@ -337,11 +383,16 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
   for (let r = 1; r < rows.length; r++) {
     const cells = rows[r];
     const line = r + 1;
-    // Linha totalmente vazia (comum no fim do CSV): ignorada sem erro.
-    if (cells.every((c) => (c ?? "").trim() === "")) { blankCount++; continue; }
 
     const rawName = (cells[idx["Nome"]] ?? "").trim();
-    if (!rawName) { ignored.push({ line, name: "", reason: "Nome vazio" }); continue; }
+    if (!rawName) {
+      // Sem Nome: a coluna Status pode vir preenchida por validação/default da
+      // planilha — isso NÃO transforma a linha em pendência.
+      const hasData = cells.some((c, i) => i !== statusIdx && (c ?? "").trim() !== "");
+      if (!hasData) { blankCount++; continue; }
+      ignored.push({ line, name: "", reason: "Linha sem Nome com dados preenchidos" });
+      continue;
+    }
 
     const rawId = cell(cells, opt["ID"]).trim();
     const knownId = resolveBikeId(rawId) ?? resolveBikeId(rawName);
@@ -349,21 +400,29 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const id = knownId ?? buildStableId(rawId, rawName);
     if (!id) { ignored.push({ line, name: rawName, reason: "Não foi possível derivar um ID estável" }); continue; }
     if (seen.has(id)) { ignored.push({ line, name: rawName, reason: "Linha duplicada para o mesmo modelo" }); continue; }
+    seen.add(id);
 
+    const sheetEligible = hasStatusColumn ? parseSheetStatus(cell(cells, statusIdx)) : null;
+
+    // Coleta TODOS os campos faltantes/inválidos (sem abortar na primeira falha).
+    const missingFields: string[] = [];
     const link = parseVitaleLink(cell(cells, idx["Link Vitale"]));
-    if (!link) { ignored.push({ line, name: rawName, reason: "Link Vitale inválido" }); continue; }
-
+    if (!link) missingFields.push("Link Vitale");
     const price = parseBrlPrice(cell(cells, idx["Preço R$"]));
-    if (price == null) { ignored.push({ line, name: rawName, reason: "Preço inválido" }); continue; }
-
+    if (price == null) missingFields.push("Preço R$");
     const autonomyKm = parseAutonomyKm(cell(cells, idx["Autonomia"]));
-    if (autonomyKm == null) { ignored.push({ line, name: rawName, reason: "Autonomia inválida" }); continue; }
-
+    if (autonomyKm == null) missingFields.push("Autonomia");
     const capacity = parseCapacity(cell(cells, idx["Capacidade"]));
-    if (capacity == null) { ignored.push({ line, name: rawName, reason: "Capacidade inválida" }); continue; }
-
+    if (capacity == null) missingFields.push("Capacidade");
     const description = cell(cells, idx["Descrição"]).trim();
-    if (!description) { ignored.push({ line, name: rawName, reason: "Descrição vazia" }); continue; }
+    if (!description) missingFields.push("Descrição");
+    // Status vazio/desconhecido em linha nomeada é pendência explícita.
+    if (hasStatusColumn && sheetEligible === null) missingFields.push("Status (Elegível / Não Elegível)");
+
+    if (missingFields.length > 0 || !link || price == null || autonomyKm == null || capacity == null) {
+      pending.push({ id, name: rawName.replace(/\s+/g, " ").trim(), line, isNew, missingFields, sheetEligible });
+      continue;
+    }
 
     // Colunas opcionais. Imagem: oficial "Imagem da Bike", alias "Imagem".
     const imgIdx = opt["Imagem da Bike"] >= 0 ? opt["Imagem da Bike"] : opt["Imagem"];
@@ -376,18 +435,6 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const perfilIndicado = cell(cells, opt["Perfil Indicado"]).replace(/\s+/g, " ").trim();
     const ativa = parseAtiva(cell(cells, opt["Ativa"]));
 
-    // Bike nova só precisa da IMAGEM na planilha — peso/usos/terrenos/etc. são
-    // derivados pelo perfil técnico de IA (event-driven), nunca exigidos manualmente.
-    const missingFields: string[] = [];
-    if (isNew && !image) missingFields.push("Imagem da Bike (URL https)");
-
-    const status: SnapshotBikeStatus = !ativa
-      ? "inactive"
-      : missingFields.length > 0
-        ? "draft"
-        : "eligible";
-
-    seen.add(id);
     bikes.push({
       id,
       name: rawName.replace(/\s+/g, " ").trim(),
@@ -398,9 +445,10 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
       description,
       shortDescription: buildShortDescription(description),
       isNew,
-      status,
-      missingFields,
+      status: ativa ? "eligible" : "inactive",
+      missingFields: [],
       line,
+      sheetEligible,
       ...(image ? { image } : {}),
       ...(weightSupportKg ? { weightSupportKg } : {}),
       ...(bestFor.length ? { bestFor } : {}),
@@ -412,21 +460,26 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
   }
 
   bikes.sort((a, b) => a.id.localeCompare(b.id));
+  pending.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const draftCount = bikes.filter((b) => b.status !== "eligible").length;
   return {
     bikes,
+    pending,
     ignored,
     recognizedCount: bikes.length,
+    pendingCount: pending.length,
     ignoredCount: ignored.length,
     draftCount,
     blankCount,
-    valid: ignored.length === 0,
+    valid: true,
   };
 }
 
-/** Hash estável (FNV-1a hex) do conteúdo relevante do snapshot. */
-export function snapshotHash(bikes: SnapshotBike[]): string {
-  const payload = JSON.stringify(bikes);
+
+/** Hash estável (FNV-1a hex) do conteúdo relevante do snapshot (bikes + pendências). */
+export function snapshotHash(bikes: SnapshotBike[], pending: PendingRow[] = []): string {
+  const payload = JSON.stringify([bikes, pending]);
+
   let h = 0x811c9dc5;
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
