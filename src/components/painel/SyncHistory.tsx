@@ -269,6 +269,8 @@ export default function SyncHistory({ call, onUnauthorized, refreshKey }: Props)
           </ul>
         </div>
       )}
+      </div>
+      )}
     </section>
   );
 }
