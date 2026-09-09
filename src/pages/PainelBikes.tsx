@@ -587,21 +587,6 @@ export default function PainelBikes() {
                     <td className="p-3">
                       <div className="font-medium text-foreground">{r.name}</div>
                       <div className="text-xs text-muted-foreground">{r.id}{r.isNew ? " · nova" : ""}</div>
-                      {(r.imageStatus || r.profileStatus) && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {r.imageStatus && (
-                            <span className={`text-[11px] ${r.imageStatus === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-                              {IMAGE_STATUS_LABEL[r.imageStatus] ?? r.imageStatus}
-                              {r.imageNeedsReview ? " (revisão)" : ""}
-                            </span>
-                          )}
-                          {r.profileStatus && (
-                            <span className={`text-[11px] ${r.profileStatus === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-                              · {PROFILE_STATUS_LABEL[r.profileStatus] ?? r.profileStatus}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </td>
                     <td className="p-3">{brl(r.price)}</td>
                     <td className="p-3">{r.autonomyKm ? `Até ${r.autonomyKm} km` : "—"}</td>
