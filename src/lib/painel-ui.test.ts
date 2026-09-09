@@ -7,16 +7,10 @@
  * - Atualização silenciosa sem duplicar timers.
  */
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pendingReasons, SILENT_REFRESH_MS, startSilentRefresh } from "./painel-bikes";
-
-const painelSrc = readFileSync(path.resolve(__dirname, "../pages/PainelBikes.tsx"), "utf8");
-const historySrc = readFileSync(
-  path.resolve(__dirname, "../components/painel/SyncHistory.tsx"),
-  "utf8",
-);
+import painelSrc from "../pages/PainelBikes.tsx?raw";
+import historySrc from "../components/painel/SyncHistory.tsx?raw";
 
 describe("motivos amigáveis de pendência", () => {
   const base = { missingFields: [] as string[], imageStatus: null as string | null, profileStatus: null as string | null };
