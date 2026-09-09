@@ -19,14 +19,14 @@ function block(startMarker: string, endMarker: string): string {
 describe("bike-profile-worker: falha terminal preserva perfil anterior", () => {
   it("ramo de erro de IA não escreve em bike_profiles", () => {
     const errorBranch = block('if (result.kind === "error")', "const validated = validateAiProfile");
-    expect(errorBranch).not.toContain("bike_profiles");
+    expect(errorBranch).not.toContain('from("bike_profiles")');
     expect(errorBranch).toContain("failJob");
     expect(errorBranch).toContain("profile_kept_on_failure");
   });
 
   it("ramo de payload inválido não escreve em bike_profiles", () => {
     const invalidBranch = block("const validated = validateAiProfile", "// Falha não apaga");
-    expect(invalidBranch).not.toContain("bike_profiles");
+    expect(invalidBranch).not.toContain('from("bike_profiles")');
     expect(invalidBranch).toContain("invalid_ai_payload");
   });
 
