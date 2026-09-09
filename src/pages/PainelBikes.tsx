@@ -624,7 +624,10 @@ export default function PainelBikes() {
                     </td>
 
                     <td className="p-3 text-xs text-muted-foreground">
-                      {r.missingFields.length > 0 ? r.missingFields.join(", ") : "—"}
+                      {(() => {
+                        const reasons = pendingReasons(r);
+                        return reasons.length > 0 ? reasons.join(", ") : "—";
+                      })()}
                     </td>
                   </tr>
                 ))}
