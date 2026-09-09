@@ -606,6 +606,52 @@ export default function PainelBikes() {
           </div>
         </section>
 
+        {pendencias.length > 0 && (
+          <section className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
+            <h2 className="text-base font-semibold text-foreground">
+              {syncState?.status === "error"
+                ? "Linhas com problema na planilha — sincronização bloqueada"
+                : "Linhas pendentes na planilha"}
+            </h2>
+            {syncState?.status === "error" && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nada foi substituído: o quiz continua usando o último catálogo válido. Corrija as
+                linhas abaixo na planilha e a próxima execução automática publica o catálogo.
+              </p>
+            )}
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              {pendencias.map((p, i) => (
+                <li key={`${p.line}-${i}`}>
+                  Linha {p.line}: <strong>{p.name || "(sem nome)"}</strong> — {p.reason}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="rounded-xl border border-border bg-muted/40 p-5 text-sm">
+          <h2 className="font-semibold text-foreground">Como editar o catálogo</h2>
+          <p className="mt-1 text-muted-foreground">
+            Todas as edições de conteúdo são feitas <strong>na planilha oficial</strong> — o painel sincroniza
+            a cada hora (ou sob demanda em “Sincronizar agora”). Colunas obrigatórias já existentes: Nome,
+            Link Vitale, Preço R$, Autonomia, Capacidade e Descrição.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong>. A elegibilidade de cada
+            bike vem da coluna <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a
+            coluna <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            <strong>Pendente</strong> quer dizer apenas que ainda faltam dados na planilha ou que uma bike nova
+            está sendo preparada — a coluna “Campos faltantes” mostra o motivo em cada linha.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Esta tela se atualiza sozinha a cada 30 segundos. Para buscar mudanças da planilha na hora, use
+            “Sincronizar agora”.
+          </p>
+        </section>
+
+
         <SyncHistory
           call={historyCall}
           onUnauthorized={() => void logout(token)}
