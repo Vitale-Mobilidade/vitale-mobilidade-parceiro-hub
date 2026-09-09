@@ -179,7 +179,7 @@ function sortValue(row: PanelRow, key: SortKey): string | number | null {
       const t = new Date(row.updatedAt).getTime();
       return Number.isNaN(t) ? null : t;
     }
-    case "state": return STATE_ORDER[row.state];
+    case "state": return STATE_ORDER[row.effective];
     case "missingFields": return row.missingFields.length;
   }
 }
