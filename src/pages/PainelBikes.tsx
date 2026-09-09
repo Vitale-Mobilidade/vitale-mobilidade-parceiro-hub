@@ -415,9 +415,6 @@ export default function PainelBikes() {
             <Button variant="outline" onClick={() => window.open(SHEET_PUBLIC_URL, "_blank", "noopener,noreferrer")}>
               <ExternalLink className="mr-2 h-4 w-4" /> Abrir planilha
             </Button>
-            <Button variant="outline" onClick={() => void loadData(token)} disabled={loadingData || syncing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loadingData ? "animate-spin" : ""}`} /> Atualizar visualização
-            </Button>
             <Button onClick={() => void handleSyncNow()} disabled={syncing || loadingData}>
               {syncing
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
