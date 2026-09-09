@@ -102,20 +102,6 @@ function fmt(value?: string | null) {
 const brl = (v: number | null) =>
   v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const IMAGE_STATUS_LABEL: Record<string, string> = {
-  pending: "imagem pendente",
-  downloading: "baixando imagem",
-  ready: "imagem persistida",
-  error: "erro na imagem",
-};
-
-const PROFILE_STATUS_LABEL: Record<string, string> = {
-  pending: "perfil IA pendente",
-  processing: "gerando perfil IA",
-  ready: "perfil IA pronto",
-  error: "erro no perfil IA",
-  review: "perfil IA em revisão",
-};
 
 // ---------------- Tela de login ----------------
 
