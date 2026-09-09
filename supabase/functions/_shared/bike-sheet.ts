@@ -386,13 +386,13 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
 
     const rawName = (cells[idx["Nome"]] ?? "").trim();
     if (!rawName) {
-      // Sem Nome: a coluna Status pode vir preenchida por validação/default da
-      // planilha — isso NÃO transforma a linha em pendência.
-      const hasData = cells.some((c, i) => i !== statusIdx && (c ?? "").trim() !== "");
-      if (!hasData) { blankCount++; continue; }
-      ignored.push({ line, name: "", reason: "Linha sem Nome com dados preenchidos" });
+      // Sem Nome a linha NÃO existe como bike — independentemente de qualquer
+      // outra célula (Status, Categoria, fórmulas, valores padrão da planilha).
+      // Nunca vira pendência nem linha ignorada.
+      blankCount++;
       continue;
     }
+
 
     const rawId = cell(cells, opt["ID"]).trim();
     const knownId = resolveBikeId(rawId) ?? resolveBikeId(rawName);

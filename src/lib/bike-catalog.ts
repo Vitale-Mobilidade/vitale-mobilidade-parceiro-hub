@@ -240,9 +240,12 @@ export function buildCatalogRows(
     };
   });
 
-  // Drafts / inativas que não entraram no quiz
+  // Linhas válidas do snapshot que não entraram no catálogo mesclado
+  // (ex.: bike nova sem metadados estáticos). O estado segue o Status oficial:
+  // só "draft" quando a linha é realmente incompleta/pendente.
   for (const s of byId.values()) {
     if (rows.some((r) => r.id === s.id)) continue;
+    const st = statusOf(s);
     rows.push({
       id: s.id,
       name: s.name,
@@ -251,13 +254,14 @@ export function buildCatalogRows(
       autonomyKm: s.autonomyKm,
       capacity: s.capacity,
       linkVitale: s.linkVitale,
-      state: statusOf(s) === "inactive" ? "inactive" : "draft",
+      state: st === "eligible" ? "eligible" : st === "inactive" ? "inactive" : "draft",
       isNew: !baseIds.has(s.id),
       missingFields: s.missingFields ?? [],
       fromSheet: true,
       sheetEligible: s.sheetEligible ?? null,
     });
   }
+
 
   // Linhas nomeadas incompletas: aparecem como pendentes, sem dados inventados.
   for (const p of Array.isArray(pendingRows) ? pendingRows : []) {
