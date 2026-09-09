@@ -201,7 +201,11 @@ async function processJob(
 
   const validated = validateAiProfile(result.parsed);
   if (!validated) {
+    // Payload inválido também preserva o perfil anterior.
     await failJob(supabase, job, "invalid_ai_payload");
+    await recordWorkerEvent(supabase, WORKER, job.bike_id, "profile_kept_on_failure", {
+      kind: "invalid_payload", attempts: job.attempts + 1,
+    });
     return "failed";
   }
 
