@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPanelRows,
+  computeEffectiveState,
   DEFAULT_SORT,
   effectiveEligible,
   nextSort,
@@ -268,5 +269,43 @@ describe("sessão do painel", () => {
     expect(s.persistent.getItem(PANEL_TOKEN_KEY)).toBeNull();
     expect(s.session.getItem(PANEL_TOKEN_KEY)).toBeNull();
     expect(readPanelSession(s)).toBeNull();
+  });
+});
+
+// ---------- Estado efetivo único (painel = quiz) ----------
+describe("estado efetivo do painel", () => {
+  it("linha incompleta da planilha é sempre Pendente", () => {
+    expect(computeEffectiveState({ state: "draft", isNew: true, eligible: true, imageStatus: "ready", profileStatus: "ready" })).toBe("pending");
+  });
+
+  it("Status 'Não Elegível' (override false) é Não elegível", () => {
+    expect(computeEffectiveState({ state: "eligible", isNew: false, eligible: false, imageStatus: "ready", profileStatus: "ready" })).toBe("not_eligible");
+    expect(computeEffectiveState({ state: "inactive", isNew: false, eligible: true, imageStatus: "ready", profileStatus: "ready" })).toBe("not_eligible");
+  });
+
+  it("bike nova só fica Elegível com imagem e perfil prontos", () => {
+    const base = { state: "eligible" as const, isNew: true, eligible: true };
+    expect(computeEffectiveState({ ...base, imageStatus: "pending", profileStatus: "ready" })).toBe("pending");
+    expect(computeEffectiveState({ ...base, imageStatus: "ready", profileStatus: null })).toBe("pending");
+    expect(computeEffectiveState({ ...base, imageStatus: "ready", profileStatus: "ready" })).toBe("eligible");
+  });
+
+  it("bike legada elegível não depende de perfil de IA", () => {
+    expect(computeEffectiveState({ state: "static", isNew: false, eligible: true, imageStatus: null, profileStatus: null })).toBe("eligible");
+  });
+
+  it("buildPanelRows expõe um único estado coerente com o override", () => {
+    const rows = buildPanelRows(
+      [
+        catalogRow({ id: "l10", name: "L10", state: "eligible", fromSheet: true }),
+        catalogRow({ id: "v35", name: "V35", state: "eligible", fromSheet: true }),
+      ],
+      [{ bike_id: "l10", eligible: true }, { bike_id: "v35", eligible: false }],
+      "2026-01-01T00:00:00Z",
+      [{ bike_id: "l10", status: "ready" }],
+      [{ bike_id: "l10", status: "ready" }],
+    );
+    expect(rows.find((r) => r.id === "l10")!.effective).toBe("eligible");
+    expect(rows.find((r) => r.id === "v35")!.effective).toBe("not_eligible");
   });
 });
