@@ -127,14 +127,26 @@ export default function SyncHistory({ call, onUnauthorized, refreshKey }: Props)
     });
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Histórico de atualizações</h2>
-          <p className="text-xs text-muted-foreground">
-            Toda tentativa de sincronização fica registrada — automática ou manual, com ou sem mudanças.
-          </p>
-        </div>
+    <section className="rounded-xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="painel-historico-conteudo"
+        className="flex w-full items-center justify-between gap-3 rounded-xl p-5 text-left"
+      >
+        <span>
+          <span className="block text-base font-semibold text-foreground">Histórico de atualizações</span>
+          <span className="block text-xs text-muted-foreground">
+            Auditoria das sincronizações e mudanças do catálogo
+          </span>
+        </span>
+        {open ? <ChevronDown className="h-5 w-5 shrink-0" /> : <ChevronRight className="h-5 w-5 shrink-0" />}
+      </button>
+
+      {!open ? null : (
+      <div id="painel-historico-conteudo" className="border-t border-border p-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={origin} onValueChange={(v) => { setPage(0); setOrigin(v); }}>
             <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
