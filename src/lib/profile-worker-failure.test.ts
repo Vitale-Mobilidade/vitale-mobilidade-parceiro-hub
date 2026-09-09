@@ -6,7 +6,7 @@ import WORKER_SRC from "../../supabase/functions/bike-profile-worker/index.ts?ra
  * escrever em bike_profiles — o perfil ready/baseline anterior permanece ativo
  * até existir um payload novo completamente validado.
  */
-const SRC = readFileSync("supabase/functions/bike-profile-worker/index.ts", "utf8");
+const SRC = WORKER_SRC;
 
 function block(startMarker: string, endMarker: string): string {
   const start = SRC.indexOf(startMarker);
