@@ -291,15 +291,31 @@ export default function PainelBikes() {
           assets: res.assets ?? [],
           profiles: res.profiles ?? [],
         });
-      } else {
+      } else if (!silent) {
         toast({ title: "Falha ao carregar o painel", description: res.error ?? "Tente novamente.", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Falha de conexão", description: "Não foi possível carregar os dados.", variant: "destructive" });
+      if (!silent) {
+        toast({ title: "Falha de conexão", description: "Não foi possível carregar os dados.", variant: "destructive" });
+      }
     } finally {
-      setLoadingData(false);
+      if (!silent) setLoadingData(false);
     }
   }, [logout, toast]);
+
+  // Atualização silenciosa a cada 30s enquanto a aba estiver visível.
+  useEffect(() => {
+    if (!token) return;
+    const refresh = () => { void loadData(token, true); };
+    const stop = startSilentRefresh(refresh, { isHidden: () => document.hidden });
+    const onVisibility = () => { if (!document.hidden) refresh(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [token, loadData]);
+
 
   // Valida sessão armazenada ao abrir a página.
   useEffect(() => {
