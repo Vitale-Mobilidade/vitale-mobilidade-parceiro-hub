@@ -128,15 +128,16 @@ describe("sortPanelRows — valores semânticos", () => {
       .toEqual(["3", "1", "2"]);
   });
 
-  it("estado segue ordem semântica elegível < pendente < inativa < estática", () => {
+  it("estado ordena pelo estado efetivo exibido (elegível < pendente < não elegível)", () => {
     const rows = [
-      row({ id: "1", name: "Estática", state: "static" }),
-      row({ id: "2", name: "Inativa", state: "inactive" }),
-      row({ id: "3", name: "Elegível", state: "eligible" }),
-      row({ id: "4", name: "Pendente", state: "draft" }),
+      row({ id: "1", name: "Nao elegivel", state: "eligible", effective: "not_eligible" }),
+      row({ id: "2", name: "Pendente", state: "draft", effective: "pending" }),
+      row({ id: "3", name: "Elegivel", state: "static", effective: "eligible" }),
     ];
     expect(sortPanelRows(rows, { key: "state", dir: "asc" }).map((r) => r.id))
-      .toEqual(["3", "4", "2", "1"]);
+      .toEqual(["3", "2", "1"]);
+    expect(sortPanelRows(rows, { key: "state", dir: "desc" }).map((r) => r.id))
+      .toEqual(["1", "2", "3"]);
   });
 
   it("campos faltantes ordena pela contagem", () => {
