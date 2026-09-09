@@ -502,12 +502,13 @@ export default function PainelBikes() {
             Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong> (URL https pública — copiada
             permanentemente para o nosso armazenamento). O perfil técnico de recomendação é gerado
             automaticamente por IA quando uma bike nova entra ou quando a Descrição muda — nenhum campo de
-            perfil precisa ser preenchido manualmente. A elegibilidade final de cada bike é definida aqui no
-            painel, na coluna <strong>Estado</strong>.
+            perfil precisa ser preenchido manualmente. A elegibilidade de cada bike vem da coluna{" "}
+            <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a coluna{" "}
+            <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Persistência de imagens e geração de perfis por IA estão em implantação gradual; os status
-            aparecem abaixo do nome de cada bike quando disponíveis.
+            A persistência de imagens e a geração de perfis por IA já estão em operação; os status
+            aparecem abaixo do nome de cada bike.
           </p>
         </section>
 
