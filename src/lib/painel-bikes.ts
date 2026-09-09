@@ -159,11 +159,11 @@ export const DEFAULT_SORT: SortState = { key: "name", dir: "asc" };
 
 const collator = new Intl.Collator("pt-BR", { numeric: true, sensitivity: "base" });
 
-const STATE_ORDER: Record<PanelRow["state"], number> = {
+/** Ordem da coluna Estado: exatamente o que o painel exibe (estado efetivo). */
+const STATE_ORDER: Record<EffectiveState, number> = {
   eligible: 0,
-  draft: 1,
-  inactive: 2,
-  static: 3,
+  pending: 1,
+  not_eligible: 2,
 };
 
 /** Valor semântico de ordenação por coluna (null = ausente, vai por último). */
