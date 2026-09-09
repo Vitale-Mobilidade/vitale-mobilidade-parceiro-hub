@@ -525,7 +525,7 @@ export default function PainelBikes() {
             <h2 className="text-base font-semibold text-foreground">
               {syncState?.status === "error"
                 ? "Linhas com problema na planilha — sincronização bloqueada"
-                : "Linhas ignoradas na planilha"}
+                : "Linhas pendentes na planilha"}
             </h2>
             {syncState?.status === "error" && (
               <p className="mt-1 text-sm text-muted-foreground">
