@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import WORKER_SRC from "../../supabase/functions/bike-profile-worker/index.ts?raw";
 
 /**
  * Regra aprovada: falha terminal de IA (gateway, JSON ou validação) NUNCA pode
