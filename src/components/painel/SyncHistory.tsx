@@ -110,7 +110,7 @@ export default function SyncHistory({ call, onUnauthorized, refreshKey }: Props)
     }
   }, [call, onUnauthorized, page, origin, status]);
 
-  useEffect(() => { void load(); }, [load, refreshKey]);
+  useEffect(() => { if (open) void load(); }, [open, load, refreshKey]);
 
   const changesByRun = useMemo(() => groupChangesByRun(res?.changes ?? []), [res]);
   const runs = res?.runs ?? [];
