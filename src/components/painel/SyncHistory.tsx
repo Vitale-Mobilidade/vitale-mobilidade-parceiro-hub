@@ -80,6 +80,8 @@ function statusBadge(status: string) {
 }
 
 export default function SyncHistory({ call, onUnauthorized, refreshKey }: Props) {
+  // Inicia recolhido: nada é buscado antes da primeira abertura.
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [origin, setOrigin] = useState("all");
