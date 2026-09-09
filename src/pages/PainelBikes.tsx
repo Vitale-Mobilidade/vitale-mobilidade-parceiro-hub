@@ -484,24 +484,21 @@ export default function PainelBikes() {
             Link Vitale, Preço R$, Autonomia, Capacidade e Descrição.
           </p>
           <p className="mt-2 text-muted-foreground">
-            Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong> (URL https pública — copiada
-            permanentemente para o nosso armazenamento). O perfil técnico de recomendação é gerado
-            automaticamente por IA quando uma bike nova entra ou quando a Descrição muda — nenhum campo de
-            perfil precisa ser preenchido manualmente. A elegibilidade de cada bike vem da coluna{" "}
-            <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a coluna{" "}
-            <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
+            Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong>. A elegibilidade de cada
+            bike vem da coluna <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a
+            coluna <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            <strong>Pendente</strong> quer dizer apenas que ainda faltam dados na planilha ou que uma bike nova
+            está sendo preparada — a coluna “Campos faltantes” mostra o motivo em cada linha.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            A persistência de imagens e a geração de perfis por IA já estão em operação; os status
-            aparecem abaixo do nome de cada bike.
+            Esta tela se atualiza sozinha a cada 30 segundos. Para buscar mudanças da planilha na hora, use
+            “Sincronizar agora”.
           </p>
         </section>
 
-        <SyncHistory
-          call={historyCall}
-          onUnauthorized={() => void logout(token)}
-          refreshKey={historyKey}
-        />
+
 
 
 
