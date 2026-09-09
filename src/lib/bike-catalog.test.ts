@@ -346,7 +346,8 @@ describe("linhas do painel", () => {
     const nova = rows.find((r) => r.id === "nova_x9")!;
     const outra = rows.find((r) => r.id === "v35")!;
     expect(ft03.state).toBe("eligible");
-    expect(nova.state).toBe("eligible");
+    // Linha completa, mas ainda sem imagem/perfil persistidos: pendente no painel.
+    expect(nova.state).toBe("draft");
     expect(nova.missingFields).toEqual([]);
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
