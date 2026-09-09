@@ -4,13 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   RefreshCw,
   ExternalLink,
   CheckCircle2,
@@ -36,6 +29,7 @@ import {
   buildPanelRows,
   clearPanelSession,
   DEFAULT_SORT,
+  EFFECTIVE_LABEL,
   nextSort,
   readPanelSession,
   relativeTime,
@@ -88,23 +82,15 @@ async function panelCall<T = Record<string, unknown>>(
   return { status: res.status, data };
 }
 
-type FilterKey = "todos" | "eligible" | "draft" | "inactive" | "static" | "not_eligible";
+type FilterKey = "todos" | "eligible" | "not_eligible" | "pending";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "todos", label: "Todas" },
   { key: "eligible", label: "Elegíveis" },
   { key: "not_eligible", label: "Não elegíveis" },
-  { key: "draft", label: "Pendentes" },
-  { key: "inactive", label: "Inativas" },
-  { key: "static", label: "Só estáticas" },
+  { key: "pending", label: "Pendentes" },
 ];
 
-const STATE_LABEL: Record<PanelRow["state"], string> = {
-  eligible: "Elegível",
-  draft: "Pendente",
-  inactive: "Inativa",
-  static: "Estática (sem linha)",
-};
 
 function fmt(value?: string | null) {
   if (!value) return "—";
@@ -268,7 +254,6 @@ export default function PainelBikes() {
   const [data, setData] = useState<PanelData | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("todos");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
@@ -377,45 +362,11 @@ export default function PainelBikes() {
     }
   };
 
-  const handleEligibility = async (row: PanelRow, value: string) => {
-    if (!token || savingId) return;
-    const eligible = value === "elegivel";
-    const previous = data;
-    setSavingId(row.id);
-    // Atualização otimista.
-    setData((d) => d && {
-      ...d,
-      overrides: [
-        ...d.overrides.filter((o) => o.bike_id !== row.id),
-        { bike_id: row.id, eligible },
-      ],
-    });
-    try {
-      const { status, data: res } = await panelCall("set-eligibility", { bikeId: row.id, eligible }, token);
-      if (status === 401) { await logout(token); return; }
-      if (!res.ok) throw new Error(res.error);
-      toast({
-        title: eligible ? "Bike marcada como elegível" : "Bike marcada como não elegível",
-        description: row.name,
-      });
-    } catch {
-      setData(previous); // rollback
-      toast({
-        title: "Não foi possível salvar",
-        description: "A elegibilidade anterior foi restaurada. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingId(null);
-      setHistoryKey((k) => k + 1);
-
-    }
-  };
-
   const rows = useMemo<PanelRow[]>(() => {
     const snapshot = data?.snapshot?.data ?? null;
     const bikes = Array.isArray(snapshot?.bikes) ? snapshot.bikes : [];
-    const base = buildCatalogRows(STATIC_CATALOG, bikes);
+    const pending = Array.isArray(snapshot?.pending) ? snapshot.pending : [];
+    const base = buildCatalogRows(STATIC_CATALOG, bikes, pending);
     return buildPanelRows(base, data?.overrides ?? [], data?.snapshot?.updated_at ?? null, data?.assets ?? [], data?.profiles ?? []);
   }, [data]);
 
@@ -431,27 +382,24 @@ export default function PainelBikes() {
     return Date.now() - t > 10 * 60 * 1000;
   }, [syncState?.next_run_at]);
 
-
+  // Contagens usam exatamente o mesmo estado efetivo aplicado ao quiz.
   const counts = useMemo(() => ({
-    eligible: rows.filter((r) => r.eligible).length,
-    notEligible: rows.filter((r) => !r.eligible).length,
-    draft: rows.filter((r) => r.state === "draft").length,
-    inactive: rows.filter((r) => r.state === "inactive").length,
-    static: rows.filter((r) => r.state === "static").length,
+    eligible: rows.filter((r) => r.effective === "eligible").length,
+    notEligible: rows.filter((r) => r.effective === "not_eligible").length,
+    pending: rows.filter((r) => r.effective === "pending").length,
   }), [rows]);
 
   // Filtro + busca ANTES da ordenação.
   const visibleRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = rows.filter((r) => {
-      if (filter === "eligible" && !r.eligible) return false;
-      if (filter === "not_eligible" && r.eligible) return false;
-      if ((filter === "draft" || filter === "inactive" || filter === "static") && r.state !== filter) return false;
+      if (filter !== "todos" && r.effective !== filter) return false;
       if (!q) return true;
       return r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
     });
     return sortPanelRows(filtered, sort);
   }, [rows, filter, query, sort]);
+
 
   if (checking) {
     return (
@@ -539,7 +487,7 @@ export default function PainelBikes() {
             <p>Reconhecidas: <strong>{syncState?.recognized_count ?? 0}</strong></p>
             <p>Ignoradas: <strong>{syncState?.ignored_count ?? 0}</strong></p>
             <p>Elegíveis / não elegíveis: <strong>{counts.eligible} / {counts.notEligible}</strong></p>
-            <p>Pendentes / inativas: <strong>{counts.draft} / {counts.inactive}</strong></p>
+            <p>Pendentes: <strong>{counts.pending}</strong></p>
           </div>
         </section>
 
@@ -685,27 +633,24 @@ export default function PainelBikes() {
                     </td>
                     <td className="p-3 text-muted-foreground">{r.fromSheet ? fmt(r.updatedAt) : "—"}</td>
                     <td className="p-3">
-                      <div className="w-40">
-                        <Select
-                          value={r.eligible ? "elegivel" : "nao_elegivel"}
-                          onValueChange={(v) => void handleEligibility(r, v)}
-                          disabled={savingId === r.id || r.state === "inactive"}
+                      <div className="w-40 space-y-1">
+                        <Badge
+                          variant={
+                            r.effective === "eligible"
+                              ? "default"
+                              : r.effective === "pending"
+                                ? "secondary"
+                                : "destructive"
+                          }
                         >
-                          <SelectTrigger className="h-8 text-xs" aria-label={`Elegibilidade de ${r.name}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="elegivel">Elegível</SelectItem>
-                            <SelectItem value="nao_elegivel">Não elegível</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="mt-1">
-                          <Badge variant={r.state === "eligible" ? "default" : r.state === "draft" ? "destructive" : "secondary"}>
-                            {STATE_LABEL[r.state]}
-                          </Badge>
-                        </div>
+                          {EFFECTIVE_LABEL[r.effective]}
+                        </Badge>
+                        <p className="text-[11px] text-muted-foreground">
+                          {r.fromSheet ? "Gerenciado pela planilha" : "Catálogo fixo"}
+                        </p>
                       </div>
                     </td>
+
                     <td className="p-3 text-xs text-muted-foreground">
                       {r.missingFields.length > 0 ? r.missingFields.join(", ") : "—"}
                     </td>

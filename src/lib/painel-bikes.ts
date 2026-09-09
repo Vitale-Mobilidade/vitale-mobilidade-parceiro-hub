@@ -38,7 +38,7 @@ export interface ProfileRow {
 
 /** Linha enriquecida exibida no painel. */
 export interface PanelRow extends CatalogRow {
-  /** Elegibilidade administrativa efetiva (override). */
+  /** Elegibilidade administrativa efetiva (override espelhado da planilha). */
   eligible: boolean;
   hasOverride: boolean;
   /** Data de atualização semântica para ordenação/exibição. */
@@ -46,15 +46,17 @@ export interface PanelRow extends CatalogRow {
   imageStatus: string | null;
   imageNeedsReview: boolean;
   profileStatus: string | null;
+  /** Estado único exibido no painel — idêntico ao critério do quiz. */
+  effective: EffectiveState;
 }
 
 // ---------- Elegibilidade ----------
 
 /**
- * Regra do override administrativo:
- * - Override presente: vale o valor persistido (sobrevive a syncs).
+ * Regra do override administrativo (espelho da coluna Status da planilha):
+ * - Override presente: vale o valor persistido.
  * - Sem override: bike estática (sem linha na planilha) permanece elegível;
- *   bikes da planilha sem override NÃO são elegíveis (novas nascem false).
+ *   bikes da planilha sem override ainda NÃO são elegíveis.
  */
 export function effectiveEligible(
   state: CatalogRow["state"],
@@ -62,6 +64,36 @@ export function effectiveEligible(
 ): boolean {
   if (override) return override.eligible;
   return state === "static";
+}
+
+/** Estado único do painel — sem contradição entre seletor e badge. */
+export type EffectiveState = "eligible" | "not_eligible" | "pending";
+
+export const EFFECTIVE_LABEL: Record<EffectiveState, string> = {
+  eligible: "Elegível",
+  not_eligible: "Não elegível",
+  pending: "Pendente",
+};
+
+/**
+ * Mesmo critério aplicado pelo quiz (RPC get_quiz_catalog):
+ *  - linha incompleta / preservada => Pendente;
+ *  - Status "Não Elegível" (ou linha inativa) => Não elegível;
+ *  - bike nova sem imagem persistida ou sem perfil pronto => Pendente;
+ *  - caso contrário => Elegível.
+ */
+export function computeEffectiveState(row: {
+  state: CatalogRow["state"];
+  isNew: boolean;
+  eligible: boolean;
+  imageStatus: string | null;
+  profileStatus: string | null;
+}): EffectiveState {
+  if (row.state === "draft") return "pending";
+  if (row.state === "inactive") return "not_eligible";
+  if (!row.eligible) return "not_eligible";
+  if (row.isNew && (row.imageStatus !== "ready" || row.profileStatus !== "ready")) return "pending";
+  return "eligible";
 }
 
 // ---------- Enriquecimento ----------
@@ -81,17 +113,28 @@ export function buildPanelRows(
     const o = overrideById.get(r.id);
     const a = assetById.get(r.id);
     const p = profileById.get(r.id);
+    const eligible = effectiveEligible(r.state, o);
+    const imageStatus = a?.status ?? null;
+    const profileStatus = p?.status ?? null;
     return {
       ...r,
-      eligible: effectiveEligible(r.state, o),
+      eligible,
       hasOverride: !!o,
       updatedAt: r.fromSheet ? snapshotUpdatedAt : null,
-      imageStatus: a?.status ?? null,
+      imageStatus,
       imageNeedsReview: a?.needs_review === true,
-      profileStatus: p?.status ?? null,
+      profileStatus,
+      effective: computeEffectiveState({
+        state: r.state,
+        isNew: r.isNew,
+        eligible,
+        imageStatus,
+        profileStatus,
+      }),
     };
   });
 }
+
 
 // ---------- Ordenação ----------
 

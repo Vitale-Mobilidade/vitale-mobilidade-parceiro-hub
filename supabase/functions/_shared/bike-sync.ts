@@ -7,19 +7,29 @@
  *
  * Garantias:
  *  - Trava de concorrência com expiração (running_since).
- *  - Atomicidade: qualquer erro estrutural de linha aborta a gravação do
- *    snapshot e o quiz permanece no último snapshot válido.
- *  - Escrita só quando o conteúdo muda (content_hash).
+ *  - Resiliência: linhas incompletas viram PENDÊNCIAS e nunca bloqueiam as
+ *    linhas válidas. A versão anterior de uma bike existente é preservada
+ *    (marcada pendente/não publicável) quando a linha fica temporariamente ruim.
+ *  - A coluna "Status" da planilha é a fonte oficial da elegibilidade e é
+ *    espelhada idempotentemente em bike_admin_overrides (updated_by="sheet").
+ *  - Escrita do snapshot só quando o conteúdo muda (content_hash).
  *  - Efeitos downstream (imagem/IA) são EVENTOS separados: falhas neles
  *    NUNCA invalidam o snapshot comercial.
  *  - Hashes separados: comercial (preço/link/...) e técnico (id+descrição).
- *    Mudança comercial não gera IA nem download de imagem.
- *  - IA somente para bikes NOVAS (as 19 legadas têm metadados estáticos e
- *    permanecem no ranking hardcoded).
+ *    Preço, link, Status e imagem JAMAIS disparam IA.
+ *  - Baseline: bikes legadas registram o hash atual da Descrição sem IA; só uma
+ *    mudança FUTURA de Descrição enfileira o reprocessamento.
  */
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { buildSnapshotFromCsv, snapshotHash, SHEET_CSV_URL, type SnapshotBike } from "./bike-sheet.ts";
+import {
+  buildSnapshotFromCsv,
+  KNOWN_BIKE_IDS,
+  snapshotHash,
+  SHEET_CSV_URL,
+  type PendingRow,
+  type SnapshotBike,
+} from "./bike-sheet.ts";
 import { technicalHash } from "./bike-hash.ts";
 import {
   countChangedBikes,
@@ -34,6 +44,9 @@ export const SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
 export const RETRY_INTERVAL_MS = 15 * 60 * 1000; // backoff em caso de falha
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // trava expira em 5 min
 
+/** IDs do catálogo estático: recebem baseline de hash técnico, nunca IA retroativa. */
+const LEGACY_IDS = new Set<string>(KNOWN_BIKE_IDS as readonly string[]);
+
 export interface SyncOutcome {
   ok: boolean;
   skipped?: boolean;
@@ -41,12 +54,17 @@ export interface SyncOutcome {
   changed?: boolean;
   snapshotWritten?: boolean;
   recognized?: number;
+  pending?: number;
   ignored?: number;
   drafts?: number;
   blank?: number;
   jobsCreated?: number;
+  baselines?: number;
   assetsQueued?: number;
   assetsReview?: number;
+  overridesSynced?: number;
+  eligible?: number;
+  notEligible?: number;
   changedBikes?: number;
   runId?: string;
   error?: string;
@@ -62,45 +80,125 @@ export function safeError(e: unknown): string {
     .slice(0, 300);
 }
 
-interface ReconcileResult {
-  jobsCreated: number;
-  assetsQueued: number;
-  assetsReview: number;
-  overridesCreated: number;
+/**
+ * Junta as bikes válidas com as versões anteriores das bikes que ficaram
+ * temporariamente pendentes — preservando dados para não apagar por erro de
+ * digitação. As preservadas ficam "draft" (não publicáveis) até a correção.
+ */
+export function mergeWithPreserved(
+  fresh: SnapshotBike[],
+  pending: PendingRow[],
+  previous: SnapshotBike[],
+): SnapshotBike[] {
+  const freshIds = new Set(fresh.map((b) => b.id));
+  const prevById = new Map(previous.map((b) => [b.id, b]));
+  const out = [...fresh];
+  for (const p of pending) {
+    if (!p.id || freshIds.has(p.id)) continue;
+    const before = prevById.get(p.id);
+    if (!before) continue;
+    out.push({
+      ...before,
+      status: "draft",
+      missingFields: p.missingFields,
+      line: p.line,
+      sheetEligible: p.sheetEligible ?? before.sheetEligible ?? null,
+    });
+  }
+  out.sort((a, b) => a.id.localeCompare(b.id));
+  return out;
+}
+
+interface OverrideSyncResult {
+  synced: number;
+  eligible: number;
+  notEligible: number;
 }
 
 /**
- * Efeitos downstream após um snapshot novo: overrides default, estado de
- * imagem e jobs técnicos. Nunca lança — cada bike é independente e falhas
- * são apenas logadas (não invalidam o snapshot comercial já gravado).
+ * Espelha a coluna Status da planilha em bike_admin_overrides.
+ * Idempotente: só escreve (e só audita) quando o valor realmente muda.
+ * Bikes pendentes/preservadas não são tocadas.
+ */
+async function syncSheetOverrides(
+  supabase: SupabaseClient,
+  bikes: SnapshotBike[],
+): Promise<OverrideSyncResult> {
+  const out: OverrideSyncResult = { synced: 0, eligible: 0, notEligible: 0 };
+  const managed = bikes.filter((b) => b.status === "eligible" && typeof b.sheetEligible === "boolean");
+  if (managed.length === 0) return out;
+
+  const ids = managed.map((b) => b.id);
+  const { data: existing, error } = await supabase
+    .from("bike_admin_overrides")
+    .select("bike_id, eligible")
+    .in("bike_id", ids);
+  if (error) {
+    console.error("[sync] leitura de overrides falhou:", safeError(error));
+    return out;
+  }
+  const current = new Map((existing ?? []).map((r: { bike_id: string; eligible: boolean }) => [r.bike_id, r.eligible]));
+
+  const now = new Date().toISOString();
+  const changes: { bike_id: string; before: boolean | null; after: boolean }[] = [];
+  for (const bike of managed) {
+    const after = bike.sheetEligible === true;
+    if (after) out.eligible++; else out.notEligible++;
+    const before = current.has(bike.id) ? (current.get(bike.id) as boolean) : null;
+    if (before === after) continue;
+    changes.push({ bike_id: bike.id, before, after });
+  }
+  if (changes.length === 0) return out;
+
+  const { error: upErr } = await supabase.from("bike_admin_overrides").upsert(
+    changes.map((c) => ({ bike_id: c.bike_id, eligible: c.after, updated_by: "sheet", updated_at: now })),
+  );
+  if (upErr) {
+    console.error("[sync] upsert de overrides falhou:", safeError(upErr));
+    return out;
+  }
+  out.synced = changes.length;
+
+  const { error: auditErr } = await supabase.from("bike_admin_audit").insert(
+    changes.map((c) => ({
+      action: "sheet-status",
+      bike_id: c.bike_id,
+      detail: { eligible: c.after, previous: c.before, origin: "planilha" },
+      actor: "sheet",
+    })),
+  );
+  if (auditErr) console.error("[sync] audit de Status falhou:", safeError(auditErr));
+
+  return out;
+}
+
+interface ReconcileResult {
+  jobsCreated: number;
+  baselines: number;
+  assetsQueued: number;
+  assetsReview: number;
+}
+
+/**
+ * Efeitos downstream após um snapshot novo: estado de imagem e jobs técnicos.
+ * Nunca lança — cada bike é independente e falhas são apenas logadas.
  */
 async function reconcileDownstream(
   supabase: SupabaseClient,
   bikes: SnapshotBike[],
 ): Promise<ReconcileResult> {
-  const out: ReconcileResult = { jobsCreated: 0, assetsQueued: 0, assetsReview: 0, overridesCreated: 0 };
-
-  // ---- Overrides: bike nova nasce NÃO elegível; existentes são preservados ----
-  const newIds = bikes.filter((b) => b.isNew && b.status !== "inactive").map((b) => b.id);
-  if (newIds.length > 0) {
-    const { data: existing } = await supabase
-      .from("bike_admin_overrides")
-      .select("bike_id")
-      .in("bike_id", newIds);
-    const have = new Set((existing ?? []).map((r: { bike_id: string }) => r.bike_id));
-    const toInsert = newIds.filter((id) => !have.has(id)).map((id) => ({ bike_id: id, eligible: false }));
-    if (toInsert.length > 0) {
-      const { error } = await supabase.from("bike_admin_overrides").insert(toInsert);
-      if (error) console.error("[sync] overrides insert falhou:", safeError(error));
-      else out.overridesCreated = toInsert.length;
-    }
-  }
+  const out: ReconcileResult = { jobsCreated: 0, baselines: 0, assetsQueued: 0, assetsReview: 0 };
 
   for (const bike of bikes) {
-    if (bike.status === "inactive") continue;
+    // Pendentes (draft) e inativas não geram efeitos downstream.
+    if (bike.status !== "eligible") continue;
     try {
       // ---- Imagem ----
-      if (bike.image) {
+      // Sem "Imagem da Bike": a origem passa a ser a própria página do Link
+      // Vitale (Mercado Livre), resolvida com segurança pelo worker.
+      const sourceUrl = bike.image ?? bike.linkVitale ?? null;
+      const sourceKind = bike.image ? "image" : "page";
+      if (sourceUrl) {
         const { data: asset } = await supabase
           .from("bike_assets")
           .select("bike_id, source_url, stored_source_url, status, attempts")
@@ -110,25 +208,32 @@ async function reconcileDownstream(
         if (!asset) {
           const { error } = await supabase.from("bike_assets").insert({
             bike_id: bike.id,
-            source_url: bike.image,
+            source_url: sourceUrl,
+            source_kind: sourceKind,
             status: "pending",
           });
           if (error) console.error(`[sync] asset insert ${bike.id}:`, safeError(error));
           else out.assetsQueued++;
         } else if (asset.status === "ready") {
           // URL nova com imagem existente: apenas marca revisão, preserva a atual.
-          if (asset.stored_source_url && asset.stored_source_url !== bike.image && asset.source_url !== bike.image) {
+          if (asset.stored_source_url && asset.stored_source_url !== sourceUrl && asset.source_url !== sourceUrl) {
             const { error } = await supabase.from("bike_assets")
-              .update({ source_url: bike.image, needs_review: true, updated_at: new Date().toISOString() })
+              .update({
+                source_url: sourceUrl,
+                source_kind: sourceKind,
+                needs_review: true,
+                updated_at: new Date().toISOString(),
+              })
               .eq("bike_id", bike.id);
             if (error) console.error(`[sync] asset review ${bike.id}:`, safeError(error));
             else out.assetsReview++;
           }
-        } else if (asset.status !== "downloading" && asset.source_url !== bike.image) {
-          // Ainda não baixada e a URL mudou: reprocessa com a URL nova.
+        } else if (asset.status !== "downloading" && asset.source_url !== sourceUrl) {
+          // Ainda não baixada e a origem mudou: reprocessa com a origem nova.
           const { error } = await supabase.from("bike_assets")
             .update({
-              source_url: bike.image,
+              source_url: sourceUrl,
+              source_kind: sourceKind,
               status: "pending",
               attempts: 0,
               error_message: null,
@@ -140,32 +245,55 @@ async function reconcileDownstream(
         }
       }
 
-      // ---- Perfil técnico (IA): SOMENTE bikes novas, um job por hash ----
-      if (bike.isNew) {
-        const th = technicalHash(bike);
-        const [{ data: profile }, { data: openJob }] = await Promise.all([
-          supabase.from("bike_profiles").select("bike_id")
-            .eq("bike_id", bike.id).eq("technical_hash", th).maybeSingle(),
-          supabase.from("bike_profile_jobs").select("id")
-            .eq("bike_id", bike.id).eq("technical_hash", th)
-            .in("status", ["queued", "processing"]).maybeSingle(),
-        ]);
-        if (!profile && !openJob) {
-          const { error } = await supabase.from("bike_profile_jobs").insert({
-            bike_id: bike.id,
-            technical_hash: th,
-            status: "queued",
-            payload: {
-              name: bike.name,
-              description: bike.description,
-              capacity: bike.capacity,
-              autonomyKm: bike.autonomyKm,
-            },
-          });
-          if (error) console.error(`[sync] job insert ${bike.id}:`, safeError(error));
-          else out.jobsCreated++;
-        }
+      // ---- Perfil técnico (IA): event-driven por id + Descrição ----
+      // Preço, link, Status, autonomia e capacidade NÃO entram no hash técnico
+      // e portanto nunca disparam IA.
+      const th = technicalHash(bike);
+      const { data: profile } = await supabase
+        .from("bike_profiles")
+        .select("bike_id, technical_hash, status")
+        .eq("bike_id", bike.id)
+        .maybeSingle();
+
+      if (profile && profile.technical_hash === th) continue; // já cobre esta versão
+
+      if (!profile && LEGACY_IDS.has(bike.id)) {
+        // Baseline sem IA: registra o hash atual das 19 legadas preservando o
+        // ranking estático. Só uma mudança futura de Descrição gera job.
+        const { error } = await supabase.from("bike_profiles").insert({
+          bike_id: bike.id,
+          technical_hash: th,
+          status: "baseline",
+          data: null,
+          missing_fields: [],
+        });
+        if (error) console.error(`[sync] baseline ${bike.id}:`, safeError(error));
+        else out.baselines++;
+        continue;
       }
+
+      const { data: openJob } = await supabase
+        .from("bike_profile_jobs")
+        .select("id")
+        .eq("bike_id", bike.id)
+        .eq("technical_hash", th)
+        .in("status", ["queued", "processing"])
+        .maybeSingle();
+      if (openJob) continue;
+
+      const { error: jobErr } = await supabase.from("bike_profile_jobs").insert({
+        bike_id: bike.id,
+        technical_hash: th,
+        status: "queued",
+        payload: {
+          name: bike.name,
+          description: bike.description,
+          capacity: bike.capacity,
+          autonomyKm: bike.autonomyKm,
+        },
+      });
+      if (jobErr) console.error(`[sync] job insert ${bike.id}:`, safeError(jobErr));
+      else out.jobsCreated++;
     } catch (e) {
       console.error(`[sync] reconcile ${bike.id}:`, safeError(e));
     }
@@ -324,78 +452,59 @@ export async function runBikeCatalogSync(
     const csv = await res.text();
 
     const result = buildSnapshotFromCsv(csv);
-
-    // Atomicidade: qualquer erro estrutural de linha aborta a sincronização.
-    if (!result.valid) {
-      const done = new Date();
-      const preview = result.ignored.slice(0, 5).map((i) => `linha ${i.line}: ${i.reason}`).join("; ");
-      const message = `Planilha com ${result.ignored.length} linha(s) inválida(s) — snapshot anterior preservado (${preview})`.slice(0, 300);
-      await supabase.from("bike_catalog_sync_state").update({
-        status: "error",
-        error_message: message,
-        recognized_count: result.recognizedCount,
-        ignored_count: result.ignoredCount,
-        ignored_rows: result.ignored,
-        next_run_at: retryAt(done).toISOString(),
-        running_since: null,
-        updated_at: done.toISOString(),
-      }).eq("id", "current");
-      await finishRun(supabase, runId, now, {
-        status: "error",
-        recognized: result.recognizedCount,
-        ignored: result.ignoredCount,
-        snapshotWritten: false,
-        errorMessage: message,
-      });
-      return {
-        status: 422,
-        body: {
-          ok: false,
-          snapshotWritten: false,
-          error: message,
-          recognized: result.recognizedCount,
-          ignored: result.ignoredCount,
-          runId: runId ?? undefined,
-        },
-      };
-    }
-
     if (result.recognizedCount === 0) throw new Error("Nenhuma linha válida reconhecida na planilha");
 
-    const hash = snapshotHash(result.bikes);
     const { data: current } = await supabase
       .from("bike_catalog_snapshot")
       .select("content_hash, data")
       .eq("id", "current")
       .maybeSingle();
 
+    const previousBikes = Array.isArray((current?.data as { bikes?: unknown } | null)?.bikes)
+      ? ((current!.data as { bikes: SnapshotBike[] }).bikes)
+      : [];
+
+    // Linhas ruins não apagam bikes boas: a versão anterior é preservada.
+    const bikes = mergeWithPreserved(result.bikes, result.pending, previousBikes);
+    const hash = snapshotHash(bikes, result.pending);
+
     let changed = false;
     let changes: BikeFieldChange[] = [];
-    let downstream: ReconcileResult = { jobsCreated: 0, assetsQueued: 0, assetsReview: 0, overridesCreated: 0 };
+    let downstream: ReconcileResult = { jobsCreated: 0, baselines: 0, assetsQueued: 0, assetsReview: 0 };
 
     if (current?.content_hash !== hash) {
       changed = true;
-      const previousBikes = Array.isArray((current?.data as { bikes?: unknown } | null)?.bikes)
-        ? ((current!.data as { bikes: SnapshotBike[] }).bikes)
-        : [];
-      changes = diffBikes(previousBikes, result.bikes);
+      changes = diffBikes(previousBikes, bikes);
 
       const { error: upErr } = await supabase.from("bike_catalog_snapshot").upsert({
         id: "current",
         data: {
           generated_at: new Date().toISOString(),
-          bikes: result.bikes,
+          bikes,
+          pending: result.pending,
           ignored: result.ignored,
         },
         content_hash: hash,
         recognized_count: result.recognizedCount,
-        ignored_count: result.ignoredCount,
+        ignored_count: result.ignoredCount + result.pendingCount,
         updated_at: new Date().toISOString(),
       });
       if (upErr) throw new Error(`Falha ao gravar snapshot: ${upErr.message}`);
-
-      downstream = await reconcileDownstream(supabase, result.bikes);
     }
+
+    // Status da planilha é espelhado em TODA execução bem-sucedida (idempotente).
+    const overrides = await syncSheetOverrides(supabase, bikes);
+    if (changed) downstream = await reconcileDownstream(supabase, bikes);
+
+    // Pendências visíveis no painel: linhas nomeadas incompletas + estruturais.
+    const pendingRows = [
+      ...result.pending.map((p) => ({
+        line: p.line,
+        name: p.name,
+        reason: `Pendente — faltam: ${p.missingFields.join(", ")}`,
+      })),
+      ...result.ignored,
+    ];
 
     const done = new Date();
     await supabase.from("bike_catalog_sync_state").update({
@@ -404,8 +513,8 @@ export async function runBikeCatalogSync(
       // Agenda fixa: próximo HH:07 (o trigger do banco normaliza igualmente).
       next_run_at: nextScheduledRun(done).toISOString(),
       recognized_count: result.recognizedCount,
-      ignored_count: result.ignoredCount,
-      ignored_rows: result.ignored,
+      ignored_count: pendingRows.length,
+      ignored_rows: pendingRows,
       error_message: null,
       running_since: null,
       updated_at: done.toISOString(),
@@ -414,15 +523,18 @@ export async function runBikeCatalogSync(
     await finishRun(supabase, runId, now, {
       status: changed ? "ok" : "ok_no_changes",
       recognized: result.recognizedCount,
-      ignored: result.ignoredCount,
+      ignored: pendingRows.length,
       snapshotWritten: changed,
       changes,
       detail: {
         drafts: result.draftCount,
+        pending: result.pendingCount,
         blank: result.blankCount,
         jobsCreated: downstream.jobsCreated,
+        baselines: downstream.baselines,
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
+        overridesSynced: overrides.synced,
       },
     });
 
@@ -437,12 +549,17 @@ export async function runBikeCatalogSync(
         changed,
         snapshotWritten: changed,
         recognized: result.recognizedCount,
-        ignored: result.ignoredCount,
+        pending: result.pendingCount,
+        ignored: pendingRows.length,
         drafts: result.draftCount,
         blank: result.blankCount,
         jobsCreated: downstream.jobsCreated,
+        baselines: downstream.baselines,
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
+        overridesSynced: overrides.synced,
+        eligible: overrides.eligible,
+        notEligible: overrides.notEligible,
         changedBikes: countChangedBikes(changes),
         runId: runId ?? undefined,
       },
@@ -468,4 +585,3 @@ function retryAt(from: Date): Date {
   const scheduled = nextScheduledRun(from);
   return retry.getTime() < scheduled.getTime() ? retry : scheduled;
 }
-

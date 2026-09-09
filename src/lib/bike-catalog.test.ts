@@ -91,17 +91,17 @@ describe("snapshot da planilha", () => {
     ].join("\n");
 
     const res = buildSnapshotFromCsv(csv);
+    // Linhas válidas SEMPRE são reconhecidas, mesmo com linhas ruins na planilha.
     expect(res.bikes.map((b) => b.id).sort()).toEqual(["bike_fantasma", "ft03", "ouxi_gt20_pro"]);
-    expect(res.bikes.find((b) => b.id === "bike_fantasma")!.status).toBe("draft");
-    expect(res.draftCount).toBe(1);
-    // a linha nova em rascunho NÃO entra no quiz
-    expect(mergeCatalog(BIKES, res.bikes).some((b) => b.id === "bike_fantasma")).toBe(false);
-    expect(res.ignoredCount).toBe(3);
-    expect(res.ignored.map((i) => i.reason)).toEqual([
-      "Linha duplicada para o mesmo modelo",
-      "Link Vitale inválido",
-      "Preço inválido",
-    ]);
+    // Duplicada é erro estrutural; link/preço inválidos viram pendência nomeada.
+    expect(res.ignoredCount).toBe(1);
+    expect(res.ignored[0].reason).toBe("Linha duplicada para o mesmo modelo");
+    expect(res.pending.map((p) => p.name).sort()).toEqual(["V29 Pro", "V35"]);
+    expect(res.pending.find((p) => p.name === "V35")!.missingFields).toContain("Link Vitale");
+    expect(res.pending.find((p) => p.name === "V29 Pro")!.missingFields).toContain("Preço R$");
+    // Pendências nunca entram no quiz.
+    const merged = mergeCatalog(BIKES, res.bikes);
+    expect(merged.some((b) => b.id === "bike_fantasma")).toBe(false);
   });
 
   it("gera hash estável e diferente quando os dados mudam", () => {
@@ -269,16 +269,16 @@ describe("parsers das colunas opcionais", () => {
 });
 
 describe("bikes novas: draft x elegível", () => {
-  it("marca como draft quando falta a imagem (demais campos vêm do perfil IA)", () => {
+  it("sem Imagem da Bike a linha continua válida (imagem vem do Link Vitale)", () => {
     const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", { usos: "Urbano" })].join("\n");
     const res = buildSnapshotFromCsv(csv);
     const bike = res.bikes[0];
     expect(bike.id).toBe("nova_x9");
     expect(bike.isNew).toBe(true);
-    expect(bike.status).toBe("draft");
-    // Só a imagem é exigida na planilha; peso/usos/terrenos são derivados pela IA.
-    expect(bike.missingFields).toEqual(["Imagem da Bike (URL https)"]);
-    expect(res.draftCount).toBe(1);
+    expect(bike.status).toBe("eligible");
+    expect(bike.missingFields).toEqual([]);
+    expect(res.pendingCount).toBe(0);
+    // Sem imagem/metadados persistidos ainda, não entra no quiz.
     expect(mergeCatalog(BIKES, res.bikes)).toHaveLength(BIKES.length);
   });
 
@@ -346,8 +346,8 @@ describe("linhas do painel", () => {
     const nova = rows.find((r) => r.id === "nova_x9")!;
     const outra = rows.find((r) => r.id === "v35")!;
     expect(ft03.state).toBe("eligible");
-    expect(nova.state).toBe("draft");
-    expect(nova.missingFields.length).toBe(1); // apenas Imagem da Bike
+    expect(nova.state).toBe("eligible");
+    expect(nova.missingFields).toEqual([]);
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
   });
@@ -358,24 +358,19 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
   const validRow = (n: number) =>
     row(`Modelo Novo ${n}`, `https://meli.la/1abc${n}`, "R$ 7.500,00");
 
-  it("18 válidas + 1 inválida invalidam a sincronização inteira", () => {
+  it("18 válidas + 1 incompleta: as válidas passam e a incompleta vira pendência", () => {
     const linhas = Array.from({ length: 18 }, (_, i) => validRow(i + 1));
     linhas.push(row("Modelo Quebrado", "https://site-errado.com/x", "R$ 7.500,00"));
     const res = buildSnapshotFromCsv([HEADER, ...linhas].join("\n"));
 
     expect(res.recognizedCount).toBe(18);
-    expect(res.ignoredCount).toBe(1);
-    expect(res.valid).toBe(false);
-    expect(res.ignored[0].reason).toBe("Link Vitale inválido");
-
-    // simula a Edge Function: com valid=false, nada é gravado
-    const snapshotAnterior = buildSnapshotFromCsv(
-      [HEADER, row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00")].join("\n"),
-    );
-    expect(snapshotAnterior.valid).toBe(true);
-    const gravado = res.valid ? res.bikes : snapshotAnterior.bikes;
-    expect(gravado).toEqual(snapshotAnterior.bikes);
-    expect(snapshotHash(gravado)).toBe(snapshotHash(snapshotAnterior.bikes));
+    expect(res.ignoredCount).toBe(0);
+    expect(res.pendingCount).toBe(1);
+    expect(res.valid).toBe(true);
+    expect(res.pending[0].name).toBe("Modelo Quebrado");
+    expect(res.pending[0].missingFields).toContain("Link Vitale");
+    // O hash considera bikes + pendências.
+    expect(snapshotHash(res.bikes, res.pending)).not.toBe(snapshotHash(res.bikes));
   });
 
   it("linha vazia no fim do CSV não invalida nem conta como ignorada", () => {
@@ -398,20 +393,32 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
     const res = buildSnapshotFromCsv(csv);
     expect(res.valid).toBe(true);
     expect(res.ignoredCount).toBe(0);
-    expect(res.draftCount).toBe(2);
+    expect(res.pendingCount).toBe(0);
+    // Apenas a linha "Ativa = Não" fica fora do quiz.
+    expect(res.draftCount).toBe(1);
+    expect(res.bikes.find((b) => b.name === "Nova Inativa")!.status).toBe("inactive");
   });
 
-  it("duplicata, preço, autonomia, capacidade e descrição vazia invalidam", () => {
-    const cases = [
-      [row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"), row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00")],
-      [row("V35", "https://meli.la/1fAggCx", "combinar")],
-      [row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "sem info")],
-      [row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "Até 60km", "vários")],
+  it("duplicata é erro estrutural; campos faltantes viram pendência", () => {
+    const dup = buildSnapshotFromCsv([
+      HEADER,
+      row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
+      row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
+    ].join("\n"));
+    expect(dup.recognizedCount).toBe(1);
+    expect(dup.ignoredCount).toBe(1);
+
+    const cases: [string[], string][] = [
+      [[row("V35", "https://meli.la/1fAggCx", "combinar")], "Preço R$"],
+      [[row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "sem info")], "Autonomia"],
+      [[row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "Até 60km", "vários")], "Capacidade"],
+      [[row("V35", "https://meli.la/1fAggCx", "R$ 10.250,00", "Até 60km", "2 pessoas", "")], "Descrição"],
     ];
-    for (const linhas of cases) {
+    for (const [linhas, campo] of cases) {
       const res = buildSnapshotFromCsv([HEADER, ...linhas].join("\n"));
-      expect(res.valid).toBe(false);
-      expect(res.ignoredCount).toBeGreaterThan(0);
+      expect(res.recognizedCount).toBe(0);
+      expect(res.pendingCount).toBe(1);
+      expect(res.pending[0].missingFields).toContain(campo);
     }
   });
 });

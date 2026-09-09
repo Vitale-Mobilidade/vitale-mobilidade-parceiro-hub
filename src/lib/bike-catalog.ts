@@ -29,6 +29,8 @@ export interface SnapshotBike {
   status?: SnapshotBikeStatus;
   missingFields?: string[];
   line?: number;
+  /** Coluna Status da planilha: true = Elegível, false = Não Elegível. */
+  sheetEligible?: boolean | null;
   image?: string;
   /** true somente quando o asset persistido está pronto (RPC); protege o fallback estático. */
   imageReady?: boolean;
@@ -40,6 +42,16 @@ export interface SnapshotBike {
   perfilIndicado?: string;
 }
 
+/** Linha nomeada porém incompleta na planilha: pendente, nunca entra no quiz. */
+export interface PendingRow {
+  id: string | null;
+  name: string;
+  line: number;
+  isNew: boolean;
+  missingFields: string[];
+  sheetEligible?: boolean | null;
+}
+
 export interface IgnoredRow {
   line: number;
   name: string;
@@ -49,6 +61,7 @@ export interface IgnoredRow {
 export interface CatalogSnapshot {
   generated_at?: string;
   bikes?: SnapshotBike[];
+  pending?: PendingRow[];
   ignored?: IgnoredRow[];
 }
 
@@ -76,7 +89,10 @@ export interface CatalogRow {
   isNew: boolean;
   missingFields: string[];
   fromSheet: boolean;
+  /** Coluna Status da planilha (fonte oficial da elegibilidade). */
+  sheetEligible?: boolean | null;
 }
+
 
 /** Faixa de orçamento correspondente ao preço. */
 export function tierForPrice(price: number): BudgetTier {
@@ -145,7 +161,8 @@ function bikeFromSnapshot(s: SnapshotBike): Bike | null {
  * Aplica o snapshot sobre o catálogo estático.
  * - Bikes existentes recebem override apenas dos campos presentes na planilha.
  * - Bikes novas entram somente quando "eligible" e com metadados mínimos.
- * - Linhas inválidas/duplicadas/inativas nunca entram no quiz.
+ * - Linhas pendentes (draft), duplicadas ou inativas nunca entram no quiz:
+ *   a versão anterior do catálogo é preservada intacta.
  */
 export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
   const byId = indexSnapshot(snapshotBikes);
@@ -153,7 +170,7 @@ export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
 
   const merged = base.map((bike) => {
     const s = byId.get(bike.id);
-    if (!s || statusOf(s) === "inactive") return bike;
+    if (!s || statusOf(s) !== "eligible") return bike;
     const tier = tierForPrice(s.price);
     const budgetTiers = bike.budgetTiers.includes(tier) ? bike.budgetTiers : [tier];
     return {
@@ -192,8 +209,15 @@ export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
   return merged;
 }
 
-/** Linhas para o painel: todas as bikes do catálogo + drafts/inativas da planilha. */
-export function buildCatalogRows(base: Bike[], snapshotBikes: unknown): CatalogRow[] {
+/**
+ * Linhas para o painel: bikes do catálogo + drafts/inativas do snapshot +
+ * linhas NOMEADAS incompletas da planilha (pendências).
+ */
+export function buildCatalogRows(
+  base: Bike[],
+  snapshotBikes: unknown,
+  pendingRows: PendingRow[] = [],
+): CatalogRow[] {
   const byId = indexSnapshot(snapshotBikes);
   const baseIds = new Set(base.map((b) => b.id));
   const merged = mergeCatalog(base, snapshotBikes);
@@ -208,10 +232,11 @@ export function buildCatalogRows(base: Bike[], snapshotBikes: unknown): CatalogR
       autonomyKm: bike.autonomyKm,
       capacity: bike.capacity,
       linkVitale: bike.linkVitale,
-      state: s ? (statusOf(s) === "inactive" ? "inactive" : "eligible") : "static",
+      state: s ? (statusOf(s) === "eligible" ? "eligible" : statusOf(s) === "inactive" ? "inactive" : "draft") : "static",
       isNew: !baseIds.has(bike.id),
       missingFields: s?.missingFields ?? [],
       fromSheet: !!s,
+      sheetEligible: s?.sheetEligible ?? null,
     };
   });
 
@@ -230,10 +255,32 @@ export function buildCatalogRows(base: Bike[], snapshotBikes: unknown): CatalogR
       isNew: !baseIds.has(s.id),
       missingFields: s.missingFields ?? [],
       fromSheet: true,
+      sheetEligible: s.sheetEligible ?? null,
+    });
+  }
+
+  // Linhas nomeadas incompletas: aparecem como pendentes, sem dados inventados.
+  for (const p of Array.isArray(pendingRows) ? pendingRows : []) {
+    const id = p?.id;
+    if (!id || rows.some((r) => r.id === id)) continue;
+    rows.push({
+      id,
+      name: p.name,
+      image: null,
+      price: null,
+      autonomyKm: null,
+      capacity: null,
+      linkVitale: null,
+      state: "draft",
+      isNew: !baseIds.has(id),
+      missingFields: p.missingFields ?? [],
+      fromSheet: true,
+      sheetEligible: p.sheetEligible ?? null,
     });
   }
 
   return rows;
+
 }
 
 /** Catálogo estático (fallback final). */

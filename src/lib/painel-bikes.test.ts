@@ -33,7 +33,9 @@ function row(partial: Partial<PanelRow> & { id: string; name: string }): PanelRo
     imageStatus: null,
     imageNeedsReview: false,
     profileStatus: null,
+    effective: "eligible",
     ...partial,
+
   };
 }
 
