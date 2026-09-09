@@ -190,14 +190,12 @@ async function processJob(
       await requeueJob(supabase, job, true, `ai_${kind}: ${result.message}`);
       return "retry";
     }
+    // Falha terminal NUNCA toca bike_profiles: o perfil ready/baseline anterior
+    // permanece ativo até existir um payload novo completamente validado.
     await failJob(supabase, job, `ai_${kind}: ${result.message}`);
-    await supabase.from("bike_profiles").upsert({
-      bike_id: job.bike_id,
-      technical_hash: job.technical_hash,
-      status: "error",
-      error_message: `ai_${kind}`.slice(0, 300),
-      attempts: attemptsAfter,
-    }, { onConflict: "bike_id" });
+    await recordWorkerEvent(supabase, WORKER, job.bike_id, "profile_kept_on_failure", {
+      kind, attempts: attemptsAfter,
+    });
     return "failed";
   }
 
