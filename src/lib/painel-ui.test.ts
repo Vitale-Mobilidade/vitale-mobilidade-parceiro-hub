@@ -140,3 +140,18 @@ describe("atualização silenciosa", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("ordem estrutural da página", () => {
+  it("filtros e tabela vêm antes de pendências, ajuda e histórico", () => {
+    const filtros = painelSrc.indexOf("Buscar por nome ou ID");
+    const tabela = painelSrc.indexOf("<table");
+    const pendentes = painelSrc.indexOf("Linhas pendentes na planilha");
+    const ajuda = painelSrc.indexOf("Como editar o catálogo");
+    const historico = painelSrc.indexOf("<SyncHistory");
+    expect(filtros).toBeGreaterThan(-1);
+    expect(tabela).toBeGreaterThan(filtros);
+    expect(pendentes).toBeGreaterThan(tabela);
+    expect(ajuda).toBeGreaterThan(pendentes);
+    expect(historico).toBeGreaterThan(ajuda);
+  });
+});

@@ -222,6 +222,7 @@ describe("fallback da engine", () => {
 import {
   buildCatalogRows,
 } from "./bike-catalog";
+import { buildPanelRows } from "./painel-bikes";
 import {
   buildStableId,
   parseAtiva,
@@ -346,11 +347,13 @@ describe("linhas do painel", () => {
     const nova = rows.find((r) => r.id === "nova_x9")!;
     const outra = rows.find((r) => r.id === "v35")!;
     expect(ft03.state).toBe("eligible");
-    // Linha completa, mas ainda sem imagem/perfil persistidos: pendente no painel.
-    expect(nova.state).toBe("draft");
+    // Linha completa e elegível: o painel mostra "eligible"; o processamento
+    // pendente (imagem/perfil) é decidido depois por computeEffectiveState.
+    expect(nova.state).toBe("eligible");
     expect(nova.missingFields).toEqual([]);
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
+
   });
 });
 
@@ -421,5 +424,65 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
       expect(res.pendingCount).toBe(1);
       expect(res.pending[0].missingFields).toContain(campo);
     }
+  });
+});
+
+// ---------- Linhas sem Nome nunca viram pendência ----------
+describe("linhas sem Nome são sempre ignoradas silenciosamente", () => {
+  it("Nome vazio com Status/Categoria/Imagem preenchidos não gera pending nem ignored", () => {
+    const linhas = [
+      HEADER_FULL,
+      fullRow("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
+    ];
+    // 5 linhas com valores padrão em colunas auxiliares, porém sem Nome.
+    for (let i = 0; i < 5; i++) {
+      linhas.push([
+        "", "", "", "", "", "", "", "",
+        "", "https://cdn.exemplo.com/x.jpg", "", '"Urbano"', '""', '""', '""', '""', "Sim",
+      ].join(","));
+    }
+    const res = buildSnapshotFromCsv(linhas.join("\n"));
+    expect(res.recognizedCount).toBe(1);
+    expect(res.pendingCount).toBe(0);
+    expect(res.ignoredCount).toBe(0);
+    expect(res.ignored).toEqual([]);
+    expect(res.blankCount).toBe(5);
+  });
+
+  it("linha COM Nome e campo obrigatório ausente continua pendente", () => {
+    const res = buildSnapshotFromCsv([
+      HEADER,
+      row("Modelo Sem Link", "site-errado", "R$ 7.500,00"),
+      ",,,,,,,",
+    ].join("\n"));
+    expect(res.pendingCount).toBe(1);
+    expect(res.pending[0].missingFields).toContain("Link Vitale");
+    expect(res.ignoredCount).toBe(0);
+  });
+});
+
+// ---------- Estado efetivo de bikes novas prontas ----------
+describe("bike nova pronta aparece Elegível no painel", () => {
+  const csv = [
+    HEADER_FULL,
+    fullRow("BW1", "https://meli.la/1abc111", "R$ 7.500,00"),
+    fullRow("V9 Max Duas Baterias", "https://meli.la/1abc222", "R$ 9.500,00"),
+  ].join("\n");
+
+  it("com imagem e perfil prontos e elegibilidade verdadeira", () => {
+    const res = buildSnapshotFromCsv(csv);
+    const rows = buildCatalogRows(BIKES, res.bikes);
+    const bw1 = rows.find((r) => r.id === "bw1")!;
+    expect(bw1.state).toBe("eligible");
+    const panel = buildPanelRows(
+      rows,
+      [{ bike_id: "bw1", eligible: true }, { bike_id: "v9_max_duas_baterias", eligible: false }],
+      "2026-09-09T12:00:00Z",
+      [{ bike_id: "bw1", status: "ready" }, { bike_id: "v9_max_duas_baterias", status: "ready" }],
+      [{ bike_id: "bw1", status: "ready" }, { bike_id: "v9_max_duas_baterias", status: "ready" }],
+    );
+    expect(panel.find((r) => r.id === "bw1")!.effective).toBe("eligible");
+    // Status "Não Elegível" nunca aparece como Pendente.
+    expect(panel.find((r) => r.id === "v9_max_duas_baterias")!.effective).toBe("not_eligible");
   });
 });
