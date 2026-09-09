@@ -274,8 +274,9 @@ export default function PainelBikes() {
     setData(null);
   }, []);
 
-  const loadData = useCallback(async (tok: string) => {
-    setLoadingData(true);
+  /** silent=true: atualização em background, sem spinner nem toast de erro. */
+  const loadData = useCallback(async (tok: string, silent = false) => {
+    if (!silent) setLoadingData(true);
     try {
       const { status, data: res } = await panelCall<PanelData>("get-data", {}, tok);
       if (status === 401) {
