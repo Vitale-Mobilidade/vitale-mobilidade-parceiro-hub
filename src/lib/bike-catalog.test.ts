@@ -346,11 +346,13 @@ describe("linhas do painel", () => {
     const nova = rows.find((r) => r.id === "nova_x9")!;
     const outra = rows.find((r) => r.id === "v35")!;
     expect(ft03.state).toBe("eligible");
-    // Linha completa, mas ainda sem imagem/perfil persistidos: pendente no painel.
-    expect(nova.state).toBe("draft");
+    // Linha completa e elegível: o painel mostra "eligible"; o processamento
+    // pendente (imagem/perfil) é decidido depois por computeEffectiveState.
+    expect(nova.state).toBe("eligible");
     expect(nova.missingFields).toEqual([]);
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
+
   });
 });
 
