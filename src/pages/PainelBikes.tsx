@@ -651,6 +651,12 @@ export default function PainelBikes() {
             </table>
           </div>
         </section>
+
+        <SyncHistory
+          call={historyCall}
+          onUnauthorized={() => void logout(token)}
+          refreshKey={historyKey}
+        />
       </div>
     </main>
   );
