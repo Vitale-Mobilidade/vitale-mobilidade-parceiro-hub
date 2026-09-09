@@ -377,3 +377,67 @@ export function eligibilityLabel(eligible: boolean | undefined): string {
   return eligible ? "Não elegível → Elegível" : "Elegível → Não elegível";
 }
 
+// ---------- Motivo amigável de pendência (coluna "Campos faltantes") ----------
+
+/**
+ * Traduz o motivo da pendência para linguagem de operação, sem termos internos
+ * (asset, profile, baseline, hash, job, IA). Lista vazia => exibir "—".
+ */
+export function pendingReasons(row: {
+  effective: EffectiveState;
+  missingFields: string[];
+  imageStatus: string | null;
+  profileStatus: string | null;
+}): string[] {
+  const out: string[] = [];
+  if (row.imageStatus === "error") out.push("Falha ao processar imagem");
+  if (row.profileStatus === "error") out.push("Falha ao processar recomendação");
+  if (row.missingFields.length > 0) out.push(...row.missingFields);
+  if (out.length > 0) return out;
+  if (row.effective !== "pending") return [];
+
+  const imagem = row.imageStatus !== "ready";
+  const perfil = row.profileStatus !== "ready";
+  if (imagem && perfil) return ["Processando imagem e recomendação"];
+  if (imagem) return ["Processando imagem"];
+  if (perfil) return ["Processando recomendação"];
+  return [];
+}
+
+// ---------- Atualização silenciosa em background ----------
+
+export const SILENT_REFRESH_MS = 30_000;
+
+export interface SilentRefreshDeps {
+  intervalMs?: number;
+  isHidden: () => boolean;
+  setIntervalFn?: typeof setInterval;
+  clearIntervalFn?: typeof clearInterval;
+}
+
+/**
+ * Agenda uma atualização periódica enquanto a aba estiver visível.
+ * Retorna a função de parada (idempotente) e nunca cria timers duplicados.
+ */
+export function startSilentRefresh(run: () => void, deps: SilentRefreshDeps): () => void {
+  const {
+    intervalMs = SILENT_REFRESH_MS,
+    isHidden,
+    setIntervalFn = setInterval,
+    clearIntervalFn = clearInterval,
+  } = deps;
+
+  let timer: ReturnType<typeof setInterval> | null = null;
+  timer = setIntervalFn(() => {
+    if (isHidden()) return;
+    run();
+  }, intervalMs);
+
+  return () => {
+    if (timer !== null) {
+      clearIntervalFn(timer);
+      timer = null;
+    }
+  };
+}
+

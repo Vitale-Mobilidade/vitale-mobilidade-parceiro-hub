@@ -31,8 +31,10 @@ import {
   DEFAULT_SORT,
   EFFECTIVE_LABEL,
   nextSort,
+  pendingReasons,
   readPanelSession,
   relativeTime,
+  startSilentRefresh,
   sortPanelRows,
   storePanelSession,
   type AssetRow,
@@ -102,20 +104,6 @@ function fmt(value?: string | null) {
 const brl = (v: number | null) =>
   v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const IMAGE_STATUS_LABEL: Record<string, string> = {
-  pending: "imagem pendente",
-  downloading: "baixando imagem",
-  ready: "imagem persistida",
-  error: "erro na imagem",
-};
-
-const PROFILE_STATUS_LABEL: Record<string, string> = {
-  pending: "perfil IA pendente",
-  processing: "gerando perfil IA",
-  ready: "perfil IA pronto",
-  error: "erro no perfil IA",
-  review: "perfil IA em revisão",
-};
 
 // ---------------- Tela de login ----------------
 
@@ -286,8 +274,9 @@ export default function PainelBikes() {
     setData(null);
   }, []);
 
-  const loadData = useCallback(async (tok: string) => {
-    setLoadingData(true);
+  /** silent=true: atualização em background, sem spinner nem toast de erro. */
+  const loadData = useCallback(async (tok: string, silent = false) => {
+    if (!silent) setLoadingData(true);
     try {
       const { status, data: res } = await panelCall<PanelData>("get-data", {}, tok);
       if (status === 401) {
@@ -302,15 +291,31 @@ export default function PainelBikes() {
           assets: res.assets ?? [],
           profiles: res.profiles ?? [],
         });
-      } else {
+      } else if (!silent) {
         toast({ title: "Falha ao carregar o painel", description: res.error ?? "Tente novamente.", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Falha de conexão", description: "Não foi possível carregar os dados.", variant: "destructive" });
+      if (!silent) {
+        toast({ title: "Falha de conexão", description: "Não foi possível carregar os dados.", variant: "destructive" });
+      }
     } finally {
-      setLoadingData(false);
+      if (!silent) setLoadingData(false);
     }
   }, [logout, toast]);
+
+  // Atualização silenciosa a cada 30s enquanto a aba estiver visível.
+  useEffect(() => {
+    if (!token) return;
+    const refresh = () => { void loadData(token, true); };
+    const stop = startSilentRefresh(refresh, { isHidden: () => document.hidden });
+    const onVisibility = () => { if (!document.hidden) refresh(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [token, loadData]);
+
 
   // Valida sessão armazenada ao abrir a página.
   useEffect(() => {
@@ -427,9 +432,6 @@ export default function PainelBikes() {
             <Button variant="outline" onClick={() => window.open(SHEET_PUBLIC_URL, "_blank", "noopener,noreferrer")}>
               <ExternalLink className="mr-2 h-4 w-4" /> Abrir planilha
             </Button>
-            <Button variant="outline" onClick={() => void loadData(token)} disabled={loadingData || syncing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loadingData ? "animate-spin" : ""}`} /> Atualizar visualização
-            </Button>
             <Button onClick={() => void handleSyncNow()} disabled={syncing || loadingData}>
               {syncing
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -499,24 +501,21 @@ export default function PainelBikes() {
             Link Vitale, Preço R$, Autonomia, Capacidade e Descrição.
           </p>
           <p className="mt-2 text-muted-foreground">
-            Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong> (URL https pública — copiada
-            permanentemente para o nosso armazenamento). O perfil técnico de recomendação é gerado
-            automaticamente por IA quando uma bike nova entra ou quando a Descrição muda — nenhum campo de
-            perfil precisa ser preenchido manualmente. A elegibilidade de cada bike vem da coluna{" "}
-            <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a coluna{" "}
-            <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
+            Colunas opcionais: <strong>ID</strong> e <strong>Imagem da Bike</strong>. A elegibilidade de cada
+            bike vem da coluna <strong>Status</strong> da planilha oficial (“Elegível” ou “Não Elegível”); a
+            coluna <strong>Estado</strong> aqui é <strong>somente leitura</strong> e apenas reflete a planilha.
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            <strong>Pendente</strong> quer dizer apenas que ainda faltam dados na planilha ou que uma bike nova
+            está sendo preparada — a coluna “Campos faltantes” mostra o motivo em cada linha.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            A persistência de imagens e a geração de perfis por IA já estão em operação; os status
-            aparecem abaixo do nome de cada bike.
+            Esta tela se atualiza sozinha a cada 30 segundos. Para buscar mudanças da planilha na hora, use
+            “Sincronizar agora”.
           </p>
         </section>
 
-        <SyncHistory
-          call={historyCall}
-          onUnauthorized={() => void logout(token)}
-          refreshKey={historyKey}
-        />
+
 
 
 
@@ -601,21 +600,6 @@ export default function PainelBikes() {
                     <td className="p-3">
                       <div className="font-medium text-foreground">{r.name}</div>
                       <div className="text-xs text-muted-foreground">{r.id}{r.isNew ? " · nova" : ""}</div>
-                      {(r.imageStatus || r.profileStatus) && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {r.imageStatus && (
-                            <span className={`text-[11px] ${r.imageStatus === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-                              {IMAGE_STATUS_LABEL[r.imageStatus] ?? r.imageStatus}
-                              {r.imageNeedsReview ? " (revisão)" : ""}
-                            </span>
-                          )}
-                          {r.profileStatus && (
-                            <span className={`text-[11px] ${r.profileStatus === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-                              · {PROFILE_STATUS_LABEL[r.profileStatus] ?? r.profileStatus}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </td>
                     <td className="p-3">{brl(r.price)}</td>
                     <td className="p-3">{r.autonomyKm ? `Até ${r.autonomyKm} km` : "—"}</td>
@@ -653,7 +637,10 @@ export default function PainelBikes() {
                     </td>
 
                     <td className="p-3 text-xs text-muted-foreground">
-                      {r.missingFields.length > 0 ? r.missingFields.join(", ") : "—"}
+                      {(() => {
+                        const reasons = pendingReasons(r);
+                        return reasons.length > 0 ? reasons.join(", ") : "—";
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -664,6 +651,12 @@ export default function PainelBikes() {
             </table>
           </div>
         </section>
+
+        <SyncHistory
+          call={historyCall}
+          onUnauthorized={() => void logout(token)}
+          refreshKey={historyKey}
+        />
       </div>
     </main>
   );
