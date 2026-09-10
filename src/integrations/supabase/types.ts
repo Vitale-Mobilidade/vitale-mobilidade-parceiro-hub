@@ -269,6 +269,56 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_price_history: {
+        Row: {
+          bike_id: string
+          bike_name: string
+          confidence: string
+          created_at: string
+          eligible: boolean
+          id: string
+          link_vitale: string | null
+          observed_at: string
+          price: number
+          source: string
+          source_run_id: string | null
+        }
+        Insert: {
+          bike_id: string
+          bike_name: string
+          confidence?: string
+          created_at?: string
+          eligible?: boolean
+          id?: string
+          link_vitale?: string | null
+          observed_at?: string
+          price: number
+          source?: string
+          source_run_id?: string | null
+        }
+        Update: {
+          bike_id?: string
+          bike_name?: string
+          confidence?: string
+          created_at?: string
+          eligible?: boolean
+          id?: string
+          link_vitale?: string | null
+          observed_at?: string
+          price?: number
+          source?: string
+          source_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_price_history_source_run_id_fkey"
+            columns: ["source_run_id"]
+            isOneToOne: false
+            referencedRelation: "bike_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bike_profile_jobs: {
         Row: {
           attempts: number
@@ -979,6 +1029,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_bike_price_history: {
+        Args: { p_bike_id: string; p_days?: number }
+        Returns: Json
+      }
+      get_price_tracker_catalog: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
     }
     Enums: {
