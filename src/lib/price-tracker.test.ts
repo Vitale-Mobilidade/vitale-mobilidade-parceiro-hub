@@ -146,3 +146,48 @@ describe("catálogo público", () => {
     expect(clampWindow(365)).toBe(90);
   });
 });
+
+describe("contrato do catálogo: métricas globais x pontos da janela", () => {
+  // A RPC devolve points limitados à janela de 90 dias + âncora, mas
+  // minObserved/maxObserved/first/last/observations vêm de TODO o histórico.
+  const payload: TrackerBike = {
+    id: "v9_max",
+    name: "V9 Max",
+    link: "https://meli.la/abc123",
+    image: null,
+    currentPrice: 6500,
+    // Mínimo real de 200 dias atrás NÃO aparece nos pontos.
+    points: [
+      { t: day(150), price: 6800, source: "sync" }, // âncora anterior à janela
+      { t: day(40), price: 6500, source: "sync" },
+    ],
+    firstObservedAt: day(200),
+    lastObservedAt: day(40),
+    observations: 9,
+    minObserved: 5900,
+    maxObserved: 7200,
+  };
+
+  it("preserva o mínimo histórico com mais de 120 dias", () => {
+    const s = computeStats(payload, 90, NOW);
+    expect(s.minObserved).toBe(5900);
+    expect(s.maxObserved).toBe(7200);
+    expect(s.observations).toBe(9);
+    expect(s.firstObservedAt).toBe(day(200));
+    expect(s.daysTracked).toBeGreaterThan(120);
+  });
+
+  it("mantém a série limitada à janela, usando a âncora para o preço vigente", () => {
+    const s = computeStats(payload, 90, NOW);
+    expect(s.series.map((p) => p.price)).toEqual([6500]);
+    // A âncora de 150 dias sustenta o preço vigente no início da janela.
+    const typical = s.typicalPrice!;
+    expect(typical).toBeGreaterThan(6500);
+    expect(typical).toBeLessThan(6800);
+  });
+
+  it("não classifica como menor preço quando o mínimo histórico é menor", () => {
+    expect(computeStats(payload, 90, NOW).classification).not.toBe("lowest");
+  });
+});
+
