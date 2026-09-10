@@ -641,6 +641,7 @@ export async function runBikeCatalogSync(
         baselines: downstream.baselines,
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
+        priceEvents,
         overridesSynced: overrides.synced,
       },
     });
