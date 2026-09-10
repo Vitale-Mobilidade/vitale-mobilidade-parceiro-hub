@@ -600,6 +600,9 @@ export async function runBikeCatalogSync(
     const overrides = await syncSheetOverrides(supabase, bikes);
     if (changed) downstream = await reconcileDownstream(supabase, bikes);
 
+    // Analytics do Radar de Preços: idempotente e isolado do catálogo/quiz.
+    const priceEvents = await recordPriceHistory(supabase, bikes, runId);
+
     // Pendências visíveis no painel: linhas nomeadas incompletas + estruturais.
     const pendingRows = [
       ...result.pending.map((p) => ({
