@@ -269,6 +269,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_price_daily: {
+        Row: {
+          bike_id: string
+          changed: boolean
+          close: number
+          created_at: string
+          day: string
+          high: number
+          last_verified_at: string | null
+          low: number
+          updated_at: string
+          verification: string
+          verified_runs: number
+        }
+        Insert: {
+          bike_id: string
+          changed?: boolean
+          close: number
+          created_at?: string
+          day: string
+          high: number
+          last_verified_at?: string | null
+          low: number
+          updated_at?: string
+          verification?: string
+          verified_runs?: number
+        }
+        Update: {
+          bike_id?: string
+          changed?: boolean
+          close?: number
+          created_at?: string
+          day?: string
+          high?: number
+          last_verified_at?: string | null
+          low?: number
+          updated_at?: string
+          verification?: string
+          verified_runs?: number
+        }
+        Relationships: []
+      }
       bike_price_history: {
         Row: {
           bike_id: string
