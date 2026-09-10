@@ -31,6 +31,7 @@ import {
   type SnapshotBike,
 } from "./bike-sheet.ts";
 import { technicalHash } from "./bike-hash.ts";
+import { buildDailyRows, saoPauloDay, type DailyCandidate, type DailyExisting } from "./price-daily.ts";
 import {
   countChangedBikes,
   currentScheduledSlot,
@@ -638,7 +639,9 @@ export async function runBikeCatalogSync(
     if (changed) downstream = await reconcileDownstream(supabase, bikes);
 
     // Analytics do Radar de Preços: idempotente e isolado do catálogo/quiz.
-    const priceEvents = await recordPriceHistory(supabase, bikes, runId);
+    const priceHistory = await recordPriceHistory(supabase, bikes, runId);
+    const priceEvents = priceHistory.events;
+    const dailyRows = await recordPriceDaily(supabase, bikes, priceHistory.changedIds, new Date());
 
     // Pendências visíveis no painel: linhas nomeadas incompletas + estruturais.
     const pendingRows = [
@@ -679,6 +682,7 @@ export async function runBikeCatalogSync(
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
         priceEvents,
+        dailyRows,
         overridesSynced: overrides.synced,
       },
     });
