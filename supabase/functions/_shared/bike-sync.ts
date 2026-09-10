@@ -328,6 +328,110 @@ async function kickWorkers(supabase: SupabaseClient, supabaseUrl: string, servic
   }
 }
 
+// ---------- Radar de preços (analytics, event-sourced) ----------
+
+export interface PriceHistoryCandidate {
+  bike_id: string;
+  bike_name: string;
+  price: number;
+  link_vitale: string | null;
+  eligible: boolean;
+}
+
+export interface PriceHistoryLastRow {
+  bike_id: string;
+  price: number | string;
+  link_vitale: string | null;
+  eligible: boolean;
+}
+
+/**
+ * Decide quais bikes merecem um novo evento de histórico.
+ * Só grava quando preço, link ou elegibilidade mudaram — ou quando a bike
+ * ainda não tem baseline. Nunca duplica linhas idênticas a cada hora.
+ */
+export function priceHistoryDelta(
+  candidates: PriceHistoryCandidate[],
+  last: PriceHistoryLastRow[],
+): { rows: PriceHistoryCandidate[]; baselines: number } {
+  const lastById = new Map(last.map((r) => [r.bike_id, r]));
+  const rows: PriceHistoryCandidate[] = [];
+  let baselines = 0;
+  for (const c of candidates) {
+    if (!(c.price > 0)) continue;
+    const prev = lastById.get(c.bike_id);
+    if (!prev) {
+      baselines++;
+      rows.push(c);
+      continue;
+    }
+    const samePrice = Number(prev.price) === Number(c.price);
+    const sameLink = (prev.link_vitale ?? null) === (c.link_vitale ?? null);
+    const sameEligible = prev.eligible === c.eligible;
+    if (samePrice && sameLink && sameEligible) continue;
+    rows.push(c);
+  }
+  return { rows, baselines };
+}
+
+/**
+ * Persiste os eventos do Radar de Preços. NUNCA lança: falha de analytics não
+ * pode quebrar o catálogo nem o quiz.
+ */
+async function recordPriceHistory(
+  supabase: SupabaseClient,
+  bikes: SnapshotBike[],
+  runId: string | null,
+): Promise<number> {
+  try {
+    const candidates: PriceHistoryCandidate[] = bikes
+      .filter((b) => b.status === "eligible" && typeof b.price === "number" && b.price > 0)
+      .map((b) => ({
+        bike_id: b.id,
+        bike_name: b.name,
+        price: b.price,
+        link_vitale: b.linkVitale ?? null,
+        eligible: b.sheetEligible === true,
+      }));
+    if (candidates.length === 0) return 0;
+
+    const ids = candidates.map((c) => c.bike_id);
+    const { data, error } = await supabase
+      .from("bike_price_history")
+      .select("bike_id, price, link_vitale, eligible, observed_at")
+      .in("bike_id", ids)
+      .order("observed_at", { ascending: false });
+    if (error) throw error;
+
+    const seen = new Set<string>();
+    const last: PriceHistoryLastRow[] = [];
+    for (const row of (data ?? []) as (PriceHistoryLastRow & { observed_at: string })[]) {
+      if (seen.has(row.bike_id)) continue;
+      seen.add(row.bike_id);
+      last.push(row);
+    }
+
+    const { rows, baselines } = priceHistoryDelta(candidates, last);
+    if (rows.length === 0) return 0;
+
+    const observedAt = new Date().toISOString();
+    const { error: insErr } = await supabase.from("bike_price_history").insert(
+      rows.map((r) => ({
+        ...r,
+        observed_at: observedAt,
+        source_run_id: runId,
+        source: baselines > 0 && !seen.has(r.bike_id) ? "new_baseline" : "sync",
+        confidence: "observed",
+      })),
+    );
+    if (insErr) throw insErr;
+    return rows.length;
+  } catch (e) {
+    console.error("[sync] histórico de preços:", safeError(e));
+    return 0;
+  }
+}
+
 // ---------- Histórico auditável ----------
 
 type RunStatus = "ok" | "ok_no_changes" | "skipped" | "error";
