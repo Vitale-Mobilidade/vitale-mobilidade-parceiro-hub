@@ -297,10 +297,10 @@ const Acompanhamento = () => {
                   no Mercado Livre. Usamos links de afiliado.
                 </p>
                 {summary.atLowest > 0 && (
-                  <p>
-                    <Badge className="mr-2 border-0 bg-primary/15 text-primary">Menor preço observado</Badge>
-                    significa o menor valor já registrado por nós — nunca comparação com outras lojas.
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-0 bg-primary/15 text-primary">Menor preço registrado</Badge>
+                    <span>significa o menor valor já registrado por nós — nunca comparação com outras lojas.</span>
+                  </div>
                 )}
               </div>
             </>
