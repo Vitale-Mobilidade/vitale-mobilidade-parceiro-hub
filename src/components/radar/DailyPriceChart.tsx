@@ -86,20 +86,11 @@ export function DailyPriceChart({ series }: Props) {
           <Tooltip content={<ChartTooltip />} />
           <Line
             type="stepAfter"
-            dataKey="reconstructed"
-            stroke="hsl(var(--muted-foreground))"
-            strokeDasharray="4 4"
-            strokeWidth={1.5}
-            dot={false}
-            connectNulls={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="stepAfter"
-            dataKey="verified"
+            dataKey="value"
             stroke="hsl(var(--primary))"
             strokeWidth={2.5}
-            dot={{ r: 2.5 }}
+            dot={<DayDot />}
+            activeDot={{ r: 4 }}
             connectNulls={false}
             isAnimationActive={false}
           />
