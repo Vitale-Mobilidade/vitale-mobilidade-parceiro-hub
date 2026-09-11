@@ -114,10 +114,13 @@ describe("rankings do radar", () => {
     expect(entries.filter((e) => matchesChips(e, ["over_8k"])).map((e) => e.id)).toEqual(["b3"]);
   });
 
-  it("destaques nunca usam bike sem histórico suficiente", () => {
+  it("rankings factuais existem mesmo com histórico curto, sem chamar de oportunidade", () => {
     const h = buildHighlights(entries);
-    const all = [...h.bestPrices, ...h.biggestDrops, ...h.nearMin];
-    expect(all.some((e) => e.id === "b3")).toBe(false);
+    expect(h.lowestPrices[0].id).toBe("b2");
+    expect(h.biggestDrops.every((e) => (e.dropPct ?? 0) < 0)).toBe(true);
+    // bike sem histórico entra em fatos absolutos, nunca em quedas observadas
+    expect(h.biggestDrops.some((e) => e.id === "b3")).toBe(false);
+    expect(isOpportunity(entries.find((e) => e.id === "b3")!)).toBe(false);
   });
 
   it("resumo conta bikes e menor preço", () => {
