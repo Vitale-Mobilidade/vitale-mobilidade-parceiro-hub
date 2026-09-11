@@ -53,6 +53,19 @@ function bike(over: Partial<RadarBike> = {}): RadarBike {
   };
 }
 
+describe("fuso e contagem de dias", () => {
+  it("usa o dia de São Paulo mesmo depois da virada UTC", () => {
+    expect(saoPauloDay(new Date("2026-09-11T02:30:00.000Z"))).toBe("2026-09-10");
+    expect(saoPauloDay(new Date("2026-09-11T03:30:00.000Z"))).toBe("2026-09-11");
+  });
+
+  it("conta 15 dias esperados entre 27/08 e 10/09", () => {
+    const series = [day("2026-08-27", 7000), day("2026-09-10", 6800, "observed_change")];
+    const m = dailyMetrics({ daily: series, currentPrice: 6800 }, "all", "2026-09-10");
+    expect(m.expectedDays).toBe(15);
+  });
+});
+
 describe("série diária", () => {
   it("marca lacuna quando um dia não teve verificação", () => {
     const series = [day("2026-09-05", 7000), day("2026-09-07", 7000)];
