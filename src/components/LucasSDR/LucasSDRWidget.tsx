@@ -17,7 +17,13 @@ interface Props {
   /** Kept for API compatibility — não é mais usado para reposicionar verticalmente. */
   liftedAboveStickyBar?: boolean;
   buyClicked?: boolean;
+  /** Nome exibido no botão. Padrão preserva o comportamento aprovado do quiz. */
+  assistantName?: string;
+  /** Convite contextual. Padrão preserva o texto do quiz. */
+  inviteTitle?: string;
+  inviteText?: string;
 }
+
 
 function isMobile() {
   if (typeof window === "undefined") return false;
