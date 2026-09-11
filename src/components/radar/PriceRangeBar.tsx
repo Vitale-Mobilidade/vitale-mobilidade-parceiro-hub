@@ -8,15 +8,17 @@ interface Props {
 
 /** Leitura visual: menor preço, faixa típica P25–P75 e onde está o preço de hoje. */
 export function PriceRangeBar({ currentPrice, metrics }: Props) {
-  const { minPrice, maxPrice, p25, p75, typicalPrice, classification } = metrics;
+  const { minPrice, maxPrice, p25, p75, typicalPrice, classification, distinctPrices } = metrics;
+  const forming = classification === "forming";
 
-  if (classification === "forming" || minPrice === null || maxPrice === null || maxPrice <= minPrice) {
+  // Só escondemos a régua quando não há faixa real: um único preço registrado.
+  if (minPrice === null || maxPrice === null || maxPrice <= minPrice || distinctPrices < 2) {
     return (
       <div className="rounded-2xl border border-border/60 bg-muted/30 p-6">
         <h2 className="text-lg font-semibold">O preço atual está bom?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Histórico em formação. Ainda não temos dias verificados suficientes para dizer se este preço é uma
-          oportunidade — seguimos acompanhando.
+          Histórico em formação. Até agora registramos um único preço para esta bike, então ainda não dá para comparar —
+          seguimos acompanhando.
         </p>
       </div>
     );
