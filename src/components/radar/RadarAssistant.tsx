@@ -76,6 +76,16 @@ export function RadarAssistant() {
     <LucasSDRErrorBoundary>
       <LucasSDRWidget
         ctx={ctx}
+        assistantName="Assistente Vitale"
+        inviteTitle={isDetail ? "Dúvida nesta bike?" : isRadar ? "Este preço está bom?" : "Qual bike é a sua?"}
+        inviteText={
+          isDetail
+            ? "Tire dúvidas sobre esta bike"
+            : isRadar
+              ? "Quer entender se este preço está bom?"
+              : "Encontre a bike ideal para você"
+        }
+
         onBuyLink={(bikeId) => {
           // Nunca aceitamos URL vinda da IA: resolvemos o id no catálogo público.
           const bike = catalog.find((b) => b.id === bikeId);
