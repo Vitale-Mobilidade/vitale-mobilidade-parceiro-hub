@@ -47,7 +47,7 @@ export const SORT_LABEL: Record<SortKey, string> = {
 export type ChipKey = "lowest" | "recent_drop" | "under_5k" | "5k_8k" | "over_8k";
 
 export const CHIP_LABEL: Record<ChipKey, string> = {
-  lowest: "No menor preço",
+  lowest: "No menor registrado",
   recent_drop: "Caiu recentemente",
   under_5k: "Até R$ 5.000",
   "5k_8k": "R$ 5.000 a R$ 8.000",
@@ -102,7 +102,7 @@ export function matchesChips(entry: RadarEntry, chips: ChipKey[]): boolean {
   return chips.every((chip) => {
     switch (chip) {
       case "lowest":
-        return entry.metrics.classification === "lowest";
+        return isAtRecordedMin(entry);
       case "recent_drop":
         return (entry.dropPct ?? 0) < 0;
       case "under_5k":
