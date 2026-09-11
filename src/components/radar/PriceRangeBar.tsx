@@ -29,14 +29,20 @@ export function PriceRangeBar({ currentPrice, metrics }: Props) {
   const bandEnd = rangePosition(p75 ?? maxPrice, minPrice, maxPrice) ?? 1;
   const diff = (typicalPrice ?? currentPrice) - currentPrice;
 
-  const tone =
-    classification === "above"
+  const tone = forming
+    ? "text-foreground"
+    : classification === "above"
       ? "text-destructive"
       : classification === "typical"
         ? "text-amber-700"
         : "text-primary";
-  const markerTone =
-    classification === "above" ? "bg-destructive" : classification === "typical" ? "bg-amber-500" : "bg-primary";
+  const markerTone = forming
+    ? "bg-foreground"
+    : classification === "above"
+      ? "bg-destructive"
+      : classification === "typical"
+        ? "bg-amber-500"
+        : "bg-primary";
 
   return (
     <section className="rounded-2xl border border-border/60 bg-white p-6 shadow-sm" aria-label="Leitura do preço atual">
