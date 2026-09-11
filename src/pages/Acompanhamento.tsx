@@ -124,6 +124,7 @@ const Acompanhamento = () => {
                 <div className="mt-6 max-w-xl">
                   <BikeSearchCombobox
                     entries={entries}
+                    loading={bikes === null}
                     query={query}
                     onQueryChange={setQuery}
                     onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -137,7 +138,7 @@ const Acompanhamento = () => {
                       <dd className="mt-1 text-2xl font-bold">{summary.tracked}</dd>
                     </div>
                     <div className="rounded-2xl border border-border/60 bg-white p-4">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">No menor preço</dt>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">No menor registrado</dt>
                       <dd className="mt-1 text-2xl font-bold text-primary">{summary.atLowest}</dd>
                     </div>
                     <div className="rounded-2xl border border-border/60 bg-white p-4">
@@ -161,7 +162,9 @@ const Acompanhamento = () => {
                   <Skeleton className="h-[420px] w-full rounded-3xl" />
                 ) : featured ? (
                   <div>
-                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">Oportunidade em destaque</p>
+                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">
+                      {featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"}
+                    </p>
                     <RadarBikeCard entry={featured} onAlert={setAlertBike} highlight />
                   </div>
                 ) : null}
