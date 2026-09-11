@@ -47,6 +47,9 @@ export function PriceRangeBar({ currentPrice, metrics }: Props) {
   return (
     <section className="rounded-2xl border border-border/60 bg-white p-6 shadow-sm" aria-label="Leitura do preço atual">
       <h2 className="text-lg font-semibold">O preço atual está bom?</h2>
+      {forming && (
+        <p className="mt-1 text-sm font-medium text-muted-foreground">Histórico em formação — leitura preliminar.</p>
+      )}
       <p className={`mt-1 text-base font-medium ${tone}`}>
         {diff > 0
           ? `Hoje está ${formatBRL(Math.abs(diff))} abaixo do preço típico.`
@@ -54,6 +57,7 @@ export function PriceRangeBar({ currentPrice, metrics }: Props) {
             ? `Hoje está ${formatBRL(Math.abs(diff))} acima do preço típico.`
             : "Hoje está exatamente no preço típico."}
       </p>
+
 
       <div className="mt-6">
         <div className="relative h-3 w-full rounded-full bg-muted">
