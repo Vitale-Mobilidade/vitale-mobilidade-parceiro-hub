@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { dailyMetrics, expandDaily, normalizeText, type DailyPoint } from "./price-daily";
+import { dailyMetrics, expandDaily, normalizeText, saoPauloDay, type DailyPoint } from "./price-daily";
 import {
   buildHighlights,
   buildRadarEntries,
   buildSummary,
+  isOpportunity,
   matchesChips,
   searchEntries,
   sortEntries,
