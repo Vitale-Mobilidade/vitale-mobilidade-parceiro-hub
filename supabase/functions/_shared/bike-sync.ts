@@ -31,6 +31,7 @@ import {
   type SnapshotBike,
 } from "./bike-sheet.ts";
 import { technicalHash } from "./bike-hash.ts";
+import { buildDailyRows, saoPauloDay, type DailyCandidate, type DailyExisting } from "./price-daily.ts";
 import {
   countChangedBikes,
   currentScheduledSlot,
@@ -382,7 +383,7 @@ async function recordPriceHistory(
   supabase: SupabaseClient,
   bikes: SnapshotBike[],
   runId: string | null,
-): Promise<number> {
+): Promise<{ events: number; changedIds: Set<string> }> {
   try {
     const candidates: PriceHistoryCandidate[] = bikes
       .filter((b) => b.status === "eligible" && typeof b.price === "number" && b.price > 0)
@@ -393,7 +394,7 @@ async function recordPriceHistory(
         link_vitale: b.linkVitale ?? null,
         eligible: b.sheetEligible === true,
       }));
-    if (candidates.length === 0) return 0;
+    if (candidates.length === 0) return { events: 0, changedIds: new Set<string>() };
 
     const ids = candidates.map((c) => c.bike_id);
     const { data, error } = await supabase
@@ -412,7 +413,8 @@ async function recordPriceHistory(
     }
 
     const { rows, baselines } = priceHistoryDelta(candidates, last);
-    if (rows.length === 0) return 0;
+    const changedIds = new Set(rows.map((r) => r.bike_id));
+    if (rows.length === 0) return { events: 0, changedIds };
 
     const observedAt = new Date().toISOString();
     const { error: insErr } = await supabase.from("bike_price_history").insert(
@@ -425,9 +427,45 @@ async function recordPriceHistory(
       })),
     );
     if (insErr) throw insErr;
-    return rows.length;
+    return { events: rows.length, changedIds };
   } catch (e) {
     console.error("[sync] histórico de preços:", safeError(e));
+    return { events: 0, changedIds: new Set<string>() };
+  }
+}
+
+/**
+ * Fechamento diário confirmado por execução bem-sucedida. NUNCA lança.
+ */
+async function recordPriceDaily(
+  supabase: SupabaseClient,
+  bikes: SnapshotBike[],
+  changedIds: Set<string>,
+  at: Date,
+): Promise<number> {
+  try {
+    const candidates: DailyCandidate[] = bikes
+      .filter((b) => b.status === "eligible" && typeof b.price === "number" && b.price > 0)
+      .map((b) => ({ bike_id: b.id, price: b.price, changed: changedIds.has(b.id) }));
+    if (candidates.length === 0) return 0;
+
+    const day = saoPauloDay(at);
+    const { data, error } = await supabase
+      .from("bike_price_daily")
+      .select("bike_id, day, low, high, verified_runs, changed")
+      .eq("day", day)
+      .in("bike_id", candidates.map((c) => c.bike_id));
+    if (error) throw error;
+
+    const rows = buildDailyRows(candidates, (data ?? []) as DailyExisting[], at);
+    if (rows.length === 0) return 0;
+    const { error: upErr } = await supabase
+      .from("bike_price_daily")
+      .upsert(rows, { onConflict: "bike_id,day" });
+    if (upErr) throw upErr;
+    return rows.length;
+  } catch (e) {
+    console.error("[sync] fechamento diário:", safeError(e));
     return 0;
   }
 }
@@ -601,7 +639,9 @@ export async function runBikeCatalogSync(
     if (changed) downstream = await reconcileDownstream(supabase, bikes);
 
     // Analytics do Radar de Preços: idempotente e isolado do catálogo/quiz.
-    const priceEvents = await recordPriceHistory(supabase, bikes, runId);
+    const priceHistory = await recordPriceHistory(supabase, bikes, runId);
+    const priceEvents = priceHistory.events;
+    const dailyRows = await recordPriceDaily(supabase, bikes, priceHistory.changedIds, new Date());
 
     // Pendências visíveis no painel: linhas nomeadas incompletas + estruturais.
     const pendingRows = [
@@ -642,6 +682,7 @@ export async function runBikeCatalogSync(
         assetsQueued: downstream.assetsQueued,
         assetsReview: downstream.assetsReview,
         priceEvents,
+        dailyRows,
         overridesSynced: overrides.synced,
       },
     });

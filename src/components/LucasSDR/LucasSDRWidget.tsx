@@ -17,7 +17,13 @@ interface Props {
   /** Kept for API compatibility — não é mais usado para reposicionar verticalmente. */
   liftedAboveStickyBar?: boolean;
   buyClicked?: boolean;
+  /** Nome exibido no botão. Padrão preserva o comportamento aprovado do quiz. */
+  assistantName?: string;
+  /** Convite contextual. Padrão preserva o texto do quiz. */
+  inviteTitle?: string;
+  inviteText?: string;
 }
+
 
 function isMobile() {
   if (typeof window === "undefined") return false;
@@ -36,7 +42,15 @@ function writeFlag(leadId: string | null, kind: string) {
   try { sessionStorage.setItem(sessionKey(leadId, kind), "true"); } catch {}
 }
 
-export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
+export function LucasSDRWidget({
+  ctx,
+  onBuyLink,
+  onEvent,
+  buyClicked,
+  assistantName = "Lucas",
+  inviteTitle = "Ainda em dúvida?",
+  inviteText = "Fale com o Lucas e entenda qual bike faz mais sentido para você.",
+}: Props) {
   const [open, setOpen] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteDismissed, setInviteDismissed] = useState(() => readFlag(ctx.leadId, "invite_dismissed"));
@@ -252,11 +266,11 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
                   type="button"
                   onClick={() => openChat("invite")}
                   className="flex flex-col items-start text-left"
-                  aria-label="Abrir chat com o Lucas"
+                  aria-label={`Abrir chat com o ${assistantName}`}
                 >
-                  <span className="text-[13px] font-semibold text-foreground leading-tight">Ainda em dúvida?</span>
+                  <span className="text-[13px] font-semibold text-foreground leading-tight">{inviteTitle}</span>
                   <span className="text-[13px] text-foreground/80 leading-tight">
-                    Fale com o Lucas e entenda qual bike faz mais sentido para você.
+                    {inviteText}
                   </span>
                 </button>
                 <button
@@ -276,14 +290,14 @@ export function LucasSDRWidget({ ctx, onBuyLink, onEvent, buyClicked }: Props) {
             <button
               type="button"
               onClick={() => openChat("button")}
-              aria-label="Falar com o Lucas, assistente virtual"
+              aria-label={`Falar com o ${assistantName}, assistente virtual`}
               className="flex items-center gap-2 pl-3 pr-4 h-14 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 bg-primary text-primary-foreground font-semibold"
             >
               <span className="h-9 w-9 rounded-full bg-white/25 flex items-center justify-center">
                 <MessagesSquare className="h-5 w-5" />
               </span>
               <span className="text-[14px] leading-tight text-left">
-                Falar com o<br />Lucas
+                Falar com o<br />{assistantName}
               </span>
             </button>
           </div>

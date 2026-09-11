@@ -269,6 +269,147 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_price_alert_throttle: {
+        Row: {
+          attempts: number
+          fingerprint: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          fingerprint: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          fingerprint?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
+      bike_price_alerts: {
+        Row: {
+          bike_id: string
+          bike_name: string
+          condition: string
+          consent: boolean
+          consent_at: string
+          consent_text: string
+          consent_version: string
+          created_at: string
+          delivery_enabled: boolean
+          id: string
+          person_name: string
+          phone_e164: string
+          reference_price: number
+          source_url: string | null
+          status: string
+          target_price: number | null
+          traffic_origin: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          bike_id: string
+          bike_name: string
+          condition?: string
+          consent?: boolean
+          consent_at?: string
+          consent_text: string
+          consent_version?: string
+          created_at?: string
+          delivery_enabled?: boolean
+          id?: string
+          person_name: string
+          phone_e164: string
+          reference_price: number
+          source_url?: string | null
+          status?: string
+          target_price?: number | null
+          traffic_origin?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          bike_id?: string
+          bike_name?: string
+          condition?: string
+          consent?: boolean
+          consent_at?: string
+          consent_text?: string
+          consent_version?: string
+          created_at?: string
+          delivery_enabled?: boolean
+          id?: string
+          person_name?: string
+          phone_e164?: string
+          reference_price?: number
+          source_url?: string | null
+          status?: string
+          target_price?: number | null
+          traffic_origin?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
+      bike_price_daily: {
+        Row: {
+          bike_id: string
+          changed: boolean
+          close: number
+          created_at: string
+          day: string
+          high: number
+          last_verified_at: string | null
+          low: number
+          updated_at: string
+          verification: string
+          verified_runs: number
+        }
+        Insert: {
+          bike_id: string
+          changed?: boolean
+          close: number
+          created_at?: string
+          day: string
+          high: number
+          last_verified_at?: string | null
+          low: number
+          updated_at?: string
+          verification?: string
+          verified_runs?: number
+        }
+        Update: {
+          bike_id?: string
+          changed?: boolean
+          close?: number
+          created_at?: string
+          day?: string
+          high?: number
+          last_verified_at?: string | null
+          low?: number
+          updated_at?: string
+          verification?: string
+          verified_runs?: number
+        }
+        Relationships: []
+      }
       bike_price_history: {
         Row: {
           bike_id: string
