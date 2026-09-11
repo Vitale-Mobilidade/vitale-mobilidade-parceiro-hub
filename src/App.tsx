@@ -5,6 +5,7 @@ import PainelBikes from "./pages/PainelBikes";
 import Acompanhamento from "./pages/Acompanhamento";
 import AcompanhamentoBike from "./pages/AcompanhamentoBike";
 import NotFound from "./pages/NotFound";
+import { RadarAssistant } from "./components/radar/RadarAssistant";
 
 const App = () => (
   <BrowserRouter>
@@ -17,6 +18,8 @@ const App = () => (
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    {/* Assistente Vitale: instância única. /escolherbike monta a sua própria. */}
+    <RadarAssistant />
   </BrowserRouter>
 );
 
