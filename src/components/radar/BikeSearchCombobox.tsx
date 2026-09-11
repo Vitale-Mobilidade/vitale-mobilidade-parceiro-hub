@@ -13,10 +13,12 @@ interface Props {
   query: string;
   onQueryChange: (value: string) => void;
   onSeeAll?: () => void;
+  /** Enquanto o catálogo carrega não dizemos que a bike não existe. */
+  loading?: boolean;
 }
 
 /** Busca com autocomplete acessível: abre com todas as bikes elegíveis. */
-export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll }: Props) {
+export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, loading = false }: Props) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -105,7 +107,12 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll }: 
           aria-label="Bikes acompanhadas"
           className="absolute z-40 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-border bg-white p-2 shadow-xl"
         >
-          {options.length === 0 && (
+          {options.length === 0 && loading && (
+            <li className="p-4 text-sm text-muted-foreground" aria-live="polite">
+              Carregando bikes...
+            </li>
+          )}
+          {options.length === 0 && !loading && (
             <li className="p-4 text-sm text-muted-foreground">
               Não encontramos essa bike no radar.{" "}
               <button

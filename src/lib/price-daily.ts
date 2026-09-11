@@ -76,6 +76,21 @@ export function normalizeText(input: string): string {
     .trim();
 }
 
+const SP_DAY = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Dia civil em America/Sao_Paulo. Nunca use o dia UTC de toISOString: perto da
+ * meia-noite UTC ainda é o dia anterior no Brasil (off-by-one na contagem).
+ */
+export function saoPauloDay(date: Date = new Date()): string {
+  return SP_DAY.format(date);
+}
+
 export function toDayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -124,7 +139,7 @@ function sanitize(series: DailyPoint[] | null | undefined): DailyPoint[] {
 export function expandDaily(
   series: DailyPoint[],
   window: DailyWindow = 30,
-  today: string = toDayKey(new Date()),
+  today: string = saoPauloDay(),
 ): DailyPoint[] {
   const clean = sanitize(series);
   if (clean.length === 0) return [];
@@ -165,7 +180,7 @@ export function expandDaily(
 export function dailyMetrics(
   input: { daily: DailyPoint[]; currentPrice: number },
   window: DailyWindow = 30,
-  today: string = toDayKey(new Date()),
+  today: string = saoPauloDay(),
 ): DailyMetrics {
   const expanded = expandDaily(input.daily, window, today);
   const real = expanded.filter((p) => p.verification !== "missing");

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { dailyMetrics, expandDaily, normalizeText, type DailyPoint } from "./price-daily";
+import { dailyMetrics, expandDaily, normalizeText, saoPauloDay, type DailyPoint } from "./price-daily";
 import {
   buildHighlights,
   buildRadarEntries,
   buildSummary,
+  isOpportunity,
   matchesChips,
   searchEntries,
   sortEntries,
@@ -51,6 +52,19 @@ function bike(over: Partial<RadarBike> = {}): RadarBike {
     ...over,
   };
 }
+
+describe("fuso e contagem de dias", () => {
+  it("usa o dia de São Paulo mesmo depois da virada UTC", () => {
+    expect(saoPauloDay(new Date("2026-09-11T02:30:00.000Z"))).toBe("2026-09-10");
+    expect(saoPauloDay(new Date("2026-09-11T03:30:00.000Z"))).toBe("2026-09-11");
+  });
+
+  it("conta 15 dias esperados entre 27/08 e 10/09", () => {
+    const series = [day("2026-08-27", 7000), day("2026-09-10", 6800, "observed_change")];
+    const m = dailyMetrics({ daily: series, currentPrice: 6800 }, "all", "2026-09-10");
+    expect(m.expectedDays).toBe(15);
+  });
+});
 
 describe("série diária", () => {
   it("marca lacuna quando um dia não teve verificação", () => {
@@ -114,10 +128,13 @@ describe("rankings do radar", () => {
     expect(entries.filter((e) => matchesChips(e, ["over_8k"])).map((e) => e.id)).toEqual(["b3"]);
   });
 
-  it("destaques nunca usam bike sem histórico suficiente", () => {
+  it("rankings factuais existem mesmo com histórico curto, sem chamar de oportunidade", () => {
     const h = buildHighlights(entries);
-    const all = [...h.bestPrices, ...h.biggestDrops, ...h.nearMin];
-    expect(all.some((e) => e.id === "b3")).toBe(false);
+    expect(h.lowestPrices[0].id).toBe("b2");
+    expect(h.biggestDrops.every((e) => (e.dropPct ?? 0) < 0)).toBe(true);
+    // bike sem histórico entra em fatos absolutos, nunca em quedas observadas
+    expect(h.biggestDrops.some((e) => e.id === "b3")).toBe(false);
+    expect(isOpportunity(entries.find((e) => e.id === "b3")!)).toBe(false);
   });
 
   it("resumo conta bikes e menor preço", () => {

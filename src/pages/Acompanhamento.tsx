@@ -16,6 +16,7 @@ import {
   buildRadarEntries,
   buildSummary,
   CHIP_LABEL,
+  isOpportunity,
   matchesChips,
   searchEntries,
   SORT_LABEL,
@@ -74,16 +75,19 @@ const Acompanhamento = () => {
     return dates.length ? dates.sort()[0] : null;
   }, [entries]);
 
-  const featured = highlights.bestPrices[0] ?? highlights.biggestDrops[0] ?? entries[0] ?? null;
+  const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
+  const featured =
+    opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
+  const featuredIsOpportunity = isOpportunity(featured);
   const loading = bikes === null;
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
 
   const blocks = [
-    { title: "Melhores preços de hoje", icon: Flame, list: highlights.bestPrices },
+    { title: "Menores preços atuais", icon: Flame, list: highlights.lowestPrices },
     { title: "Maiores quedas recentes", icon: TrendingDown, list: highlights.biggestDrops },
-    { title: "Perto do menor preço registrado", icon: Target, list: highlights.nearMin },
+    { title: "No menor preço registrado até agora", icon: Target, list: highlights.atMin },
   ].filter((b) => b.list.length > 0);
 
   return (
@@ -120,6 +124,7 @@ const Acompanhamento = () => {
                 <div className="mt-6 max-w-xl">
                   <BikeSearchCombobox
                     entries={entries}
+                    loading={bikes === null}
                     query={query}
                     onQueryChange={setQuery}
                     onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -133,7 +138,7 @@ const Acompanhamento = () => {
                       <dd className="mt-1 text-2xl font-bold">{summary.tracked}</dd>
                     </div>
                     <div className="rounded-2xl border border-border/60 bg-white p-4">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">No menor preço</dt>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">No menor registrado</dt>
                       <dd className="mt-1 text-2xl font-bold text-primary">{summary.atLowest}</dd>
                     </div>
                     <div className="rounded-2xl border border-border/60 bg-white p-4">
@@ -157,7 +162,9 @@ const Acompanhamento = () => {
                   <Skeleton className="h-[420px] w-full rounded-3xl" />
                 ) : featured ? (
                   <div>
-                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">Oportunidade em destaque</p>
+                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">
+                      {featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"}
+                    </p>
                     <RadarBikeCard entry={featured} onAlert={setAlertBike} highlight />
                   </div>
                 ) : null}
@@ -290,10 +297,10 @@ const Acompanhamento = () => {
                   no Mercado Livre. Usamos links de afiliado.
                 </p>
                 {summary.atLowest > 0 && (
-                  <p>
-                    <Badge className="mr-2 border-0 bg-primary/15 text-primary">Menor preço observado</Badge>
-                    significa o menor valor já registrado por nós — nunca comparação com outras lojas.
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-0 bg-primary/15 text-primary">Menor preço registrado</Badge>
+                    <span>significa o menor valor já registrado por nós — nunca comparação com outras lojas.</span>
+                  </div>
                 )}
               </div>
             </>

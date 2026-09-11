@@ -47,7 +47,7 @@ export const SORT_LABEL: Record<SortKey, string> = {
 export type ChipKey = "lowest" | "recent_drop" | "under_5k" | "5k_8k" | "over_8k";
 
 export const CHIP_LABEL: Record<ChipKey, string> = {
-  lowest: "No menor preço",
+  lowest: "No menor registrado",
   recent_drop: "Caiu recentemente",
   under_5k: "Até R$ 5.000",
   "5k_8k": "R$ 5.000 a R$ 8.000",
@@ -102,7 +102,7 @@ export function matchesChips(entry: RadarEntry, chips: ChipKey[]): boolean {
   return chips.every((chip) => {
     switch (chip) {
       case "lowest":
-        return entry.metrics.classification === "lowest";
+        return isAtRecordedMin(entry);
       case "recent_drop":
         return (entry.dropPct ?? 0) < 0;
       case "under_5k":
@@ -124,48 +124,41 @@ export function searchEntries(entries: RadarEntry[], query: string): RadarEntry[
 }
 
 export interface RadarHighlights {
-  bestPrices: RadarEntry[];
+  /** Menores preços atuais (fato absoluto, não é leitura de oportunidade). */
+  lowestPrices: RadarEntry[];
+  /** Quedas realmente observadas contra o preço anterior. */
   biggestDrops: RadarEntry[];
-  nearMin: RadarEntry[];
+  /** Preço atual igual ao menor já registrado até agora. */
+  atMin: RadarEntry[];
 }
 
-/** Destaques com dado real e sem repetir a mesma bike quando há alternativa. */
+/**
+ * Só chamamos de OPORTUNIDADE quando a classificação é confiável e realmente
+ * indica preço bom. "Histórico em formação" nunca vira oportunidade.
+ */
+export function isOpportunity(entry: RadarEntry | null | undefined): boolean {
+  if (!entry) return false;
+  return entry.metrics.classification === "lowest" || entry.metrics.classification === "good";
+}
+
+/** Preço atual igual (ou abaixo) do menor já registrado até agora. */
+export function isAtRecordedMin(entry: RadarEntry): boolean {
+  return entry.allTimeMin !== null && entry.currentPrice <= entry.allTimeMin + 0.5;
+}
+
+/** Rankings factuais: valem mesmo com histórico curto, sem prometer oportunidade. */
 export function buildHighlights(entries: RadarEntry[], perBlock = 3): RadarHighlights {
-  const reliable = entries.filter((e) => e.metrics.classification !== "forming");
-  const used = new Set<string>();
+  const take = (list: RadarEntry[]) => list.slice(0, perBlock);
 
-  const take = (list: RadarEntry[]) => {
-    const picked: RadarEntry[] = [];
-    for (const e of list) {
-      if (picked.length >= perBlock) break;
-      if (used.has(e.id)) continue;
-      picked.push(e);
-      used.add(e.id);
-    }
-    // Se não houve alternativa suficiente, completa permitindo repetição.
-    for (const e of list) {
-      if (picked.length >= perBlock) break;
-      if (picked.some((p) => p.id === e.id)) continue;
-      picked.push(e);
-    }
-    return picked;
-  };
-
-  const bestPrices = take(
-    reliable
-      .filter((e) => (e.savingsPct ?? 0) > 0)
-      .sort((a, b) => (b.savingsPct ?? 0) - (a.savingsPct ?? 0)),
-  );
+  const lowestPrices = take([...entries].sort((a, b) => a.currentPrice - b.currentPrice));
   const biggestDrops = take(
-    reliable.filter((e) => (e.dropPct ?? 0) < 0).sort((a, b) => (a.dropPct ?? 0) - (b.dropPct ?? 0)),
+    entries.filter((e) => (e.dropPct ?? 0) < 0).sort((a, b) => (a.dropPct ?? 0) - (b.dropPct ?? 0)),
   );
-  const nearMin = take(
-    reliable
-      .filter((e) => (e.distanceToMinPct ?? Infinity) <= 3)
-      .sort((a, b) => (a.distanceToMinPct ?? 0) - (b.distanceToMinPct ?? 0)),
+  const atMin = take(
+    entries.filter(isAtRecordedMin).sort((a, b) => a.currentPrice - b.currentPrice),
   );
 
-  return { bestPrices, biggestDrops, nearMin };
+  return { lowestPrices, biggestDrops, atMin };
 }
 
 export interface RadarSummary {
@@ -175,7 +168,7 @@ export interface RadarSummary {
 }
 
 export function buildSummary(entries: RadarEntry[]): RadarSummary {
-  const atLowest = entries.filter((e) => e.metrics.classification === "lowest").length;
+  const atLowest = entries.filter(isAtRecordedMin).length;
   const drops = entries.map((e) => e.dropPct).filter((d): d is number => typeof d === "number" && d < 0);
   return {
     tracked: entries.length,
@@ -187,7 +180,11 @@ export function buildSummary(entries: RadarEntry[]): RadarSummary {
 /** Diagnóstico curto e honesto, sempre baseado no histórico registrado. */
 export function shortDiagnosis(entry: RadarEntry): string {
   const { classification, typicalPrice } = entry.metrics;
-  if (classification === "forming") return "Histórico em formação — ainda observando este preço.";
+  if (classification === "forming") {
+    return isAtRecordedMin(entry)
+      ? "É o menor preço que registramos até agora — histórico ainda em formação."
+      : "Histórico em formação — ainda observando este preço.";
+  }
   const diff = typicalPrice !== null ? typicalPrice - entry.currentPrice : 0;
   if (classification === "lowest") return "É o menor preço que já registramos para esta bike.";
   if (classification === "good") return `Hoje está R$ ${Math.round(diff).toLocaleString("pt-BR")} abaixo do preço típico.`;

@@ -8,15 +8,17 @@ interface Props {
 
 /** Leitura visual: menor preço, faixa típica P25–P75 e onde está o preço de hoje. */
 export function PriceRangeBar({ currentPrice, metrics }: Props) {
-  const { minPrice, maxPrice, p25, p75, typicalPrice, classification } = metrics;
+  const { minPrice, maxPrice, p25, p75, typicalPrice, classification, distinctPrices } = metrics;
+  const forming = classification === "forming";
 
-  if (classification === "forming" || minPrice === null || maxPrice === null || maxPrice <= minPrice) {
+  // Só escondemos a régua quando não há faixa real: um único preço registrado.
+  if (minPrice === null || maxPrice === null || maxPrice <= minPrice || distinctPrices < 2) {
     return (
       <div className="rounded-2xl border border-border/60 bg-muted/30 p-6">
         <h2 className="text-lg font-semibold">O preço atual está bom?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Histórico em formação. Ainda não temos dias verificados suficientes para dizer se este preço é uma
-          oportunidade — seguimos acompanhando.
+          Histórico em formação. Até agora registramos um único preço para esta bike, então ainda não dá para comparar —
+          seguimos acompanhando.
         </p>
       </div>
     );
@@ -27,18 +29,27 @@ export function PriceRangeBar({ currentPrice, metrics }: Props) {
   const bandEnd = rangePosition(p75 ?? maxPrice, minPrice, maxPrice) ?? 1;
   const diff = (typicalPrice ?? currentPrice) - currentPrice;
 
-  const tone =
-    classification === "above"
+  const tone = forming
+    ? "text-foreground"
+    : classification === "above"
       ? "text-destructive"
       : classification === "typical"
         ? "text-amber-700"
         : "text-primary";
-  const markerTone =
-    classification === "above" ? "bg-destructive" : classification === "typical" ? "bg-amber-500" : "bg-primary";
+  const markerTone = forming
+    ? "bg-foreground"
+    : classification === "above"
+      ? "bg-destructive"
+      : classification === "typical"
+        ? "bg-amber-500"
+        : "bg-primary";
 
   return (
     <section className="rounded-2xl border border-border/60 bg-white p-6 shadow-sm" aria-label="Leitura do preço atual">
       <h2 className="text-lg font-semibold">O preço atual está bom?</h2>
+      {forming && (
+        <p className="mt-1 text-sm font-medium text-muted-foreground">Histórico em formação — leitura preliminar.</p>
+      )}
       <p className={`mt-1 text-base font-medium ${tone}`}>
         {diff > 0
           ? `Hoje está ${formatBRL(Math.abs(diff))} abaixo do preço típico.`
@@ -46,6 +57,7 @@ export function PriceRangeBar({ currentPrice, metrics }: Props) {
             ? `Hoje está ${formatBRL(Math.abs(diff))} acima do preço típico.`
             : "Hoje está exatamente no preço típico."}
       </p>
+
 
       <div className="mt-6">
         <div className="relative h-3 w-full rounded-full bg-muted">
