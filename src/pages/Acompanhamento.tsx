@@ -16,6 +16,7 @@ import {
   buildRadarEntries,
   buildSummary,
   CHIP_LABEL,
+  isOpportunity,
   matchesChips,
   searchEntries,
   SORT_LABEL,
@@ -74,16 +75,19 @@ const Acompanhamento = () => {
     return dates.length ? dates.sort()[0] : null;
   }, [entries]);
 
-  const featured = highlights.bestPrices[0] ?? highlights.biggestDrops[0] ?? entries[0] ?? null;
+  const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
+  const featured =
+    opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
+  const featuredIsOpportunity = isOpportunity(featured);
   const loading = bikes === null;
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
 
   const blocks = [
-    { title: "Melhores preços de hoje", icon: Flame, list: highlights.bestPrices },
+    { title: "Menores preços atuais", icon: Flame, list: highlights.lowestPrices },
     { title: "Maiores quedas recentes", icon: TrendingDown, list: highlights.biggestDrops },
-    { title: "Perto do menor preço registrado", icon: Target, list: highlights.nearMin },
+    { title: "No menor preço registrado até agora", icon: Target, list: highlights.atMin },
   ].filter((b) => b.list.length > 0);
 
   return (
