@@ -107,7 +107,12 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, lo
           aria-label="Bikes acompanhadas"
           className="absolute z-40 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-border bg-white p-2 shadow-xl"
         >
-          {options.length === 0 && (
+          {options.length === 0 && loading && (
+            <li className="p-4 text-sm text-muted-foreground" aria-live="polite">
+              Carregando bikes...
+            </li>
+          )}
+          {options.length === 0 && !loading && (
             <li className="p-4 text-sm text-muted-foreground">
               Não encontramos essa bike no radar.{" "}
               <button

@@ -180,7 +180,11 @@ export function buildSummary(entries: RadarEntry[]): RadarSummary {
 /** Diagnóstico curto e honesto, sempre baseado no histórico registrado. */
 export function shortDiagnosis(entry: RadarEntry): string {
   const { classification, typicalPrice } = entry.metrics;
-  if (classification === "forming") return "Histórico em formação — ainda observando este preço.";
+  if (classification === "forming") {
+    return isAtRecordedMin(entry)
+      ? "É o menor preço que registramos até agora — histórico ainda em formação."
+      : "Histórico em formação — ainda observando este preço.";
+  }
   const diff = typicalPrice !== null ? typicalPrice - entry.currentPrice : 0;
   if (classification === "lowest") return "É o menor preço que já registramos para esta bike.";
   if (classification === "good") return `Hoje está R$ ${Math.round(diff).toLocaleString("pt-BR")} abaixo do preço típico.`;
