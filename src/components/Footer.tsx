@@ -47,6 +47,16 @@ const Footer = () => {
               <li><a href="#casos-sucesso" className="hover:text-white transition-colors">Casos de Sucesso</a></li>
               <li><a href="#faq" className="hover:text-white transition-colors">Perguntas Frequentes</a></li>
               <li><a href="#contato" className="hover:text-white transition-colors">Contato</a></li>
+              <li>
+                <a
+                  href="https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Grupo de ofertas da Vitale
+                </a>
+              </li>
             </ul>
           </div>
 

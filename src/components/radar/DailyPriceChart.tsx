@@ -9,23 +9,35 @@ interface Props {
 interface Row {
   date: string;
   label: string;
-  verified: number | null;
-  reconstructed: number | null;
+  /** Linha-base contínua: valor em todo dia com preço; null apenas em lacuna real. */
+  value: number | null;
+  reconstructed: boolean;
   point: DailyPoint | null;
 }
 
 function toRows(series: DailyPoint[]): Row[] {
   return series.map((p) => {
-    const value = Number.isFinite(p.close) ? p.close : null;
-    const isVerified = p.verification === "observed_change" || p.verification === "confirmed_unchanged";
+    const missing = p.verification === "missing";
+    const value = !missing && Number.isFinite(p.close) ? p.close : null;
     return {
       date: p.date,
       label: formatDateBR(p.date),
-      verified: isVerified ? value : null,
-      reconstructed: p.verification === "reconstructed" ? value : null,
-      point: p.verification === "missing" ? null : p,
+      value,
+      reconstructed: p.verification === "reconstructed",
+      point: missing ? null : p,
     };
   });
+}
+
+/** Dias confirmados ganham ponto cheio; reconstruídos, um marcador vazado e discreto. */
+function DayDot(props: { cx?: number; cy?: number; payload?: Row }) {
+  const { cx, cy, payload } = props;
+  if (cx === undefined || cy === undefined || !payload || payload.value === null) return null;
+  return payload.reconstructed ? (
+    <circle cx={cx} cy={cy} r={2.5} fill="hsl(var(--background))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+  ) : (
+    <circle cx={cx} cy={cy} r={2.8} fill="hsl(var(--primary))" />
+  );
 }
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: { payload: Row }[] }) {
