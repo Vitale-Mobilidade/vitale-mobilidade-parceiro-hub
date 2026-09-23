@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
 import { ArrowRight, BellRing, Check, ExternalLink } from "lucide-react";
 import { useLoaderData } from "@tanstack/react-router";
+import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, BikeMedia, PriceStatus, SectionHeading } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
@@ -239,6 +240,13 @@ const AcompanhamentoBike = () => {
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {initial.videos?.length > 0 && (
+              <section className="mt-12" aria-labelledby="bike-videos">
+                <SectionHeading id="bike-videos" title="Vídeos deste modelo" />
+                <VideoCards videos={initial.videos} className="mt-4" />
               </section>
             )}
 

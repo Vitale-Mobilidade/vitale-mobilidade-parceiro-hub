@@ -1,4 +1,6 @@
 import { Link, useLoaderData } from "@tanstack/react-router";
+import { VideoCards } from "@/components/site/VideoCards";
+import type { VideoCard } from "@/lib/videos.functions";
 import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading, PriceStatus } from "@/components/site/site-ui";
@@ -198,7 +200,15 @@ function CompareBlock({ cards }: { cards: HomeCard[] }) {
   );
 }
 
-function ContentBlock({ cards }: { cards: HomeCard[] }) {
+function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[] }) {
+  if (videos.length) {
+    return (
+      <section id="conteudos" aria-labelledby="conteudos-h" className="scroll-mt-24">
+        <SectionHeading id="conteudos-h" title="Vídeos e testes" sub="Vídeos recentes do canal da Vitale no YouTube." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} />
+        <VideoCards videos={videos} className="mt-6" />
+      </section>
+    );
+  }
   const areas = [
     { tag: "Testes", title: "Testes de bikes elétricas", text: "Como as bikes se comportam no uso real." },
     { tag: "Comparativos", title: "Modelos lado a lado", text: "Diferenças que importam na hora de escolher." },
@@ -281,7 +291,7 @@ const HomeB2C = () => {
             <CalculatorPanel />
           </div>
           <CompareBlock cards={cards} />
-          <ContentBlock cards={cards} />
+          <ContentBlock cards={cards} videos={data?.videos ?? []} />
           <GroupAndNewsletter />
         </div>
       </main>

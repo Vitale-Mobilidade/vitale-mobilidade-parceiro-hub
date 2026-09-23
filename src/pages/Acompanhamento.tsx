@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, BarChart3, BellRing, ExternalLink, Flame, LineChart, Target, TrendingDown, Youtube, BookOpen } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLoaderData } from "@tanstack/react-router";
+import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, PriceStatus, DisabledCta } from "@/components/site/site-ui";
@@ -281,14 +282,12 @@ const Acompanhamento = () => {
                 )}
               </section>
 
-              <section aria-label="Vídeos e conteúdos" className="mt-12 grid gap-5 md:grid-cols-2">
-                {[{ t: "Testes e análises em vídeo", i: Youtube, c: "Ver no YouTube" }, { t: "Conteúdos relacionados", i: BookOpen, c: "Ver conteúdos" }].map((x) => (
-                  <div key={x.t} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-5">
-                    <p className="flex items-center gap-2 font-bold text-ink"><x.i className="h-5 w-5 text-action" aria-hidden="true" /> {x.t}</p>
-                    <DisabledCta className="shrink-0 text-sm font-semibold text-action">{x.c}</DisabledCta>
-                  </div>
-                ))}
-              </section>
+              {initial.videos?.length > 0 && (
+                <section aria-labelledby="radar-videos" className="mt-12">
+                  <h2 id="radar-videos" className="flex items-center gap-2 text-xl font-bold text-ink"><Youtube className="h-5 w-5 text-action" aria-hidden="true" /> Testes e análises em vídeo</h2>
+                  <VideoCards videos={initial.videos} className="mt-4" />
+                </section>
+              )}
 
               <div className="mt-10 space-y-2 text-sm text-muted-foreground">
                 <p>
