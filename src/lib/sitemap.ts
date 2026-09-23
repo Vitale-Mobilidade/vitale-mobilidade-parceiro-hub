@@ -11,6 +11,7 @@ export const STATIC_SITEMAP_PATHS = [
   "/radar",
   "/escolherbike",
   "/ferramentas",
+  "/conteudos",
   "/calculadoras/economia",
   "/calculadoras/payback",
   "/calculadoras/custo-anual-mobilidade",
@@ -40,6 +41,15 @@ export function radarIdPaths(items: ReadonlyArray<unknown>): string[] {
   for (const it of items) {
     const id = (it as { id?: unknown })?.id;
     if (typeof id === "string" && BIKE_ID_RE.test(id)) out.add(`/radar/${encodeURIComponent(id)}`);
+  }
+  return [...out];
+}
+
+/** Only published/indexable editorial slugs returned by the dedicated RPC. */
+export function articleSlugPaths(items: ReadonlyArray<{ slug?: unknown }>): string[] {
+  const out = new Set<string>();
+  for (const item of items) {
+    if (typeof item.slug === "string" && SLUG_RE.test(item.slug)) out.add(`/conteudos/${encodeURIComponent(item.slug)}`);
   }
   return [...out];
 }

@@ -25,3 +25,8 @@ export async function safeVideos(input: { bikeId?: string; limit?: number }): Pr
     return [];
   }
 }
+
+/** Public sheet metadata only; transcripts and editorial state are loaded by the protected admin API. */
+export const getSheetVideoCatalog = createServerFn({ method: "GET" }).handler(async () => {
+  return fetchVideoCatalog();
+});

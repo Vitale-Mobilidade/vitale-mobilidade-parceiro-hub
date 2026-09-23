@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Nota de desenvolvimento de 23/09/2026:** a branch `feat/admin-editorial-p0` prepara localmente a base do Admin editorial, Article/Relations, Compiler, preview e publicação. **Nada foi aplicado no Supabase nem publicado.** Etapas 12–14 continuam parciais/em desenvolvimento e a Etapa 15 (primeiro artigo real) ainda não ocorreu. O painel `/painel-bikes` continua operacional. Veja [ADMIN_EDITORIAL_P0.md](./ADMIN_EDITORIAL_P0.md) para escopo, papéis, gates e rollback.
+
 > Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).
 
 ## 1. Objetivo final

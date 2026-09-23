@@ -17,6 +17,11 @@ import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
+import { Route as AdminIaRouteImport } from './routes/admin/ia'
+import { Route as AdminLogsRouteImport } from './routes/admin/logs'
+import { Route as AdminVideosRouteImport } from './routes/admin/videos'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
 import { Route as CalculadorasCarroVsBikeRouteImport } from './routes/calculadoras/carro-vs-bike'
@@ -28,8 +33,14 @@ import { Route as CalculadorasTempoNoTransitoRouteImport } from './routes/calcul
 import { Route as CalculadorasTempoRecuperadoRouteImport } from './routes/calculadoras/tempo-recuperado'
 import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './routes/calculadoras/transporte-publico-vs-bike'
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
+import { Route as ConteudosIndexRouteImport } from './routes/conteudos/index'
+import { Route as ConteudosSlugRouteImport } from './routes/conteudos/$slug'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
+import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
+import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
+import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
+import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -69,6 +80,31 @@ const AcompanhamentoIndexRoute = AcompanhamentoIndexRouteImport.update({
 const AcompanhamentoBikeIdRoute = AcompanhamentoBikeIdRouteImport.update({
   id: '/acompanhamento/$bikeId',
   path: '/acompanhamento/$bikeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBikesRoute = AdminBikesRouteImport.update({
+  id: '/admin/bikes',
+  path: '/admin/bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIaRoute = AdminIaRouteImport.update({
+  id: '/admin/ia',
+  path: '/admin/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/admin/logs',
+  path: '/admin/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminVideosRoute = AdminVideosRouteImport.update({
+  id: '/admin/videos',
+  path: '/admin/videos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BikesIndexRoute = BikesIndexRouteImport.update({
@@ -130,6 +166,16 @@ const CalculadorasUberVsBikeRoute = CalculadorasUberVsBikeRouteImport.update({
   path: '/calculadoras/uber-vs-bike',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConteudosIndexRoute = ConteudosIndexRouteImport.update({
+  id: '/conteudos/',
+  path: '/conteudos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConteudosSlugRoute = ConteudosSlugRouteImport.update({
+  id: '/conteudos/$slug',
+  path: '/conteudos/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -140,6 +186,26 @@ const RadarBikeIdRoute = RadarBikeIdRouteImport.update({
   path: '/radar/$bikeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminConteudosIndexRoute = AdminConteudosIndexRouteImport.update({
+  id: '/admin/conteudos/',
+  path: '/admin/conteudos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminConteudosIdRoute = AdminConteudosIdRouteImport.update({
+  id: '/admin/conteudos/$id',
+  path: '/admin/conteudos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminConteudosNovoRoute = AdminConteudosNovoRouteImport.update({
+  id: '/admin/conteudos/novo',
+  path: '/admin/conteudos/novo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => AdminConteudosIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -149,6 +215,10 @@ export interface FileRoutesByFullPath {
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/admin/bikes': typeof AdminBikesRoute
+  '/admin/ia': typeof AdminIaRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -159,10 +229,17 @@ export interface FileRoutesByFullPath {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conteudos/$slug': typeof ConteudosSlugRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/bikes/': typeof BikesIndexRoute
+  '/conteudos/': typeof ConteudosIndexRoute
   '/radar/': typeof RadarIndexRoute
+  '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
+  '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/admin/conteudos/': typeof AdminConteudosIndexRoute
+  '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -172,6 +249,10 @@ export interface FileRoutesByTo {
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/admin/bikes': typeof AdminBikesRoute
+  '/admin/ia': typeof AdminIaRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -182,10 +263,17 @@ export interface FileRoutesByTo {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conteudos/$slug': typeof ConteudosSlugRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/bikes': typeof BikesIndexRoute
+  '/conteudos': typeof ConteudosIndexRoute
   '/radar': typeof RadarIndexRoute
+  '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
+  '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/admin/conteudos': typeof AdminConteudosIndexRoute
+  '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -196,6 +284,10 @@ export interface FileRoutesById {
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/admin/bikes': typeof AdminBikesRoute
+  '/admin/ia': typeof AdminIaRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -206,10 +298,17 @@ export interface FileRoutesById {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conteudos/$slug': typeof ConteudosSlugRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/bikes/': typeof BikesIndexRoute
+  '/conteudos/': typeof ConteudosIndexRoute
   '/radar/': typeof RadarIndexRoute
+  '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
+  '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/admin/conteudos/': typeof AdminConteudosIndexRoute
+  '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +320,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
+    | '/admin/bikes'
+    | '/admin/ia'
+    | '/admin/logs'
+    | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -231,10 +334,17 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conteudos/$slug'
     | '/radar/$bikeId'
     | '/acompanhamento/'
+    | '/admin/'
     | '/bikes/'
+    | '/conteudos/'
     | '/radar/'
+    | '/admin/conteudos/$id'
+    | '/admin/conteudos/novo'
+    | '/admin/conteudos/'
+    | '/admin/conteudos/$id/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -244,6 +354,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
+    | '/admin/bikes'
+    | '/admin/ia'
+    | '/admin/logs'
+    | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -254,10 +368,17 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conteudos/$slug'
     | '/radar/$bikeId'
     | '/acompanhamento'
+    | '/admin'
     | '/bikes'
+    | '/conteudos'
     | '/radar'
+    | '/admin/conteudos/$id'
+    | '/admin/conteudos/novo'
+    | '/admin/conteudos'
+    | '/admin/conteudos/$id/preview'
   id:
     | '__root__'
     | '/'
@@ -267,6 +388,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
+    | '/admin/bikes'
+    | '/admin/ia'
+    | '/admin/logs'
+    | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -277,10 +402,17 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conteudos/$slug'
     | '/radar/$bikeId'
     | '/acompanhamento/'
+    | '/admin/'
     | '/bikes/'
+    | '/conteudos/'
     | '/radar/'
+    | '/admin/conteudos/$id'
+    | '/admin/conteudos/novo'
+    | '/admin/conteudos/'
+    | '/admin/conteudos/$id/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -291,6 +423,10 @@ export interface RootRouteChildren {
   PainelBikesRoute: typeof PainelBikesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
+  AdminBikesRoute: typeof AdminBikesRoute
+  AdminIaRoute: typeof AdminIaRoute
+  AdminLogsRoute: typeof AdminLogsRoute
+  AdminVideosRoute: typeof AdminVideosRoute
   BikesSlugRoute: typeof BikesSlugRoute
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
   CalculadorasCustoAnualMobilidadeRoute: typeof CalculadorasCustoAnualMobilidadeRoute
@@ -301,10 +437,16 @@ export interface RootRouteChildren {
   CalculadorasTempoRecuperadoRoute: typeof CalculadorasTempoRecuperadoRoute
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
+  ConteudosSlugRoute: typeof ConteudosSlugRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   BikesIndexRoute: typeof BikesIndexRoute
+  ConteudosIndexRoute: typeof ConteudosIndexRoute
   RadarIndexRoute: typeof RadarIndexRoute
+  AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
+  AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
+  AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -363,6 +505,41 @@ declare module '@tanstack/react-router' {
       path: '/acompanhamento/$bikeId'
       fullPath: '/acompanhamento/$bikeId'
       preLoaderRoute: typeof AcompanhamentoBikeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/bikes': {
+      id: '/admin/bikes'
+      path: '/admin/bikes'
+      fullPath: '/admin/bikes'
+      preLoaderRoute: typeof AdminBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/ia': {
+      id: '/admin/ia'
+      path: '/admin/ia'
+      fullPath: '/admin/ia'
+      preLoaderRoute: typeof AdminIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/admin/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/videos': {
+      id: '/admin/videos'
+      path: '/admin/videos'
+      fullPath: '/admin/videos'
+      preLoaderRoute: typeof AdminVideosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bikes/': {
@@ -442,6 +619,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalculadorasUberVsBikeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conteudos/': {
+      id: '/conteudos/'
+      path: '/conteudos'
+      fullPath: '/conteudos/'
+      preLoaderRoute: typeof ConteudosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conteudos/$slug': {
+      id: '/conteudos/$slug'
+      path: '/conteudos/$slug'
+      fullPath: '/conteudos/$slug'
+      preLoaderRoute: typeof ConteudosSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -456,8 +647,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RadarBikeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/conteudos/': {
+      id: '/admin/conteudos/'
+      path: '/admin/conteudos'
+      fullPath: '/admin/conteudos/'
+      preLoaderRoute: typeof AdminConteudosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/conteudos/$id': {
+      id: '/admin/conteudos/$id'
+      path: '/admin/conteudos/$id'
+      fullPath: '/admin/conteudos/$id'
+      preLoaderRoute: typeof AdminConteudosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/conteudos/novo': {
+      id: '/admin/conteudos/novo'
+      path: '/admin/conteudos/novo'
+      fullPath: '/admin/conteudos/novo'
+      preLoaderRoute: typeof AdminConteudosNovoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/conteudos/$id/preview': {
+      id: '/admin/conteudos/$id/preview'
+      path: '/preview'
+      fullPath: '/admin/conteudos/$id/preview'
+      preLoaderRoute: typeof AdminConteudosIdPreviewRouteImport
+      parentRoute: typeof AdminConteudosIdRoute
+    }
   }
 }
+
+interface AdminConteudosIdRouteChildren {
+  AdminConteudosIdPreviewRoute: typeof AdminConteudosIdPreviewRoute
+}
+
+const AdminConteudosIdRouteChildren: AdminConteudosIdRouteChildren = {
+  AdminConteudosIdPreviewRoute: AdminConteudosIdPreviewRoute,
+}
+
+const AdminConteudosIdRouteWithChildren =
+  AdminConteudosIdRoute._addFileChildren(AdminConteudosIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -467,6 +697,10 @@ const rootRouteChildren: RootRouteChildren = {
   PainelBikesRoute: PainelBikesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
+  AdminBikesRoute: AdminBikesRoute,
+  AdminIaRoute: AdminIaRoute,
+  AdminLogsRoute: AdminLogsRoute,
+  AdminVideosRoute: AdminVideosRoute,
   BikesSlugRoute: BikesSlugRoute,
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
   CalculadorasCustoAnualMobilidadeRoute: CalculadorasCustoAnualMobilidadeRoute,
@@ -478,10 +712,16 @@ const rootRouteChildren: RootRouteChildren = {
   CalculadorasTransportePublicoVsBikeRoute:
     CalculadorasTransportePublicoVsBikeRoute,
   CalculadorasUberVsBikeRoute: CalculadorasUberVsBikeRoute,
+  ConteudosSlugRoute: ConteudosSlugRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
+  AdminIndexRoute: AdminIndexRoute,
   BikesIndexRoute: BikesIndexRoute,
+  ConteudosIndexRoute: ConteudosIndexRoute,
   RadarIndexRoute: RadarIndexRoute,
+  AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
+  AdminConteudosNovoRoute: AdminConteudosNovoRoute,
+  AdminConteudosIndexRoute: AdminConteudosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
