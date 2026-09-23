@@ -19,6 +19,7 @@ import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhament
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
 import { Route as CalculadorasEconomiaRouteImport } from './routes/calculadoras/economia'
+import { Route as CalculadorasPaybackRouteImport } from './routes/calculadoras/payback'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 
@@ -72,6 +73,11 @@ const CalculadorasEconomiaRoute = CalculadorasEconomiaRouteImport.update({
   path: '/calculadoras/economia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalculadorasPaybackRoute = CalculadorasPaybackRouteImport.update({
+  id: '/calculadoras/payback',
+  path: '/calculadoras/payback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/bikes': typeof BikesIndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/economia'
+    | '/calculadoras/payback'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/economia'
+    | '/calculadoras/payback'
     | '/radar/$bikeId'
     | '/acompanhamento'
     | '/bikes'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/economia'
+    | '/calculadoras/payback'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   BikesSlugRoute: typeof BikesSlugRoute
   CalculadorasEconomiaRoute: typeof CalculadorasEconomiaRoute
+  CalculadorasPaybackRoute: typeof CalculadorasPaybackRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   BikesIndexRoute: typeof BikesIndexRoute
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalculadorasEconomiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calculadoras/payback': {
+      id: '/calculadoras/payback'
+      path: '/calculadoras/payback'
+      fullPath: '/calculadoras/payback'
+      preLoaderRoute: typeof CalculadorasPaybackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   BikesSlugRoute: BikesSlugRoute,
   CalculadorasEconomiaRoute: CalculadorasEconomiaRoute,
+  CalculadorasPaybackRoute: CalculadorasPaybackRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   BikesIndexRoute: BikesIndexRoute,

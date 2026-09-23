@@ -362,3 +362,12 @@ continuam não implementadas e sem links públicos.
 - **Limites e escopo:** estimativas não são garantias e excluem financiamento, inflação, revenda, depreciação e
   imprevistos. SSR, metadata/canonical/JSON-LD, leitores e links existentes foram preservados. Sem alteração em Quiz,
   Radar, banco, RLS, Sheets, ofertas, links, scripts operacionais ou publicação.
+
+
+## Calculadora de payback + componentes compartilhados (23/09/2026, PREVIEW, não publicado)
+
+- Extraídos sem mudar UX/cálculo da Economia: `src/lib/mobility/format.ts` (brl, decimal, parseNumber, validateNumber, resolveBudget) e `src/components/mobility/calculator-ui.tsx` (NumberField, Metric, BudgetSelector, PassengerToggle, BikeResultCard com `position` de analytics). `BUDGET_PRESETS` em `config.ts`.
+- Nova rota `/calculadoras/payback` (SSR, head/canonical/JSON-LD próprios, sitemap, card em /ferramentas). Uma tela, 6 controles: gasto mensal evitável, % substituível, km/dia, dias/semana, orçamento (Sem limite, 5/7/10/15 mil, Outro valor) e garupa. Resultado imediato, sem botão/etapas.
+- Contrato (`src/lib/mobility/payback-engine.ts`): custo = `computeQuickMobilityCost` com gasto já evitável (nenhum custo fixo somado); por bike, `computeCostProjection` (payback = preço ÷ economia mensal positiva, ↑0,1 mês; saldos 12/24/36 = economia × meses − preço; economia ≤ 0 → sem payback). Insight determinístico usa o menor payback real.
+- Bikes: `getMobilityBikeCandidates` + `recommendQuickComparison` (máx. 2; mesmos filtros estritos). Gráfico compartilhado inicia com preço real no mês 0. Analytics `position: "calculadora_payback"`, não bloqueante.
+- Demais 7 calculadoras seguem apenas planejadas; não são exibidas ao público.

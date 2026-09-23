@@ -33,6 +33,15 @@ const TOOLS = [
     body: "Informe seu gasto mensal e sua rotina para ver a estimativa na hora, além de até duas bikes compatíveis e suas projeções de custo.",
   },
   {
+    key: "payback",
+    icon: Calculator,
+    title: "Calculadora de payback",
+    to: "/calculadoras/payback" as const,
+    cta: "Ver em quanto tempo se paga",
+    question: "Em quanto tempo a bike se paga?",
+    body: "Informe o gasto que a bike evitaria e sua rotina para ver o prazo de retorno e o saldo em 12, 24 e 36 meses de até duas bikes reais com oferta atual.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",
