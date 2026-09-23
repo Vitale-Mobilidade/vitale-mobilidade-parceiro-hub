@@ -17,7 +17,7 @@ export type DiscoveryBike = CatalogBike & {
   autonomyKm: number | null;
   capacityPeople: number | null;
   videoCount: number | null;
-  radar: { currentPrice: number; classification: Classification } | null;
+  radar: { currentPrice: number; classification: Classification; typicalPrice?: number | null; allTimeMin?: number | null } | null;
 };
 
 export function parseKm(v: string | null): number | null {
@@ -38,10 +38,10 @@ export const getBikesDiscovery = createServerFn({ method: "GET" }).handler(
     ]);
     if (!catalog) return { ok: false, radarOk: false, videosOk: false, bikes: [], videos: [] };
 
-    const radarMap = new Map<string, { currentPrice: number; classification: Classification }>();
+    const radarMap = new Map<string, NonNullable<DiscoveryBike["radar"]>>();
     if (radar.ok) {
       for (const e of buildRadarEntries(radar.data as unknown as RadarBike[], "all")) {
-        radarMap.set(e.id, { currentPrice: e.currentPrice, classification: e.metrics.classification });
+        radarMap.set(e.id, { currentPrice: e.currentPrice, classification: e.metrics.classification, typicalPrice: e.metrics.typicalPrice ?? null, allTimeMin: e.allTimeMin ?? null });
       }
     }
     const videosOk = videos.length > 0;

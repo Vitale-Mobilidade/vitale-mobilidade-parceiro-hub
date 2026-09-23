@@ -103,7 +103,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
   </section>;
   if (block.type === "comparator") {
     const compared = [...new Set([block.bikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
-      .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike)).slice(0, 3);
+      .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike)).slice(0, 2);
     if (compared.length < 2) return null;
     const rows: [string, (b: CatalogBike) => React.ReactNode][] = [
       ["Preço atual", b => b.sheetPrice != null && b.link ? <strong className="text-emerald-800">{BRL.format(b.sheetPrice)}</strong> : "Sem oferta no momento"],
@@ -127,6 +127,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
           </td>)}</tr></tbody>
       </table></div>
       <p className="mt-2 text-xs text-muted-foreground">Preço e disponibilidade vêm do anúncio atual e podem mudar.</p>
+      <a href={`/bikes?compare=${encodeURIComponent(compared.slice(0, 2).map(b => b.bikeId).join(","))}`} className="mt-3 inline-block rounded-lg bg-emerald-950 px-4 py-2 font-semibold text-white">Compare as especificações destes modelos</a>
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;

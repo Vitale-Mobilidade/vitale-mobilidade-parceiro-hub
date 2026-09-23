@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, X, Sparkles, LineChart, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Search, X, Sparkles, LineChart, Users, Check, GitCompareArrows } from "lucide-react";
+import { BikeComparison, CompareBar } from "@/components/site/BikeComparison";
+import { compareParam, parseCompare, trackCompare, COMPARE_MAX } from "@/lib/bike-compare";
 import { SiteHeader, SiteFooter, SectionHeading } from "@/components/site/site-ui";
 import { BikeCatalogCard } from "@/components/site/BikeCatalogCard";
 import { VideoCards } from "@/components/site/VideoCards";
@@ -9,6 +11,11 @@ import { normalizeText } from "@/lib/price-daily";
 import { pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/bikes/")({
+  // Comparação = estado funcional da página (bikeIds). Canonical permanece /bikes.
+  validateSearch: (s: Record<string, unknown>): { compare?: string } => {
+    const c = compareParam(parseCompare(s.compare));
+    return c ? { compare: c } : {};
+  },
   loader: () =>
     getBikesDiscovery().catch(() => ({ ok: false, radarOk: false, videosOk: false, bikes: [] as DiscoveryBike[], videos: [] })),
   head: () =>
@@ -44,6 +51,27 @@ function cmpNullable(a: number | null, b: number | null, dir: 1 | -1) {
 
 function BikesIndex() {
   const { ok, radarOk, bikes, videos } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/bikes/" });
+  const selectedIds = useMemo(() => parseCompare(search.compare).filter((id) => bikes.some((b) => b.bikeId === id)), [search.compare, bikes]);
+  const selected = selectedIds.map((id) => bikes.find((b) => b.bikeId === id)!);
+  const [compareOpen, setCompareOpen] = useState(selectedIds.length === COMPARE_MAX);
+  const setSelection = (ids: string[]) => navigate({ search: (prev) => ({ ...prev, compare: compareParam(ids) }), resetScroll: false });
+  const toggleCompare = (id: string) => {
+    if (selectedIds.includes(id)) {
+      trackCompare("bike_compare_removed", { bike_id: id });
+      setSelection(selectedIds.filter((x) => x !== id));
+    } else {
+      trackCompare("bike_compare_added", { bike_id: id });
+      setSelection([...selectedIds, id].slice(-COMPARE_MAX));
+    }
+  };
+  useEffect(() => { if (selectedIds.length < COMPARE_MAX) setCompareOpen(false); }, [selectedIds.length]);
+  const openComparison = () => {
+    setCompareOpen(true);
+    trackCompare("bike_comparison_opened", { bike_ids: selectedIds });
+    requestAnimationFrame(() => document.getElementById("comparacao")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
   const [q, setQ] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -157,7 +185,10 @@ function BikesIndex() {
         </div>
       )}
 
-      <main className="responsive-container py-8 md:py-12">
+      <main className={`responsive-container py-8 md:py-12 ${selected.length ? "pb-44" : ""}`}>
+        {compareOpen && selected.length === COMPARE_MAX && (
+          <div className="mb-10"><BikeComparison pair={[selected[0], selected[1]]} onClose={() => setCompareOpen(false)} /></div>
+        )}
         {!ok ? (
           <p className="text-muted-foreground">O catálogo está indisponível no momento. Tente novamente em instantes.</p>
         ) : (
@@ -210,7 +241,20 @@ function BikesIndex() {
 
             {results.length ? (
               <ul className="mt-4 grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 min-[1920px]:grid-cols-5">
-                {results.map((b) => <li key={b.bikeId}><BikeCatalogCard bike={b} /></li>)}
+                {results.map((b) => {
+                  const on = selectedIds.includes(b.bikeId);
+                  return (
+                    <li key={b.bikeId} className="relative">
+                      <BikeCatalogCard bike={b} />
+                      <button type="button" aria-pressed={on} onClick={() => toggleCompare(b.bikeId)}
+                        aria-label={on ? `Remover ${b.name} da comparação` : `Adicionar ${b.name} à comparação`}
+                        className={`absolute right-2 top-2 inline-flex h-9 items-center gap-1 rounded-full px-3 text-xs font-bold shadow ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${on ? "bg-ink text-ink-foreground ring-ink" : "bg-card/95 text-ink ring-line hover:ring-action"}`}>
+                        {on ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <GitCompareArrows className="h-3.5 w-3.5" aria-hidden="true" />}
+                        {on ? "Na comparação" : "Comparar"}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="mt-8 rounded-2xl bg-surface p-6 text-center text-muted-foreground">Nenhum modelo corresponde a esses filtros.</p>
@@ -249,6 +293,7 @@ function BikesIndex() {
         )}
       </main>
       <SiteFooter />
+      {!compareOpen && <CompareBar selected={selected} onRemove={toggleCompare} onOpen={openComparison} />}
     </div>
   );
 }
