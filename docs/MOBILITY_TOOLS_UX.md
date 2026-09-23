@@ -1,6 +1,6 @@
 # Ferramentas de Mobilidade — contrato global de UX (9 calculadoras)
 
-Status em 23/09/2026. As nove rotas estão publicadas. A revisão visual e comercial de `/calculadoras/tempo-no-transito` é o piloto da nova experiência; as outras oito rotas permanecem funcionais, mas ainda aguardam esse mesmo tratamento visual específico.
+Status em 23/09/2026. As nove rotas estão publicadas. O piloto visual foi `/calculadoras/tempo-no-transito`; a revisão seguinte estendeu conclusão dominante, comparação de bikes, conexões contextuais e gráfico de tempo às outras oito rotas, sem alterar os motores de cálculo.
 
 ## Regras comuns (todas as rotas)
 
@@ -59,3 +59,12 @@ Nas rotas /calculadoras/\*, abaixo de 768px, o botão fechado do assistente vira
 - Cada opção mostra imagem, especificações disponíveis, preço e link afiliado direto; classificação do Radar só aparece quando ID, preço e URL coincidem com a oferta atual. Há caminhos contextuais para ficha, Radar, Comparador e Quiz, sem alterar o Quiz.
 - O bloco visual do Quiz e as conexões com vídeos reais e outras ferramentas fazem parte da página; não são publicados dados fictícios quando a fonte não tiver conteúdo.
 - Os componentes reutilizáveis do piloto estão em `src/components/mobility/TimeProjectionChart.tsx`; a lógica compartilhada de recomendação fica em `src/lib/mobility/recommendation-engine.ts`. As demais calculadoras precisam de conclusões e visualizações próprias antes de serem marcadas como concluídas nesta revisão global.
+
+## Extensão visual e de jornada às outras oito rotas (23/09/2026)
+
+- Economia responde com economia ou custo mensal; Payback destaca prazo para a bike selecionada, inclusive ausência honesta de retorno; Uber, carro, moto e transporte público trazem a comparação mensal do modal específico. Custo anual destaca gasto total, sem confundi-lo com economia; tempo recuperado destaca horas anuais e usa gráfico de diferença entre cenários.
+- As rotas com bikes usam a mesma fonte comercial atômica e os filtros rígidos existentes. A primeira opção é a compatível de menor preço; a alternativa só aparece quando há pelo menos 25% mais autonomia declarada, inclusive sem teto informado. Os cards mostram preço real, imagem, autonomia, relação entre as opções, acesso à ficha/Radar quando disponível e link afiliado direto. Um quadro de comparação usa apenas preço, autonomia e capacidade conhecidos.
+- Vídeos reais vinculados aos `bikeId` sugeridos são carregados quando disponíveis. Quiz continua uma saída contextual de decisão; a própria página do Quiz não foi alterada. Radar e grupo de ofertas permanecem conexões complementares, não substituem o CTA comercial.
+- O gráfico de custo acumulado destaca visualmente a distância entre o gasto atual e o cenário de bike, usando somente os pontos calculados em 0, 12, 24 e 36 meses. Não interpola preços ou inventa dados.
+- A rota de custo anual não mostra bikes: falta distância diária para filtrar autonomia com segurança. Ela direciona à calculadora de economia para uma simulação específica.
+- Esta revisão é visual/de jornada. Não declara ganho de conversão comprovado, cobertura total de vídeos ou conclusão das demais etapas do roadmap. Supabase, Sheets, regras de preço, Quiz, Radar e URLs afiliadas não foram alterados.
