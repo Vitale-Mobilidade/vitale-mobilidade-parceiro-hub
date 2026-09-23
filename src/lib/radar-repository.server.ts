@@ -30,10 +30,40 @@ async function callRpc<T>(fn: string, args: Record<string, unknown>): Promise<Ra
   }
 }
 
+/** Item com oferta atual válida: preço e link vêm da MESMA linha de bike_offers. */
+function hasCurrentOffer(item: unknown): boolean {
+  const x = item as { hasCurrentOffer?: unknown; currentPrice?: unknown; link?: unknown };
+  return (
+    x?.hasCurrentOffer === true &&
+    typeof x.currentPrice === "number" &&
+    Number.isFinite(x.currentPrice) &&
+    x.currentPrice > 0 &&
+    typeof x.link === "string" &&
+    x.link !== ""
+  );
+}
+
+/**
+ * Catálogo ATIVO do Radar: só bikes com oferta atual válida.
+ * A elegibilidade do Quiz não é mais aplicada aqui (contrato da RPC).
+ */
 export async function fetchTrackerCatalog(): Promise<RadarResult<unknown[]>> {
   const r = await callRpc<unknown>("get_price_tracker_catalog", {});
   if (!r.ok || !Array.isArray(r.data)) return { ok: false };
-  return { ok: true, data: r.data };
+  return { ok: true, data: r.data.filter(hasCurrentOffer) };
+}
+
+/** Histórico ARQUIVADO: bikes sem oferta atual, mas com observações já registradas. */
+export async function fetchTrackerArchived(): Promise<RadarResult<unknown[]>> {
+  const r = await callRpc<unknown>("get_price_tracker_catalog", {});
+  if (!r.ok || !Array.isArray(r.data)) return { ok: false };
+  return {
+    ok: true,
+    data: r.data.filter((item) => {
+      const x = item as { observations?: unknown };
+      return !hasCurrentOffer(item) && typeof x.observations === "number" && x.observations > 0;
+    }),
+  };
 }
 
 export async function fetchBikeHistory(bikeId: string): Promise<RadarResult<unknown | null>> {
