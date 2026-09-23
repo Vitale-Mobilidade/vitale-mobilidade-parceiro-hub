@@ -122,7 +122,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
             <a href={`/bikes/${b.slug}`} className="block font-semibold text-emerald-800 underline">Conhecer bike</a>
             <a href={`/radar/${b.bikeId}`} className="block text-emerald-800 underline">Ver no Radar</a>
             {b.link && b.sheetPrice != null && <a href={b.link} target="_blank" rel="sponsored noopener noreferrer"
-              onClick={() => trackAffiliateClick({ bike_id: b.bikeId, position: "content_article_compare" })}
+              onClick={() => trackAffiliateClick({ bike_id: b.bikeId, position: "content_article" })}
               className="block text-emerald-800 underline">Ver oferta no Mercado Livre</a>}
           </td>)}</tr></tbody>
       </table></div>
