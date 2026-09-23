@@ -65,7 +65,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 - **Verificação no domínio público (`vitalemobilidade.com`):** o H2 “O preço de hoje está bom?” foi encontrado na Home publicada; após 25 segundos sem interação, o chat do Assistente Vitale permaneceu fechado, permanecendo visível apenas o botão flutuante.
 - **Home v2 (revisão visual inicial) também está em produção**, pois v2.1 é evolução direta da mesma branch publicada.
 - **Resultado do Quiz (`/escolherbike`) em rascunho:** removidos header/footer e links visíveis de Radar na tela de resultado; o CTA "Comprar aqui" abre o link afiliado do Mercado Livre imediatamente; o Assistente Vitale na tela de resultado foi configurado com `manualOnly` (sem convite nem autoabertura).
-- **Banco/Sheets/Quiz/Radar/Edge Functions continuam no ecossistema atual.** Nenhuma nova migration, writer, Edge Function, job, integração de CRM ou alteração de planilha foi criada para estas publicações.
+- **Banco/Sheets/Quiz/Radar/Edge Functions (na época dessas publicações da Home):** nenhuma nova migration, writer, Edge Function, job, integração de CRM ou alteração de planilha foi criada para estas publicações.
 - **A publicação foi decisão explícita do responsável com pendências aceitas.** Isso não equivale a gates técnicos completos nem fecha os itens pendentes de arquitetura, SEO/GEO, performance, taxonomia e produtos futuros.
 
 ### Quadro compacto — etapas 1–5
@@ -75,15 +75,44 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 | 1 — Base técnica TanStack/SSR/Supabase/auditoria/testes | Conversão nativa para TanStack Start v1; rotas SSR de Radar read-only; 503/404 via `headers({ loaderData })` e wrapper em `src/server.ts`; testes direcionados e build passando.                                                                  | Aceite operacional; ensaio de recuperação/rollback/paridade; 503 real, `Retry-After` e `Cache-Control` ainda não comprovados em falha controlada; baseline de backup não validado. | Entrega técnica feita; aceite formal e recuperação pendentes. |
 | 2 — SEO/GEO                                             | Helper `src/lib/seo.ts`; `head()` SSR nas rotas públicas; canonical sem query/UTM; JSON-LD Organization + WebSite; `robots.txt` com `Disallow: /painel-bikes`; sitemap com URLs públicas existentes; useEffect SEO redundante do Quiz removido.   | OG image dinâmico; metadata de entidades (Bike, Product, Article) quando o contrato existir; JSON-LD e sitemap dinâmicos baseados em catálogo; validação final no HTML publicado.  | Parcial.                                                      |
 | 3 — Performance                                         | `RadarAssistant` lazy + `Suspense` em `src/routes/__root.tsx`; payload `getHomeCards` reduzido (até 5 cards).                                                                                                                                     | PageSpeed/CWV real; medida de payload; bundle split; otimização de imagem/fonte.                                                                                                   | Não validada.                                                 |
-| 4 — Taxonomia                                           | Regex `BIKE_ID_RE` centralizada em `src/lib/bike-identity.ts`; `docs/TAXONOMY.md` e `docs/BIKE_MODEL.md` com mapeamento; repositório Quiz usa a constante.                                                                                        | Rotas `/radar` e `/bikes`; slugs editoriais; aliases/redirects para 100% dos IDs legados; contrato Bike/oferta no banco.                                                           | Parcial.                                                      |
+| 4 — Taxonomia                                           | Regex `BIKE_ID_RE` centralizada em `src/lib/bike-identity.ts`; `docs/TAXONOMY.md` e `docs/BIKE_MODEL.md` com mapeamento; repositório Quiz usa a constante.                                                                                        | Rota `/radar` (já existem `/bikes` e `/bikes/{slug}`); aliases/redirects para 100% dos IDs legados; contrato Bike/oferta no banco.                                                           | Parcial.                                                      |
 | 5 — Home B2C                                            | Publicada visualmente (v2 e v2.1); Home com dados reais de `getRadarCatalog` (até 5 cards), CTAs ativos para `/escolherbike` e `/acompanhamento`, CTAs inativos claramente desabilitados para produtos sem backend; `/grupodeofertas` preservado. | Ecossistema comparador, calculadora, conteúdos e newsletter ainda não funcional; depende das etapas 19, 20, 23 e 12–18.                                                            | Visual publicado; funcionalidades pendentes.                  |
 
-### Etapas 6–25
+### Quadro factual das 25 etapas — auditoria estática de 23/09/2026 06:51 UTC
 
-- **Etapa 6 — Bike:** **schema + backfill concluídos** no banco vivo (migration `20260923063339_a73a6a10-…`, 30 bikes, paridade snapshot 0/0, RLS sem acesso anon/authenticated; `docs/BIKE_MODEL.md` §13). Specs estruturadas pendentes de fonte validada; 2 IDs órfãos a investigar. **Etapa 7:** projeção pelo sync existente implantada (RPC `project_bikes_from_snapshot`, `docs/BIKE_MODEL.md` §14); aguarda confirmação na próxima execução agendada. **Etapa 8:** `bike_offers` schema+backfill aplicados e writer implantado no mesmo sync (shadow); corrigido em 20260923064843 (URL só `meli.la` exata, coluna `radar_eligible` — não é decisão do Quiz —, `synced_at` = última projeção); primeira execução automática pendente; cutover de leitura não realizado (`docs/BIKE_MODEL.md` §15–15.1).
-- **Gate 0 — Restauração:** ensaio parcial do schema `public` executado fora do Lovable em cluster isolado (`docs/GATE0_RESTORE_REHEARSAL.md`). Backup anterior a escritas vivas; Storage, Edge Functions, secrets, jobs e ACLs não validados. **Não fechado.**
+> Legenda: **Operando** = em produção com contrato real; **Parcial** = existe e funciona em parte; **Pendente** = não existe como módulo. UI ou build sozinhos não contam como entrega. Site publicado no deployment `f3211bc5-dc3d-42b3-ab9f-7a17647fc267`. Rotas existentes: `/`, `/bikes`, `/bikes/$slug`, `/acompanhamento`, `/acompanhamento/$bikeId`, `/escolherbike`, `/grupodeofertas`, `/painel-bikes`. Não existem `/radar`, `/comparar`, `/conteudos`.
 
-Demais etapas não concluídas. Algumas estruturas e documentos preparatórios existem (contrato de bike, taxonomia, DS), mas nenhum módulo alvo está finalizado.
+| # | Etapa | Status | Evidência | Próxima lacuna verificável |
+|---|---|---|---|---|
+| 1 | Fundação TanStack/SSR/Supabase | Operando (aceite formal pendente) | TanStack Start publicado; `src/server.ts`; 34 migrations; 11 Edge Functions | 503 com `Retry-After`/`no-store` comprovado em falha controlada |
+| 2 | SEO/GEO | Parcial | `src/lib/seo.ts`; `head()` por rota; `public/robots.txt`; `public/sitemap.xml` estático com 3 URLs | Sitemap sem `/bikes` e `/bikes/{slug}`; JSON-LD Product/Bike; canonical entre `/acompanhamento/{bikeId}` e `/bikes/{slug}` |
+| 3 | SSR/performance | Pendente (validação) | `RadarAssistant` lazy; heros WebP com `<picture>` | Medição PageSpeed/CWV real no domínio publicado |
+| 4 | Taxonomia | Parcial | `src/lib/bike-identity.ts`; slug = bikeId com `_`→`-`; `docs/TAXONOMY.md` | `/radar` inexistente; redirects/canonical legados; aliases de vídeo fixos no código |
+| 5 | Home B2C | Parcial (publicada) | `src/pages/HomeB2C.tsx` com cards reais (`getHomeCards`) e vídeos reais; CTAs Quiz/Radar ativos | Comparador, calculadora e newsletter são superfícies visuais (newsletter com campo `disabled`, sem coleta) |
+| 6 | Entidade Bike | Operando (schema/backfill) | `public.bikes` 30 IDs, migration `20260923063339`; RLS fechado | Specs com fonte validada; decisão sobre IDs órfãos `jflsjdlksjdl` e `v9_max_duas_baterias` |
+| 7 | Sheets → Supabase | Parcial | Projeção em `supabase/functions/_shared/bike-projection.ts` chamada por `bike-sync.ts`; RPC `project_bikes_from_snapshot`; Edge Functions reimplantadas | Primeiro run automático com `detail.bikesProjection`: consulta às 06:51 UTC mostra último run às 06:07 UTC, **anterior à implantação**, sem esse campo |
+| 8 | Oferta/preço/link | Parcial (shadow) | `public.bike_offers` 30 atuais, 20 `radar_eligible` = conjunto do RPC do Radar; preço+URL = snapshot; CHECK `meli.la` exato (migration `20260923064843`) | Primeiro run com `detail.offersProjection`; leitores ainda usam snapshot/RPCs |
+| 9 | Radar `/radar` | Parcial | Radar funcional em `/acompanhamento` e `/acompanhamento/$bikeId` (RPCs `get_price_tracker_catalog`, `get_bike_price_history`; `src/components/radar/*`) | Rota `/radar` + redirect aprovado, reaproveitando componentes e regra (sem duplicar) |
+| 10 | `/bikes/{slug}` | Parcial (publicada) | `src/routes/bikes/$slug.tsx`, `src/routes/bikes/index.tsx`: 30 bikes da planilha (inclui não elegíveis), vídeos reais, Radar quando existe | Ler `public.bikes`/`bike_offers` em vez da planilha; entrar no sitemap |
+| 11 | Analytics afiliado | Parcial | `dataLayer` em `src/lib/radar-analytics.ts` e Quiz; Edge Function `quiz-track` (eventos do Quiz) | Evento de clique afiliado padronizado para todas as superfícies, com `bikeId`/oferta, sem bloquear o clique |
+| 12 | Video/Article/Relations | Parcial | Vídeos: aba "Videos Youtube" → `src/lib/video-catalog.server.ts` (read-only, cache 10 min) | Article e Relations inexistentes; vídeo fora do Supabase |
+| 13 | CMS | Pendente | — | Definir fonte/fluxo editorial |
+| 14 | Article Compiler IA | Pendente | — | Depende de 12–13 e fontes datadas |
+| 15–17 | Artigos (1 / 10 / 98) | Pendente | — | Primeiro artigo real com fonte |
+| 18 | Content Graph | Pendente | `bikeId` já liga bike, oferta, vídeo | Relações persistidas |
+| 19 | Comparador | Pendente (visual na Home) | Bloco visual em `HomeB2C.tsx` | Ferramenta real sobre `bikes`/`bike_offers` |
+| 20 | Newsletter | Pendente (visual na Home) | Campo desabilitado, sem coleta | Consentimento, provedor, envio |
+| 21 | Alertas de preço | Parcial | `PriceAlertDialog.tsx` + Edge Function `bike-price-alert` gravam interesse com `delivery_enabled=false` | Entrega real desativada; não anunciar alerta ativo |
+| 22 | Podcast | Pendente | — | — |
+| 23 | Calculadora | Pendente (visual na Home) | Bloco visual sem valores inventados | Fórmula e fontes aprovadas |
+| 24 | Hotpipe IA | Pendente | Nenhuma referência no código. Lucas SDR (`sdr-lucas-chat`, `LucasSDRWidget`) e Assistente do Radar são outros produtos | Definir escopo próprio |
+| 25 | Loop de inteligência | Pendente | — | Depende de 11, 12 e 18 |
+
+Gate 0 (restauração): ensaio parcial em `docs/GATE0_RESTORE_REHEARSAL.md`; retirado como impedimento pelo responsável, segue não fechado.
+
+**Próxima ordem:** (1) confirmar o primeiro run automático após a implantação e a paridade `bikes`/`bike_offers`; (2) evoluir o Radar existente para `/radar`, sem duplicar regra; (3) página Bike existente sobre os contratos novos; (4) analytics de clique afiliado; (5) conteúdo. O Quiz continua focado no clique direto no Mercado Livre e fica intocado.
+
+**Squad (decisão de NÃO recriar):** Produto: evoluir o que já converte. CTO: uma regra, um writer, sem rotas paralelas. IA: N/A até existir grounding. Segurança: tabelas novas fechadas; nada novo exposto. UX/CX: URLs e jornadas atuais mantidas até redirect aprovado. Growth: links `meli.la` diretos e byte a byte preservados. PMO: status só avança com evidência no vivo.
 
 ### Gates de cutover ainda pendentes
 
