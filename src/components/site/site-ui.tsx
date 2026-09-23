@@ -25,12 +25,12 @@ export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
   );
 }
 
-type NavItem = { label: string; href?: string; to?: "/radar" | "/bikes" };
+type NavItem = { label: string; href?: string; to?: "/radar" | "/bikes" | "/ferramentas" };
 export const SITE_NAV: NavItem[] = [
   { label: "Bikes", to: "/bikes" },
   { label: "Comparar", href: "/#comparar" },
   { label: "Conteúdos", href: "/#conteudos" },
-  { label: "Ferramentas", href: "/#calc" },
+  { label: "Ferramentas", to: "/ferramentas" },
   { label: "Radar", to: "/radar" },
 ];
 
