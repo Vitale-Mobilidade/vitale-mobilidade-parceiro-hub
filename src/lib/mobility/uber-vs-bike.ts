@@ -34,5 +34,5 @@ export function uberVsBikeInsight(args: {
   if (args.monthlySavings < 0) {
     return `Com esses dados, a bike custaria ${brl(Math.abs(args.monthlySavings), true)} a mais por mês do que as corridas substituídas. Nesse cenário o app sai mais barato.`;
   }
-  return `Trocando essas corridas pela bike, você deixaria de gastar cerca de ${brl(args.monthlySavings, true)} por mês (${brl(args.annualSavings)} por ano), antes do preço da bike.`;
+  return `Economia líquida estimada de ${brl(args.monthlySavings, true)} por mês (${brl(args.annualSavings)} por ano), já descontado o custo operacional da bike e antes do preço dela.`;
 }
