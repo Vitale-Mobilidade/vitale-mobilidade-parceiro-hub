@@ -1,11 +1,11 @@
 // Server-only: leitura pública do Radar via RPCs somente leitura (chave publicável/anon).
 // Nunca usa service role nem lê tabelas diretamente.
 
+import { BIKE_ID_RE } from "@/lib/bike-identity";
+
 const TIMEOUT_MS = 6000;
 
 export type RadarResult<T> = { ok: true; data: T } | { ok: false };
-
-export const BIKE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
 
 async function callRpc<T>(fn: string, args: Record<string, unknown>): Promise<RadarResult<T>> {
   const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
