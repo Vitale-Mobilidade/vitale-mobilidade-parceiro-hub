@@ -19,7 +19,7 @@ describe("Uber vs bike", () => {
     if (!r.ok) throw new Error();
     expect(r.data.monthlySavings).toBe(0);
     expect(r.data.bikeTotalCost).toBe(0);
-    expect(uberVsBikeInsight({ replaceablePercent: 0, monthlySavings: 0, annualSavings: 0 })).toMatch(/0%/);
+    expect(uberVsBikeInsight({ replaceablePercent: 0, monthlySavings: 0, annualSavings: 0 })).toMatch(/Sem gasto informado/);
   });
   it("economia negativa é explícita", () => {
     const r = computeUberVsBike({ ...base, monthlySpend: 20 });
