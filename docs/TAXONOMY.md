@@ -71,3 +71,12 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 - Card: foto 4:3, status do Radar só quando existe, preço com fonte explícita ("Preço registrado pelo Radar Vitale" ou "Preço de referência cadastrado (não monitorado)"), autonomia/capacidade, nº de vídeos, CTA "Conhecer a bike" → `/bikes/{slug}` e, só para bikes no Radar, "Analisar preço no Radar" → `/acompanhamento/{bikeId}`. Sem link direto ao Mercado Livre.
 - Blocos: Quiz (`/escolherbike`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
 - Pendências: `/radar` e `/comparar` não existem (sem links para eles; seleção de comparação não implementada); `/bikes` fora do sitemap; filtros não persistem na URL.
+
+### 7.2 `/bikes/{slug}` — hub de decisão (rascunho, 23/09/2026)
+
+- Loader SSR: catálogo editorial (cache) → bike pelo slug (404 noindex se inexistente) + `getRadarBike` read-only + todos os vídeos associados ao `bikeId` (até 60) + alternativas.
+- Hero: foto, nome, autonomia/capacidade; com Radar: `PriceStatus` + último preço registrado e data; sem Radar: "Preço não monitorado pelo Radar" + preço de referência cadastrado (nunca "hoje"). CTA "Ver oferta no Mercado Livre" com meli.la byte-idêntico; sem link: "Link indisponível no momento". Secundário "Análise de preço completa" → `/acompanhamento/{bikeId}` só com Radar.
+- Seções (ordem mobile): resumo rápido (só fatos estruturados), Preço no Radar (`dailyMetrics` 30 dias + `PriceRangeBar`, cobertura e última verificação), especificações/descrição, bloco Quiz, vídeos (4 visíveis + disclosure "Ver todos os vídeos" com o restante, sem perda), alternativas (mesma capacidade, menor diferença de preço de referência, até 3, critério exibido), Grupo de Ofertas, CTA final de compra (só com link válido).
+- Breadcrumb visível + JSON-LD BreadcrumbList.
+- Guias: contrato `BikeGuide`/`BikeGuides` pronto, sem fonte — nada é renderizado.
+- Pendências: `/comparar` e `/radar` inexistentes (sem links); sem gráfico temporal nesta página (histórico completo fica em `/acompanhamento/{bikeId}`); sem redirects entre as rotas do Radar e `/bikes`.
