@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeMobilityCost, type CostInput } from "./cost-engine";
-import { WEEKS_PER_MONTH } from "./config";
+import { computeMobilityCost, computeQuickMobilityCost, type CostInput } from "./cost-engine";
+import { QUICK_BIKE_COST, WEEKS_PER_MONTH } from "./config";
 
 const bike = { energyCostPerKm: 0.05, maintenanceMonthly: 30 };
 
@@ -157,5 +157,48 @@ describe("MobilityCostEngine — decisão sobre o veículo", () => {
     const sold = computeMobilityCost({ ...base, vehicle: { ...vehicle, keepsVehicle: false } });
     expect(kept.ok && kept.data.currentFixedRemoved).toBe(0);
     expect(sold.ok && sold.data.currentFixedRemoved).toBe(800);
+  });
+});
+
+describe("MobilityCostEngine — modo rápido", () => {
+  const quick = {
+    modal: "carro" as const,
+    monthlySpend: 1000,
+    daysPerWeek: 5,
+    dailyKm: 20,
+    replaceablePercent: 50,
+  };
+
+  it("usa gasto substituível e as premissas centrais da bike", () => {
+    const r = computeQuickMobilityCost(quick);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const replacedKm = 20 * 5 * WEEKS_PER_MONTH * 0.5;
+    expect(r.data.currentTotalReplaced).toBe(500);
+    expect(r.data.bikeEnergyCost).toBeCloseTo(replacedKm * QUICK_BIKE_COST.energyPerKm, 2);
+    expect(r.data.bikeMaintenanceCost).toBe(QUICK_BIKE_COST.maintenanceMonthly);
+    expect(r.data.annualSavings).toBe(r.data.monthlySavings * 12);
+  });
+
+  it("com 0% zera custo, economia e uso da bike", () => {
+    const r = computeQuickMobilityCost({ ...quick, replaceablePercent: 0 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.currentTotalReplaced).toBe(0);
+    expect(r.data.bikeTotalCost).toBe(0);
+    expect(r.data.monthlySavings).toBe(0);
+  });
+
+  it("recusa negativos, não finitos e limites inválidos", () => {
+    expect(computeQuickMobilityCost({ ...quick, monthlySpend: -1 }).ok).toBe(false);
+    expect(computeQuickMobilityCost({ ...quick, dailyKm: Number.NaN }).ok).toBe(false);
+    expect(computeQuickMobilityCost({ ...quick, daysPerWeek: 8 }).ok).toBe(false);
+  });
+
+  it("preserva economia negativa sem criar payback", () => {
+    const r = computeQuickMobilityCost({ ...quick, monthlySpend: 0, replaceablePercent: 100 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.monthlySavings).toBeLessThan(0);
   });
 });
