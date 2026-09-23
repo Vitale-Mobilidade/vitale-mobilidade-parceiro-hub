@@ -77,7 +77,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
-  const featuredIsOpportunity = isOpportunity(featured);
   const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
