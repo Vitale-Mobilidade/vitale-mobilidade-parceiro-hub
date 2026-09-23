@@ -106,19 +106,19 @@ describe("BikeRecommendationEngine", () => {
 });
 
 describe("BikeRecommendationEngine — comparação rápida", () => {
-  it("escolhe a mais barata e a alternativa mais barata com vantagem verificável", () => {
+  it("com teto: alternativa = maior autonomia relevante dentro do teto (sem teto: só a econômica)", () => {
     const r = recommendQuickComparison(
       [
         make({ bikeId: "barata", price: 5000, autonomyKm: 40, capacity: 1 }),
         make({ bikeId: "intermediaria", price: 6000, autonomyKm: 55, capacity: 2 }),
         make({ bikeId: "longa", price: 9000, autonomyKm: 90, capacity: 1 }),
       ],
-      criteria,
+      { ...criteria, maxBudget: 10000 },
     );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["barata", "intermediaria"]);
-    expect(r.bikes[1].tradeoff).toEqual({ extraPrice: 1000, extraAutonomyKm: 15, extraCapacity: 1 });
+    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["barata", "longa"]);
+    expect(r.bikes[1].tradeoff).toEqual({ extraPrice: 4000, extraAutonomyKm: 50, extraCapacity: 0 });
     expect(r.eligibleCount).toBe(3);
   });
 
