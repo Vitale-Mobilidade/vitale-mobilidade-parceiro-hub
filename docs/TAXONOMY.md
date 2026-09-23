@@ -88,3 +88,8 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 ### 7.4 Heróis temáticos das páginas estruturais (23/09/2026, prévia)
 
 Apenas Home, `/bikes` e `/acompanhamento` usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, detalhe de bike e páginas internas não seguem esse padrão.
+
+
+## Radar: rotas-alvo em preview (Etapa 9)
+
+`/radar` e `/radar/{bikeId}` existem em preview reutilizando a mesma implementação de `/acompanhamento` (loader, página, 503/404). Cada rota tem canonical próprio até o cutover. O menu global, a Home e o sitemap continuam apontando para `/acompanhamento`; sem redirect até aprovação.
