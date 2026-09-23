@@ -199,8 +199,8 @@ export function PriceIntelPanel({
           </p>
           <p className="mt-2">
             O preço típico é a mediana dos fechamentos diários do período e a faixa habitual vai do percentil 25 ao 75.
-            Com menos de 14 dias verificados, cobertura abaixo de 80% ou apenas um preço, dizemos honestamente que o
-            histórico ainda está em formação.
+            Quando a sequência de dias do período ainda é curta ou tem intervalos, mostramos os valores registrados como
+            referência e não qualificamos o preço — os registros continuam sendo os que a Vitale acompanha.
           </p>
         </details>
       </div>
