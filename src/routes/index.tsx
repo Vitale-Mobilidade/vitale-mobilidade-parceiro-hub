@@ -3,16 +3,20 @@ import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
 import { safeVideos } from "@/lib/videos.functions";
+import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 
 // Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
-    const [cards, videos] = await Promise.all([
+    const [cards, videos, catalog] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
       safeVideos({ limit: 4 }),
+      getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
     ]);
-    return { ...cards, videos };
+    // bikeId -> slug editorial, só para modelos existentes no catálogo.
+    const bikeSlugs: Record<string, string> = Object.fromEntries(catalog.bikes.map((b) => [b.bikeId, b.slug]));
+    return { ...cards, videos, bikeSlugs };
   },
   head: () =>
     pageHead({
