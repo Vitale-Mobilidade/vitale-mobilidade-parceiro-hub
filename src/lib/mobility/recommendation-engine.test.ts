@@ -106,7 +106,7 @@ describe("BikeRecommendationEngine", () => {
 });
 
 describe("BikeRecommendationEngine — comparação rápida", () => {
-  it("escolhe a mais barata e uma alternativa distinta de maior autonomia", () => {
+  it("escolhe a mais barata e a alternativa mais barata com vantagem verificável", () => {
     const r = recommendQuickComparison(
       [
         make({ bikeId: "barata", price: 5000, autonomyKm: 40, capacity: 1 }),
@@ -117,7 +117,9 @@ describe("BikeRecommendationEngine — comparação rápida", () => {
     );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["barata", "longa"]);
+    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["barata", "intermediaria"]);
+    expect(r.bikes[1].tradeoff).toEqual({ extraPrice: 1000, extraAutonomyKm: 15, extraCapacity: 1 });
+    expect(r.eligibleCount).toBe(3);
   });
 
   it("retorna somente as bikes reais disponíveis e respeita orçamento e garupa", () => {
@@ -132,6 +134,39 @@ describe("BikeRecommendationEngine — comparação rápida", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["garupa"]);
-    expect(recommendQuickComparison([], criteria)).toEqual({ ok: true, bikes: [] });
+    expect(recommendQuickComparison([], criteria)).toEqual({ ok: true, bikes: [], eligibleCount: 0 });
+  });
+
+  it("sem vantagem relevante mostra só uma; mais cara sem ganho não entra", () => {
+    const r = recommendQuickComparison(
+      [
+        make({ bikeId: "a", price: 5000, autonomyKm: 60, capacity: 1 }),
+        make({ bikeId: "b", price: 8000, autonomyKm: 70, capacity: 1 }),
+      ],
+      criteria,
+    );
+    if (!r.ok) throw new Error();
+    expect(r.bikes.map((b) => b.bikeId)).toEqual(["a"]);
+    expect(r.bikes[0].role).toBe("economica");
+  });
+
+  it("orçamento: folga até o teto e nunca acima dele", () => {
+    const r = recommendQuickComparison(
+      [
+        make({ bikeId: "a", price: 5000, autonomyKm: 40, capacity: 1 }),
+        make({ bikeId: "b", price: 6500, autonomyKm: 80, capacity: 1 }),
+        make({ bikeId: "c", price: 9000, autonomyKm: 120, capacity: 2 }),
+      ],
+      { dailyKm: 20, needsPassenger: false, maxBudget: 7000 },
+    );
+    if (!r.ok) throw new Error();
+    expect(r.bikes.map((b) => [b.bikeId, b.budgetRemaining])).toEqual([["a", 2000], ["b", 500]]);
+    expect(r.bikes[1].reason).toMatch(/R\$ 1\.500 a mais por \+40 km/);
+  });
+
+  it("sem orçamento: budgetRemaining null", () => {
+    const r = recommendQuickComparison([make({ bikeId: "a", price: 5000, autonomyKm: 40 })], criteria);
+    if (!r.ok) throw new Error();
+    expect(r.bikes[0].budgetRemaining).toBeNull();
   });
 });

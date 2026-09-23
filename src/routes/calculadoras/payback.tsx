@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { CostProjectionChart } from "@/components/mobility/CostProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { brl, decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -66,7 +66,6 @@ function CalculadoraPayback() {
   const [monthlySpend, setMonthlySpend] = useState("");
   const [dailyKm, setDailyKm] = useState("");
   const [daysPerWeek, setDaysPerWeek] = useState("");
-  const [replaceablePercent, setReplaceablePercent] = useState("");
   const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
@@ -77,27 +76,27 @@ function CalculadoraPayback() {
     monthlySpend: parseNumber(monthlySpend),
     dailyKm: parseNumber(dailyKm),
     daysPerWeek: parseNumber(daysPerWeek),
-    replaceablePercent: parseNumber(replaceablePercent),
-  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent]);
+    // 100% do subconjunto que a pessoa escolheu informar (só os trajetos que faria de bike).
+    replaceablePercent: 100,
+  }), [monthlySpend, dailyKm, daysPerWeek]);
 
   const errors = useMemo(() => ({
     monthlySpend: validateNumber(monthlySpend, "Gasto mensal", LIMITS.monthlyMoney),
     dailyKm: validateNumber(dailyKm, "Distância por dia", LIMITS.dailyKm),
     daysPerWeek: validateNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek),
-    replaceablePercent: validateNumber(replaceablePercent, "Percentual substituível", LIMITS.replaceablePercent),
     budget:
       budgetMode === "custom"
         ? validateNumber(customBudget, "Orçamento", LIMITS.budget)
         : null,
-  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget]);
+  }), [monthlySpend, dailyKm, daysPerWeek, budgetMode, customBudget]);
 
-  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget;
+  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.budget;
   const costResult = useMemo(() => {
     if (!requiredValid) return null;
     return computePaybackCost(values);
   }, [requiredValid, values]);
   const data = costResult?.ok ? costResult.data : null;
-  const hasBikeUse = data !== null && values.replaceablePercent > 0;
+  const hasBikeUse = data !== null && values.monthlySpend > 0;
   const budget = resolveBudget(budgetMode, customBudget);
 
   const recommendations = useMemo(() => {
@@ -145,7 +144,7 @@ function CalculadoraPayback() {
               Em quanto tempo uma bike elétrica se paga?
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
-              Informe o gasto que a bike evitaria e sua rotina. O prazo de retorno de até duas bikes reais aparece na hora, sem cadastro.
+              Informe o gasto e a distância só dos trajetos que faria de bike. O prazo de retorno de até duas bikes reais aparece na hora, sem cadastro.
             </p>
           </div>
         </section>
@@ -164,29 +163,18 @@ function CalculadoraPayback() {
               <div className="mt-6 space-y-5">
                 <NumberField
                   name="monthlySpend"
-                  label="Quanto você gasta hoje por mês nesses deslocamentos"
+                  label="Gasto mensal só nos trajetos que faria de bike"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help="Informe o gasto atual total desses trajetos, antes de qualquer troca pela bike — o percentual abaixo define quanto dele seria substituído. Inclua só custos que deixariam de existir (passagens, corridas, combustível, pedágio, estacionamento); não inclua seguro, IPVA ou outros custos fixos de veículo que continuará com você."
+                  help="Exemplo: se gasta R$ 1.000 no mês, mas R$ 600 são dos trajetos que faria de bike, informe R$ 600. Só custos que deixariam de existir; não inclua seguro, IPVA ou custos fixos de veículo mantido."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="dailyKm" label="Distância por dia" value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
-                  <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
+                  <NumberField name="dailyKm" label="Km por dia desses trajetos" help="Ida + volta, somando só os trajetos que faria de bike." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
+                  <NumberField name="daysPerWeek" label="Dias por semana de bike" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
                 </div>
-                <NumberField
-                  name="replaceablePercent"
-                  label="Quanto desse uso pode ser substituído pela bike?"
-                  value={replaceablePercent}
-                  onChange={setReplaceablePercent}
-                  onBlur={() => markTouched("replaceablePercent")}
-                  suffix="%"
-                  step="1"
-                  help="Com 0%, a economia e o uso da bike ficam zerados e nenhum modelo é sugerido."
-                  error={visibleError("replaceablePercent")}
-                />
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
                 <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
@@ -206,7 +194,7 @@ function CalculadoraPayback() {
               ) : (
                 <div className="mt-5 space-y-5">
                   <dl className="grid grid-cols-2 gap-3">
-                    <Metric label="Gasto evitável substituído" value={brl(data.currentTotalReplaced, true)} />
+                    <Metric label="Gasto atual nesses trajetos" value={brl(data.currentTotalReplaced, true)} />
                     <Metric label="Custo operacional da bike" value={brl(data.bikeTotalCost, true)} />
                     <Metric label={data.monthlySavings >= 0 ? "Economia mensal estimada" : "Diferença mensal estimada"} value={brl(data.monthlySavings, true)} emphasis />
                     <Metric label={selectedBike ? `Payback estimado · ${selectedBike.name}` : "Payback estimado"} value={paybackLabel} emphasis />
@@ -233,7 +221,7 @@ function CalculadoraPayback() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{QUICK_ORDER_CRITERION}</p>
               </div>
               {!hasBikeUse ? (
-                <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Com 0% de substituição não existe uso de bike para comparar, então não sugerimos nenhum modelo.</p>
+                <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Com gasto zero nesses trajetos, a bike não tem o que substituir: o resultado acima é o custo real dela e nenhum modelo é sugerido.</p>
               ) : !sourceOk ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Não conseguimos ler as ofertas atuais agora. Nenhum modelo ou preço foi preenchido por alternativa.</p>
               ) : recommendations && !recommendations.ok ? (
@@ -241,11 +229,14 @@ function CalculadoraPayback() {
               ) : bikes.length === 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Nenhuma bike com oferta atual atende à distância, margem de autonomia, garupa e orçamento informados. Não afrouxamos os filtros.</p>
               ) : (
+<>
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {paybacks.map(({ bike, projection }) => (
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_payback" />
                   ))}
                 </div>
+                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                </>
               )}
             </section>
           )}
@@ -256,10 +247,10 @@ function CalculadoraPayback() {
               <div>
                 <h2 className="font-bold text-ink">Economia operacional</h2>
                 <ul className="mt-2 list-disc space-y-2 pl-5">
-                  <li>Gasto substituível = gasto mensal informado × percentual substituível.</li>
-                  <li>Km substituídos = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12) × percentual.</li>
-                  <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
-                  <li>Economia líquida = gasto substituível − custo operacional da bike; anual = mensal × 12.</li>
+                  <li>Você informa só o gasto, a distância e os dias dos trajetos que faria de bike; todo esse conjunto é considerado substituído. Nada é presumido sobre o restante dos seus gastos.</li>
+                  <li>Km de bike por mês = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12).</li>
+                  <li>Custo da bike = km de bike por mês × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
+                  <li>Economia líquida = gasto desses trajetos − custo operacional da bike; anual = mensal × 12.</li>
                 </ul>
               </div>
               <div>
