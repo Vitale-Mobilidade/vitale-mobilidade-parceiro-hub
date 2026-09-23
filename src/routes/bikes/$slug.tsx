@@ -224,7 +224,18 @@ function BikeDetail() {
         <h2 id="radar" className="text-2xl font-black text-ink">Preço no Radar</h2>
         {radar && metrics ? (
           <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <PriceRangeBar currentPrice={radar.currentPrice} metrics={metrics} />
+            {radar.hasCurrentOffer ? (
+              <PriceRangeBar currentPrice={radar.currentPrice} metrics={metrics} />
+            ) : (
+              /* Sem oferta ativa: não posicionamos "preço atual" na faixa, para não sugerir preço de hoje. */
+              <div className="rounded-2xl border border-line bg-surface p-6 text-sm text-muted-foreground">
+                <p className="font-bold text-ink">Sem oferta ativa no Mercado Livre</p>
+                <p className="mt-2">
+                  Mantemos o histórico registrado por nós. O último valor registrado foi {formatBRL(radar.currentPrice)}
+                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""} e pode não ser o preço de hoje.
+                </p>
+              </div>
+            )}
             <div className="rounded-2xl border border-line bg-card p-6">
               <h3 className="font-bold text-ink">Últimos 30 dias</h3>
               <dl className="mt-3 divide-y divide-line text-sm">
