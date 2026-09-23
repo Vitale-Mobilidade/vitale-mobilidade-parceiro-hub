@@ -102,23 +102,6 @@ function FerramentasPage() {
                   1
                 </span>
                 <div>
-                  <h3 className="font-bold text-ink">Descubra seu perfil no Quiz</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Poucas perguntas sobre trajeto e uso indicam os modelos que combinam com você.{" "}
-                    <Link to="/escolherbike" className="font-semibold text-action underline underline-offset-2">
-                      Fazer o quiz
-                    </Link>
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
-                >
-                  2
-                </span>
-                <div>
                   <h3 className="font-bold text-ink">Conheça os modelos no catálogo</h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Autonomia, capacidade, descrição, vídeos reais e o preço da oferta atual quando existe.{" "}
@@ -133,7 +116,7 @@ function FerramentasPage() {
                   aria-hidden="true"
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
                 >
-                  3
+                  2
                 </span>
                 <div>
                   <h3 className="font-bold text-ink">Confira o preço no Radar</h3>
@@ -141,6 +124,23 @@ function FerramentasPage() {
                     Histórico de preços observado com a data de cada leitura, para decidir se vale comprar agora.{" "}
                     <Link to="/radar" className="font-semibold text-action underline underline-offset-2">
                       Abrir o Radar
+                    </Link>
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
+                >
+                  3
+                </span>
+                <div>
+                  <h3 className="font-bold text-ink">Decida no Quiz</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Passo final: poucas perguntas sobre trajeto e uso apontam o modelo certo e levam direto ao anúncio.{" "}
+                    <Link to="/escolherbike" className="font-semibold text-action underline underline-offset-2">
+                      Fazer o quiz
                     </Link>
                   </p>
                 </div>
