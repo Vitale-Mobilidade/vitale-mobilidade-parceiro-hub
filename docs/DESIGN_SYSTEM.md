@@ -123,3 +123,12 @@ Caminho local das evidências (não incluídas no deploy):
 ## Diferenças em relação às referências visuais
 
 As referências de layout/hierarquia foram seguidas, mas sem dados inventados: não há vídeos, artigos, modelos relacionados, thumbnails fictícias, badges de autonomia percentual, scores de economia ou slogans promocionais. O que existe no acervo real (foto, nome, preço, histórico, specs, perfilIndicado) foi usado; o restante foi omitido.
+
+## Heróis das páginas de entrada e card de catálogo — 23/09/2026 (prévia, não publicado)
+
+- Utilitários compartilhados em `src/styles.css`: `entry-hero` (fundo ink, isolate/overflow), `entry-hero-inner` (min-height 560px mobile / 640px desktop, texto na base no mobile e centralizado no desktop — baseline = hero da Home v2.1), `entry-eyebrow`, `entry-h1` (2.6rem → 3.75rem ≥640px → 4.5rem ≥1024px), `entry-lead` e `section-h2` (1.875rem → 2.25rem).
+- Aplicados em Home `/`, `/bikes` e `/acompanhamento`; cada página mantém pergunta, copy e um único H1. Quiz e detalhe de bike não foram alterados.
+- `/bikes`: hero fotográfico com `<picture>` reaproveitando `vitale-hero-v2*.webp` (foto real já existente), crop diferente da Home (`object-[80%_75%]`, zoom 125% no desktop) e gradiente ink para legibilidade. Busca e atalhos preservados dentro do hero.
+- `/acompanhamento`: busca permanece no hero; indicadores reais (monitoradas, menor preço, maior queda) passaram para um painel sobreposto à base do hero (`-mt-16/-mt-20`), sem comprimir texto.
+- Altura mínima comum; o hero pode crescer quando o conteúdo exige (sem overflow).
+- `BikeCatalogCard`: o card inteiro é um único `<Link to="/bikes/$slug">` (foto, nome, selo Radar, preço, fonte, vídeos e CTA visual "Conhecer a bike"). Sem link separado para o Radar dentro do card; o acesso ao Radar fica no detalhe da bike. Hover/foco responde no card todo (`focus-visible:ring-4`), sem links aninhados nem `onClick` em div.

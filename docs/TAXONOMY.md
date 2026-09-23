@@ -80,3 +80,7 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 - Breadcrumb visível + JSON-LD BreadcrumbList.
 - Guias: contrato `BikeGuide`/`BikeGuides` pronto, sem fonte — nada é renderizado.
 - Pendências: `/comparar` e `/radar` inexistentes (sem links); sem gráfico temporal nesta página (histórico completo fica em `/acompanhamento/{bikeId}`); sem redirects entre as rotas do Radar e `/bikes`.
+
+### 7.3 Card do catálogo como link único (23/09/2026, prévia)
+
+`BikeCatalogCard` é um único link `bikeId → slug → /bikes/$slug`. A classificação do Radar é selo informativo, sem destino próprio; o CTA secundário "Analisar preço no Radar" saiu do card e o Radar continua acessível pelo detalhe da bike. Preços, fontes ("Preço registrado pelo Radar Vitale" / "Preço de referência cadastrado (não monitorado)" / "Preço não informado") e status inalterados.
