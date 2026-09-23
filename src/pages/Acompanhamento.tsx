@@ -295,6 +295,8 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                 )}
               </section>
 
+              <ArchivedHistorySection bikes={archived} base={base} />
+
               {initial.videos?.length > 0 && (
                 <section aria-labelledby="radar-videos" className="mt-12">
                   <h2 id="radar-videos" className="flex items-center gap-2 text-xl font-bold text-ink"><Youtube className="h-5 w-5 text-action" aria-hidden="true" /> Testes e análises em vídeo</h2>
