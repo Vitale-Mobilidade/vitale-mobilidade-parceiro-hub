@@ -40,6 +40,7 @@ export function CostProjectionChart({
   const y = (value: number) => HEIGHT - PAD_Y - (value / maxValue) * (HEIGHT - PAD_Y * 2);
   const path = (key: "currentRouteCost" | "bikeCostWithPurchase") =>
     chartPoints.map((point, index) => `${index === 0 ? "M" : "L"} ${x(index)} ${y(point[key])}`).join(" ");
+  const finalBalance = points[points.length - 1]?.netBalance ?? 0;
   const gap =
     chartPoints.map((point, index) => `${x(index)},${y(point.currentRouteCost)}`).join(" ") +
     " " +
@@ -84,11 +85,7 @@ export function CostProjectionChart({
             </g>
           );
         })}
-        <polygon
-          points={gap}
-          fill={points.at(-1)?.netBalance && points.at(-1)!.netBalance >= 0 ? "#2dd4bf" : "#fbbf24"}
-          fillOpacity="0.18"
-        />
+        <polygon points={gap} fill={finalBalance >= 0 ? "#2dd4bf" : "#fbbf24"} fillOpacity="0.18" />
         <path
           d={path("currentRouteCost")}
           fill="none"
