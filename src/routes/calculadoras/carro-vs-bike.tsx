@@ -135,7 +135,6 @@ function CalculadoraCarroVsBike() {
   const paybacks = data ? computeBikePaybacks(bikes, data.currentTotalReplaced, data.bikeTotalCost) : [];
   const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
   const insight = data ? carroVsBikeInsight({ replaceablePercent: values.replaceablePercent, monthlySavings: data.monthlySavings, annualSavings: data.annualSavings, keepsVehicle: keepsVehicle === true, fixedIncluded: data.currentFixedRemoved }) : null;
-  const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
   const paybackLabel = !selectedPayback || !selectedPayback.projection.ok
     ? "—"
     : selectedPayback.projection.paybackMonths === null
