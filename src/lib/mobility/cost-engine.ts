@@ -275,7 +275,10 @@ export type AnnualCostInput = {
   rideHailing: number;
   publicTransport: number;
   parkingOther: number;
-  replaceablePercent: number;
+  /** Compatibilidade: percentual antigo. */
+  replaceablePercent?: number;
+  /** Preferido: R$/mês que a pessoa acha que deixaria de pagar (0..total). null = não informado. */
+  replaceableMonthly?: number | null;
 };
 
 export type AnnualCategory = "carMoto" | "rideHailing" | "publicTransport" | "parkingOther";
@@ -286,8 +289,8 @@ export type AnnualCostResult =
       data: {
         monthlyTotal: number;
         annualTotal: number;
-        replaceableMonthly: number;
-        replaceableAnnual: number;
+        replaceableMonthly: number | null;
+        replaceableAnnual: number | null;
         largestCategory: AnnualCategory | null;
       };
     }
@@ -299,7 +302,12 @@ export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostRes
   checkRange(errors, "Uber/99", input.rideHailing, LIMITS.monthlyMoney);
   checkRange(errors, "Transporte público", input.publicTransport, LIMITS.monthlyMoney);
   checkRange(errors, "Estacionamento e outros", input.parkingOther, LIMITS.monthlyMoney);
-  checkRange(errors, "Percentual substituível", input.replaceablePercent, LIMITS.replaceablePercent);
+  const direct = input.replaceableMonthly !== undefined;
+  if (direct) {
+    if (input.replaceableMonthly !== null) checkRange(errors, "Valor que deixaria de pagar", input.replaceableMonthly, LIMITS.monthlyMoney);
+  } else {
+    checkRange(errors, "Percentual substituível", input.replaceablePercent as number, LIMITS.replaceablePercent);
+  }
   if (errors.length > 0) return { ok: false, errors };
 
   const cats = {
@@ -309,7 +317,15 @@ export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostRes
     parkingOther: input.parkingOther,
   };
   const monthlyTotal = roundMoney(Object.values(cats).reduce((a, b) => a + b, 0));
-  const replaceableMonthly = roundMoney(monthlyTotal * (input.replaceablePercent / 100));
+  let replaceableMonthly: number | null;
+  if (direct) {
+    if (input.replaceableMonthly !== null && (input.replaceableMonthly as number) > monthlyTotal + 1e-9) {
+      return { ok: false, errors: ["Valor que deixaria de pagar: não pode ser maior que a soma dos gastos informados."] };
+    }
+    replaceableMonthly = input.replaceableMonthly === null ? null : roundMoney(input.replaceableMonthly as number);
+  } else {
+    replaceableMonthly = roundMoney(monthlyTotal * ((input.replaceablePercent as number) / 100));
+  }
   let largestCategory: AnnualCategory | null = null;
   let max = 0;
   for (const [key, value] of Object.entries(cats) as [keyof typeof cats, number][]) {
@@ -321,7 +337,7 @@ export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostRes
       monthlyTotal,
       annualTotal: roundMoney(monthlyTotal * 12),
       replaceableMonthly,
-      replaceableAnnual: roundMoney(replaceableMonthly * 12),
+      replaceableAnnual: replaceableMonthly === null ? null : roundMoney(replaceableMonthly * 12),
       largestCategory,
     },
   };

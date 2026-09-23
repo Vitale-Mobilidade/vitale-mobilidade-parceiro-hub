@@ -40,7 +40,7 @@ export function vehicleVsBikeInsight(args: {
 }): string {
   const noun = args.vehicle === "carro" ? "o carro" : "a moto";
   if (args.replaceablePercent === 0 && args.fixedIncluded === 0) {
-    return "Com 0% dos trajetos substituíveis, a bike não entra na sua rotina: não há economia a estimar nem bike a sugerir.";
+    return "Sem gasto informado nesses trajetos, não há o que a bike substituir: o resultado mostra só o custo dela, e nenhuma bike é sugerida.";
   }
   if (args.monthlySavings === 0) {
     return `Com esses dados, o custo operacional estimado da bike empata com o gasto evitável d${noun.slice(0,1) === "o" ? "o carro" : "a moto"}. Não há economia mensal nem retorno do investimento.`;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { CostProjectionChart } from "@/components/mobility/CostProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { brl, decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -236,11 +236,14 @@ function CalculadoraTransportePublicoVsBike() {
               ) : bikes.length === 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Nenhuma bike com oferta atual atende à distância, margem de autonomia, garupa e orçamento informados. Não afrouxamos os filtros.</p>
               ) : (
+<>
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {paybacks.map(({ bike, projection }) => (
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_transporte_publico_vs_bike" />
                   ))}
                 </div>
+                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                </>
               )}
             </section>
           )}
@@ -254,7 +257,7 @@ function CalculadoraTransportePublicoVsBike() {
                   <li>Os campos descrevem só as viagens que você escolheu trocar, então usamos 100% desse conjunto — nenhum percentual é presumido.</li>
                   <li>Tempo por ano = (minutos atuais − minutos de bike) × dias/semana × 52 semanas ÷ 60. Negativo = a bike demora mais.</li>
                   <li>Benefício dominante: "dinheiro" se a economia mensal for positiva, "tempo" se as horas recuperadas forem positivas, ambos ou nenhum.</li>
-                  <li>Km substituídos = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12) × percentual.</li>
+                  <li>Km de bike por mês = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12).</li>
                   <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
                   <li>Economia líquida = gasto substituível − custo operacional da bike; anual = mensal × 12.</li>
                 </ul>

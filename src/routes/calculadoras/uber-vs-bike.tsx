@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { CostProjectionChart } from "@/components/mobility/CostProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { brl, decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -67,7 +67,6 @@ function CalculadoraUberVsBike() {
   const [monthlySpend, setMonthlySpend] = useState("");
   const [dailyKm, setDailyKm] = useState("");
   const [daysPerWeek, setDaysPerWeek] = useState("");
-  const [replaceablePercent, setReplaceablePercent] = useState("");
   const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
@@ -78,27 +77,27 @@ function CalculadoraUberVsBike() {
     monthlySpend: parseNumber(monthlySpend),
     dailyKm: parseNumber(dailyKm),
     daysPerWeek: parseNumber(daysPerWeek),
-    replaceablePercent: parseNumber(replaceablePercent),
-  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent]);
+    // 100% interno: o gasto já é só das corridas que a pessoa faria de bike.
+    replaceablePercent: 100,
+  }), [monthlySpend, dailyKm, daysPerWeek]);
 
   const errors = useMemo(() => ({
     monthlySpend: validateNumber(monthlySpend, "Gasto mensal", LIMITS.monthlyMoney),
     dailyKm: validateNumber(dailyKm, "Distância por dia", LIMITS.dailyKm),
     daysPerWeek: validateNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek),
-    replaceablePercent: validateNumber(replaceablePercent, "Percentual substituível", LIMITS.replaceablePercent),
     budget:
       budgetMode === "custom"
         ? validateNumber(customBudget, "Orçamento", LIMITS.budget)
         : null,
-  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget]);
+  }), [monthlySpend, dailyKm, daysPerWeek, budgetMode, customBudget]);
 
-  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget;
+  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.budget;
   const costResult = useMemo(() => {
     if (!requiredValid) return null;
     return computeUberVsBike(values);
   }, [requiredValid, values]);
   const data = costResult?.ok ? costResult.data : null;
-  const hasBikeUse = data !== null && values.replaceablePercent > 0;
+  const hasBikeUse = data !== null && values.monthlySpend > 0;
   const budget = resolveBudget(budgetMode, customBudget);
 
   const recommendations = useMemo(() => {
@@ -128,7 +127,7 @@ function CalculadoraUberVsBike() {
   const visibleError = (name: keyof typeof errors) => (touched[name] ? errors[name] : null);
   const paybacks = data ? computeBikePaybacks(bikes, data.currentTotalReplaced, data.bikeTotalCost) : [];
   const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
-  const insight = data ? uberVsBikeInsight({ replaceablePercent: values.replaceablePercent, monthlySavings: data.monthlySavings, annualSavings: data.annualSavings }) : null;
+  const insight = data ? uberVsBikeInsight({ replaceablePercent: values.monthlySpend > 0 ? 100 : 0, monthlySavings: data.monthlySavings, annualSavings: data.annualSavings }) : null;
   const annualCurrent = costResult?.ok ? costResult.annualCurrentSpend ?? 0 : 0;
 
   return (
@@ -161,29 +160,18 @@ function CalculadoraUberVsBike() {
               <div className="mt-6 space-y-5">
                 <NumberField
                   name="monthlySpend"
-                  label="Gasto mensal total com Uber/99 hoje"
+                  label="Quanto você gasta por mês nas corridas que faria de bike?"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help="Some todas as corridas por aplicativo do mês, antes de qualquer troca pela bike. O percentual abaixo define quanto disso seria substituído."
+                  help="Só essas corridas. Exemplo: se gasta R$ 1.000 no mês com apps, mas R$ 600 são corridas que faria de bike, informe R$ 600."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="dailyKm" label="Distância por dia nas corridas avaliadas" help="Trajeto total atual dessas corridas por dia, antes da substituição. O percentual é aplicado depois." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
-                  <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
+                  <NumberField name="dailyKm" label="Km por dia dessas corridas" help="Ida + volta, somando só as corridas que faria de bike." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
+                  <NumberField name="daysPerWeek" label="Dias por semana dessas corridas" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
                 </div>
-                <NumberField
-                  name="replaceablePercent"
-                  label="Percentual das corridas que a bike pode substituir"
-                  value={replaceablePercent}
-                  onChange={setReplaceablePercent}
-                  onBlur={() => markTouched("replaceablePercent")}
-                  suffix="%"
-                  step="1"
-                  help="Considere só corridas de distância e condição viáveis de bike. Com 0%, a economia fica zerada e nenhum modelo é sugerido."
-                  error={visibleError("replaceablePercent")}
-                />
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
                 <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
@@ -203,8 +191,8 @@ function CalculadoraUberVsBike() {
               ) : (
                 <div className="mt-5 space-y-5">
                   <dl className="grid grid-cols-2 gap-3">
-                    <Metric label="Gasto anual atual com apps" value={brl(annualCurrent, true)} />
-                    <Metric label="Corridas substituíveis por mês" value={brl(data.currentTotalReplaced, true)} />
+                    <Metric label="Gasto anual nessas corridas" value={brl(annualCurrent, true)} />
+                    <Metric label="Gasto mensal nessas corridas" value={brl(data.currentTotalReplaced, true)} />
                     <Metric label={data.monthlySavings >= 0 ? "Economia líquida mensal" : "Diferença líquida mensal"} value={brl(data.monthlySavings, true)} emphasis />
                     <Metric label={data.annualSavings >= 0 ? "Economia líquida anual" : "Diferença líquida anual"} value={brl(data.annualSavings, true)} emphasis />
                   </dl>
@@ -238,11 +226,14 @@ function CalculadoraUberVsBike() {
               ) : bikes.length === 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Nenhuma bike com oferta atual atende à distância, margem de autonomia, garupa e orçamento informados. Não afrouxamos os filtros.</p>
               ) : (
+<>
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {paybacks.map(({ bike, projection }) => (
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_uber_vs_bike" />
                   ))}
                 </div>
+                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                </>
               )}
             </section>
           )}
@@ -253,11 +244,11 @@ function CalculadoraUberVsBike() {
               <div>
                 <h2 className="font-bold text-ink">Uber/99 vs bike</h2>
                 <ul className="mt-2 list-disc space-y-2 pl-5">
-                  <li>Gasto anual atual = gasto mensal com apps × 12.</li>
-                  <li>Gasto substituível = gasto mensal com apps × percentual de corridas substituíveis.</li>
-                  <li>Km substituídos = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12) × percentual.</li>
-                  <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
-                  <li>Economia líquida = gasto substituível − custo operacional da bike; anual = mensal × 12.</li>
+                  <li>Você informa só o gasto, km e dias das corridas que faria de bike; esse conjunto inteiro é considerado substituído. Nada é presumido sobre suas outras corridas.</li>
+                  <li>Gasto anual nessas corridas = gasto mensal × 12.</li>
+                  <li>Km de bike por mês = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12).</li>
+                  <li>Custo da bike = km de bike por mês × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
+                  <li>Economia líquida = gasto nessas corridas − custo operacional da bike; anual = mensal × 12.</li>
                 </ul>
               </div>
               <div>

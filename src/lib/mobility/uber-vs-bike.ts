@@ -26,7 +26,7 @@ export function uberVsBikeInsight(args: {
   annualSavings: number;
 }): string {
   if (args.replaceablePercent === 0) {
-    return "Com 0% das corridas substituíveis, a bike não entra na sua rotina: não há economia a estimar nem bike a sugerir.";
+    return "Sem gasto informado nessas corridas, não há o que a bike substituir: o resultado mostra só o custo dela, e nenhuma bike é sugerida.";
   }
   if (args.monthlySavings === 0) {
     return "Com esses dados, o custo estimado da bike empata com as corridas que ela substituiria. Não há economia mensal.";
