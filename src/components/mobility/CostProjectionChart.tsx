@@ -5,6 +5,13 @@ const HEIGHT = 240;
 const PAD_X = 48;
 const PAD_Y = 28;
 
+export type ChartProjectionPoint = Pick<ProjectionPoint, "months" | "currentRouteCost" | "bikeCostWithPurchase">;
+
+/** Acrescenta o investimento inicial real sem alterar os pontos calculados pelo motor. */
+export function buildProjectionChartPoints(points: ProjectionPoint[], bikePrice: number): ChartProjectionPoint[] {
+  return [{ months: 0, currentRouteCost: 0, bikeCostWithPurchase: bikePrice }, ...points];
+}
+
 function money(value: number) {
   return value.toLocaleString("pt-BR", {
     style: "currency",
@@ -14,8 +21,8 @@ function money(value: number) {
 }
 
 /** SVG leve e reutilizável para comparar os dois custos acumulados, sem biblioteca de gráfico. */
-export function CostProjectionChart({ points, bikeName }: { points: ProjectionPoint[]; bikeName: string }) {
-  const chartPoints = [{ months: 0, currentRouteCost: 0, bikeCostWithPurchase: points[0]?.bikeCostWithPurchase ?? 0 }, ...points];
+export function CostProjectionChart({ points, bikeName, bikePrice }: { points: ProjectionPoint[]; bikeName: string; bikePrice: number }) {
+  const chartPoints = buildProjectionChartPoints(points, bikePrice);
   const maxValue = Math.max(1, ...chartPoints.flatMap((point) => [point.currentRouteCost, point.bikeCostWithPurchase]));
   const x = (index: number) => PAD_X + (index / Math.max(1, chartPoints.length - 1)) * (WIDTH - PAD_X * 2);
   const y = (value: number) => HEIGHT - PAD_Y - (value / maxValue) * (HEIGHT - PAD_Y * 2);
