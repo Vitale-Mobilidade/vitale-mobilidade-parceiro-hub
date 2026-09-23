@@ -26,6 +26,12 @@ export type MobilityBikeCandidate = {
   capacity: number | null;
   /** true apenas quando a bike realmente tem histórico no Radar. */
   monitored: boolean;
+  /**
+   * Evidência POSITIVA na fonte do Quiz: `terrains` contém "muitas_subidas" ou `bestFor` contém
+   * "subidas" (arrays de strings validados). Ausente/desconhecido = false. É marcação editorial,
+   * não prova de desempenho real.
+   */
+  hillTagged?: boolean;
 };
 
 export type RecommendationCriteria = {
@@ -37,6 +43,8 @@ export type RecommendationCriteria = {
    * nunca convertida silenciosamente em "sem limite".
    */
   maxBudget: number | null;
+  /** Opcional: quando true, só entram bikes com `hillTagged === true`. */
+  needsHills?: boolean;
 };
 
 export type RecommendedBike = MobilityBikeCandidate & {
@@ -57,7 +65,7 @@ export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
 
 export const QUICK_ORDER_CRITERION =
-  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e teto de preço quando informados. A primeira é a compra compatível de menor preço; a segunda só aparece se tiver pelo menos 25% mais autonomia ou mais lugares, e é a mais barata entre as que têm essa vantagem.";
+  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e teto de preço quando informados e, se você marcar subidas, só bikes marcadas no catálogo do Quiz como indicadas para subidas (sem marcação = não entra). A primeira é a compra compatível de menor preço; a segunda só aparece se tiver pelo menos 25% mais autonomia ou mais lugares, e é a mais barata entre as que têm essa vantagem.";
 
 const finitePositive = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -93,6 +101,7 @@ export function recommendBikes(
     if (!finitePositive(b.autonomyKm) || b.autonomyKm < requiredKm) return false;
     if (criteria.needsPassenger && !(finitePositive(b.capacity) && (b.capacity as number) >= 2)) return false;
     if (finitePositive(criteria.maxBudget) && b.price > (criteria.maxBudget as number)) return false;
+    if (criteria.needsHills === true && b.hillTagged !== true) return false;
     return true;
   });
 
@@ -126,6 +135,7 @@ export function recommendQuickComparison(
     if (!finitePositive(b.autonomyKm) || b.autonomyKm < requiredKm) return false;
     if (criteria.needsPassenger && !(finitePositive(b.capacity) && b.capacity >= 2)) return false;
     if (finitePositive(criteria.maxBudget) && b.price > criteria.maxBudget) return false;
+    if (criteria.needsHills === true && b.hillTagged !== true) return false;
     return true;
   });
   const byPrice = [...eligible].sort(
@@ -187,6 +197,7 @@ function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): strin
     `Autonomia declarada de ${b.autonomyKm} km cobre os ${c.dailyKm} km do seu dia com margem de 20%`,
   ];
   if (c.needsPassenger && finitePositive(b.capacity)) parts.push(`capacidade para ${b.capacity} pessoas`);
+  if (c.needsHills === true && b.hillTagged === true) parts.push("marcada no catálogo do Quiz como indicada para trajetos com subidas");
   if (finitePositive(c.maxBudget)) parts.push("preço dentro do orçamento informado");
   return `${parts.join("; ")}.`;
 }

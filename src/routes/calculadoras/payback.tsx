@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { CostProjectionChart } from "@/components/mobility/CostProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, HillsToggle, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { brl, decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -69,6 +69,7 @@ function CalculadoraPayback() {
   const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
+  const [needsHills, setNeedsHills] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
 
@@ -101,8 +102,8 @@ function CalculadoraPayback() {
 
   const recommendations = useMemo(() => {
     if (!hasBikeUse || !sourceOk || errors.budget) return null;
-    return recommendQuickComparison(candidates, { dailyKm: values.dailyKm, needsPassenger, maxBudget: budget });
-  }, [hasBikeUse, sourceOk, errors.budget, candidates, values.dailyKm, needsPassenger, budget]);
+    return recommendQuickComparison(candidates, { dailyKm: values.dailyKm, needsPassenger, needsHills, maxBudget: budget });
+  }, [hasBikeUse, sourceOk, errors.budget, candidates, values.dailyKm, needsPassenger, needsHills, budget]);
   const bikes = recommendations?.ok ? recommendations.bikes : [];
 
   useEffect(() => {
@@ -178,6 +179,7 @@ function CalculadoraPayback() {
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
                 <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
+                <HillsToggle checked={needsHills} onChange={setNeedsHills} />
               </div>
             </div>
 
@@ -235,7 +237,7 @@ function CalculadoraPayback() {
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_payback" />
                   ))}
                 </div>
-                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                <RecommendationFooter hillsRequested={needsHills} budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
                 </>
               )}
             </section>

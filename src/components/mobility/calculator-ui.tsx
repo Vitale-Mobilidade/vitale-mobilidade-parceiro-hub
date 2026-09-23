@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bike, ExternalLink, LineChart, Users } from "lucide-react";
+import { Bike, ExternalLink, LineChart, Mountain, Users } from "lucide-react";
 import { BikeMedia } from "@/components/site/site-ui";
 import { Button } from "@/components/ui/button";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
@@ -119,6 +119,15 @@ export function PassengerToggle({ checked, onChange }: { checked: boolean; onCha
   );
 }
 
+export function HillsToggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4 rounded-md bg-surface px-4 py-3 ring-1 ring-line">
+      <span className="flex items-center gap-3 text-sm font-bold text-ink"><Mountain className="h-5 w-5 text-action" aria-hidden="true" /> Meu trajeto tem muitas subidas</span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 accent-[var(--color-action,currentColor)]" />
+    </label>
+  );
+}
+
 export function BikeResultCard({
   bike,
   selected,
@@ -213,16 +222,17 @@ export function BikeResultCard({
 }
 
 /** Explica o que realmente filtra a seleção e oferece o Quiz como refinamento opcional (sem bloco genérico). */
-export function RecommendationFooter({ budgetInformed, eligibleCount }: { budgetInformed: boolean; eligibleCount: number }) {
+export function RecommendationFooter({ budgetInformed, eligibleCount, hillsRequested = false }: { budgetInformed: boolean; eligibleCount: number; hillsRequested?: boolean }) {
   return (
     <div className="mt-5 space-y-3 text-sm leading-relaxed text-muted-foreground">
       <p>
-        {eligibleCount} bike{eligibleCount === 1 ? "" : "s"} com oferta atual {eligibleCount === 1 ? "atende" : "atendem"} aos filtros. As sugestões só mudam quando distância, garupa ou teto de preço mudam — o gasto informado não altera quais bikes cabem no trajeto.
+        {eligibleCount} bike{eligibleCount === 1 ? "" : "s"} com oferta atual {eligibleCount === 1 ? "atende" : "atendem"} aos filtros. As sugestões só mudam quando distância, garupa, subidas ou teto de preço mudam — o gasto informado não altera quais bikes cabem no trajeto.
         {!budgetInformed && " Sem teto de preço, a seleção considera apenas distância, garupa e menor preço; escolha um teto acima para comparar dentro dele."}
+        {hillsRequested && " Com subidas marcado, só entram bikes que o catálogo do Quiz marca como indicadas para subidas; modelos sem essa marcação ficam de fora mesmo que possam servir. A marcação é editorial, não um teste de desempenho."}
       </p>
       <p>
         <Link to="/escolherbike" className="inline-flex min-h-11 items-center font-bold text-action underline-offset-4 hover:underline">
-          Quer considerar ladeira, peso e tipo de uso? Refine no Quiz
+          Quer considerar peso, terreno e tipo de uso? Refine no Quiz
         </Link>
       </p>
     </div>
