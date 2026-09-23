@@ -81,12 +81,18 @@ export function ArchivedHistorySection({ bikes, base }: { bikes: ArchivedBike[];
                   Sem oferta no Mercado Livre
                 </span>
                 {b.lastObservedPrice !== null && (
-                  <span className="block font-bold text-ink">Último preço registrado: {formatBRL(b.lastObservedPrice)}</span>
+                  <span className="block font-bold text-ink">Último preço verificado: {formatBRL(b.lastObservedPrice)}</span>
                 )}
-                {b.lastObservedAt && (
+                {b.lastConfirmedAt ? (
                   <span className="block text-sm text-muted-foreground">
-                    Registrado em {formatDateBR(b.lastObservedAt)} · pode não ser o preço de hoje
+                    Confirmado em {formatDateBR(b.lastConfirmedAt)} · pode não ser o preço de hoje
                   </span>
+                ) : (
+                  b.lastObservedAt && (
+                    <span className="block text-sm text-muted-foreground">
+                      Última alteração em {formatDateBR(b.lastObservedAt)} · pode não ser o preço de hoje
+                    </span>
+                  )
                 )}
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
