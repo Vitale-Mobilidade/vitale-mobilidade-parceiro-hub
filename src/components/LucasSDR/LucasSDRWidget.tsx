@@ -22,8 +22,6 @@ interface Props {
   /** Convite contextual. Padrão preserva o texto do quiz. */
   inviteTitle?: string;
   inviteText?: string;
-  /** false = launcher sempre recolhido (sem autoabertura). Padrão true preserva o Quiz. */
-  autoOpen?: boolean;
 }
 
 
@@ -52,7 +50,6 @@ export function LucasSDRWidget({
   assistantName = "Lucas",
   inviteTitle = "Ainda em dúvida?",
   inviteText = "Fale com o Lucas e entenda qual bike faz mais sentido para você.",
-  autoOpen = true,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -81,7 +78,7 @@ export function LucasSDRWidget({
   }, [inviteDismissed, onEvent]);
 
   useEffect(() => {
-    if (!autoOpen || autoOpenBlocked || open) return;
+    if (autoOpenBlocked || open) return;
     const delay = isMobile() ? AUTO_OPEN_DELAY_MOBILE_MS : AUTO_OPEN_DELAY_DESKTOP_MS;
     onEvent("sdr_auto_open_scheduled", { delay_ms: delay });
     const t = window.setTimeout(() => {
@@ -100,7 +97,7 @@ export function LucasSDRWidget({
     }, delay);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoOpen, autoOpenBlocked, buyClicked, ctx.leadId]);
+  }, [autoOpenBlocked, buyClicked, ctx.leadId]);
 
   useEffect(() => {
     if (buyClicked && !autoOpenBlocked) {
