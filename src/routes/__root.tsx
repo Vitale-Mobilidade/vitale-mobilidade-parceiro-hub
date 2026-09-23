@@ -24,7 +24,7 @@ const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétr
 const DESCRIPTION =
   "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
 
-const GTM_SNIPPET = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+const GTM_SNIPPET = `if (!location.pathname.startsWith('/admin')) (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
@@ -112,7 +112,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes");
+  const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes") || path.startsWith("/admin");
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider context={{}}>

@@ -1,18 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { buildSitemapXml, bikeSlugPaths, radarIdPaths, STATIC_SITEMAP_PATHS } from "@/lib/sitemap";
+import { buildSitemapXml, bikeSlugPaths, radarIdPaths, articleSlugPaths, STATIC_SITEMAP_PATHS } from "@/lib/sitemap";
 
 async function build(): Promise<string | null> {
-  const [{ fetchBikeCatalogFromDb }, { fetchTrackerSplit }] = await Promise.all([
+  const [{ fetchBikeCatalogFromDb }, { fetchTrackerSplit }, { fetchPublishedIndex }] = await Promise.all([
     import("@/lib/bikes-repository.server"),
     import("@/lib/radar-repository.server"),
+    import("@/lib/editorial-repository.server"),
   ]);
-  const [catalog, radar] = await Promise.all([fetchBikeCatalogFromDb(), fetchTrackerSplit()]);
-  // Sem dado confiável de qualquer fonte → sem sitemap parcial.
+  const [catalog, radar, articles] = await Promise.all([fetchBikeCatalogFromDb(), fetchTrackerSplit(), fetchPublishedIndex()]);
+  // A coleção editorial pode falhar isoladamente sem derrubar o sitemap de Bike/Radar.
+  // O deploy do frontend ainda depende da migration editorial antes da publicação.
   if (!catalog || catalog.length === 0 || !radar.ok) return null;
   return buildSitemapXml([
     ...STATIC_SITEMAP_PATHS,
     ...bikeSlugPaths(catalog),
     ...radarIdPaths([...radar.data.active, ...radar.data.archived]),
+    ...articleSlugPaths(articles ?? []),
   ]);
 }
 
