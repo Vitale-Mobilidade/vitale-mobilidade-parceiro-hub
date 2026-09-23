@@ -298,3 +298,60 @@
   --color-surface: hsl(var(--vt-surface));
   --color-line: hsl(var(--vt-line));
 }
+
+/* Design System — heróis das páginas de entrada (Home, /bikes, /acompanhamento).
+   Baseline = hero da Home v2.1. */
+@utility entry-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--color-ink);
+  color: var(--color-ink-foreground);
+}
+@utility entry-hero-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 560px;
+  padding-top: 10rem;
+  padding-bottom: 7rem;
+  @media (min-width: 768px) {
+    justify-content: center;
+    min-height: 640px;
+    padding-top: 4rem;
+    padding-bottom: 9rem;
+  }
+}
+@utility entry-eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-mint);
+}
+@utility entry-h1 {
+  margin-top: 1rem;
+  max-width: 48rem;
+  font-size: 2.5rem;
+  line-height: 1.04;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  @media (min-width: 640px) { font-size: 3.5rem; }
+  @media (min-width: 1024px) { font-size: 4.25rem; }
+}
+@utility entry-lead {
+  margin-top: 1.5rem;
+  max-width: 40rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.9;
+  @media (min-width: 640px) { font-size: 1.25rem; }
+}
+@utility section-h2 {
+  font-size: 1.875rem;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  @media (min-width: 640px) { font-size: 2.25rem; }
+}
