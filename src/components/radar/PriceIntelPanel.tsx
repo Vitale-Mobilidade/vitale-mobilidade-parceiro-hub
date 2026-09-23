@@ -102,7 +102,6 @@ export function PriceIntelPanel({
         {/* Escala verde/amarelo/vermelho: referência visual sobre os registros reais. */}
         {hasRange ? (
           <div className="mt-4">
-            <p className="mb-2 text-4xl font-extrabold tracking-tight text-action">{formatBRL(currentPrice)}</p>
             <div
               className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
               role="img"
