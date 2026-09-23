@@ -308,10 +308,10 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                   no Mercado Livre. Usamos links de afiliado.
                 </p>
                 {summary.atLowest > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="border-0 bg-primary/15 text-primary">Menor preço registrado</Badge>
-                    <span>significa o menor valor já registrado por nós — nunca comparação com outras lojas.</span>
-                  </div>
+                  <p>
+                    Quando dizemos “menor preço registrado”, falamos do menor valor já registrado por nós — nunca
+                    comparação com outras lojas.
+                  </p>
                 )}
               </div>
             </>
