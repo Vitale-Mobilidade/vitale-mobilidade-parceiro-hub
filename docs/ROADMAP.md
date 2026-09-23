@@ -397,3 +397,13 @@ continuam não implementadas e sem links públicos.
 - Evidência: `pnpm validate` exit 0 (typecheck, 30 testes básicos, build); 84 testes dirigidos de mobilidade passaram; smoke HTTP das 9 rotas retornou 200 após a publicação.
 - Escopo desta publicação: somente frontend e docs. Sem mudanças em Quiz `/escolherbike`, Supabase, Sheets, writers ou links afiliados.
 - Status: as 9 calculadoras estão publicadas. Isso NÃO marca outras etapas inteiras como concluídas nem comprova analytics de conversão.
+
+### 23/09/2026 — Etapa 2 SEO/GEO: sitemap dinâmico (PREVIEW, não publicado)
+
+- `public/sitemap.xml` estático removido; `/sitemap.xml` agora é servido por `src/routes/sitemap[.]xml.ts` (GET e HEAD), server-side e read-only.
+- Fontes: `fetchBikeCatalogFromDb` (RPC `get_bikes_public_catalog`) → todas as `/bikes/{slug}`, inclusive sem oferta; `fetchTrackerSplit` (RPC `get_price_tracker_catalog`) → `/radar/{id}` apenas ativos ou arquivados com histórico. IDs vêm do campo `id` da RPC, nunca de slug; slugs/IDs validados (`SLUG_RE`/`BIKE_ID_RE`), URL-encoded e XML-escapados; deduplicados.
+- Estáticas: `/`, `/bikes`, `/radar`, `/escolherbike`, `/ferramentas` e as 9 `/calculadoras/*`. Fora: `/acompanhamento`, `/calc`, `/painel-bikes`, `/grupodeofertas`, `/comparar`, `/conteudos`. Sem `lastmod`.
+- Falha de qualquer RPC sem cache confiável → 503 `no-store` + `Retry-After` (nunca sitemap parcial 200). Resposta boa: `Cache-Control: public, max-age=300, s-maxage=600`. `robots.txt` inalterado.
+- Evidência local: teste dirigido `src/lib/sitemap.test.ts` (3) passou; preview 200 com 74 URLs (14 estáticas, 30 bikes, 30 radar); HEAD 200. Build/suíte não rodados; falta validar no domínio após publicação.
+- Etapa 2 continua **Parcial** (OG dinâmico, JSON-LD de entidades e canonical radar↔bikes pendentes).
+- Rollback: remover a rota e `src/lib/sitemap.ts`, restaurar o arquivo estático. Sem banco, Sheets, Quiz, Radar UI ou links afiliados.
