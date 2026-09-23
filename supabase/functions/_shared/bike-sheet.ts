@@ -295,6 +295,12 @@ export interface SnapshotBike {
   sheetEligible: boolean | null;
   // --- Colunas opcionais (podem ainda não existir na planilha) ---
   image?: string;
+  /** Categoria editorial literal da planilha (ex.: "Bike elétrica"). */
+  category?: string;
+  /** Rótulo literal da planilha (ex.: "Até 40km") — não substitui autonomyKm. */
+  autonomyLabel?: string;
+  /** Rótulo literal da planilha (ex.: "1 pessoa") — não substitui capacity. */
+  capacityLabel?: string;
   weightSupportKg?: number;
   bestFor?: string[];
   terrains?: string[];
@@ -317,6 +323,10 @@ export interface PendingRow {
   isNew: boolean;
   missingFields: string[];
   sheetEligible: boolean | null;
+  /** Rótulos editoriais literais da linha atual (sem dado comercial). */
+  category?: string;
+  autonomyLabel?: string;
+  capacityLabel?: string;
 }
 
 export interface SnapshotResult {
@@ -340,7 +350,7 @@ const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capa
 /** Colunas opcionais suportadas. "Imagem da Bike" é o nome oficial; "Imagem" é alias. */
 export const OPTIONAL_HEADERS = [
   "ID", "Status", "Imagem da Bike", "Imagem", "Peso Suportado", "Usos", "Terrenos",
-  "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa",
+  "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa", "Categoria",
 ] as const;
 
 function headerIndex(headers: string[], name: string): number {
@@ -419,10 +429,26 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     // Status vazio/desconhecido em linha nomeada é pendência explícita.
     if (hasStatusColumn && sheetEligible === null) missingFields.push("Status (Elegível / Não Elegível)");
 
+    // Rótulos editoriais literais (não comerciais) — servem também às linhas pendentes.
+    const category = cell(cells, opt["Categoria"]).replace(/\s+/g, " ").trim();
+    const autonomyLabel = cell(cells, idx["Autonomia"]).replace(/\s+/g, " ").trim();
+    const capacityLabel = cell(cells, idx["Capacidade"]).replace(/\s+/g, " ").trim();
+
     if (missingFields.length > 0 || !link || price == null || autonomyKm == null || capacity == null) {
-      pending.push({ id, name: rawName.replace(/\s+/g, " ").trim(), line, isNew, missingFields, sheetEligible });
+      pending.push({
+        id,
+        name: rawName.replace(/\s+/g, " ").trim(),
+        line,
+        isNew,
+        missingFields,
+        sheetEligible,
+        ...(category ? { category } : {}),
+        ...(autonomyLabel ? { autonomyLabel } : {}),
+        ...(capacityLabel ? { capacityLabel } : {}),
+      });
       continue;
     }
+
 
     // Colunas opcionais. Imagem: oficial "Imagem da Bike", alias "Imagem".
     const imgIdx = opt["Imagem da Bike"] >= 0 ? opt["Imagem da Bike"] : opt["Imagem"];
@@ -450,6 +476,9 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
       line,
       sheetEligible,
       ...(image ? { image } : {}),
+      ...(category ? { category } : {}),
+      ...(autonomyLabel ? { autonomyLabel } : {}),
+      ...(capacityLabel ? { capacityLabel } : {}),
       ...(weightSupportKg ? { weightSupportKg } : {}),
       ...(bestFor.length ? { bestFor } : {}),
       ...(terrains.length ? { terrains } : {}),

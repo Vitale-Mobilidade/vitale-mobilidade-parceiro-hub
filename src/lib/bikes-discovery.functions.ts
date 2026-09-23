@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { fetchBikeCatalog } from "./editorial-bikes.server";
+import { fetchBikeCatalogFromDb } from "./bikes-repository.server";
 import { fetchTrackerCatalog } from "./radar-repository.server";
 import { fetchVideoCatalog } from "./video-catalog.server";
 import { buildRadarEntries, type RadarBike } from "./radar-rankings";
@@ -32,7 +32,7 @@ export function parsePeople(v: string | null): number | null {
 export const getBikesDiscovery = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ ok: boolean; radarOk: boolean; videosOk: boolean; bikes: DiscoveryBike[]; videos: VideoCard[] }> => {
     const [catalog, radar, videos] = await Promise.all([
-      fetchBikeCatalog().catch(() => null),
+      fetchBikeCatalogFromDb().catch(() => null),
       fetchTrackerCatalog().catch(() => ({ ok: false as const })),
       fetchVideoCatalog().catch(() => []),
     ]);

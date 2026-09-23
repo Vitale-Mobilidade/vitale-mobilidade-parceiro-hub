@@ -105,6 +105,10 @@ export function mergeWithPreserved(
       missingFields: p.missingFields,
       line: p.line,
       sheetEligible: p.sheetEligible ?? before.sheetEligible ?? null,
+      // Rótulos editoriais da linha atual (sem dado comercial); nunca apagam o que já existe.
+      ...(p.category ? { category: p.category } : {}),
+      ...(p.autonomyLabel ? { autonomyLabel: p.autonomyLabel } : {}),
+      ...(p.capacityLabel ? { capacityLabel: p.capacityLabel } : {}),
     });
   }
   out.sort((a, b) => a.id.localeCompare(b.id));

@@ -719,9 +719,12 @@ export type Database = {
       bikes: {
         Row: {
           autonomy_km: number | null
+          autonomy_label: string | null
           battery: string | null
           bike_id: string
+          capacity_label: string | null
           capacity_people: number | null
+          category: string | null
           created_at: string
           description: string | null
           image_url: string | null
@@ -735,9 +738,12 @@ export type Database = {
         }
         Insert: {
           autonomy_km?: number | null
+          autonomy_label?: string | null
           battery?: string | null
           bike_id: string
+          capacity_label?: string | null
           capacity_people?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           image_url?: string | null
@@ -751,9 +757,12 @@ export type Database = {
         }
         Update: {
           autonomy_km?: number | null
+          autonomy_label?: string | null
           battery?: string | null
           bike_id?: string
+          capacity_label?: string | null
           capacity_people?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           image_url?: string | null
@@ -1296,6 +1305,7 @@ export type Database = {
         Args: { p_bike_id: string; p_days?: number }
         Returns: Json
       }
+      get_bikes_public_catalog: { Args: never; Returns: Json }
       get_price_tracker_catalog: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
       project_bike_offers_from_snapshot: {

@@ -123,6 +123,8 @@ function BuyCta({ link, className = "" }: { link: string | null; className?: str
 function BikeDetail() {
   const { bike, radar, radarOk, videos, alternatives } = Route.useLoaderData();
   const metrics = useMemo(() => (radar ? dailyMetrics({ daily: radar.daily, currentPrice: radar.currentPrice }, 30) : null), [radar]);
+  // Oferta atual coesa: só existe quando preço E link vêm do mesmo registro válido.
+  const offer = bike.link && bike.sheetPrice != null ? { link: bike.link, price: bike.sheetPrice } : null;
   const paragraphs = (bike.description ?? "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
   const specs = [
     bike.autonomy && { label: "Autonomia", value: bike.autonomy },
@@ -148,35 +150,32 @@ function BikeDetail() {
           <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-ink md:text-5xl">{bike.name}</h1>
           {specs.length > 0 && <p className="mt-2 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ")}</p>}
           <div className="mt-5 rounded-2xl bg-ink p-5 text-ink-foreground">
-            {radar && metrics ? (
+            {/* Oferta atual: preço e link vêm SEMPRE do mesmo registro. */}
+            {radar && metrics && <PriceStatus classification={metrics.classification} />}
+            {offer ? (
               <>
-                <PriceStatus classification={metrics.classification} />
-                <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(radar.currentPrice)}</p>
+                <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(offer.price)}</p>
                 <p className="mt-1 text-xs text-ink-foreground/70">
-                  Último preço registrado pelo Radar Vitale{radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. Confirme no Mercado Livre.
+                  Preço da oferta atual registrada pela Vitale, do mesmo anúncio do botão abaixo. Confirme no Mercado Livre antes de comprar.
                 </p>
               </>
             ) : (
-              <>
-                <p className="text-sm font-semibold text-mint">Preço não monitorado pelo Radar</p>
-                {bike.sheetPrice != null ? (
-                  <>
-                    <p className="mt-2 text-3xl font-black">{formatBRL(bike.sheetPrice)}</p>
-                    <p className="mt-1 text-xs text-ink-foreground/70">Preço de referência cadastrado, não verificado como preço atual.</p>
-                  </>
-                ) : (
-                  <p className="mt-2 text-sm text-ink-foreground/80">Preço não informado.</p>
-                )}
-              </>
+              <p className="mt-3 text-sm text-ink-foreground/80">Sem oferta ativa registrada para este modelo.</p>
             )}
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
-              <BuyCta link={bike.link} className="w-full xl:w-auto xl:whitespace-nowrap" />
+              <BuyCta link={offer?.link ?? null} className="w-full xl:w-auto xl:whitespace-nowrap" />
               {radar && (
                 <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
                 </Link>
               )}
             </div>
+            {radar && (
+              <p className="mt-3 border-t border-ink-foreground/15 pt-3 text-xs text-ink-foreground/70">
+                Observação histórica do Radar: {formatBRL(radar.currentPrice)}
+                {radar.lastObservedAt ? ` registrado em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. É um registro de acompanhamento, não o preço do anúncio agora.
+              </p>
+            )}
           </div>
         </div>
       </header>
