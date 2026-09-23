@@ -14,7 +14,7 @@ const answers: Answers = {
   had_ebike_before: "nao",
 };
 
-const AFFILIATE = "https://mercadolivre.com/sec/ABC123?matt_tool=1&x=%20y";
+const AFFILIATE = "https://meli.la/TesteFixture9?utm_source=vitale&x=1"; // fixture, nunca acessado
 
 describe("Quiz — regras puras", () => {
   it("filtro de orçamento é rígido quando há opções no limite", () => {
