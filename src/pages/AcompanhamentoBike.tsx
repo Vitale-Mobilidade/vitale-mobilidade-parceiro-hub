@@ -11,7 +11,7 @@ import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
 import { UnavailableExplainer } from "@/components/radar/UnavailableExplainer";
-import { UNAVAILABLE_LEGEND } from "@/lib/radar-unavailable";
+import { UNAVAILABLE_LEGEND, lastConfirmedDay } from "@/lib/radar-unavailable";
 import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
@@ -86,6 +86,10 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
       firstDay: real[0]?.date ?? null,
     };
   }, [archivedSeries]);
+
+  // Data do último preço VERIFICADO (confirmação diária). `lastObservedAt` é a
+  // última ALTERAÇÃO de preço e só aparece rotulada como tal.
+  const lastConfirmed = useMemo(() => lastConfirmedDay(archivedSeries), [archivedSeries]);
 
   const loading = false; // dados já chegam no SSR
   const canBuy = hasOffer;
@@ -186,7 +190,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                   /* Sem oferta atual: mantemos o último preço REAL registrado, rotulado como histórico.
                      Sem farol, sem CTA de compra e sem alerta que prometa oferta. */
                   <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
-                    <p className="text-sm font-semibold text-muted-foreground">Último preço registrado</p>
+                    <p className="text-sm font-semibold text-muted-foreground">Último preço verificado</p>
                     {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 ? (
                       <p className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
                         {formatBRL(bike.lastObservedPrice)}
@@ -196,9 +200,18 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     )}
                     <p className="mt-2 text-sm text-muted-foreground">
                       Sem oferta disponível no Mercado Livre no momento.
-                      {bike.lastObservedAt && ` Registrado pela Vitale em ${formatDateBR(bike.lastObservedAt)}; pode não ser o preço de hoje.`}
+                      {lastConfirmed
+                        ? ` Confirmado pela Vitale em ${formatDateBR(lastConfirmed.date)}; pode não ser o preço de hoje.`
+                        : bike.lastObservedAt
+                          ? ` Última alteração de preço registrada em ${formatDateBR(bike.lastObservedAt)}; pode não ser o preço de hoje.`
+                          : ""}
                     </p>
-                    <UnavailableExplainer dateISO={bike.lastObservedAt} className="mt-3" />
+                    {lastConfirmed && bike.lastObservedAt && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Última alteração de preço registrada em {formatDateBR(bike.lastObservedAt)}.
+                      </p>
+                    )}
+                    <UnavailableExplainer dateISO={lastConfirmed?.date ?? bike.lastObservedAt} className="mt-3" />
                   </div>
                 )}
 
@@ -247,7 +260,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                         <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-destructive" />
                         {UNAVAILABLE_LEGEND}
                       </span>
-                      <UnavailableExplainer dateISO={bike.lastObservedAt} label="Entenda o ponto vermelho" />
+                      <UnavailableExplainer dateISO={lastConfirmed?.date ?? bike.lastObservedAt} label="Entenda o ponto vermelho" />
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias

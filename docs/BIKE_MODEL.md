@@ -260,7 +260,9 @@ Fato operacional: em `bike_offers` as 3 linhas estão `is_current=false`, `end_r
 | `v35` | R$ 11.500 | 10/09/2026 23:36 |
 | `x50_action_pro` | R$ 9.599 | 22/09/2026 19:07 |
 
-Contrato de exibição dessas bikes: preço **exibido** como "Último preço registrado" + data, jamais apresentado como preço verificado hoje; ponto mais recente do gráfico em vermelho (significa **indisponibilidade da oferta**, não preço alto), legenda textual sempre visível, explicação por hover/foco/toque; sem CTA do Mercado Livre e sem alerta de preço. Série histórica inteira preservada.
+**Duas datas distintas, nunca misturadas:** `bike_price_history.lastObservedAt` é o último **evento de mudança** de preço (v29_pro e v35: 10/09/2026); `bike_price_daily` tem o último dia **confirmado** pelo time (as 3: 22/09/2026). A UI usa `lastConfirmedDay(daily)` (`src/lib/radar-unavailable.ts`) como data de "último preço verificado" no hero, na legenda, no tooltip do ponto vermelho e na listagem arquivada; a data de evento só aparece rotulada como "última alteração de preço registrada em …".
+
+Contrato de exibição dessas bikes: preço **exibido** como "Último preço verificado" + data da confirmação, jamais apresentado como preço de hoje; ponto mais recente do gráfico em vermelho (significa **indisponibilidade da oferta**, não preço alto), legenda textual sempre visível, explicação por hover/foco/toque; sem CTA do Mercado Livre e sem alerta de preço. Série histórica inteira preservada.
 
 Estado da RPC hoje: `get_price_tracker_catalog()` está temporariamente limitada a **27 linhas** (só ofertas ativas). O código já tolera 27 ou 30:
 - `fetchTrackerSplit()` separa por `hasCurrentOffer` na leitura — com 27 a seção "Histórico arquivado" simplesmente não aparece; ao restaurar a cláusula para 30, as 3 entram automaticamente, sem novo deploy de código.

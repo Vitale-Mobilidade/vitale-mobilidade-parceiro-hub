@@ -2,13 +2,18 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
+import { lastConfirmedDay } from "@/lib/radar-unavailable";
+import type { DailyPoint } from "@/lib/price-daily";
 import type { RadarBase } from "@/lib/radar-base";
 
 export interface ArchivedBike {
   id: string;
   name: string;
   image: string | null;
+  /** Última ALTERAÇÃO de preço (evento). */
   lastObservedAt: string | null;
+  /** Último dia CONFIRMADO na série diária — é a data de "verificado". */
+  lastConfirmedAt: string | null;
   lastObservedPrice: number | null;
   observations: number;
 }
@@ -34,6 +39,7 @@ export function parseArchived(raw: unknown[]): ArchivedBike[] {
         name,
         image: typeof x.image === "string" && /^https:\/\/[^\s"<>]+$/.test(x.image) ? x.image : null,
         lastObservedAt: typeof x.lastObservedAt === "string" ? x.lastObservedAt : null,
+        lastConfirmedAt: lastConfirmedDay(Array.isArray(x.daily) ? (x.daily as DailyPoint[]) : [])?.date ?? null,
         lastObservedPrice:
           typeof x.lastObservedPrice === "number" && Number.isFinite(x.lastObservedPrice) && x.lastObservedPrice > 0
             ? x.lastObservedPrice
@@ -75,12 +81,18 @@ export function ArchivedHistorySection({ bikes, base }: { bikes: ArchivedBike[];
                   Sem oferta no Mercado Livre
                 </span>
                 {b.lastObservedPrice !== null && (
-                  <span className="block font-bold text-ink">Último preço registrado: {formatBRL(b.lastObservedPrice)}</span>
+                  <span className="block font-bold text-ink">Último preço verificado: {formatBRL(b.lastObservedPrice)}</span>
                 )}
-                {b.lastObservedAt && (
+                {b.lastConfirmedAt ? (
                   <span className="block text-sm text-muted-foreground">
-                    Registrado em {formatDateBR(b.lastObservedAt)} · pode não ser o preço de hoje
+                    Confirmado em {formatDateBR(b.lastConfirmedAt)} · pode não ser o preço de hoje
                   </span>
+                ) : (
+                  b.lastObservedAt && (
+                    <span className="block text-sm text-muted-foreground">
+                      Última alteração em {formatDateBR(b.lastObservedAt)} · pode não ser o preço de hoje
+                    </span>
+                  )
                 )}
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />

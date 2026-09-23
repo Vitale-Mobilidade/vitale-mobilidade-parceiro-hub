@@ -10,7 +10,8 @@ import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getRadarBike } from "@/lib/radar.functions";
 import { safeVideos } from "@/lib/videos.functions";
 import { dailyMetrics, type DailyPoint } from "@/lib/price-daily";
-import { formatBRL, formatDateTimeBR } from "@/lib/price-tracker";
+import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
+import { lastConfirmedDay } from "@/lib/radar-unavailable";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
@@ -140,6 +141,8 @@ function BuyCta({ link, bikeId, position, className = "" }: { link: string | nul
 function BikeDetail() {
   const { bike, radar, radarOk, videos, alternatives } = Route.useLoaderData();
   const metrics = useMemo(() => (radar ? dailyMetrics({ daily: radar.daily, currentPrice: radar.currentPrice }, 30) : null), [radar]);
+  // Última confirmação diária: data correta de "preço verificado".
+  const lastConfirmed = useMemo(() => lastConfirmedDay(radar?.daily ?? []), [radar]);
   // Oferta atual coesa: só existe quando preço E link vêm do mesmo registro válido.
   const offer = bike.link && bike.sheetPrice != null ? { link: bike.link, price: bike.sheetPrice } : null;
   const paragraphs = (bike.description ?? "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
@@ -181,9 +184,18 @@ function BikeDetail() {
               <>
                 <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(radar.currentPrice)}</p>
                 <p className="mt-1 text-xs text-ink-foreground/70">
-                  Último preço registrado pela Vitale
-                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. Pode não ser o preço de hoje.
+                  {/* Data = última CONFIRMAÇÃO diária; o evento de mudança é rotulado como alteração. */}
+                  {lastConfirmed
+                    ? `Último preço verificado pela Vitale em ${formatDateBR(lastConfirmed.date)}. Pode não ser o preço de hoje.`
+                    : radar.lastObservedAt
+                      ? `Última alteração de preço registrada em ${formatDateTimeBR(radar.lastObservedAt)}. Pode não ser o preço de hoje.`
+                      : "Pode não ser o preço de hoje."}
                 </p>
+                {lastConfirmed && radar.lastObservedAt && (
+                  <p className="mt-1 text-xs text-ink-foreground/60">
+                    Última alteração de preço registrada em {formatDateBR(radar.lastObservedAt)}.
+                  </p>
+                )}
               </>
             ) : (
               <p className="mt-3 text-sm text-ink-foreground/80">Sem preço registrado para este modelo.</p>
@@ -232,8 +244,13 @@ function BikeDetail() {
               <div className="rounded-2xl border border-line bg-surface p-6 text-sm text-muted-foreground">
                 <p className="font-bold text-ink">Sem oferta ativa no Mercado Livre</p>
                 <p className="mt-2">
-                  Mantemos o histórico registrado por nós. O último valor registrado foi {formatBRL(radar.currentPrice)}
-                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""} e pode não ser o preço de hoje.
+                  Mantemos o histórico registrado por nós. O último valor verificado foi {formatBRL(radar.currentPrice)}
+                  {lastConfirmed
+                    ? ` em ${formatDateBR(lastConfirmed.date)}`
+                    : radar.lastObservedAt
+                      ? ` na última alteração em ${formatDateTimeBR(radar.lastObservedAt)}`
+                      : ""}{" "}
+                  e pode não ser o preço de hoje.
                 </p>
               </div>
             )}
