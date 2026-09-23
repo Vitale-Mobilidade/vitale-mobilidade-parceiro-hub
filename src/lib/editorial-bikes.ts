@@ -50,6 +50,7 @@ export function buildBikeCatalog(csv: string): CatalogBike[] {
   const iDesc = head.findIndex((h) => h.startsWith("descri"));
   const iImg = idx("imagem_da_bike");
   const iCat = idx("categoria");
+  const iId = idx("id");
 
   const out: CatalogBike[] = [];
   const seenIds = new Set<string>();
@@ -57,7 +58,10 @@ export function buildBikeCatalog(csv: string): CatalogBike[] {
   for (const r of rows.slice(1)) {
     const name = cell(r[iName]);
     if (!name) continue;
-    const bikeId = resolveBikeId(name) ?? buildStableId("", name);
+    // Mesma precedência de buildSnapshotFromCsv (writer): ID explícito conhecido,
+    // depois nome conhecido, depois ID estável derivado de ID bruto + nome.
+    const rawId = iId >= 0 ? String(r[iId] ?? "").trim() : "";
+    const bikeId = resolveBikeId(rawId) ?? resolveBikeId(name) ?? buildStableId(rawId, name);
     if (!bikeId) continue;
     const slug = slugFromBikeId(bikeId);
     // Colisão: mantém a primeira linha; nunca sobrescreve.

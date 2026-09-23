@@ -58,7 +58,9 @@ Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + Typ
 
 ### Etapas 6–25
 
-Não concluídas. Algumas estruturas e documentos preparatórios existem (contrato de bike, taxonomia, DS), mas nenhum módulo alvo está finalizado.
+- **Etapa 6 — Bike:** contrato e código avançados (paridade de `bikeId` editorial × writer com teste; evidência do schema vivo em `docs/BIKE_MODEL.md` §7–9). Tabela `bikes` **não criada**; depende do Gate 0. **Não concluída.**
+
+Demais etapas não concluídas. Algumas estruturas e documentos preparatórios existem (contrato de bike, taxonomia, DS), mas nenhum módulo alvo está finalizado.
 
 ### Gates de cutover ainda pendentes
 
