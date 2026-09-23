@@ -33,20 +33,15 @@ export function computeBikePaybacks(
   }));
 }
 
-/** Insight determinístico; nunca promete retorno quando economia <= 0. */
-export function paybackInsight(monthlySavings: number, paybacks: BikePayback[]): string {
+/** Insight determinístico da bike SELECIONADA; neutro sem seleção; nunca promete retorno com economia <= 0. */
+export function paybackInsight(monthlySavings: number, selected: BikePayback | null | undefined): string {
   if (monthlySavings <= 0) {
     return monthlySavings === 0
       ? "Com esses dados, a bike não reduz seu custo mensal. Não existe prazo de retorno do investimento."
       : `Com esses dados, a bike custaria ${brl(Math.abs(monthlySavings), true)} a mais por mês. Não existe prazo de retorno do investimento.`;
   }
-  const valid = paybacks.filter((p) => p.projection.ok && p.projection.paybackMonths !== null);
-  if (valid.length === 0) {
+  if (!selected || !selected.projection.ok || selected.projection.paybackMonths === null) {
     return `Você deixaria de gastar ${brl(monthlySavings, true)} por mês. Escolha uma bike compatível para ver em quanto tempo ela se paga.`;
   }
-  const fastest = valid.reduce((a, b) =>
-    (a.projection.ok ? a.projection.paybackMonths! : Infinity) <= (b.projection.ok ? b.projection.paybackMonths! : Infinity) ? a : b,
-  );
-  const months = fastest.projection.ok ? fastest.projection.paybackMonths! : 0;
-  return `Economizando ${brl(monthlySavings, true)} por mês, a ${fastest.bike.name} (${brl(fastest.bike.price)}) se paga em cerca de ${decimal(months)} meses.`;
+  return `Economizando ${brl(monthlySavings, true)} por mês, a ${selected.bike.name} (${brl(selected.bike.price)}) se paga em cerca de ${decimal(selected.projection.paybackMonths)} meses.`;
 }

@@ -57,7 +57,7 @@ Evolução da Home v2 publicada no mesmo domínio em 23/09/2026, por autorizaç�
   - Vitrine com até 3 mini-cards reais do array `radar` (`BikeMedia`, `formatBRL`, `PriceStatus`).
   - Contagem real `search.length` bikes monitoradas.
   - Decoração SVG abstrato `aria-hidden`; nenhum gráfico temporal, queda ou economia simulada.
-- **Calculadora**: card claro, eyebrow "CALCULADORA", título "Quanto você economiza com bike elétrica?", sequência visual carro → Uber → ônibus → bike (`role="img"` com rótulo acessível), sem campos/resultados; CTA ativo "Escolher minha bike" → `/escolherbike`. Funcionalidade real depende da etapa 23.
+- **Calculadora**: card claro, eyebrow "CALCULADORA", título "Quanto você economiza com bike elétrica?", sequência visual carro → Uber → ônibus → bike (`role="img"` com rótulo acessível), sem campos/resultados; CTA ativo "Escolher minha bike" → `/escolherbike`. Em PREVIEW (não publicado) existem as calculadoras funcionais `/calculadoras/economia` e `/calculadoras/payback`; em produção este card segue a descrição acima até a publicação aprovada.
 - **Comparador**: `bg-ink`, eyebrow "COMPARADOR", título "Compare duas bikes lado a lado", preview de duas fotos reais com selo "VS" em `mint`; CTA ativo "Explorar modelos no Radar" → `/acompanhamento`. Rota `/comparar` ainda não existe.
 
 ### Assistente Vitale — `manualOnly` em produção
@@ -75,7 +75,7 @@ Evolução da Home v2 publicada no mesmo domínio em 23/09/2026, por autorizaç�
 
 ## Pendências reais (não são promessa de release)
 
-- Comparador, calculadora, conteúdos/vídeos, newsletter: sem backend; CTAs desativados.
+- Comparador, conteúdos/vídeos, newsletter: sem backend; CTAs desativados. Calculadoras de economia e payback: funcionais apenas em PREVIEW; em produção ainda não publicadas.
 - Galeria: só uma imagem real por bike; sem galeria.
 - Modelos semelhantes, vídeos e artigos no detalhe: omitidos até existir relação/dados reais.
 - Divergência de dados observada: strengths da V8 Ultra citam "até 80km" enquanto autonomyKm = 50. Precisa de reconciliação na planilha (não alterado).
@@ -110,7 +110,7 @@ Caminho local das evidências (não incluídas no deploy):
 - **Segurança**: Pass
 - **IA**: Pass
 - **CX**: Pass com ressalva — autonomia V8 Ultra divergente na planilha (`strengths` mencionam até 80 km; campo `autonomyKm` = 50). Reconciliação de dados não alterada no código.
-- **Produto/UX/Growth**: ainda **não aprovam release integral**. Catálogo editorial, vídeos, comparador, calculadora e newsletter ainda não estão funcionais, e alguns CTAs permanecem semanticamente desativados.
+- **Produto/UX/Growth**: ainda **não aprovam release integral**. Catálogo editorial, vídeos, comparador e newsletter ainda não estão funcionais; calculadoras de economia/payback funcionam apenas em PREVIEW, e alguns CTAs permanecem semanticamente desativados.
 - **PMO**: Pass da validação visual/documental após atualizar a evidência do resultado do Quiz, mas **No-Go de publicação** enquanto Produto/UX/Growth e os gates de cutover não fossem atendidos.
 
 > **Atualização pós-publicação v2.1:** a Home v2.1 foi publicada em 23/09/2026 por decisão explícita do responsável, apesar dos gates de cutover e aprovações de Produto/UX/Growth ainda não estarem completos. O status das lentes acima reflete a situação pré-publicação.
@@ -118,7 +118,7 @@ Caminho local das evidências (não incluídas no deploy):
 ## Escopo implementado vs. pendentes
 
 **Implementado (visual/DS):** header/footer únicos, tokens de cor, Home B2C v2 e v2.1, Radar, página de bike, resultado do Quiz — tudo usando o mesmo design system e dados reais onde existem.
-**Pendente (produtos/futuros, sem backend pronto):** comparador funcional, calculadora funcional, conteúdos/vídeos, newsletter, galeria de bikes, modelos relacionados, alertas de preço funcionais.
+**Pendente (produtos/futuros, sem backend pronto):** comparador funcional, publicação das calculadoras (economia/payback funcionais só em PREVIEW), conteúdos/vídeos, newsletter, galeria de bikes, modelos relacionados, alertas de preço funcionais.
 
 ## Diferenças em relação às referências visuais
 
