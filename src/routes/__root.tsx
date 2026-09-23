@@ -54,11 +54,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
       { title: TITLE },
       { name: "description", content: DESCRIPTION },
-      {
-        name: "keywords",
-        content:
-          "consultoria veículos elétricos, mobilidade elétrica, fornecedores veículos elétricos, consultoria B2B veículos elétricos, Lucas Vitale, Vitale Mobilidade",
-      },
       { name: "author", content: "Vitale Mobilidade" },
       { name: "robots", content: "index, follow, max-image-preview:large" },
       { property: "og:type", content: "website" },
