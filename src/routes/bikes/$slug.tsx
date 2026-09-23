@@ -181,9 +181,18 @@ function BikeDetail() {
               <>
                 <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(radar.currentPrice)}</p>
                 <p className="mt-1 text-xs text-ink-foreground/70">
-                  Último preço registrado pela Vitale
-                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. Pode não ser o preço de hoje.
+                  {/* Data = última CONFIRMAÇÃO diária; o evento de mudança é rotulado como alteração. */}
+                  {lastConfirmed
+                    ? `Último preço verificado pela Vitale em ${formatDateBR(lastConfirmed.date)}. Pode não ser o preço de hoje.`
+                    : radar.lastObservedAt
+                      ? `Última alteração de preço registrada em ${formatDateTimeBR(radar.lastObservedAt)}. Pode não ser o preço de hoje.`
+                      : "Pode não ser o preço de hoje."}
                 </p>
+                {lastConfirmed && radar.lastObservedAt && (
+                  <p className="mt-1 text-xs text-ink-foreground/60">
+                    Última alteração de preço registrada em {formatDateBR(radar.lastObservedAt)}.
+                  </p>
+                )}
               </>
             ) : (
               <p className="mt-3 text-sm text-ink-foreground/80">Sem preço registrado para este modelo.</p>
