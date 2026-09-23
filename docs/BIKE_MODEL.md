@@ -1,6 +1,6 @@
 # Modelo de Bike: contrato preparatório (Etapa 6)
 
-Status (23/09/2026): **contrato e código avançados; banco pendente.** Nenhuma tabela, migration ou escrita no banco foi criada. Toda escrita segue bloqueada até o Gate 0 (restauração isolada).
+Status (23/09/2026): **contrato, código e proposta SQL avançados; banco pendente.** Nenhuma tabela, migration ou escrita no banco vivo foi criada. Ensaio parcial de restauração do schema `public` executado fora do Lovable (`docs/GATE0_RESTORE_REHEARSAL.md`); **Gate 0 não fechado** (backup anterior a escritas vivas; Storage, Edge Functions, secrets, jobs e ACLs não validados). Proposta aditiva não executável automaticamente: `docs/sql/bikes_stage6_proposal.sql` (§11).
 Fontes: migrations em `supabase/migrations/`, código do repositório e auditoria **read-only** do schema vivo e da planilha realizada nesta task em 23/09/2026 (§7).
 
 ## 1. Modelo atual (chave comum: `bike_id` texto)
@@ -68,7 +68,7 @@ Classificação cautelosa (sem apagar nada, sem decisão tomada):
 - Preservados: bikes "Não Elegível", link `meli.la` byte a byte, slug derivado (`_`→`-`), visual e URLs.
 
 ## 9. Sequência segura para a tabela normalizada `bikes`
-1. **Gate 0:** restauração isolada de banco/Storage validada (pendente).
+1. **Gate 0:** restauração isolada de banco/Storage validada (parcial: schema `public` ensaiado; pendentes reconciliação de escritas, Storage, Edge Functions, secrets, jobs, ACLs e paridade de RPC).
 2. Decisão escrita sobre os 2 IDs fora do snapshot (manter como alias, órfão ou legado; nunca apagar histórico).
 3. Proposta de DDL revisada: `bike_id` texto PK imutável (`BIKE_ID_RE`), sem preço/link (ficam em Offer/snapshot); GRANTs explícitos; RLS; leitura pública só via RPC.
 4. Migration aditiva (só `CREATE`), sem alterar tabelas/RPCs existentes.
@@ -90,3 +90,23 @@ Rollback (não destrutivo): manter RPCs e writer antigos como fonte de verdade; 
 - **PMO/QA:** teste direcionado + `pnpm validate`; Etapa 6 **não** concluída (DB e Gate 0 pendentes).
 
 Observação: `docs/SQUAD_GOVERNANCE.md` e `AGENTS.md` não existem neste repositório; a revisão segue `docs/PAGE_INTENT_AND_SYNERGY.md`.
+
+## 11. Proposta de schema `bikes` (não aplicada)
+Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`, para teste manual isolado pelo responsável. **Não testado pelo Lovable.**
+- `bike_id` texto PK imutável (trigger bloqueia alteração); `slug` editorial explícito `UNIQUE`; `name`; specs permitidas (autonomia, velocidade, motor, bateria, capacidade, `specs` JSONB com CHECK que proíbe chaves comerciais).
+- **Sem** preço, link afiliado, elegibilidade/status ou PII.
+- RLS ligado, sem policies; `REVOKE` de anon/authenticated; só `service_role`. Leitura pública futura apenas via RPC revisada.
+- Backfill (comentado): somente os 30 IDs do snapshot `current`, slug = `bike_id` com `_`→`-` (igual a `/bikes` hoje). `jflsjdlksjdl` e `v9_max_duas_baterias` **excluídos** até decisão.
+- Paridade: diferença de conjuntos snapshot × `bikes` = 0 nos dois sentidos; contagem 30; slugs iguais aos atuais; md5 do JSON das três RPCs igual antes/depois.
+- Rollback não destrutivo: nada lê a tabela; RPCs/writer continuam fonte; preservar tabela e dados; DROP só em tarefa separada com backup e autorização.
+- Ponto a revisar: o CHECK de `bike_id` deve espelhar exatamente `BIKE_ID_RE`.
+
+## 12. Revisão compacta (8 perspectivas) — incremento Gate 0 + proposta
+- **Produto:** nenhuma mudança visível; entidade Bike ganha forma sem afetar Quiz/Radar.
+- **CTO:** proposta aditiva, idempotente, fora do fluxo de migrations; nenhuma dependência nova.
+- **IA:** `bike_id` estável como âncora; nenhum dado gerado; specs só da planilha.
+- **Segurança:** RLS + revoke; sem PII/links; evidência do ensaio sem PII; nada aplicado no vivo.
+- **UX:** nenhuma alteração; slugs do backfill iguais aos atuais.
+- **CX:** links `meli.la` fora da tabela, intocados.
+- **Growth:** URLs `/bikes/{slug}` preservadas; nenhum redirect.
+- **PMO/QA:** Gate 0 parcial, Etapa 6 **não** concluída; SQL só será validado pelo responsável em ambiente isolado.
