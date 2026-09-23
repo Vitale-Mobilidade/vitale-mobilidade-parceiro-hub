@@ -767,7 +767,9 @@ function CalculadoraEconomia() {
                 <div>
                   <p className="font-bold text-ink">O que entra e o que não entra</p>
                   <p className="mt-2">
-                    Entram apenas os valores que você informa. Não entram: preço de compra da bike e sua amortização,
+                    Entram apenas os valores que você informa — nenhum campo vem preenchido com número nosso.
+                    No modal misto, some só gastos variáveis: custo fixo de carro ou moto que você continuará mantendo
+                    não deve entrar no valor substituível, porque ele não deixa de existir. Não entram: preço de compra da bike e sua amortização,
                     financiamento, seguro da bike, depreciação do veículo, valor do seu tempo e imprevistos. Se você
                     mantém carro ou moto, os custos fixos deles não viram economia — só somem se o veículo sair da sua
                     vida.
