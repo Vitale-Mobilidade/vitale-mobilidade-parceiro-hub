@@ -2,35 +2,34 @@
 -- PROPOSTA — Etapa 6 (entidade Bike). NÃO É MIGRATION.
 -- NÃO executar no banco vivo. Não mover para supabase/migrations/.
 -- Somente para teste manual em ambiente isolado pelo responsável.
--- Aditiva: só CREATE; não altera tabelas, RPCs, writer, Quiz ou Radar.
+-- Aditiva e fail-fast: não altera tabelas, RPCs, writer, Quiz ou Radar.
+-- NÃO é idempotente: reexecução deve FALHAR (tabela/função/trigger já
+-- existem) em vez de substituir ou ocultar drift.
 -- Sem preço, link afiliado, elegibilidade ou PII nesta tabela.
+-- Demais fatos (specs adicionais) só depois, com fonte validada.
 -- =====================================================================
 
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS public.bikes (
-  bike_id        text PRIMARY KEY
-                 CHECK (bike_id ~* '^[a-z0-9][a-z0-9_-]{0,63}$'),  -- espelha BIKE_ID_RE (src/lib/bike-identity.ts)
-  slug           text NOT NULL UNIQUE
-                 CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  name           text NOT NULL CHECK (length(btrim(name)) > 0),
-  -- Especificação permitida (fatos da planilha; nullable = não informado)
-  autonomy_km    numeric CHECK (autonomy_km IS NULL OR autonomy_km > 0),
-  max_speed_kmh  numeric CHECK (max_speed_kmh IS NULL OR max_speed_kmh > 0),
-  motor_w        numeric CHECK (motor_w IS NULL OR motor_w > 0),
-  battery        text,
-  capacity       text,
-  specs          jsonb NOT NULL DEFAULT '{}'::jsonb,  -- somente specs; proibido price/link/eligible
-  source         text NOT NULL DEFAULT 'snapshot_backfill',
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  updated_at     timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT bikes_specs_no_commercial CHECK (
-    NOT (specs ?| ARRAY['price','preco','linkVitale','link','url','eligible','status','sheetEligible'])
-  )
+CREATE TABLE public.bikes (
+  bike_id         text PRIMARY KEY
+                  CHECK (bike_id ~* '^[a-z0-9][a-z0-9_-]{0,63}$'),  -- espelha BIKE_ID_RE (src/lib/bike-identity.ts)
+  slug            text NOT NULL UNIQUE
+                  CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  name            text NOT NULL CHECK (length(btrim(name)) > 0),
+  -- Especificação estruturada (nullable = não informado; preenchida depois com fonte validada)
+  autonomy_km     numeric CHECK (autonomy_km IS NULL OR autonomy_km > 0),
+  max_speed_kmh   numeric CHECK (max_speed_kmh IS NULL OR max_speed_kmh > 0),
+  motor_w         numeric CHECK (motor_w IS NULL OR motor_w > 0),
+  battery         text,
+  capacity_people smallint CHECK (capacity_people IS NULL OR capacity_people IN (1, 2)),
+  source          text NOT NULL DEFAULT 'snapshot_backfill',
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
 -- bike_id imutável
-CREATE OR REPLACE FUNCTION public.bikes_block_id_change()
+CREATE FUNCTION public.bikes_block_id_change()
 RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
 BEGIN
   IF NEW.bike_id IS DISTINCT FROM OLD.bike_id THEN
@@ -40,7 +39,6 @@ BEGIN
   RETURN NEW;
 END $$;
 
-DROP TRIGGER IF EXISTS bikes_immutable_id ON public.bikes;
 CREATE TRIGGER bikes_immutable_id BEFORE UPDATE ON public.bikes
   FOR EACH ROW EXECUTE FUNCTION public.bikes_block_id_change();
 
