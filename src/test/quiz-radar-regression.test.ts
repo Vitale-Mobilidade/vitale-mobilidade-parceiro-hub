@@ -14,7 +14,7 @@ const answers: Answers = {
   had_ebike_before: "nao",
 };
 
-const AFFILIATE = "https://meli.la/TesteFixture9?utm_source=vitale&x=1"; // fixture, nunca acessado
+const AFFILIATE = "https://meli.la/TesteFixture9"; // fixture, nunca acessado
 
 describe("Quiz — regras puras", () => {
   it("filtro de orçamento é rígido quando há opções no limite", () => {
@@ -49,6 +49,11 @@ describe("href afiliado direto — preservação exata", () => {
     expect(bike.affiliateLink).toBe(AFFILIATE);
     expect(bike.linkVitale).toBe(AFFILIATE);
     expect(bike.linkMeta).toBe(base.linkMeta);
+  });
+
+  it("link fora do padrão meli.la é ignorado e o anterior é mantido", () => {
+    const kept = mergeCatalog(BIKES, [{ id: base.id, description: "x", price: 5000, autonomyKm: 30, capacity: 1, linkVitale: "https://evil.example/x", status: "eligible" }]);
+    expect(kept.find((b) => b.id === base.id)!.affiliateLink).toBe(base.affiliateLink);
   });
 
   it("recomendação devolve o mesmo href", () => {
