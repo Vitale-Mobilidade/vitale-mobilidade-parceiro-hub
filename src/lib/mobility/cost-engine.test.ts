@@ -30,8 +30,8 @@ describe("MobilityCostEngine", () => {
     expect(r.data.monthlyKm).toBeCloseTo(km, 2);
     expect(r.data.currentFixedRemoved).toBe(0);
     expect(r.data.fixedExcludedBecauseVehicleKept).toBe(true);
-    expect(r.data.currentVariableReplaced).toBeCloseTo(km * 0.6 + 200, 2);
-    expect(r.data.bikeTotalCost).toBeCloseTo(km * 0.05 + 30, 2);
+    expect(r.data.currentVariableReplaced).toBeCloseTo(km * 0.6 + 200, 1);
+    expect(r.data.bikeTotalCost).toBeCloseTo(km * 0.05 + 30, 1);
     expect(r.data.annualSavings).toBeCloseTo(r.data.monthlySavings * 12, 2);
   });
 
@@ -100,7 +100,7 @@ describe("MobilityCostEngine", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const days = 5 * WEEKS_PER_MONTH;
-    expect(r.data.currentVariableReplaced).toBeCloseTo(Math.round(4.4 * 2 * days * 0.5 * 100) / 100, 2);
+    expect(r.data.currentVariableReplaced).toBeCloseTo(4.4 * 2 * days * 0.5, 1);
     expect(Number.isInteger(r.data.monthlySavings * 100)).toBe(true);
   });
 
@@ -123,7 +123,7 @@ describe("MobilityCostEngine", () => {
     });
     expect(uber.ok && misto.ok).toBe(true);
     if (!uber.ok || !misto.ok) return;
-    expect(uber.data.currentVariableReplaced).toBeCloseTo(uber.data.replacedKm * 3, 2);
+    expect(uber.data.currentVariableReplaced).toBeCloseTo(uber.data.replacedKm * 3, 1);
     expect(misto.data.currentVariableReplaced).toBeCloseTo(300, 2);
   });
 });

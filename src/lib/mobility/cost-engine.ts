@@ -147,7 +147,8 @@ export function computeMobilityCost(input: CostInput): CostResult {
   const bikeMaintenanceCost = okMaint && share > 0 ? input.bike.maintenanceMonthly : 0;
   const currentTotalReplaced = variableReplaced + fixedRemoved;
   const bikeTotalCost = bikeEnergyCost + bikeMaintenanceCost;
-  const monthlySavings = currentTotalReplaced - bikeTotalCost;
+  // Arredonda a economia mensal em centavos e deriva a anual dela, para as duas serem coerentes.
+  const monthlySavings = roundMoney(currentTotalReplaced - bikeTotalCost);
 
   return {
     ok: true,
@@ -161,7 +162,7 @@ export function computeMobilityCost(input: CostInput): CostResult {
       bikeEnergyCost: roundMoney(bikeEnergyCost),
       bikeMaintenanceCost: roundMoney(bikeMaintenanceCost),
       bikeTotalCost: roundMoney(bikeTotalCost),
-      monthlySavings: roundMoney(monthlySavings),
+      monthlySavings,
       annualSavings: roundMoney(monthlySavings * 12),
       fixedExcludedBecauseVehicleKept,
     },
