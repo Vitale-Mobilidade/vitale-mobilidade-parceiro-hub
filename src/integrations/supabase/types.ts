@@ -203,7 +203,7 @@ export type Database = {
           is_current: boolean
           override_eligible: boolean | null
           price: number
-          quiz_eligible: boolean
+          radar_eligible: boolean
           sheet_eligible: boolean | null
           sheet_status: string | null
           source: string
@@ -223,7 +223,7 @@ export type Database = {
           is_current?: boolean
           override_eligible?: boolean | null
           price: number
-          quiz_eligible?: boolean
+          radar_eligible?: boolean
           sheet_eligible?: boolean | null
           sheet_status?: string | null
           source?: string
@@ -243,7 +243,7 @@ export type Database = {
           is_current?: boolean
           override_eligible?: boolean | null
           price?: number
-          quiz_eligible?: boolean
+          radar_eligible?: boolean
           sheet_eligible?: boolean | null
           sheet_status?: string | null
           source?: string

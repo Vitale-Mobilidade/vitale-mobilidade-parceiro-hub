@@ -145,7 +145,7 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 
 **Objetivo:** bike mantém `bike_id` estável enquanto anúncio, preço e link mudam; preço e link sempre no mesmo registro.
 
-**Schema + backfill (aplicado):** migration `20260923064500_6637a3c1-…`. Tabela `public.bike_offers` com FK a `bikes`, `id` próprio, `source='sheet'`, `url` exata (sem normalizar), `price>0`, `sheet_status`, `sheet_eligible`, `override_eligible`, `quiz_eligible` (= status eligible ∧ sheetEligible ∧ override, mesmas condições do Radar), `is_current`, `first_seen_at`, `synced_at`, `verified_at` (NULL — sem verificação humana inventada), `ended_at`/`end_reason`. Índice único parcial: no máximo 1 oferta atual por bike/fonte. Sem vendedor/listing ID. RLS ligado, sem acesso anon/authenticated; só service_role. Backfill na mesma migration com asserts fail-fast: 30 atuais, 0 divergências de preço/URL vs snapshot, 20 elegíveis = RPC do Radar.
+**Schema + backfill (aplicado):** migration `20260923064500_6637a3c1-…`. Tabela `public.bike_offers` com FK a `bikes`, `id` próprio, `source='sheet'`, `url` exata (sem normalizar), `price>0`, `sheet_status`, `sheet_eligible`, `override_eligible`, `radar_eligible` (renomeada de `quiz_eligible` em 20260923064843; = status eligible ∧ sheetEligible ∧ override ∧ preço/link válidos — elegibilidade comercial do Radar, **não** decisão do Quiz), `is_current`, `first_seen_at`, `synced_at`, `verified_at` (NULL — sem verificação humana inventada), `ended_at`/`end_reason`. Índice único parcial: no máximo 1 oferta atual por bike/fonte. Sem vendedor/listing ID. RLS ligado, sem acesso anon/authenticated; só service_role. Backfill na mesma migration com asserts fail-fast: 30 atuais, 0 divergências de preço/URL vs snapshot, 20 elegíveis = RPC do Radar.
 
 **Writer (implantado):** RPC `project_bike_offers_from_snapshot` (INVOKER, search_path fixo, EXECUTE só service_role), chamada pelo `sync-bike-catalog`/sync-now logo após a projeção de `bikes`. Mesma URL → atualiza preço/flags só se mudou; URL diferente → encerra atual (`link_changed`) e cria nova; preço ou link inválido → encerra atual (`invalid_price`/`invalid_link`) sem criar nova (UI futura: "Link indisponível no momento"). Nunca apaga. Bike ausente de `bikes` é pulada (sem oferta órfã). Falha isolada e logada em `bike_sync_runs.detail.offersProjection`; próxima execução repara.
 
@@ -156,4 +156,12 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 
 **Revisão 8 perspectivas (pré/pós):** Produto — modelo pronto para vitrine sem trocar leitores. CTO — atômico por lote, idempotente, constraint garante 1 atual. IA — N/A. Segurança — RLS fechado, função só service_role. UX/CX — nada visível muda; preço e link nunca de anúncios diferentes. Growth — links meli.la byte a byte, analytics intocado. PMO — Etapa 8 schema+writer feitos; primeira execução e cutover pendentes.
 
-**Riscos residuais:** elegibilidade do Quiz real também depende de imagem/perfil para bikes novas (não copiado para `quiz_eligible`); `synced_at` só muda quando algo muda; `verified_at` sem processo definido.
+**Riscos residuais:** o Quiz também exige asset+perfil prontos para bikes novas e continua decidido só por `get_quiz_catalog()`; `verified_at` sem processo definido.
+
+### 15.1 Correção pós-auditoria (migration `20260923064843_52c07cc9-…`)
+
+- **URL:** CHECK `^https://meli\.la/[A-Za-z0-9]+$` na tabela (validou os 30 dados existentes) e na função; URL ausente/fora do padrão encerra a oferta atual (`invalid_link`) e nunca cria nova. Bytes preservados, sem normalização.
+- **Elegibilidade:** coluna renomeada para `radar_eligible` sem perda de dados. Não usar como decisão do Quiz. Conjunto de IDs comparado com `get_price_tracker_catalog()` dentro da migration: diferença 0/0.
+- **`synced_at`:** passa a significar última projeção bem-sucedida — atualizado em todo run, mesmo sem mudança comercial (junto com `updated_at`), sem criar oferta nova nem evento de preço. `verified_at` segue NULL (verificação humana).
+- Verificação no vivo: 30 atuais, 0 URLs fora do padrão, 20 `radar_eligible` (0/0 vs Radar), Quiz 20, 0 divergências preço/URL vs snapshot, anon/authenticated sem SELECT/EXECUTE.
+- Squad pós-fix: Produto/UX/CX sem mudança visível; CTO contrato mais estrito e nome preciso; Segurança acessos fechados; Growth links byte a byte; IA N/A; PMO primeira execução automática ainda não ocorreu, cutover não feito.
