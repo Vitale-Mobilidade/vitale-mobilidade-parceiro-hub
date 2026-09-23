@@ -153,7 +153,7 @@ function BikeDetail() {
           {specs.length > 0 && <p className="mt-2 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ")}</p>}
           <div className="mt-5 rounded-2xl bg-ink p-5 text-ink-foreground">
             {/* Oferta atual: preço e link vêm SEMPRE do mesmo registro.
-                O selo do Radar só aparece com oferta ativa, para não parecer status de algo comprável. */}
+                Selo comercial só nesta página (o painel do Radar segue sem selo de avaliação). */}
             <CommercialPriceBadge hasOffer={!!offer} classification={metrics?.classification ?? null} />
             {offer ? (
               <>
@@ -162,8 +162,16 @@ function BikeDetail() {
                   Preço da oferta atual registrada pela Vitale, do mesmo anúncio do botão abaixo. Confirme no Mercado Livre antes de comprar.
                 </p>
               </>
+            ) : radar ? (
+              <>
+                <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(radar.currentPrice)}</p>
+                <p className="mt-1 text-xs text-ink-foreground/70">
+                  Último preço registrado pela Vitale
+                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. Pode não ser o preço de hoje.
+                </p>
+              </>
             ) : (
-              <p className="mt-3 text-sm text-ink-foreground/80">Sem oferta ativa registrada para este modelo.</p>
+              <p className="mt-3 text-sm text-ink-foreground/80">Sem preço registrado para este modelo.</p>
             )}
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
               <BuyCta link={offer?.link ?? null} bikeId={bike.bikeId} position="bike_detail_hero" className="w-full xl:w-auto xl:whitespace-nowrap" />
