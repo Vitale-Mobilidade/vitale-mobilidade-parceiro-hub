@@ -223,4 +223,6 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 
 **UI do detalhe.** O bloco de compra usa exclusivamente o par preço+link da oferta atual; sem oferta, "Sem oferta ativa registrada" + "Link indisponível no momento". O Radar aparece como **observação histórica** rotulada, separada do preço comercial, e nunca alimenta o CTA. Nada de "verificado agora" derivado de `synced_at`.
 
+**Ajuste pós-revisão (mesmo dia).** Card, filtro e ordenação de `/bikes` passaram a usar exclusivamente o preço comercial da oferta atual (`sheetPrice`); o preço do Radar aparece só como linha "Radar (histórico)" e o selo de classificação segue informativo. Sem oferta ativa, o card mostra "Sem oferta ativa no momento" e nunca um preço comprável. `mapCatalogRow` virou par atômico: preço e link válidos juntos, ou ambos `null` — assim o CTA do detalhe nunca existe sem o preço da mesma oferta. No topo do detalhe, o selo do Radar só é renderizado quando há oferta ativa. Verificado na prévia: 27 cards com preço de oferta, 3 sem oferta, 20 com linha histórica do Radar.
+
 **Rollback.** Reverter apenas os dois `*.functions.ts` para `fetchBikeCatalog()` (CSV). Nenhuma tabela, RPC, oferta ou histórico precisa ser apagado.
