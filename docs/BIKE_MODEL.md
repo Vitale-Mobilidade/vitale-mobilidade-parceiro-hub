@@ -1,6 +1,6 @@
 # Modelo de Bike: contrato preparatório (Etapa 6)
 
-Status (23/09/2026): **contrato, código e proposta SQL avançados; banco pendente.** Nenhuma tabela, migration ou escrita no banco vivo foi criada. Ensaio parcial de restauração do schema `public` executado fora do Lovable (`docs/GATE0_RESTORE_REHEARSAL.md`); **Gate 0 não fechado** (backup anterior a escritas vivas; Storage, Edge Functions, secrets, jobs e ACLs não validados). Proposta aditiva não executável automaticamente: `docs/sql/bikes_stage6_proposal.sql` (§11).
+Status (23/09/2026): **schema e backfill da entidade Bike concluídos no banco vivo** via migration `supabase/migrations/20260923063339_a73a6a10-69e2-4993-8dbc-d98318850dc1.sql` (promoção da proposta do commit 5689bf7, §13). Etapa 6 **fechada quanto a schema + identidade**; specs estruturadas NULL até fonte validada. Etapa 7 (writer único Sheets→`bikes`) **pendente**. Backup/Gate 0 retirado como impedimento pelo responsável para esta mudança aditiva.
 Fontes: migrations em `supabase/migrations/`, código do repositório e auditoria **read-only** do schema vivo e da planilha realizada nesta task em 23/09/2026 (§7).
 
 ## 1. Modelo atual (chave comum: `bike_id` texto)
@@ -114,3 +114,19 @@ Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`
 - **CX:** links `meli.la` fora da tabela, intocados.
 - **Growth:** URLs `/bikes/{slug}` preservadas; nenhum redirect.
 - **PMO/QA:** Gate 0 parcial, Etapa 6 **não** concluída; SQL só será validado pelo responsável em ambiente isolado.
+
+## 13. Aplicação no banco vivo (23/09/2026)
+
+Migration: `supabase/migrations/20260923063339_a73a6a10-69e2-4993-8dbc-d98318850dc1.sql` — aplicada com sucesso, numa única transação.
+- Pré-checagem fail-fast: `public.bikes` e `bikes_block_id_change()` inexistentes; snapshot `current` com 30 linhas, 30 IDs, 30 slugs e 30 nomes distintos/não vazios; senão aborta.
+- DDL da proposta sem `IF NOT EXISTS`/`OR REPLACE`/`DROP`; backfill `bike_id`/`slug = replace(bike_id,'_','-')`/`name` sem `ON CONFLICT`; asserção final count=30.
+- Inclui bikes não elegíveis; exclui `jflsjdlksjdl` e `v9_max_duas_baterias` (seguem a investigar).
+- Nenhuma tabela antiga, RPC, writer, sync, Edge Function, Quiz, Radar, página, oferta, afiliado ou analytics alterado. Nada lê `bikes` ainda.
+
+Verificação dirigida (pós-aplicação): count 30; 30 IDs e 30 slugs únicos; 0 slugs fora da regra; 0 faltantes/0 extras vs snapshot; 0 órfãos; RLS true; SELECT anon=false, authenticated=false, service_role=true; REST anon em `bikes` → 42501; RPCs `get_quiz_catalog` e `get_price_tracker_catalog` via API anon → 20 cada.
+
+Linter: avisos existentes (RLS sem policy — intencional, inclui `bikes`; RPCs SECURITY DEFINER públicas do Quiz/Radar — preexistentes, fora do escopo).
+
+Rollback não destrutivo: nada consome a tabela; preservar dados; DROP só em tarefa separada.
+
+Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/artigo/comparação. **CTO** aditiva, fail-fast, sem segundo writer. **IA** sem fatos inventados; specs NULL. **Segurança** RLS + zero acesso direto público. **UX/CX** sem mudança visível. **Growth** links ML diretos intactos. **PMO/QA** Etapa 6 schema/backfill fechados; Etapa 7 writer pendente.
