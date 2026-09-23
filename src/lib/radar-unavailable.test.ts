@@ -35,3 +35,23 @@ describe("radar-unavailable", () => {
     expect(lastRealIndex([])).toBe(-1);
   });
 });
+
+describe("lastConfirmedDay", () => {
+  const p = (date: string, verification: string, close = 100) =>
+    ({ date, close, low: close, high: close, changed: false, verification, verifiedRuns: 1, lastVerifiedAt: null }) as never;
+
+  it("usa o último dia CONFIRMADO, não o último evento de mudança", () => {
+    const series = [p("2026-09-10", "observed_change", 11500), p("2026-09-22", "confirmed_unchanged", 11500)];
+    expect(lastConfirmedDay(series)).toEqual({ date: "2026-09-22", close: 11500 });
+  });
+
+  it("ignora lacunas e dias reconstruídos no fim da série", () => {
+    const series = [p("2026-09-20", "confirmed_unchanged", 9599), p("2026-09-21", "reconstructed"), p("2026-09-22", "missing")];
+    expect(lastConfirmedDay(series)?.date).toBe("2026-09-20");
+  });
+
+  it("retorna null sem confirmação e a mensagem não inventa data", () => {
+    expect(lastConfirmedDay([])).toBeNull();
+    expect(unavailableMessage(null)).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+});
