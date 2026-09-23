@@ -16,7 +16,7 @@ const day = (date: string, verification: DailyPoint["verification"], close = 100
 describe("radar-unavailable", () => {
   it("usa a data civil literal na mensagem", () => {
     expect(unavailableMessage("2026-08-27")).toBe(
-      "Sem oferta disponível no Mercado Livre no momento. Este é o último preço registrado pela Vitale em 27/08/2026; pode não ser o preço de hoje.",
+      "Sem oferta disponível no Mercado Livre no momento. Este preço foi confirmado pela Vitale em 27/08/2026; pode não ser o preço de hoje.",
     );
   });
 
