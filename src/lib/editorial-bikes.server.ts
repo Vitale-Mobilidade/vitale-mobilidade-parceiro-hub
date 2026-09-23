@@ -1,6 +1,6 @@
 // Server-only: leitura read-only da aba de bikes com cache em memória (stale em falha).
 import { SHEET_CSV_URL } from "../../supabase/functions/_shared/bike-sheet";
-import { buildBikeCatalog, type CatalogBike } from "./bike-catalog";
+import { buildBikeCatalog, type CatalogBike } from "./editorial-bikes";
 
 const TTL_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 5000;

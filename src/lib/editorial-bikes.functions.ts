@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { fetchBikeCatalog } from "./bike-catalog.server";
-import { SLUG_RE, type CatalogBike } from "./bike-catalog";
+import { fetchBikeCatalog } from "./editorial-bikes.server";
+import { SLUG_RE, type CatalogBike } from "./editorial-bikes";
 
 export type { CatalogBike };
 
