@@ -53,3 +53,5 @@ O site legado publicado permanece no ar.
 - [ ] Comportamento de falha SSR documentado e aceito.
 - [ ] Baseline do ambiente e recuperação isolada a partir do backup validada.
 - [ ] Aceite operacional e plano de rollback.
+
+> **Nota de baseline/rollback:** O Lovable History registra a ação “Adicionou rota /grupodeofertas” como **Published** em 20/09/2026 18:28 BRT, e essa versão está favoritada. O commit Git legado `6095147846fb1279ee88a77770f5ccb4832f8f79` tem o mesmo título e timestamp `2026-09-20T21:28:54Z`. Essa correspondência indica o ponto de retorno do código publicado, mas **não comprova equivalência byte a byte do artefato servido**, nem substitui o ensaio de restauração de banco/Storage. As mudanças TanStack posteriores a essa marca continuam **não publicadas**.
