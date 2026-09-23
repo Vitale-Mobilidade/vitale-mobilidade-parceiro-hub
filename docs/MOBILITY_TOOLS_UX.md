@@ -1,6 +1,6 @@
 # Ferramentas de Mobilidade — contrato global de UX (9 calculadoras)
 
-Status em 23/09/2026. Nada aqui está publicado em produção; rotas implementadas existem só em PREVIEW.
+Status em 23/09/2026. As nove rotas estão publicadas. A revisão visual e comercial de `/calculadoras/tempo-no-transito` é o piloto da nova experiência; as outras oito rotas permanecem funcionais, mas ainda aguardam esse mesmo tratamento visual específico.
 
 ## Regras comuns (todas as rotas)
 
@@ -14,24 +14,21 @@ Status em 23/09/2026. Nada aqui está publicado em produção; rotas implementad
 
 ## Ordem e estado
 
-| # | Rota | Pergunta | Entradas principais | Bikes | Estado |
-|---|------|----------|---------------------|-------|--------|
-| 1 | `/calculadoras/economia` | Quanto posso economizar por mês? | modal, gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo % (100% interno do subconjunto) | até 2 | PREVIEW |
-| 2 | `/calculadoras/payback` | Em quanto tempo a bike se paga? | gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo % | até 2 | PREVIEW |
-| 3 | `/calculadoras/custo-anual-mobilidade` | Quanto gasto por ano para me locomover? | 4 categorias R$/mês (opcionais) + opcional "quanto deixaria de pagar usando bike" em R$ (0..soma); nunca chamado de economia líquida | nenhuma | PREVIEW |
-| 4 | `/calculadoras/uber-vs-bike` | Uber/99 ou bike? | gasto mensal só nas corridas que faria de bike, km/dia e dias/sem dessas corridas, orçamento, garupa | até 2 | PREVIEW |
-| 5 | `/calculadoras/carro-vs-bike` | Carro ou bike: quanto cada um custa no trajeto? | gasto variável só nos trajetos que faria de bike do carro (sem fixos), km/dia desses trajetos, dias/sem, continuará com o carro? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não" | até 2 | PREVIEW |
-| 6 | `/calculadoras/transporte-publico-vs-bike` | Transporte público ou bike no mês? | gasto mensal nas viagens que pretende trocar, tempo diário atual (ida+volta), tempo diário estimado de bike, dias/sem, km/dia antes da troca, orçamento opcional, garupa (toggle); percentual interno = 100% do subconjunto informado, explicado em "Como calculamos?" | até 2 | PREVIEW |
-| 7 | `/calculadoras/moto-vs-bike` | Moto ou bike elétrica no trajeto? | gasto variável só nos trajetos que faria de bike da moto (sem fixos), km/dia desses trajetos, dias/sem, continuará com a moto? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não" | até 2 | PREVIEW |
-| 8 | `/calculadoras/tempo-no-transito` | Quanto tempo por ano passo no trânsito? | minutos de ida, minutos de volta, minutos de bike por dia (ida+volta, estimativa do usuário), dias/sem, km/dia (opcional, só para bikes); orçamento/garupa opcionais em detalhes; semanas/ano (52) editável só em "Como calculamos?"; sem payback nem custo | até 2 (com km/dia) | PREVIEW |
-| 9 | `/calculadoras/tempo-recuperado` | Quanto tempo a bike devolve por ano? | tempo atual por dia (ida+volta), tempo de bike por dia (ida+volta), dias/sem, km/dia (opcional, só para bikes), orçamento opcional (+garupa) em detalhes; horas/mês = horas/ano ÷ 12; sem payback nem custo | até 2 (com km/dia) | PREVIEW |
+| #   | Rota                                       | Pergunta                                        | Entradas principais                                                                                                                                                                                                                                                    | Bikes              | Estado  |
+| --- | ------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
+| 1   | `/calculadoras/economia`                   | Quanto posso economizar por mês?                | modal, gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo % (100% interno do subconjunto)                                                                                                        | até 2              | PREVIEW |
+| 2   | `/calculadoras/payback`                    | Em quanto tempo a bike se paga?                 | gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo %                                                                                                                                             | até 2              | PREVIEW |
+| 3   | `/calculadoras/custo-anual-mobilidade`     | Quanto gasto por ano para me locomover?         | 4 categorias R$/mês (opcionais) + opcional "quanto deixaria de pagar usando bike" em R$ (0..soma); nunca chamado de economia líquida                                                                                                                                   | nenhuma            | PREVIEW |
+| 4   | `/calculadoras/uber-vs-bike`               | Uber/99 ou bike?                                | gasto mensal só nas corridas que faria de bike, km/dia e dias/sem dessas corridas, orçamento, garupa                                                                                                                                                                   | até 2              | PREVIEW |
+| 5   | `/calculadoras/carro-vs-bike`              | Carro ou bike: quanto cada um custa no trajeto? | gasto variável só nos trajetos que faria de bike do carro (sem fixos), km/dia desses trajetos, dias/sem, continuará com o carro? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não"           | até 2              | PREVIEW |
+| 6   | `/calculadoras/transporte-publico-vs-bike` | Transporte público ou bike no mês?              | gasto mensal nas viagens que pretende trocar, tempo diário atual (ida+volta), tempo diário estimado de bike, dias/sem, km/dia antes da troca, orçamento opcional, garupa (toggle); percentual interno = 100% do subconjunto informado, explicado em "Como calculamos?" | até 2              | PREVIEW |
+| 7   | `/calculadoras/moto-vs-bike`               | Moto ou bike elétrica no trajeto?               | gasto variável só nos trajetos que faria de bike da moto (sem fixos), km/dia desses trajetos, dias/sem, continuará com a moto? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não"             | até 2              | PREVIEW |
+| 8   | `/calculadoras/tempo-no-transito`          | Quanto tempo por ano passo no trânsito?         | minutos de ida, minutos de volta, minutos de bike por dia (ida+volta, estimativa do usuário), dias/sem, km/dia (opcional, só para bikes); orçamento/garupa opcionais em detalhes; semanas/ano (52) editável só em "Como calculamos?"; sem payback nem custo            | até 2 (com km/dia) | PREVIEW |
+| 9   | `/calculadoras/tempo-recuperado`           | Quanto tempo a bike devolve por ano?            | tempo atual por dia (ida+volta), tempo de bike por dia (ida+volta), dias/sem, km/dia (opcional, só para bikes), orçamento opcional (+garupa) em detalhes; horas/mês = horas/ano ÷ 12; sem payback nem custo                                                            | até 2 (com km/dia) | PREVIEW |
 
 As rotas 5–9 seguem o briefing já fechado: rápidas/reativas, sem wizard, sem parâmetros técnicos no fluxo principal (premissas só em "Como calculamos?"). As de tempo (8–9) usam `MobilityTimeEngine` com minutos informados pelo usuário; 52 semanas/ano é a premissa central documentada, não um input principal. Ordem sequencial após custo anual; nenhuma entra no sitemap nem recebe link até estar funcional em PREVIEW.
 
-
 Semanas/ano (52) é premissa central documentada em "Como calculamos?" para todas as rotas de tempo, nunca input principal.
-
-
 
 ## Decisão de UX: subconjunto concreto em vez de "% substituível" (23/09/2026, PREVIEW)
 
@@ -44,10 +41,21 @@ Filtros rígidos inalterados (elegível/ativa no Quiz ∩ oferta atual atômica,
 Todas as rotas com bikes (Economia, Payback, Uber, Carro, Moto, Transporte público, Tempo no trânsito, Tempo recuperado) usam `RecommendationFooter` após os cards; nas de tempo, orçamento e garupa ficam junto das bikes e não são necessários para calcular o tempo.
 
 ### Filtro opcional "Meu trajeto tem muitas subidas" (PREVIEW)
+
 Toggle compartilhado (`HillsToggle`) junto de garupa/orçamento nas 8 rotas com bikes; não entra na simulação financeira/temporal e altera a seleção na hora. Marcado: só entram bikes com evidência POSITIVA exata no `get_quiz_catalog` — `terrains` contém `muitas_subidas` ou `bestFor` contém `subidas`, ambos validados como arrays de strings (`hasHillTag`). Ausente/desconhecido não conta. Sem regex/IA sobre descrições, sem score do Quiz, sem reordenação por página. Os demais filtros (elegibilidade, oferta atômica, autonomia ×1,2, garupa, orçamento rígido, alternativa com vantagem verificável) seguem iguais; pode resultar em 0 ou 1 bike. O motivo cita apenas "marcada no catálogo do Quiz como indicada para trajetos com subidas" — marcação editorial, não prova de desempenho. Na data da implementação, 4 modelos elegíveis tinham a marcação.
 
 ### Regra da segunda bike (revisada)
+
 Capacidade extra não justifica alternativa (garupa já é filtro rígido quando pedida). Com teto informado: 1ª = menor preço compatível; 2ª = bike distinta dentro do teto com MAIOR autonomia declarada, desde que ≥25% (RELEVANT_AUTONOMY_GAIN) acima da 1ª; empate → menor preço. Sem ganho real, só uma bike com explicação. Sem teto: só a "opção econômica provisória" e convite para escolher um teto. Garupa/subidas valem para as duas.
 
 ### Assistente no mobile
-Nas rotas /calculadoras/*, abaixo de 768px, o botão fechado do assistente vira círculo de 56px só com ícone (aria-label mantido); continua abrindo só por clique. Desktop e demais rotas inalterados.
+
+Nas rotas /calculadoras/\*, abaixo de 768px, o botão fechado do assistente vira círculo de 56px só com ícone (aria-label mantido); continua abrindo só por clique. Desktop e demais rotas inalterados.
+
+## Piloto de jornada de decisão — tempo no trânsito (23/09/2026)
+
+- O resultado prioriza a conclusão em horas recuperadas; as projeções de 1, 3 e 5 anos comparam os dois cenários sem inventar tempo de deslocamento. Premissas continuam recolhidas.
+- Quando há distância informada e fonte comercial disponível, a seleção tenta mostrar duas bikes reais: uma econômica e outra com vantagem verificável de autonomia, sempre respeitando elegibilidade, oferta atômica, autonomia, garupa, subidas e teto. Se não houver segunda opção adequada, exibe uma só com justificativa honesta.
+- Cada opção mostra imagem, especificações disponíveis, preço e link afiliado direto; classificação do Radar só aparece quando ID, preço e URL coincidem com a oferta atual. Há caminhos contextuais para ficha, Radar, Comparador e Quiz, sem alterar o Quiz.
+- O bloco visual do Quiz e as conexões com vídeos reais e outras ferramentas fazem parte da página; não são publicados dados fictícios quando a fonte não tiver conteúdo.
+- Os componentes reutilizáveis do piloto estão em `src/components/mobility/TimeProjectionChart.tsx`; a lógica compartilhada de recomendação fica em `src/lib/mobility/recommendation-engine.ts`. As demais calculadoras precisam de conclusões e visualizações próprias antes de serem marcadas como concluídas nesta revisão global.
