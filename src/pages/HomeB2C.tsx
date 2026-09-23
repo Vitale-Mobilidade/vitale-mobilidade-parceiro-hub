@@ -154,7 +154,7 @@ function CalculatorPanel() {
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
         <p className="text-xs font-bold tracking-[0.2em] text-action">CALCULADORA DE ECONOMIA</p>
       </div>
-      <h2 id="calc" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
+      <h2 id="ferramentas" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
       <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
       <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
         <ul className="flex flex-1 justify-around gap-2">
