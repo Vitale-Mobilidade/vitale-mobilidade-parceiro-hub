@@ -10,6 +10,8 @@ import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
+import { UnavailableExplainer } from "@/components/radar/UnavailableExplainer";
+import { UNAVAILABLE_LEGEND } from "@/lib/radar-unavailable";
 import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
