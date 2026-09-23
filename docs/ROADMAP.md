@@ -13,7 +13,7 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 3. Validar SSR e performance
 4. Taxonomia, rotas, slugs e relacionamentos
 5. Home B2C
-6. Página Bike
+6. Criar entidade Bike no Supabase. Modelo central.
 7. Sheets → Supabase
 8. Oferta, preço e link afiliado
 9. Novo Radar em `/radar` e `/radar/{bikeId}`
