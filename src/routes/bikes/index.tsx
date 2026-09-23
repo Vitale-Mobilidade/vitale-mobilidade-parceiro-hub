@@ -185,7 +185,7 @@ function BikesIndex() {
         </div>
       )}
 
-      <main className={`responsive-container py-8 md:py-12 ${selected.length ? "pb-28" : ""}`}>
+      <main className={`responsive-container py-8 md:py-12 ${selected.length ? "pb-44" : ""}`}>
         {compareOpen && selected.length === COMPARE_MAX && (
           <div className="mb-10"><BikeComparison pair={[selected[0], selected[1]]} onClose={() => setCompareOpen(false)} /></div>
         )}

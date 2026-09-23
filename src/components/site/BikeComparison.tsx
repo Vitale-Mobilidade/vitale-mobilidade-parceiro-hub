@@ -13,8 +13,8 @@ import type { DiscoveryBike } from "@/lib/bikes-discovery.functions";
 export function CompareBar({ selected, onRemove, onOpen }: { selected: DiscoveryBike[]; onRemove: (id: string) => void; onOpen: () => void }) {
   if (!selected.length) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 shadow-2xl backdrop-blur" role="region" aria-label="Comparação de bikes">
-      <div className="responsive-container flex flex-wrap items-center gap-2 py-3 pr-20 lg:pr-4">
+    <div className="fixed inset-x-3 bottom-24 z-40 mx-auto max-w-3xl rounded-2xl border border-line bg-card/95 shadow-2xl backdrop-blur" role="region" aria-label="Comparação de bikes">
+      <div className="flex flex-wrap items-center gap-2 p-3">
         <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
           {selected.map((b) => (
             <li key={b.bikeId} className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface py-1 pl-3 pr-1 text-sm font-semibold text-ink ring-1 ring-line">
