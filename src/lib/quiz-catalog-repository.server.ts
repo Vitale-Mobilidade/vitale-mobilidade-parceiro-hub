@@ -1,6 +1,8 @@
 // Server-only: leitura pública do catálogo do Quiz via RPC `get_quiz_catalog`
 // (chave publicável/anon). Nunca usa service role nem lê tabelas diretamente.
 
+import { BIKE_ID_RE } from "./bike-identity";
+
 const TIMEOUT_MS = 5000;
 const MAX_ITEMS = 200;
 
@@ -9,7 +11,7 @@ export type QuizCatalogResult = { ok: true; bikes: unknown[] } | { ok: false };
 function isValidItem(item: unknown): boolean {
   if (!item || typeof item !== "object" || Array.isArray(item)) return false;
   const id = (item as { id?: unknown }).id;
-  return typeof id === "string" && /^[a-z0-9][a-z0-9_-]{0,63}$/i.test(id);
+  return typeof id === "string" && BIKE_ID_RE.test(id);
 }
 
 export async function fetchQuizCatalog(): Promise<QuizCatalogResult> {
