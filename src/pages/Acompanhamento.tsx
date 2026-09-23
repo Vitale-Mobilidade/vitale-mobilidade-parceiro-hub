@@ -13,6 +13,7 @@ import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
+import { ArchivedHistorySection, parseArchived } from "@/components/radar/ArchivedHistorySection";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
@@ -43,6 +44,11 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     [initial],
   );
   const error = !initial.ok;
+  // Histórico arquivado: sem oferta atual, fora dos rankings e dos indicadores.
+  const archived = useMemo(
+    () => parseArchived(initial.ok ? ((initial.archived as unknown[]) ?? []) : []),
+    [initial],
+  );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("opportunity");
   const [chips, setChips] = useState<ChipKey[]>([]);
