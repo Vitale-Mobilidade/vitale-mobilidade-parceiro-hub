@@ -676,7 +676,21 @@ function CalculadoraEconomia() {
                     </Link>
                     .
                   </p>
-                ) : bikes.length === 0 ? (
+                ) : !hasReplacement ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Você informou que 0% do trajeto seria feito de bike, então não há cenário de uso para comparar
+                    modelos.
+                  </p>
+                ) : recommendation && !recommendation.ok ? (
+                  <div className="mt-3 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive" role="alert">
+                    <p className="font-bold">Corrija os dados abaixo para ver modelos compatíveis:</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {recommendation.errors.map((e) => (
+                        <li key={e}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : !recommendation || recommendation.bikes.length === 0 ? (
                   <p className="mt-3 text-sm text-muted-foreground">
                     Nenhum modelo com oferta ativa atende à sua distância diária com margem de segurança
                     {needsPassenger ? ", capacidade para garupa" : ""}
