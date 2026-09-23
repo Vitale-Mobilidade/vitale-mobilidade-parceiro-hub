@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import { getRadarBike, markRadarUnavailable } from "@/lib/radar.functions";
+import { getRadarBike, markRadarNotFound, markRadarUnavailable } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 
 const BASE = "https://vitalemobilidade.com/acompanhamento";
@@ -24,6 +24,8 @@ export const Route = createFileRoute("/acompanhamento/$bikeId")({
     const r = await getRadarBike({ data: { bikeId: params.bikeId } });
     // Falha temporária: 503 + Retry-After no SSR; não é tratada como bike inexistente.
     if (!r.ok && typeof window === "undefined") await markRadarUnavailable();
+    // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404.
+    if (r.ok && (r.bike === null || r.bike === undefined) && typeof window === "undefined") await markRadarNotFound();
     return r;
   },
   head: ({ params, loaderData }) => {
