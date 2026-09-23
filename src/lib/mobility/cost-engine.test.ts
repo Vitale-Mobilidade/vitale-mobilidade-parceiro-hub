@@ -238,3 +238,27 @@ describe("MobilityCostEngine — exportação agregada", () => {
     expect(MobilityCostEngine.computeAnnual).toBe(computeAnnualMobilityCost);
   });
 });
+
+describe("computeAnnualMobilityCost — valor direto em R$", () => {
+  const base = { carMoto: 300, rideHailing: 200, publicTransport: 0, parkingOther: 100 };
+  it("usa o valor informado sem percentual nem arredondamento extra", () => {
+    const r = computeAnnualMobilityCost({ ...base, replaceableMonthly: 250.35 });
+    if (!r.ok) throw new Error();
+    expect(r.data.monthlyTotal).toBe(600);
+    expect(r.data.replaceableMonthly).toBe(250.35);
+    expect(r.data.replaceableAnnual).toBe(3004.2);
+  });
+  it("vazio (null) mostra total e deixa potencial não informado", () => {
+    const r = computeAnnualMobilityCost({ ...base, replaceableMonthly: null });
+    if (!r.ok) throw new Error();
+    expect(r.data.annualTotal).toBe(7200);
+    expect(r.data.replaceableMonthly).toBeNull();
+    expect(r.data.replaceableAnnual).toBeNull();
+  });
+  it("aceita 0 e o total exato; recusa acima da soma e negativo", () => {
+    expect(computeAnnualMobilityCost({ ...base, replaceableMonthly: 0 }).ok).toBe(true);
+    expect(computeAnnualMobilityCost({ ...base, replaceableMonthly: 600 }).ok).toBe(true);
+    expect(computeAnnualMobilityCost({ ...base, replaceableMonthly: 600.01 }).ok).toBe(false);
+    expect(computeAnnualMobilityCost({ ...base, replaceableMonthly: -1 }).ok).toBe(false);
+  });
+});

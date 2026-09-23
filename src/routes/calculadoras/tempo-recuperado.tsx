@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { TimeProjectionChart } from "@/components/mobility/TimeProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -142,13 +142,6 @@ function TempoRecuperado() {
                   <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => mark("daysPerWeek")} suffix="dias" step="1" error={err("daysPerWeek")} />
                   <NumberField name="dailyKm" label="Km por dia (opcional)" value={dailyKm} onChange={setDailyKm} onBlur={() => mark("dailyKm")} suffix="km" step="0.1" help="Só para sugerir bikes com autonomia suficiente." error={err("dailyKm")} />
                 </div>
-                <details className="rounded-md bg-surface p-3 ring-1 ring-line">
-                  <summary className="min-h-11 cursor-pointer text-sm font-bold text-ink">Filtrar bikes por orçamento e garupa (opcional)</summary>
-                  <div className="mt-3 space-y-4">
-                    <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => mark("budget")} error={err("budget")} />
-                    <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
-                  </div>
-                </details>
               </div>
             </div>
 
@@ -184,6 +177,10 @@ function TempoRecuperado() {
                 <h2 id="bikes" className="text-2xl font-black text-ink">Bikes com autonomia para seu trajeto</h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{QUICK_ORDER_CRITERION} Esta ferramenta não calcula economia financeira nem payback.</p>
               </div>
+              <div className="mt-5 grid gap-4 rounded-md bg-surface p-4 ring-1 ring-line lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => mark("budget")} error={err("budget")} />
+                <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
+              </div>
               {km === null || km <= 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Informe os km por dia para vermos quais bikes têm autonomia suficiente. Sem essa informação, não sugerimos modelos.</p>
               ) : !sourceOk ? (
@@ -195,11 +192,14 @@ function TempoRecuperado() {
               ) : bikes.length === 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Nenhuma bike com oferta atual atende à distância, margem de autonomia, garupa e orçamento informados. Não afrouxamos os filtros.</p>
               ) : (
+<>
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {bikes.map((bike) => (
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={false} onSelect={() => {}} position="calculadora_tempo_recuperado" />
                   ))}
                 </div>
+                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                </>
               )}
             </section>
           )}

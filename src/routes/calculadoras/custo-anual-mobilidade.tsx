@@ -61,8 +61,8 @@ const CATEGORY_LABEL: Record<AnnualCategory, string> = {
 };
 
 function CustoAnualMobilidade() {
-  const [values, setValues] = useState<Record<AnnualCategory | "replaceablePercent", string>>({
-    carMoto: "", rideHailing: "", publicTransport: "", parkingOther: "", replaceablePercent: "",
+  const [values, setValues] = useState<Record<AnnualCategory | "replaceableMonthly", string>>({
+    carMoto: "", rideHailing: "", publicTransport: "", parkingOther: "", replaceableMonthly: "",
   });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const set = (key: keyof typeof values) => (v: string) => setValues((c) => ({ ...c, [key]: v }));
@@ -81,11 +81,11 @@ function CustoAnualMobilidade() {
     rideHailing: fields.rideHailing.error,
     publicTransport: fields.publicTransport.error,
     parkingOther: fields.parkingOther.error,
-    replaceablePercent: validateNumber(values.replaceablePercent, "Percentual", LIMITS.replaceablePercent),
+    replaceableMonthly: values.replaceableMonthly.trim() === "" ? null : validateNumber(values.replaceableMonthly, "Valor que deixaria de pagar", LIMITS.monthlyMoney),
   };
   const anySpendProvided = fields.carMoto.provided || fields.rideHailing.provided
     || fields.publicTransport.provided || fields.parkingOther.provided;
-  const ready = anySpendProvided && errors.replaceablePercent === null
+  const ready = anySpendProvided && errors.replaceableMonthly === null
     && !fields.carMoto.error && !fields.rideHailing.error
     && !fields.publicTransport.error && !fields.parkingOther.error;
   const result = useMemo(() => ready
@@ -94,10 +94,11 @@ function CustoAnualMobilidade() {
         rideHailing: fields.rideHailing.value,
         publicTransport: fields.publicTransport.value,
         parkingOther: fields.parkingOther.value,
-        replaceablePercent: Number(values.replaceablePercent.replace(",", ".")),
+        replaceableMonthly: values.replaceableMonthly.trim() === "" ? null : Number(values.replaceableMonthly.replace(",", ".")),
       })
-    : null, [ready, fields, values.replaceablePercent]);
+    : null, [ready, fields, values.replaceableMonthly]);
   const data = result?.ok ? result.data : null;
+  const overTotal = result && !result.ok ? result.errors.join(" ") : null;
   const err = (key: keyof typeof errors) => (touched[key] ? errors[key] : null);
 
   const insight = !data
@@ -105,11 +106,13 @@ function CustoAnualMobilidade() {
     : data.monthlyTotal === 0
       ? "Com esses dados, você não tem gasto mensal com deslocamento — não há o que substituir."
       : `Seu maior gasto é ${CATEGORY_LABEL[data.largestCategory!]}. ${
-          data.replaceableMonthly > 0
-            ? `A parcela que você acredita poder trocar por bike equivale a ${brl(data.replaceableAnnual)} por ano — isso é gasto potencialmente substituível, não economia garantida${
+          data.replaceableMonthly === null
+            ? "Para ver o potencial substituível, informe quanto por mês você acha que deixaria de pagar usando bike."
+            : data.replaceableMonthly > 0
+            ? `Você estima deixar de pagar ${brl(data.replaceableAnnual ?? 0)} por ano — é gasto potencialmente substituível, não economia líquida: ainda falta descontar o custo da bike${
                 fields.carMoto.value > 0 ? ": custos fixos de um carro ou moto que você mantiver continuam existindo." : "."
               }`
-            : "Com 0% de substituição, nenhuma parte desse gasto é considerada substituível."
+            : "Você informou R$ 0: nenhuma parte desse gasto é considerada substituível."
         }`;
 
   return (
@@ -145,15 +148,14 @@ function CustoAnualMobilidade() {
                   ))}
                 </div>
                 <NumberField
-                  name="replaceablePercent"
-                  label="Quanto disso você acredita poder trocar por bike?"
-                  value={values.replaceablePercent}
-                  onChange={set("replaceablePercent")}
-                  onBlur={touch("replaceablePercent")}
-                  suffix="%"
-                  step="1"
-                  help="Uma estimativa sua, de 0 a 100%."
-                  error={err("replaceablePercent")}
+                  name="replaceableMonthly"
+                  label="Desses gastos, quanto por mês você acha que deixaria de pagar se usasse bike? (opcional)"
+                  value={values.replaceableMonthly}
+                  onChange={set("replaceableMonthly")}
+                  onBlur={touch("replaceableMonthly")}
+                  suffix="R$/mês"
+                  help="Uma estimativa sua, de R$ 0 até a soma dos gastos acima. Não é economia líquida: o custo da bike ainda não foi descontado."
+                  error={err("replaceableMonthly") ?? overTotal}
                 />
               </div>
             </div>
@@ -164,7 +166,7 @@ function CustoAnualMobilidade() {
                 <div className="mt-5 grid min-h-72 place-items-center rounded-lg bg-surface p-6 text-center ring-1 ring-line">
                   <div className="max-w-sm">
                     <Wallet className="mx-auto h-9 w-9 text-action" aria-hidden="true" />
-                    <p className="mt-3 font-bold text-ink">Informe pelo menos um gasto e o percentual para ver o total</p>
+                    <p className="mt-3 font-bold text-ink">Informe pelo menos um gasto para ver o total</p>
                     <p className="mt-2 text-sm text-muted-foreground">Nenhum resultado aparece enquanto esses valores estiverem vazios ou inválidos.</p>
                   </div>
                 </div>
@@ -173,8 +175,8 @@ function CustoAnualMobilidade() {
                   <dl className="grid grid-cols-2 gap-3">
                     <Metric label="Custo mensal total" value={brl(data.monthlyTotal, true)} />
                     <Metric label="Custo anual total" value={brl(data.annualTotal, true)} emphasis />
-                    <Metric label="Potencialmente substituível / mês" value={brl(data.replaceableMonthly, true)} />
-                    <Metric label="Potencialmente substituível / ano" value={brl(data.replaceableAnnual, true)} emphasis />
+                    <Metric label="Deixaria de pagar / mês (sua estimativa)" value={data.replaceableMonthly === null ? "Não informado" : brl(data.replaceableMonthly, true)} />
+                    <Metric label="Deixaria de pagar / ano (sua estimativa)" value={data.replaceableAnnual === null ? "Não informado" : brl(data.replaceableAnnual, true)} emphasis />
                   </dl>
                   <p className="rounded-md bg-surface p-4 text-sm leading-relaxed text-ink ring-1 ring-line">{insight}</p>
                   {data.monthlyTotal > 0 && (
@@ -200,7 +202,7 @@ function CustoAnualMobilidade() {
                 <ul className="mt-2 list-disc space-y-2 pl-5">
                   <li>Custo mensal = carro/moto + Uber/99 + transporte público + estacionamento e outros.</li>
                   <li>Custo anual = custo mensal × 12.</li>
-                  <li>Potencialmente substituível = custo mensal × percentual informado (e × 12 no ano).</li>
+                  <li>Deixaria de pagar = valor em R$/mês que você informa (0 até a soma dos gastos) e × 12 no ano. Não descontamos o custo da bike aqui.</li>
                   <li>Valores arredondados para centavos; limite de R$ {LIMITS.monthlyMoney.max.toLocaleString("pt-BR")} por campo.</li>
                 </ul>
               </div>
