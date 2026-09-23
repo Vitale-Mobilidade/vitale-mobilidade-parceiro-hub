@@ -181,18 +181,22 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     </p>
                   </>
                 ) : (
-                  /* Sem oferta atual: nenhum preço atual, farol, CTA de compra ou alerta. */
+                  /* Sem oferta atual: mantemos o último preço REAL registrado, rotulado como histórico.
+                     Sem farol, sem CTA de compra e sem alerta que prometa oferta. */
                   <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
-                    <p className="font-bold text-ink">Link indisponível no momento</p>
-                    {bike.lastObservedAt ? (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Último preço registrado em {formatDateBR(bike.lastObservedAt)}
-                        {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 && `: ${formatBRL(bike.lastObservedPrice)}`}.
-                        Esse valor é histórico e não representa o preço de hoje.
+                    <p className="text-sm font-semibold text-muted-foreground">Último preço registrado</p>
+                    {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 ? (
+                      <p className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
+                        {formatBRL(bike.lastObservedPrice)}
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm text-muted-foreground">Não há preço atual registrado para este modelo.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Não temos preço registrado para este modelo.</p>
                     )}
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Sem oferta disponível no Mercado Livre no momento.
+                      {bike.lastObservedAt && ` Registrado pela Vitale em ${formatDateBR(bike.lastObservedAt)}; pode não ser o preço de hoje.`}
+                    </p>
+                    <UnavailableExplainer dateISO={bike.lastObservedAt} className="mt-3" />
                   </div>
                 )}
 
