@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Calculator, GitCompareArrows, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Sparkles } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
 
 /*
  * Hub de ferramentas de decisão. Só lista fluxos que existem hoje (Quiz, Radar, catálogo).
- * Comparador e calculadora aparecem como contexto honesto, sem CTA, sem número inventado.
+ * Não mostra produtos "em construção": se ainda não existe, não aparece como promessa.
  * Não duplica lógica do Radar nem lê dados: é uma página de orientação.
  */
 
@@ -91,34 +91,61 @@ function FerramentasPage() {
             </ul>
           </section>
 
-          <section aria-labelledby="em-construcao" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
-            <h2 id="em-construcao" className="section-h2 text-ink">Em construção</h2>
-            <p className="mt-2 max-w-2xl text-muted-foreground">
-              Estas ferramentas ainda não existem. Preferimos avisar a publicar um resultado que não podemos sustentar
-              com dado real.
-            </p>
-            <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-              <li className="rounded-2xl bg-surface p-5 ring-1 ring-line">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-muted-foreground">
-                  <GitCompareArrows className="h-5 w-5" aria-hidden="true" />
+          <section aria-labelledby="caminho" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+            <h2 id="caminho" className="section-h2 text-ink">Um caminho para decidir</h2>
+            <ol className="mt-6 space-y-5">
+              <li className="flex gap-4">
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
+                >
+                  1
                 </span>
-                <h3 className="mt-3 font-bold text-ink">Comparador lado a lado</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Enquanto não fica pronto, dá para comparar especificações e preços modelo a modelo no catálogo e no
-                  Radar.
-                </p>
+                <div>
+                  <h3 className="font-bold text-ink">Descubra seu perfil no Quiz</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Poucas perguntas sobre trajeto e uso indicam os modelos que combinam com você.{" "}
+                    <Link to="/escolherbike" className="font-semibold text-action underline underline-offset-2">
+                      Fazer o quiz
+                    </Link>
+                  </p>
+                </div>
               </li>
-              <li className="rounded-2xl bg-surface p-5 ring-1 ring-line">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-muted-foreground">
-                  <Calculator className="h-5 w-5" aria-hidden="true" />
+              <li className="flex gap-4">
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
+                >
+                  2
                 </span>
-                <h3 className="mt-3 font-bold text-ink">Calculadora de economia</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  A ideia é estimar quanto você economiza trocando carro, aplicativo ou ônibus pela bike. Ainda não
-                  publicamos nenhum número.
-                </p>
+                <div>
+                  <h3 className="font-bold text-ink">Conheça os modelos no catálogo</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Autonomia, capacidade, descrição, vídeos reais e o preço da oferta atual quando existe.{" "}
+                    <Link to="/bikes" className="font-semibold text-action underline underline-offset-2">
+                      Ver os modelos
+                    </Link>
+                  </p>
+                </div>
               </li>
-            </ul>
+              <li className="flex gap-4">
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
+                >
+                  3
+                </span>
+                <div>
+                  <h3 className="font-bold text-ink">Confira o preço no Radar</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Histórico de preços observado com a data de cada leitura, para decidir se vale comprar agora.{" "}
+                    <Link to="/radar" className="font-semibold text-action underline underline-offset-2">
+                      Abrir o Radar
+                    </Link>
+                  </p>
+                </div>
+              </li>
+            </ol>
           </section>
         </div>
       </main>
