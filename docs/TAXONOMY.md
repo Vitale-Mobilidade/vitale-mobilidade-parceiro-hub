@@ -4,23 +4,23 @@
 
 ## 1. Rotas legadas ativas (até paridade/cutover)
 
-| Rota | Propósito | Observação |
-|------|-----------|------------|
-| `/escolherbike` | Quiz de recomendação de bike elétrica | Preservada indefinidamente; canonical fixo. |
-| `/acompanhamento` | Radar de preços (listagem) | Ativa durante a paridade; futuramente redirecionável para `/radar`. |
-| `/acompanhamento/{bikeId}` | Radar de preços (detalhe da bike) | Usa o `bike_id` legado original. Ativa durante a paridade. |
+| Rota                       | Propósito                             | Observação                                                          |
+| -------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
+| `/escolherbike`            | Quiz de recomendação de bike elétrica | Preservada indefinidamente; canonical fixo.                         |
+| `/acompanhamento`          | Radar de preços (listagem)            | Ativa durante a paridade; futuramente redirecionável para `/radar`. |
+| `/acompanhamento/{bikeId}` | Radar de preços (detalhe da bike)     | Usa o `bike_id` legado original. Ativa durante a paridade.          |
 
 ## 2. Rotas futuras reservadas (sem páginas criadas nesta etapa)
 
-| Rota | Propósito | Restrição |
-|------|-----------|-----------|
-| `/radar` | Listagem do Radar de preços | Somente após contrato Bike/oferta validado. |
-| `/radar/{bikeId}` | Detalhe do Radar | Usa **o `bike_id` legado original**, incluindo underscore (`_`), sem conversão automática de formato. |
-| `/bikes` | Índice de bikes | Editorial; requer entidade Bike consolidada. |
-| `/bikes/{slug}` | Página editorial de uma bike | Usa **slug editorial separado e explícito**, distinto do `bike_id` técnico. Nenhum slug oficial é declarado neste documento. |
-| `/conteudos` | Hub de conteúdo | Reservado. |
-| `/conteudos/{slug}` | Artigo ou vídeo | Reservado. |
-| `/comparar` | Comparador de bikes | Reservado (Etapa 19). |
+| Rota                | Propósito                    | Restrição                                                                                                                    |
+| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `/radar`            | Listagem do Radar de preços  | Somente após contrato Bike/oferta validado.                                                                                  |
+| `/radar/{bikeId}`   | Detalhe do Radar             | Usa **o `bike_id` legado original**, incluindo underscore (`_`), sem conversão automática de formato.                        |
+| `/bikes`            | Índice de bikes              | Editorial; requer entidade Bike consolidada.                                                                                 |
+| `/bikes/{slug}`     | Página editorial de uma bike | Usa **slug editorial separado e explícito**, distinto do `bike_id` técnico. Nenhum slug oficial é declarado neste documento. |
+| `/conteudos`        | Hub de conteúdo              | Reservado.                                                                                                                   |
+| `/conteudos/{slug}` | Artigo ou vídeo              | Reservado.                                                                                                                   |
+| `/comparar`         | Comparador de bikes          | Reservado (Etapa 19).                                                                                                        |
 
 ## 3. Entidade central: Bike
 
