@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "@/lib/router-compat";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, BellRing, Check, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

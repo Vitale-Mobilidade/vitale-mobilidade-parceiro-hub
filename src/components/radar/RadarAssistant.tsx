@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
 import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";

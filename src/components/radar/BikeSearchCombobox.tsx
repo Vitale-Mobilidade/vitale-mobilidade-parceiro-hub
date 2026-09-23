@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CLASSIFICATION_LABEL } from "@/lib/price-tracker";
