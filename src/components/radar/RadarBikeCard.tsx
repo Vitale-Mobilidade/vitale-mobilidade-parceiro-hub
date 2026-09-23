@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CLASSIFICATION_LABEL, formatBRL } from "@/lib/price-tracker";
 import { CLASSIFICATION_COLOR, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
+import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
   entry: RadarEntry;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
+  const base = useRadarBase();
   const cls = entry.metrics.classification;
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
 
@@ -23,7 +25,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
       }`}
     >
       <Link
-        to={`/acompanhamento/${entry.id}`}
+        to={`${base}/${entry.id}`}
         aria-label={`Ver análise de preço da ${entry.name}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
@@ -45,7 +47,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-base font-semibold leading-tight">
-            <Link to={`/acompanhamento/${entry.id}`} className="hover:text-primary focus-visible:outline-none">
+            <Link to={`${base}/${entry.id}`} className="hover:text-primary focus-visible:outline-none">
               {entry.name}
             </Link>
           </h3>
@@ -76,7 +78,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
           </Button>
           <div className="flex gap-2">
             <Button asChild variant="outline" className="min-h-11 flex-1">
-              <Link to={`/acompanhamento/${entry.id}`}>
+              <Link to={`${base}/${entry.id}`}>
                 <LineChart className="mr-2 h-4 w-4" aria-hidden="true" /> Ver análise
               </Link>
             </Button>

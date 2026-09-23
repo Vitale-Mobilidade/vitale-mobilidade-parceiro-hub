@@ -44,7 +44,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-const RADAR_DOC_PATH = /^\/acompanhamento(?:\/[^/]+)?\/?$/;
+const RADAR_DOC_PATH = /^\/(?:acompanhamento|radar)(?:\/[^/]+)?\/?$/;
 
 // Converte 200 + marcador do Radar em 503, preservando o mesmo body stream (sem lê-lo) e headers.
 function applyRadarUnavailableStatus(request: Request, response: Response): Response {

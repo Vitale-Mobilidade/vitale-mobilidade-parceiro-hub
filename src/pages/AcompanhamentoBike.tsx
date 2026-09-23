@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
 import { ArrowRight, BellRing, Check, ExternalLink } from "lucide-react";
-import { useLoaderData } from "@tanstack/react-router";
+import type { RadarBikeData } from "@/lib/radar-routes";
+import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, BikeMedia, PriceStatus, SectionHeading } from "@/components/site/site-ui";
@@ -37,11 +38,11 @@ interface RadarBikeDetail {
   maxObserved: number | null;
 }
 
-const AcompanhamentoBike = () => {
+const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
+  const base = useRadarBase();
   const { bikeId = "" } = useParams();
   const [window, setWindow] = useState<DailyWindow>(30);
   // Dados reais vêm do loader (SSR + hidratação; reexecuta ao trocar de bike).
-  const initial = useLoaderData({ from: "/acompanhamento/$bikeId" });
   const bike: RadarBikeDetail | null = initial.ok ? ((initial.bike as RadarBikeDetail | null) ?? null) : null;
   const error = !initial.ok;
   const [alertOpen, setAlertOpen] = useState(false);
@@ -75,7 +76,7 @@ const AcompanhamentoBike = () => {
           <ol className="flex flex-wrap items-center gap-1.5">
             <li><Link to="/" className="hover:text-action">Início</Link></li>
             <li aria-hidden="true">›</li>
-            <li><Link to="/acompanhamento" className="hover:text-action">Radar de preços</Link></li>
+            <li><Link to={base} className="hover:text-action">Radar de preços</Link></li>
             {bike && (<><li aria-hidden="true">›</li><li aria-current="page" className="font-medium text-ink">{bike.name}</li></>)}
           </ol>
         </nav>

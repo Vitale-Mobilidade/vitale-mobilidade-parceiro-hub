@@ -17,6 +17,8 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
+import { Route as RadarIndexRouteImport } from './routes/radar/index'
+import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +60,16 @@ const BikesSlugRoute = BikesSlugRouteImport.update({
   path: '/bikes/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RadarIndexRoute = RadarIndexRouteImport.update({
+  id: '/radar/',
+  path: '/radar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RadarBikeIdRoute = RadarBikeIdRouteImport.update({
+  id: '/radar/$bikeId',
+  path: '/radar/$bikeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,8 +78,10 @@ export interface FileRoutesByFullPath {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
+  '/radar/': typeof RadarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +90,10 @@ export interface FileRoutesByTo {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/bikes': typeof BikesIndexRoute
+  '/radar': typeof RadarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,8 +103,10 @@ export interface FileRoutesById {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
+  '/radar/': typeof RadarIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,8 +117,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
+    | '/radar/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +129,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/radar/$bikeId'
     | '/acompanhamento'
     | '/bikes'
+    | '/radar'
   id:
     | '__root__'
     | '/'
@@ -119,8 +141,10 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
+    | '/radar/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,8 +154,10 @@ export interface RootRouteChildren {
   PainelBikesRoute: typeof PainelBikesRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   BikesSlugRoute: typeof BikesSlugRoute
+  RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   BikesIndexRoute: typeof BikesIndexRoute
+  RadarIndexRoute: typeof RadarIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +218,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BikesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/radar/': {
+      id: '/radar/'
+      path: '/radar'
+      fullPath: '/radar/'
+      preLoaderRoute: typeof RadarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/radar/$bikeId': {
+      id: '/radar/$bikeId'
+      path: '/radar/$bikeId'
+      fullPath: '/radar/$bikeId'
+      preLoaderRoute: typeof RadarBikeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,8 +242,10 @@ const rootRouteChildren: RootRouteChildren = {
   PainelBikesRoute: PainelBikesRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   BikesSlugRoute: BikesSlugRoute,
+  RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   BikesIndexRoute: BikesIndexRoute,
+  RadarIndexRoute: RadarIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

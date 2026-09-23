@@ -23,6 +23,7 @@ describe("fundação TanStack Start — rotas", () => {
     ["/grupodeofertas", "/grupodeofertas"],
     ["/acompanhamento", "/acompanhamento/"],
     ["/painel-bikes", "/painel-bikes"],
+    ["/radar", "/radar/"],
   ])("%s resolve para a rota %s", (path, id) => {
     expect(leafId(path)).toBe(id);
   });
@@ -31,6 +32,13 @@ describe("fundação TanStack Start — rotas", () => {
     const matches = makeRouter().matchRoutes("/acompanhamento/d50_cross");
     const leaf = matches[matches.length - 1];
     expect(leaf?.routeId).toBe("/acompanhamento/$bikeId");
+    expect(leaf?.params).toMatchObject({ bikeId: "d50_cross" });
+  });
+
+  it("/radar/$bikeId extrai o parâmetro", () => {
+    const matches = makeRouter().matchRoutes("/radar/d50_cross");
+    const leaf = matches[matches.length - 1];
+    expect(leaf?.routeId).toBe("/radar/$bikeId");
     expect(leaf?.params).toMatchObject({ bikeId: "d50_cross" });
   });
 
@@ -43,7 +51,7 @@ describe("fundação TanStack Start — rotas", () => {
 
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
-    for (const id of ["/", "/escolherbike", "/acompanhamento/", "/acompanhamento/$bikeId", "/painel-bikes"]) {
+    for (const id of ["/", "/escolherbike", "/acompanhamento/", "/acompanhamento/$bikeId", "/radar/", "/radar/$bikeId", "/painel-bikes"]) {
       const route = (router.routesById as unknown as Record<string, { options: { component?: unknown } }>)[id];
       expect(route, id).toBeDefined();
       expect(route.options.component, id).toBeDefined();
