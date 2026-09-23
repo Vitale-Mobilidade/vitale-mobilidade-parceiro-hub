@@ -165,7 +165,7 @@ function BikeDetail() {
               <p className="mt-3 text-sm text-ink-foreground/80">Sem oferta ativa registrada para este modelo.</p>
             )}
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
-              <BuyCta link={offer?.link ?? null} className="w-full xl:w-auto xl:whitespace-nowrap" />
+              <BuyCta link={offer?.link ?? null} bikeId={bike.bikeId} position="bike_detail_hero" className="w-full xl:w-auto xl:whitespace-nowrap" />
               {radar && (
                 <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
