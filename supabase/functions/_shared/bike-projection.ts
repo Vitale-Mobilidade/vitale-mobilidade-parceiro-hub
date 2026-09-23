@@ -15,6 +15,10 @@ export interface BikeProjectionRow {
   image_url: string | null;
   description: string | null;
   short_description: string | null;
+  /** Rótulos editoriais literais da planilha (paridade com o leitor CSV atual). */
+  category: string | null;
+  autonomy_label: string | null;
+  capacity_label: string | null;
 }
 
 export interface BikeProjectionResult {
