@@ -1,6 +1,6 @@
-# Admin editorial P0 — branch de desenvolvimento
+# Admin editorial P0 — release inicial
 
-Status em 23/09/2026: **código local, não publicado; migration não aplicada; função não implantada; nenhum usuário provisionado; nenhuma chamada paga de IA feita.** O painel `/painel-bikes` e os fluxos de Sheets, Supabase, Quiz, Radar e Mercado Livre permanecem inalterados.
+Status em 23/09/2026: **código integrado ao Lovable e publicado; migration aditiva aplicada; função `editorial-admin` implantada; nenhum usuário Auth provisionado e nenhum artigo criado ou publicado.** O painel `/painel-bikes` e os fluxos de Sheets, Supabase, Quiz, Radar e Mercado Livre permanecem inalterados. O Admin está fechado até a designação explícita do primeiro usuário e papel.
 
 ## Intenção e escopo
 
@@ -52,23 +52,23 @@ Classificação: **estrutural**, por adicionar autenticação, schema, IA e publ
 | Growth/CRO | Artigo deve ligar vídeo, bike, Radar e oferta direta sem inventar preço. Condição: publicação só com SEO e links reais. |
 | PMO/QA | Alteração estrutural não deve ir ao vivo pelo simples build. Condição: recuperação do banco, teste de papéis, validação editorial e autorização de publicação. |
 
-Decisão consolidada: **GO para implementação local; NO-GO para release nesta task.** O ponto de conflito é velocidade versus segurança de autenticação/publicação; resolvido mantendo o legado operacional e deixando a nova base privada e não implantada até os gates abaixo.
+Decisão consolidada para a implementação inicial: **GO para código e schema privado; publicação autorizada em 23/09/2026 pelo responsável.** O primeiro acesso e o primeiro artigo permanecem gates operacionais separados. A publicação do frontend não equivale a declarar o Content Engine concluído.
 
 ## Revisão pós-implementação (oito perspectivas)
 
 - **Produto:** o fluxo P0 cabe num Admin editorial; os módulos P1/P2 não foram antecipados.
 - **CTO:** Bike segue entidade central; leitura pública editorial é projeção SSR e não altera o writer comercial. `pnpm validate` passou.
 - **IA:** saída do Compiler é filtrada e não publica sozinha; validação automática não substitui checagem humana de contexto.
-- **Segurança:** service role restrita à Edge Function, login por usuário, memberships e RLS fechada; o ensaio real de papéis ainda depende do ambiente de homologação.
+- **Segurança:** service role restrita à Edge Function, login por usuário, memberships e RLS fechada; a função rejeitou chamada sem autenticação. O ensaio real de papéis ainda depende de usuário provisionado.
 - **UX/UI:** acesso desktop/mobile foi inspecionado localmente; telas autenticadas ainda precisam de inspeção com usuário de teste provisionado. O chat externo do GTM foi excluído da área `/admin`.
 - **CX/Operação:** catálogo comercial permanece somente leitura, com atalho para o painel antigo; coexistência de dois logins é a limitação operacional explícita.
 - **Growth/CRO:** artigo publicado pode conectar vídeo, bike, Radar e link afiliado direto da oferta atual; falta o primeiro conteúdo real para provar a jornada completa.
-- **PMO/QA:** testes direcionados, typecheck e build passaram; migration, Edge Function, papéis e publicação não foram executados.
+- **PMO/QA:** testes direcionados, typecheck e build passaram antes da integração; os 31 arquivos do patch entraram sem conflitos no Lovable. Migration, função e frontend foram implantados; papéis e fluxo editorial completo ainda não foram exercitados.
 
 ## Gates de release e rollback
 
-Antes de aplicar a migration: captura recuperável e ensaio isolado de restauração do banco, por envolver schema/RLS/auth. Depois, ordem: (1) migration aditiva; (2) criar usuários de teste no Supabase Auth e memberships explícitas; (3) implantar `editorial-admin`; (4) testar negações de acesso por papel e ausência de leitura pública de drafts; (5) validar importação de vídeo, transcrição, geração, erro, edição, preview, publicação/despublicação e SEO/sitemap com um conteúdo real; (6) publicar frontend somente com autorização atual do responsável.
+O responsável dispensou nova rodada de backup nesta fase. A migration aditiva foi ensaiada em PostgreSQL isolado e aplicada no Lovable; seis tabelas privadas e RLS foram confirmadas. A função foi implantada e negou acesso sem autenticação. O frontend foi publicado mediante autorização explícita. Ainda faltam: (1) criar o primeiro usuário no Supabase Auth e membership explícita; (2) testar autorizações por papel e ausência de leitura pública de drafts; (3) validar importação de vídeo, transcrição, geração, erro, edição, preview, publicação/despublicação e SEO/sitemap com um conteúdo real. Não declarar a operação editorial pronta antes desses gates.
 
 Rollback preferido: reverter o frontend para o deployment anterior, desabilitar a Edge Function editorial, despublicar artigos via status e preservar as tabelas aditivas privadas para diagnóstico. **Não** apagar dados ou reaplicar migrations antigas. Uma falha na RPC editorial não derruba o sitemap de Bike/Radar, mas deixa temporariamente de listar artigos; nunca publicar frontend novo antes da migration, pois `/conteudos` depende dessa RPC.
 
-Pendências objetivas antes de declarar P0 concluído: usuários/papéis provisionados; ensaio de recuperação; Edge Function implantada; exercício real do Compiler com transcrição aprovada; primeiro artigo revisado e publicado; integração do painel comercial ao SSO (ou decisão explícita de manter acesso duplo). Nenhuma dessas foi presumida pelo build local.
+Pendências objetivas antes de declarar P0 concluído: usuário/papel provisionado; exercício real do Compiler com transcrição aprovada; primeiro artigo revisado e publicado; teste de permissões; decisão explícita sobre a convivência do painel comercial com acesso separado. O ensaio de recuperação integral não foi realizado nesta liberação; isso é risco aceito pelo responsável ao dispensar nova etapa de backup.

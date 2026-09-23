@@ -776,6 +776,317 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_admin_memberships: {
+        Row: {
+          active: boolean
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      editorial_articles: {
+        Row: {
+          blocks: Json
+          content_type: string
+          created_at: string
+          created_by: string | null
+          faq: Json
+          id: string
+          indexable: boolean
+          meta_description: string
+          model: string | null
+          og_description: string
+          og_image_url: string | null
+          og_title: string
+          primary_bike_id: string | null
+          prompt_version: number | null
+          published_at: string | null
+          published_by: string | null
+          related_article_ids: string[]
+          related_bike_ids: string[]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          revision: number
+          seo_title: string
+          slug: string | null
+          status: string
+          summary: string
+          summary_source_excerpt: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          validation_errors: Json
+          video_id: string
+        }
+        Insert: {
+          blocks?: Json
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          faq?: Json
+          id?: string
+          indexable?: boolean
+          meta_description?: string
+          model?: string | null
+          og_description?: string
+          og_image_url?: string | null
+          og_title?: string
+          primary_bike_id?: string | null
+          prompt_version?: number | null
+          published_at?: string | null
+          published_by?: string | null
+          related_article_ids?: string[]
+          related_bike_ids?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          seo_title?: string
+          slug?: string | null
+          status?: string
+          summary?: string
+          summary_source_excerpt?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_errors?: Json
+          video_id: string
+        }
+        Update: {
+          blocks?: Json
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          faq?: Json
+          id?: string
+          indexable?: boolean
+          meta_description?: string
+          model?: string | null
+          og_description?: string
+          og_image_url?: string | null
+          og_title?: string
+          primary_bike_id?: string | null
+          prompt_version?: number | null
+          published_at?: string | null
+          published_by?: string | null
+          related_article_ids?: string[]
+          related_bike_ids?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision?: number
+          seo_title?: string
+          slug?: string | null
+          status?: string
+          summary?: string
+          summary_source_excerpt?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_errors?: Json
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_articles_primary_bike_id_fkey"
+            columns: ["primary_bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["bike_id"]
+          },
+          {
+            foreignKeyName: "editorial_articles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
+      editorial_audit_logs: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          detail: Json
+          entity_id: string
+          entity_type: string
+          id: number
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          entity_id: string
+          entity_type: string
+          id?: never
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          entity_id?: string
+          entity_type?: string
+          id?: never
+        }
+        Relationships: []
+      }
+      editorial_compiler_runs: {
+        Row: {
+          actor: string | null
+          article_id: string | null
+          completed_at: string | null
+          error_code: string | null
+          id: string
+          kind: string
+          model: string
+          prompt_version: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          actor?: string | null
+          article_id?: string | null
+          completed_at?: string | null
+          error_code?: string | null
+          id?: string
+          kind: string
+          model: string
+          prompt_version: number
+          started_at?: string
+          status: string
+        }
+        Update: {
+          actor?: string | null
+          article_id?: string | null
+          completed_at?: string | null
+          error_code?: string | null
+          id?: string
+          kind?: string
+          model?: string
+          prompt_version?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_compiler_runs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_compiler_runs_prompt_version_fkey"
+            columns: ["prompt_version"]
+            isOneToOne: false
+            referencedRelation: "editorial_prompt_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      editorial_prompt_versions: {
+        Row: {
+          change_reason: string
+          changed_by: string | null
+          created_at: string
+          model: string
+          schema_version: number
+          system_prompt: string
+          version: number
+        }
+        Insert: {
+          change_reason: string
+          changed_by?: string | null
+          created_at?: string
+          model: string
+          schema_version?: number
+          system_prompt: string
+          version: number
+        }
+        Update: {
+          change_reason?: string
+          changed_by?: string | null
+          created_at?: string
+          model?: string
+          schema_version?: number
+          system_prompt?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      editorial_videos: {
+        Row: {
+          content_type: string
+          created_at: string
+          created_by: string | null
+          primary_bike_id: string | null
+          published_on: string | null
+          related_bike_ids: string[]
+          status: string
+          thumbnail_url: string | null
+          title: string
+          transcript: string | null
+          updated_at: string
+          updated_by: string | null
+          youtube_id: string
+          youtube_url: string
+        }
+        Insert: {
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          primary_bike_id?: string | null
+          published_on?: string | null
+          related_bike_ids?: string[]
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          youtube_id: string
+          youtube_url: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          primary_bike_id?: string | null
+          published_on?: string | null
+          related_bike_ids?: string[]
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          youtube_id?: string
+          youtube_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_videos_primary_bike_id_fkey"
+            columns: ["primary_bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["bike_id"]
+          },
+        ]
+      }
       integration_logs: {
         Row: {
           attempt: number | null
@@ -1307,6 +1618,11 @@ export type Database = {
       }
       get_bikes_public_catalog: { Args: never; Returns: Json }
       get_price_tracker_catalog: { Args: never; Returns: Json }
+      get_published_editorial_article: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
+      get_published_editorial_index: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
