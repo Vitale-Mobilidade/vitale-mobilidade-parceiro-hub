@@ -19,7 +19,7 @@ describe("Payback rápido", () => {
     expect(r.data.currentFixedRemoved).toBe(0);
     const [a] = computeBikePaybacks([bike("a", 6000)], r.data.currentTotalReplaced, r.data.bikeTotalCost);
     expect(a.projection.ok && a.projection.paybackMonths).toBeGreaterThan(0);
-    expect(paybackInsight(r.data.monthlySavings, [a])).toContain("se paga");
+    expect(paybackInsight(r.data.monthlySavings, a)).toContain("se paga");
   });
 
   it("0% zera economia e economia negativa não tem payback", () => {
@@ -30,7 +30,17 @@ describe("Payback rápido", () => {
     if (!neg.ok) return;
     const [p] = computeBikePaybacks([bike("a", 6000)], neg.data.currentTotalReplaced, neg.data.bikeTotalCost);
     expect(p.projection.ok && p.projection.paybackMonths).toBeNull();
-    expect(paybackInsight(neg.data.monthlySavings, [p])).toContain("Não existe prazo");
+    expect(paybackInsight(neg.data.monthlySavings, p)).toContain("Não existe prazo");
+  });
+
+  it("insight acompanha a bike selecionada e fica neutro sem seleção", () => {
+    const r = computePaybackCost(base);
+    if (!r.ok) throw new Error("cenário inválido");
+    const [cheap, pricey] = computeBikePaybacks([bike("a", 6000), bike("b", 9000)], r.data.currentTotalReplaced, r.data.bikeTotalCost);
+    expect(paybackInsight(r.data.monthlySavings, pricey)).toContain("B (");
+    expect(paybackInsight(r.data.monthlySavings, pricey)).not.toContain("A (");
+    expect(paybackInsight(r.data.monthlySavings, cheap)).toContain("A (");
+    expect(paybackInsight(r.data.monthlySavings, null)).toContain("Escolha uma bike");
   });
 
   it("rejeita entradas inválidas", () => {

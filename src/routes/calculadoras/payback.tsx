@@ -126,8 +126,8 @@ function CalculadoraPayback() {
   const markTouched = (name: string) => setTouched((current) => ({ ...current, [name]: true }));
   const visibleError = (name: keyof typeof errors) => (touched[name] ? errors[name] : null);
   const paybacks = data ? computeBikePaybacks(bikes, data.currentTotalReplaced, data.bikeTotalCost) : [];
-  const insight = data ? paybackInsight(data.monthlySavings, paybacks) : null;
   const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
+  const insight = data ? paybackInsight(data.monthlySavings, selectedPayback) : null;
   const paybackLabel = !selectedPayback || !selectedPayback.projection.ok
     ? "—"
     : selectedPayback.projection.paybackMonths === null
@@ -164,12 +164,12 @@ function CalculadoraPayback() {
               <div className="mt-6 space-y-5">
                 <NumberField
                   name="monthlySpend"
-                  label="Gasto mensal atual evitável"
+                  label="Quanto você gasta hoje por mês nesses deslocamentos"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help="Some só o que deixaria de gastar no trajeto: passagens, corridas, combustível, pedágio, estacionamento. Não inclua seguro, IPVA ou custos fixos de um veículo que continuará com você."
+                  help="Informe o gasto atual total desses trajetos, antes de qualquer troca pela bike — o percentual abaixo define quanto dele seria substituído. Inclua só custos que deixariam de existir (passagens, corridas, combustível, pedágio, estacionamento); não inclua seguro, IPVA ou outros custos fixos de veículo que continuará com você."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">

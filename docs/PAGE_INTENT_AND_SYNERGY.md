@@ -108,13 +108,15 @@ Estado de release (prévia / publicado por decisão explícita):
 - Quiz `/escolherbike` não foi alterado; seu resultado segue terminal, focado no clique direto ao Mercado Livre.
 - Continuam proibidos links a `/comparar` e `/conteudos` (não existem).
 
-## `/calculadoras/economia` — calculadora de economia (prévia, 23/09/2026)
+## `/calculadoras/economia` e `/calculadoras/payback` — calculadoras rápidas (PREVIEW, não publicadas, 23/09/2026)
 
-- **Decisão do visitante:** "trocar parte dos meus trajetos por uma bike elétrica compensa financeiramente no meu caso?"
-- **Resposta acima da dobra (mobile):** H1 direto + etapa 1 do formulário; o número mensal e anual aparece na etapa 3, com o detalhamento logo abaixo.
-- **CTA principal:** calcular o cenário. CTAs condicionais depois do resultado: ficha da bike, Radar (só quando monitorada) e anúncio no Mercado Livre — nunca antes de haver resultado.
-- **Fontes e recência:** cálculo 100% local com premissas do próprio usuário; bikes sugeridas vêm de `get_quiz_catalog` (elegíveis) ∩ `get_bikes_public_catalog` (oferta atual), lidas no carregamento da página. Sem fallback estático.
-- **Estados sem dados:** fonte indisponível ou nenhuma bike compatível → texto explícito e link para `/bikes`, sem afrouxar filtro nem exibir preço/link inventado. Economia zero ou negativa é exibida como tal.
-- **Limites:** não inclui preço/amortização da bike, financiamento, seguro da bike, depreciação do veículo nem valor do tempo; custos fixos de carro/moto só entram quando o usuário declara que deixará de manter o veículo.
+- **Decisões do visitante:** Economia — "trocar parte dos trajetos por uma bike compensa por mês?"; Payback — "em quanto tempo uma bike real se paga?".
+- **Formato:** uma tela, sem wizard, etapas ou botão Calcular; campos começam vazios e o resultado aparece assim que os obrigatórios são válidos (antes disso, estado vazio honesto). Erros locais e acessíveis.
+- **Controles:** Economia — modal (carro/Uber/transporte público/moto/misto), gasto mensal atual, km/dia, dias/semana, % substituível, orçamento opcional (Sem limite, R$ 5/7/10/15 mil, Outro valor) e garupa. Payback — os mesmos sem modal (gasto atual total dos trajetos avaliados, só custos que deixariam de existir).
+- **Contrato de cálculo (`src/lib/mobility/`):** substituível = gasto mensal × %; custo da bike = km/dia × dias × 52/12 × % × energia/km central + manutenção central só com uso (premissas em `config.ts`); economia = substituível − custo da bike; anual = × 12. Payback por bike = preço atual ÷ economia mensal positiva (↑0,1 mês); saldos 12/24/36 = economia × meses − preço; economia ≤ 0 → sem payback. Gráfico começa no preço real da bike no mês 0.
+- **Bikes:** `get_quiz_catalog` (elegíveis) ∩ `get_bikes_public_catalog` (oferta atual) por `bikeId`, lidas no carregamento; máx. 2 (menor preço + alternativa distinta de maior autonomia/capacidade); filtros rígidos de link meli.la, preço > 0, autonomia com margem, garupa e orçamento. 0% → sem bikes. Selecionar uma bike atualiza métrica, gráfico e insight da Payback sem reload.
+- **CTAs condicionais:** ficha da bike, Radar só quando monitorada, anúncio Mercado Livre direto (analytics não bloqueante, `calculadora_economia` / `calculadora_payback`).
+- **Estados sem dados:** fonte indisponível, orçamento inválido ou nenhuma bike compatível → texto explícito, sem afrouxar filtros nem inventar preço/link. Economia zero/negativa exibida como tal.
+- **Limites:** sem financiamento, inflação, revenda, depreciação ou valor do tempo; custos fixos de veículo mantido nunca entram.
 - **Privacidade:** nenhum nome, e-mail ou telefone é pedido ou enviado.
 - **Sinergia:** `/ferramentas` é a porta de entrada; `/radar` responde "este preço está bom hoje?"; `/escolherbike` continua sendo a conversão terminal e não é alterado por esta página.
