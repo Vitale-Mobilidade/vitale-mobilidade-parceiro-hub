@@ -1,9 +1,8 @@
 import { Link } from "@/lib/router-compat";
 import { BellRing, ExternalLink, LineChart } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CLASSIFICATION_LABEL, formatBRL } from "@/lib/price-tracker";
-import { CLASSIFICATION_COLOR, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
+import { formatBRL } from "@/lib/price-tracker";
+import { shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { useRadarBase } from "@/lib/radar-base";
