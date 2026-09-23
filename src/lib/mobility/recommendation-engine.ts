@@ -4,7 +4,7 @@
  * oferta atômica atual do catálogo público). Não inventa score, preço, autonomia nem link.
  * Não altera nem reproduz o resultado do Quiz: aqui só há filtro verificável + ordenação explicada.
  */
-import { AUTONOMY_SAFETY_MARGIN, MAX_RECOMMENDATIONS, MELI_LINK_RE } from "./config";
+import { AUTONOMY_SAFETY_MARGIN, LIMITS, MAX_RECOMMENDATIONS, MELI_LINK_RE } from "./config";
 
 export type MobilityBikeCandidate = {
   bikeId: string;
@@ -24,10 +24,19 @@ export type MobilityBikeCandidate = {
 export type RecommendationCriteria = {
   dailyKm: number;
   needsPassenger: boolean;
+  /**
+   * Orçamento máximo é opcional: `null` significa "não filtrar por preço".
+   * Qualquer outro valor precisa ser plausível — entrada inválida é RECUSADA,
+   * nunca convertida silenciosamente em "sem limite".
+   */
   maxBudget: number | null;
 };
 
 export type RecommendedBike = MobilityBikeCandidate & { reason: string };
+
+export type RecommendationResult =
+  | { ok: true; bikes: RecommendedBike[] }
+  | { ok: false; errors: string[] };
 
 export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
