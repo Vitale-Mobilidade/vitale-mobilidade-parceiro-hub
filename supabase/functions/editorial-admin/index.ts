@@ -499,97 +499,95 @@ Deno.serve(async (req) => {
       if (error || !data) return json(req, { error: "Não foi possível criar o artigo." }, 409);
       return json(req, { article: data });
     }
+    if (action === "generate") {
+      if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
+      return generateStream(req, db, actor, body);
+    }
     if (action === "article-save") {
+      // Simple edit: title, intro and continuous body. Works for drafts and published articles alike.
       if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão ou ID inválido." }, 403);
       const old = await articleById(db, body.id);
       if (!old) return json(req, { error: "Artigo não encontrado." }, 404);
-      if (old.status === "published") return json(req, { error: "Despublique antes de editar." }, 409);
-      const slug = str(body.slug, 120);
-      if (!validEditorialSlug(slug)) return json(req, { error: "Slug inválido." }, 400);
-      const primaryBikeId = validBikeId(body.primaryBikeId) ? body.primaryBikeId : null;
-      const relatedBikeIds = arr(body.relatedBikeIds).filter((id) => id !== primaryBikeId);
-      const known = await knownBikes(db);
-      if ((primaryBikeId && !known.has(primaryBikeId)) || relatedBikeIds.some((id) => !known.has(id))) return json(req, { error: "Bike desconhecida." }, 400);
-      const blocks = parseArticleBlocks(body.blocks);
-      const faq = parseFaq(body.faq);
+      const sections = markdownToSections(str(body.body, 60000));
+      if (sections.length < 2) return json(req, { error: "O corpo do artigo precisa de pelo menos dois trechos." }, 400);
+      const overrides: Partial<EditorialArticle> = { title: str(body.title, 200) || old.title, summary: str(body.summary, 1500) };
+      if (body.advanced && typeof body.advanced === "object") {
+        const a = body.advanced as Body;
+        if (validEditorialSlug(a.slug)) overrides.slug = a.slug;
+        if (typeof a.seoTitle === "string") overrides.seo_title = str(a.seoTitle, 70);
+        if (typeof a.metaDescription === "string") overrides.meta_description = str(a.metaDescription, 170);
+        if (/^https:\/\//.test(str(a.ogImageUrl, 1000))) overrides.og_image_url = str(a.ogImageUrl, 1000);
+        const known = await knownBikes(db);
+        if (a.primaryBikeId === "" || a.primaryBikeId === null) overrides.primary_bike_id = null;
+        else if (validBikeId(a.primaryBikeId) && known.has(a.primaryBikeId)) overrides.primary_bike_id = a.primaryBikeId;
+        if (Array.isArray(a.relatedBikeIds)) overrides.related_bike_ids = arr(a.relatedBikeIds).filter((id) => known.has(id) && id !== (overrides.primary_bike_id ?? old.primary_bike_id));
+        if (typeof a.indexable === "boolean") overrides.indexable = a.indexable;
+      }
+      const next = await rebuildLayout(db, old, sections, overrides);
       const { data, error } = await db.from("editorial_articles").update({
-        title: str(body.title, 200), slug, summary: str(body.summary, 1200),
-        summary_source_excerpt: str(body.summarySourceExcerpt, 1200), blocks, faq,
-        seo_title: str(body.seoTitle, 70), meta_description: str(body.metaDescription, 170),
-        og_title: str(body.ogTitle, 160), og_description: str(body.ogDescription, 300),
-        og_image_url: /^https:\/\//.test(str(body.ogImageUrl, 1000)) ? body.ogImageUrl : null,
-        primary_bike_id: primaryBikeId, related_bike_ids: relatedBikeIds,
-        related_article_ids: Array.isArray(body.relatedArticleIds) ? [...new Set(body.relatedArticleIds.filter(uuid))].slice(0, 20) : [],
-        indexable: body.indexable === true, status: "draft", validation_errors: [], updated_by: actor.id,
+        title: next.title, slug: next.slug, summary: next.summary, blocks: next.blocks, faq: next.faq,
+        seo_title: next.seo_title, meta_description: next.meta_description, og_title: next.og_title,
+        og_description: next.og_description, og_image_url: next.og_image_url,
+        primary_bike_id: next.primary_bike_id, related_bike_ids: next.related_bike_ids, indexable: next.indexable,
+        validation_errors: [], updated_by: actor.id,
       }).eq("id", old.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
-      if (error || !data) return json(req, { error: "Conflito de edição. Recarregue o artigo." }, 409);
+      if (error || !data) return json(req, { error: "O artigo foi alterado em outra aba. Recarregue a página." }, 409);
       await log(db, actor, "article_revision", "article", old.id, revisionSnapshot(old));
       await log(db, actor, "article_edited", "article", old.id);
       return json(req, { article: data });
     }
-    if (action === "validate-article" || action === "review-article" || action === "publish-article") {
+    if (action === "article-status") {
       if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão ou ID inválido." }, 403);
+      const target = str(body.status, 20);
+      if (!["draft", "published", "archived"].includes(target)) return json(req, { error: "Status inválido." }, 400);
       const article = await articleById(db, body.id);
       if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
-      if (action === "validate-article") {
+      let patch: Body = { status: target, updated_by: actor.id };
+      if (target === "published") {
+        // Automatic QA immediately before going live; only an empty/unreliable article is refused.
+        const bikeIds = [article.primary_bike_id, ...article.related_bike_ids].filter(Boolean) as string[];
+        const related = await relatedArticlesFor(db, article.id, bikeIds, article.content_type);
+        const repaired = await rebuildLayout(db, article, article.blocks.filter((b) => b.type === "text"), {});
         const video = await videoById(db, article.video_id);
-        if (!video) return json(req, { error: "Vídeo de origem ausente." }, 422);
-        const catalog = await bikeCandidates(db);
-        const detection = detectEditorialBikes(video.title, video.transcript ?? "", catalog);
-        const bikeId = article.primary_bike_id ?? detection.primaryBikeId;
-        const { data: offer } = bikeId ? await db.from("bike_offers")
-          .select("bike_id").eq("bike_id", bikeId).eq("is_current", true).limit(1).maybeSingle() : { data: null };
-        const repaired = completeEditorialDraft({
-          title: article.title, slug: article.slug, summary: article.summary, seoTitle: article.seo_title,
-          metaDescription: article.meta_description, ogTitle: article.og_title,
-          ogDescription: article.og_description, blocks: article.blocks, faq: article.faq,
-          videoId: article.video_id, bikeId, relatedBikeIds: article.related_bike_ids,
-          contentType: article.content_type, hasCurrentOffer: Boolean(offer), addCommercialBlocks: false,
-          ogImageUrl: article.og_image_url && article.og_image_url !== EDITORIAL_OG_FALLBACK
-            ? article.og_image_url : video.thumbnail_url ||
-            catalog.find((bike) => bike.bike_id === bikeId)?.image_url || EDITORIAL_OG_FALLBACK,
-          relatedArticleIds: article.related_article_ids,
-        });
-        const candidate = { ...article, ...repaired, primary_bike_id: bikeId } as EditorialArticle;
-        const errors = await validate(db, candidate);
-        const { data, error } = await db.from("editorial_articles").update({
-          ...repaired, primary_bike_id: bikeId, validation_errors: errors,
-          status: errors.length ? "validation_error" : "ready", updated_by: actor.id,
-        }).eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
-        if (error || !data) return json(req, { error: "O artigo mudou. Recarregue antes de validar." }, 409);
-        await log(db, actor, "article_revision", "article", article.id, revisionSnapshot(article));
-        return json(req, { article: data, errors });
+        const errors = validateArticleForPublication(repaired, video?.transcript ?? "", await knownBikes(db));
+        if (errors.length) return json(req, { error: "Este artigo ainda não tem conteúdo suficiente para ir ao ar. Use Regenerar artigo." }, 422);
+        patch = { ...patch, title: repaired.title, slug: repaired.slug, summary: repaired.summary, blocks: repaired.blocks,
+          faq: repaired.faq, seo_title: repaired.seo_title, meta_description: repaired.meta_description,
+          og_title: repaired.og_title, og_description: repaired.og_description, og_image_url: repaired.og_image_url,
+          related_article_ids: related, indexable: true, validation_errors: [], published_by: actor.id };
+      } else if (target === "archived") patch.indexable = false;
+      let { data, error } = await db.from("editorial_articles").update(patch)
+        .eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
+      if (error?.code === "23505" && target === "published") {
+        ({ data, error } = await db.from("editorial_articles").update({ ...patch, slug: `${String(patch.slug).slice(0, 100)}-${article.video_id.toLowerCase()}` })
+          .eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle());
       }
-      const errors = await validate(db, article);
-      if (errors.length) return json(req, { error: "Corrija a validação antes de continuar.", errors }, 422);
-      if (action === "review-article") {
-        const { data, error } = await db.from("editorial_articles").update({
-          validation_errors: [], status: "ready", reviewed_at: new Date().toISOString(),
-          reviewed_by: actor.id, updated_by: actor.id,
-        }).eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
-        if (error || !data) return json(req, { error: "O artigo mudou. Recarregue antes de revisar." }, 409);
-        await log(db, actor, "article_reviewed", "article", article.id);
-        return json(req, { article: data });
-      }
-      if (!article.reviewed_at || article.status !== "ready") return json(req, { error: "Revisão humana pendente." }, 422);
-      const { data, error } = await db.from("editorial_articles").update({
-        status: "published", validation_errors: [], published_by: actor.id, updated_by: actor.id,
-      }).eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
-      if (error || !data) return json(req, { error: "Publicação falhou; revise a versão atual." }, 409);
+      if (error || !data) return json(req, { error: "Não foi possível alterar o status. Recarregue a página e tente novamente." }, 409);
       return json(req, { article: data });
     }
-    if (["unpublish-article", "archive-article", "delete-article"].includes(action)) {
+    if (action === "compile-article") {
+      // "Regenerar artigo": same orchestration as the first generation, into the same draft.
+      if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão editorial." }, 403);
+      const article = await articleById(db, body.id);
+      if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
+      if (article.status === "published") return json(req, { error: "Mude para Rascunho antes de regenerar." }, 409);
+      const video = await videoById(db, article.video_id);
+      if (!video || (video.transcript ?? "").trim().length < 200) return json(req, { error: "Não conseguimos gerar o artigo. Tente novamente." }, 422);
+      try { return json(req, { article: await generateInto(db, actor, article, video, () => {}) }); }
+      catch { return json(req, { error: "Não conseguimos gerar o artigo. Tente novamente." }, 422); }
+    }
+    if (["archive-article", "delete-article"].includes(action)) {
       if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão ou ID inválido." }, 403);
       const article = await articleById(db, body.id);
       if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
       if (action === "delete-article") {
         if (actor.role !== "admin" || article.status !== "archived" || body.confirm !== article.slug) {
-          return json(req, { error: "Exclusão exige Admin, artigo arquivado e confirmação literal do slug." }, 403);
+          return json(req, { error: "Exclusão exige Admin, artigo arquivado e confirmação do endereço." }, 403);
         }
         const { data: references, error: referencesError } = await db.from("editorial_articles")
           .select("id").contains("related_article_ids", [article.id]).limit(1);
         if (referencesError) throw new Error("article_dependency_read_failed");
-        if (references?.length) return json(req, { error: "Remova primeiro as relações de outros artigos com este conteúdo." }, 409);
+        if (references?.length) return json(req, { error: "Outro artigo aponta para este conteúdo." }, 409);
         const { error, count } = await db.from("editorial_articles").delete({ count: "exact" })
           .eq("id", article.id).eq("status", "archived").eq("revision", Number(body.revision));
         if (error) throw new Error("article_delete_failed");
@@ -597,16 +595,10 @@ Deno.serve(async (req) => {
         await log(db, actor, "article_deleted", "article", article.id, { slug: article.slug });
         return json(req, { ok: true });
       }
-      const status = action === "archive-article" ? "archived" : "draft";
-      const { data, error } = await db.from("editorial_articles").update({ status, indexable: false, updated_by: actor.id })
+      const { data, error } = await db.from("editorial_articles").update({ status: "archived", indexable: false, updated_by: actor.id })
         .eq("id", article.id).eq("revision", Number(body.revision)).select("*").maybeSingle();
       if (error || !data) return json(req, { error: "O artigo mudou. Recarregue antes de alterar o estado." }, 409);
       return json(req, { article: data });
-    }
-    if (action === "compile-article" || action === "regenerate-block" || action === "regenerate-section") {
-      if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
-      const result = await compile(db, actor, body);
-      return json(req, result.data, result.status);
     }
     if (action === "ai-status") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
