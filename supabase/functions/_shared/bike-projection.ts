@@ -130,9 +130,13 @@ export function buildBikeOfferRows(bikes: SnapshotBike[], pending: PendingOfferR
   return rows;
 }
 
-export async function projectBikeOffers(supabase: RpcClient, bikes: SnapshotBike[]): Promise<BikeOfferProjectionResult> {
+export async function projectBikeOffers(
+  supabase: RpcClient,
+  bikes: SnapshotBike[],
+  pending: PendingOfferRow[] = [],
+): Promise<BikeOfferProjectionResult> {
   try {
-    const { data, error } = await supabase.rpc("project_bike_offers_from_snapshot", { p_rows: buildBikeOfferRows(bikes) });
+    const { data, error } = await supabase.rpc("project_bike_offers_from_snapshot", { p_rows: buildBikeOfferRows(bikes, pending) });
     if (error) return { ok: false, error: String(error.message ?? error).slice(0, 300) };
     const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
     if (skipped.length) console.warn("[sync] offers projection skipped:", JSON.stringify(skipped));
