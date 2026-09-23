@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
-import { formatBRL, formatDateBR, formatDateTimeBR, CLASSIFICATION_LABEL } from "@/lib/price-tracker";
+import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import {
   rangePosition,
   DAILY_WINDOWS,
@@ -45,24 +45,17 @@ export function PriceIntelPanel({
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
-  // Leitura DESCRITIVA. Com histórico curto/descontínuo não qualificamos barato/caro
-  // e não exibimos selo prescritivo — os registros existentes são a base validada pelo time.
+  // Leitura FACTUAL e neutra: nenhum selo de avaliação ("bom preço", "oportunidade"),
+  // apenas comparação numérica com os registros validados manualmente pelo time.
   const verdict = forming
     ? "Comparação baseada nos registros disponíveis até agora para esta bike."
     : classification === "lowest"
-      ? "É o menor preço que já registramos para esta bike."
+      ? "É o menor valor registrado por nós para esta bike no período acompanhado."
       : classification === "good"
         ? `Está ${formatBRL(Math.abs(diff ?? 0))} abaixo do preço típico do período.`
         : classification === "typical"
           ? "Está dentro da faixa de preço mais comum do período."
           : `Está ${formatBRL(Math.abs(diff ?? 0))} acima do preço típico do período.`;
-
-  const verdictTone =
-    classification === "above"
-      ? "bg-destructive/10 text-destructive border-destructive/20"
-      : classification === "typical"
-        ? "bg-amber-50 text-amber-900 border-amber-200"
-        : "bg-mint/20 text-ink border-mint/40";
 
   const markerTone =
     classification === "above"
@@ -71,7 +64,7 @@ export function PriceIntelPanel({
         ? "bg-amber-500"
         : "bg-action";
 
-  const markerLabel = `Preço atual ${formatBRL(currentPrice)} — ${CLASSIFICATION_LABEL[classification]}`;
+  const markerLabel = `Preço atual ${formatBRL(currentPrice)} na escala dos registros`;
 
   return (
     <section
@@ -88,12 +81,6 @@ export function PriceIntelPanel({
             Preço de hoje comparado aos preços que registramos ({WINDOW_LABEL[String(window)]}).
           </p>
         </div>
-        {/* Selo só quando a leitura é conclusiva; nunca um selo grande para histórico curto. */}
-        {!forming && (
-          <p className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${verdictTone}`}>
-            {CLASSIFICATION_LABEL[classification]}
-          </p>
-        )}
       </div>
 
       <div className="px-4 py-4 sm:px-6">
@@ -128,7 +115,7 @@ export function PriceIntelPanel({
 
             <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
-                {forming ? "Menor registrado" : "Baixo preço"}
+                Menor registrado
                 <span className="block font-bold text-ink">{formatBRL(minPrice)}</span>
               </span>
               <span className="text-center">
@@ -138,7 +125,7 @@ export function PriceIntelPanel({
                 </span>
               </span>
               <span className="text-right">
-                {forming ? "Maior registrado" : "Preço alto"}
+                Maior registrado
                 <span className="block font-bold text-ink">{formatBRL(maxPrice)}</span>
               </span>
             </div>
