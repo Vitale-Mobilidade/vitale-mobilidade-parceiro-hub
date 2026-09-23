@@ -225,7 +225,24 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
   };
 }
 
-export const MobilityCostEngine = { compute: computeMobilityCost, computeQuick: computeQuickMobilityCost };
+/**
+ * Normaliza um campo de gasto OPCIONAL (custo anual): branco = ausente (tratado como 0
+ * somente quando outro campo tiver valor), sem erro. Preenchido: precisa ser número válido.
+ * Nunca converte texto inválido em 0 silenciosamente.
+ */
+export type OptionalSpendField = { value: number; provided: boolean; error: string | null };
+
+export function normalizeOptionalSpend(raw: string, label: string): OptionalSpendField {
+  if (raw.trim() === "") return { value: 0, provided: false, error: null };
+  const value = Number(raw.replace(",", "."));
+  if (!Number.isFinite(value) || value < 0) {
+    return { value: 0, provided: true, error: `${label}: informe um número válido e não negativo.` };
+  }
+  if (value < LIMITS.monthlyMoney.min || value > LIMITS.monthlyMoney.max) {
+    return { value: 0, provided: true, error: `${label}: valor fora do intervalo aceito (${LIMITS.monthlyMoney.min} a ${LIMITS.monthlyMoney.max}).` };
+  }
+  return { value, provided: true, error: null };
+}
 
 /**
  * Custo anual de mobilidade (visão de gasto, NÃO de economia).
