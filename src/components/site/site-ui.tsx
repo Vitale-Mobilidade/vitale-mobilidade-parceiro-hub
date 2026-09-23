@@ -25,9 +25,9 @@ export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
   );
 }
 
-type NavItem = { label: string; href?: string; to?: "/acompanhamento" };
+type NavItem = { label: string; href?: string; to?: "/acompanhamento" | "/bikes" };
 export const SITE_NAV: NavItem[] = [
-  { label: "Bikes", href: "/#bikes" },
+  { label: "Bikes", to: "/bikes" },
   { label: "Comparar", href: "/#comparar" },
   { label: "Conteúdos", href: "/#conteudos" },
   { label: "Ferramentas", href: "/#calc" },
@@ -73,9 +73,9 @@ export function SiteHeader() {
 
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter() {
-  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/acompanhamento" | "/grupodeofertas" }[] }[] = [
+  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/acompanhamento" | "/grupodeofertas" | "/bikes" }[] }[] = [
     { title: "Explorar", items: [
-      { label: "Bikes", href: "/#bikes" },
+      { label: "Bikes", to: "/bikes" },
       { label: "Escolher minha bike", to: "/escolherbike" },
       { label: "Radar de preços", to: "/acompanhamento" },
     ] },

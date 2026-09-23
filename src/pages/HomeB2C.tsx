@@ -60,7 +60,7 @@ function Shortcuts() {
   );
 }
 
-function BikesRow({ cards }: { cards: HomeCard[] }) {
+function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<string, string> }) {
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
@@ -74,18 +74,27 @@ function BikesRow({ cards }: { cards: HomeCard[] }) {
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
-            <Link to="/acompanhamento/$bikeId" params={{ bikeId: e.id }} className="group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-action">
+            <CardLink id={e.id} slug={slugs[e.id]}>
               <BikeMedia src={e.image} name={e.name} className="aspect-[4/3] w-full" />
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="line-clamp-2 font-bold text-ink">{e.name}</h3>
                 <p className="mt-auto pt-3 text-2xl font-black text-action">{formatBRL(e.currentPrice)}</p>
                 <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-ink group-hover:text-action">Ver detalhes <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
               </div>
-            </Link>
+            </CardLink>
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+const CARD_CLS = "group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-action";
+function CardLink({ id, slug, children }: { id: string; slug?: string; children: React.ReactNode }) {
+  return slug ? (
+    <Link to="/bikes/$slug" params={{ slug }} className={CARD_CLS}>{children}</Link>
+  ) : (
+    <Link to="/acompanhamento/$bikeId" params={{ bikeId: id }} className={CARD_CLS}>{children}</Link>
   );
 }
 

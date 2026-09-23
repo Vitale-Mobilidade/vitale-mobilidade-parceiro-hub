@@ -15,6 +15,8 @@ import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
+import { Route as BikesIndexRouteImport } from './routes/bikes/index'
+import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +48,16 @@ const AcompanhamentoBikeIdRoute = AcompanhamentoBikeIdRouteImport.update({
   path: '/acompanhamento/$bikeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BikesIndexRoute = BikesIndexRouteImport.update({
+  id: '/bikes/',
+  path: '/bikes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BikesSlugRoute = BikesSlugRouteImport.update({
+  id: '/bikes/$slug',
+  path: '/bikes/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,7 +65,9 @@ export interface FileRoutesByFullPath {
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/bikes/$slug': typeof BikesSlugRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
+  '/bikes/': typeof BikesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,7 +75,9 @@ export interface FileRoutesByTo {
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/bikes/$slug': typeof BikesSlugRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
+  '/bikes': typeof BikesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,7 +86,9 @@ export interface FileRoutesById {
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
+  '/bikes/$slug': typeof BikesSlugRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
+  '/bikes/': typeof BikesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,7 +98,9 @@ export interface FileRouteTypes {
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
+    | '/bikes/$slug'
     | '/acompanhamento/'
+    | '/bikes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -88,7 +108,9 @@ export interface FileRouteTypes {
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
+    | '/bikes/$slug'
     | '/acompanhamento'
+    | '/bikes'
   id:
     | '__root__'
     | '/'
@@ -96,7 +118,9 @@ export interface FileRouteTypes {
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
+    | '/bikes/$slug'
     | '/acompanhamento/'
+    | '/bikes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -105,7 +129,9 @@ export interface RootRouteChildren {
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   PainelBikesRoute: typeof PainelBikesRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
+  BikesSlugRoute: typeof BikesSlugRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
+  BikesIndexRoute: typeof BikesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +178,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcompanhamentoBikeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bikes/': {
+      id: '/bikes/'
+      path: '/bikes'
+      fullPath: '/bikes/'
+      preLoaderRoute: typeof BikesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bikes/$slug': {
+      id: '/bikes/$slug'
+      path: '/bikes/$slug'
+      fullPath: '/bikes/$slug'
+      preLoaderRoute: typeof BikesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -161,7 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   GrupodeofertasRoute: GrupodeofertasRoute,
   PainelBikesRoute: PainelBikesRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
+  BikesSlugRoute: BikesSlugRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
+  BikesIndexRoute: BikesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
