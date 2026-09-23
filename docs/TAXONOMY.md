@@ -55,9 +55,9 @@ A `Bike` é a raiz do domínio. Ela se relaciona com:
 
 ## 5. Slugs, aliases e redirects
 
-- **Pendentes:** mapeamento de aliases e redirects entre `/acompanhamento/{bikeId}` e `/radar/{bikeId}`, e entre `/bikes/{slug}` e os IDs legados.
-- **Não declarar slug oficial de nenhuma bike neste documento.** A reconciliação deve cobrir 100% dos IDs legados antes do cutover.
-- Futuros redirects (quando aprovados) devem ser 301 e centralizados em configuração de rota, nunca hardcoded em componentes.
+- **Feito:** `/acompanhamento[/{bikeId}]` → `/radar[/{bikeId}]` (301 real, publicado e verificado no domínio); `/calc` e `/calc/` → `/ferramentas` (301, em prévia).
+- **Pendente:** mapeamento explícito entre `/bikes/{slug}` e IDs legados em redirects (hoje o slug é derivado por `_` → `-`, sem tabela de aliases).
+- Redirects são 301 centralizados em `src/lib/legacy-redirects.ts` + `src/server.ts`, nunca hardcoded em componentes.
 
 ## 6. Sitemap
 
@@ -65,11 +65,13 @@ O sitemap só inclui páginas públicas existentes e elegíveis à indexação. 
 
 - `/`
 - `/escolherbike`
-- `/acompanhamento`
+- `/radar`
+- `/bikes`
+- `/ferramentas`
 
-Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `/conteudos`, `/comparar`) ficam fora até que cada uma tenha `head()` SSR e regra de indexação definida.
+Fora do sitemap: painel (bloqueado no robots.txt), aliases 301 (`/acompanhamento`, `/calc`), rotas inexistentes (`/conteudos`, `/comparar`) e páginas de detalhe (`/radar/{bikeId}`, `/bikes/{slug}`) — estas dependem de geração dinâmica do sitemap, para não fixar uma lista que envelhece.
 
-## 7. `/bikes` e `/bikes/{slug}` — implementado em rascunho (23/09/2026)
+## 7. `/bikes` e `/bikes/{slug}` (histórico do rascunho de 23/09/2026 — links de `/acompanhamento` já migrados para `/radar`)
 
 - Fonte: aba oficial de bikes (gid=0), leitura read-only no servidor com cache; inclui todas as linhas nomeadas, inclusive "Não Elegível" (elegibilidade só afeta o Quiz).
 - `bikeId` canônico = mesmo resolvedor do sync (`resolveBikeId`/`normalizeName`); `slug` = `bikeId` com `_` → `-` (ex.: `v9_max_20ah` → `v9-max-20ah`). Colisões de ID/slug descartam a linha repetida, nunca sobrescrevem.
