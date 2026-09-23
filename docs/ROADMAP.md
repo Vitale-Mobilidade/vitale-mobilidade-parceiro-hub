@@ -226,3 +226,23 @@ Publicado no mesmo projeto Lovable: campos editoriais de `public.bikes` (deploy 
 - **Comprovado (local, HTTP real):** `/calc` → 301 `/ferramentas`; `/calc/?utm_source=yt&x=1` → 301 `/ferramentas?utm_source=yt&x=1`; `/acompanhamento/v8_ultra?utm_source=t` → 301 `/radar/v8_ultra?utm_source=t`; `/ferramentas` 200 com canonical `https://vitalemobilidade.com/ferramentas`; rota inexistente 404. 18 testes direcionados + typecheck + build.
 - **Não comprovado:** comportamento no domínio publicado (depende do Publish do responsável); nenhum ganho de tráfego/conversão medido.
 - **Rollback:** remover o bloco de redirect em `src/server.ts` (ou a função `legacyToolsRedirect`), reverter os links de "Ferramentas" para `/#calc` e retirar `/ferramentas` do sitemap. Nada de banco, Quiz, preço, elegibilidade, link afiliado ou analytics envolvido.
+
+---
+
+**Etapa 12 (incremento) — Radar público desacoplado da elegibilidade do Quiz + histórico arquivado (23/09/2026, PREVIEW, não publicado).**
+
+Migration `20260923142233_8a61d066-b019-4543-9aa3-b6f6b7f482b2.sql`: substitui apenas `get_price_tracker_catalog()` e `get_bike_price_history(text,int)`. Nenhum INSERT/UPDATE/DELETE, nenhuma mudança de schema, RLS, grants ou writer; `get_quiz_catalog()` intocada. Detalhe do contrato em `docs/BIKE_MODEL.md` §16.
+
+Estado verificado (leitura pela chave publicável + prévia local):
+- Radar ativo: **27 bikes** com oferta atual válida (eram 20), incluindo as 7 que o Quiz classifica como não elegíveis. Preço e link sempre da mesma linha de `bike_offers`; 0 divergências e 0 URLs fora do padrão `meli.la`.
+- Paridade das 20 já públicas: preço e link idênticos, nenhuma saiu do Radar.
+- Histórico arquivado: **3 bikes** (`v29_pro`, `v35`, `x50_action_pro`) em seção própria no fim de `/radar`, fora dos rankings, do destaque e do indicador "Bikes monitoradas" (que mostra 27). Detalhe acessível em `/radar/{bikeId}` sem preço atual, sem farol, sem CTA do Mercado Livre e sem alerta; `/radar/v35` traz "Link indisponível no momento" e "Último preço registrado em 10/09/2026: R$ 11.500" rotulado como histórico, mais o gráfico real (15 dias confirmados, 12 reconstruídos, desde 27/08/2026).
+- `PriceIntelPanel` declara a evidência da janela; `/radar/ft03` continua **"Histórico em formação"** (18 confirmados, 10 reconstruídos em 28 dias) — o estado **não** sumiu e só sumirá quando os critérios reais forem cumpridos. `dailyMetrics`, thresholds e a proveniência dos dias não mudaram.
+- Quiz: `get_quiz_catalog()` = 20, `/escolherbike` sem alteração. Home e `/bikes` continuam recebendo só o catálogo ativo (filtro em `fetchTrackerSplit`).
+- Verificação: typecheck, build e testes dirigidos (radar-archived 3, radar-rankings 12, quiz-radar-regression 6, radar-base 2, bikes-repository 5, affiliate-analytics 9).
+
+Arquivos: `src/lib/radar-repository.server.ts` (`fetchTrackerSplit`), `src/lib/radar.functions.ts`, `src/components/radar/ArchivedHistorySection.tsx` (novo), `src/components/radar/PriceIntelPanel.tsx`, `src/pages/Acompanhamento.tsx`, `src/pages/AcompanhamentoBike.tsx`, `src/lib/radar-archived.test.ts` (novo).
+
+Ressalva: o linter do Supabase mantém os avisos pré-existentes (RLS sem policy em 15 tabelas; RPCs SECURITY DEFINER executáveis por anon/authenticated, que é o desenho público intencional). Nenhum aviso novo.
+
+Rollback: restaurar as definições anteriores das duas funções e reverter os arquivos acima; nenhum dado de preço/histórico é tocado.
