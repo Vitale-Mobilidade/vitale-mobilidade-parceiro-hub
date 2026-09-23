@@ -191,3 +191,30 @@ describe("contrato do catálogo: métricas globais x pontos da janela", () => {
   });
 });
 
+
+describe("formatDateBR / formatDateTimeBR — sem off-by-one", () => {
+  it("data civil YYYY-MM-DD é formatada literalmente, sem deslocar o dia", async () => {
+    const { formatDateBR } = await import("./price-tracker");
+    expect(formatDateBR("2026-08-27")).toBe("27/08/2026");
+    expect(formatDateBR("2026-02-30")).toBe("—");
+  });
+
+  it("timestamp perto da meia-noite UTC usa America/Sao_Paulo explícito", async () => {
+    const { formatDateBR, formatDateTimeBR } = await import("./price-tracker");
+    // 00:30Z em 23/09 = 21:30 do dia 22/09 em São Paulo.
+    expect(formatDateBR("2026-09-23T00:30:00.000Z")).toBe("22/09/2026");
+    expect(formatDateTimeBR("2026-09-23T00:30:00.000Z")).toBe("22/09/2026 às 21:30");
+  });
+
+  it("entrada inválida ou ausente vira —", async () => {
+    const { formatDateBR, formatDateTimeBR } = await import("./price-tracker");
+    expect(formatDateBR("não-é-data")).toBe("—");
+    expect(formatDateBR(null)).toBe("—");
+    expect(formatDateTimeBR(undefined)).toBe("—");
+  });
+
+  it("data civil em formatDateTimeBR não inventa horário", async () => {
+    const { formatDateTimeBR } = await import("./price-tracker");
+    expect(formatDateTimeBR("2026-08-27")).toBe("27/08/2026");
+  });
+});

@@ -204,18 +204,53 @@ export function formatBRL(value: number | null | undefined): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
+/**
+ * Duas entradas distintas, sem off-by-one:
+ *  - "YYYY-MM-DD" (data civil, ex.: coluna `date` do Postgres): formatamos o
+ *    dia literalmente, sem interpretar como meia-noite UTC.
+ *  - Timestamp real (ISO com hora): formatamos em America/Sao_Paulo,
+ *    explicitamente — sem depender do fuso do servidor/navegador.
+ */
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const TIMEZONE_BR = "America/Sao_Paulo";
+
+function parseDateOnly(iso: string): { y: number; m: number; d: number } | null {
+  const match = DATE_ONLY_RE.exec(iso.trim());
+  if (!match) return null;
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  // Valida como data civil real (rejeita 2026-02-30 etc.).
+  const check = new Date(Date.UTC(y, m - 1, d));
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) return null;
+  return { y, m, d };
+}
+
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return "—";
+  if (DATE_ONLY_RE.test(iso.trim())) {
+    const civil = parseDateOnly(iso);
+    if (!civil) return "—"; // data civil impossível (ex.: 2026-02-30)
+    return `${String(civil.d).padStart(2, "0")}/${String(civil.m).padStart(2, "0")}/${civil.y}`;
+  }
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: TIMEZONE_BR,
+  });
 }
+
 
 export function formatDateTimeBR(iso: string | null | undefined): string {
   if (!iso) return "—";
+  // Data civil não tem horário: exibimos apenas a data, nunca "às 00:00".
+  if (parseDateOnly(iso)) return formatDateBR(iso);
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return `${formatDateBR(iso)} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  return `${formatDateBR(iso)} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TIMEZONE_BR })}`;
 }
 
 /** Link de compra: só aceitamos o Link Vitale completo com https://. */
