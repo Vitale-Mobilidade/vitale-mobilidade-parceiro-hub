@@ -85,18 +85,18 @@ const Acompanhamento = () => {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main>
-        <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
+        <section className="entry-hero">
           <picture>
             <source media="(max-width: 767px)" srcSet="/vitale-hero-mobile.webp" width={480} height={728} />
             <img src="/vitale-hero-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
           </picture>
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-ink/80" aria-hidden="true" />
-          <div className="responsive-container py-12 md:py-16">
-            <p className="text-xs font-bold tracking-[0.25em] text-mint">RADAR DE PREÇOS</p>
-            <h1 className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/80 max-md:to-ink/40" aria-hidden="true" />
+          <div className="responsive-container entry-hero-inner">
+            <p className="entry-eyebrow">RADAR DE PREÇOS</p>
+            <h1 className="entry-h1">
               Veja se hoje é um bom momento para <span className="text-mint">comprar sua bike elétrica</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-ink-foreground/90 md:text-lg">
+            <p className="entry-lead">
               Registramos os preços das bikes elétricas acompanhadas e comparamos o valor atual com o histórico real de cada modelo.
             </p>
             <div className="mt-6 max-w-xl text-foreground [&_label]:text-ink-foreground">
@@ -108,25 +108,29 @@ const Acompanhamento = () => {
                 onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
               />
             </div>
-            {!error && entries.length > 0 && (
-              <dl className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
-                {[
-                  { k: "Bikes monitoradas", v: String(summary.tracked) },
-                  { k: "No menor preço registrado", v: String(summary.atLowest) },
-                  { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1).replace(".", ",")}%` },
-                ].map((i) => (
-                  <div key={i.k} className="rounded-2xl bg-card p-4 text-card-foreground">
-                    <dd className="text-2xl font-extrabold text-ink">{i.v}</dd>
-                    <dt className="text-sm text-muted-foreground">{i.k}</dt>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {trackingSince && (
-              <p className="mt-3 text-sm text-ink-foreground/75">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
-            )}
           </div>
         </section>
+        {((!error && entries.length > 0) || trackingSince) && (
+          <div className={`responsive-container relative z-10 ${!error && entries.length > 0 ? "-mt-16 md:-mt-20" : "pt-4"}`}>
+              {!error && entries.length > 0 && (
+                <dl className="grid grid-cols-1 gap-3 rounded-2xl bg-card p-3 shadow-xl ring-1 ring-line sm:grid-cols-3">
+                  {[
+                    { k: "Bikes monitoradas", v: String(summary.tracked) },
+                    { k: "No menor preço registrado", v: String(summary.atLowest) },
+                    { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1).replace(".", ",")}%` },
+                  ].map((i) => (
+                    <div key={i.k} className="rounded-xl bg-surface p-4 text-card-foreground">
+                      <dd className="text-2xl font-extrabold text-ink">{i.v}</dd>
+                      <dt className="text-sm text-muted-foreground">{i.k}</dt>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {trackingSince && (
+                <p className="mt-3 text-sm text-muted-foreground">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
+              )}
+          </div>
+        )}
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
