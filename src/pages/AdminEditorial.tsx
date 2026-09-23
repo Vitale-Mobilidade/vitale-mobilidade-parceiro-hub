@@ -9,7 +9,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
-import { blocksToMarkdown, type EditorialArticle, type EditorialVideo } from
+import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle, type EditorialVideo } from
   "../../supabase/functions/_shared/editorial-contract";
 
 const BTN = "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
