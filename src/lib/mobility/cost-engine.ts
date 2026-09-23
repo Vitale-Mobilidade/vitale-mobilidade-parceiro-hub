@@ -111,6 +111,10 @@ export function computeMobilityCost(input: CostInput): CostResult {
       const okCons = checkRange(errors, "Consumo (km/l)", v.kmPerLiter, LIMITS.kmPerLiter);
       const okExtra = checkRange(errors, "Pedágio e estacionamento", v.variableExtrasMonthly, LIMITS.monthlyMoney);
       const okFixed = checkRange(errors, "Custos fixos mensais", v.fixedMonthly, LIMITS.monthlyMoney);
+      // Decisão sobre manter o veículo precisa ser explícita: `undefined` NUNCA vira "vendeu o veículo".
+      if (typeof v.keepsVehicle !== "boolean") {
+        errors.push("Manter o veículo: responda se você vai continuar com o carro/moto ou não.");
+      }
       if (okFuel && okCons) variableReplaced += (v.fuelPricePerLiter / v.kmPerLiter) * replacedKm;
       if (okExtra) variableReplaced += v.variableExtrasMonthly * share;
       if (okFixed) {
