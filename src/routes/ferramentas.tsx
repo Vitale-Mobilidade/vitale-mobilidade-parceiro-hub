@@ -69,6 +69,15 @@ const TOOLS = [
     body: "Informe o gasto variável do carro nesses trajetos e sua rotina para ver a economia líquida estimada, o payback e o custo acumulado de até duas bikes reais.",
   },
   {
+    key: "transporte-publico-vs-bike",
+    icon: Calculator,
+    title: "Transporte público vs bike",
+    to: "/calculadoras/transporte-publico-vs-bike" as const,
+    cta: "Comparar com minhas viagens",
+    question: "Transporte público ou bike: o que compensa no mês?",
+    body: "Informe gasto, tempo e distância só das viagens que pensa em trocar para ver economia, tempo por ano e o custo acumulado de até duas bikes reais.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",

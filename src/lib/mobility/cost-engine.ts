@@ -221,6 +221,8 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
   const bikeEnergyCost = replacedKm * QUICK_BIKE_COST.energyPerKm;
   const bikeMaintenanceCost = share > 0 ? QUICK_BIKE_COST.maintenanceMonthly : 0;
   const bikeTotalCost = bikeEnergyCost + bikeMaintenanceCost;
+  // Mesma regra do motor detalhado: sem uso da bike (0%), nenhum custo fixo é atribuído a ela.
+  if (share === 0) fixedRemoved = 0;
   const currentTotalReplaced = currentVariableReplaced + fixedRemoved;
   const monthlySavings = roundMoney(currentTotalReplaced - bikeTotalCost);
 
