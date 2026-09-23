@@ -196,7 +196,8 @@ function BikeDetail() {
                 </Link>
               )}
             </div>
-            {radar && (
+            {/* Sem oferta o valor acima JÁ é o último registro: não repetimos a observação. */}
+            {radar && offer && (
               <p className="mt-3 border-t border-ink-foreground/15 pt-3 text-xs text-ink-foreground/70">
                 Observação histórica do Radar: {formatBRL(radar.currentPrice)}
                 {radar.lastObservedAt ? ` registrado em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. É um registro de acompanhamento, não o preço do anúncio agora.
