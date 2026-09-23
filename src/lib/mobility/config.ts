@@ -59,3 +59,6 @@ export function roundMoney(value: number): number {
 
 /** Presets de orçamento máximo das calculadoras rápidas (filtro rígido quando escolhido). */
 export const BUDGET_PRESETS = [5000, 7000, 10000, 15000] as const;
+
+/** Alternativa só entra com vantagem verificável: ≥ 25% mais autonomia declarada ou mais lugares. */
+export const RELEVANT_AUTONOMY_GAIN = 0.25;

@@ -10,6 +10,7 @@ import {
   MAX_QUICK_RECOMMENDATIONS,
   MAX_RECOMMENDATIONS,
   MELI_LINK_RE,
+  RELEVANT_AUTONOMY_GAIN,
 } from "./config";
 
 export type MobilityBikeCandidate = {
@@ -38,17 +39,25 @@ export type RecommendationCriteria = {
   maxBudget: number | null;
 };
 
-export type RecommendedBike = MobilityBikeCandidate & { reason: string };
+export type RecommendedBike = MobilityBikeCandidate & {
+  reason: string;
+  /** Só no modo rápido: papel verificável na comparação. */
+  role?: "economica" | "alternativa";
+  /** Reais abaixo do teto informado (null = sem teto). */
+  budgetRemaining?: number | null;
+  /** Diferença real versus a opção econômica (só na alternativa). */
+  tradeoff?: { extraPrice: number; extraAutonomyKm: number; extraCapacity: number };
+};
 
 export type RecommendationResult =
-  | { ok: true; bikes: RecommendedBike[] }
+  | { ok: true; bikes: RecommendedBike[]; eligibleCount?: number }
   | { ok: false; errors: string[] };
 
 export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
 
 export const QUICK_ORDER_CRITERION =
-  "Mostramos primeiro a opção compatível de menor preço e, quando existe, uma alternativa distinta com maior autonomia ou capacidade.";
+  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e teto de preço quando informados. A primeira é a compra compatível de menor preço; a segunda só aparece se tiver pelo menos 25% mais autonomia ou mais lugares, e é a mais barata entre as que têm essa vantagem.";
 
 const finitePositive = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -123,23 +132,54 @@ export function recommendQuickComparison(
     (a, b) => a.price - b.price || (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) || a.bikeId.localeCompare(b.bikeId),
   );
   const first = byPrice[0];
-  if (!first) return { ok: true, bikes: [] };
-  const alternative = [...eligible]
-    .filter((b) => b.bikeId !== first.bikeId)
-    .sort(
-      (a, b) =>
-        (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) ||
-        (b.capacity ?? 0) - (a.capacity ?? 0) ||
-        a.price - b.price ||
-        a.bikeId.localeCompare(b.bikeId),
-    )[0];
-  return {
-    ok: true,
-    bikes: [first, alternative]
-      .filter((b): b is MobilityBikeCandidate => Boolean(b))
-      .slice(0, MAX_QUICK_RECOMMENDATIONS)
-      .map((b) => ({ ...b, reason: buildReason(b, criteria) })),
-  };
+  if (!first) return { ok: true, bikes: [], eligibleCount: 0 };
+  const alternative = pickAlternative(first, byPrice);
+  const budget = finitePositive(criteria.maxBudget) ? criteria.maxBudget : null;
+  const remaining = (b: MobilityBikeCandidate) => (budget === null ? null : Math.round((budget - b.price) * 100) / 100);
+  const bikes: RecommendedBike[] = [
+    {
+      ...first,
+      role: "economica",
+      budgetRemaining: remaining(first),
+      reason: `Menor preço entre as ${byPrice.length} bike${byPrice.length > 1 ? "s" : ""} com oferta atual compatíve${byPrice.length > 1 ? "is" : "l"} com seu cenário. ${buildReason(first, criteria)}`,
+    },
+  ];
+  if (alternative) {
+    const tradeoff = {
+      extraPrice: Math.round((alternative.price - first.price) * 100) / 100,
+      extraAutonomyKm: (alternative.autonomyKm ?? 0) - (first.autonomyKm ?? 0),
+      extraCapacity: (alternative.capacity ?? 0) - (first.capacity ?? 0),
+    };
+    const gains = [
+      tradeoff.extraAutonomyKm > 0 ? `+${tradeoff.extraAutonomyKm} km de autonomia declarada` : null,
+      tradeoff.extraCapacity > 0 ? `+${tradeoff.extraCapacity} lugar${tradeoff.extraCapacity > 1 ? "es" : ""}` : null,
+    ].filter(Boolean).join(" e ");
+    const priceText = tradeoff.extraPrice > 0
+      ? `R$ ${tradeoff.extraPrice.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} a mais`
+      : "mesmo preço";
+    bikes.push({
+      ...alternative,
+      role: "alternativa",
+      budgetRemaining: remaining(alternative),
+      tradeoff,
+      reason: `Alternativa à ${first.name}: ${priceText} por ${gains}. ${buildReason(alternative, criteria)}`,
+    });
+  }
+  return { ok: true, bikes: bikes.slice(0, MAX_QUICK_RECOMMENDATIONS), eligibleCount: byPrice.length };
+}
+
+/** Mais barata entre as que têm vantagem verificável relevante sobre a econômica; nenhuma = só uma opção. */
+export function pickAlternative(first: MobilityBikeCandidate, byPrice: MobilityBikeCandidate[]): MobilityBikeCandidate | null {
+  const firstKm = first.autonomyKm ?? 0;
+  const firstCap = first.capacity ?? 0;
+  return (
+    byPrice.find(
+      (b) =>
+        b.bikeId !== first.bikeId &&
+        (((b.autonomyKm ?? 0) >= firstKm * (1 + RELEVANT_AUTONOMY_GAIN) && (b.autonomyKm ?? 0) > firstKm) ||
+          (finitePositive(b.capacity) && b.capacity > firstCap)),
+    ) ?? null
+  );
 }
 
 function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): string {
