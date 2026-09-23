@@ -4,6 +4,8 @@ import { VERIFICATION_LABEL, type DailyPoint } from "@/lib/price-daily";
 
 interface Props {
   series: DailyPoint[];
+  /** Altura reduzida para o painel compacto do Radar (padrão: altura original). */
+  compact?: boolean;
 }
 
 interface Row {
@@ -67,7 +69,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   );
 }
 
-export function DailyPriceChart({ series }: Props) {
+export function DailyPriceChart({ series, compact = false }: Props) {
   const rows = toRows(series);
   if (rows.length === 0) {
     return (
@@ -77,7 +79,13 @@ export function DailyPriceChart({ series }: Props) {
     );
   }
   return (
-    <div className="h-72 w-full rounded-2xl border border-border/60 bg-card p-3 md:h-80">
+    <div
+      className={
+        compact
+          ? "h-[180px] w-full rounded-xl border border-line bg-card p-2 md:h-[200px]"
+          : "h-72 w-full rounded-2xl border border-border/60 bg-card p-3 md:h-80"
+      }
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

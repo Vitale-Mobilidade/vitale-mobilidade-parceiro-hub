@@ -6,12 +6,11 @@ import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, BikeMedia, PriceStatus, SectionHeading } from "@/components/site/site-ui";
-import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
-import { PriceRangeBar } from "@/components/radar/PriceRangeBar";
-import { formatBRL, formatDateBR, formatDateTimeBR, isSafePurchaseLink } from "@/lib/price-tracker";
-import { dailyMetrics, DAILY_WINDOWS, WINDOW_LABEL, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
+import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
+import { formatBRL, isSafePurchaseLink } from "@/lib/price-tracker";
+import { dailyMetrics, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 
@@ -103,8 +102,8 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
         {!loading && bike && metrics && (
           <>
-            <header className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <BikeMedia src={bike.image} name={bike.name} eager className="h-[300px] rounded-3xl border border-line md:h-[440px]" />
+            <header className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <BikeMedia src={bike.image} name={bike.name} eager className="h-[260px] rounded-3xl border border-line md:h-[340px]" />
 
               <div className="flex min-w-0 flex-col">
                 <PriceStatus classification={metrics.classification} />
@@ -158,61 +157,18 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               </div>
             </header>
 
-            <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-              <PriceRangeBar currentPrice={bike.currentPrice} metrics={metrics} />
+            <PriceIntelPanel
+              currentPrice={bike.currentPrice}
+              metrics={metrics}
+              window={window}
+              onWindowChange={(w) => {
+                setWindow(w);
+                trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
+              }}
+              firstObservedAt={bike.firstObservedAt}
+              lastObservedAt={bike.lastObservedAt}
+            />
 
-              <div className="rounded-2xl border border-line bg-card p-6">
-                <h2 className="text-lg font-bold text-ink">Resumo do período ({WINDOW_LABEL[String(window)]})</h2>
-                <dl className="mt-4 divide-y divide-line">
-                  {[
-                    ["Menor verificado", formatBRL(metrics.minPrice)],
-                    ["Preço típico", formatBRL(metrics.typicalPrice)],
-                    ["Maior verificado", formatBRL(metrics.maxPrice)],
-                    ["Cobertura", `${metrics.verifiedDays} de ${metrics.expectedDays} dias`],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-3 py-2.5">
-                      <dt className="text-muted-foreground">{k}</dt>
-                      <dd className="font-bold text-ink">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Acompanhando desde {formatDateBR(bike.firstObservedAt)} · última verificação em{" "}
-                  {formatDateTimeBR(metrics.lastVerifiedAt ?? bike.lastObservedAt)}.
-                  {metrics.reconstructedDays > 0 &&
-                    ` ${metrics.reconstructedDays} dia(s) do período foram reconstruídos do histórico.`}
-                </p>
-              </div>
-            </div>
-
-            <section className="mt-12" aria-labelledby="historico">
-              <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                <SectionHeading id="historico" title="Histórico de preços" sub="Preços diários registrados pela Vitale para esta bike." />
-                <div className="inline-flex flex-wrap rounded-xl border border-line p-1" role="group" aria-label="Período do gráfico">
-                  {DAILY_WINDOWS.map((w) => (
-                    <button
-                      key={String(w)}
-                      type="button"
-                      onClick={() => {
-                        setWindow(w);
-                        trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
-                      }}
-                      aria-pressed={window === w}
-                      className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${
-                        window === w ? "bg-action text-primary-foreground" : "text-muted-foreground hover:bg-surface"
-                      }`}
-                    >
-                      {WINDOW_LABEL[String(w)]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <DailyPriceChart series={metrics.series} />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias sem
-                verificação — nunca repetimos um preço que não confirmamos.
-              </p>
-            </section>
 
             <section aria-labelledby="combina" className="relative isolate mt-12 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
               <picture>
@@ -256,18 +212,6 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               <OffersGroupCta source="radar_detail" />
             </div>
 
-            <section className="mt-8 rounded-2xl border border-line bg-surface p-5 text-sm text-muted-foreground">
-              <h2 className="mb-2 text-base font-semibold text-foreground">Como lemos esses números</h2>
-              <p>
-                A cada verificação bem-sucedida registramos o preço vigente do dia. O preço típico é a mediana dos
-                fechamentos diários do período e a faixa típica vai do percentil 25 ao 75. A leitura compara o preço de
-                hoje com esse histórico registrado pela Vitale — nunca com outras lojas.
-              </p>
-              <p className="mt-2">
-                Com menos de 14 dias verificados, cobertura abaixo de 80% ou apenas um preço, dizemos honestamente que o
-                histórico ainda está em formação.
-              </p>
-            </section>
           </>
         )}
       </main>

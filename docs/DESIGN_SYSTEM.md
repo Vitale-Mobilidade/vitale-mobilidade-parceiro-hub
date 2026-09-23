@@ -133,3 +133,18 @@ As referências de layout/hierarquia foram seguidas, mas sem dados inventados: n
 - `/acompanhamento`: a busca e os indicadores reais (monitoradas, menor preço, maior queda) ficam num painel de transição sobreposto à base do hero (`-mt-16/-mt-20`), sem comprimir o texto do hero.
 - Alturas medidas: desktop 1280px — Home 640, Bikes 640, Radar 640; mobile 390px — Home 640, Bikes 640, Radar 640; mobile 320px — Home ~704 (crescimento natural), Bikes 640, Radar 640.
 - `BikeCatalogCard`: o card inteiro é um único `<Link to="/bikes/$slug">` (foto, nome, selo Radar, preço, fonte, vídeos e CTA visual "Conhecer a bike"). Sem link separado para o Radar dentro do card; o acesso ao Radar fica no detalhe da bike. Hover/foco responde no card todo (`focus-visible:ring-4`), sem links aninhados nem `onClick` em div.
+
+## Radar — detalhe da bike (`/radar/{bikeId}`): painel compacto de inteligência de preço
+
+Referência de **hierarquia/densidade** (padrão "price insights"), não de branding.
+
+- Header compacto: foto `h-[260px]` mobile / `md:h-[340px]` desktop (antes 300/440), `gap-6`. Preço, CTA "Ver oferta no Mercado Livre" (link afiliado direto) e alerta permanecem acima da dobra.
+- Um único painel contínuo `PriceIntelPanel` (`src/components/radar/PriceIntelPanel.tsx`) substitui as duas caixas ("O preço atual está bom?" + "Resumo do período") e a seção separada de histórico. Estrutura em três faixas separadas por `border-line`, sem card dentro de card:
+  1. cabeçalho (H2 + janela vigente) e selo textual do estado;
+  2. veredito em texto, régua farol segmentada, referências e cobertura;
+  3. seletor 7/30/90/Tudo, gráfico compacto e `<details>` nativo "Como lemos esses números".
+- **Farol**: verde `action/70` (baixo preço, min→P25), âmbar `amber-400/80` (faixa habitual, P25→P75), vermelho `destructive/70` (preço alto, P75→max); marcador do preço atual com `ring-2 ring-card`. Cor nunca comunica sozinha: há selo textual, veredito em frase e `role="img"` com `aria-label` descrevendo preço, faixa e estado.
+- **Regra do histórico em formação (`classification === "forming"`)**: estado neutro e explícito — "Histórico em formação — ainda não dá para afirmar se está barato ou caro." Sem copy assertiva, sem percentual de desconto e **sem marcador colorido**. A régua aparece em cinza, apenas como escala explicativa, com rótulos "Menor/Mediana/Maior (preliminar)". Com um único preço (`distinctPrices < 2`) nenhuma faixa ou posição é renderizada.
+- Para histórico suficiente, o veredito corresponde estritamente a `lowest`/`good`/`typical`/`above` já calculados por `dailyMetrics`; o painel não recalcula nem cria valores.
+- Gráfico: `DailyPriceChart` ganhou a prop `compact` (180px mobile / 200px desktop) usada só pelo Radar; sem `compact` o componente mantém a altura original em `/bikes/$slug`. Lacunas, proveniência (ponto cheio = verificado, vazado = reconstruído) e tooltips inalterados.
+- `PriceRangeBar` permanece em uso apenas por `/bikes/$slug`.
