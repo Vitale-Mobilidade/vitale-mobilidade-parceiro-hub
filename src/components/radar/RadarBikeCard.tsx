@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CLASSIFICATION_LABEL, formatBRL } from "@/lib/price-tracker";
 import { CLASSIFICATION_COLOR, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
+import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
@@ -71,7 +72,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
               href={entry.link}
               target="_blank"
               rel="noopener noreferrer nofollow sponsored"
-              onClick={() => trackRadar("radar_ml_click", { bike_id: entry.id, position: highlight ? "highlight" : "catalog" })}
+              onClick={() => { trackRadar("radar_ml_click", { bike_id: entry.id, position: highlight ? "highlight" : "catalog" }); trackAffiliateClick({ bike_id: entry.id, position: highlight ? "radar_highlight" : "radar_catalog" }); }}
             >
               Ver oferta no Mercado Livre <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
             </a>

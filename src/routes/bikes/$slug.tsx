@@ -12,6 +12,7 @@ import { dailyMetrics, type DailyPoint } from "@/lib/price-daily";
 import { formatBRL, formatDateTimeBR } from "@/lib/price-tracker";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
+import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
 
 type RadarDetail = {
   id: string;
@@ -111,10 +112,10 @@ function Back() {
 
 const GUIDES: BikeGuide[] = []; // sem fonte de artigos ainda — ver BikeGuides.
 
-function BuyCta({ link, className = "" }: { link: string | null; className?: string }) {
+function BuyCta({ link, bikeId, position, className = "" }: { link: string | null; bikeId: string; position: AffiliatePosition; className?: string }) {
   if (!link) return <p className={`font-semibold text-ink ${className}`}>Link indisponível no momento</p>;
   return (
-    <a href={link} target="_blank" rel="noopener noreferrer sponsored" className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-action-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint ${className}`}>
+    <a href={link} target="_blank" rel="noopener noreferrer sponsored" onClick={() => trackAffiliateClick({ bike_id: bikeId, position })} className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-action-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint ${className}`}>
       Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
     </a>
   );
@@ -164,7 +165,7 @@ function BikeDetail() {
               <p className="mt-3 text-sm text-ink-foreground/80">Sem oferta ativa registrada para este modelo.</p>
             )}
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
-              <BuyCta link={offer?.link ?? null} className="w-full xl:w-auto xl:whitespace-nowrap" />
+              <BuyCta link={offer?.link ?? null} bikeId={bike.bikeId} position="bike_detail_hero" className="w-full xl:w-auto xl:whitespace-nowrap" />
               {radar && (
                 <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
@@ -314,10 +315,10 @@ function BikeDetail() {
       </section>
 
       {/* CTA final */}
-      {bike.link && (
+      {offer && (
         <section aria-label="Comprar" className="mt-10 flex flex-col items-center gap-3 rounded-2xl bg-surface p-6 text-center ring-1 ring-line">
           <p className="text-lg font-black text-ink">Decidiu pelo {bike.name}?</p>
-          <BuyCta link={bike.link} />
+          <BuyCta link={offer.link} bikeId={bike.bikeId} position="bike_detail_final" />
           <p className="text-xs text-muted-foreground">Preço e disponibilidade devem ser confirmados no Mercado Livre.</p>
         </section>
       )}
