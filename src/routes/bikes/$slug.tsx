@@ -111,10 +111,10 @@ function Back() {
 
 const GUIDES: BikeGuide[] = []; // sem fonte de artigos ainda — ver BikeGuides.
 
-function BuyCta({ link, className = "" }: { link: string | null; className?: string }) {
+function BuyCta({ link, bikeId, position, className = "" }: { link: string | null; bikeId: string; position: AffiliatePosition; className?: string }) {
   if (!link) return <p className={`font-semibold text-ink ${className}`}>Link indisponível no momento</p>;
   return (
-    <a href={link} target="_blank" rel="noopener noreferrer sponsored" className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-action-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint ${className}`}>
+    <a href={link} target="_blank" rel="noopener noreferrer sponsored" onClick={() => trackAffiliateClick({ bike_id: bikeId, position })} className={`inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-action-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint ${className}`}>
       Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
     </a>
   );
