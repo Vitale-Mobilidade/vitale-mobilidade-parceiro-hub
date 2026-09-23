@@ -19,3 +19,16 @@ export const getRadarBike = createServerFn({ method: "GET" })
       ? { ok: true as const, bike: JSON.parse(JSON.stringify(r.data ?? null)) as Json }
       : { ok: false as const };
   });
+
+/**
+ * Marca a resposta do documento SSR como indisponível temporariamente (503 + Retry-After).
+ * Chamado pelos loaders do Radar somente durante o SSR (mesma requisição do documento),
+ * nunca em navegação no cliente — assim a resposta RPC das server functions não é afetada.
+ */
+export const markRadarUnavailable = createServerFn({ method: "GET" }).handler(async () => {
+  const { setResponseStatus, setResponseHeader } = await import("@tanstack/react-start/server");
+  setResponseStatus(503, "Service Unavailable");
+  setResponseHeader("Retry-After", "120");
+  setResponseHeader("Cache-Control", "no-store");
+  return null;
+});

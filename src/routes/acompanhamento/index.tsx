@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Acompanhamento from "@/pages/Acompanhamento";
-import { getRadarCatalog } from "@/lib/radar.functions";
+import { getRadarCatalog, markRadarUnavailable } from "@/lib/radar.functions";
 
 const URL = "https://vitalemobilidade.com/acompanhamento";
 const TITLE = "Radar de Preços de Bikes Elétricas | Vitale Mobilidade";
@@ -11,7 +11,12 @@ const OG_DESCRIPTION =
   "Compare o preço atual com o histórico e acompanhe as melhores oportunidades de bikes elétricas.";
 
 export const Route = createFileRoute("/acompanhamento/")({
-  loader: () => getRadarCatalog(),
+  loader: async () => {
+    const r = await getRadarCatalog();
+    // Falha temporária (timeout/erro/config ausente): 503 no documento SSR, sem dados falsos.
+    if (!r.ok && typeof window === "undefined") await markRadarUnavailable();
+    return r;
+  },
   head: () => ({
     meta: [
       { title: TITLE },
