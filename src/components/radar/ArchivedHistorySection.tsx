@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
+import { lastConfirmedDay } from "@/lib/radar-unavailable";
+import type { DailyPoint } from "@/lib/price-daily";
 import type { RadarBase } from "@/lib/radar-base";
 
 export interface ArchivedBike {
