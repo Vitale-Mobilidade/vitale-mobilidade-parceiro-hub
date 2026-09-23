@@ -17,8 +17,11 @@ import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 interface RadarBikeDetail {
   id: string;
   name: string;
-  currentPrice: number;
-  link: string;
+  /** Só existe quando há oferta atual válida (mesma linha de bike_offers). */
+  currentPrice?: number | null;
+  link?: string | null;
+  hasCurrentOffer?: boolean;
+  lastObservedPrice?: number | null;
   image: string | null;
   shortDescription?: string | null;
   description?: string | null;
