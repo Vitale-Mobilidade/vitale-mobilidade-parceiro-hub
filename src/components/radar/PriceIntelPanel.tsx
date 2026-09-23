@@ -81,12 +81,6 @@ export function PriceIntelPanel({
             Preço de hoje comparado aos preços que registramos ({WINDOW_LABEL[String(window)]}).
           </p>
         </div>
-        {/* Selo só quando a leitura é conclusiva; nunca um selo grande para histórico curto. */}
-        {!forming && (
-          <p className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${verdictTone}`}>
-            {CLASSIFICATION_LABEL[classification]}
-          </p>
-        )}
       </div>
 
       <div className="px-4 py-4 sm:px-6">
@@ -121,7 +115,7 @@ export function PriceIntelPanel({
 
             <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
-                {forming ? "Menor registrado" : "Baixo preço"}
+                Menor registrado
                 <span className="block font-bold text-ink">{formatBRL(minPrice)}</span>
               </span>
               <span className="text-center">
