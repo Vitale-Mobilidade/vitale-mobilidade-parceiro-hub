@@ -421,3 +421,9 @@ continuam não implementadas e sem links públicos.
 - A seleção comercial continua filtrada por elegibilidade do Quiz, oferta atual atômica, autonomia, garupa, subidas e teto. Classificação de preço do Radar só aparece quando bike, preço e link correspondem à oferta atual. O Quiz, o banco, a planilha e os links afiliados não foram modificados nesta revisão.
 - Evidência pré-publicação desta revisão: typecheck sem erros, 46 testes direcionados aprovados e build de produção concluído; prévia conferida com duas bikes e links reais. A autorização de publicação foi dada pelo usuário nesta task.
 - As nove calculadoras já eram públicas e continuam funcionais. **A revisão visual global ainda não está concluída:** as outras oito páginas precisam de conclusão, gráfico e apresentação comercial específicos antes de receber o mesmo status de UX. Não confundir a publicação deste piloto com conclusão de etapas inteiras do roadmap ou com prova de aumento de conversão.
+
+## Revisão de UX/CRO das ferramentas — extensão às outras oito rotas (23/09/2026)
+
+- Economia, Payback, Custo Anual, Uber vs Bike, Carro vs Bike, Moto vs Bike, Transporte Público vs Bike e Tempo Recuperado receberam uma conclusão dominante específica para a decisão de cada página. Carro/Moto compartilham implementação; a rota de tempo recuperado usa o gráfico de diferença do piloto.
+- As sete rotas adicionais com bikes exibem até duas ofertas reais somente quando a segunda tem ganho verificável de autonomia, com comparação factual, vídeos associados quando disponíveis e caminhos para ficha, Radar, Quiz e grupo. Custo Anual não força recomendações sem distância diária.
+- Fórmulas, fontes de ofertas, links afiliados, elegibilidade, Supabase, Sheets e Quiz permanecem intactos. Typecheck, testes direcionados e build concluídos localmente. O resultado de UX não substitui validação de conversão real nem fecha outras etapas do roadmap.
