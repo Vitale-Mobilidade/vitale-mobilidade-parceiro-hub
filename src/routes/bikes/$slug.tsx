@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink, LineChart, Sparkles, Users, Gauge, Youtube, Megaphone, ArrowRight } from "lucide-react";
-import { SiteHeader, SiteFooter, BikeMedia, PriceStatus } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
+import { CommercialPriceBadge } from "@/components/site/CommercialPriceBadge";
 import { VideoCards } from "@/components/site/VideoCards";
 import { PriceRangeBar } from "@/components/radar/PriceRangeBar";
 import { BikeGuides, type BikeGuide } from "@/components/site/BikeGuides";
@@ -20,6 +21,8 @@ type RadarDetail = {
   currentPrice: number;
   daily: DailyPoint[];
   lastObservedAt: string | null;
+  lastObservedPrice?: number | null;
+  hasCurrentOffer?: boolean;
 };
 
 const km = (v: string | null) => { const m = v?.match(/(\d{1,4})\s*km/i); return m ? Number(m[1]) : null; };
@@ -47,8 +50,21 @@ export const Route = createFileRoute("/bikes/$slug")({
       safeVideos({ bikeId: bike.bikeId, limit: 60 }),
     ]);
     const rb = radarRes.ok ? (radarRes.bike as unknown as RadarDetail | null) : null;
-    const radar = rb && typeof rb.currentPrice === "number" && rb.currentPrice > 0
-      ? { currentPrice: rb.currentPrice, daily: Array.isArray(rb.daily) ? rb.daily : [], lastObservedAt: rb.lastObservedAt ?? null }
+    // Sem oferta atual, o RPC devolve currentPrice 0/null mas mantém o ÚLTIMO PREÇO
+    // REGISTRADO: exibimos esse valor rotulado como histórico, nunca como preço de hoje.
+    const observed =
+      rb && typeof rb.currentPrice === "number" && rb.currentPrice > 0
+        ? rb.currentPrice
+        : rb && typeof rb.lastObservedPrice === "number" && rb.lastObservedPrice > 0
+          ? rb.lastObservedPrice
+          : null;
+    const radar = rb && observed !== null
+      ? {
+          currentPrice: observed,
+          hasCurrentOffer: rb.hasCurrentOffer === true,
+          daily: Array.isArray(rb.daily) ? rb.daily : [],
+          lastObservedAt: rb.lastObservedAt ?? null,
+        }
       : null;
     return { bike, radar, radarOk: radarRes.ok, videos, alternatives: pickAlternatives(cat.bikes, bike) };
   },
@@ -152,8 +168,8 @@ function BikeDetail() {
           {specs.length > 0 && <p className="mt-2 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ")}</p>}
           <div className="mt-5 rounded-2xl bg-ink p-5 text-ink-foreground">
             {/* Oferta atual: preço e link vêm SEMPRE do mesmo registro.
-                O selo do Radar só aparece com oferta ativa, para não parecer status de algo comprável. */}
-            {offer && radar && metrics && <PriceStatus classification={metrics.classification} />}
+                Selo comercial só nesta página (o painel do Radar segue sem selo de avaliação). */}
+            <CommercialPriceBadge hasOffer={!!offer} classification={metrics?.classification ?? null} />
             {offer ? (
               <>
                 <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(offer.price)}</p>
@@ -161,8 +177,16 @@ function BikeDetail() {
                   Preço da oferta atual registrada pela Vitale, do mesmo anúncio do botão abaixo. Confirme no Mercado Livre antes de comprar.
                 </p>
               </>
+            ) : radar ? (
+              <>
+                <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(radar.currentPrice)}</p>
+                <p className="mt-1 text-xs text-ink-foreground/70">
+                  Último preço registrado pela Vitale
+                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. Pode não ser o preço de hoje.
+                </p>
+              </>
             ) : (
-              <p className="mt-3 text-sm text-ink-foreground/80">Sem oferta ativa registrada para este modelo.</p>
+              <p className="mt-3 text-sm text-ink-foreground/80">Sem preço registrado para este modelo.</p>
             )}
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
               <BuyCta link={offer?.link ?? null} bikeId={bike.bikeId} position="bike_detail_hero" className="w-full xl:w-auto xl:whitespace-nowrap" />
@@ -172,7 +196,8 @@ function BikeDetail() {
                 </Link>
               )}
             </div>
-            {radar && (
+            {/* Sem oferta o valor acima JÁ é o último registro: não repetimos a observação. */}
+            {radar && offer && (
               <p className="mt-3 border-t border-ink-foreground/15 pt-3 text-xs text-ink-foreground/70">
                 Observação histórica do Radar: {formatBRL(radar.currentPrice)}
                 {radar.lastObservedAt ? ` registrado em ${formatDateTimeBR(radar.lastObservedAt)}` : ""}. É um registro de acompanhamento, não o preço do anúncio agora.
@@ -200,7 +225,18 @@ function BikeDetail() {
         <h2 id="radar" className="text-2xl font-black text-ink">Preço no Radar</h2>
         {radar && metrics ? (
           <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <PriceRangeBar currentPrice={radar.currentPrice} metrics={metrics} />
+            {radar.hasCurrentOffer ? (
+              <PriceRangeBar currentPrice={radar.currentPrice} metrics={metrics} />
+            ) : (
+              /* Sem oferta ativa: não posicionamos "preço atual" na faixa, para não sugerir preço de hoje. */
+              <div className="rounded-2xl border border-line bg-surface p-6 text-sm text-muted-foreground">
+                <p className="font-bold text-ink">Sem oferta ativa no Mercado Livre</p>
+                <p className="mt-2">
+                  Mantemos o histórico registrado por nós. O último valor registrado foi {formatBRL(radar.currentPrice)}
+                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""} e pode não ser o preço de hoje.
+                </p>
+              </div>
+            )}
             <div className="rounded-2xl border border-line bg-card p-6">
               <h3 className="font-bold text-ink">Últimos 30 dias</h3>
               <dl className="mt-3 divide-y divide-line text-sm">
