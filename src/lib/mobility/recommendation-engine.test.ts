@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   recommendBikes,
   recommendQuickComparison,
+  recommendScenarioPair,
   type MobilityBikeCandidate,
   type RecommendedBike,
 } from "./recommendation-engine";
@@ -62,10 +63,7 @@ describe("BikeRecommendationEngine", () => {
   });
 
   it("filtra por capacidade 2 quando há garupa e por orçamento máximo", () => {
-    const list = [
-      make({ bikeId: "solo", capacity: 1 }),
-      make({ bikeId: "dupla", capacity: 2, price: 9000 }),
-    ];
+    const list = [make({ bikeId: "solo", capacity: 1 }), make({ bikeId: "dupla", capacity: 2, price: 9000 })];
     expect(
       bikesOf(recommendBikes(list, { dailyKm: 20, needsPassenger: true, maxBudget: null })).map((b) => b.bikeId),
     ).toEqual(["dupla"]);
@@ -160,7 +158,10 @@ describe("BikeRecommendationEngine — comparação rápida", () => {
       { dailyKm: 20, needsPassenger: false, maxBudget: 7000 },
     );
     if (!r.ok) throw new Error();
-    expect(r.bikes.map((b) => [b.bikeId, b.budgetRemaining])).toEqual([["a", 2000], ["b", 500]]);
+    expect(r.bikes.map((b) => [b.bikeId, b.budgetRemaining])).toEqual([
+      ["a", 2000],
+      ["b", 500],
+    ]);
     expect(r.bikes[1].reason).toMatch(/R\$ 1\.500 a mais por \+40 km/);
   });
 
@@ -168,5 +169,23 @@ describe("BikeRecommendationEngine — comparação rápida", () => {
     const r = recommendQuickComparison([make({ bikeId: "a", price: 5000, autonomyKm: 40 })], criteria);
     if (!r.ok) throw new Error();
     expect(r.bikes[0].budgetRemaining).toBeNull();
+  });
+});
+
+describe("BikeRecommendationEngine — par contextual das ferramentas", () => {
+  it("mostra segunda opção sem exigir teto, somente com ganho verificável de autonomia", () => {
+    const r = recommendScenarioPair(
+      [
+        make({ bikeId: "economica", price: 5000, autonomyKm: 40 }),
+        make({ bikeId: "sem_ganho", price: 5200, autonomyKm: 45 }),
+        make({ bikeId: "alternativa", price: 6500, autonomyKm: 70 }),
+        make({ bikeId: "link_invalido", price: 6000, autonomyKm: 100, link: "https://example.com" }),
+      ],
+      criteria,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["economica", "alternativa"]);
+    expect(r.bikes[1].tradeoff?.extraPrice).toBe(1500);
   });
 });
