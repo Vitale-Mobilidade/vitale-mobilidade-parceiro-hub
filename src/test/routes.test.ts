@@ -44,7 +44,7 @@ describe("fundação TanStack Start — rotas", () => {
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
     for (const id of ["/", "/escolherbike", "/acompanhamento/", "/acompanhamento/$bikeId", "/painel-bikes"]) {
-      const route = (router.routesById as Record<string, { options: { component?: unknown } }>)[id];
+      const route = (router.routesById as unknown as Record<string, { options: { component?: unknown } }>)[id];
       expect(route, id).toBeDefined();
       expect(route.options.component, id).toBeDefined();
     }

@@ -8,9 +8,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.{ts,tsx}"],
-    // supabase/functions/**/*.test.ts usam Deno (imports https://) — fora desta suíte.
-    exclude: ["node_modules/**", "supabase/**", "dist/**", ".output/**"],
+    include: ["src/**/*.test.{ts,tsx}", "supabase/functions/_shared/**/*.test.ts"],
+    // zoho-crm.test.ts usa Deno (imports https://) — roda com deno test, fora desta suíte.
+    exclude: ["node_modules/**", "supabase/functions/_shared/zoho-crm.test.ts", "dist/**", ".output/**"],
     setupFiles: ["./src/test/setup.ts"],
     env: {
       VITE_SUPABASE_URL: "https://test.invalid",
