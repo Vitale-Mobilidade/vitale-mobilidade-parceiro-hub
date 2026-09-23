@@ -10,7 +10,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.bikes (
   bike_id        text PRIMARY KEY
-                 CHECK (bike_id ~ '^[a-z0-9][a-z0-9_-]{0,79}$'),  -- revisar contra BIKE_ID_RE (src/lib/bike-identity.ts)
+                 CHECK (bike_id ~* '^[a-z0-9][a-z0-9_-]{0,63}$'),  -- espelha BIKE_ID_RE (src/lib/bike-identity.ts)
   slug           text NOT NULL UNIQUE
                  CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   name           text NOT NULL CHECK (length(btrim(name)) > 0),

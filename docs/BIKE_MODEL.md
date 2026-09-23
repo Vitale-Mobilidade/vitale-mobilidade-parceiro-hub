@@ -99,7 +99,7 @@ Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`
 - Backfill (comentado): somente os 30 IDs do snapshot `current`, slug = `bike_id` com `_`→`-` (igual a `/bikes` hoje). `jflsjdlksjdl` e `v9_max_duas_baterias` **excluídos** até decisão.
 - Paridade: diferença de conjuntos snapshot × `bikes` = 0 nos dois sentidos; contagem 30; slugs iguais aos atuais; md5 do JSON das três RPCs igual antes/depois.
 - Rollback não destrutivo: nada lê a tabela; RPCs/writer continuam fonte; preservar tabela e dados; DROP só em tarefa separada com backup e autorização.
-- Ponto a revisar: o CHECK de `bike_id` deve espelhar exatamente `BIKE_ID_RE`.
+- CHECK de `bike_id` espelha `BIKE_ID_RE` (`^[a-z0-9][a-z0-9_-]{0,63}$`, case-insensitive).
 
 ## 12. Revisão compacta (8 perspectivas) — incremento Gate 0 + proposta
 - **Produto:** nenhuma mudança visível; entidade Bike ganha forma sem afetar Quiz/Radar.
