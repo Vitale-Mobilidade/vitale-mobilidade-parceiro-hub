@@ -169,8 +169,8 @@ function BikeDetail() {
                 )}
               </>
             )}
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <BuyCta link={bike.link} className="w-full sm:w-auto" />
+            <div className="mt-4 flex flex-col gap-2 xl:flex-row">
+              <BuyCta link={bike.link} className="w-full xl:w-auto xl:whitespace-nowrap" />
               {radar && (
                 <Link to="/acompanhamento/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
