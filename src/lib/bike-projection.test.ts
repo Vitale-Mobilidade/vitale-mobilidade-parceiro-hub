@@ -9,10 +9,16 @@ describe("bikes projection", () => {
   it("projects only identity + validated specs, no commercial fields", () => {
     const rows = buildBikeProjectionRows([bike({}), bike({ id: "x", name: " X ", autonomyKm: NaN as unknown as number, capacity: 3 as unknown as 1 })]);
     expect(rows).toEqual([
-      { bike_id: "v8_ultra", name: "V8 Ultra", autonomy_km: 50, capacity_people: 2 },
-      { bike_id: "x", name: "X", autonomy_km: null, capacity_people: null },
+      { bike_id: "v8_ultra", name: "V8 Ultra", autonomy_km: 50, capacity_people: 2, image_url: null, description: null, short_description: null },
+      { bike_id: "x", name: "X", autonomy_km: null, capacity_people: null, image_url: null, description: null, short_description: null },
     ]);
     for (const r of rows) for (const k of ["price", "link", "eligible", "slug"]) expect(r).not.toHaveProperty(k);
+  });
+  it("projects editorial fields only when present and valid", () => {
+    const [ok] = buildBikeProjectionRows([bike({ image: "https://cdn.x/a.webp", description: " Desc longa ", shortDescription: "Curta" })]);
+    expect(ok).toMatchObject({ image_url: "https://cdn.x/a.webp", description: "Desc longa", short_description: "Curta" });
+    const [bad] = buildBikeProjectionRows([bike({ image: "http://cdn.x/a.webp", description: "  ", shortDescription: undefined })]);
+    expect(bad).toMatchObject({ image_url: null, description: null, short_description: null });
   });
   it("keeps bike_id literal and dedupes", () => {
     const rows = buildBikeProjectionRows([bike({ id: "v9_max_20ah" }), bike({ id: "v9_max_20ah", name: "dup" })]);
