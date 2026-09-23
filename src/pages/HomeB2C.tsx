@@ -114,7 +114,7 @@ function Shortcuts() {
         {SHORTCUTS.map(({ to, icon: Icon, title, sub }) => (
           <li key={to}>
             <Link to={to} className="flex items-center gap-3 rounded-xl p-3 hover:bg-muted">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-mint/25 text-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
               <span className="min-w-0"><span className="block font-bold">{title}</span><span className="block text-sm text-muted-foreground">{sub}</span></span>
             </Link>
           </li>
@@ -189,7 +189,7 @@ const HomeB2C = () => {
         </div>
 
         <section className="responsive-container pb-14" aria-labelledby="quiz-cta">
-          <div className="grid gap-6 rounded-3xl bg-accent p-6 sm:p-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div className="grid gap-6 rounded-3xl border border-border bg-muted p-6 sm:p-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div>
               <h2 id="quiz-cta" className="text-2xl font-bold">Não sabe por onde começar?</h2>
               <p className="mt-2 max-w-xl text-muted-foreground">Responda 7 perguntas sobre uso, trajeto e orçamento e veja os modelos indicados para o seu perfil.</p>
