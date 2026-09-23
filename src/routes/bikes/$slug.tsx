@@ -172,7 +172,7 @@ function BikeDetail() {
             <div className="mt-4 flex flex-col gap-2 xl:flex-row">
               <BuyCta link={bike.link} className="w-full xl:w-auto xl:whitespace-nowrap" />
               {radar && (
-                <Link to="/acompanhamento/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
+                <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
                 </Link>
               )}
@@ -213,7 +213,7 @@ function BikeDetail() {
                   <div key={k} className="flex justify-between gap-3 py-2"><dt className="text-muted-foreground">{k}</dt><dd className="font-bold text-ink">{v}</dd></div>
                 ))}
               </dl>
-              <Link to="/acompanhamento/$bikeId" params={{ bikeId: bike.bikeId }} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-action hover:underline">
+              <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-action hover:underline">
                 Ver histórico completo <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
@@ -223,7 +223,7 @@ function BikeDetail() {
             {radarOk
               ? "Este modelo ainda não é monitorado pelo Radar de preços, por isso não há histórico para comparar."
               : "Os dados do Radar estão indisponíveis agora. Tente novamente em instantes."}{" "}
-            <Link to="/acompanhamento" className="font-semibold text-action hover:underline">Ver bikes monitoradas</Link>
+            <Link to="/radar" className="font-semibold text-action hover:underline">Ver bikes monitoradas</Link>
           </p>
         )}
       </section>

@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { legacyRadarRedirect } from "./lib/radar-base";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -60,6 +61,14 @@ function applyRadarUnavailableStatus(request: Request, response: Response): Resp
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Cutover Etapa 9: redirect permanente real antes do SSR (rollback = remover este bloco).
+      if (request.method === "GET" || request.method === "HEAD") {
+        const url = new URL(request.url);
+        const target = legacyRadarRedirect(url.pathname, url.search);
+        if (target) {
+          return new Response(null, { status: 301, headers: { location: target, "cache-control": "public, max-age=3600" } });
+        }
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return applyRadarUnavailableStatus(request, await normalizeCatastrophicSsrResponse(response));

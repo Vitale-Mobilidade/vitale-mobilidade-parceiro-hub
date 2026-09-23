@@ -8,11 +8,11 @@ import { BarChart3, BookOpen, Calculator, GitCompareArrows, Users, type LucideIc
  * rota e preencher `to` aqui.
  */
 export type HomeAnchor = "#comparar" | "#conteudos" | "#calc" | "#bikes";
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/acompanhamento" | "/escolherbike" | "/grupodeofertas" | HomeAnchor | null };
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
   { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: "#comparar" },
-  { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/acompanhamento" },
+  { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/radar" },
   { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "#calc" },
   { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "#conteudos" },
   { key: "grupo", title: "Grupo de ofertas", sub: "Ofertas selecionadas", icon: Users, to: "/grupodeofertas" },
@@ -23,7 +23,7 @@ export const NAV_ITEMS: { label: string; to: HomeProduct["to"] }[] = [
   { label: "Comparar", to: "#comparar" },
   { label: "Conteúdos", to: "#conteudos" },
   { label: "Ferramentas", to: "#calc" },
-  { label: "Radar", to: "/acompanhamento" },
+  { label: "Radar", to: "/radar" },
 ];
 
 /** Link real quando há destino; âncoras funcionais para seções da Home; caso contrário elemento inativo sem href nem ação. */

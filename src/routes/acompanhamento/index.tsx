@@ -1,14 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import Acompanhamento from "@/pages/Acompanhamento";
-import { loadRadarCatalog, radarCatalogHead, radarHeaders } from "@/lib/radar-routes";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// Legado: o servidor responde 301 (src/server.ts). Aqui cobre navegação no cliente.
 export const Route = createFileRoute("/acompanhamento/")({
-  loader: loadRadarCatalog,
-  headers: radarHeaders,
-  head: () => radarCatalogHead("/acompanhamento"),
-  component: LegacyRadarPage,
+  beforeLoad: ({ location }) => {
+    throw redirect({ href: `/radar${location.searchStr ?? ""}`, statusCode: 301 });
+  },
 });
-
-function LegacyRadarPage() {
-  return <Acompanhamento initial={Route.useLoaderData()} />;
-}
