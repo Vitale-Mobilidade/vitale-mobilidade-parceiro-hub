@@ -440,6 +440,9 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     const diferencial = cell(cells, opt["Diferencial"]).replace(/\s+/g, " ").trim();
     const perfilIndicado = cell(cells, opt["Perfil Indicado"]).replace(/\s+/g, " ").trim();
     const ativa = parseAtiva(cell(cells, opt["Ativa"]));
+    const category = cell(cells, opt["Categoria"]).replace(/\s+/g, " ").trim();
+    const autonomyLabel = cell(cells, idx["Autonomia"]).replace(/\s+/g, " ").trim();
+    const capacityLabel = cell(cells, idx["Capacidade"]).replace(/\s+/g, " ").trim();
 
     bikes.push({
       id,
