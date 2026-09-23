@@ -26,7 +26,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 - **Segurança:** nenhuma mudança de acesso; proposta SQL continua fora do vivo.
 - **UX/CX:** nenhuma alteração de interface; links diretos preservados.
 - **Growth:** prioridade de conversão na Fase B antes de escalar conteúdo.
-- **PMO/QA:** status das etapas não muda; Gate 0 retirado como impedimento pelo responsável; Etapa 6 schema/backfill fechados; Etapa 7 pendente.
+- **PMO/QA:** status das etapas não muda; Gate 0 retirado como impedimento pelo responsável; Etapa 6 schema/backfill fechados; Etapa 7 implantada, aguardando confirmação no próximo run.
 
 ## 3. Etapas (ordem definida pelo responsável)
 
