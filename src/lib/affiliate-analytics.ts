@@ -23,6 +23,7 @@ export const AFFILIATE_POSITIONS = [
   "radar_detail",
   "radar_highlight",
   "radar_catalog",
+  "calculadora_economia",
 ] as const;
 
 export type AffiliatePosition = (typeof AFFILIATE_POSITIONS)[number];
@@ -35,8 +36,8 @@ export type AffiliateClickInput = {
 
 const POSITIONS = new Set<string>(AFFILIATE_POSITIONS);
 
-/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}. */
-const ALLOWED_ROUTE_RE = /^\/bikes\/[a-z0-9-]+$|^\/radar(\/[a-z0-9_]+)?$/;
+/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}, /calculadoras/economia. */
+const ALLOWED_ROUTE_RE = /^\/bikes\/[a-z0-9-]+$|^\/radar(\/[a-z0-9_]+)?$|^\/calculadoras\/economia$/;
 
 function currentRoute(): string | undefined {
   if (typeof window === "undefined") return undefined;
