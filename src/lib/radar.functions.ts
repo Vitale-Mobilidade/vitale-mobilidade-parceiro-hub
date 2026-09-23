@@ -1,4 +1,4 @@
-import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import { fetchBikeHistory, fetchTrackerCatalog } from "./radar-repository.server";
 
@@ -20,15 +20,9 @@ export const getRadarBike = createServerFn({ method: "GET" })
       : { ok: false as const };
   });
 
-/**
- * Marca a resposta do documento SSR como indisponível temporariamente (503 + Retry-After).
- * Chamado pelos loaders do Radar somente durante o SSR (mesma requisição do documento),
- * nunca em navegação no cliente — assim a resposta RPC das server functions não é afetada.
- */
-export const markRadarUnavailable = createServerOnlyFn(async () => {
-  const { setResponseStatus, setResponseHeader } = await import("@tanstack/react-start/server");
-  setResponseStatus(503, "Service Unavailable");
-  setResponseHeader("Retry-After", "120");
-  setResponseHeader("Cache-Control", "no-store");
-  return null;
-});
+/** Cabeçalhos do documento SSR quando a leitura do Radar falha; src/server.ts converte o marcador em 503. */
+export const RADAR_UNAVAILABLE_HEADERS: Record<string, string> = {
+  "Retry-After": "120",
+  "Cache-Control": "no-store",
+  "X-Vitale-Radar-Unavailable": "1",
+};

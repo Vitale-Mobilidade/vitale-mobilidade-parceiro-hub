@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
 import Footer from "@/components/Footer";
-import { getRadarBike, markRadarUnavailable } from "@/lib/radar.functions";
+import { getRadarBike, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 
 const BASE = "https://vitalemobilidade.com/acompanhamento";
@@ -43,12 +43,13 @@ function BikeNotFound() {
 export const Route = createFileRoute("/acompanhamento/$bikeId")({
   loader: async ({ params }) => {
     const r = await getRadarBike({ data: { bikeId: params.bikeId } });
-    // Falha temporária: 503 + Retry-After no SSR; não é tratada como bike inexistente.
-    if (!r.ok && typeof window === "undefined") await markRadarUnavailable();
     // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404 nativo.
     if (r.ok && (r.bike === null || r.bike === undefined)) throw notFound();
     return r;
   },
+  // Falha temporária: marcador + Retry-After/no-store; src/server.ts troca o status para 503.
+  headers: ({ loaderData }) =>
+    loaderData && loaderData.ok === false ? RADAR_UNAVAILABLE_HEADERS : undefined,
   head: ({ params, loaderData }) => {
     const bike = validBike(loaderData);
     const idOk = BIKE_ID_RE.test(params.bikeId);
