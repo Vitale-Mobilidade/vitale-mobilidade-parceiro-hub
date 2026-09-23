@@ -313,8 +313,8 @@
   flex-direction: column;
   justify-content: flex-end;
   min-height: 640px;
-  padding-top: 10rem;
-  padding-bottom: 7rem;
+  padding-top: 7.5rem;
+  padding-bottom: 6rem;
   @media (min-width: 768px) {
     justify-content: center;
     min-height: 640px;
