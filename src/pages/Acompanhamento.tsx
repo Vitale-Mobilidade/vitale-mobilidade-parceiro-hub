@@ -111,7 +111,7 @@ const Acompanhamento = () => {
           </div>
         </section>
         {((!error && entries.length > 0) || trackingSince) && (
-          <div className="responsive-container relative z-10 -mt-16 md:-mt-20">
+          <div className={`responsive-container relative z-10 ${!error && entries.length > 0 ? "-mt-16 md:-mt-20" : "pt-4"}`}>
               {!error && entries.length > 0 && (
                 <dl className="grid grid-cols-1 gap-3 rounded-2xl bg-card p-3 shadow-xl ring-1 ring-line sm:grid-cols-3">
                   {[
