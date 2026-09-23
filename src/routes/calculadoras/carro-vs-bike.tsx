@@ -205,7 +205,7 @@ function CalculadoraCarroVsBike() {
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Responder "Não" não adiciona nenhum valor sozinho. Seguro, IPVA e outros custos fixos só entram se você informar abaixo.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Responder "Não" não adiciona nenhum valor sozinho. Seguro, IPVA e outros custos fixos só entram se você responder "Não" e digitar o valor em "Ajustar premissas".</p>
                   {keepsVehicle === false && (
                     <details className="mt-3 rounded-md bg-surface p-3 ring-1 ring-line">
                       <summary className="min-h-11 cursor-pointer text-sm font-bold text-ink">Ajustar premissas (opcional)</summary>
