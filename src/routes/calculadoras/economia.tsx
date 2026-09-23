@@ -418,7 +418,11 @@ function CalculadoraEconomia() {
                   <p className="text-xs leading-relaxed text-muted-foreground">Estimativa operacional. O preço de compra da bike não reduz nem aumenta os números acima; ele entra separadamente nas projeções por modelo.</p>
 
                   {selectedBike && selectedProjection?.ok && hasBikeUse && (
-                    <CostProjectionChart points={selectedProjection.points} bikeName={selectedBike.name} />
+                    <CostProjectionChart
+                      points={selectedProjection.points}
+                      bikeName={selectedBike.name}
+                      bikePrice={selectedBike.price}
+                    />
                   )}
                 </div>
               )}

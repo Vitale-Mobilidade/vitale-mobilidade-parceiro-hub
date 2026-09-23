@@ -355,6 +355,7 @@ continuam não implementadas e sem links públicos.
   bike”. Mudanças em km, orçamento, garupa ou percentual atualizam a lista; 0% mostra nenhuma bike.
 - **Projeções:** `MobilityProjectionEngine` calcula custo acumulado do trajeto atual e da bike (preço real da oferta +
   operação) em 12/24/36 meses, payback apenas com economia mensal positiva e saldo `economiaMensal × meses − preço`.
+  No gráfico, 0 mês começa em zero para o trajeto atual e exatamente no preço real da bike selecionada; 12/24/36 permanecem os pontos do motor.
   Um SVG local, sem biblioteca de gráfico, destaca a bike selecionada sem recarregar. Cards mostram imagem, fatos,
   preço/fonte, autonomia/capacidade, motivo, payback/saldos e somente CTAs reais: bike, Radar quando monitorada e link
   afiliado direto com analytics não bloqueante. Nenhum CTA de comparação ou caixa genérica foi adicionado.
