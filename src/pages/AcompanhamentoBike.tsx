@@ -212,18 +212,6 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               <OffersGroupCta source="radar_detail" />
             </div>
 
-            <section className="mt-8 rounded-2xl border border-line bg-surface p-5 text-sm text-muted-foreground">
-              <h2 className="mb-2 text-base font-semibold text-foreground">Como lemos esses números</h2>
-              <p>
-                A cada verificação bem-sucedida registramos o preço vigente do dia. O preço típico é a mediana dos
-                fechamentos diários do período e a faixa típica vai do percentil 25 ao 75. A leitura compara o preço de
-                hoje com esse histórico registrado pela Vitale — nunca com outras lojas.
-              </p>
-              <p className="mt-2">
-                Com menos de 14 dias verificados, cobertura abaixo de 80% ou apenas um preço, dizemos honestamente que o
-                histórico ainda está em formação.
-              </p>
-            </section>
           </>
         )}
       </main>
