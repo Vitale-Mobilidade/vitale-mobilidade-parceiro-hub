@@ -227,7 +227,7 @@ export function RecommendationFooter({ budgetInformed, eligibleCount, hillsReque
     <div className="mt-5 space-y-3 text-sm leading-relaxed text-muted-foreground">
       <p>
         {eligibleCount} bike{eligibleCount === 1 ? "" : "s"} com oferta atual {eligibleCount === 1 ? "atende" : "atendem"} aos filtros. As sugestões só mudam quando distância, garupa, subidas ou teto de preço mudam — o gasto informado não altera quais bikes cabem no trajeto.
-        {!budgetInformed && " Sem teto de preço, a seleção considera apenas distância, garupa e menor preço; escolha um teto acima para comparar dentro dele."}
+        {!budgetInformed && " Sem teto de preço, mostramos só a opção econômica provisória — não é uma recomendação completa. Escolha um teto de orçamento acima para ver se existe uma alternativa com bem mais autonomia dentro dele."}
         {hillsRequested && " Com subidas marcado, só entram bikes que o catálogo do Quiz marca como indicadas para subidas; modelos sem essa marcação ficam de fora mesmo que possam servir. A marcação é editorial, não um teste de desempenho."}
       </p>
       <p>

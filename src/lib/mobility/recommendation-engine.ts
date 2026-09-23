@@ -65,7 +65,7 @@ export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
 
 export const QUICK_ORDER_CRITERION =
-  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e teto de preço quando informados e, se você marcar subidas, só bikes marcadas no catálogo do Quiz como indicadas para subidas (sem marcação = não entra). A primeira é a compra compatível de menor preço; a segunda só aparece se tiver pelo menos 25% mais autonomia ou mais lugares, e é a mais barata entre as que têm essa vantagem.";
+  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e subidas quando marcadas (subidas = só bikes marcadas no catálogo do Quiz; sem marcação não entra) e teto de preço quando informado. A primeira é a compra compatível de menor preço. Com teto informado, a segunda só aparece se tiver pelo menos 25% mais autonomia declarada: é a de maior autonomia dentro do teto e, em empate, a mais barata. Sem teto, mostramos só a opção econômica provisória.";
 
 const finitePositive = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -143,15 +143,16 @@ export function recommendQuickComparison(
   );
   const first = byPrice[0];
   if (!first) return { ok: true, bikes: [], eligibleCount: 0 };
-  const alternative = pickAlternative(first, byPrice);
   const budget = finitePositive(criteria.maxBudget) ? criteria.maxBudget : null;
+  // Sem teto não há como saber a capacidade de gasto: só a opção econômica provisória.
+  const alternative = budget === null ? null : pickAlternative(first, byPrice);
   const remaining = (b: MobilityBikeCandidate) => (budget === null ? null : Math.round((budget - b.price) * 100) / 100);
   const bikes: RecommendedBike[] = [
     {
       ...first,
       role: "economica",
       budgetRemaining: remaining(first),
-      reason: `Menor preço entre as ${byPrice.length} bike${byPrice.length > 1 ? "s" : ""} com oferta atual compatíve${byPrice.length > 1 ? "is" : "l"} com seu cenário. ${buildReason(first, criteria)}`,
+      reason: `${budget === null ? "Opção econômica provisória: menor" : "Menor"} preço entre as ${byPrice.length} bike${byPrice.length > 1 ? "s" : ""} com oferta atual compatíve${byPrice.length > 1 ? "is" : "l"} com seu cenário.${budget !== null && byPrice.length === 1 ? " Só ela passou nos filtros." : ""}${budget !== null && byPrice.length > 1 && !alternative ? " Nenhuma outra dentro do teto tem pelo menos 25% mais autonomia declarada, então não mostramos segunda opção." : ""} ${buildReason(first, criteria)}`,
     },
   ];
   if (alternative) {
@@ -162,7 +163,6 @@ export function recommendQuickComparison(
     };
     const gains = [
       tradeoff.extraAutonomyKm > 0 ? `+${tradeoff.extraAutonomyKm} km de autonomia declarada` : null,
-      tradeoff.extraCapacity > 0 ? `+${tradeoff.extraCapacity} lugar${tradeoff.extraCapacity > 1 ? "es" : ""}` : null,
     ].filter(Boolean).join(" e ");
     const priceText = tradeoff.extraPrice > 0
       ? `R$ ${tradeoff.extraPrice.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} a mais`
@@ -172,24 +172,25 @@ export function recommendQuickComparison(
       role: "alternativa",
       budgetRemaining: remaining(alternative),
       tradeoff,
-      reason: `Alternativa à ${first.name}: ${priceText} por ${gains}${tradeoff.extraAutonomyKm < 0 ? `, com ${Math.abs(tradeoff.extraAutonomyKm)} km a menos de autonomia` : ""}. ${buildReason(alternative, criteria)}`,
+      reason: `Alternativa à ${first.name}: ${priceText} por ${gains}${tradeoff.extraAutonomyKm < 0 ? `` : ""}. ${buildReason(alternative, criteria)}`,
     });
   }
   return { ok: true, bikes: bikes.slice(0, MAX_QUICK_RECOMMENDATIONS), eligibleCount: byPrice.length };
 }
 
-/** Mais barata entre as que têm vantagem verificável relevante sobre a econômica; nenhuma = só uma opção. */
+/**
+ * Alternativa só com vantagem que responde a uma necessidade expressa: autonomia declarada
+ * ≥ 25% maior que a da econômica (capacidade extra não conta; garupa já é filtro rígido).
+ * Entre as que qualificam: MAIOR autonomia; empate → menor preço; depois bikeId. Nenhuma = só uma.
+ * `byPrice` já vem filtrado (teto, garupa, subidas), então a alternativa satisfaz os mesmos filtros.
+ */
 export function pickAlternative(first: MobilityBikeCandidate, byPrice: MobilityBikeCandidate[]): MobilityBikeCandidate | null {
   const firstKm = first.autonomyKm ?? 0;
-  const firstCap = first.capacity ?? 0;
-  return (
-    byPrice.find(
-      (b) =>
-        b.bikeId !== first.bikeId &&
-        (((b.autonomyKm ?? 0) >= firstKm * (1 + RELEVANT_AUTONOMY_GAIN) && (b.autonomyKm ?? 0) > firstKm) ||
-          (finitePositive(b.capacity) && b.capacity > firstCap)),
-    ) ?? null
+  const qualified = byPrice.filter(
+    (b) => b.bikeId !== first.bikeId && finitePositive(b.autonomyKm) && b.autonomyKm > firstKm && b.autonomyKm >= firstKm * (1 + RELEVANT_AUTONOMY_GAIN),
   );
+  qualified.sort((a, b) => (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) || a.price - b.price || a.bikeId.localeCompare(b.bikeId));
+  return qualified[0] ?? null;
 }
 
 function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): string {
