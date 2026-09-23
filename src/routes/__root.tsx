@@ -11,7 +11,6 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { HelmetProvider } from "react-helmet-async";
-import { RadarAssistant } from "@/components/radar/RadarAssistant";
 import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "../styles.css?url";
