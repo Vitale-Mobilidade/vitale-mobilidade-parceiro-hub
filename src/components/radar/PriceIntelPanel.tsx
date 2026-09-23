@@ -158,8 +158,8 @@ export function PriceIntelPanel({
         </p>
         {forming && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Ainda em formação porque o período precisa de pelo menos 14 dias confirmados, 80% de cobertura e mais de um
-            preço distinto. No período “Tudo” você vê toda a série já registrada.
+            Como a sequência de dias ainda é curta ou tem intervalos, mostramos os valores registrados sem qualificar se
+            o preço está barato ou caro. No período “Tudo” você vê toda a série registrada.
           </p>
         )}
       </div>
