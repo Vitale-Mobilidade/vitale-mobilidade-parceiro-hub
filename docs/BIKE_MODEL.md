@@ -1,7 +1,7 @@
 # Modelo de Bike: contrato preparatório (Etapa 6)
 
 Status (23/09/2026): **contrato e código avançados; banco pendente.** Nenhuma tabela, migration ou escrita no banco foi criada. Toda escrita segue bloqueada até o Gate 0 (restauração isolada).
-Fontes: migrations em `supabase/migrations/`, código do repositório e leitura **read-only** do schema vivo feita pelo responsável em 23/09/2026 (§7).
+Fontes: migrations em `supabase/migrations/`, código do repositório e auditoria **read-only** do schema vivo e da planilha realizada nesta task em 23/09/2026 (§7).
 
 ## 1. Modelo atual (chave comum: `bike_id` texto)
 
