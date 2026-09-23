@@ -146,7 +146,9 @@ function CalculatorPanel() {
     { icon: Bus, label: "Ônibus" },
   ];
   return (
-    <section aria-labelledby="calc" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+    <section aria-labelledby="ferramentas" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+      {/* Alias de âncora para backlinks antigos (/#calc). Sem título duplicado. */}
+      <span id="calc" aria-hidden="true" className="block scroll-mt-24" />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-48 w-48 rounded-full bg-mint/20" />
       <div className="relative flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
