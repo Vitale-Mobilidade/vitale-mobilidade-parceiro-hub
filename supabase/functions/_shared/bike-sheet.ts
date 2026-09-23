@@ -323,6 +323,10 @@ export interface PendingRow {
   isNew: boolean;
   missingFields: string[];
   sheetEligible: boolean | null;
+  /** Rótulos editoriais literais da linha atual (sem dado comercial). */
+  category?: string;
+  autonomyLabel?: string;
+  capacityLabel?: string;
 }
 
 export interface SnapshotResult {
@@ -425,10 +429,26 @@ export function buildSnapshotFromCsv(csv: string): SnapshotResult {
     // Status vazio/desconhecido em linha nomeada é pendência explícita.
     if (hasStatusColumn && sheetEligible === null) missingFields.push("Status (Elegível / Não Elegível)");
 
+    // Rótulos editoriais literais (não comerciais) — servem também às linhas pendentes.
+    const category = cell(cells, opt["Categoria"]).replace(/\s+/g, " ").trim();
+    const autonomyLabel = cell(cells, idx["Autonomia"]).replace(/\s+/g, " ").trim();
+    const capacityLabel = cell(cells, idx["Capacidade"]).replace(/\s+/g, " ").trim();
+
     if (missingFields.length > 0 || !link || price == null || autonomyKm == null || capacity == null) {
-      pending.push({ id, name: rawName.replace(/\s+/g, " ").trim(), line, isNew, missingFields, sheetEligible });
+      pending.push({
+        id,
+        name: rawName.replace(/\s+/g, " ").trim(),
+        line,
+        isNew,
+        missingFields,
+        sheetEligible,
+        ...(category ? { category } : {}),
+        ...(autonomyLabel ? { autonomyLabel } : {}),
+        ...(capacityLabel ? { capacityLabel } : {}),
+      });
       continue;
     }
+
 
     // Colunas opcionais. Imagem: oficial "Imagem da Bike", alias "Imagem".
     const imgIdx = opt["Imagem da Bike"] >= 0 ? opt["Imagem da Bike"] : opt["Imagem"];
