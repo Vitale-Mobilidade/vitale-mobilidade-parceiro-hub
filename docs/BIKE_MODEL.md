@@ -210,3 +210,17 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 **Verificação no vivo (run `f5ad8c04`, forçado apenas por antecipação de `next_run_at`):** 30 bikes preservadas; 3 drafts preservados no snapshot; ofertas: 27 atuais, 3 encerradas com `end_reason = invalid_price` e `ended_at` preenchido, 0 registros apagados; 20 `radar_eligible` conforme a fonte; 0 divergências de preço/URL entre ofertas atuais e snapshot. Testes dirigidos: `bike-offers-projection.test.ts` (5) + `bike-projection.test.ts` (4) — 9 passaram. Edge Functions reimplantadas: `sync-bike-catalog` e `bike-panel` (as únicas que usam o módulo compartilhado).
 
 **Nota de leitura:** `recognized_count` do snapshot (27) é metadado da planilha e **não** o tamanho do array de bikes (30, incluindo os 3 drafts preservados).
+
+## 18. Etapa 10 — cutover de leitura de `/bikes` para Supabase (23/09/2026)
+
+**Campos editoriais restantes.** Migration aditiva incluiu `category`, `autonomy_label` e `capacity_label` em `public.bikes` (nullable, sem dado comercial). `bike-sheet.ts` passou a extrair `Categoria` (coluna opcional) e os rótulos literais de `Autonomia`/`Capacidade` também nas linhas **pendentes** (`PendingRow`), e `mergeWithPreserved` enriquece as bikes preservadas em draft com os rótulos da linha atual sem apagar valores conhecidos. `project_bikes_from_snapshot` projeta os três campos; `NULL` nunca sobrescreve valor existente. Backfill idempotente pelo próprio sync (run `b07d711f`): **30/30** com `category`, `autonomy_label`, `capacity_label`, `image_url`, `description`.
+
+**Leitura pública.** Nova RPC `get_bikes_public_catalog()` (STABLE, SECURITY DEFINER, `search_path = public, pg_temp`, EXECUTE para `anon`/`authenticated`/`service_role`) faz `LATERAL` join de cada bike com **no máximo uma** `bike_offers` `is_current`, `price > 0` e `url ~ '^https://meli\.la/[A-Za-z0-9]+$'`. Preço e link saem sempre do mesmo registro; oferta encerrada não devolve link antigo. Nada de elegibilidade do Quiz, PII ou colunas operacionais.
+
+**Repositório server-side.** `src/lib/bikes-repository.server.ts` lê a RPC com chave publicável, cache 5 min, mantém o último resultado bom em falha, revalida o padrão `meli.la` byte a byte e anula o par preço/link quando um dos dois falta. `editorial-bikes.functions.ts` e `bikes-discovery.functions.ts` passaram a usar esse repositório; `editorial-bikes.server.ts` (CSV) fica no repositório apenas como caminho de rollback.
+
+**Paridade verificada (script read-only, CSV vs RPC):** 30 vs 30 IDs, **0 divergências** em slug, nome, autonomia, capacidade, categoria, imagem, descrição, preço e URL. `/bikes` renderiza 30 cards; `/bikes/v8-ultra` traz `https://meli.la/2keMDer` com o preço da mesma oferta; `/bikes/v35` mostra "Link indisponível no momento"; `/bikes/nao-existe` responde 404. `get_quiz_catalog` = 20 e `get_price_tracker_catalog` = 20, inalterados.
+
+**UI do detalhe.** O bloco de compra usa exclusivamente o par preço+link da oferta atual; sem oferta, "Sem oferta ativa registrada" + "Link indisponível no momento". O Radar aparece como **observação histórica** rotulada, separada do preço comercial, e nunca alimenta o CTA. Nada de "verificado agora" derivado de `synced_at`.
+
+**Rollback.** Reverter apenas os dois `*.functions.ts` para `fetchBikeCatalog()` (CSV). Nenhuma tabela, RPC, oferta ou histórico precisa ser apagado.
