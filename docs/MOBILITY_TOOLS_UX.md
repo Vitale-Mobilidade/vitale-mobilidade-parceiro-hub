@@ -21,7 +21,7 @@ Status em 23/09/2026. Nada aqui está publicado em produção; rotas implementad
 | 3 | `/calculadoras/custo-anual-mobilidade` | Quanto gasto por ano para me locomover? | carro/moto, Uber/99, transporte público, estacionamento/outros, % | não (sem km/dia) | PREVIEW |
 | 4 | `/calculadoras/uber-vs-bike` | Uber/99 ou bike: qual sai mais barato? | gasto mensal total com Uber/99, % de corridas substituíveis, km/dia, dias/sem, orçamento opcional, garupa (toggle) | até 2 | PREVIEW |
 | 5 | `/calculadoras/carro-vs-bike` | Carro ou bike: quanto cada um custa no trajeto? | gasto mensal variável evitável do carro (sem fixos), km/dia total antes da substituição, dias/sem, %, continuará com o carro? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não" | até 2 | PREVIEW |
-| 6 | `/calculadoras/transporte-publico-vs-bike` | Transporte público ou bike no mês? | gasto mensal em tarifas, tempo atual do trajeto, tempo estimado de bike, km/dia, dias/sem, orçamento (+garupa); % substituível não é presumido — se usado, é explicado | até 2 | PLANEJADA — sem link público |
+| 6 | `/calculadoras/transporte-publico-vs-bike` | Transporte público ou bike no mês? | gasto mensal nas viagens que pretende trocar, tempo diário atual (ida+volta), tempo diário estimado de bike, dias/sem, km/dia antes da troca, orçamento opcional, garupa (toggle); percentual interno = 100% do subconjunto informado, explicado em "Como calculamos?" | até 2 | PREVIEW |
 | 7 | `/calculadoras/moto-vs-bike` | Moto ou bike elétrica no trajeto? | gasto mensal evitável da moto, %, km/dia, dias/sem, mantém o veículo? (sim/não), orçamento (+garupa) | até 2 | PLANEJADA — sem link público |
 | 8 | `/calculadoras/tempo-no-transito` | Quanto tempo por ano passo no trânsito? | minutos de ida, minutos de volta, dias/sem, tempo estimado de bike, km/dia | não | PLANEJADA — sem link público |
 | 9 | `/calculadoras/tempo-recuperado` | Quanto tempo a bike devolve por ano? | tempo atual do trajeto, tempo estimado de bike, dias/sem, km/dia, orçamento opcional | até 2 (km/dia + orçamento) | PLANEJADA — sem link público |
@@ -30,3 +30,4 @@ As rotas 5–9 seguem o briefing já fechado: rápidas/reativas, sem wizard, sem
 
 
 Semanas/ano (52) é premissa central documentada em "Como calculamos?" para todas as rotas de tempo, nunca input principal.
+
