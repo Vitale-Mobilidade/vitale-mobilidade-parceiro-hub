@@ -309,7 +309,7 @@ function CalculadoraEconomia() {
           </div>
         </section>
 
-        <div className="responsive-container grid gap-8 py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:py-14">
+        <div className="responsive-container grid gap-8 py-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:py-10">
           {/* ---------- Formulário progressivo ---------- */}
           <section aria-labelledby="form" className="rounded-3xl bg-card p-5 ring-1 ring-line sm:p-7">
             <div className="flex items-center gap-3">
