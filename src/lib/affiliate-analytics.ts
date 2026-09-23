@@ -57,7 +57,8 @@ export function trackAffiliateClick(input: AffiliateClickInput) {
   if (typeof window === "undefined") return;
   try {
     const bikeId = typeof input?.bike_id === "string" ? input.bike_id.trim() : "";
-    const position = typeof input?.position === "string" ? input.position.trim() : "";
+    // Position: correspondência exata com a allowlist (sem trim/normalização).
+    const position = typeof input?.position === "string" ? input.position : "";
     if (!BIKE_ID_RE.test(bikeId)) return;
     if (!POSITIONS.has(position)) return;
     const safe: Record<string, unknown> = {
