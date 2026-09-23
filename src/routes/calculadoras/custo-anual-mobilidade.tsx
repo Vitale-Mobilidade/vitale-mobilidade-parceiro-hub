@@ -106,7 +106,9 @@ function CustoAnualMobilidade() {
       ? "Com esses dados, você não tem gasto mensal com deslocamento — não há o que substituir."
       : `Seu maior gasto é ${CATEGORY_LABEL[data.largestCategory!]}. ${
           data.replaceableMonthly > 0
-            ? `A parcela que você acredita poder trocar por bike equivale a ${brl(data.replaceableAnnual)} por ano — isso é gasto potencialmente substituível, não economia garantida: custos fixos de um carro ou moto que você mantiver continuam existindo.`
+            ? `A parcela que você acredita poder trocar por bike equivale a ${brl(data.replaceableAnnual)} por ano — isso é gasto potencialmente substituível, não economia garantida${
+                fields.carMoto.value > 0 ? ": custos fixos de um carro ou moto que você mantiver continuam existindo." : "."
+              }`
             : "Com 0% de substituição, nenhuma parte desse gasto é considerada substituível."
         }`;
 
