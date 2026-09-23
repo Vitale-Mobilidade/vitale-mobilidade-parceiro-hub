@@ -643,7 +643,8 @@ export async function runBikeCatalogSync(
     const bikesProjection = await projectBikes(supabase, bikes);
     if (!bikesProjection.ok) console.error("[sync] bikes projection failed:", bikesProjection.error);
     // Etapa 8: ofertas shadow (após overrides e bikes; bike ausente em `bikes` é pulada, sem oferta órfã).
-    const offersProjection = await projectBikeOffers(supabase, bikes);
+    // Linha pendente sem Link Vitale/Preço R$ encerra a oferta atual (nunca reutiliza o valor preservado do draft).
+    const offersProjection = await projectBikeOffers(supabase, bikes, result.pending);
     if (!offersProjection.ok) console.error("[sync] offers projection failed:", offersProjection.error);
 
     // Analytics do Radar de Preços: idempotente e isolado do catálogo/quiz.
