@@ -60,8 +60,7 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 - Aba `gid=0` (bikes): **30 linhas nomeadas** e **zero valores preenchidos na coluna ID**. Portanto o ajuste de precedência no leitor editorial (`ID explícito → nome → ID gerado`) não altera os slugs/URLs atuais, mas protege a identidade se um ID explícito for introduzido futuramente.
 
 Classificação cautelosa (sem apagar nada, sem decisão tomada):
-- `v9_max_duas_baterias` e `jflsjdlksjdl`: **IDs fora do snapshot a investigar**. Não classificar `v9_max_duas_baterias` como alias só porque o nome de um vídeo contém "Duas Baterias"; a correspondência exata de `bike_id` com a planilha ainda não foi confirmada. Ambos precisam de decisão explícita antes de serem incluídos em qualquer tabela normalizada.
-- `jflsjdlksjdl`: **ID não reconhecido, possivelmente registro de teste**. Não chamar de lixo nem remover; classificar como "órfão a investigar" até decisão explícita.
+- `v9_max_duas_baterias` e `jflsjdlksjdl`: **IDs fora do snapshot a investigar**. Não classificar `v9_max_duas_baterias` como alias só porque o nome de um vídeo contém "Duas Baterias"; a correspondência exata de `bike_id` com a planilha ainda não foi confirmada. Não chamar `jflsjdlksjdl` de lixo nem remover. Ambos precisam de decisão explícita antes de serem incluídos em qualquer tabela normalizada.
 
 ## 8. Paridade de identidade (código)
 - `buildBikeCatalog` (leitura editorial de `/bikes`) agora usa a **mesma precedência** do writer `buildSnapshotFromCsv`: `resolveBikeId(ID)` → `resolveBikeId(Nome)` → `buildStableId(ID bruto, Nome)`. Antes ignorava a coluna ID e podia divergir do banco.
