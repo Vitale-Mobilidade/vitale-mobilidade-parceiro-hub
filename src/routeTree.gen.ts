@@ -18,6 +18,7 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
+import { Route as CalculadorasEconomiaRouteImport } from './routes/calculadoras/economia'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 
@@ -66,6 +67,11 @@ const BikesSlugRoute = BikesSlugRouteImport.update({
   path: '/bikes/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalculadorasEconomiaRoute = CalculadorasEconomiaRouteImport.update({
+  id: '/calculadoras/economia',
+  path: '/calculadoras/economia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/bikes': typeof BikesIndexRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/bikes/': typeof BikesIndexRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/economia'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/economia'
     | '/radar/$bikeId'
     | '/acompanhamento'
     | '/bikes'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/economia'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/bikes/'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   PainelBikesRoute: typeof PainelBikesRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   BikesSlugRoute: typeof BikesSlugRoute
+  CalculadorasEconomiaRoute: typeof CalculadorasEconomiaRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   BikesIndexRoute: typeof BikesIndexRoute
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BikesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calculadoras/economia': {
+      id: '/calculadoras/economia'
+      path: '/calculadoras/economia'
+      fullPath: '/calculadoras/economia'
+      preLoaderRoute: typeof CalculadorasEconomiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   PainelBikesRoute: PainelBikesRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   BikesSlugRoute: BikesSlugRoute,
+  CalculadorasEconomiaRoute: CalculadorasEconomiaRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   BikesIndexRoute: BikesIndexRoute,

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Calculator, Sparkles } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
 
@@ -23,6 +23,15 @@ export const Route = createFileRoute("/ferramentas")({
 });
 
 const TOOLS = [
+  {
+    key: "calculadora",
+    icon: Calculator,
+    title: "Calculadora de economia",
+    to: "/calculadoras/economia" as const,
+    cta: "Calcular minha economia",
+    question: "Vale a pena trocar meu transporte por uma bike?",
+    body: "Você informa seus custos de hoje e quanto do trajeto pretende substituir. A conta aparece inteira, com premissas editáveis, e o resultado pode ser zero ou negativo — mostramos assim mesmo.",
+  },
   {
     key: "quiz",
     icon: Sparkles,
@@ -71,7 +80,7 @@ function FerramentasPage() {
         <div className="responsive-container space-y-12 py-12 sm:py-16">
           <section aria-labelledby="disponiveis">
             <h2 id="disponiveis" className="section-h2 text-ink">Disponíveis agora</h2>
-            <ul className="mt-6 grid gap-4 md:grid-cols-3">
+            <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {TOOLS.map(({ key, icon: Icon, title, to, cta, question, body }) => (
                 <li key={key} className="flex h-full flex-col rounded-3xl bg-card p-6 ring-1 ring-line">
                   <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action">
