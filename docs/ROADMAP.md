@@ -72,3 +72,6 @@ O site legado publicado permanece no ar.
 - Etapa 5 (rascunho): cards da Home B2C agora vêm prontos da server function read-only `getHomeCards` (mesma RPC `get_price_tracker_catalog` via `fetchTrackerCatalog`, mesma regra `buildRadarEntries`, até 6 em ordem alfabética, apenas `{id,name,currentPrice}`; id validado por `BIKE_ID_RE`). Otimização estática: payload menor para o cliente, sem daily/histórico/link afiliado; **sem medida real** de payload, PageSpeed ou CWV; não validada no preview nem publicada. Radar original e suas RPCs intactos.
 
 - Etapa 6 (Main não publicada): contrato preparatório em `docs/BIKE_MODEL.md` (mapa do modelo atual por `bike_id`, autoridade, entidades alvo, `bike_id` vs slug, sequência de reconciliação, riscos). `quiz-catalog-repository.server.ts` passou a usar `BIKE_ID_RE` (comportamento idêntico). **Nenhuma tabela Bike foi criada**, nenhuma migration; ensaio de restauração e schema vivo seguem bloqueando escrita. **Etapa 6 NÃO concluída.**
+
+## Design System (rascunho)
+- Parte 1 e 2 do DS aplicadas no rascunho (Home, Radar, detalhe, resultado do Quiz). Ver docs/DESIGN_SYSTEM.md. Não validado em produção nem publicado.

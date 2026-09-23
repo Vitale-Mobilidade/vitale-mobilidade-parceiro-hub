@@ -19,6 +19,11 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getHomeCards } from "@/lib/home-cards.functions";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData } from "@tanstack/react-router";
 
@@ -775,6 +780,13 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   const [showPrimaryOfferPopup, setShowPrimaryOfferPopup] = useState(false);
   const offerPopupDecidedRef = useRef(false);
   const resultMountedAtRef = useRef<number>(Date.now());
+  // Leitura pública read-only para saber quais bikes têm página no Radar (link só se existir).
+  const fetchRadarIds = useServerFn(getHomeCards);
+  const radarQuery = useQuery({ queryKey: ["radar-ids"], queryFn: () => fetchRadarIds(), staleTime: 300_000 });
+  const radarIds = useMemo(
+    () => new Set<string>(radarQuery.data?.ok ? radarQuery.data.search.map((b) => b.id) : []),
+    [radarQuery.data],
+  );
 
   const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
     const finalPayload = { ...(baseLeadData ?? {}), ...payload };
@@ -1032,16 +1044,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   return (
     <main className="min-h-screen bg-background">
-
+      <SiteHeader />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
-        <div className="flex justify-center mb-5">
-          <VitaleBrand size="sm" />
-        </div>
 
         {/* Título + Subtítulo */}
         <div className="text-center mb-7">
-          <h1 className="text-[28px] leading-tight sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">
+          <p className="mb-2 text-xs font-bold tracking-[0.25em] text-action">RESULTADO DO QUIZ</p>
+          <h1 className="text-[28px] leading-tight sm:text-3xl lg:text-4xl font-extrabold text-ink mb-3">
             Sua bike elétrica ideal está aqui
           </h1>
           <p className="text-[15px] sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -1050,21 +1060,21 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
 
         {/* Recomendação principal */}
-        <div ref={primaryCardRef} className="bg-card border-2 border-primary rounded-[18px] overflow-hidden shadow-lg mb-5">
-          <div className="bg-primary text-primary-foreground px-4 py-2 text-base font-bold inline-block rounded-br-xl">
-            ⭐ Melhor escolha para o seu perfil
+        <div ref={primaryCardRef} className="bg-card border-2 border-action rounded-3xl overflow-hidden shadow-lg mb-6">
+          <div className="bg-action text-primary-foreground px-5 py-2 text-base font-bold inline-block rounded-br-2xl">
+            Melhor escolha para o seu perfil
           </div>
           <div className="grid lg:grid-cols-2 gap-5 lg:gap-6 p-4 sm:p-6 lg:p-8">
-            <div className="bg-muted rounded-[14px] p-3 sm:p-4 flex items-center justify-center">
+            <div className="bg-surface border border-line rounded-2xl p-3 sm:p-4 flex items-center justify-center">
               <img
                 src={recommendation.primary.image}
                 alt={`Bike elétrica ${recommendation.primary.name}`}
-                width={800} height={600} loading="lazy"
-                className="w-full h-auto object-contain max-h-[260px] lg:max-h-none lg:aspect-[4/3]"
+                width={800} height={600} decoding="async"
+                className="w-full h-auto object-contain max-h-[280px] lg:max-h-none lg:aspect-[4/3]"
               />
             </div>
             <div>
-              <h2 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.primary.name}</h2>
+              <h2 className="text-[26px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.primary.name}</h2>
               <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.primary.shortDescription}</p>
               <BikeSpecsRow bike={recommendation.primary} />
               <ul className="space-y-2 mb-5">
@@ -1090,6 +1100,11 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
+              {radarIds.has(recommendation.primary.id) && (
+                <Link to="/acompanhamento/$bikeId" params={{ bikeId: recommendation.primary.id }} className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-line text-[15px] font-semibold text-action hover:bg-surface">
+                  Ver histórico de preços no Radar
+                </Link>
+              )}
 
               {reasonPrimary && (
                 <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />
@@ -1100,12 +1115,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
         {/* Alternativa inteligente */}
         {recommendation.secondary && (
-          <div className="bg-card border-2 border-primary/40 rounded-[18px] overflow-hidden mb-5 shadow-md">
-            <div className="bg-primary/15 text-primary px-4 py-2 text-base font-bold inline-block rounded-br-xl">
-              💡 Alternativa inteligente
+          <div className="bg-card border border-line rounded-3xl overflow-hidden mb-6 shadow-sm">
+            <div className="bg-mint/25 text-ink px-5 py-2 text-base font-bold inline-block rounded-br-2xl">
+              Alternativa inteligente
             </div>
             <div className="grid lg:grid-cols-2 gap-5 lg:gap-6 p-4 sm:p-6 lg:p-8">
-              <div className="bg-muted rounded-[14px] p-3 sm:p-4 flex items-center justify-center">
+              <div className="bg-surface border border-line rounded-2xl p-3 sm:p-4 flex items-center justify-center">
                 <img
                   src={recommendation.secondary.image}
                   alt={`Bike elétrica ${recommendation.secondary.name}`}
@@ -1114,7 +1129,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 />
               </div>
               <div>
-                <h3 className="text-[24px] sm:text-[26px] lg:text-3xl font-bold text-foreground mb-2 leading-tight">{recommendation.secondary.name}</h3>
+                <h3 className="text-[24px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.secondary.name}</h3>
                 <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.secondary.shortDescription}</p>
                 <BikeSpecsRow bike={recommendation.secondary} />
                 <ul className="space-y-2 mb-5">
@@ -1139,6 +1154,11 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
                 </p>
+                {radarIds.has(recommendation.secondary.id) && (
+                  <Link to="/acompanhamento/$bikeId" params={{ bikeId: recommendation.secondary.id }} className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-line text-[15px] font-semibold text-action hover:bg-surface">
+                    Ver histórico de preços no Radar
+                  </Link>
+                )}
 
                 {reasonSecondary && (
                   <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />
@@ -1181,9 +1201,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             {/* Mobile: cards empilhados */}
             <div className="grid gap-4 lg:hidden">
               {[recommendation.primary, recommendation.secondary].map((bike: any, idx: number) => (
-                <div key={idx} className="bg-card border border-border rounded-[18px] p-4">
-                  <div className={`text-[15px] font-bold mb-3 ${idx === 0 ? "text-primary" : "text-foreground"}`}>
-                    {bike.name}
+                <div key={idx} className="bg-card border border-line rounded-2xl p-4">
+                  <div className="mb-3 flex items-center gap-3">
+                    <img src={bike.image} alt="" width={72} height={54} loading="lazy" decoding="async" className="h-14 w-18 shrink-0 rounded-lg bg-surface object-contain p-1" />
+                    <div className={`text-[16px] font-bold ${idx === 0 ? "text-action" : "text-ink"}`}>{bike.name}</div>
                   </div>
                   <dl className="space-y-2 text-[15px]">
                     <div className="flex justify-between gap-3">
@@ -1212,11 +1233,17 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             </div>
 
             {/* Desktop: tabela */}
-            <div className="hidden lg:block bg-card border border-border rounded-xl p-5">
+            <div className="hidden lg:block bg-card border border-line rounded-2xl p-6 [&_.grid>div]:py-1.5">
               <div className="grid grid-cols-3 gap-2 text-base">
                 <div></div>
-                <div className="font-bold text-primary text-center">{recommendation.primary.name}</div>
-                <div className="font-bold text-center">{recommendation.secondary.name}</div>
+                {[recommendation.primary, recommendation.secondary].map((b: any, i: number) => (
+                  <div key={b.id} className="text-center">
+                    <div className="mx-auto mb-2 flex h-28 items-center justify-center rounded-xl bg-surface">
+                      <img src={b.image} alt="" width={160} height={112} loading="lazy" decoding="async" className="h-full w-auto object-contain p-2" />
+                    </div>
+                    <div className={`font-bold ${i === 0 ? "text-action" : "text-ink"}`}>{b.name}</div>
+                  </div>
+                ))}
 
                 <div className="text-muted-foreground">Autonomia</div>
                 <div className="text-center">Até {recommendation.primary.autonomyKm} km</div>
@@ -1273,6 +1300,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           baseLeadData={baseLeadData}
           onMainAction={markMainActionClicked}
         />
+      </div>
+      <div className="pb-20 lg:pb-0">
+        <SiteFooter />
       </div>
 
       {/* Sticky CTA mobile */}
