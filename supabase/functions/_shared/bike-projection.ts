@@ -36,7 +36,19 @@ export function buildBikeProjectionRows(bikes: SnapshotBike[]): BikeProjectionRo
       ? b.autonomyKm
       : null;
     const cap = b.capacity === 1 || b.capacity === 2 ? b.capacity : null;
-    rows.push({ bike_id: b.id, name: String(b.name ?? "").trim(), autonomy_km: aut, capacity_people: cap });
+    const rawImg = typeof b.image === "string" ? b.image.trim() : "";
+    const img = /^https:\/\/[^\s"'<>]+$/.test(rawImg) ? rawImg : null;
+    const desc = typeof b.description === "string" && b.description.trim() ? b.description.trim() : null;
+    const short = typeof b.shortDescription === "string" && b.shortDescription.trim() ? b.shortDescription.trim() : null;
+    rows.push({
+      bike_id: b.id,
+      name: String(b.name ?? "").trim(),
+      autonomy_km: aut,
+      capacity_people: cap,
+      image_url: img,
+      description: desc,
+      short_description: short,
+    });
   }
   return rows;
 }
