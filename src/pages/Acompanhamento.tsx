@@ -31,30 +31,18 @@ const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k
 const SORTS: SortKey[] = ["opportunity", "drop", "price", "name"];
 
 const Acompanhamento = () => {
-  const [bikes, setBikes] = useState<RadarBike[] | null>(null);
-  const [error, setError] = useState(false);
+  // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
+  const initial = useLoaderData({ from: "/acompanhamento/" });
+  const bikes = useMemo<RadarBike[]>(
+    () => (initial.ok ? (initial.bikes as unknown as RadarBike[]) : []),
+    [initial],
+  );
+  const error = !initial.ok;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("opportunity");
   const [chips, setChips] = useState<ChipKey[]>([]);
   const [alertBike, setAlertBike] = useState<RadarEntry | null>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error: rpcError } = await supabase.rpc("get_price_tracker_catalog");
-      if (cancelled) return;
-      if (rpcError || !Array.isArray(data)) {
-        setError(true);
-        setBikes([]);
-        return;
-      }
-      setBikes(data as unknown as RadarBike[]);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     trackRadar("radar_viewed");
