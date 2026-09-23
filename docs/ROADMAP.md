@@ -192,3 +192,7 @@ A primeira sincronização automática após as Etapas 6–8 concluiu com `statu
 O Radar foi publicado no deployment `22834d61-c1e0-481b-af40-1a2243c47f33`: `/radar` e detalhe retornam 200 SSR, ID inexistente retorna 404 e `/acompanhamento/{id}?utm_source=...` retorna 301 preservando ID e query. O Quiz não foi alterado.
 
 Próximo gate: completar os campos reais de imagem/descrição na entidade Bike, reconciliar o catálogo público e só então mudar a leitura de `/bikes`, sem recriar a página nem alterar a oferta/Quiz.
+
+## Atualização — campos editoriais em `public.bikes` (23/09/2026)
+
+Migration aditiva `20260923125500` adiciona `image_url` (CHECK https), `description` e `short_description` a `public.bikes`, atualiza `project_bikes_from_snapshot` para projetá-los a partir do snapshot (`image`, `description`, `shortDescription`) e faz backfill idempotente. Valor ausente/inválido nunca sobrescreve o que já existe; sem regravação quando nada muda. Verificação no vivo: 30 bikes, 30 com `image_url`, `description` e `short_description`, 0 divergências vs snapshot; 30 ofertas atuais inalteradas. Edge Functions `sync-bike-catalog` e `bike-panel` reimplantadas. Etapa 6 passa a **operando (schema + backfill + campos editoriais)**; Etapa 7 segue operando com a mesma rotina única. Quiz, Radar, ofertas, preço, links afiliados e leitores web **não** foram alterados; leitura de `/bikes` continua vindo da planilha.
