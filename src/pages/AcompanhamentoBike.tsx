@@ -102,8 +102,8 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
         {!loading && bike && metrics && (
           <>
-            <header className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <BikeMedia src={bike.image} name={bike.name} eager className="h-[300px] rounded-3xl border border-line md:h-[440px]" />
+            <header className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <BikeMedia src={bike.image} name={bike.name} eager className="h-[260px] rounded-3xl border border-line md:h-[340px]" />
 
               <div className="flex min-w-0 flex-col">
                 <PriceStatus classification={metrics.classification} />
