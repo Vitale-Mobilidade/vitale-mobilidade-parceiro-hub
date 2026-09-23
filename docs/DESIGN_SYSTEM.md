@@ -126,16 +126,10 @@ As referências de layout/hierarquia foram seguidas, mas sem dados inventados: n
 
 ## Heróis das páginas de entrada e card de catálogo — 23/09/2026 (prévia, não publicado)
 
-- Utilitários compartilhados em `src/styles.css`: `entry-hero` (fundo ink, isolate/overflow), `entry-hero-inner` (min-height 560px mobile / 640px desktop, texto na base no mobile e centralizado no desktop — baseline = hero da Home v2.1), `entry-eyebrow`, `entry-h1` (2.6rem → 3.75rem ≥640px → 4.5rem ≥1024px), `entry-lead` e `section-h2` (1.875rem → 2.25rem).
+- Utilitários compartilhados em `src/styles.css`: `entry-hero` (fundo ink, isolate/overflow), `entry-hero-inner` (min-height 640px a partir de 390px; texto na base no mobile e centralizado no desktop), `entry-eyebrow`, `entry-h1` (2.6rem → 3.75rem ≥640px → 4.5rem ≥1024px), `entry-lead` e `section-h2` (1.875rem → 2.25rem). O hero pode crescer naturalmente quando o conteúdo exige (ex.: Home a ~704px em 320px por quebra de linha do H1/lead).
 - Aplicados em Home `/`, `/bikes` e `/acompanhamento`; cada página mantém pergunta, copy e um único H1. Quiz e detalhe de bike não foram alterados.
-- `/bikes`: hero fotográfico com `<picture>` reaproveitando `vitale-hero-v2*.webp` (foto real já existente), crop diferente da Home (`object-[80%_75%]`, zoom 125% no desktop) e gradiente ink para legibilidade. Busca e atalhos preservados dentro do hero.
-- `/acompanhamento`: busca permanece no hero; indicadores reais (monitoradas, menor preço, maior queda) passaram para um painel sobreposto à base do hero (`-mt-16/-mt-20`), sem comprimir texto.
-- Altura mínima comum; o hero pode crescer quando o conteúdo exige (sem overflow).
+- Imagens temáticas próprias por página (imagens editoriais geradas, não fotos de modelos reais; nunca identificar como modelo/preço/oferta): Home usa `vitale-hero-v2*`; `/bikes` usa `vitale-hero-bikes-2026*`; `/acompanhamento` usa `vitale-hero-radar-2026*`. Todas via `<picture>` com gradiente `ink` para legibilidade.
+- `/bikes`: a busca permanece dentro do hero; os atalhos de perfil (“Para 2 pessoas”, “Autonomia de 100 km ou mais”, “Com preço no Radar”) ficam num painel de transição sobreposto à base do hero (`-mt-16/-mt-20`).
+- `/acompanhamento`: a busca e os indicadores reais (monitoradas, menor preço, maior queda) ficam num painel de transição sobreposto à base do hero (`-mt-16/-mt-20`), sem comprimir o texto do hero.
+- Alturas medidas: desktop 1280px — Home 640, Bikes 640, Radar 640; mobile 390px — Home 640, Bikes 640, Radar 640; mobile 320px — Home ~704 (crescimento natural), Bikes 640, Radar 640.
 - `BikeCatalogCard`: o card inteiro é um único `<Link to="/bikes/$slug">` (foto, nome, selo Radar, preço, fonte, vídeos e CTA visual "Conhecer a bike"). Sem link separado para o Radar dentro do card; o acesso ao Radar fica no detalhe da bike. Hover/foco responde no card todo (`focus-visible:ring-4`), sem links aninhados nem `onClick` em div.
-
-### Segunda passada — heróis com tema próprio e altura igual (23/09/2026, prévia)
-
-- Imagens editoriais geradas (não são fotos de modelos reais; nunca identificar como modelo, preço ou oferta), em `public/`: `/bikes` → `vitale-hero-bikes-2026{,-1280,-mobile}.webp`; `/acompanhamento` → `vitale-hero-radar-2026{,-1280,-mobile}.webp` (1672×941 / 1280×720 / 600×909, via `<picture>`). A Home mantém `vitale-hero-v2*`. Mesma paleta e gradiente ink nas três. Não aplicar a Quiz, detalhe de bike ou páginas internas.
-- `entry-hero-inner`: min-height 640px em todas as larguras; `entry-h1` com largura útil de 56rem (escala comum, sem reduzir por página).
-- No hero ficam só eyebrow, H1, lead e (no `/bikes`) a busca. Atalhos do `/bikes` e busca + indicadores do Radar ficam num painel de transição sobreposto à base do hero (`-mt-16/-mt-20`), padrão dos atalhos da Home. O dropdown da busca do Radar não é mais cortado pelo `overflow-hidden` do hero.
-- Alturas medidas: desktop 1280px — Home 640, Bikes 640, Radar 640; mobile 390px — Home 640, Bikes 640, Radar 640; mobile 320px — Home ~704 (crescimento natural por quebra de linha do H1/lead, preservando legibilidade), Bikes 640, Radar 640.
