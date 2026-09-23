@@ -5,8 +5,8 @@ import { Metric, NumberField } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { Button } from "@/components/ui/button";
 import { LIMITS } from "@/lib/mobility/config";
-import { computeAnnualMobilityCost, type AnnualCategory } from "@/lib/mobility/cost-engine";
-import { brl, parseNumber, validateNumber } from "@/lib/mobility/format";
+import { computeAnnualMobilityCost, normalizeOptionalSpend, type AnnualCategory } from "@/lib/mobility/cost-engine";
+import { brl, validateNumber } from "@/lib/mobility/format";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
 const PATH = "/calculadoras/custo-anual-mobilidade";
