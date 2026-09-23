@@ -77,8 +77,8 @@ Classificação cautelosa (sem apagar nada, sem decisão tomada):
 6. Paridade: `get_quiz_catalog`, `get_price_tracker_catalog` e `get_bike_price_history` com JSON e hrefs idênticos antes/depois.
 7. Só depois, em tarefa separada, o writer passa a escrever também em `bikes`.
 
-Critérios de aceite: 32 (ou número aprovado) linhas com IDs iguais à união; zero diff nas três RPCs; links afiliados idênticos; RLS + GRANTs revisados; Quiz e Radar sem regressão.
-Rollback: `DROP TABLE public.bikes` (nada depende dela até o passo 7); como a migration é aditiva, as tabelas atuais permanecem fonte operacional.
+Critérios de aceite: conjunto de IDs aprovado após investigar os 2 extras (não assumir inclusão automática); todas as linhas aprovadas com IDs iguais à união correspondente; zero diff nas três RPCs; links afiliados idênticos; RLS + GRANTs revisados; Quiz e Radar sem regressão.
+Rollback (não destrutivo): manter RPCs e writer antigos como fonte de verdade; desativar/desfazer qualquer novo leitor/writer por flag ou reversão de código; preservar a tabela `public.bikes` e seus dados para análise. Eventual exclusão da tabela só em tarefa separada, com backup e autorizações explícitas.
 
 ## 10. Revisão pelas 8 perspectivas (pré → pós)
 - **Produto:** risco de `/bikes` mostrar ID diferente do Radar → mesma identidade em ambos.
