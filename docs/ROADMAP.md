@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Trabalho editorial V2 (branch, não publicado):** a revisão do Admin para “URL + título + transcrição → Gerar artigo → prévia privada” foi implementada em código, com detecção de bike, thumbnail/OG, blocos conectados e validação. Typecheck, build e testes direcionados passaram. Não houve merge, deploy ou escrita comercial. **Etapas 13–15 não são declaradas concluídas por esta mudança:** falta exercer a geração com transcrição real, inspeção autenticada e revisão humana do primeiro artigo. Ver [ADMIN_ARTICLE_FLOW_V2.md](./ADMIN_ARTICLE_FLOW_V2.md).
+
 > **Atualização de release em 23/09/2026:** o Admin editorial P0, as rotas públicas de conteúdo, seis tabelas privadas, RLS e a Edge Function `editorial-admin` foram integrados e publicados no Lovable. **Etapas 12–14 estão parciais, não concluídas:** ainda não existe usuário Auth provisionado, fluxo editorial exercitado com transcrição real nem artigo publicado. A Etapa 15 permanece pendente. O painel `/painel-bikes` e a operação comercial continuam intactos. A tabela histórica abaixo precisa de reauditoria geral antes de ser usada como status atual. Veja [ADMIN_EDITORIAL_P0.md](./ADMIN_EDITORIAL_P0.md).
 
 > Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).

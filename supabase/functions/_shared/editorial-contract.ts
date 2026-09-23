@@ -145,7 +145,7 @@ export function validateArticleForPublication(
   const source = normalized(transcript);
   for (const [i, block] of (article.blocks ?? []).entries()) {
     if (!BLOCK_TYPES.includes(block.type)) { errors.push(`Bloco ${i + 1}: tipo inválido.`); continue; }
-    if (["summary", "text", "pros_cons"].includes(block.type)) {
+    if (["hero", "summary", "text", "pros_cons"].includes(block.type)) {
       if (!block.text?.trim()) errors.push(`Bloco ${i + 1}: texto vazio.`);
       if (!block.sourceExcerpt || !source.includes(normalized(block.sourceExcerpt))) {
         errors.push(`Bloco ${i + 1}: trecho de fonte ausente ou não encontrado na transcrição.`);

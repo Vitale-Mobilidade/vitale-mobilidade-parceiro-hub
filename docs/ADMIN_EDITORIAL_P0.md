@@ -1,5 +1,7 @@
 # Admin editorial P0 — release inicial
 
+> **Nota sobre a revisão em andamento:** este documento registra o release P0 anterior. O fluxo novo de criação em um clique está documentado em [ADMIN_ARTICLE_FLOW_V2.md](./ADMIN_ARTICLE_FLOW_V2.md) e ainda não foi publicado. Os números/estados operacionais deste P0 não devem ser tratados como uma auditoria ao vivo da revisão V2.
+
 Status em 23/09/2026: **código integrado ao Lovable e publicado; migration aditiva aplicada; função `editorial-admin` implantada; nenhum usuário Auth provisionado e nenhum artigo criado ou publicado.** O painel `/painel-bikes` e os fluxos de Sheets, Supabase, Quiz, Radar e Mercado Livre permanecem inalterados. O Admin está fechado até a designação explícita do primeiro usuário e papel.
 
 ## Intenção e escopo

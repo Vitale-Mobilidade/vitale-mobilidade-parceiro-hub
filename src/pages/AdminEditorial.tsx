@@ -6,6 +6,7 @@ import { adminCall, type AdminArticleList, type AdminBike, type AdminOffer, type
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
+import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import { BLOCK_TYPES, CONTENT_TYPES, parseArticleBlocks, type ArticleBlock, type EditorialArticle, type EditorialVideo } from
@@ -211,9 +212,16 @@ export function AdminArticlesPage() {
 }
 function Articles() {
   const [items, setItems] = useState<ArticleRow[]>([]);
+  const [videoNames, setVideoNames] = useState<Map<string, string>>(new Map());
+  const [bikeNames, setBikeNames] = useState<Map<string, string>>(new Map());
   const [error, setError] = useState("");
   const [status, setStatus] = useState("all");
-  useEffect(() => { void adminCall<AdminArticleList>("articles").then(v => setItems(v.articles)).catch(e => setError(e.message)); }, []);
+  useEffect(() => { void Promise.all([
+    adminCall<AdminArticleList>("articles"), adminCall<AdminVideoList>("videos"), adminCall<{ bikes: AdminBike[] }>("bikes"),
+  ]).then(([articles, videos, catalog]) => { setItems(articles.articles);
+    setVideoNames(new Map(videos.videos.map(video => [video.youtube_id, video.title])));
+    setBikeNames(new Map(catalog.bikes.map(bike => [bike.bike_id, bike.name])));
+  }).catch(e => setError(e.message)); }, []);
   const visible = items.filter(a => status === "all" || a.status === status);
   return <>
     <Heading title="Artigos" detail="Rascunhos, validação, revisão e publicação em um único fluxo.">
@@ -225,12 +233,14 @@ function Articles() {
       {["draft", "generated", "validation_error", "ready", "published", "archived"].map(s => <option key={s} value={s}>{s}</option>)}
     </select>
     <div className={PANEL}><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm">
-      <thead><tr className="border-b border-line text-muted-foreground"><th className="pb-3">Título / slug</th><th>Vídeo</th><th>Bike</th><th>Status</th><th>Atualizado</th><th>SEO</th></tr></thead>
+      <thead><tr className="border-b border-line text-muted-foreground"><th className="pb-3">Artigo</th><th>Vídeo de origem</th><th>Bike</th><th>Estado</th><th>Atualizado</th><th>Qualidade</th></tr></thead>
       <tbody>{visible.map(a => <tr key={a.id} className="border-b border-line/70 last:border-0">
         <td className="py-3"><a href={`/admin/conteudos/${a.id}`} className="font-semibold text-emerald-800 underline">{a.title || "Sem título"}</a>
-          <br/><small className="text-muted-foreground">{a.slug ?? "Sem slug"}</small></td>
-        <td>{a.video_id}</td><td>{a.primary_bike_id ?? "—"}</td><td>{a.status}</td><td>{date(a.updated_at)}</td>
-        <td>{a.validation_errors?.length ? `${a.validation_errors.length} pendências` : a.status === "draft" ? "Não validado" : "Sem erros"}</td>
+          </td>
+        <td className="max-w-48 truncate">{videoNames.get(a.video_id) ?? "Vídeo cadastrado"}</td>
+        <td>{a.primary_bike_id ? bikeNames.get(a.primary_bike_id) ?? "Bike identificada" : "Conteúdo geral"}</td>
+        <td>{a.status === "validation_error" ? "Precisa de revisão" : a.status === "published" ? "Publicado" : a.status === "ready" ? "Pronto" : "Em preparação"}</td><td>{date(a.updated_at)}</td>
+        <td>{a.validation_errors?.length ? `${a.validation_errors.length} item(ns)` : a.status === "draft" ? "Não validado" : "Sem erros"}</td>
       </tr>)}</tbody>
     </table></div>{visible.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum artigo neste estado.</p>}</div>
   </>;
@@ -242,65 +252,70 @@ export function AdminNewArticlePage() {
 function NewArticle() {
   const [sheet, setSheet] = useState<VideoItem[]>([]);
   const [savedVideos, setSavedVideos] = useState<EditorialVideo[]>([]);
-  const [videoId, setVideoId] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [title, setTitle] = useState("");
-  const [videoDate, setVideoDate] = useState("");
-  const [primaryBikeId, setPrimaryBikeId] = useState("");
-  const [relatedBikeIds, setRelatedBikeIds] = useState("");
-  const [contentType, setContentType] = useState("test");
   const [transcript, setTranscript] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [draftId, setDraftId] = useState("");
   useEffect(() => { void Promise.allSettled([getSheetVideoCatalog(), adminCall<AdminVideoList>("videos")])
     .then(([items, saved]) => {
       if (items.status === "fulfilled") setSheet(items.value);
       if (saved.status === "fulfilled") setSavedVideos(saved.value.videos);
-      else setError("Não foi possível carregar os vídeos cadastrados no Admin.");
     }); }, []);
-  function choose(id: string) {
-    setVideoId(id);
-    const v = sheet.find(item => item.videoId === id);
-    if (v) { setVideoUrl(v.url); setTitle(v.title); setVideoDate(v.date ?? "");
-      const saved = savedVideos.find(item => item.youtube_id === id);
-      setPrimaryBikeId(saved?.primary_bike_id ?? v.bikeIds[0] ?? "");
-      setRelatedBikeIds((saved?.related_bike_ids ?? v.bikeIds).join(", "));
-      setTranscript(saved?.transcript ?? ""); setContentType(saved?.content_type ?? "test"); }
-  }
+  const videoId = parseYoutubeId(videoUrl);
+  const source = videoId ? sheet.find(item => item.videoId === videoId) : null;
+  const saved = videoId ? savedVideos.find(item => item.youtube_id === videoId) : null;
+  useEffect(() => {
+    if (!videoId) return;
+    setTitle(current => current || saved?.title || source?.title || "");
+    setTranscript(current => current || saved?.transcript || "");
+  }, [videoId, saved?.title, saved?.transcript, source?.title]);
   async function create(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
-    const id = videoId || parseYoutubeId(videoUrl);
-    if (!id) { setError("Informe um vídeo do YouTube válido."); setBusy(false); return; }
+    event.preventDefault(); setError(""); setDraftId("");
+    if (!videoId) { setError("Cole uma URL válida do YouTube."); return; }
+    if (transcript.trim().length < 200) { setError("Cole a transcrição completa para gerar o artigo."); return; }
+    setBusy("Preparando vídeo e identificando bikes…");
     try {
-      await adminCall("video-save", { youtubeId: id, title, date: videoDate || null, transcript,
-        primaryBikeId: primaryBikeId || null,
-        relatedBikeIds: relatedBikeIds.split(",").map(x => x.trim()).filter(Boolean), contentType });
-      const result = await adminCall<{ article: EditorialArticle }>("article-create", { videoId: id, title });
-      window.location.assign(`/admin/conteudos/${result.article.id}`);
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível criar o artigo."); setBusy(false); }
+      await adminCall("video-save", { youtubeId: videoId, title, date: source?.date ?? null, transcript });
+      setBusy("Criando artigo…");
+      const result = await adminCall<{ article: EditorialArticle }>("article-create", { videoId, title });
+      setDraftId(result.article.id);
+      if (result.article.status !== "published") {
+        setBusy("Escrevendo, conectando Radar e preparando SEO…");
+        const generated = await adminCall<{ article: EditorialArticle; errors: string[] }>("compile-article",
+          { id: result.article.id, revision: result.article.revision });
+        if (generated.errors.length) {
+          setBusy("Corrigindo detalhes simples e validando…");
+          await adminCall("validate-article", { id: result.article.id, revision: generated.article.revision });
+        }
+      }
+      window.location.assign(`/admin/conteudos/${result.article.id}/preview`);
+    } catch (e) { setError(`A geração não terminou. O rascunho foi preservado. ${e instanceof Error ? e.message : "Tente novamente."}`); setBusy(""); }
   }
   return <>
-    <Heading title="Criar artigo" detail="Comece por um vídeo real. A transcrição é obrigatória para geração e publicação." />
+    <Heading title="Criar novo artigo" detail="Cole o vídeo e a transcrição. A Vitale cuida da estrutura, SEO e conexões." />
     {error && <Notice danger>{error}</Notice>}
-    <form onSubmit={create} className={`${PANEL} max-w-3xl space-y-5`}>
-      <label className="block text-sm font-medium">Vídeo da planilha
-        <select className={`${INPUT} mt-1`} value={videoId} onChange={e => choose(e.target.value)}>
-          <option value="">Escolher ou informar URL abaixo</option>
-          {sheet.map(v => <option key={v.videoId} value={v.videoId}>{v.title}</option>)}
-        </select>
-      </label>
-      <label className="block text-sm font-medium">URL YouTube<input className={`${INPUT} mt-1`} value={videoUrl} onChange={e => { setVideoUrl(e.target.value); setVideoId(""); }} required /></label>
-      <label className="block text-sm font-medium">Título do vídeo<input className={`${INPUT} mt-1`} value={title} onChange={e => setTitle(e.target.value)} required /></label>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium">Data do vídeo<input className={`${INPUT} mt-1`} type="date" value={videoDate} onChange={e => setVideoDate(e.target.value)} /></label>
-        <label className="block text-sm font-medium">Tipo<select className={`${INPUT} mt-1`} value={contentType} onChange={e => setContentType(e.target.value)}>
-          {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
-      </div>
-      <label className="block text-sm font-medium">Bike principal (ID estável)<input className={`${INPUT} mt-1`} value={primaryBikeId} onChange={e => setPrimaryBikeId(e.target.value)} /></label>
-      <label className="block text-sm font-medium">Bikes relacionadas (IDs separados por vírgula)<input className={`${INPUT} mt-1`} value={relatedBikeIds} onChange={e => setRelatedBikeIds(e.target.value)} /></label>
-      <label className="block text-sm font-medium">Transcrição completa<textarea className={`${INPUT} mt-1 min-h-64`} value={transcript} onChange={e => setTranscript(e.target.value)} required /></label>
-      <p className="text-sm text-muted-foreground">A IA usará a transcrição como fonte, nunca como instrução. O artigo não será publicado automaticamente.</p>
-      <button className={BTN} disabled={busy}>{busy ? "Criando…" : "Criar rascunho"}</button>
+    {draftId && error && <a href={`/admin/conteudos/${draftId}/preview`} className={`${OUTLINE} mb-5 inline-block`}>Abrir rascunho preservado</a>}
+    <form onSubmit={create} className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9">
+      <label className="block text-base font-semibold">URL do YouTube<input type="url" autoComplete="url" className={`${INPUT} mt-2 py-3`} value={videoUrl}
+        onChange={e => {
+          const nextId = parseYoutubeId(e.target.value);
+          if (videoId && nextId && nextId !== videoId) { setTitle(""); setTranscript(""); }
+          setVideoUrl(e.target.value);
+        }} placeholder="https://www.youtube.com/watch?v=…" required /></label>
+      {videoUrl && !videoId && <p className="-mt-4 text-sm text-amber-800">Confira a URL do vídeo.</p>}
+      {videoId && <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3">
+        <img src={saved?.thumbnail_url || source?.thumbnail || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`}
+          alt="Prévia do vídeo" className="h-16 w-28 rounded-lg object-cover" />
+        <p className="text-sm text-emerald-950">{saved || source ? "Vídeo encontrado na biblioteca Vitale. Dados existentes serão reutilizados." : "Novo vídeo: será cadastrado automaticamente."}</p>
+      </div>}
+      <label className="block text-base font-semibold">Título do vídeo<input className={`${INPUT} mt-2 py-3`} value={title}
+        onChange={e => setTitle(e.target.value)} placeholder="Título publicado no YouTube" required minLength={3} /></label>
+      <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
+        onChange={e => setTranscript(e.target.value)} placeholder="Cole aqui a transcrição integral do vídeo" required /></label>
+      <p className="text-sm text-muted-foreground">O artigo será aberto em prévia privada. Nada será publicado sem sua revisão e confirmação.</p>
+      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)}>{busy || "Gerar artigo"}</button>
     </form>
   </>;
 }
@@ -326,17 +341,23 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
   const [video, setVideo] = useState<EditorialVideo | null>(null);
   const [draft, setDraft] = useState<EditorDraft | null>(null);
   const [related, setRelated] = useState<ArticleRow[]>([]);
+  const [bikeNames, setBikeNames] = useState<Map<string, string>>(new Map());
+  const [mode, setMode] = useState<"visual" | "advanced">("visual");
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const [revisions, setRevisions] = useState<{ id: number; revision: number; createdAt: string }[]>([]);
   const [dirty, setDirty] = useState(false);
   const [reviewChecked, setReviewChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   async function load() {
-    const [detail, list] = await Promise.all([
+    const [detail, list, catalog] = await Promise.all([
       adminCall<{ article: EditorialArticle; video: EditorialVideo }>("article-get", { id }),
       adminCall<AdminArticleList>("articles"),
+      adminCall<{ bikes: AdminBike[] }>("bikes"),
     ]);
     setArticle(detail.article); setVideo(detail.video); setDraft(fromArticle(detail.article));
+    setBikeNames(new Map(catalog.bikes.map(bike => [bike.bike_id, bike.name])));
     setRelated(list.articles.filter(a => a.id !== id && a.status === "published")); setDirty(false);
   }
   useEffect(() => { void load().catch(e => setError(e.message)); }, [id]);
@@ -353,7 +374,7 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
     try {
       const result = await adminCall<{ article?: EditorialArticle; errors?: string[]; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
       if (result.article) { setArticle(result.article); setDraft(fromArticle(result.article)); setDirty(false); }
-      if (result.errors?.length) setError(result.errors.join(" "));
+      if (result.errors?.length) { setQualityOpen(true); setMessage(`${result.errors.length} item(ns) precisam de revisão.`); }
       else setMessage(name === "publish-article" ? "Artigo publicado." : "Operação concluída.");
       if (result.ok) window.location.assign("/admin/conteudos");
     } catch (e) { setError(e instanceof Error ? e.message : "Falha na operação."); }
@@ -361,23 +382,47 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
   }
   async function save(event?: FormEvent) {
     event?.preventDefault(); if (!article || !draft) return;
+    const blocks = draft.blocks.map(block =>
+      draft.primaryBikeId && ["radar", "specs", "cta"].includes(block.type) &&
+      (!block.bikeId || block.bikeId === article.primary_bike_id)
+        ? { ...block, bikeId: draft.primaryBikeId } : block);
     await action("article-save", {
-      ...draft, blocks: parseArticleBlocks(draft.blocks), primaryBikeId: draft.primaryBikeId || null,
+      ...draft, blocks: parseArticleBlocks(blocks), primaryBikeId: draft.primaryBikeId || null,
       relatedBikeIds: draft.relatedBikeIds.split(",").map(x => x.trim()).filter(Boolean),
     });
   }
   if (error && !article) return <Notice danger>{error}</Notice>;
   if (!article || !draft) return <p aria-busy="true">Carregando artigo…</p>;
   const editable = article.status !== "published" && article.status !== "archived";
+  const quality = article.validation_errors?.length ? "Bloqueado" :
+    article.status === "ready" || article.status === "published" ? "Pronto" : "Atenção";
   return <>
-    <Heading title={article.title || "Novo artigo"} detail={`Estado: ${article.status} · revisão ${article.revision} · vídeo ${article.video_id}`}>
+    <Heading title={article.title || "Novo artigo"} detail="Revise a prévia e publique somente quando o conteúdo estiver correto.">
       <a href={`/admin/conteudos/${id}/preview`} target="_blank" rel="noopener noreferrer" className={OUTLINE}>Abrir preview</a>
     </Heading>
     {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
-    {article.validation_errors?.length > 0 && <Notice danger>Validação: {article.validation_errors.join(" ")}</Notice>}
+    <section className={`${PANEL} mb-5`} aria-label="Qualidade do artigo">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><h2 className="text-lg font-semibold">Qualidade do artigo · {quality}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{article.validation_errors?.length
+            ? `${article.validation_errors.length} item(ns) precisam de revisão` :
+            article.reviewed_at ? "Validado e revisado por uma pessoa" : "Validação automática e revisão humana antes da publicação"}</p></div>
+        {article.validation_errors?.length > 0 && <button className={OUTLINE} onClick={() => setQualityOpen(v => !v)}>
+          {qualityOpen ? "Ocultar detalhes" : "Abrir detalhes"}</button>}
+      </div>
+      {qualityOpen && article.validation_errors?.length > 0 && <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-red-800">
+        {article.validation_errors.map((item, index) => <li key={index}>{item}</li>)}</ul>}
+      <div className="mt-4 flex flex-wrap gap-2 text-xs text-emerald-950">
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Vídeo: {video?.title ?? article.video_id}</span>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Bike: {article.primary_bike_id ? bikeNames.get(article.primary_bike_id) ?? article.primary_bike_id : "confirmação necessária"}</span>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5">SEO: {article.seo_title && article.meta_description ? "preparado" : "a revisar"}</span>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Radar: {article.blocks.some(b => b.type === "radar") ? "conectado" : "não aplicável"}</span>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Relacionados: {article.related_article_ids.length}</span>
+      </div>
+    </section>
     <div className="mb-5 flex flex-wrap gap-2">
       <button className={BTN} disabled={!editable || !dirty || busy} onClick={() => void save()}>Salvar rascunho</button>
-      <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("compile-article")}>Gerar artigo com IA</button>
+      <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("compile-article")}>Regenerar artigo</button>
       <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("validate-article")}>Validar</button>
       <button className={OUTLINE} disabled={!editable || dirty || busy || article.status !== "ready" || !reviewChecked}
         onClick={() => void action("review-article")}>Marcar revisão humana</button>
@@ -393,6 +438,55 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
     </div>
     <label className="mb-5 flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewChecked} onChange={e => setReviewChecked(e.target.checked)} />
       Revisei transcrição, números, IDs, links, afirmações, SEO e preview. A IA não publica sozinha.</label>
+    <div className="mb-5 flex gap-2" role="tablist" aria-label="Modo de edição">
+      <button role="tab" aria-selected={mode === "visual"} onClick={() => setMode("visual")}
+        className={mode === "visual" ? BTN : OUTLINE}>Modo visual</button>
+      <button role="tab" aria-selected={mode === "advanced"} onClick={() => setMode("advanced")}
+        className={mode === "advanced" ? BTN : OUTLINE}>Avançado</button>
+    </div>
+    {mode === "visual" && <section className="mx-auto max-w-4xl rounded-3xl bg-white px-5 py-8 shadow-sm sm:px-10">
+      <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Prévia editável · Conteúdo Vitale</p>
+      <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm"><label className="font-semibold">Bike principal identificada
+        <select className={`${INPUT} mt-2 max-w-sm`} disabled={!editable} value={draft.primaryBikeId}
+          onChange={e => patch({ primaryBikeId: e.target.value })}>
+          <option value="">Conteúdo geral / ainda não identificada</option>
+          {[...bikeNames.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"))
+            .map(([bikeId, name]) => <option key={bikeId} value={bikeId}>{name}</option>)}
+        </select></label>
+        {!draft.primaryBikeId && <p className="mt-2 text-amber-900">Se o vídeo analisa um modelo específico, confirme-o aqui antes de publicar.</p>}
+      </div>
+      <label className="mt-5 block text-sm font-semibold">Título do artigo<input className="mt-2 w-full border-0 border-b border-line px-0 py-2 text-3xl font-bold leading-tight focus:ring-0 sm:text-4xl"
+        disabled={!editable} value={draft.title} onChange={e => patch({ title: e.target.value })} /></label>
+      {article.og_image_url && <img src={article.og_image_url} alt="" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
+      <div className="mt-7 flex items-center justify-between gap-3"><span className="text-sm font-semibold">Resumo</span>
+        <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-section", { section: "summary" })}>Regenerar resumo</button></div>
+      <label className="block"><span className="sr-only">Resumo</span><textarea className="mt-2 min-h-24 w-full rounded-xl border border-line p-3 text-lg leading-8"
+        disabled={!editable} value={draft.summary} onChange={e => patch({ summary: e.target.value })} /></label>
+      <div className="mt-7 space-y-5">{draft.blocks.map((block, index) => <section key={index} className="rounded-xl border border-line p-4">
+        <div className="flex flex-wrap items-center gap-2"><strong className="mr-auto text-sm text-emerald-800">{block.type === "text" ? "Seção" : block.type === "video" ? "Vídeo original" : block.type === "radar" ? "Radar dinâmico" : block.type === "cta" ? "Oferta atual" : block.type}</strong>
+          <button type="button" className={OUTLINE} disabled={!editable || index === 0} onClick={() => moveBlock(index, -1)} aria-label={`Mover bloco ${index + 1} para cima`}>↑</button>
+          <button type="button" className={OUTLINE} disabled={!editable || index === draft.blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label={`Mover bloco ${index + 1} para baixo`}>↓</button>
+          <button type="button" className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-block", { index })}>Regenerar</button>
+          <button type="button" className={OUTLINE} disabled={!editable} onClick={() => patch({ blocks: draft.blocks.filter((_, i) => i !== index) })}>Remover</button>
+        </div>
+        {["text", "hero", "summary", "pros_cons"].includes(block.type) ? <>
+          {block.type === "text" && <input aria-label={`Título da seção ${index + 1}`} className="mt-4 w-full border-0 border-b border-line px-0 py-2 text-2xl font-bold"
+            disabled={!editable} value={block.heading ?? ""} onChange={e => changeBlock(index, { heading: e.target.value })} />}
+          <textarea aria-label={`Texto do bloco ${index + 1}`} className="mt-3 min-h-36 w-full rounded-lg border border-line p-3 leading-8"
+            disabled={!editable} value={block.text ?? ""} onChange={e => changeBlock(index, { text: e.target.value })} />
+        </> : <p className="mt-3 text-sm text-muted-foreground">{block.heading || (block.type === "video" ? video?.title : block.type === "radar" ? "Preço e oferta virão dos dados atuais da bike." : "Este componente usa dados atuais do site.")}</p>}
+      </section>)}</div>
+      <button type="button" className={`${OUTLINE} mt-5`} disabled={!editable} onClick={() => patch({ blocks: [...draft.blocks, { type: "text", heading: "", text: "", sourceExcerpt: "" }] })}>Adicionar seção</button>
+      {draft.faq.length > 0 && <div className="mt-8"><div className="flex items-center justify-between gap-2"><h2 className="text-2xl font-bold">Perguntas frequentes</h2>
+        <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-section", { section: "faq" })}>Regenerar FAQ</button></div>
+        {draft.faq.map((item, index) => <div key={index} className="mt-4 border-b border-line pb-4">
+          <input aria-label={`Pergunta ${index + 1}`} className="w-full text-lg font-semibold" disabled={!editable} value={item.question}
+            onChange={e => patch({ faq: draft.faq.map((faq, i) => i === index ? { ...faq, question: e.target.value } : faq) })} />
+          <textarea aria-label={`Resposta ${index + 1}`} className={`${INPUT} mt-2 min-h-24`} disabled={!editable} value={item.answer}
+            onChange={e => patch({ faq: draft.faq.map((faq, i) => i === index ? { ...faq, answer: e.target.value } : faq) })} />
+        </div>)}</div>}
+    </section>}
+    {mode === "advanced" && <>
     <form onSubmit={save} className="space-y-6">
       <section className={PANEL}><h2 className="mb-4 text-xl font-semibold">Identidade e relações</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -442,6 +536,8 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
         <button type="button" className={OUTLINE} disabled={!editable} onClick={() => patch({ faq: [...draft.faq, { question: "", answer: "", sourceExcerpt: "" }] })}>Adicionar pergunta</button>
       </section>
       <section className={PANEL}><h2 className="mb-4 text-xl font-semibold">SEO e compartilhamento</h2>
+        <button type="button" className={`${OUTLINE} mb-4`} disabled={!editable || dirty || busy}
+          onClick={() => void action("regenerate-section", { section: "metadata" })}>Regenerar metadata</button>
         <div className="grid gap-4 md:grid-cols-2">
           {([['seoTitle','SEO title'],['metaDescription','Meta description'],['ogTitle','OG title'],['ogDescription','OG description'],['ogImageUrl','Imagem OG (HTTPS)']] as const)
             .map(([key, label]) => <label key={key} className="text-sm font-medium">{label}<input className={`${INPUT} mt-1`} disabled={!editable} value={draft[key]} onChange={e => patch({ [key]: e.target.value })} /></label>)}
@@ -453,6 +549,12 @@ function Editor({ id, role }: { id: string; role: AdminRole }) {
       </section>
       <button className={BTN} disabled={!editable || !dirty || busy}>Salvar alterações</button>
     </form>
+    <section className={`${PANEL} mt-6`}><div className="flex items-center justify-between gap-3">
+      <h2 className="text-lg font-semibold">Histórico de revisões</h2>
+      <button className={OUTLINE} onClick={() => void adminCall<{ revisions: typeof revisions }>("article-revisions", { id })
+        .then(result => setRevisions(result.revisions)).catch(e => setError(e.message))}>Carregar histórico</button></div>
+      <ul className="mt-3 space-y-1 text-sm">{revisions.map(item => <li key={item.id}>Revisão {item.revision} · {date(item.createdAt)}</li>)}</ul>
+    </section></>}
   </>;
 }
 
@@ -472,23 +574,96 @@ export function AdminArticlePreviewPage({ id }: { id: string }) {
 }
 function ArticlePreview({ id }: { id: string }) {
   const [article, setArticle] = useState<EditorialArticle | null>(null);
+  const [video, setVideo] = useState<EditorialVideo | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
   const [related, setRelated] = useState<{ id: string; slug: string; title: string }[]>([]);
+  const [relatedVideos, setRelatedVideos] = useState<VideoCard[]>([]);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const [reviewChecked, setReviewChecked] = useState(false);
   useEffect(() => { void Promise.all([
-    adminCall<{ article: EditorialArticle }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
-  ]).then(([detail, catalog, index]) => { setArticle(detail.article); setBikes(catalog.bikes);
-    setRelated((index ?? []).filter(a => detail.article.related_article_ids.includes(a.id))); })
+    adminCall<{ article: EditorialArticle; video: EditorialVideo }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
+  ]).then(async ([detail, catalog, index]) => { setArticle(detail.article); setVideo(detail.video); setBikes(catalog.bikes);
+    setRelated((index ?? []).filter(a => detail.article.related_article_ids.includes(a.id)));
+    if (detail.article.primary_bike_id) {
+      const videos = await safeVideos({ bikeId: detail.article.primary_bike_id, limit: 12 });
+      setRelatedVideos(videos.filter(item => item.videoId !== detail.article.video_id));
+    } })
     .catch(e => setError(e.message)); }, [id]);
-  if (error) return <Notice danger>{error}</Notice>;
+  async function runAction(name: string) {
+    if (!article) return; setBusy(true); setError(""); setMessage("");
+    try {
+      const result = await adminCall<{ article: EditorialArticle; errors?: string[] }>(name, { id, revision: article.revision });
+      setArticle(result.article); setMessage(result.errors?.length ? `${result.errors.length} item(ns) precisam de revisão.` : "Prévia atualizada.");
+      if (result.errors?.length) setQualityOpen(true);
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir a ação."); }
+    finally { setBusy(false); }
+  }
+  async function publish() {
+    if (!article || !reviewChecked || !window.confirm("Você revisou o vídeo, as afirmações e a prévia. Publicar este artigo no site?")) return;
+    setBusy(true); setError("");
+    try {
+      const reviewed = article.reviewed_at ? article : (await adminCall<{ article: EditorialArticle }>("review-article", { id, revision: article.revision })).article;
+      const result = await adminCall<{ article: EditorialArticle }>("publish-article", { id, revision: reviewed.revision });
+      setArticle(result.article); setMessage("Artigo publicado após revisão humana.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Publicação bloqueada."); }
+    finally { setBusy(false); }
+  }
+  if (error && !article) return <Notice danger>{error}</Notice>;
   if (!article) return <p aria-busy="true">Carregando preview…</p>;
-  return <div className={PANEL}>
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4 text-sm">
-      <a href={`/admin/conteudos/${id}`} className="font-semibold text-emerald-800 underline">← Voltar ao editor</a>
-      <span>SEO: {article.seo_title || "sem título"} · {article.meta_description.length} caracteres na descrição</span>
+  const quality = article.validation_errors.length ? "Bloqueado" : article.status === "ready" || article.status === "published" ? "Pronto" : "Atenção";
+  const editable = article.status !== "published" && article.status !== "archived";
+  const bike = bikes.find(item => item.bikeId === article.primary_bike_id);
+  return <>
+    <div className={`${PANEL} mb-5`}>
+      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-4">
+        <a href={`/admin/conteudos/${id}`} className={OUTLINE}>Editar</a>
+        <button className={OUTLINE} disabled={!editable || busy} onClick={() => void runAction("compile-article")}>Regenerar</button>
+        <button className={OUTLINE} disabled={!editable || busy} onClick={() => void runAction("validate-article")}>Validar</button>
+        <button className={BTN} disabled={!editable || busy || article.status !== "ready" || !reviewChecked}
+          onClick={() => void publish()}>Publicar</button>
+        <button className={OUTLINE} disabled={busy || article.status === "archived"}
+          onClick={() => { if (window.confirm("Arquivar este artigo?")) void runAction("archive-article"); }}>Arquivar</button>
+      </div>
+      {error && <div className="mt-4"><Notice danger>{error}</Notice></div>}
+      {message && <div className="mt-4"><Notice>{message}</Notice></div>}
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <div><h1 className="text-lg font-bold">Qualidade do artigo · {quality}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{article.validation_errors.length
+            ? `${article.validation_errors.length} item(ns) precisam de revisão` : "Confira a prévia completa antes de publicar."}</p></div>
+        {article.validation_errors.length > 0 && <button className={OUTLINE} onClick={() => setQualityOpen(value => !value)}>
+          {qualityOpen ? "Ocultar detalhes" : "Abrir detalhes"}</button>}
+      </div>
+      {qualityOpen && article.validation_errors.length > 0 && <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-red-800">
+        {article.validation_errors.map((item, index) => <li key={index}>{item}</li>)}</ul>}
+      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <div><dt className="text-muted-foreground">Bike detectada</dt><dd className="font-semibold">{bike?.name ?? (article.primary_bike_id ? article.primary_bike_id : "Confirmar se este conteúdo é geral")}</dd>
+          {!article.primary_bike_id && <dd><a href={`/admin/conteudos/${id}`} className="text-emerald-800 underline">Confirmar ou corrigir bike</a></dd>}</div>
+        <div><dt className="text-muted-foreground">Vídeo</dt><dd className="font-semibold">{video?.title ?? article.video_id}</dd></div>
+        <div><dt className="text-muted-foreground">Radar</dt><dd className="font-semibold">{article.blocks.some(block => block.type === "radar") ? "Conectado ao preço atual" : "Não aplicável"}</dd></div>
+        <div><dt className="text-muted-foreground">SEO</dt><dd className="font-semibold">{article.seo_title && article.meta_description ? "Preparado" : "A revisar"}</dd></div>
+        <div><dt className="text-muted-foreground">Imagem social</dt><dd className="font-semibold">{article.og_image_url ? "Definida" : "Ausente"}</dd></div>
+        <div><dt className="text-muted-foreground">Relacionados</dt><dd className="font-semibold">{related.length} artigo(s), {relatedVideos.length} vídeo(s)</dd></div>
+      </dl>
+      {article.og_image_url && <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground"><img src={article.og_image_url} alt="Imagem de compartilhamento" className="h-16 w-28 rounded-lg object-cover" />
+        <span>OG: {article.og_image_url}</span></div>}
+      <details className="mt-4 rounded-xl bg-surface p-4 text-sm">
+        <summary className="cursor-pointer font-semibold">Ver SEO e dados de compartilhamento</summary>
+        <dl className="mt-3 grid gap-3 break-words sm:grid-cols-2">
+          <div><dt className="text-muted-foreground">SEO title</dt><dd>{article.seo_title || "A revisar"}</dd></div>
+          <div><dt className="text-muted-foreground">Meta description</dt><dd>{article.meta_description || "A revisar"}</dd></div>
+          <div><dt className="text-muted-foreground">Canonical após publicação</dt><dd>{article.slug ? `https://vitalemobilidade.com/conteudos/${article.slug}` : "A revisar"}</dd></div>
+          <div><dt className="text-muted-foreground">Dados estruturados</dt><dd>Article, VideoObject e BreadcrumbList na página pública</dd></div>
+        </dl>
+      </details>
+      <label className="mt-5 flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewChecked} onChange={e => setReviewChecked(e.target.checked)} />
+        Revisei o texto, as evidências, as relações e a prévia. A publicação é minha decisão.</label>
     </div>
-    <ArticleView article={previewArticle(article)} bikes={bikes} relatedArticles={related} preview />
-  </div>;
+    <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
+      relatedArticles={related} relatedVideos={relatedVideos} preview /></div>
+  </>;
 }
 
 export function AdminAiPage() {
