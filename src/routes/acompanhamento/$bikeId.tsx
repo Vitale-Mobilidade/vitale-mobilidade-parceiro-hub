@@ -4,9 +4,9 @@ import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
 import Footer from "@/components/Footer";
 import { getRadarBike, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
+import { BIKE_ID_RE } from "@/lib/bike-identity";
 
 const BASE = "https://vitalemobilidade.com/acompanhamento";
-const BIKE_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
 const FALLBACK_TITLE = "Histórico de preços | Vitale Mobilidade";
 const FALLBACK_DESCRIPTION = "Histórico real de preços de bikes elétricas acompanhado pela Vitale Mobilidade.";
 
