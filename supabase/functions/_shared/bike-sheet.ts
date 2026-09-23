@@ -295,6 +295,12 @@ export interface SnapshotBike {
   sheetEligible: boolean | null;
   // --- Colunas opcionais (podem ainda não existir na planilha) ---
   image?: string;
+  /** Categoria editorial literal da planilha (ex.: "Bike elétrica"). */
+  category?: string;
+  /** Rótulo literal da planilha (ex.: "Até 40km") — não substitui autonomyKm. */
+  autonomyLabel?: string;
+  /** Rótulo literal da planilha (ex.: "1 pessoa") — não substitui capacity. */
+  capacityLabel?: string;
   weightSupportKg?: number;
   bestFor?: string[];
   terrains?: string[];
@@ -340,7 +346,7 @@ const REQUIRED_HEADERS = ["Nome", "Link Vitale", "Preço R$", "Autonomia", "Capa
 /** Colunas opcionais suportadas. "Imagem da Bike" é o nome oficial; "Imagem" é alias. */
 export const OPTIONAL_HEADERS = [
   "ID", "Status", "Imagem da Bike", "Imagem", "Peso Suportado", "Usos", "Terrenos",
-  "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa",
+  "Pontos Fortes", "Diferencial", "Perfil Indicado", "Ativa", "Categoria",
 ] as const;
 
 function headerIndex(headers: string[], name: string): number {
