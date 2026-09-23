@@ -21,7 +21,14 @@ export function parseArchived(raw: unknown[]): ArchivedBike[] {
       const id = typeof x.id === "string" ? x.id : "";
       const name = typeof x.name === "string" ? x.name.trim() : "";
       const observations = typeof x.observations === "number" ? x.observations : 0;
-      if (!id || !name || observations <= 0) return null;
+      // Guarda local: quem tem oferta atual válida nunca é tratado como arquivado.
+      const hasOffer =
+        x.hasCurrentOffer === true &&
+        typeof x.currentPrice === "number" &&
+        x.currentPrice > 0 &&
+        typeof x.link === "string" &&
+        x.link !== "";
+      if (!id || !name || observations <= 0 || hasOffer) return null;
       return {
         id,
         name,
