@@ -15,6 +15,7 @@ import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
 import { trackRadar } from "@/lib/radar-analytics";
+import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import {
   buildHighlights,
   buildRadarEntries,
@@ -146,7 +147,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
                   <div className="mt-auto space-y-2 pt-4">
-                    <a href={featured.link} target="_blank" rel="noopener noreferrer nofollow sponsored" onClick={() => trackRadar("radar_ml_click", { bike_id: featured.id, position: "highlight" })} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">
+                    <a href={featured.link} target="_blank" rel="noopener noreferrer nofollow sponsored" onClick={() => { trackRadar("radar_ml_click", { bike_id: featured.id, position: "highlight" }); trackAffiliateClick({ bike_id: featured.id, position: "radar_highlight" }); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">
                       Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
                     </a>
                     <button type="button" onClick={() => { trackRadar("radar_alert_opened", { bike_id: featured.id, source: "card" }); setAlertBike(featured); }} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold text-ink hover:bg-surface">

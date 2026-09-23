@@ -13,6 +13,7 @@ import { PriceRangeBar } from "@/components/radar/PriceRangeBar";
 import { formatBRL, formatDateBR, formatDateTimeBR, isSafePurchaseLink } from "@/lib/price-tracker";
 import { dailyMetrics, DAILY_WINDOWS, WINDOW_LABEL, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
+import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 
 interface RadarBikeDetail {
   id: string;
@@ -123,7 +124,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                       href={bike.link}
                       target="_blank"
                       rel="noopener noreferrer nofollow sponsored"
-                      onClick={() => trackRadar("radar_ml_click", { bike_id: bike.id, position: "detail" })}
+                      onClick={() => { trackRadar("radar_ml_click", { bike_id: bike.id, position: "detail" }); trackAffiliateClick({ bike_id: bike.id, position: "radar_detail" }); }}
                       className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
                     >
                       Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
