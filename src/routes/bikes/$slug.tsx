@@ -123,6 +123,8 @@ function BuyCta({ link, className = "" }: { link: string | null; className?: str
 function BikeDetail() {
   const { bike, radar, radarOk, videos, alternatives } = Route.useLoaderData();
   const metrics = useMemo(() => (radar ? dailyMetrics({ daily: radar.daily, currentPrice: radar.currentPrice }, 30) : null), [radar]);
+  // Oferta atual coesa: só existe quando preço E link vêm do mesmo registro válido.
+  const offer = bike.link && bike.sheetPrice != null ? { link: bike.link, price: bike.sheetPrice } : null;
   const paragraphs = (bike.description ?? "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
   const specs = [
     bike.autonomy && { label: "Autonomia", value: bike.autonomy },
