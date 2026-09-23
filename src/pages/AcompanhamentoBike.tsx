@@ -62,7 +62,7 @@ const AcompanhamentoBike = () => {
     bike?.autonomyKm ? { label: "Autonomia", value: `Até ${bike.autonomyKm} km` } : null,
     bike?.capacity ? { label: "Capacidade", value: `${bike.capacity} pessoa(s)` } : null,
     bike?.weightSupportKg ? { label: "Suporta até", value: `${bike.weightSupportKg} kg` } : null,
-    bike?.terrains?.length ? { label: "Terrenos", value: bike.terrains.filter((t) => typeof t === "string").slice(0, 3).join(", ") } : null,
+    bike?.terrains?.length ? { label: "Terrenos", value: bike.terrains.filter((t) => typeof t === "string").slice(0, 3).map((t) => t.replace(/_/g, " ")).join(", ") } : null,
   ].filter((x): x is { label: string; value: string } => !!x && !!x.value);
 
   return (
