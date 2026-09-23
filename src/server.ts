@@ -44,12 +44,25 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+const RADAR_DOC_PATH = /^\/acompanhamento(?:\/[^/]+)?\/?$/;
+
+// Converte 200 + marcador do Radar em 503, preservando o mesmo body stream (sem lê-lo) e headers.
+function applyRadarUnavailableStatus(request: Request, response: Response): Response {
+  if (request.method !== "GET" || response.status !== 200) return response;
+  if (response.headers.get("x-vitale-radar-unavailable") !== "1") return response;
+  if (!(response.headers.get("content-type") ?? "").includes("text/html")) return response;
+  if (!RADAR_DOC_PATH.test(new URL(request.url).pathname)) return response;
+  const headers = new Headers(response.headers);
+  headers.delete("x-vitale-radar-unavailable");
+  return new Response(response.body, { status: 503, statusText: "Service Unavailable", headers });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return applyRadarUnavailableStatus(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
