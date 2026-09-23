@@ -76,38 +76,72 @@ const dec = (v: number, d = 2) =>
 const numberOrNaN = (s: string) => (s.trim() === "" ? Number.NaN : Number(s.replace(",", ".")));
 
 function Field({
+  name,
   label,
   value,
   onChange,
   suffix,
   step = "0.01",
   help,
+  error,
 }: {
+  name: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   suffix?: string;
   step?: string;
   help?: string;
+  error?: string;
 }) {
+  const helpId = `${name}-help`;
+  const errorId = `${name}-error`;
   return (
-    <label className="block">
-      <span className="text-sm font-semibold text-ink">{label}</span>
-      <span className="mt-1 flex items-center gap-2 rounded-xl bg-surface px-3 ring-1 ring-line focus-within:ring-2 focus-within:ring-action">
+    <div className="block">
+      <label htmlFor={name} className="text-sm font-semibold text-ink">
+        {label}
+      </label>
+      <span
+        className={`mt-1 flex items-center gap-2 rounded-xl bg-surface px-3 ring-1 focus-within:ring-2 ${
+          error ? "ring-destructive focus-within:ring-destructive" : "ring-line focus-within:ring-action"
+        }`}
+      >
         <input
+          id={name}
+          name={name}
           type="number"
           inputMode="decimal"
           step={step}
           min="0"
           value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[help ? helpId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined}
           onChange={(e) => onChange(e.target.value)}
           className="h-12 w-full bg-transparent text-base text-ink outline-none"
         />
         {suffix && <span className="shrink-0 text-sm text-muted-foreground">{suffix}</span>}
       </span>
-      {help && <span className="mt-1 block text-xs text-muted-foreground">{help}</span>}
-    </label>
+      {help && (
+        <span id={helpId} className="mt-1 block text-xs text-muted-foreground">
+          {help}
+        </span>
+      )}
+      {error && (
+        <span id={errorId} className="mt-1 block text-xs font-semibold text-destructive">
+          {error}
+        </span>
+      )}
+    </div>
   );
+}
+
+/** Campo obrigatório: vazio é erro, nunca um número presumido pela Vitale. */
+function requireNumber(raw: string, label: string, range: { min: number; max: number }): string | null {
+  if (raw.trim() === "") return `${label}: preencha este campo. Não preenchemos nada por você.`;
+  const n = Number(raw.replace(",", "."));
+  if (!Number.isFinite(n) || n < 0) return `${label}: informe um número válido e não negativo.`;
+  if (n < range.min || n > range.max) return `${label}: use um valor entre ${range.min} e ${range.max}.`;
+  return null;
 }
 
 function CalculadoraEconomia() {
