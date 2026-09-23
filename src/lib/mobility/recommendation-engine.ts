@@ -67,7 +67,7 @@ export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
 
 export const QUICK_ORDER_CRITERION =
-  "Filtramos só por dados verificáveis: autonomia declarada que cobre sua distância diária com 20% de margem, garupa e subidas quando marcadas (subidas = só bikes marcadas no catálogo do Quiz; sem marcação não entra) e teto de preço quando informado. A primeira é a compra compatível de menor preço. Com teto informado, a segunda só aparece se tiver pelo menos 25% mais autonomia declarada: é a de maior autonomia dentro do teto e, em empate, a mais barata. Sem teto, mostramos só a opção econômica provisória.";
+  "Mostramos a bike de menor preço que cobre sua distância com margem de 20%, respeita garupa, subidas e o teto informado. Quando existe outra opção com pelo menos 25% mais autonomia declarada, mostramos também essa alternativa para comparação. A seleção não é o resultado personalizado do Quiz.";
 
 const finitePositive = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -186,6 +186,7 @@ export function recommendScenarioPair(
   if (!first) return { ok: true, bikes: [], eligibleCount: 0 };
   const second = sorted
     .slice(1)
+    .filter((bike) => (bike.autonomyKm ?? 0) >= (first.autonomyKm ?? 0) * (1 + RELEVANT_AUTONOMY_GAIN))
     .sort(
       (a, b) => (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) || a.price - b.price || a.bikeId.localeCompare(b.bikeId),
     )[0];
