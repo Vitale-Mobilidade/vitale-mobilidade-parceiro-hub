@@ -48,8 +48,21 @@ export const Route = createFileRoute("/bikes/$slug")({
       safeVideos({ bikeId: bike.bikeId, limit: 60 }),
     ]);
     const rb = radarRes.ok ? (radarRes.bike as unknown as RadarDetail | null) : null;
-    const radar = rb && typeof rb.currentPrice === "number" && rb.currentPrice > 0
-      ? { currentPrice: rb.currentPrice, daily: Array.isArray(rb.daily) ? rb.daily : [], lastObservedAt: rb.lastObservedAt ?? null }
+    // Sem oferta atual, o RPC devolve currentPrice 0/null mas mantém o ÚLTIMO PREÇO
+    // REGISTRADO: exibimos esse valor rotulado como histórico, nunca como preço de hoje.
+    const observed =
+      rb && typeof rb.currentPrice === "number" && rb.currentPrice > 0
+        ? rb.currentPrice
+        : rb && typeof rb.lastObservedPrice === "number" && rb.lastObservedPrice > 0
+          ? rb.lastObservedPrice
+          : null;
+    const radar = rb && observed !== null
+      ? {
+          currentPrice: observed,
+          hasCurrentOffer: rb.hasCurrentOffer === true,
+          daily: Array.isArray(rb.daily) ? rb.daily : [],
+          lastObservedAt: rb.lastObservedAt ?? null,
+        }
       : null;
     return { bike, radar, radarOk: radarRes.ok, videos, alternatives: pickAlternatives(cat.bikes, bike) };
   },
