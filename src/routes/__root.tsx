@@ -16,9 +16,9 @@ import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "../styles.css?url";
 
-const TITLE = "Vitale Mobilidade | Consultoria em Veículos Elétricos";
+const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
-  "Consultoria estratégica em veículos elétricos: escolha fornecedores confiáveis, estruture operações B2B/B2C e cresça com segurança no Brasil.";
+  "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
 
 const GTM_SNIPPET = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
