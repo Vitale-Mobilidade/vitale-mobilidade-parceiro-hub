@@ -54,8 +54,17 @@ function InlineText({ value }: { value: string }) {
 function EditorialBody({ text }: { text: string }) {
   return <div className="space-y-4 leading-8">{text.split(/\n\s*\n/g).filter(Boolean).map((paragraph, index) => {
     const lines = paragraph.split("\n");
-    if (lines.every(line => /^[-•]\s+/.test(line.trim()))) return <ul key={index} className="list-disc space-y-1 pl-6">
+    if (lines.every(line => /^\d+[.)]\s+/.test(line.trim()))) return <ol key={index} className="list-decimal space-y-1 pl-6">
+      {lines.map((line, lineIndex) => <li key={lineIndex}><InlineText value={line.replace(/^\s*\d+[.)]\s+/, "")} /></li>)}</ol>;
+    if (lines.every(line => /^[-•*]\s+/.test(line.trim()))) return <ul key={index} className="list-disc space-y-1 pl-6">
       {lines.map((line, lineIndex) => <li key={lineIndex}><InlineText value={line.replace(/^\s*[-•]\s+/, "")} /></li>)}</ul>;
+    if (lines.length >= 2 && lines.every(line => /^\s*\|.*\|\s*$/.test(line))) {
+      const rows = lines.filter(line => !/^\s*\|[\s:|-]+\|\s*$/.test(line)).map(line => line.trim().slice(1, -1).split("|").map(c => c.trim()));
+      return <div key={index} className="overflow-x-auto"><table className="w-full min-w-[480px] border-collapse text-left text-sm">
+        <thead><tr>{rows[0].map((c, i) => <th key={i} className="border-b-2 border-line p-2 font-semibold"><InlineText value={c} /></th>)}</tr></thead>
+        <tbody>{rows.slice(1).map((r, ri) => <tr key={ri} className="border-b border-line">{r.map((c, i) => <td key={i} className="p-2 align-top"><InlineText value={c} /></td>)}</tr>)}</tbody>
+      </table></div>;
+    }
     if (paragraph.startsWith("### ")) return <h3 key={index} className="text-xl font-bold"><InlineText value={paragraph.slice(4)} /></h3>;
     if (paragraph.startsWith("> ")) return <blockquote key={index} className="border-l-4 border-emerald-400 pl-4 italic"><InlineText value={paragraph.slice(2)} /></blockquote>;
     return <p key={index} className="whitespace-pre-line"><InlineText value={paragraph} /></p>;
@@ -79,7 +88,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
   if (block.type === "video") return <section className="my-8">
     <h2 className="mb-3 text-2xl font-bold">{block.heading || "Teste em vídeo"}</h2>
     <div className="aspect-video overflow-hidden rounded-xl bg-emerald-950">
-      <iframe src={`https://www.youtube-nocookie.com/embed/${article.videoId}`} title={block.heading || "Vídeo original da Vitale"}
+      <iframe src={`https://www.youtube-nocookie.com/embed/${article.videoId}`} title={block.heading || "Vídeo da Vitale"}
         loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="h-full w-full" />
     </div>
   </section>;
@@ -95,20 +104,33 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
     const compared = [...new Set([block.bikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
       .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike)).slice(0, 3);
     if (compared.length < 2) return null;
-    return <section className="my-8 rounded-2xl bg-surface p-5 sm:p-7">
-      <h2 className="text-2xl font-bold">Compare os modelos citados</h2>
-      <p className="mt-2 text-sm text-muted-foreground">Abra cada ficha para conferir os dados e a oferta atual antes de escolher.</p>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{compared.map(bike =>
-        <a key={bike.bikeId} href={`/bikes/${bike.slug}`} className="rounded-xl border border-line bg-white p-4 hover:border-emerald-600 focus-visible:outline-2 focus-visible:outline-emerald-600">
-          {bike.image && <img src={bike.image} alt={`Bike elétrica ${bike.name}`} loading="lazy" className="h-28 w-full object-contain" />}
-          <strong className="mt-3 block">{bike.name}</strong>
-          <span className="mt-1 block text-sm text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ") || "Ver ficha da bike"}</span>
-          {bike.sheetPrice != null && bike.link && <span className="mt-2 block font-bold text-emerald-800">{BRL.format(bike.sheetPrice)}</span>}
-        </a>)}</div>
+    const rows: [string, (b: CatalogBike) => React.ReactNode][] = [
+      ["Preço atual", b => b.sheetPrice != null && b.link ? <strong className="text-emerald-800">{BRL.format(b.sheetPrice)}</strong> : "Sem oferta no momento"],
+      ["Autonomia", b => b.autonomy ?? "—"],
+      ["Capacidade", b => b.capacity ?? "—"],
+    ];
+    return <section className="my-10">
+      <h2 className="mb-4 text-2xl font-bold">{block.heading || "Comparação lado a lado"}</h2>
+      <div className="overflow-x-auto rounded-2xl border border-line"><table className="w-full min-w-[520px] text-left text-sm">
+        <thead className="bg-surface"><tr><th className="p-3" scope="col"><span className="sr-only">Item</span></th>{compared.map(b => <th key={b.bikeId} scope="col" className="p-3 align-bottom">
+          {b.image && <img src={b.image} alt={`Bike elétrica ${b.name}`} loading="lazy" className="mb-2 h-24 w-full object-contain" />}
+          <span className="font-bold">{b.name}</span></th>)}</tr></thead>
+        <tbody>{rows.map(([label, value]) => <tr key={label} className="border-t border-line"><th scope="row" className="p-3 font-medium text-muted-foreground">{label}</th>
+          {compared.map(b => <td key={b.bikeId} className="p-3">{value(b)}</td>)}</tr>)}
+          <tr className="border-t border-line"><th scope="row" className="p-3"><span className="sr-only">Links</span></th>{compared.map(b => <td key={b.bikeId} className="space-y-1 p-3">
+            <a href={`/bikes/${b.slug}`} className="block font-semibold text-emerald-800 underline">Conhecer bike</a>
+            <a href={`/radar/${b.bikeId}`} className="block text-emerald-800 underline">Ver no Radar</a>
+            {b.link && b.sheetPrice != null && <a href={b.link} target="_blank" rel="sponsored noopener noreferrer"
+              onClick={() => trackAffiliateClick({ bike_id: b.bikeId, position: "content_article_compare" })}
+              className="block text-emerald-800 underline">Ver oferta no Mercado Livre</a>}
+          </td>)}</tr></tbody>
+      </table></div>
+      <p className="mt-2 text-xs text-muted-foreground">Preço e disponibilidade vêm do anúncio atual e podem mudar.</p>
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;
-  if (block.type === "related") return <section className="my-8">
+  if (block.type === "related") return null;
+  if (false) return <section className="my-8">
     <h2 className="text-xl font-bold">Continue sua pesquisa</h2>
     <div className="mt-3 flex flex-col gap-2">{relatedArticles.map(a =>
       <a key={a.id} href={`/conteudos/${a.slug}`} className="text-emerald-800 underline">{a.title}</a>)}</div>
@@ -121,7 +143,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
 export function ArticleView({ article, bikes, relatedArticles = [], relatedVideos = [], preview = false }: { article: PublishedArticle; bikes: CatalogBike[]; relatedArticles?: RelatedArticle[]; relatedVideos?: VideoCard[]; preview?: boolean }) {
   return <article className="mx-auto max-w-4xl px-4 py-10 text-foreground sm:px-6">
     {preview && <p className="mb-5 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">Preview privado — não publicado</p>}
-    <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Conteúdo Vitale · vídeo original</p>
+    <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Conteúdo Vitale</p>
     <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
     {article.publishedAt && <time dateTime={article.publishedAt} className="mt-3 block text-sm text-muted-foreground">
       Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}</time>}
@@ -129,15 +151,17 @@ export function ArticleView({ article, bikes, relatedArticles = [], relatedVideo
     <p className="mt-7 text-xl leading-8 text-muted-foreground">{article.summary}</p>
     {article.blocks.map((block, index) => <Block key={`${index}-${block.type}`} block={block} article={article} bikes={bikes} relatedArticles={relatedArticles} />)}
     {!article.blocks.some(b => b.type === "faq") && <FaqList faq={article.faq} />}
-    {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Mais testes sobre esta bike</h2>
+    {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Continue sua pesquisa</h2>
+      <ul className="mt-4 space-y-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="font-semibold text-emerald-800 underline">{a.title}</a></li>)}</ul></section>}
+    {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{relatedVideos.map(video => <a key={video.videoId} href={video.url}
         target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-xl border border-line hover:border-emerald-500">
         <img src={video.thumbnail} alt="" loading="lazy" className="aspect-video w-full object-cover" />
         <span className="block p-4 font-semibold">{video.title}</span>
       </a>)}</div></section>}
     <section className="my-10 border-t border-line pt-6 text-sm text-muted-foreground">
-      <p>Este conteúdo foi produzido a partir de um vídeo real da Vitale. Preços e disponibilidade podem mudar; consulte o anúncio antes de comprar.</p>
-      <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-emerald-800 underline">Assistir ao vídeo original</a>
+      <p>Conteúdo baseado nos testes práticos da Vitale. Preços e disponibilidade podem mudar; consulte o anúncio antes de comprar.</p>
+      <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-emerald-800 underline">Assistir no YouTube</a>
     </section>
   </article>;
 }
