@@ -16,12 +16,12 @@ export const Route = createFileRoute("/")({
   head: () =>
     pageHead({
       path: "/",
-      title: "Vitale Mobilidade | Escolha sua bike elétrica e acompanhe preços",
+      title: "Encontre a bike elétrica certa para você | Vitale Mobilidade",
       description:
-        "Descubra a bike elétrica ideal para o seu perfil com o quiz da Vitale e consulte o histórico de preços antes de decidir a compra.",
-      ogTitle: "Escolha sua bike elétrica com clareza",
+        "Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher sua bike elétrica.",
+      ogTitle: "Encontre a bike elétrica certa para você",
       ogDescription:
-        "Quiz para descobrir a bike ideal e histórico de preços para decidir a compra com segurança.",
+        "Quiz de perfil, Radar com histórico de preços e bikes elétricas monitoradas no Brasil.",
     }),
   component: HomeB2C,
 });

@@ -1,15 +1,17 @@
 import { Link, useLoaderData } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Menu, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Calculator, GitCompareArrows, Mail, Menu, PlayCircle, Search, ShieldCheck, Users, Youtube } from "lucide-react";
 import logo96 from "@/assets/logo-96.webp";
 import logo192 from "@/assets/logo-192.webp";
 import { formatBRL } from "@/lib/price-tracker";
 import { RadarPreview } from "@/components/home/RadarPreview";
 import { HomeSearch } from "@/components/home/HomeSearch";
+import { HOME_PRODUCTS, NAV_ITEMS, ProductLink, InactiveButton } from "@/components/home/home-products";
 import type { HomeSearchItem } from "@/lib/home-cards.functions";
 
 /*
- * Comparador, calculadora, conteúdos/testes e newsletter ainda não têm backend/contrato
- * real: ficam fora da Home (sem links, sem "em breve") até estarem prontos.
+ * Comparador, calculadora, conteúdos e newsletter aparecem na arquitetura visual, mas
+ * seus CTAs são inativos (aria-disabled, sem href/submit) até as rotas existirem.
+ * Nenhum email é coletado. Ligue-os preenchendo `to` em home-products.tsx.
  */
 
 function Brand() {
@@ -24,22 +26,15 @@ function Brand() {
   );
 }
 
-const NAV = [
-  { label: "Bikes", href: "#bikes" },
-  { label: "Ferramentas", href: "#ferramentas" },
-] as const;
-
 function HomeHeader({ search }: { search: HomeSearchItem[] }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
       <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
         <Brand />
         <nav aria-label="Principal" className="hidden items-center gap-7 text-sm font-semibold text-ink-foreground lg:flex">
-          {NAV.map((n) => (
-            <a key={n.label} href={n.href} className="hover:text-mint">{n.label}</a>
+          {NAV_ITEMS.map((n) => (
+            <ProductLink key={n.label} to={n.to} className="hover:text-mint">{n.label}</ProductLink>
           ))}
-          <Link to="/escolherbike" className="hover:text-mint">Quiz</Link>
-          <Link to="/acompanhamento" className="hover:text-mint">Radar</Link>
         </nav>
         <div className="hidden items-center gap-3 lg:flex">
           <HomeSearch items={search} className="w-56" />
@@ -47,17 +42,15 @@ function HomeHeader({ search }: { search: HomeSearchItem[] }) {
             Grupo de Ofertas
           </Link>
         </div>
-        <details className="group relative lg:hidden">
+        <details className="relative lg:hidden">
           <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">
             <Menu className="h-5 w-5" aria-hidden="true" /> Menu
           </summary>
           <div className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
             <HomeSearch items={search} className="mb-2" />
-            {NAV.map((n) => (
-              <a key={n.label} href={n.href} className="block rounded-lg px-3 py-2 font-medium hover:bg-muted">{n.label}</a>
+            {NAV_ITEMS.map((n) => (
+              <ProductLink key={n.label} to={n.to} className="block rounded-lg px-3 py-2 font-medium hover:bg-muted">{n.label}</ProductLink>
             ))}
-            <Link to="/escolherbike" className="block rounded-lg px-3 py-2 font-medium hover:bg-muted">Quiz: escolher minha bike</Link>
-            <Link to="/acompanhamento" className="block rounded-lg px-3 py-2 font-medium hover:bg-muted">Radar de preços</Link>
             <Link to="/grupodeofertas" className="mt-2 block rounded-lg bg-mint px-3 py-2 text-center font-bold text-mint-foreground">Grupo de Ofertas</Link>
           </div>
         </details>
@@ -75,7 +68,7 @@ function Hero() {
         <img src="/vitale-hero.webp" width={1672} height={941} alt="Ciclista em bike elétrica na orla ao pôr do sol" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
       </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/20 max-md:bg-ink/70" aria-hidden="true" />
-      <div className="responsive-container py-16 sm:py-24 lg:py-28">
+      <div className="responsive-container pb-24 pt-16 sm:pb-28 sm:pt-24">
         <p className="text-xs font-bold tracking-[0.25em] text-mint">BIKES ELÉTRICAS NO BRASIL</p>
         <h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
           Encontre a bike elétrica <span className="text-mint">certa para você</span>
@@ -92,7 +85,7 @@ function Hero() {
           </Link>
         </div>
         <ul className="mt-10 flex max-w-2xl flex-wrap gap-x-6 gap-y-2 border-t border-ink-foreground/15 pt-6 text-sm">
-          <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden="true" /> Quiz de perfil</li>
+          <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden="true" /> Testes e análises</li>
           <li className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-mint" aria-hidden="true" /> Histórico de preços</li>
           <li className="flex items-center gap-2"><Bike className="h-4 w-4 text-mint" aria-hidden="true" /> Modelos monitorados</li>
         </ul>
@@ -101,22 +94,16 @@ function Hero() {
   );
 }
 
-const SHORTCUTS = [
-  { to: "/escolherbike", icon: Sparkles, title: "Escolher minha bike", sub: "Quiz de perfil" },
-  { to: "/acompanhamento", icon: BarChart3, title: "Radar de preços", sub: "Acompanhe o histórico" },
-  { to: "/grupodeofertas", icon: Users, title: "Grupo de ofertas", sub: "Avisos no WhatsApp" },
-] as const;
-
 function Shortcuts() {
   return (
-    <nav aria-label="Atalhos" id="ferramentas" className="responsive-container relative z-10 -mt-8 scroll-mt-24">
-      <ul className="grid gap-2 rounded-2xl border border-border bg-card p-3 shadow-lg sm:grid-cols-3">
-        {SHORTCUTS.map(({ to, icon: Icon, title, sub }) => (
-          <li key={to}>
-            <Link to={to} className="flex items-center gap-3 rounded-xl p-3 hover:bg-muted">
+    <nav aria-label="Produtos" className="responsive-container relative z-10 -mt-12">
+      <ul className="grid gap-1 rounded-2xl border border-border bg-card p-3 shadow-lg sm:grid-cols-2 lg:grid-cols-5">
+        {HOME_PRODUCTS.map(({ key, to, icon: Icon, title, sub }) => (
+          <li key={key}>
+            <ProductLink to={to} className="flex items-center gap-3 rounded-xl p-3 hover:bg-muted">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-mint/25 text-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
               <span className="min-w-0"><span className="block font-bold">{title}</span><span className="block text-sm text-muted-foreground">{sub}</span></span>
-            </Link>
+            </ProductLink>
           </li>
         ))}
       </ul>
@@ -124,17 +111,135 @@ function Shortcuts() {
   );
 }
 
+function CalculatorBlock() {
+  return (
+    <section aria-labelledby="calc" className="overflow-hidden rounded-3xl bg-ink p-6 text-ink-foreground sm:p-10">
+      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center">
+        <div>
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
+          <h2 id="calc" className="mt-5 text-2xl font-bold sm:text-3xl">Calculadora de custos</h2>
+          <p className="mt-3 max-w-md text-ink-foreground/80">Entenda quanto uma bike elétrica custa no seu dia a dia, com base no seu trajeto e nos seus números.</p>
+          <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground">
+            Calcular meus custos <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </InactiveButton>
+        </div>
+        <div aria-hidden="true" className="grid gap-3 rounded-2xl border border-ink-foreground/15 bg-ink-foreground/5 p-5">
+          {["Distância por dia", "Dias de uso por semana", "Valor da bike"].map((l) => (
+            <div key={l}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-foreground/70">{l}</p>
+              <div className="mt-1 h-11 rounded-lg border border-ink-foreground/20 bg-ink" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CompareBlock({ names }: { names: string[] }) {
+  const [a, b] = names;
+  return (
+    <section aria-labelledby="comparar" className="rounded-3xl border border-border bg-card p-6 sm:p-10">
+      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:items-center">
+        <div>
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-primary"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
+          <h2 id="comparar" className="mt-5 text-2xl font-bold sm:text-3xl">Comparar bikes</h2>
+          <p className="mt-3 max-w-md text-muted-foreground">Coloque modelos lado a lado e veja as diferenças antes de decidir.</p>
+          <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
+            Comparar modelos <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </InactiveButton>
+        </div>
+        <div aria-hidden="true" className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          {[a, b].map((n, i) => (
+            <div key={i} className={`rounded-2xl border border-border bg-muted p-5 text-center ${i === 1 ? "col-start-3" : ""}`}>
+              <Bike className="mx-auto h-8 w-8 text-primary" />
+              <p className="mt-3 truncate font-semibold">{n ?? "Bike"}</p>
+            </div>
+          ))}
+          <span className="col-start-2 row-start-1 grid h-10 w-10 place-items-center rounded-full bg-ink text-sm font-bold text-ink-foreground">VS</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContentBlock() {
+  const cats = ["Testes", "Comparativos", "Guias de compra"];
+  return (
+    <section aria-labelledby="conteudos">
+      <div className="flex items-end justify-between gap-3">
+        <h2 id="conteudos" className="flex items-center gap-2 text-2xl font-bold"><Youtube className="h-6 w-6 text-primary" aria-hidden="true" /> Conteúdos e testes</h2>
+        <InactiveButton className="shrink-0 text-sm font-semibold text-primary">Ver no YouTube</InactiveButton>
+      </div>
+      <p className="mt-2 text-muted-foreground">Análises em vídeo e texto para ajudar na escolha.</p>
+      <ul className="mt-5 grid gap-4 sm:grid-cols-3">
+        {cats.map((c) => (
+          <li key={c} className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="grid aspect-video place-items-center bg-ink" aria-hidden="true">
+              <PlayCircle className="h-12 w-12 text-mint" />
+            </div>
+            <p className="p-4 font-semibold">{c}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Newsletter() {
+  return (
+    <section aria-labelledby="newsletter" className="rounded-3xl border border-border bg-muted p-6 sm:p-10">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center">
+        <div>
+          <h2 id="newsletter" className="flex items-center gap-2 text-2xl font-bold"><Mail className="h-6 w-6 text-primary" aria-hidden="true" /> Newsletter Vitale</h2>
+          <p className="mt-2 text-muted-foreground">Novidades sobre bikes elétricas, preços e ferramentas no seu email.</p>
+        </div>
+        {/* Sem <form>, sem name, sem submit: nenhum dado é coletado. */}
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <label htmlFor="nl-email" className="sr-only">Seu email</label>
+          <input id="nl-email" type="email" disabled aria-disabled="true" placeholder="seu@email.com" className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 text-sm" />
+          <InactiveButton className="h-12 rounded-xl bg-primary px-6 font-bold text-primary-foreground">Quero receber</InactiveButton>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HomeFooter() {
+  const cols: { title: string; items: { label: string; to: string | null }[] }[] = [
+    { title: "Produtos", items: [
+      { label: "Escolher minha bike", to: "/escolherbike" },
+      { label: "Radar de preços", to: "/acompanhamento" },
+      { label: "Comparar bikes", to: null },
+      { label: "Calculadora", to: null },
+    ] },
+    { title: "Conteúdo", items: [
+      { label: "Bikes monitoradas", to: "#bikes" },
+      { label: "Conteúdos e testes", to: null },
+      { label: "Newsletter", to: null },
+    ] },
+    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
+  ];
   return (
     <footer className="bg-ink text-ink-foreground/80">
-      <div className="responsive-container flex flex-col gap-6 py-10 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <Brand />
-        <nav aria-label="Rodapé" className="flex flex-wrap gap-5">
-          <Link to="/escolherbike" className="hover:text-mint">Escolher minha bike</Link>
-          <Link to="/acompanhamento" className="hover:text-mint">Radar de preços</Link>
-          <Link to="/grupodeofertas" className="hover:text-mint">Grupo de ofertas</Link>
-        </nav>
-        <p>© 2026 Vitale Mobilidade</p>
+      <div className="responsive-container grid gap-10 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <div>
+          <Brand />
+          <p className="mt-4 max-w-xs">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
+        </div>
+        {cols.map((c) => (
+          <nav key={c.title} aria-label={c.title}>
+            <p className="font-bold text-ink-foreground">{c.title}</p>
+            <ul className="mt-3 space-y-2">
+              {c.items.map((i) => (
+                <li key={i.label}><ProductLink to={i.to} className="hover:text-mint">{i.label}</ProductLink></li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
+      <div className="border-t border-ink-foreground/10">
+        <p className="responsive-container py-5 text-xs">© 2026 Vitale Mobilidade</p>
       </div>
     </footer>
   );
@@ -155,9 +260,8 @@ const HomeB2C = () => {
         <Shortcuts />
 
         <div className="responsive-container grid gap-8 py-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-          {/* No mobile o Radar vem antes das bikes (ordem do DOM); no desktop fica à direita. */}
+          {/* Mobile: Radar antes das bikes (ordem do DOM); desktop: à direita. */}
           <RadarPreview items={radar} className="lg:order-2 lg:sticky lg:top-24" />
-
           {cards.length > 0 ? (
             <section id="bikes" aria-labelledby="bikes-monitoradas" className="scroll-mt-24 lg:order-1">
               <div className="flex items-end justify-between gap-3">
@@ -188,17 +292,11 @@ const HomeB2C = () => {
           )}
         </div>
 
-        <section className="responsive-container pb-14" aria-labelledby="quiz-cta">
-          <div className="grid gap-6 rounded-3xl border border-border bg-muted p-6 sm:p-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-            <div>
-              <h2 id="quiz-cta" className="text-2xl font-bold">Não sabe por onde começar?</h2>
-              <p className="mt-2 max-w-xl text-muted-foreground">Responda 7 perguntas sobre uso, trajeto e orçamento e veja os modelos indicados para o seu perfil.</p>
-            </div>
-            <Link to="/escolherbike" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground hover:bg-primary/90">
-              Fazer o quiz <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
-        </section>
+        <div className="responsive-container space-y-12 pb-14">
+          <CalculatorBlock />
+          <CompareBlock names={cards.map((c) => c.name)} />
+          <ContentBlock />
+        </div>
 
         <section className="bg-ink py-14 text-ink-foreground" aria-labelledby="grupo-ofertas">
           <div className="responsive-container grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
@@ -211,6 +309,10 @@ const HomeB2C = () => {
             </Link>
           </div>
         </section>
+
+        <div className="responsive-container py-14">
+          <Newsletter />
+        </div>
       </main>
       <HomeFooter />
     </div>
