@@ -74,4 +74,8 @@ O site legado publicado permanece no ar.
 - Etapa 6 (Main não publicada): contrato preparatório em `docs/BIKE_MODEL.md` (mapa do modelo atual por `bike_id`, autoridade, entidades alvo, `bike_id` vs slug, sequência de reconciliação, riscos). `quiz-catalog-repository.server.ts` passou a usar `BIKE_ID_RE` (comportamento idêntico). **Nenhuma tabela Bike foi criada**, nenhuma migration; ensaio de restauração e schema vivo seguem bloqueando escrita. **Etapa 6 NÃO concluída.**
 
 ## Design System (rascunho)
-- Parte 1 e 2 do DS aplicadas no rascunho (Home, Radar, detalhe, resultado do Quiz). Ver docs/DESIGN_SYSTEM.md. Não validado em produção nem publicado.
+- Parte 1 e 2 do DS aplicadas no rascunho (Home, Radar, detalhe, resultado do Quiz). Ver docs/DESIGN_SYSTEM.md.
+- Evidências capturadas: 8 screenshots (Home, Radar, detalhe V8 Ultra e resultado do Quiz). Resultado do Quiz fotografado localmente com fixture temporária não comitada, respostas sintéticas, catálogo real/read-only e `leadId` nulo — sem criação de lead, alerta ou webhook.
+- `pnpm validate` passou no commit `82bc781` (typecheck + 26 testes direcionados + build).
+- Status pós-QA: CTO/Segurança/IA/PMO Pass; CX Pass com ressalva de dado da V8 Ultra; Produto/UX/Growth ainda não aprovam release integral por produtos pendentes.
+- Não validado em produção; **não publicado**.
