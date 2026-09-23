@@ -54,3 +54,10 @@ O sitemap só inclui páginas públicas existentes e elegíveis à indexação. 
 - `/acompanhamento`
 
 Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `/conteudos`, `/comparar`) ficam fora até que cada uma tenha `head()` SSR e regra de indexação definida.
+
+## 7. `/bikes` e `/bikes/{slug}` — implementado em rascunho (23/09/2026)
+
+- Fonte: aba oficial de bikes (gid=0), leitura read-only no servidor com cache; inclui todas as linhas nomeadas, inclusive "Não Elegível" (elegibilidade só afeta o Quiz).
+- `bikeId` canônico = mesmo resolvedor do sync (`resolveBikeId`/`normalizeName`); `slug` = `bikeId` com `_` → `-` (ex.: `v9_max_20ah` → `v9-max-20ah`). Colisões de ID/slug descartam a linha repetida, nunca sobrescrevem.
+- Link: só `meli.la` válido e idêntico ao da planilha; senão "Link indisponível no momento". Preço exibido como "Preço de referência cadastrado", nunca como preço de hoje.
+- Slug inexistente → 404 `noindex`. Ainda fora do sitemap; redirects `/acompanhamento/{bikeId}` ↔ `/bikes/{slug}` seguem pendentes.
