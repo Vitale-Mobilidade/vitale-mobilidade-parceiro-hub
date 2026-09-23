@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
-import { getRadarCatalog } from "@/lib/radar.functions";
+import { getHomeCards } from "@/lib/home-cards.functions";
 
 // Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
 export const Route = createFileRoute("/")({
-  // Leitura read-only do catálogo do Radar; falha apenas omite os cards.
+  // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
     try {
-      return await getRadarCatalog();
+      return await getHomeCards();
     } catch {
       return { ok: false as const };
     }

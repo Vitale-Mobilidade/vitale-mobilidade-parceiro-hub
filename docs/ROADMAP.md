@@ -67,3 +67,5 @@ O site legado publicado permanece no ar.
 - [ ] Aceite operacional e plano de rollback.
 
 > **Nota de baseline/rollback:** O Lovable History registra a ação “Adicionou rota /grupodeofertas” como **Published** em 20/09/2026 18:28 BRT, e essa versão está favoritada. O commit Git legado `6095147846fb1279ee88a77770f5ccb4832f8f79` tem o mesmo título e timestamp `2026-09-20T21:28:54Z`. Essa correspondência indica o ponto de retorno do código publicado, mas **não comprova equivalência byte a byte do artefato servido**, nem substitui o ensaio de restauração de banco/Storage. As mudanças TanStack posteriores a essa marca continuam **não publicadas**.
+
+- Etapa 5 (rascunho): cards da Home B2C agora vêm prontos da server function read-only `getHomeCards` (mesma RPC `get_price_tracker_catalog` via `fetchTrackerCatalog`, mesma regra `buildRadarEntries`, até 6 em ordem alfabética, apenas `{id,name,currentPrice}`; id validado por `BIKE_ID_RE`). Otimização estática: payload menor para o cliente, sem daily/histórico/link afiliado; **sem medida real** de payload, PageSpeed ou CWV; não validada no preview nem publicada. Radar original e suas RPCs intactos.
