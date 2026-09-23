@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).
+
 ## 1. Objetivo final
 
 Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + TypeScript com SSR, usando o Supabase/Lovable Cloud e as planilhas Google Sheets existentes como fontes de dados.

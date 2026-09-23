@@ -1,5 +1,7 @@
 # Vitale Design System
 
+> Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).
+
 ## Tokens (src/styles.css)
 
 - `ink` #102b29 (header/hero), `vt-dark` #082b29 (footer), `action` #0b7b55 (CTA/preço, AA sobre branco),
