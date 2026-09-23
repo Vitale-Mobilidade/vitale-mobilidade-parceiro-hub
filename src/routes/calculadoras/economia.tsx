@@ -176,47 +176,121 @@ function CalculadoraEconomia() {
   const percentNum = numberOrNaN(percent);
   const hasReplacement = Number.isFinite(percentNum) && percentNum > 0;
 
-  const input: CostInput = useMemo(
-    () => ({
-      modal,
-      daysPerWeek: numberOrNaN(daysPerWeek),
-      dailyKm: numberOrNaN(dailyKm),
-      replaceablePercent: numberOrNaN(percent),
-      vehicle: isVehicle
-        ? {
-            fuelPricePerLiter: numberOrNaN(fuelPrice),
-            kmPerLiter: numberOrNaN(kmPerLiter),
-            variableExtrasMonthly: numberOrNaN(extras),
-            fixedMonthly: numberOrNaN(fixedMonthly),
-            keepsVehicle,
-          }
-        : undefined,
-      ridePricePerKm: modal === "uber" ? numberOrNaN(ridePerKm) : undefined,
-      transit:
-        modal === "transporte_publico"
-          ? { farePerTrip: numberOrNaN(fare), tripsPerDay: numberOrNaN(tripsPerDay) }
-          : undefined,
-      mixedMonthlySpend: modal === "misto" ? numberOrNaN(mixedSpend) : undefined,
-      bike: { energyCostPerKm: numberOrNaN(energyPerKm), maintenanceMonthly: numberOrNaN(maintenance) },
-    }),
+  const input: CostInput | null = useMemo(
+    () =>
+      modal === null
+        ? null
+        : {
+            modal,
+            daysPerWeek: numberOrNaN(daysPerWeek),
+            dailyKm: numberOrNaN(dailyKm),
+            replaceablePercent: numberOrNaN(percent),
+            vehicle: isVehicle
+              ? {
+                  fuelPricePerLiter: numberOrNaN(fuelPrice),
+                  kmPerLiter: numberOrNaN(kmPerLiter),
+                  variableExtrasMonthly: numberOrNaN(extras),
+                  fixedMonthly: numberOrNaN(fixedMonthly),
+                  // `null` (sem resposta) chega ao motor como valor inválido e é recusado.
+                  keepsVehicle: keepsVehicle as boolean,
+                }
+              : undefined,
+            ridePricePerKm: modal === "uber" ? numberOrNaN(ridePerKm) : undefined,
+            transit:
+              modal === "transporte_publico"
+                ? { farePerTrip: numberOrNaN(fare), tripsPerDay: numberOrNaN(tripsPerDay) }
+                : undefined,
+            mixedMonthlySpend: modal === "misto" ? numberOrNaN(mixedSpend) : undefined,
+            bike: { energyCostPerKm: numberOrNaN(energyPerKm), maintenanceMonthly: numberOrNaN(maintenance) },
+          },
     [
       modal, daysPerWeek, dailyKm, percent, isVehicle, fuelPrice, kmPerLiter, extras, fixedMonthly,
       keepsVehicle, ridePerKm, fare, tripsPerDay, mixedSpend, energyPerKm, maintenance,
     ],
   );
 
-  const result = useMemo(() => (step === 2 ? computeMobilityCost(input) : null), [step, input]);
+  const result = useMemo(
+    () => (step === 2 && input ? computeMobilityCost(input) : null),
+    [step, input],
+  );
 
-  const bikes = useMemo(() => {
-    if (!result?.ok || !sourceOk) return [];
-    const km = numberOrNaN(dailyKm);
+  const recommendation = useMemo(() => {
+    // Sem resultado válido, sem catálogo ou com 0% de substituição não há o que recomendar.
+    if (!result?.ok || !sourceOk || !hasReplacement) return null;
     const budget = maxBudget.trim() === "" ? null : numberOrNaN(maxBudget);
     return recommendBikes(candidates, {
-      dailyKm: km,
+      dailyKm: numberOrNaN(dailyKm),
       needsPassenger,
-      maxBudget: Number.isFinite(budget) && (budget as number) > 0 ? (budget as number) : null,
+      maxBudget: budget,
     });
-  }, [result, sourceOk, candidates, dailyKm, needsPassenger, maxBudget]);
+  }, [result, sourceOk, hasReplacement, candidates, dailyKm, needsPassenger, maxBudget]);
+
+  /** Etapa 1: cenário de deslocamento. Nada avança sem modal escolhido e números informados. */
+  function validateStep0(): boolean {
+    const e: Record<string, string> = {};
+    if (modal === null) e.modal = "Escolha como você se desloca hoje.";
+    const d = requireNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek);
+    if (d) e.daysPerWeek = d;
+    const k = requireNumber(dailyKm, "Distância por dia", LIMITS.dailyKm);
+    if (k) e.dailyKm = k;
+    const p = requireNumber(percent, "Percentual substituível", LIMITS.replaceablePercent);
+    if (p) e.percent = p;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  /** Etapa 2: custos e premissas. O resultado só aparece depois daqui. */
+  function validateStep1(): boolean {
+    const e: Record<string, string> = {};
+    if (isVehicle) {
+      const f = requireNumber(fuelPrice, "Preço do combustível", LIMITS.moneyPerUnit);
+      if (f) e.fuelPrice = f;
+      const c = requireNumber(kmPerLiter, "Consumo (km/litro)", LIMITS.kmPerLiter);
+      if (c) e.kmPerLiter = c;
+      const x = requireNumber(extras, "Pedágio e estacionamento", LIMITS.monthlyMoney);
+      if (x) e.extras = x;
+      const fx = requireNumber(fixedMonthly, "Custos fixos do veículo", LIMITS.monthlyMoney);
+      if (fx) e.fixedMonthly = fx;
+      if (keepsVehicle === null) e.keepsVehicle = "Responda se você vai continuar mantendo o veículo.";
+    }
+    if (modal === "uber") {
+      const r = requireNumber(ridePerKm, "Custo por km no aplicativo", LIMITS.moneyPerUnit);
+      if (r) e.ridePerKm = r;
+    }
+    if (modal === "transporte_publico") {
+      const t = requireNumber(fare, "Tarifa por embarque", LIMITS.moneyPerUnit);
+      if (t) e.fare = t;
+      const n = requireNumber(tripsPerDay, "Embarques por dia", LIMITS.tripsPerDay);
+      if (n) e.tripsPerDay = n;
+    }
+    if (modal === "misto") {
+      const m = requireNumber(mixedSpend, "Gasto mensal atual com transporte", LIMITS.monthlyMoney);
+      if (m) e.mixedSpend = m;
+    }
+    const en = requireNumber(energyPerKm, "Energia por km da bike", LIMITS.moneyPerUnit);
+    if (en) e.energyPerKm = en;
+    const mt = requireNumber(maintenance, "Manutenção mensal da bike", LIMITS.monthlyMoney);
+    if (mt) e.maintenance = mt;
+    if (maxBudget.trim() !== "") {
+      const b = requireNumber(maxBudget, "Orçamento máximo", LIMITS.budget);
+      if (b) e.maxBudget = b;
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function goNext() {
+    const ok = step === 0 ? validateStep0() : validateStep1();
+    if (ok) setStep((s) => s + 1);
+  }
+
+  function goBack() {
+    // Voltar preserva tudo o que já foi digitado e limpa apenas as mensagens de erro.
+    setErrors({});
+    setStep((s) => s - 1);
+  }
+
+  const errorList = Object.values(errors);
 
   return (
     <div className="min-h-screen bg-surface">
