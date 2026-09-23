@@ -32,6 +32,7 @@ export const AFFILIATE_POSITIONS = [
   "calculadora_tempo_no_transito",
   "calculadora_tempo_recuperado",
   "content_article",
+  "bikes_comparison",
 ] as const;
 
 export type AffiliatePosition = (typeof AFFILIATE_POSITIONS)[number];
@@ -45,7 +46,7 @@ export type AffiliateClickInput = {
 const POSITIONS = new Set<string>(AFFILIATE_POSITIONS);
 
 /** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}, /calculadoras/economia, /calculadoras/payback, /calculadoras/uber-vs-bike, /calculadoras/carro-vs-bike, /calculadoras/transporte-publico-vs-bike, /calculadoras/moto-vs-bike, /calculadoras/tempo-no-transito, /calculadoras/tempo-recuperado. */
-const ALLOWED_ROUTE_RE = /^\/bikes\/[a-z0-9-]+$|^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$/;
+const ALLOWED_ROUTE_RE = /^\/bikes(\/[a-z0-9-]+)?$|^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$/;
 
 function currentRoute(): string | undefined {
   if (typeof window === "undefined") return undefined;
