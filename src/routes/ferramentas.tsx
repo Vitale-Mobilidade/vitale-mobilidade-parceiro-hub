@@ -96,6 +96,15 @@ const TOOLS = [
     body: "Informe seus minutos de trajeto hoje e sua estimativa de bike para ver horas e dias por ano e a projeção em 1, 3 e 5 anos.",
   },
   {
+    key: "tempo-recuperado",
+    icon: Calculator,
+    title: "Tempo recuperado",
+    to: "/calculadoras/tempo-recuperado" as const,
+    cta: "Ver quanto tempo recupero",
+    question: "Quanto tempo a bike devolve por ano?",
+    body: "Compare seu tempo diário de trajeto com sua estimativa de bike e veja as horas recuperadas, ou adicionais, por mês, ano, 3 e 5 anos.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",
