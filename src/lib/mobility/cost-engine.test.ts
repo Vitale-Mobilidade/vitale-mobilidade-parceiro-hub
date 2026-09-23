@@ -202,3 +202,39 @@ describe("MobilityCostEngine — modo rápido", () => {
     expect(r.data.monthlySavings).toBeLessThan(0);
   });
 });
+
+describe("normalizeOptionalSpend — categorias de gasto opcionais", () => {
+  it("branco é ausente: sem erro e sem valor, nunca inventa resultado", () => {
+    expect(normalizeOptionalSpend("", "Carro ou moto")).toEqual({ value: 0, provided: false, error: null });
+    expect(normalizeOptionalSpend("   ", "Uber / 99")).toEqual({ value: 0, provided: false, error: null });
+  });
+
+  it("0 digitado conta como preenchido (resultado 0 honesto)", () => {
+    expect(normalizeOptionalSpend("0", "Carro ou moto")).toEqual({ value: 0, provided: true, error: null });
+  });
+
+  it("aceita número válido com vírgula e rejeita negativo, NaN e fora de limite", () => {
+    expect(normalizeOptionalSpend("600,50", "Carro ou moto")).toEqual({ value: 600.5, provided: true, error: null });
+    expect(normalizeOptionalSpend("-1", "Carro ou moto").error).toMatch(/não negativo/);
+    expect(normalizeOptionalSpend("abc", "Carro ou moto").error).toBeTruthy();
+    expect(normalizeOptionalSpend("9999999999", "Carro ou moto").error).toMatch(/intervalo/);
+  });
+
+  it("categorias em branco passam como 0 ao motor sem erro, com 0 digitado honesto", () => {
+    const r = computeAnnualMobilityCost({
+      carMoto: 0, rideHailing: 0, publicTransport: 0, parkingOther: 0, replaceablePercent: 50,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.monthlyTotal).toBe(0);
+    expect(r.data.replaceableAnnual).toBe(0);
+  });
+});
+
+describe("MobilityCostEngine — exportação agregada", () => {
+  it("expõe compute, computeQuick e computeAnnual", () => {
+    expect(MobilityCostEngine.compute).toBe(computeMobilityCost);
+    expect(MobilityCostEngine.computeQuick).toBe(computeQuickMobilityCost);
+    expect(MobilityCostEngine.computeAnnual).toBe(computeAnnualMobilityCost);
+  });
+});
