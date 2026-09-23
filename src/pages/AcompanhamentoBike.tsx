@@ -144,7 +144,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                 {/* Sem selo de avaliação de preço: só status factual de oferta/histórico. */}
                 {!(hasOffer && metrics) && (
                   <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
-                    Histórico arquivado
+                    Sem oferta no momento
                   </span>
                 )}
                 <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">{bike.name}</h1>

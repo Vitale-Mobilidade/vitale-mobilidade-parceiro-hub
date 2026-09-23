@@ -52,9 +52,10 @@ export function parseArchived(raw: unknown[]): ArchivedBike[] {
 }
 
 /**
- * Histórico arquivado: bikes sem oferta atual no Mercado Livre.
+ * Bikes sem oferta atual no Mercado Livre (o histórico validado continua ativo;
+ * a entidade não é "arquivada", apenas a oferta está indisponível agora).
  * Sem preço atual, sem farol, sem CTA de compra e sem alerta de preço —
- * apenas o que já foi registrado, com data.
+ * apenas o último preço verificado, com data.
  */
 export function ArchivedHistorySection({ bikes, base }: { bikes: ArchivedBike[]; base: RadarBase }) {
   if (bikes.length === 0) return null;
@@ -62,8 +63,8 @@ export function ArchivedHistorySection({ bikes, base }: { bikes: ArchivedBike[];
     <section aria-labelledby="arquivado" className="mt-12">
       <SectionHeading
         id="arquivado"
-        title={`Histórico arquivado (${bikes.length})`}
-        sub="Modelos sem oferta ativa no momento. Mantemos o histórico já registrado; não há preço atual nem link de compra."
+        title={`Sem oferta no momento (${bikes.length})`}
+        sub="Sem oferta ativa no Mercado Livre agora. O preço exibido é o último verificado pela Vitale, com a data da confirmação — pode não ser o preço de hoje. O histórico registrado segue disponível."
       />
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {bikes.map((b) => (
