@@ -8,6 +8,7 @@ import {
   Outlet,
   Scripts,
   useRouter,
+  useRouterState,
   Link,
 } from "@tanstack/react-router";
 import { HelmetProvider } from "react-helmet-async";
@@ -110,14 +111,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes");
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider context={{}}>
         <Outlet />
         {/* Assistente Vitale: instância única. /escolherbike monta a sua própria. */}
-        <Suspense fallback={null}>
-          <RadarAssistant />
-        </Suspense>
+        {!excluded && (
+          <Suspense fallback={null}>
+            <RadarAssistant />
+          </Suspense>
+        )}
       </HelmetProvider>
     </QueryClientProvider>
   );
