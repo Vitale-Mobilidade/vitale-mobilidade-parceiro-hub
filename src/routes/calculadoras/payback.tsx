@@ -13,7 +13,7 @@ import {
   QUICK_BIKE_COST,
   WEEKS_PER_MONTH,
 } from "@/lib/mobility/config";
-import { computeQuickMobilityCost, type Modal } from "@/lib/mobility/cost-engine";
+import { computeBikePaybacks, computePaybackCost, paybackInsight } from "@/lib/mobility/payback-engine";
 import { computeCostProjection } from "@/lib/mobility/projection-engine";
 import {
   QUICK_ORDER_CRITERION,
@@ -22,20 +22,20 @@ import {
 } from "@/lib/mobility/recommendation-engine";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
-const TITLE = "Calculadora de economia: transporte x bike elétrica | Vitale Mobilidade";
+const TITLE = "Calculadora de payback: em quanto tempo a bike elétrica se paga | Vitale Mobilidade";
 const DESCRIPTION =
-  "Estime quanto pode economizar por mês ao substituir parte do transporte por uma bike elétrica e veja até duas opções compatíveis com seu cenário.";
+  "Descubra em quantos meses uma bike elétrica real se paga com a economia do seu trajeto e veja o saldo em 12, 24 e 36 meses.";
 
-export const Route = createFileRoute("/calculadoras/economia")({
+export const Route = createFileRoute("/calculadoras/payback")({
   loader: () =>
     getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
-      path: "/calculadoras/economia",
+      path: "/calculadoras/payback",
       title: TITLE,
       description: DESCRIPTION,
-      ogTitle: "Quanto você pode economizar usando uma bike elétrica?",
-      ogDescription: "Simulação rápida com seus dados e ofertas atuais de bikes compatíveis, sem cadastro.",
+      ogTitle: "Em quanto tempo uma bike elétrica se paga?",
+      ogDescription: "Payback com seus dados e ofertas atuais de bikes compatíveis, sem cadastro.",
     });
     return {
       ...base,
@@ -45,8 +45,8 @@ export const Route = createFileRoute("/calculadoras/economia")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            name: "Calculadora de economia com bike elétrica",
-            url: canonicalUrl("/calculadoras/economia"),
+            name: "Calculadora de payback de bike elétrica",
+            url: canonicalUrl("/calculadoras/payback"),
             applicationCategory: "FinanceApplication",
             operatingSystem: "Web",
             inLanguage: "pt-BR",
@@ -58,19 +58,11 @@ export const Route = createFileRoute("/calculadoras/economia")({
       ],
     };
   },
-  component: CalculadoraEconomia,
+  component: CalculadoraPayback,
 });
 
-const MODALS: { key: Modal; label: string }[] = [
-  { key: "carro", label: "Carro" },
-  { key: "uber", label: "Uber / 99" },
-  { key: "transporte_publico", label: "Transporte público" },
-  { key: "moto", label: "Moto" },
-  { key: "misto", label: "Misto" },
-];
-function CalculadoraEconomia() {
+function CalculadoraPayback() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
-  const [modal, setModal] = useState<Modal | null>(null);
   const [monthlySpend, setMonthlySpend] = useState("");
   const [dailyKm, setDailyKm] = useState("");
   const [daysPerWeek, setDaysPerWeek] = useState("");
@@ -89,7 +81,6 @@ function CalculadoraEconomia() {
   }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent]);
 
   const errors = useMemo(() => ({
-    modal: modal === null ? "Escolha seu meio de transporte atual." : null,
     monthlySpend: validateNumber(monthlySpend, "Gasto mensal", LIMITS.monthlyMoney),
     dailyKm: validateNumber(dailyKm, "Distância por dia", LIMITS.dailyKm),
     daysPerWeek: validateNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek),
@@ -98,13 +89,13 @@ function CalculadoraEconomia() {
       budgetMode === "custom"
         ? validateNumber(customBudget, "Orçamento", LIMITS.budget)
         : null,
-  }), [modal, monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget]);
+  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget]);
 
-  const requiredValid = !errors.modal && !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget;
+  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget;
   const costResult = useMemo(() => {
-    if (!requiredValid || modal === null) return null;
-    return computeQuickMobilityCost({ modal, ...values });
-  }, [requiredValid, modal, values]);
+    if (!requiredValid) return null;
+    return computePaybackCost(values);
+  }, [requiredValid, values]);
   const data = costResult?.ok ? costResult.data : null;
   const hasBikeUse = data !== null && values.replaceablePercent > 0;
   const budget = resolveBudget(budgetMode, customBudget);
@@ -134,13 +125,14 @@ function CalculadoraEconomia() {
 
   const markTouched = (name: string) => setTouched((current) => ({ ...current, [name]: true }));
   const visibleError = (name: keyof typeof errors) => (touched[name] ? errors[name] : null);
-  const insight = data
-    ? data.monthlySavings > 0
-      ? `Neste cenário, a operação da bike custa ${brl(data.bikeTotalCost, true)} por mês e deixa uma diferença positiva estimada de ${brl(data.monthlySavings, true)}.`
-      : data.monthlySavings === 0
-        ? "Neste cenário, os custos operacionais estimados ficam iguais. Não há retorno financeiro positivo para projetar."
-        : `Neste cenário, usar a bike acrescenta ${brl(Math.abs(data.monthlySavings), true)} por mês. Não há retorno financeiro positivo.`
-    : null;
+  const paybacks = data ? computeBikePaybacks(bikes, data.currentTotalReplaced, data.bikeTotalCost) : [];
+  const insight = data ? paybackInsight(data.monthlySavings, paybacks) : null;
+  const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
+  const paybackLabel = !selectedPayback || !selectedPayback.projection.ok
+    ? "—"
+    : selectedPayback.projection.paybackMonths === null
+      ? "Sem retorno"
+      : `${decimal(selectedPayback.projection.paybackMonths)} meses`;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -148,12 +140,12 @@ function CalculadoraEconomia() {
       <main>
         <section className="bg-ink text-ink-foreground">
           <div className="responsive-container py-6 sm:py-8">
-            <p className="text-xs font-bold tracking-[0.2em] text-mint">CALCULADORA DE ECONOMIA</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-mint">CALCULADORA DE PAYBACK</p>
             <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight sm:text-4xl">
-              Quanto você pode economizar por mês usando uma bike elétrica?
+              Em quanto tempo uma bike elétrica se paga?
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
-              Informe seu gasto aproximado e sua rotina. A estimativa aparece automaticamente, sem cadastro e sem presumir economia.
+              Informe o gasto que a bike evitaria e sua rotina. O prazo de retorno de até duas bikes reais aparece na hora, sem cadastro.
             </p>
           </div>
         </section>
@@ -170,34 +162,14 @@ function CalculadoraEconomia() {
               </div>
 
               <div className="mt-6 space-y-5">
-                <fieldset>
-                  <legend className="text-sm font-bold text-ink">Como você se desloca hoje?</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {MODALS.map((item) => (
-                      <label key={item.key} className={`flex min-h-11 cursor-pointer items-center justify-center rounded-md px-3 text-center text-sm font-semibold ring-1 ${modal === item.key ? "bg-mint/25 text-ink ring-action" : "bg-background text-muted-foreground ring-line"}`}>
-                        <input
-                          type="radio"
-                          name="modal"
-                          value={item.key}
-                          checked={modal === item.key}
-                          onChange={() => { setModal(item.key); markTouched("modal"); }}
-                          className="sr-only"
-                        />
-                        {item.label}
-                      </label>
-                    ))}
-                  </div>
-                  {visibleError("modal") && <p className="mt-2 text-xs font-semibold text-destructive">{errors.modal}</p>}
-                </fieldset>
-
                 <NumberField
                   name="monthlySpend"
-                  label="Gasto mensal aproximado com esse transporte"
+                  label="Gasto mensal atual evitável"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help={modal === "carro" || modal === "moto" ? "Informe apenas combustível, pedágio, estacionamento e outros custos do trajeto que deixam de existir. Não inclua seguro, IPVA ou custos fixos do veículo mantido." : "Informe somente a parte mensal ligada aos deslocamentos que você está avaliando."}
+                  help="Some só o que deixaria de gastar no trajeto: passagens, corridas, combustível, pedágio, estacionamento. Não inclua seguro, IPVA ou custos fixos de um veículo que continuará com você."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -234,13 +206,13 @@ function CalculadoraEconomia() {
               ) : (
                 <div className="mt-5 space-y-5">
                   <dl className="grid grid-cols-2 gap-3">
-                    <Metric label="Gasto atual substituível" value={brl(data.currentTotalReplaced, true)} />
-                    <Metric label="Custo estimado da bike" value={brl(data.bikeTotalCost, true)} />
+                    <Metric label="Gasto evitável substituído" value={brl(data.currentTotalReplaced, true)} />
+                    <Metric label="Custo operacional da bike" value={brl(data.bikeTotalCost, true)} />
                     <Metric label={data.monthlySavings >= 0 ? "Economia mensal estimada" : "Diferença mensal estimada"} value={brl(data.monthlySavings, true)} emphasis />
-                    <Metric label={data.annualSavings >= 0 ? "Economia anual estimada" : "Diferença anual estimada"} value={brl(data.annualSavings, true)} emphasis />
+                    <Metric label={selectedBike ? `Payback estimado · ${selectedBike.name}` : "Payback estimado"} value={paybackLabel} emphasis />
                   </dl>
                   <p className={`rounded-md p-4 text-sm leading-relaxed ${data.monthlySavings > 0 ? "bg-mint/20 text-ink" : "bg-surface text-muted-foreground ring-1 ring-line"}`}>{insight}</p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">Estimativa operacional. O preço de compra da bike não reduz nem aumenta os números acima; ele entra separadamente nas projeções por modelo.</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">Estimativa. Payback = preço atual da oferta ÷ economia mensal positiva, arredondado para cima em 0,1 mês.</p>
 
                   {selectedBike && selectedProjection?.ok && hasBikeUse && (
                     <CostProjectionChart
@@ -270,8 +242,8 @@ function CalculadoraEconomia() {
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Nenhuma bike com oferta atual atende à distância, margem de autonomia, garupa e orçamento informados. Não afrouxamos os filtros.</p>
               ) : (
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
-                  {bikes.map((bike) => (
-                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={computeCostProjection({ monthlyCurrentCost: data.currentTotalReplaced, monthlyBikeCost: data.bikeTotalCost, bikePrice: bike.price })} position="calculadora_economia" />
+                  {paybacks.map(({ bike, projection }) => (
+                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_payback" />
                   ))}
                 </div>
               )}
@@ -296,7 +268,7 @@ function CalculadoraEconomia() {
                   <li>Nos horizontes de {PROJECTION_MONTHS.join(", ")} meses, o custo da bike inclui seu preço real atual e o custo operacional acumulado.</li>
                   <li>Retorno estimado = preço atual ÷ economia mensal positiva. Com economia zero ou negativa, não existe payback positivo.</li>
                   <li>Valores são arredondados para centavos; as projeções não incluem financiamento, inflação, revenda, depreciação ou imprevistos.</li>
-                  <li>Para carro e moto, o gasto principal deve excluir seguro, IPVA e outros custos fixos do veículo que continuará sendo mantido.</li>
+                  <li>O gasto informado deve excluir seguro, IPVA e outros custos fixos de veículo que continuará sendo mantido.</li>
                 </ul>
               </div>
               <div>

@@ -56,3 +56,6 @@ export const MELI_LINK_RE = /^https:\/\/meli\.la\/[A-Za-z0-9]+$/;
 export function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
+
+/** Presets de orçamento máximo das calculadoras rápidas (filtro rígido quando escolhido). */
+export const BUDGET_PRESETS = [5000, 7000, 10000, 15000] as const;
