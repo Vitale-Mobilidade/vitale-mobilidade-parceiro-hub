@@ -21,6 +21,8 @@ type RadarDetail = {
   currentPrice: number;
   daily: DailyPoint[];
   lastObservedAt: string | null;
+  lastObservedPrice?: number | null;
+  hasCurrentOffer?: boolean;
 };
 
 const km = (v: string | null) => { const m = v?.match(/(\d{1,4})\s*km/i); return m ? Number(m[1]) : null; };
