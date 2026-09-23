@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Flame, Target, TrendingDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Footer from "@/components/Footer";
@@ -31,30 +31,18 @@ const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k
 const SORTS: SortKey[] = ["opportunity", "drop", "price", "name"];
 
 const Acompanhamento = () => {
-  const [bikes, setBikes] = useState<RadarBike[] | null>(null);
-  const [error, setError] = useState(false);
+  // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
+  const initial = useLoaderData({ from: "/acompanhamento/" });
+  const bikes = useMemo<RadarBike[]>(
+    () => (initial.ok ? (initial.bikes as unknown as RadarBike[]) : []),
+    [initial],
+  );
+  const error = !initial.ok;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("opportunity");
   const [chips, setChips] = useState<ChipKey[]>([]);
   const [alertBike, setAlertBike] = useState<RadarEntry | null>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error: rpcError } = await supabase.rpc("get_price_tracker_catalog");
-      if (cancelled) return;
-      if (rpcError || !Array.isArray(data)) {
-        setError(true);
-        setBikes([]);
-        return;
-      }
-      setBikes(data as unknown as RadarBike[]);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     trackRadar("radar_viewed");
@@ -79,7 +67,7 @@ const Acompanhamento = () => {
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
   const featuredIsOpportunity = isOpportunity(featured);
-  const loading = bikes === null;
+  const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
@@ -124,7 +112,7 @@ const Acompanhamento = () => {
                 <div className="mt-6 max-w-xl">
                   <BikeSearchCombobox
                     entries={entries}
-                    loading={bikes === null}
+                    loading={false}
                     query={query}
                     onQueryChange={setQuery}
                     onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}

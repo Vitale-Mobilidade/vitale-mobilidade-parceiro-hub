@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, BellRing, Check, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,31 +53,11 @@ function Spec({ label, value }: { label: string; value: string | null }) {
 const AcompanhamentoBike = () => {
   const { bikeId = "" } = useParams();
   const [window, setWindow] = useState<DailyWindow>(30);
-  const [bike, setBike] = useState<RadarBikeDetail | null | undefined>(undefined);
-  const [error, setError] = useState(false);
+  // Dados reais vêm do loader (SSR + hidratação; reexecuta ao trocar de bike).
+  const initial = useLoaderData({ from: "/acompanhamento/$bikeId" });
+  const bike: RadarBikeDetail | null = initial.ok ? ((initial.bike as RadarBikeDetail | null) ?? null) : null;
+  const error = !initial.ok;
   const [alertOpen, setAlertOpen] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setBike(undefined);
-    (async () => {
-      const { data, error: rpcError } = await supabase.rpc("get_bike_price_history", {
-        p_bike_id: bikeId,
-        p_days: 0, // série completa: a janela é aplicada no cliente
-      });
-      if (cancelled) return;
-      if (rpcError) {
-        setError(true);
-        setBike(null);
-        return;
-      }
-      setError(false);
-      setBike((data as unknown as RadarBikeDetail) ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [bikeId]);
 
   useEffect(() => {
     if (bike) trackRadar("radar_detail_viewed", { bike_id: bike.id });
@@ -88,7 +68,7 @@ const AcompanhamentoBike = () => {
     [bike, window],
   );
 
-  const loading = bike === undefined;
+  const loading = false; // dados já chegam no SSR
   const canBuy = !!bike && isSafePurchaseLink(bike.link);
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
   const goodFor = bike?.shortDescription || bike?.perfilIndicado || bike?.description || null;
