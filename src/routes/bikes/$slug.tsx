@@ -244,8 +244,13 @@ function BikeDetail() {
               <div className="rounded-2xl border border-line bg-surface p-6 text-sm text-muted-foreground">
                 <p className="font-bold text-ink">Sem oferta ativa no Mercado Livre</p>
                 <p className="mt-2">
-                  Mantemos o histórico registrado por nós. O último valor registrado foi {formatBRL(radar.currentPrice)}
-                  {radar.lastObservedAt ? ` em ${formatDateTimeBR(radar.lastObservedAt)}` : ""} e pode não ser o preço de hoje.
+                  Mantemos o histórico registrado por nós. O último valor verificado foi {formatBRL(radar.currentPrice)}
+                  {lastConfirmed
+                    ? ` em ${formatDateBR(lastConfirmed.date)}`
+                    : radar.lastObservedAt
+                      ? ` na última alteração em ${formatDateTimeBR(radar.lastObservedAt)}`
+                      : ""}{" "}
+                  e pode não ser o preço de hoje.
                 </p>
               </div>
             )}
