@@ -1,291 +1,83 @@
-/**
- * Catálogo dinâmico do quiz.
- *
- * A planilha oficial é a fonte para os 6 campos atuais:
- *   Nome, Link Vitale, Preço, Autonomia, Capacidade e Descrição.
- * Colunas opcionais (ID, Imagem, Peso Suportado, Usos, Terrenos, Pontos Fortes,
- * Diferencial, Perfil Indicado, Ativa) permitem cadastrar bikes NOVAS.
- *
- * Bikes existentes mantêm id, imagem e metadados estáticos como fallback.
- * Bikes novas só entram no quiz quando têm os dados mínimos (status "eligible").
- *
- * Fallback em cascata: snapshot do banco -> catálogo estático.
- */
+// Catálogo editorial read-only a partir da aba oficial de bikes (gid=0).
+// Inclui TODAS as linhas nomeadas, inclusive "Não Elegível" (elegibilidade só afeta o Quiz).
+// Não escreve em lugar nenhum; o writer Sheets→banco segue intacto.
+import {
+  parseCsvRows,
+  normalizeName,
+  resolveBikeId,
+  buildStableId,
+  parseVitaleLink,
+  parseImageUrl,
+  parseBrlPrice,
+} from "../../supabase/functions/_shared/bike-sheet";
 
-import { BIKES, type Bike, type BudgetTier } from "@/data/bikes";
-
-export type SnapshotBikeStatus = "eligible" | "draft" | "inactive";
-
-export interface SnapshotBike {
-  id: string;
+export type CatalogBike = {
+  bikeId: string; // ID canônico técnico (igual ao usado no Radar/Quiz)
+  slug: string; // slug editorial de URL, separado do bikeId
   name: string;
-  linkVitale: string;
-  price: number;
-  autonomyKm: number;
-  capacity: 1 | 2;
-  description: string;
-  shortDescription: string;
-  isNew?: boolean;
-  status?: SnapshotBikeStatus;
-  missingFields?: string[];
-  line?: number;
-  /** Coluna Status da planilha: true = Elegível, false = Não Elegível. */
-  sheetEligible?: boolean | null;
-  image?: string;
-  /** true somente quando o asset persistido está pronto (RPC); protege o fallback estático. */
-  imageReady?: boolean;
-  weightSupportKg?: number;
-  bestFor?: string[];
-  terrains?: string[];
-  strengths?: string[];
-  diferencial?: string;
-  perfilIndicado?: string;
-}
-
-/** Linha nomeada porém incompleta na planilha: pendente, nunca entra no quiz. */
-export interface PendingRow {
-  id: string | null;
-  name: string;
-  line: number;
-  isNew: boolean;
-  missingFields: string[];
-  sheetEligible?: boolean | null;
-}
-
-export interface IgnoredRow {
-  line: number;
-  name: string;
-  reason: string;
-}
-
-export interface CatalogSnapshot {
-  generated_at?: string;
-  bikes?: SnapshotBike[];
-  pending?: PendingRow[];
-  ignored?: IgnoredRow[];
-}
-
-export interface SyncState {
-  status: string;
-  last_attempt_at: string | null;
-  last_success_at: string | null;
-  next_run_at: string | null;
-  recognized_count: number;
-  ignored_count: number;
-  ignored_rows: IgnoredRow[];
-  error_message: string | null;
-}
-
-/** Linha do painel: bike + estado de correspondência. */
-export interface CatalogRow {
-  id: string;
-  name: string;
+  link: string | null; // meli.la exato da planilha, ou null
+  sheetPrice: number | null; // preço de referência na planilha (não verificado como "hoje")
+  autonomy: string | null;
+  capacity: string | null;
+  description: string | null;
   image: string | null;
-  price: number | null;
-  autonomyKm: number | null;
-  capacity: 1 | 2 | null;
-  linkVitale: string | null;
-  state: "eligible" | "draft" | "inactive" | "static";
-  isNew: boolean;
-  missingFields: string[];
-  fromSheet: boolean;
-  /** Coluna Status da planilha (fonte oficial da elegibilidade). */
-  sheetEligible?: boolean | null;
+  category: string | null;
+};
+
+export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Slug editorial explícito: bikeId com "_" -> "-". Determinístico e reversível só via o catálogo. */
+export function slugFromBikeId(bikeId: string): string {
+  return bikeId.replace(/_/g, "-");
 }
 
-
-/** Faixa de orçamento correspondente ao preço. */
-export function tierForPrice(price: number): BudgetTier {
-  if (price <= 7000) return "ate_7000";
-  if (price <= 8000) return "7000_8000";
-  if (price <= 10000) return "8000_10000";
-  return "acima_10000";
+function cell(v: string | undefined): string | null {
+  const t = String(v ?? "").replace(/\s+/g, " ").trim();
+  return t ? t : null;
 }
 
-const MELI_RE = /^https:\/\/meli\.la\/[A-Za-z0-9]+$/;
+export function buildBikeCatalog(csv: string): CatalogBike[] {
+  const rows = parseCsvRows(csv);
+  if (rows.length < 2) return [];
+  const head = rows[0].map((h) => normalizeName(h));
+  const idx = (k: string) => head.indexOf(k);
+  const iName = idx("nome");
+  if (iName < 0) return [];
+  const iLink = idx("link_vitale");
+  const iPrice = head.findIndex((h) => h.startsWith("pre_o") || h.startsWith("preco"));
+  const iAut = idx("autonomia");
+  const iCap = idx("capacidade");
+  const iDesc = head.findIndex((h) => h.startsWith("descri"));
+  const iImg = idx("imagem_da_bike");
+  const iCat = idx("categoria");
 
-function isValidSnapshotBike(b: unknown): b is SnapshotBike {
-  const x = b as SnapshotBike;
-  return !!x && typeof x.id === "string" && x.id.length > 0
-    && typeof x.linkVitale === "string" && MELI_RE.test(x.linkVitale)
-    && typeof x.price === "number" && x.price > 0
-    && typeof x.autonomyKm === "number" && x.autonomyKm > 0
-    && (x.capacity === 1 || x.capacity === 2)
-    && typeof x.description === "string" && x.description.trim().length > 0;
-}
-
-/** Índice id -> linha válida do snapshot (primeira ocorrência vence). */
-function indexSnapshot(snapshotBikes: unknown): Map<string, SnapshotBike> {
-  const list = Array.isArray(snapshotBikes) ? snapshotBikes : [];
-  const byId = new Map<string, SnapshotBike>();
-  for (const raw of list) {
-    if (!isValidSnapshotBike(raw)) continue;
-    if (byId.has(raw.id)) continue;
-    byId.set(raw.id, raw);
-  }
-  return byId;
-}
-
-function statusOf(s: SnapshotBike): SnapshotBikeStatus {
-  return s.status ?? "eligible";
-}
-
-/** Bike nova construída somente com dados da planilha (sem inventar metadados). */
-function bikeFromSnapshot(s: SnapshotBike): Bike | null {
-  if (!s.image || !s.weightSupportKg || !s.bestFor?.length || !s.terrains?.length) return null;
-  return {
-    id: s.id,
-    name: s.name,
-    shortDescription: s.shortDescription || s.description.slice(0, 200),
-    fullDescription: s.description,
-    image: s.image,
-    affiliateLink: s.linkVitale,
-    linkVitale: s.linkVitale,
-    // Sem link Meta específico: usa o link da planilha, nunca sobrescreve estático.
-    linkMeta: s.linkVitale,
-    internalPrice: s.price,
-    capacity: s.capacity,
-    weightSupportKg: s.weightSupportKg,
-    autonomyKm: s.autonomyKm,
-    bestFor: s.bestFor,
-    terrains: s.terrains,
-    strengths: s.strengths ?? [],
-    budgetTiers: [tierForPrice(s.price)],
-    diferencial: s.diferencial ?? "",
-    perfilIndicado: s.perfilIndicado ?? "",
-    isDynamic: true,
-  };
-}
-
-/**
- * Aplica o snapshot sobre o catálogo estático.
- * - Bikes existentes recebem override apenas dos campos presentes na planilha.
- * - Bikes novas entram somente quando "eligible" e com metadados mínimos.
- * - Linhas pendentes (draft), duplicadas ou inativas nunca entram no quiz:
- *   a versão anterior do catálogo é preservada intacta.
- */
-export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
-  const byId = indexSnapshot(snapshotBikes);
-  const baseIds = new Set(base.map((b) => b.id));
-
-  const merged = base.map((bike) => {
-    const s = byId.get(bike.id);
-    if (!s || statusOf(s) !== "eligible") return bike;
-    const tier = tierForPrice(s.price);
-    const budgetTiers = bike.budgetTiers.includes(tier) ? bike.budgetTiers : [tier];
-    return {
-      ...bike,
-      name: s.name?.trim() || bike.name,
-      shortDescription: s.shortDescription?.trim() || bike.shortDescription,
-      fullDescription: s.description,
-      internalPrice: s.price,
-      autonomyKm: s.autonomyKm,
-      capacity: s.capacity,
-      linkVitale: s.linkVitale,
-      affiliateLink: s.linkVitale,
-      // linkMeta NUNCA é sobrescrito pela planilha
-      linkMeta: bike.linkMeta,
-      budgetTiers,
-      // Imagem da planilha só vence quando o asset persistido está ready (proxy).
-      // Sem asset pronto, a imagem estática atual é mantida.
-      image: s.imageReady && s.image ? s.image : bike.image,
-      weightSupportKg: s.weightSupportKg ?? bike.weightSupportKg,
-      bestFor: s.bestFor?.length ? s.bestFor : bike.bestFor,
-      terrains: s.terrains?.length ? s.terrains : bike.terrains,
-      strengths: s.strengths?.length ? s.strengths : bike.strengths,
-      diferencial: s.diferencial || bike.diferencial,
-      perfilIndicado: s.perfilIndicado || bike.perfilIndicado,
-    };
-  });
-
-  // Bikes novas elegíveis
-  for (const s of byId.values()) {
-    if (baseIds.has(s.id)) continue;
-    if (statusOf(s) !== "eligible") continue;
-    const created = bikeFromSnapshot(s);
-    if (created) merged.push(created);
-  }
-
-  return merged;
-}
-
-/**
- * Linhas para o painel: bikes do catálogo + drafts/inativas do snapshot +
- * linhas NOMEADAS incompletas da planilha (pendências).
- */
-export function buildCatalogRows(
-  base: Bike[],
-  snapshotBikes: unknown,
-  pendingRows: PendingRow[] = [],
-): CatalogRow[] {
-  const byId = indexSnapshot(snapshotBikes);
-  const baseIds = new Set(base.map((b) => b.id));
-  const merged = mergeCatalog(base, snapshotBikes);
-
-  const rows: CatalogRow[] = merged.map((bike) => {
-    const s = byId.get(bike.id);
-    return {
-      id: bike.id,
-      name: bike.name,
-      image: bike.image ?? null,
-      price: bike.internalPrice,
-      autonomyKm: bike.autonomyKm,
-      capacity: bike.capacity,
-      linkVitale: bike.linkVitale,
-      state: s ? (statusOf(s) === "eligible" ? "eligible" : statusOf(s) === "inactive" ? "inactive" : "draft") : "static",
-      isNew: !baseIds.has(bike.id),
-      missingFields: s?.missingFields ?? [],
-      fromSheet: !!s,
-      sheetEligible: s?.sheetEligible ?? null,
-    };
-  });
-
-  // Linhas válidas do snapshot que não entraram no catálogo mesclado
-  // (ex.: bike nova sem metadados estáticos). O estado segue o Status oficial:
-  // só "draft" quando a linha é realmente incompleta/pendente.
-  for (const s of byId.values()) {
-    if (rows.some((r) => r.id === s.id)) continue;
-    const st = statusOf(s);
-    rows.push({
-      id: s.id,
-      name: s.name,
-      image: s.image ?? null,
-      price: s.price,
-      autonomyKm: s.autonomyKm,
-      capacity: s.capacity,
-      linkVitale: s.linkVitale,
-      state: st === "eligible" ? "eligible" : st === "inactive" ? "inactive" : "draft",
-      isNew: !baseIds.has(s.id),
-      missingFields: s.missingFields ?? [],
-      fromSheet: true,
-      sheetEligible: s.sheetEligible ?? null,
+  const out: CatalogBike[] = [];
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  for (const r of rows.slice(1)) {
+    const name = cell(r[iName]);
+    if (!name) continue;
+    const bikeId = resolveBikeId(name) ?? buildStableId("", name);
+    if (!bikeId) continue;
+    const slug = slugFromBikeId(bikeId);
+    // Colisão: mantém a primeira linha; nunca sobrescreve.
+    if (seenIds.has(bikeId) || seenSlugs.has(slug) || !SLUG_RE.test(slug)) continue;
+    seenIds.add(bikeId);
+    seenSlugs.add(slug);
+    const rawLink = String(r[iLink] ?? "").trim();
+    const valid = parseVitaleLink(rawLink);
+    out.push({
+      bikeId,
+      slug,
+      name,
+      link: valid && valid === rawLink ? rawLink : null, // byte-a-byte ou nada
+      sheetPrice: iPrice >= 0 ? parseBrlPrice(String(r[iPrice] ?? "")) : null,
+      autonomy: iAut >= 0 ? cell(r[iAut]) : null,
+      capacity: iCap >= 0 ? cell(r[iCap]) : null,
+      description: iDesc >= 0 ? String(r[iDesc] ?? "").trim() || null : null,
+      image: iImg >= 0 ? parseImageUrl(String(r[iImg] ?? "")) : null,
+      category: iCat >= 0 ? cell(r[iCat]) : null,
     });
   }
-
-
-  // Linhas nomeadas incompletas: aparecem como pendentes, sem dados inventados.
-  for (const p of Array.isArray(pendingRows) ? pendingRows : []) {
-    const id = p?.id;
-    if (!id || rows.some((r) => r.id === id)) continue;
-    rows.push({
-      id,
-      name: p.name,
-      image: null,
-      price: null,
-      autonomyKm: null,
-      capacity: null,
-      linkVitale: null,
-      state: "draft",
-      isNew: !baseIds.has(id),
-      missingFields: p.missingFields ?? [],
-      fromSheet: true,
-      sheetEligible: p.sheetEligible ?? null,
-    });
-  }
-
-  return rows;
-
+  return out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
-
-/** Catálogo estático (fallback final). */
-export const STATIC_CATALOG: Bike[] = BIKES;
