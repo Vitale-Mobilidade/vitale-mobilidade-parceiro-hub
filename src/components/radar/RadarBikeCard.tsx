@@ -1,9 +1,8 @@
 import { Link } from "@/lib/router-compat";
 import { BellRing, ExternalLink, LineChart } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CLASSIFICATION_LABEL, formatBRL } from "@/lib/price-tracker";
-import { CLASSIFICATION_COLOR, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
+import { formatBRL } from "@/lib/price-tracker";
+import { shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { useRadarBase } from "@/lib/radar-base";
@@ -16,7 +15,6 @@ interface Props {
 
 export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
   const base = useRadarBase();
-  const cls = entry.metrics.classification;
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
 
   return (
@@ -46,13 +44,13 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
+        {/* Sem selo de classificação na listagem do Radar: só leitura factual. */}
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-base font-semibold leading-tight">
             <Link to={`${base}/${entry.id}`} className="hover:text-primary focus-visible:outline-none">
               {entry.name}
             </Link>
           </h3>
-          <Badge className={`shrink-0 border-0 text-[11px] ${CLASSIFICATION_COLOR[cls]}`}>{CLASSIFICATION_LABEL[cls]}</Badge>
         </div>
 
         <p className="mt-3 text-3xl font-bold tracking-tight text-primary">{formatBRL(entry.currentPrice)}</p>

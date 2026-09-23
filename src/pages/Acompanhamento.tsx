@@ -5,8 +5,7 @@ import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, PriceStatus, DisabledCta } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, DisabledCta } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
@@ -77,7 +76,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
-  const featuredIsOpportunity = isOpportunity(featured);
   const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
@@ -143,12 +141,11 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
-            <SectionHeading id="destaque" title={featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"} action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+            <SectionHeading id="destaque" title="Destaque do Radar" action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
             <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
-                  <PriceStatus classification={featured.metrics.classification} />
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
@@ -310,10 +307,10 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                   no Mercado Livre. Usamos links de afiliado.
                 </p>
                 {summary.atLowest > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="border-0 bg-primary/15 text-primary">Menor preço registrado</Badge>
-                    <span>significa o menor valor já registrado por nós — nunca comparação com outras lojas.</span>
-                  </div>
+                  <p>
+                    Quando dizemos “menor preço registrado”, falamos do menor valor já registrado por nós — nunca
+                    comparação com outras lojas.
+                  </p>
                 )}
               </div>
             </>

@@ -7,6 +7,7 @@ import {
   isOpportunity,
   matchesChips,
   searchEntries,
+  shortDiagnosis,
   sortEntries,
   type RadarBike,
 } from "./radar-rankings";
@@ -142,5 +143,35 @@ describe("rankings do radar", () => {
     expect(s.tracked).toBe(3);
     expect(s.atLowest).toBeGreaterThan(0);
     expect(s.biggestDropPct).toBeLessThan(0);
+  });
+});
+
+describe("shortDiagnosis — texto factual, sem selo", () => {
+  function entryWith(over: Partial<RadarBike>) {
+    return buildRadarEntries([bike(over)], "all", TODAY)[0];
+  }
+
+  it("nunca diz 'R$ 0 abaixo do típico' quando o preço iguala o típico", () => {
+    const daily = makeSeries(Array(30).fill(7000));
+    const e = entryWith({ daily, currentPrice: 7000 });
+    const text = shortDiagnosis(e);
+    expect(text).not.toMatch(/R\$ 0 /);
+    expect(text).not.toMatch(/abaixo do preço típico/);
+
+    // Caso direto: classificação conclusiva com diferença zero.
+    const forced = { ...e, metrics: { ...e.metrics, classification: "good" as const, typicalPrice: e.currentPrice } };
+    expect(shortDiagnosis(forced)).toBe("Hoje está igual ao preço típico do período.");
+  });
+
+  it("histórico curto usa leitura factual, sem 'em formação'", () => {
+    const daily = [day("2026-09-09", 7000), day("2026-09-10", 7000)];
+    const e = entryWith({ daily, currentPrice: 7000, minObserved: 7000, maxObserved: 7000 });
+    expect(e.metrics.classification).toBe("forming");
+    const text = shortDiagnosis(e);
+    expect(text).not.toMatch(/forma/i);
+    expect([
+      "É o menor preço registrado por nós até agora.",
+      "Preço registrado no histórico da Vitale.",
+    ]).toContain(text);
   });
 });

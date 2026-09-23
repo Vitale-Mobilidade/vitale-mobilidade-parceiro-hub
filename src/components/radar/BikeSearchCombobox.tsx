@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { Search, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { CLASSIFICATION_LABEL } from "@/lib/price-tracker";
 import { formatBRL } from "@/lib/price-tracker";
 import { normalizeText } from "@/lib/price-daily";
-import { CLASSIFICATION_COLOR, type RadarEntry } from "@/lib/radar-rankings";
+import type { RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
 import { useRadarBase } from "@/lib/radar-base";
 
@@ -148,9 +146,6 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, lo
                   <span className="block truncate text-sm font-medium">{entry.name}</span>
                   <span className="block text-sm font-semibold text-primary">{formatBRL(entry.currentPrice)}</span>
                 </span>
-                <Badge className={`shrink-0 border-0 text-[11px] ${CLASSIFICATION_COLOR[entry.metrics.classification]}`}>
-                  {CLASSIFICATION_LABEL[entry.metrics.classification]}
-                </Badge>
               </button>
             </li>
           ))}
