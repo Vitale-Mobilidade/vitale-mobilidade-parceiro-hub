@@ -64,7 +64,7 @@ export default {
       // Cutover Etapa 9: redirect permanente real antes do SSR (rollback = remover este bloco).
       if (request.method === "GET" || request.method === "HEAD") {
         const url = new URL(request.url);
-        const target = legacyRadarRedirect(url.pathname, url.search);
+        const target = legacyRedirect(url.pathname, url.search);
         if (target) {
           return new Response(null, { status: 301, headers: { location: target, "cache-control": "public, max-age=3600" } });
         }
