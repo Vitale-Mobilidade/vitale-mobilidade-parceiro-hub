@@ -91,3 +91,19 @@ export function computeMobilityTime(input: TimeInput): TimeResult {
 }
 
 export const MobilityTimeEngine = { compute: computeMobilityTime };
+
+/** Horizontes (anos) da projeção de tempo. */
+export const TIME_PROJECTION_YEARS = [1, 3, 5] as const;
+
+export type TimeProjectionPoint = { years: number; currentHours: number; bikeHours: number; savedHours: number };
+
+/** Projeção pura: acumula as horas/ano já calculadas pelo motor; nada é estimado além disso. */
+export function computeTimeProjection(data: Pick<TimeBreakdown, "currentHoursPerYear" | "bikeHoursPerYear">): TimeProjectionPoint[] {
+  const bike = data.bikeHoursPerYear ?? data.currentHoursPerYear;
+  return TIME_PROJECTION_YEARS.map((years) => ({
+    years,
+    currentHours: round2(data.currentHoursPerYear * years),
+    bikeHours: round2(bike * years),
+    savedHours: round2((data.currentHoursPerYear - bike) * years),
+  }));
+}
