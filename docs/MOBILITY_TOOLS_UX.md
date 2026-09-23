@@ -48,3 +48,6 @@ Toggle compartilhado (`HillsToggle`) junto de garupa/orçamento nas 8 rotas com 
 
 ### Regra da segunda bike (revisada)
 Capacidade extra não justifica alternativa (garupa já é filtro rígido quando pedida). Com teto informado: 1ª = menor preço compatível; 2ª = bike distinta dentro do teto com MAIOR autonomia declarada, desde que ≥25% (RELEVANT_AUTONOMY_GAIN) acima da 1ª; empate → menor preço. Sem ganho real, só uma bike com explicação. Sem teto: só a "opção econômica provisória" e convite para escolher um teto. Garupa/subidas valem para as duas.
+
+### Assistente no mobile
+Nas rotas /calculadoras/*, abaixo de 768px, o botão fechado do assistente vira círculo de 56px só com ícone (aria-label mantido); continua abrindo só por clique. Desktop e demais rotas inalterados.
