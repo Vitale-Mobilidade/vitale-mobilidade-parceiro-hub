@@ -16,19 +16,19 @@ import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
 
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
+    <section className="entry-hero">
       <picture>
         <source media="(max-width: 767px)" srcSet="/vitale-hero-v2-mobile.webp" width={600} height={909} />
         <source media="(max-width: 1400px)" srcSet="/vitale-hero-v2-1280.webp" width={1280} height={720} />
         <img src="/vitale-hero-v2.webp" width={1672} height={941} alt="Ciclista em bike elétrica na orla da cidade ao pôr do sol" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
       </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-transparent max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/70 max-md:to-ink/20" aria-hidden="true" />
-      <div className="responsive-container flex min-h-[560px] flex-col justify-end pb-28 pt-40 md:min-h-[640px] md:justify-center md:pb-36 md:pt-16">
-        <p className="text-xs font-bold tracking-[0.25em] text-mint">BIKES ELÉTRICAS NO BRASIL</p>
-        <h1 className="mt-4 max-w-3xl text-[2.6rem] font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
+      <div className="responsive-container entry-hero-inner">
+        <p className="entry-eyebrow">BIKES ELÉTRICAS NO BRASIL</p>
+        <h1 className="entry-h1">
           Encontre a bike elétrica <span className="text-mint">certa para você</span>
         </h1>
-        <p className="mt-6 max-w-xl text-base text-ink-foreground/90 sm:text-xl">
+        <p className="entry-lead max-w-xl">
           Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher.
         </p>
         <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row">
@@ -112,7 +112,7 @@ function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number })
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><BarChart3 className="h-6 w-6" aria-hidden="true" /></span>
         <p className="text-xs font-bold tracking-[0.2em] text-mint">RADAR DE PREÇOS</p>
       </div>
-      <h2 id="radar-home" className="relative mt-4 text-3xl font-black leading-tight sm:text-4xl">O preço de hoje está bom?</h2>
+      <h2 id="radar-home" className="section-h2 relative mt-4">O preço de hoje está bom?</h2>
       <p className="relative mt-2 max-w-md text-ink-foreground/80">
         {total > 0 ? <><strong className="text-mint">{total} bikes</strong> monitoradas. Veja o preço atual e a classificação do Radar antes de comprar.</> : "Veja o preço atual e a classificação do Radar antes de comprar."}
       </p>
@@ -152,7 +152,7 @@ function CalculatorPanel() {
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
         <p className="text-xs font-bold tracking-[0.2em] text-action">CALCULADORA DE ECONOMIA</p>
       </div>
-      <h2 id="calc" className="relative mt-4 text-3xl font-black leading-tight text-ink sm:text-4xl">E se o seu trajeto fosse de bike?</h2>
+      <h2 id="calc" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
       <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
       <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
         <ul className="flex flex-1 justify-around gap-2">
@@ -189,7 +189,7 @@ function CompareBlock({ cards }: { cards: HomeCard[] }) {
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
             <p className="text-xs font-bold tracking-[0.2em] text-mint">COMPARAR BIKES</p>
           </div>
-          <h2 id="comparar" className="mt-4 text-3xl font-black leading-tight sm:text-4xl">Em dúvida entre dois modelos?</h2>
+          <h2 id="comparar" className="section-h2 mt-4">Em dúvida entre dois modelos?</h2>
           <p className="mt-2 max-w-md text-ink-foreground/80">Coloque as opções lado a lado e decida com calma. Por enquanto, explore os modelos e preços no Radar.</p>
           <Link to="/acompanhamento" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
             Explorar modelos no Radar <ArrowRight className="h-4 w-4" aria-hidden="true" />

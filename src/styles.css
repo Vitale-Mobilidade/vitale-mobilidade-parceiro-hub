@@ -333,12 +333,12 @@
 @utility entry-h1 {
   margin-top: 1rem;
   max-width: 48rem;
-  font-size: 2.5rem;
-  line-height: 1.04;
+  font-size: 2.6rem;
+  line-height: 1.02;
   font-weight: 900;
   letter-spacing: -0.025em;
-  @media (min-width: 640px) { font-size: 3.5rem; }
-  @media (min-width: 1024px) { font-size: 4.25rem; }
+  @media (min-width: 640px) { font-size: 3.75rem; }
+  @media (min-width: 1024px) { font-size: 4.5rem; }
 }
 @utility entry-lead {
   margin-top: 1.5rem;
