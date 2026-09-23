@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeMobilityCost, computeQuickMobilityCost, type CostInput } from "./cost-engine";
+import { computeMobilityCost, computeQuickMobilityCost, computeAnnualMobilityCost, normalizeOptionalSpend, MobilityCostEngine, type CostInput } from "./cost-engine";
 import { QUICK_BIKE_COST, WEEKS_PER_MONTH } from "./config";
 
 const bike = { energyCostPerKm: 0.05, maintenanceMonthly: 30 };
