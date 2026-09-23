@@ -407,3 +407,10 @@ continuam não implementadas e sem links públicos.
 - Evidência local: teste dirigido `src/lib/sitemap.test.ts` (3) passou; preview 200 com 74 URLs (14 estáticas, 30 bikes, 30 radar); HEAD 200. Build/suíte não rodados; falta validar no domínio após publicação.
 - Etapa 2 continua **Parcial** (OG dinâmico, JSON-LD de entidades e canonical radar↔bikes pendentes).
 - Rollback: remover a rota e `src/lib/sitemap.ts`, restaurar o arquivo estático. Sem banco, Sheets, Quiz, Radar UI ou links afiliados.
+
+## Publicação do sitemap dinâmico (23/09/2026, PUBLICADO)
+
+- O `/sitemap.xml` dinâmico (Etapa 2 SEO/GEO) foi **publicado** no deployment `54522b21-5da7-4627-9976-38cb4b505f2d` em `vitalemobilidade.com`. Deployment anterior registrado para rollback: `aa69f616-8cca-4a98-b815-27f0a2f4ee62`. Commit de código: `ad33b366be6651df159329d560994e674872a2de`.
+- Evidência: `pnpm validate` exit 0 (typecheck, 30 testes básicos, build); 3 testes dirigidos (`src/lib/sitemap.test.ts`) passaram; `GET /sitemap.xml` retornou 200 `application/xml` com 74 URLs (14 estáticas, 30 `/bikes/{slug}`, 30 `/radar/{bikeId}`); `HEAD` 200; exemplo verificado: `/bikes/v8-ultra` e `/radar/v8_ultra`. Sem aliases (`/acompanhamento`, `/calc`) e sem URLs `noindex` no sitemap.
+- Escopo desta publicação: somente frontend/docs (rota `src/routes/sitemap[.]xml.ts` e `src/lib/sitemap.ts`). Sem mudanças em Quiz, Supabase, Sheets, writers, Radar UI ou links afiliados.
+- Status: Etapa 2 continua **Parcial** (OG dinâmico, JSON-LD de entidades e canonical radar↔bikes pendentes). Esta publicação NÃO declara a Etapa 2 concluída.
