@@ -150,7 +150,7 @@ const Acompanhamento = () => {
               </div>
               <div className="min-w-0">
                 <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><LineChart className="h-4 w-4 text-action" aria-hidden="true" /> Histórico diário registrado</p>
-                <DailyPriceChart series={featured.daily} />
+                <DailyPriceChart series={featured.metrics.series} />
               </div>
             </div>
           </section>

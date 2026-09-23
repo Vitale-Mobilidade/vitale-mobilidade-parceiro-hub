@@ -24,6 +24,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getHomeCards } from "@/lib/home-cards.functions";
+import { PriceStatus } from "@/components/site/site-ui";
+import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData } from "@tanstack/react-router";
 
@@ -783,10 +785,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   // Leitura pública read-only para saber quais bikes têm página no Radar (link só se existir).
   const fetchRadarIds = useServerFn(getHomeCards);
   const radarQuery = useQuery({ queryKey: ["radar-ids"], queryFn: () => fetchRadarIds(), staleTime: 300_000 });
-  const radarIds = useMemo(
-    () => new Set<string>(radarQuery.data?.ok ? radarQuery.data.search.map((b) => b.id) : []),
+  // Preço/status só do Radar real; sem entrada, nada é exibido. internalPrice segue oculto.
+  const radarById = useMemo(
+    () => new Map(radarQuery.data?.ok ? radarQuery.data.search.map((b) => [b.id, b] as const) : []),
     [radarQuery.data],
   );
+  const radarIds = radarById;
 
   const trackEvent = (event_name: string, payload: Record<string, any> = {}) => {
     const finalPayload = { ...(baseLeadData ?? {}), ...payload };
@@ -1075,6 +1079,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             </div>
             <div>
               <h2 className="text-[26px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.primary.name}</h2>
+              <RadarPriceLine item={radarById.get(recommendation.primary.id)} />
               <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.primary.shortDescription}</p>
               <BikeSpecsRow bike={recommendation.primary} />
               <ul className="space-y-2 mb-5">
@@ -1130,6 +1135,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               </div>
               <div>
                 <h3 className="text-[24px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.secondary.name}</h3>
+                <RadarPriceLine item={radarById.get(recommendation.secondary.id)} />
                 <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.secondary.shortDescription}</p>
                 <BikeSpecsRow bike={recommendation.secondary} />
                 <ul className="space-y-2 mb-5">
@@ -1204,7 +1210,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <div key={idx} className="bg-card border border-line rounded-2xl p-4">
                   <div className="mb-3 flex items-center gap-3">
                     <img src={bike.image} alt="" width={72} height={54} loading="lazy" decoding="async" className="h-14 w-18 shrink-0 rounded-lg bg-surface object-contain p-1" />
-                    <div className={`text-[16px] font-bold ${idx === 0 ? "text-action" : "text-ink"}`}>{bike.name}</div>
+                    <div className="min-w-0">
+                      <div className={`text-[16px] font-bold ${idx === 0 ? "text-action" : "text-ink"}`}>{bike.name}</div>
+                      {radarById.get(bike.id) && <div className="text-sm font-semibold text-action">{formatBRL(radarById.get(bike.id)!.currentPrice)}</div>}
+                    </div>
                   </div>
                   <dl className="space-y-2 text-[15px]">
                     <div className="flex justify-between gap-3">
@@ -1242,6 +1251,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                       <img src={b.image} alt="" width={160} height={112} loading="lazy" decoding="async" className="h-full w-auto object-contain p-2" />
                     </div>
                     <div className={`font-bold ${i === 0 ? "text-action" : "text-ink"}`}>{b.name}</div>
+                    {radarById.get(b.id) && <div className="text-sm font-semibold text-action">{formatBRL(radarById.get(b.id)!.currentPrice)}</div>}
                   </div>
                 ))}
 
@@ -1376,6 +1386,17 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 }
 
 // ---------- Bike specs row ----------
+function RadarPriceLine({ item }: { item?: { currentPrice: number; classification: import("@/lib/price-tracker").Classification } }) {
+  if (!item) return null;
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <span className="text-2xl font-extrabold text-action">{formatBRL(item.currentPrice)}</span>
+      <PriceStatus classification={item.classification} />
+      <span className="w-full text-sm text-muted-foreground">Preço atual registrado pelo Radar da Vitale.</span>
+    </div>
+  );
+}
+
 function BikeSpecsRow({ bike }: { bike: any }) {
   return (
     <div className="flex flex-wrap gap-2 mb-4 text-[13px] sm:text-sm">

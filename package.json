@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "test": "vitest run --config vitest.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate": "tsc --noEmit && vitest run --config vitest.config.ts src/test/routes.test.ts src/test/quiz-radar-regression.test.ts src/lib/radar-rankings.test.ts && vite build"
   },
   "overrides": {
     "rolldown": "1.2.1"

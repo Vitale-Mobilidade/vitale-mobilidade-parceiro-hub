@@ -25,7 +25,7 @@ interface Props {
 }
 
 const CONSENT_LABEL =
-  "Autorizo a Vitale Mobilidade a usar meu WhatsApp para me avisar sobre queda de preço desta bike.";
+  "Autorizo a Vitale Mobilidade a registrar meu WhatsApp com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
 
 export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, currentPrice }: Props) {
   const [name, setName] = useState("");
@@ -84,7 +84,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BellRing className="h-5 w-5 text-primary" aria-hidden="true" /> Quero ser avisado quando baixar
+            <BellRing className="h-5 w-5 text-primary" aria-hidden="true" /> Registrar alerta de preço
           </DialogTitle>
           <DialogDescription>
             {bikeName} — preço de referência de hoje: <strong>{formatBRL(currentPrice)}</strong>.
@@ -94,7 +94,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
         {status === "done" ? (
           <div className="space-y-3 text-sm">
             <p className="rounded-xl bg-green-50 p-4 text-foreground">
-              Alerta registrado. O envio automático será ativado na próxima etapa.
+              Interesse registrado. O envio automático de avisos ainda não está ativo, então não enviaremos mensagem por enquanto.
             </p>
             <Button className="w-full" onClick={() => onOpenChange(false)}>
               Fechar
@@ -119,7 +119,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Quando avisar</legend>
+              <legend className="text-sm font-medium">Condição do alerta</legend>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="radio"
@@ -174,7 +174,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
               Registrar alerta
             </Button>
             <p className="text-xs text-muted-foreground">
-              Registraremos seu alerta. O envio automático será ativado na próxima etapa.
+              Registramos seu interesse. O envio automático de avisos ainda não está ativo.
             </p>
           </form>
         )}
