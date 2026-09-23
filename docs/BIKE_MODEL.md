@@ -140,3 +140,20 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 - Falha isolada: erro na RPC é logado; snapshot, overrides, Radar, Quiz, histórico, afiliados e jobs seguem. Próxima execução repara (idempotente).
 - Testes dirigidos: `src/lib/bike-projection.test.ts` (3) + `bike-catalog.test.ts` — 35 passaram.
 - Pendente: confirmar na próxima execução agendada (HH:07) via `detail.bikesProjection`; sync manual em produção não foi forçado.
+
+## 15. Etapa 8 — Oferta/preço/link separado de Bike (shadow, 23/09/2026)
+
+**Objetivo:** bike mantém `bike_id` estável enquanto anúncio, preço e link mudam; preço e link sempre no mesmo registro.
+
+**Schema + backfill (aplicado):** migration `20260923064500_6637a3c1-…`. Tabela `public.bike_offers` com FK a `bikes`, `id` próprio, `source='sheet'`, `url` exata (sem normalizar), `price>0`, `sheet_status`, `sheet_eligible`, `override_eligible`, `quiz_eligible` (= status eligible ∧ sheetEligible ∧ override, mesmas condições do Radar), `is_current`, `first_seen_at`, `synced_at`, `verified_at` (NULL — sem verificação humana inventada), `ended_at`/`end_reason`. Índice único parcial: no máximo 1 oferta atual por bike/fonte. Sem vendedor/listing ID. RLS ligado, sem acesso anon/authenticated; só service_role. Backfill na mesma migration com asserts fail-fast: 30 atuais, 0 divergências de preço/URL vs snapshot, 20 elegíveis = RPC do Radar.
+
+**Writer (implantado):** RPC `project_bike_offers_from_snapshot` (INVOKER, search_path fixo, EXECUTE só service_role), chamada pelo `sync-bike-catalog`/sync-now logo após a projeção de `bikes`. Mesma URL → atualiza preço/flags só se mudou; URL diferente → encerra atual (`link_changed`) e cria nova; preço ou link inválido → encerra atual (`invalid_price`/`invalid_link`) sem criar nova (UI futura: "Link indisponível no momento"). Nunca apaga. Bike ausente de `bikes` é pulada (sem oferta órfã). Falha isolada e logada em `bike_sync_runs.detail.offersProjection`; próxima execução repara.
+
+**Pendente:** primeira execução automática (HH:07) a conferir; **cutover de leitura NÃO realizado** — Quiz, Radar, `/bikes` e CTAs continuam lendo o snapshot (Etapa 9).
+
+**Aceite:** 30/30 atuais, 0 divergências, 20 elegíveis, Quiz/Radar 20, grants fechados — atendido no backfill.
+**Rollback não destrutivo:** reverter a chamada no `bike-sync.ts` e reimplantar; tabela e histórico preservados; nenhum leitor depende dela.
+
+**Revisão 8 perspectivas (pré/pós):** Produto — modelo pronto para vitrine sem trocar leitores. CTO — atômico por lote, idempotente, constraint garante 1 atual. IA — N/A. Segurança — RLS fechado, função só service_role. UX/CX — nada visível muda; preço e link nunca de anúncios diferentes. Growth — links meli.la byte a byte, analytics intocado. PMO — Etapa 8 schema+writer feitos; primeira execução e cutover pendentes.
+
+**Riscos residuais:** elegibilidade do Quiz real também depende de imagem/perfil para bikes novas (não copiado para `quiz_eligible`); `synced_at` só muda quando algo muda; `verified_at` sem processo definido.
