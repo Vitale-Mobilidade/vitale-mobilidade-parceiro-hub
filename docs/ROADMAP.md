@@ -331,3 +331,33 @@ e nenhum ativo de marca existente em `public/` é a imagem que a página mostra.
 não são exibidos nesta página. Pendência: quando houver uma imagem real desta página (ou decisão de criar uma
 arte 1200x630 aprovada), adicionar `og:image`/`twitter:image` no `head()` da rota. Até lá, o compartilhamento usa
 título e descrição.
+
+### Refação para ferramenta rápida em uma tela (23/09/2026, PREVIEW, não publicado)
+
+Direção de produto corrigida após a primeira calculadora: `/calculadoras/economia` deixou de ser um wizard técnico de
+três etapas e passou a ser o padrão de experiência antes da expansão das demais calculadoras. As outras oito rotas
+continuam não implementadas e sem links públicos.
+
+- **Uma tela e resultado reativo:** sem etapas, submit ou botão Calcular. O topo continua compacto; a área principal
+  reúne modal atual, gasto mensal aproximado, km/dia, dias/semana, percentual substituível e orçamento opcional, mais
+  o toggle de garupa. Todos começam vazios/sem seleção. O resultado só aparece quando os obrigatórios são válidos;
+  erros locais usam `aria-invalid`/`aria-describedby`. Orçamento oferece sem limite, presets de R$ 5/7/10/15 mil e
+  outro valor; zero, negativo, não finito ou fora de `LIMITS.budget` nunca vira “sem limite”.
+- **Contrato rápido no `MobilityCostEngine`:** preservado o cálculo detalhado anterior e adicionado `computeQuick`.
+  `gastoSubstituível = gastoMensal × percentual`; `kmSubstituídos = km/dia × dias/semana × 52/12 × percentual`;
+  `custoBike = kmSubstituídos × R$ 0,05/km + R$ 30/mês quando há uso`; `economiaMensal = gastoSubstituível − custoBike`;
+  anual = mensal × 12. As duas premissas operacionais ficam centralizadas em `QUICK_BIKE_COST` e expostas em “Como
+  calculamos?”. Para carro/moto, o gasto informado exclui seguro, IPVA e custos fixos do veículo mantido. Compra da
+  bike não entra na economia operacional. Zero e resultado negativo são preservados.
+- **Até duas bikes reais:** `recommendQuickComparison` mantém os filtros rígidos existentes (elegibilidade, oferta
+  atômica atual, preço positivo, link `meli.la`, autonomia com margem, capacidade e orçamento). Mostra a compatível de
+  menor preço e, quando existe, uma alternativa distinta priorizada por autonomia/capacidade. Sem score e sem “melhor
+  bike”. Mudanças em km, orçamento, garupa ou percentual atualizam a lista; 0% mostra nenhuma bike.
+- **Projeções:** `MobilityProjectionEngine` calcula custo acumulado do trajeto atual e da bike (preço real da oferta +
+  operação) em 12/24/36 meses, payback apenas com economia mensal positiva e saldo `economiaMensal × meses − preço`.
+  Um SVG local, sem biblioteca de gráfico, destaca a bike selecionada sem recarregar. Cards mostram imagem, fatos,
+  preço/fonte, autonomia/capacidade, motivo, payback/saldos e somente CTAs reais: bike, Radar quando monitorada e link
+  afiliado direto com analytics não bloqueante. Nenhum CTA de comparação ou caixa genérica foi adicionado.
+- **Limites e escopo:** estimativas não são garantias e excluem financiamento, inflação, revenda, depreciação e
+  imprevistos. SSR, metadata/canonical/JSON-LD, leitores e links existentes foram preservados. Sem alteração em Quiz,
+  Radar, banco, RLS, Sheets, ofertas, links, scripts operacionais ou publicação.
