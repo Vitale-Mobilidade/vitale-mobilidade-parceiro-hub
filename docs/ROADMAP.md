@@ -390,3 +390,10 @@ continuam não implementadas e sem links públicos.
 - Economia e Payback (23/09/2026, PREVIEW): campo "% substituível" removido; entradas agora são gasto/km/dias só dos trajetos que faria de bike (100% interno). Recomendação rápida: alternativa exige vantagem verificável (≥25% autonomia ou mais lugares), cards mostram tradeoff e folga até o teto, rodapé com link opcional ao Quiz. 
 - Varredura global (23/09/2026, PREVIEW): campo % removido de Uber, Carro/Moto (componente compartilhado) e Custo anual (agora valor opcional em R$, `computeAnnualMobilityCost` aceita `replaceableMonthly`, percentual antigo mantido por compatibilidade). `RecommendationFooter` + link ao Quiz em todas as rotas com bikes; orçamento/garupa das rotas de tempo movidos para junto das bikes.
 - [x] Calculadoras: filtro opcional de subidas por marcação positiva do catálogo do Quiz (PREVIEW).
+
+## Publicação das 9 calculadoras (23/09/2026, PUBLICADO)
+
+- As 9 rotas `/calculadoras/{economia, payback, custo-anual-mobilidade, uber-vs-bike, carro-vs-bike, moto-vs-bike, transporte-publico-vs-bike, tempo-no-transito, tempo-recuperado}` foram **publicadas** no deployment `aa69f616-8cca-4a98-b815-27f0a2f4ee62` em `vitalemobilidade.com`. Deployment anterior registrado para rollback: `c34a77c9-6b57-4934-8952-d0bd84aaddcf`. Commit de código: `c11b7f2bd476350b69fe55d16605afcc1588ddae`.
+- Evidência: `pnpm validate` exit 0 (typecheck, 30 testes básicos, build); 84 testes dirigidos de mobilidade passaram; smoke HTTP das 9 rotas retornou 200 após a publicação.
+- Escopo desta publicação: somente frontend e docs. Sem mudanças em Quiz `/escolherbike`, Supabase, Sheets, writers ou links afiliados.
+- Status: as 9 calculadoras estão publicadas. Isso NÃO marca outras etapas inteiras como concluídas nem comprova analytics de conversão.
