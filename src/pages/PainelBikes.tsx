@@ -262,16 +262,6 @@ export default function PainelBikes() {
   );
 
 
-  useEffect(() => {
-    document.title = "Painel do catálogo de bikes | Vitale Mobilidade";
-    const robots = document.querySelector('meta[name="robots"]') ?? (() => {
-      const m = document.createElement("meta");
-      m.setAttribute("name", "robots");
-      document.head.appendChild(m);
-      return m;
-    })();
-    robots.setAttribute("content", "noindex, nofollow");
-  }, []);
 
   const logout = useCallback(async (tok?: string | null) => {
     if (tok) {
