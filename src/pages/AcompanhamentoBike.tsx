@@ -6,12 +6,11 @@ import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, BikeMedia, PriceStatus, SectionHeading } from "@/components/site/site-ui";
-import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
-import { PriceRangeBar } from "@/components/radar/PriceRangeBar";
-import { formatBRL, formatDateBR, formatDateTimeBR, isSafePurchaseLink } from "@/lib/price-tracker";
-import { dailyMetrics, DAILY_WINDOWS, WINDOW_LABEL, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
+import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
+import { formatBRL, isSafePurchaseLink } from "@/lib/price-tracker";
+import { dailyMetrics, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 
