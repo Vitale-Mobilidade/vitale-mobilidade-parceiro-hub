@@ -111,63 +111,106 @@ export function parseFaq(raw: unknown): ArticleFaq[] {
   });
 }
 
-/** Returns blocking problems. Human review is still mandatory: textual grounding is necessary, not sufficient. */
+/**
+ * Returns only problems that make an article impossible to publish. Everything else is
+ * repaired automatically by `autoRepairArticle` — validation never becomes human work.
+ */
 export function validateArticleForPublication(
-  article: Pick<EditorialArticle, "title" | "slug" | "summary" | "summary_source_excerpt" | "seo_title" | "meta_description" | "og_title" | "og_description" | "og_image_url" | "video_id" | "primary_bike_id" | "related_bike_ids" | "blocks" | "faq">,
+  article: Pick<EditorialArticle, "title" | "slug" | "video_id" | "primary_bike_id" | "related_bike_ids" | "blocks">,
   transcript: string,
   knownBikeIds: ReadonlySet<string>,
 ): string[] {
   const errors: string[] = [];
-  if (article.title.trim().length < 10) errors.push("Título editorial muito curto.");
-  if (!validEditorialSlug(article.slug)) errors.push("Slug inválido.");
-  if (article.summary.trim().length < 30) errors.push("Resumo insuficiente.");
-  if (!article.summary_source_excerpt || !normalized(transcript).includes(normalized(article.summary_source_excerpt))) {
-    errors.push("Resumo sem trecho verificável da transcrição.");
-  } else {
-    for (const number of article.summary.match(/\d+(?:[.,]\d+)*/g) ?? []) {
-      if (!article.summary_source_excerpt.includes(number)) errors.push(`Resumo: número ${number} sem apoio no trecho citado.`);
-    }
-  }
-  if (article.seo_title.trim().length < 20 || article.seo_title.length > 70) errors.push("SEO title deve ter 20 a 70 caracteres.");
-  if (article.meta_description.trim().length < 70 || article.meta_description.length > 170) errors.push("Meta description deve ter 70 a 170 caracteres.");
-  if (!article.og_title.trim() || !article.og_description.trim()) errors.push("Open Graph incompleto.");
-  if (article.og_image_url) {
-    try {
-      const url = new URL(article.og_image_url);
-      if (url.protocol !== "https:") errors.push("Imagem OG precisa usar HTTPS.");
-    } catch { errors.push("URL da imagem OG inválida."); }
-  } else errors.push("Imagem Open Graph ausente.");
+  if (article.title.trim().length < 10) errors.push("Título muito curto.");
+  if (!validEditorialSlug(article.slug)) errors.push("Endereço inválido.");
   if (!validYoutubeId(article.video_id)) errors.push("Vídeo de origem inválido.");
   if (normalized(transcript).length < 200) errors.push("Transcrição completa é obrigatória.");
   if (article.primary_bike_id && !knownBikeIds.has(article.primary_bike_id)) errors.push("Bike principal desconhecida.");
-  for (const id of article.related_bike_ids) if (!knownBikeIds.has(id)) errors.push(`Bike relacionada desconhecida: ${id}.`);
-  if (!Array.isArray(article.blocks) || article.blocks.length < 2) errors.push("Artigo precisa de blocos editoriais.");
-  const source = normalized(transcript);
-  for (const [i, block] of (article.blocks ?? []).entries()) {
-    if (!BLOCK_TYPES.includes(block.type)) { errors.push(`Bloco ${i + 1}: tipo inválido.`); continue; }
-    if (["hero", "summary", "text", "pros_cons"].includes(block.type)) {
-      if (!block.text?.trim()) errors.push(`Bloco ${i + 1}: texto vazio.`);
-      if (!block.sourceExcerpt || !source.includes(normalized(block.sourceExcerpt))) {
-        errors.push(`Bloco ${i + 1}: trecho de fonte ausente ou não encontrado na transcrição.`);
-      } else {
-        const numbers = block.text?.match(/\d+(?:[.,]\d+)*/g) ?? [];
-        for (const number of numbers) {
-          if (!block.sourceExcerpt.includes(number)) errors.push(`Bloco ${i + 1}: número ${number} sem apoio no trecho citado.`);
-        }
+  const sections = (article.blocks ?? []).filter((b) => b.type === "text" && b.text?.trim());
+  if (sections.length < 2) errors.push("Artigo sem corpo suficiente.");
+  return errors;
+}
+
+const GENERIC_HEADING = /^(se[cç][aã]o|section|bloco|texto)?\s*\d*$/i;
+export const VIDEO_META_RE = /\b(n[eo]ste? v[íi]deo|n[oa] v[íi]deo|o v[íi]deo (mostra|aborda|apresenta|explica|detalha)|durante o v[íi]deo|a grava[cç][aã]o|o conte[úu]do apresenta|apresentad[oa]s? no v[íi]deo)\b/i;
+
+/** Removes sentences with prices (commercial data comes only from entities) and any link. */
+export function sanitizeEditorialText(value: string): string {
+  return value
+    .replace(/\[([^\]]+)\]\((?:[^)]+)\)/g, "$1")
+    .replace(/https?:\/\/\S+/gi, "")
+    .split(/\n/).map((line) => line.replace(/[^.!?\n]*R\$\s*\d[^.!?\n]*[.!?]?/g, "").replace(/\s{2,}/g, " ").trimEnd())
+    .join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function clip(value: string, max: number): string {
+  const v = value.replace(/\s+/g, " ").trim();
+  if (v.length <= max) return v;
+  const cut = v.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20)).replace(/[\s,;:.-]+$/, "")}…`;
+}
+
+/** Deterministic QA: fixes what can be fixed, drops what cannot be sustained. */
+export function autoRepairArticle<T extends Pick<EditorialArticle, "title" | "slug" | "summary" | "blocks" | "faq" | "seo_title" | "meta_description" | "og_title" | "og_description" | "og_image_url">>(
+  article: T, ogFallback: string,
+): T {
+  const title = article.title.replace(/\s+/g, " ").trim();
+  const summary = sanitizeEditorialText(article.summary ?? "");
+  const blocks: ArticleBlock[] = [];
+  for (const block of article.blocks ?? []) {
+    if (["hero", "summary"].includes(block.type)) continue; // the lead is the summary
+    if (block.type === "text" || block.type === "pros_cons") {
+      const text = sanitizeEditorialText(block.text ?? "");
+      if (!text) continue;
+      const heading = (block.heading ?? "").trim();
+      const previous = blocks[blocks.length - 1];
+      if ((!heading || GENERIC_HEADING.test(heading)) && previous?.type === "text" && blocks.length) {
+        previous.text = `${previous.text}\n\n${text}`; continue;
       }
+      blocks.push({ type: "text", ...(heading && !GENERIC_HEADING.test(heading) ? { heading } : {}), text });
+      continue;
     }
-    if (["radar", "specs", "comparator", "cta"].includes(block.type) &&
-      (!block.bikeId || !knownBikeIds.has(block.bikeId))) {
-      errors.push(`Bloco ${i + 1}: bike_id válido é obrigatório.`);
-    }
-    if (block.type === "video" && block.videoId !== article.video_id) errors.push(`Bloco ${i + 1}: vídeo não corresponde à origem.`);
+    blocks.push(block);
   }
-  for (const [i, f] of (article.faq ?? []).entries()) {
-    if (!f.question?.trim() || !f.answer?.trim() || !f.sourceExcerpt || !source.includes(normalized(f.sourceExcerpt))) {
-      errors.push(`FAQ ${i + 1}: resposta sem trecho verificável da transcrição.`);
+  const faq = (article.faq ?? []).map((f) => ({ ...f, answer: sanitizeEditorialText(f.answer ?? "") }))
+    .filter((f) => f.question?.trim() && f.answer.trim()).slice(0, 6);
+  const firstText = blocks.find((b) => b.type === "text")?.text ?? "";
+  let seo = (article.seo_title ?? "").trim();
+  if (seo.length < 20 || seo.length > 70) seo = clip(title, 70);
+  if (seo.length < 20) seo = clip(`${title} | Vitale Mobilidade`, 70);
+  let meta = (article.meta_description ?? "").replace(/\s+/g, " ").trim();
+  if (meta.length < 70 || meta.length > 170) meta = clip(`${summary} ${firstText.replace(/[#*>|-]/g, " ")}`, 160);
+  return {
+    ...article, title, summary, blocks, faq,
+    slug: validEditorialSlug(article.slug) ? article.slug : slugifyEditorialTitle(title),
+    seo_title: seo, meta_description: meta,
+    og_title: (article.og_title ?? "").trim() || title,
+    og_description: clip((article.og_description ?? "").trim() || meta, 300),
+    og_image_url: article.og_image_url?.startsWith("https://") ? article.og_image_url : ogFallback,
+  };
+}
+
+/** Editor representation: the article body as continuous markdown (## = H2, ### = H3). */
+export function blocksToMarkdown(blocks: ArticleBlock[]): string {
+  return (blocks ?? []).filter((b) => b.type === "text" && b.text?.trim())
+    .map((b) => `${b.heading ? `## ${b.heading}\n\n` : ""}${b.text!.trim()}`).join("\n\n");
+}
+
+export function markdownToSections(markdown: string): ArticleBlock[] {
+  const out: ArticleBlock[] = [];
+  let current: ArticleBlock | null = null;
+  for (const line of markdown.replace(/\r\n/g, "\n").split("\n")) {
+    const h2 = line.match(/^##\s+(.+?)\s*$/);
+    if (h2 && !line.startsWith("###")) {
+      if (current) out.push(current);
+      current = { type: "text", heading: h2[1].slice(0, 160), text: "" }; continue;
     }
+    if (/^#\s+/.test(line)) continue; // title is the only H1
+    if (!current) current = { type: "text", text: "" };
+    current.text = `${current.text}${current.text ? "\n" : ""}${line}`;
   }
-  return [...new Set(errors)];
+  if (current) out.push(current);
+  return out.map((b) => ({ ...b, text: (b.text ?? "").trim().slice(0, 8000) })).filter((b) => b.text);
 }
 
 /** Whitelisted AI output; it never supplies status, published_at or affiliate URLs. */

@@ -44,3 +44,38 @@ export async function adminCall<T>(action: string, payload: Record<string, unkno
 
 export type AdminVideoList = { videos: EditorialVideo[] };
 export type AdminArticleList = { articles: ArticleRow[] };
+
+/** Streams NDJSON progress events from a long-running admin action (article generation). */
+export async function adminStream<T>(action: string, payload: Record<string, unknown>, onProgress: (step: string) => void): Promise<T> {
+  const { data: session } = await supabase.auth.getSession();
+  const token = session.session?.access_token;
+  if (!token) throw new AdminApiError("Sessão expirada. Entre novamente.", 401);
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editorial-admin`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  if (!response.ok || !response.body) {
+    let message = "Não conseguimos gerar o artigo. Tente novamente.";
+    try { const data = await response.json(); if (typeof data.error === "string") message = data.error; } catch { /* keep default */ }
+    throw new AdminApiError(message, response.status);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: true });
+    let cut: number;
+    while ((cut = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, cut).trim(); buffer = buffer.slice(cut + 1);
+      if (!line) continue;
+      const event = JSON.parse(line) as { type: string; step?: string; message?: string } & T;
+      if (event.type === "progress" && event.step) onProgress(event.step);
+      if (event.type === "error") throw new AdminApiError(event.message ?? "Não conseguimos gerar o artigo. Tente novamente.", 422);
+      if (event.type === "done") return event as T;
+    }
+    if (done) break;
+  }
+  throw new AdminApiError("Não conseguimos gerar o artigo. Tente novamente.", 500);
+}

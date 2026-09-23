@@ -14,7 +14,8 @@ export const Route = createFileRoute("/conteudos/$slug")({
     const [catalog, index, videos] = await Promise.all([getBikeCatalog(), getPublishedArticles(),
       article.primaryBikeId ? safeVideos({ bikeId: article.primaryBikeId, limit: 12 }) : Promise.resolve([])]);
     return { article, bikes: catalog.ok ? catalog.bikes : [],
-      relatedArticles: (index ?? []).filter(a => article.relatedArticleIds.includes(a.id)),
+      relatedArticles: (index ?? []).filter(a => a.id !== article.id && (article.relatedArticleIds.includes(a.id) ||
+        (a.primaryBikeId && [article.primaryBikeId, ...article.relatedBikeIds].includes(a.primaryBikeId)))).slice(0, 4),
       relatedVideos: videos.filter(video => video.videoId !== article.videoId) };
   },
   head: ({ loaderData }) => {

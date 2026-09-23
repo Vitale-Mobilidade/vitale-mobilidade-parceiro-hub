@@ -6,27 +6,35 @@ export type BikeDetection = { primaryBikeId: string | null; relatedBikeIds: stri
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
 
-/** Prefer a complete variant (V9 Max 20Ah) over a shorter name contained in it (V9 Max). */
+/** Commercial suffixes that the catalog appends but people rarely say ("duas baterias"). */
+const SUFFIXES = /\s+(duas baterias|2 baterias|bateria dupla|dupla bateria)$/;
+
+/**
+ * Prefer a complete variant (V9 Max 20Ah) over a shorter name contained in it (V9 Max).
+ * In comparisons, the model named first in the title is the primary bike; the others are related.
+ */
 export function detectEditorialBikes(title: string, transcript: string, bikes: BikeCandidate[]): BikeDetection {
   const titleWords = ` ${normalize(title)} `;
   const transcriptWords = ` ${normalize(transcript)} `;
   const matches = bikes.map((bike) => {
-    const names = [bike.name, bike.bike_id.replace(/_/g, " "), ...(bike.aliases ?? [])].map(normalize)
-      .filter((name) => name.length >= 3);
+    const base = [bike.name, bike.bike_id.replace(/_/g, " "), ...(bike.aliases ?? [])].map(normalize);
+    const names = [...new Set([...base, ...base.map((n) => n.replace(SUFFIXES, ""))])].filter((name) => name.length >= 3);
     const best = names.reduce((acc, name) => {
-      const inTitle = titleWords.includes(` ${name} `);
+      const at = titleWords.indexOf(` ${name} `);
       const inTranscript = transcriptWords.includes(` ${name} `);
-      const score = inTitle ? 100 + name.length : inTranscript ? 10 + name.length / 100 : 0;
-      return score > acc.score ? { score, name } : acc;
-    }, { score: 0, name: "" });
+      const score = at >= 0 ? 100 + name.length : inTranscript ? 10 + name.length / 100 : 0;
+      return score > acc.score ? { score, name, at } : acc;
+    }, { score: 0, name: "", at: -1 });
     return { id: bike.bike_id, ...best };
-  }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score);
+  }).filter((item) => item.score > 0);
   const selected = matches.filter((item) => !matches.some((other) =>
-    other !== item && other.score > item.score && other.name.includes(item.name) && other.name !== item.name));
-  const titleMatches = selected.filter((item) => item.score >= 100);
-  const ambiguous = titleMatches.length > 1 && titleMatches[0].score - titleMatches[1].score < 10;
-  return { primaryBikeId: ambiguous ? null : selected[0]?.id ?? null,
-    relatedBikeIds: selected.slice(0, 8).map((item) => item.id).filter((id) => id !== (ambiguous ? null : selected[0]?.id)), ambiguous };
+    other !== item && other.name.length > item.name.length && other.name.includes(item.name) &&
+    (other.score >= 100) === (item.score >= 100)));
+  const inTitle = selected.filter((item) => item.score >= 100).sort((a, b) => a.at - b.at);
+  const rest = selected.filter((item) => item.score < 100).sort((a, b) => b.score - a.score);
+  const ordered = [...inTitle, ...rest];
+  const primary = ordered[0]?.id ?? null;
+  return { primaryBikeId: primary, relatedBikeIds: ordered.slice(1, 8).map((i) => i.id), ambiguous: false };
 }
 
 export function detectContentType(title: string): ContentType {
@@ -51,43 +59,54 @@ export function youtubeThumbnailUrl(id: string, variant: string): string {
 
 export const EDITORIAL_OG_FALLBACK = "https://vitalemobilidade.com/vitale-hero-v2-1280.webp";
 
+export function videoHeading(contentType?: ContentType): string {
+  return contentType === "comparison" ? "Assista ao comparativo completo"
+    : contentType === "guide" || contentType === "tips" ? "Veja as explicações em vídeo"
+    : "Veja o teste completo em vídeo";
+}
+
+/**
+ * Deterministic page layout. Only editorial text comes from the writer; video, Radar,
+ * comparison, offer, Quiz and FAQ are connected from real entities in fixed, natural positions.
+ */
+export function layoutArticle(input: {
+  sections: ArticleBlock[]; videoId: string; bikeId: string | null; relatedBikeIds?: string[];
+  contentType?: ContentType; offerBikeIds: ReadonlySet<string>; hasFaq: boolean;
+}): ArticleBlock[] {
+  const sections = input.sections.filter((b) => b.type === "text" && b.text?.trim());
+  const n = sections.length;
+  const compared = input.bikeId ? [input.bikeId, ...(input.relatedBikeIds ?? [])].slice(0, 3) : [];
+  const isComparison = input.contentType === "comparison" && compared.length >= 2;
+  const radarIds = (isComparison ? compared.slice(0, 2) : input.bikeId ? [input.bikeId] : [])
+    .filter((id) => input.offerBikeIds.has(id));
+  const comparatorAt = isComparison ? Math.min(1, n - 1) : -1;
+  const radarAt = radarIds.length ? Math.max(Math.ceil(n / 2), comparatorAt + 1) : -1;
+  const videoAt = Math.min(n - 1, radarAt === 2 ? 3 : 2);
+  const out: ArticleBlock[] = [];
+  sections.forEach((section, i) => {
+    out.push(section);
+    if (i === comparatorAt) out.push({ type: "comparator", bikeId: input.bikeId!, heading: "Comparação lado a lado" });
+    if (i === radarAt) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
+    if (i === videoAt) out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
+  });
+  if (!out.some((b) => b.type === "video")) out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
+  if (radarAt >= n) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
+  if (input.bikeId && input.offerBikeIds.has(input.bikeId)) out.push({ type: "cta", bikeId: input.bikeId });
+  if (input.hasFaq) out.push({ type: "faq" });
+  if (input.bikeId || ["comparison", "guide", "test"].includes(input.contentType ?? "")) out.push({ type: "quiz" });
+  return out;
+}
+
+/** Back-compat helper used by tests and the generator: layout + metadata defaults. */
 export function completeEditorialDraft(input: {
   title: string; slug?: string | null; summary: string; seoTitle: string; metaDescription: string;
   ogTitle: string; ogDescription: string; blocks: ArticleBlock[]; faq: ArticleFaq[];
-  videoId: string; bikeId: string | null; relatedBikeIds?: string[]; contentType?: ContentType; hasCurrentOffer: boolean;
-  addCommercialBlocks?: boolean;
-  ogImageUrl: string | null; relatedArticleIds: string[];
+  videoId: string; bikeId: string | null; relatedBikeIds?: string[]; contentType?: ContentType;
+  offerBikeIds: ReadonlySet<string>; ogImageUrl: string | null; relatedArticleIds: string[];
 }) {
   const title = input.title.trim();
-  const summary = input.summary.trim();
-  const description = (input.metaDescription.trim() || summary).slice(0, 170);
-  const blocks = input.blocks.filter((block) => {
-    if (["summary", "text", "pros_cons"].includes(block.type)) return Boolean(block.text?.trim());
-    if (["radar", "cta"].includes(block.type)) return Boolean(input.bikeId && input.hasCurrentOffer);
-    if (block.type === "comparator") return Boolean(input.bikeId && input.relatedBikeIds?.length);
-    if (block.type === "specs") return Boolean(input.bikeId);
-    return true;
-  }).map((block) => block.type === "video" ? { ...block, videoId: input.videoId } :
-    input.bikeId && ["radar", "specs", "cta", "comparator"].includes(block.type)
-      ? { ...block, bikeId: input.bikeId } : block);
-  if (!blocks.some((block) => block.type === "video")) {
-    blocks.splice(Math.min(2, blocks.length), 0, { type: "video", heading: "Veja o teste original", videoId: input.videoId });
-  }
-  if (input.addCommercialBlocks !== false && input.bikeId && input.hasCurrentOffer && !blocks.some((block) => block.type === "radar")) {
-    const firstEditorial = blocks.findIndex((block) => block.type === "text");
-    blocks.splice(Math.min(blocks.length, Math.max(2, firstEditorial + 1)), 0,
-      { type: "radar", heading: "O preço atual está bom?", bikeId: input.bikeId });
-  }
-  if (input.addCommercialBlocks !== false && input.bikeId && input.hasCurrentOffer && !blocks.some((block) => block.type === "cta")) {
-    blocks.push({ type: "cta", bikeId: input.bikeId });
-  }
-  if (input.relatedArticleIds.length && !blocks.some((block) => block.type === "related")) {
-    blocks.push({ type: "related", heading: "Continue sua pesquisa" });
-  }
-  if (input.addCommercialBlocks !== false && input.contentType === "comparison" && input.bikeId && input.relatedBikeIds?.length &&
-    !blocks.some((block) => block.type === "comparator")) {
-    blocks.push({ type: "comparator", bikeId: input.bikeId, heading: "Compare os modelos citados" });
-  }
+  const description = (input.metaDescription.trim() || input.summary.trim()).slice(0, 170);
+  const faq = input.faq.filter((item) => item.question.trim() && item.answer.trim());
   return {
     title,
     slug: validEditorialSlug(input.slug) ? input.slug : slugifyEditorialTitle(title),
@@ -96,8 +115,9 @@ export function completeEditorialDraft(input: {
     og_title: input.ogTitle.trim() || title,
     og_description: input.ogDescription.trim() || description,
     og_image_url: input.ogImageUrl || EDITORIAL_OG_FALLBACK,
-    blocks,
-    faq: input.faq.filter((item) => item.question.trim() && item.answer.trim() && item.sourceExcerpt.trim()),
+    blocks: layoutArticle({ sections: input.blocks, videoId: input.videoId, bikeId: input.bikeId,
+      relatedBikeIds: input.relatedBikeIds, contentType: input.contentType, offerBikeIds: input.offerBikeIds, hasFaq: faq.length > 0 }),
+    faq,
     related_article_ids: input.relatedArticleIds,
   };
 }
