@@ -158,61 +158,18 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               </div>
             </header>
 
-            <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-              <PriceRangeBar currentPrice={bike.currentPrice} metrics={metrics} />
+            <PriceIntelPanel
+              currentPrice={bike.currentPrice}
+              metrics={metrics}
+              window={window}
+              onWindowChange={(w) => {
+                setWindow(w);
+                trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
+              }}
+              firstObservedAt={bike.firstObservedAt}
+              lastObservedAt={bike.lastObservedAt}
+            />
 
-              <div className="rounded-2xl border border-line bg-card p-6">
-                <h2 className="text-lg font-bold text-ink">Resumo do período ({WINDOW_LABEL[String(window)]})</h2>
-                <dl className="mt-4 divide-y divide-line">
-                  {[
-                    ["Menor verificado", formatBRL(metrics.minPrice)],
-                    ["Preço típico", formatBRL(metrics.typicalPrice)],
-                    ["Maior verificado", formatBRL(metrics.maxPrice)],
-                    ["Cobertura", `${metrics.verifiedDays} de ${metrics.expectedDays} dias`],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-3 py-2.5">
-                      <dt className="text-muted-foreground">{k}</dt>
-                      <dd className="font-bold text-ink">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Acompanhando desde {formatDateBR(bike.firstObservedAt)} · última verificação em{" "}
-                  {formatDateTimeBR(metrics.lastVerifiedAt ?? bike.lastObservedAt)}.
-                  {metrics.reconstructedDays > 0 &&
-                    ` ${metrics.reconstructedDays} dia(s) do período foram reconstruídos do histórico.`}
-                </p>
-              </div>
-            </div>
-
-            <section className="mt-12" aria-labelledby="historico">
-              <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                <SectionHeading id="historico" title="Histórico de preços" sub="Preços diários registrados pela Vitale para esta bike." />
-                <div className="inline-flex flex-wrap rounded-xl border border-line p-1" role="group" aria-label="Período do gráfico">
-                  {DAILY_WINDOWS.map((w) => (
-                    <button
-                      key={String(w)}
-                      type="button"
-                      onClick={() => {
-                        setWindow(w);
-                        trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
-                      }}
-                      aria-pressed={window === w}
-                      className={`min-h-10 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${
-                        window === w ? "bg-action text-primary-foreground" : "text-muted-foreground hover:bg-surface"
-                      }`}
-                    >
-                      {WINDOW_LABEL[String(w)]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <DailyPriceChart series={metrics.series} />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias sem
-                verificação — nunca repetimos um preço que não confirmamos.
-              </p>
-            </section>
 
             <section aria-labelledby="combina" className="relative isolate mt-12 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
               <picture>
