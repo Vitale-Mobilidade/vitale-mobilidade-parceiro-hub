@@ -12,9 +12,9 @@
 - `SiteFooter` B2C único (sem copy de consultoria).
 - `Brand`, `SectionHeading`, `BikeMedia` (imagem real, lazy; ícone quando falta), `PriceStatus` (selo da classificação já calculada; não recalcula), `DisabledCta` (visível, `disabled`/`aria-disabled`, opacidade reduzida).
 
-## Home v2 — revisão visual da página inicial
+## Home v2 — revisão visual da página inicial (publicada em 23/09/2026)
 
-A Home foi redesenhada no rascunho para aproximar a composição da referência visual aprovada. (Texto original dizia "ainda não publicada"; **publicada em 23/09/2026**.)
+A Home foi redesenhada para aproximar a composição da referência visual aprovada e publicada no domínio existente em 23/09/2026.
 
 ### Layout e superfície
 
@@ -41,17 +41,35 @@ A Home foi redesenhada no rascunho para aproximar a composição da referência 
 ### Regras de dados reais e CTAs inativos
 
 - Todos os cards de bikes vêm exclusivamente de `getHomeCards` (`src/lib/home-cards.functions.ts`): `id`, `name`, `currentPrice`, `classification` e `image` do Radar público read-only. Se o Radar falhar ou retornar vazio, a seção mostra apenas o título e um link para `/acompanhamento` — **nenhum card é inventado**.
-- O painel do Radar exibe o primeiro item real; quando inexistente, aparece apenas o texto introdutório e o botão ativo para o Radar.
 - Produtos sem backend (comparador, calculadora, conteúdos editoriais, newsletter) são **arquitetura de UI apenas**. Seus CTAs usam os componentes `InactiveButton` e `ProductLink` (`src/components/home/home-products.tsx`) com `disabled` / `aria-disabled="true"`, cursor `not-allowed` e opacidade reduzida (`opacity-50`).
 - A newsletter não usa `<form>`, não tem `name`/`type="submit"` e o campo de email está `disabled`; a copy "Nenhum email é coletado nesta página" deixa o estado explícito.
 - O único CTA ativo além do Quiz/Radar é o **Grupo de ofertas**, que leva para `/grupodeofertas` (redirecionamento ao WhatsApp).
 
+## Home v2.1 — painéis e assistente manual (publicada em 23/09/2026)
+
+Evolução da Home v2 publicada no mesmo domínio em 23/09/2026, por autorização do responsável. Verificação no domínio público confirmou o H2 "O preço de hoje está bom?" e o fechamento contínuo do Assistente Vitale após 25 segundos sem interação (apenas o botão flutuante visível).
+
+### Painéis principais
+
+- **Radar**: `bg-vt-dark`, eyebrow "RADAR DE PREÇOS", título `font-black` "O preço de hoje está bom?", CTA ativo "Explorar Radar de preços" → `/acompanhamento`.
+  - Vitrine com até 3 mini-cards reais do array `radar` (`BikeMedia`, `formatBRL`, `PriceStatus`).
+  - Contagem real `search.length` bikes monitoradas.
+  - Decoração SVG abstrato `aria-hidden`; nenhum gráfico temporal, queda ou economia simulada.
+- **Calculadora**: card claro, eyebrow "CALCULADORA", título "Quanto você economiza com bike elétrica?", sequência visual carro → Uber → ônibus → bike (`role="img"` com rótulo acessível), sem campos/resultados; CTA ativo "Escolher minha bike" → `/escolherbike`. Funcionalidade real depende da etapa 23.
+- **Comparador**: `bg-ink`, eyebrow "COMPARADOR", título "Compare duas bikes lado a lado", preview de duas fotos reais com selo "VS" em `mint`; CTA ativo "Explorar modelos no Radar" → `/acompanhamento`. Rota `/comparar` ainda não existe.
+
+### Assistente Vitale — `manualOnly` em produção
+
+- A prop `manualOnly` foi aplicada ao `LucasSDRWidget` usado pelo `RadarAssistant` global (`src/routes/__root.tsx`).
+- Comportamento: remove convite flutuante e autoabertura temporizada; o painel só abre quando o usuário clica no botão flutuante.
+- Widget do Quiz (`QuizSDRWidget`) mantém `manualOnly={false}` (default), pois o contexto de quiz já exige interação prévia.
+- O botão flutuante global não abre sozinho após carregamento da página.
+
 ## Superfícies
 
-- Home, Radar (/acompanhamento), detalhe (/acompanhamento/$bikeId) e resultado do Quiz usam header/footer do DS.
+- Home, Radar (`/acompanhamento`), detalhe (`/acompanhamento/$bikeId`) e resultado do Quiz usam header/footer do DS.
 - Detalhe: descrições legadas (slogans) não são exibidas; só perfilIndicado, specs e strengths.
 - Alertas: modal, legenda ("Condição do alerta"), consentimento e confirmação falam em registro de interesse, sem envio ativo (delivery desativado). Campos, condição e envio à função de backend inalterados. UI diz "Registrar alerta de preço" e explicita que o envio automático ainda não está ativo.
-- Assistente Vitale: comportamento baseline preservado (autoabertura revertida na QA). Convite flutuante no mobile = pendência de UX para Growth/CX.
 
 ## Pendências reais (não são promessa de release)
 
@@ -84,28 +102,22 @@ Caminho local das evidências (não incluídas no deploy):
 
 - `pnpm validate` executado e passou: typecheck, 26 testes direcionados e build.
 
-## Status das lentes pós-QA
+## Status das lentes pós-QA (pré-v2.1)
 
 - **CTO**: Pass
 - **Segurança**: Pass
 - **IA**: Pass
 - **CX**: Pass com ressalva — autonomia V8 Ultra divergente na planilha (`strengths` mencionam até 80 km; campo `autonomyKm` = 50). Reconciliação de dados não alterada no código.
 - **Produto/UX/Growth**: ainda **não aprovam release integral**. Catálogo editorial, vídeos, comparador, calculadora e newsletter ainda não estão funcionais, e alguns CTAs permanecem semanticamente desativados.
-- **PMO**: Pass da validação visual/documental após atualizar a evidência do resultado do Quiz, mas **No-Go de publicação** enquanto Produto/UX/Growth e os gates de cutover não forem atendidos.
+- **PMO**: Pass da validação visual/documental após atualizar a evidência do resultado do Quiz, mas **No-Go de publicação** enquanto Produto/UX/Growth e os gates de cutover não fossem atendidos.
+
+> **Atualização pós-publicação v2.1:** a Home v2.1 foi publicada em 23/09/2026 por decisão explícita do responsável, apesar dos gates de cutover e aprovações de Produto/UX/Growth ainda não estarem completos. O status das lentes acima reflete a situação pré-publicação.
 
 ## Escopo implementado vs. pendentes
 
-**Implementado (visual/DS):** header/footer únicos, tokens de cor, Home B2C, Radar, página de bike, resultado do Quiz — tudo usando o mesmo design system e dados reais onde existem.
-**Pendente (produtos/futuros, sem backend pronto):** comparador, calculadora, conteúdos/vídeos, newsletter, galeria de bikes, modelos relacionados, alertas de preço funcional.
+**Implementado (visual/DS):** header/footer únicos, tokens de cor, Home B2C v2 e v2.1, Radar, página de bike, resultado do Quiz — tudo usando o mesmo design system e dados reais onde existem.
+**Pendente (produtos/futuros, sem backend pronto):** comparador funcional, calculadora funcional, conteúdos/vídeos, newsletter, galeria de bikes, modelos relacionados, alertas de preço funcionais.
 
 ## Diferenças em relação às referências visuais
 
 As referências de layout/hierarquia foram seguidas, mas sem dados inventados: não há vídeos, artigos, modelos relacionados, thumbnails fictícias, badges de autonomia percentual, scores de economia ou slogans promocionais. O que existe no acervo real (foto, nome, preço, histórico, specs, perfilIndicado) foi usado; o restante foi omitido.
-
-## Home v2.1 — painéis (rascunho, não publicado)
-
-- Painéis com eyebrow em caixa alta, título-pergunta `font-black` 3xl/4xl, CTA ativo largura total no mobile.
-- Radar: `bg-vt-dark`, até 3 mini-cards reais (`BikeMedia`, `formatBRL`, `PriceStatus`), contagem `search.length`; decoração só SVG abstrato `aria-hidden`.
-- Calculadora: sequência de modais → bike (`role="img"` com rótulo), sem campos/resultados; CTA para `/escolherbike`.
-- Comparador: `bg-ink`, duas fotos reais com selo VS `mint`, sem specs/vencedor; CTA para `/acompanhamento`.
-- Assistente global com `manualOnly`: sem convite/autoabertura; só clique.
