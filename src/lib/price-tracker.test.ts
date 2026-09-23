@@ -140,6 +140,27 @@ describe("catálogo público", () => {
     expect(entries.map((e) => e.id)).toEqual(["a", "z"]);
   });
 
+  it("com includeWithoutOffer, mantém bike sem link com o último preço registrado e sem oferta", () => {
+    const entries = buildTrackerEntries(
+      [
+        bike({ id: "a", name: "Álfa", currentPrice: 100, points: [{ t: day(1), price: 100 }] }),
+        {
+          ...bike({ id: "v35", name: "V35", currentPrice: 11500, points: [{ t: day(13), price: 11500 }] }),
+          link: "",
+        },
+        // Sem preço histórico nenhum: continua fora, mesmo com a opção ligada.
+        { ...bike({ id: "vazio", name: "Vazio", currentPrice: 0, points: [] }), link: "" },
+      ] as TrackerBike[],
+      30,
+      NOW,
+      { includeWithoutOffer: true },
+    );
+    expect(entries.map((e) => e.id)).toEqual(["a", "v35"]);
+    expect(entries.find((e) => e.id === "v35")?.hasCurrentOffer).toBe(false);
+    expect(entries.find((e) => e.id === "v35")?.currentPrice).toBe(11500);
+    expect(entries.find((e) => e.id === "a")?.hasCurrentOffer).toBe(true);
+  });
+
   it("clampWindow aceita somente 7/30/90", () => {
     expect(clampWindow(1)).toBe(7);
     expect(clampWindow(30)).toBe(30);
