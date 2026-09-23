@@ -2,33 +2,47 @@
  * Contrato único de analytics de clique afiliado (dataLayer/GTM).
  * SEM PII: nunca envia nome, e-mail, telefone, texto livre ou URL completa.
  * Disparo não bloqueante: nunca usa preventDefault, await ou rede síncrona.
+ *
+ * Entrada pública aceita APENAS bike_id e position:
+ * - route vem exclusivamente de window.location.pathname (sem query/hash),
+ *   restrito às rotas que emitem o evento (/bikes/{slug}, /radar, /radar/{bikeId});
+ * - destination é constante "mercado_livre";
+ * - bike_id validado com a regex canônica do projeto (BIKE_ID_RE);
+ * - position validado com allowlist em runtime.
+ * Tipos TypeScript não são validação em runtime — tudo é revalidado aqui.
  */
+
+import { BIKE_ID_RE } from "./bike-identity";
 
 export const AFFILIATE_CLICK_EVENT = "affiliate_click";
 
 /** Posições permitidas — enum fechado, sem texto livre. */
-export type AffiliatePosition =
-  | "bike_detail_hero"
-  | "bike_detail_final"
-  | "radar_detail"
-  | "radar_highlight"
-  | "radar_catalog";
+export const AFFILIATE_POSITIONS = [
+  "bike_detail_hero",
+  "bike_detail_final",
+  "radar_detail",
+  "radar_highlight",
+  "radar_catalog",
+] as const;
 
-export type AffiliateClickPayload = {
+export type AffiliatePosition = (typeof AFFILIATE_POSITIONS)[number];
+
+/** Entrada pública: somente bike_id e position. Nenhum outro campo é aceito. */
+export type AffiliateClickInput = {
   bike_id: string;
   position: AffiliatePosition;
-  /** Caminho da rota (sem query, sem hash). */
-  route?: string;
-  /** Destino do link — sempre o domínio, nunca a URL completa. */
-  destination?: "mercado_livre";
 };
 
-const ALLOWED_KEYS = new Set(["bike_id", "position", "route", "destination"]);
+const POSITIONS = new Set<string>(AFFILIATE_POSITIONS);
+
+/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}. */
+const ALLOWED_ROUTE_RE = /^\/bikes\/[a-z0-9-]+$|^\/radar(\/[a-z0-9_]+)?$/;
 
 function currentRoute(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
-    return window.location.pathname;
+    const path = window.location.pathname; // nunca inclui query/hash
+    return ALLOWED_ROUTE_RE.test(path) ? path : undefined;
   } catch {
     return undefined;
   }
@@ -36,30 +50,28 @@ function currentRoute(): string | undefined {
 
 /**
  * Empurra o evento no dataLayer. Falha silenciosa: analytics nunca bloqueia
- * nem altera a navegação do link afiliado.
+ * nem altera a navegação do link afiliado. Qualquer dado fora do contrato
+ * (ou com valor inválido) impede a emissão.
  */
-export function trackAffiliateClick(payload: AffiliateClickPayload) {
+export function trackAffiliateClick(input: AffiliateClickInput) {
   if (typeof window === "undefined") return;
-  const merged: Record<string, unknown> = {
-    destination: "mercado_livre",
-    route: currentRoute(),
-    ...payload,
-  };
-  const safe: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(merged)) {
-    if (!ALLOWED_KEYS.has(k)) continue;
-    if (typeof v !== "string") continue;
-    const trimmed = v.trim();
-    if (!trimmed) continue;
-    // Nunca enviar URL completa.
-    if (/^https?:\/\//i.test(trimmed)) continue;
-    safe[k] = trimmed;
-  }
-  if (!safe.bike_id || !safe.position) return;
   try {
+    const bikeId = typeof input?.bike_id === "string" ? input.bike_id.trim() : "";
+    // Position: correspondência exata com a allowlist (sem trim/normalização).
+    const position = typeof input?.position === "string" ? input.position : "";
+    if (!BIKE_ID_RE.test(bikeId)) return;
+    if (!POSITIONS.has(position)) return;
+    const safe: Record<string, unknown> = {
+      event: AFFILIATE_CLICK_EVENT,
+      destination: "mercado_livre",
+      bike_id: bikeId,
+      position,
+    };
+    const route = currentRoute();
+    if (route) safe.route = route;
     const w = window as unknown as { dataLayer?: Record<string, unknown>[] };
     w.dataLayer = w.dataLayer || [];
-    w.dataLayer.push({ event: AFFILIATE_CLICK_EVENT, ...safe });
+    w.dataLayer.push(safe);
   } catch {
     /* analytics nunca quebra a página */
   }
