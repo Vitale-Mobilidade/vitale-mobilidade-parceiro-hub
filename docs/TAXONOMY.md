@@ -103,9 +103,12 @@ Fora do sitemap: painel (bloqueado no robots.txt), aliases 301 (`/acompanhamento
 
 ### 7.4 Heróis temáticos das páginas estruturais (23/09/2026, prévia)
 
-Apenas Home, `/bikes` e `/acompanhamento` usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, detalhe de bike e páginas internas não seguem esse padrão.
+Apenas Home, `/bikes` e o Radar (`/radar`) usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, `/ferramentas`, detalhe de bike e páginas internas não seguem esse padrão.
 
+## 8. Radar canônico em `/radar` (Etapa 9 — publicada)
 
-## Radar: rotas-alvo em preview (Etapa 9)
+`/radar` e `/radar/{bikeId}` são as rotas canônicas do Radar, com canonical próprio. `/acompanhamento[/{bikeId}]` responde 301 antes do SSR, preservando `bikeId` literal e query/UTM. Menu, rodapé, Home, `/bikes`, cards, busca, assistente e sitemap apontam para `/radar`.
 
-`/radar` e `/radar/{bikeId}` existem em preview reutilizando a mesma implementação de `/acompanhamento` (loader, página, 503/404). Cada rota tem canonical próprio até o cutover. O menu global, a Home e o sitemap continuam apontando para `/acompanhamento`; sem redirect até aprovação.
+## 9. `/ferramentas` (23/09/2026, prévia)
+
+Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/escolherbike`), Radar (`/radar`) e catálogo (`/bikes`). Comparador e calculadora aparecem em bloco "Em construção", sem CTA, sem número ou resultado. Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
