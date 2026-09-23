@@ -37,6 +37,7 @@ export function parseArchived(raw: unknown[]): ArchivedBike[] {
         name,
         image: typeof x.image === "string" && /^https:\/\/[^\s"<>]+$/.test(x.image) ? x.image : null,
         lastObservedAt: typeof x.lastObservedAt === "string" ? x.lastObservedAt : null,
+        lastConfirmedAt: lastConfirmedDay(Array.isArray(x.daily) ? (x.daily as DailyPoint[]) : [])?.date ?? null,
         lastObservedPrice:
           typeof x.lastObservedPrice === "number" && Number.isFinite(x.lastObservedPrice) && x.lastObservedPrice > 0
             ? x.lastObservedPrice
