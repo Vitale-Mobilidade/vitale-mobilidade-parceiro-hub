@@ -44,6 +44,7 @@ export function buildBikeProjectionRows(bikes: SnapshotBike[]): BikeProjectionRo
     const img = /^https:\/\/[^\s"'<>]+$/.test(rawImg) ? rawImg : null;
     const desc = typeof b.description === "string" && b.description.trim() ? b.description.trim() : null;
     const short = typeof b.shortDescription === "string" && b.shortDescription.trim() ? b.shortDescription.trim() : null;
+    const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
     rows.push({
       bike_id: b.id,
       name: String(b.name ?? "").trim(),
@@ -52,6 +53,9 @@ export function buildBikeProjectionRows(bikes: SnapshotBike[]): BikeProjectionRo
       image_url: img,
       description: desc,
       short_description: short,
+      category: text(b.category),
+      autonomy_label: text(b.autonomyLabel),
+      capacity_label: text(b.capacityLabel),
     });
   }
   return rows;
