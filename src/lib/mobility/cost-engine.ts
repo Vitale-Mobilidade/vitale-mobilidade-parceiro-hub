@@ -14,7 +14,7 @@
  *
  * Economia <= 0 é retornada como está. Nunca há valor "padrão".
  */
-import { LIMITS, WEEKS_PER_MONTH, roundMoney } from "./config";
+import { LIMITS, QUICK_BIKE_COST, WEEKS_PER_MONTH, roundMoney } from "./config";
 
 export type Modal = "carro" | "moto" | "uber" | "transporte_publico" | "misto";
 
@@ -65,6 +65,15 @@ export type CostBreakdown = {
 };
 
 export type CostResult = { ok: true; data: CostBreakdown } | { ok: false; errors: string[] };
+
+export type QuickCostInput = {
+  modal: Modal;
+  /** Gasto mensal evitável informado pelo usuário. Para carro/moto, não inclui custos fixos mantidos. */
+  monthlySpend: number;
+  daysPerWeek: number;
+  dailyKm: number;
+  replaceablePercent: number;
+};
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
@@ -173,4 +182,47 @@ export function computeMobilityCost(input: CostInput): CostResult {
   };
 }
 
-export const MobilityCostEngine = { compute: computeMobilityCost };
+/**
+ * Modo rápido: preserva o mesmo CostBreakdown do motor detalhado, mas parte do gasto mensal
+ * evitável informado pelo usuário e das premissas operacionais centrais da bike.
+ */
+export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
+  const errors: string[] = [];
+  const validModal = ["carro", "moto", "uber", "transporte_publico", "misto"].includes(input.modal);
+  if (!validModal) errors.push("Modal de transporte inválido.");
+  const okSpend = checkRange(errors, "Gasto mensal aproximado", input.monthlySpend, LIMITS.monthlyMoney);
+  const okDays = checkRange(errors, "Dias por semana", input.daysPerWeek, LIMITS.daysPerWeek);
+  const okKm = checkRange(errors, "Distância por dia", input.dailyKm, LIMITS.dailyKm);
+  const okPct = checkRange(errors, "Percentual substituível", input.replaceablePercent, LIMITS.replaceablePercent);
+  if (errors.length > 0) return { ok: false, errors };
+
+  const share = okPct ? input.replaceablePercent / 100 : 0;
+  const monthlyDays = okDays ? input.daysPerWeek * WEEKS_PER_MONTH : 0;
+  const monthlyKm = okKm ? monthlyDays * input.dailyKm : 0;
+  const replacedKm = monthlyKm * share;
+  const currentVariableReplaced = okSpend ? input.monthlySpend * share : 0;
+  const bikeEnergyCost = replacedKm * QUICK_BIKE_COST.energyPerKm;
+  const bikeMaintenanceCost = share > 0 ? QUICK_BIKE_COST.maintenanceMonthly : 0;
+  const bikeTotalCost = bikeEnergyCost + bikeMaintenanceCost;
+  const monthlySavings = roundMoney(currentVariableReplaced - bikeTotalCost);
+
+  return {
+    ok: true,
+    data: {
+      monthlyDays: roundMoney(monthlyDays),
+      monthlyKm: roundMoney(monthlyKm),
+      replacedKm: roundMoney(replacedKm),
+      currentVariableReplaced: roundMoney(currentVariableReplaced),
+      currentFixedRemoved: 0,
+      currentTotalReplaced: roundMoney(currentVariableReplaced),
+      bikeEnergyCost: roundMoney(bikeEnergyCost),
+      bikeMaintenanceCost: roundMoney(bikeMaintenanceCost),
+      bikeTotalCost: roundMoney(bikeTotalCost),
+      monthlySavings,
+      annualSavings: roundMoney(monthlySavings * 12),
+      fixedExcludedBecauseVehicleKept: input.modal === "carro" || input.modal === "moto",
+    },
+  };
+}
+
+export const MobilityCostEngine = { compute: computeMobilityCost, computeQuick: computeQuickMobilityCost };

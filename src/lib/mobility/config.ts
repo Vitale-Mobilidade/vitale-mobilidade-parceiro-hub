@@ -13,6 +13,19 @@ export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 /** Margem de segurança sobre a autonomia declarada do fabricante ao recomendar bikes. */
 export const AUTONOMY_SAFETY_MARGIN = 1.2;
 
+/**
+ * Premissas operacionais centrais do modo rápido da calculadora.
+ * São uma referência de cálculo, não garantia de custo real, e ficam expostas na metodologia da página.
+ * O preço de compra da bike não entra na economia operacional; entra apenas nas projeções por modelo.
+ */
+export const QUICK_BIKE_COST = {
+  energyPerKm: 0.05,
+  maintenanceMonthly: 30,
+} as const;
+
+/** Horizontes exibidos na projeção acumulada. */
+export const PROJECTION_MONTHS = [12, 24, 36] as const;
+
 /** Limites de plausibilidade da entrada. Fora disso o cálculo é recusado, não "corrigido". */
 export const LIMITS = {
   daysPerWeek: { min: 1, max: 7 },
@@ -32,6 +45,9 @@ export const LIMITS = {
 
 /** Máximo de bikes sugeridas no resultado da calculadora. */
 export const MAX_RECOMMENDATIONS = 3;
+
+/** A experiência rápida compara no máximo duas opções reais. */
+export const MAX_QUICK_RECOMMENDATIONS = 2;
 
 /** Padrão oficial do link afiliado. Qualquer outro formato é descartado, nunca corrigido. */
 export const MELI_LINK_RE = /^https:\/\/meli\.la\/[A-Za-z0-9]+$/;
