@@ -12,6 +12,7 @@ import { dailyMetrics, type DailyPoint } from "@/lib/price-daily";
 import { formatBRL, formatDateTimeBR } from "@/lib/price-tracker";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
+import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
 
 type RadarDetail = {
   id: string;
