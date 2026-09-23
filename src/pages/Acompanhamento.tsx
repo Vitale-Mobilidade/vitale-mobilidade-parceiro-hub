@@ -87,10 +87,11 @@ const Acompanhamento = () => {
       <main>
         <section className="entry-hero">
           <picture>
-            <source media="(max-width: 767px)" srcSet="/vitale-hero-mobile.webp" width={480} height={728} />
-            <img src="/vitale-hero-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+            <source media="(max-width: 767px)" srcSet="/vitale-hero-radar-2026-mobile.webp" width={600} height={909} />
+            <source media="(max-width: 1400px)" srcSet="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} />
+            <img src="/vitale-hero-radar-2026.webp" width={1672} height={941} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
           </picture>
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/80 max-md:to-ink/40" aria-hidden="true" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/60 max-md:to-ink/10" aria-hidden="true" />
           <div className="responsive-container entry-hero-inner">
             <p className="entry-eyebrow">RADAR DE PREÇOS</p>
             <h1 className="entry-h1">
@@ -99,21 +100,21 @@ const Acompanhamento = () => {
             <p className="entry-lead">
               Registramos os preços das bikes elétricas acompanhadas e comparamos o valor atual com o histórico real de cada modelo.
             </p>
-            <div className="mt-6 max-w-xl text-foreground [&_label]:text-ink-foreground">
-              <BikeSearchCombobox
-                entries={entries}
-                loading={false}
-                query={query}
-                onQueryChange={setQuery}
-                onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
-              />
-            </div>
           </div>
         </section>
-        {((!error && entries.length > 0) || trackingSince) && (
-          <div className={`responsive-container relative z-10 ${!error && entries.length > 0 ? "-mt-16 md:-mt-20" : "pt-4"}`}>
+        <div className="responsive-container relative z-10 -mt-16 md:-mt-20">
+          <div className="grid gap-4 rounded-2xl bg-card p-4 shadow-xl ring-1 ring-line md:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:items-end">
+              <div className="max-w-xl text-foreground">
+                <BikeSearchCombobox
+                  entries={entries}
+                  loading={false}
+                  query={query}
+                  onQueryChange={setQuery}
+                  onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
+                />
+              </div>
               {!error && entries.length > 0 && (
-                <dl className="grid grid-cols-1 gap-3 rounded-2xl bg-card p-3 shadow-xl ring-1 ring-line sm:grid-cols-3">
+                <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
                     { k: "Bikes monitoradas", v: String(summary.tracked) },
                     { k: "No menor preço registrado", v: String(summary.atLowest) },
@@ -127,10 +128,10 @@ const Acompanhamento = () => {
                 </dl>
               )}
               {trackingSince && (
-                <p className="mt-3 text-sm text-muted-foreground">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
+                <p className="text-sm text-muted-foreground lg:col-span-2">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
               )}
           </div>
-        )}
+        </div>
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">

@@ -93,8 +93,8 @@ function BikesIndex() {
   const maxKm = kmOptions.at(-1) ?? null;
 
   const chip = (on: boolean) =>
-    `inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint ${
-      on ? "bg-mint text-mint-foreground" : "bg-ink-foreground/10 text-ink-foreground hover:bg-ink-foreground/20"
+    `inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${
+      on ? "bg-ink text-ink-foreground" : "bg-surface text-ink ring-1 ring-line hover:ring-action"
     }`;
   const field = "h-11 w-full rounded-xl border border-line bg-background px-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action";
 
@@ -103,11 +103,11 @@ function BikesIndex() {
       <SiteHeader />
       <section className="entry-hero" aria-labelledby="bikes-h1">
         <picture>
-          <source media="(max-width: 767px)" srcSet="/vitale-hero-v2-mobile.webp" width={600} height={909} />
-          <source media="(max-width: 1400px)" srcSet="/vitale-hero-v2-1280.webp" width={1280} height={720} />
-          <img src="/vitale-hero-v2.webp" width={1672} height={941} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[80%_75%] md:origin-[85%_80%] md:scale-125" />
+          <source media="(max-width: 767px)" srcSet="/vitale-hero-bikes-2026-mobile.webp" width={600} height={909} />
+          <source media="(max-width: 1400px)" srcSet="/vitale-hero-bikes-2026-1280.webp" width={1280} height={720} />
+          <img src="/vitale-hero-bikes-2026.webp" width={1672} height={941} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[75%_center]" />
         </picture>
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/10 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/80 max-md:to-ink/30" aria-hidden="true" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/10 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/60 max-md:to-ink/10" aria-hidden="true" />
         <div className="responsive-container entry-hero-inner">
           <p className="entry-eyebrow">Catálogo Vitale</p>
           <h1 id="bikes-h1" className="entry-h1">
@@ -130,7 +130,14 @@ function BikesIndex() {
                   className="h-14 w-full rounded-2xl bg-background pl-12 pr-4 text-base text-ink shadow-lg placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-mint"
                 />
               </div>
-              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Atalhos">
+            </>
+          )}
+        </div>
+      </section>
+      {ok && (
+        <div className="responsive-container relative z-10 -mt-16 md:-mt-20">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-3 shadow-xl ring-1 ring-line md:p-4" role="group" aria-label="Atalhos">
+                <span className="px-1 text-sm font-bold text-ink">Atalhos:</span>
                 {peopleOptions.includes(2) && (
                   <button type="button" aria-pressed={people === 2} onClick={() => setPeople(people === 2 ? 0 : 2)} className={chip(people === 2)}>
                     <Users className="h-4 w-4" aria-hidden="true" /> Para 2 pessoas
@@ -147,10 +154,8 @@ function BikesIndex() {
                   </button>
                 )}
               </div>
-            </>
-          )}
         </div>
-      </section>
+      )}
 
       <main className="responsive-container py-8 md:py-12">
         {!ok ? (
