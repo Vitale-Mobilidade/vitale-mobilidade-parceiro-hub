@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastRealIndex, unavailableMessage } from "./radar-unavailable";
+import { lastRealIndex, unavailableMessage, lastConfirmedDay } from "./radar-unavailable";
 import type { DailyPoint } from "./price-daily";
 
 const day = (date: string, verification: DailyPoint["verification"], close = 1000): DailyPoint => ({
