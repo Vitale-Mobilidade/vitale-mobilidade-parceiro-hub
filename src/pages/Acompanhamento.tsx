@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { Flame, Target, TrendingDown } from "lucide-react";
 import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
@@ -80,22 +79,6 @@ const Acompanhamento = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Helmet>
-        <title>Radar de Preços de Bikes Elétricas | Vitale Mobilidade</title>
-        <meta
-          name="description"
-          content="Veja se hoje é um bom momento para comprar sua bike elétrica: compare o preço atual com o histórico real registrado pela Vitale."
-        />
-        <link rel="canonical" href="https://vitalemobilidade.com/acompanhamento" />
-        <meta property="og:title" content="Veja se hoje é um bom momento para comprar sua bike" />
-        <meta property="og:url" content="https://vitalemobilidade.com/acompanhamento" />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          property="og:description"
-          content="Compare o preço atual com o histórico e acompanhe as melhores oportunidades de bikes elétricas."
-        />
-      </Helmet>
 
       <main>
         <section className="border-b border-border/60 bg-gradient-to-br from-green-50 via-white to-white">

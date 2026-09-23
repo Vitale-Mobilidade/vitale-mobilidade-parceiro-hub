@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
-import { Helmet } from "react-helmet-async";
 import { ArrowLeft, BellRing, Check, ExternalLink } from "lucide-react";
 import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
@@ -75,24 +74,6 @@ const AcompanhamentoBike = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Helmet>
-        <title>
-          {bike ? `${bike.name} — histórico de preços | Vitale Mobilidade` : "Histórico de preços | Vitale Mobilidade"}
-        </title>
-        <meta
-          name="description"
-          content={
-            bike
-              ? `${bike.name}: preço de hoje ${formatBRL(bike.currentPrice)} e histórico real registrado pela Vitale Mobilidade.`
-              : "Histórico real de preços de bikes elétricas acompanhado pela Vitale Mobilidade."
-          }
-        />
-        <link rel="canonical" href={`https://vitalemobilidade.com/acompanhamento/${bikeId}`} />
-        {bike && <meta property="og:title" content={`${bike.name} — histórico de preços`} />}
-        {bike && <meta property="og:type" content="product" />}
-        {bike?.image && <meta property="og:image" content={bike.image} />}
-        <meta name="twitter:card" content="summary_large_image" />
-      </Helmet>
 
       <main className="responsive-container py-8 md:py-12">
         <Link
