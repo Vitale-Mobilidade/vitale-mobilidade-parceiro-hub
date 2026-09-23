@@ -73,7 +73,8 @@ const AcompanhamentoBike = () => {
   const goodFor = bike?.shortDescription || bike?.perfilIndicado || bike?.description || null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
 
       <main className="responsive-container py-8 md:py-12">
         <Link
@@ -105,7 +106,7 @@ const AcompanhamentoBike = () => {
         {!loading && bike && metrics && (
           <>
             <header className="mt-6 grid gap-8 lg:grid-cols-2">
-              <div className="flex h-[320px] items-center justify-center overflow-hidden rounded-3xl bg-green-50/70 md:h-[460px]">
+              <div className="flex h-[320px] items-center justify-center overflow-hidden rounded-3xl bg-surface md:h-[460px]">
                 {bike.image ? (
                   <img
                     src={bike.image}

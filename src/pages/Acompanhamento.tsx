@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, BarChart3, BellRing, ExternalLink, Flame, LineChart, Target, TrendingDown, Youtube, BookOpen } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLoaderData } from "@tanstack/react-router";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, PriceStatus, DisabledCta } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";

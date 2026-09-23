@@ -23,7 +23,8 @@ function validBike(loaderData: unknown): { name: string; price: number | null; i
 
 function BikeNotFound() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
       <main className="responsive-container py-8 md:py-12">
         <Link
           to="/acompanhamento"
