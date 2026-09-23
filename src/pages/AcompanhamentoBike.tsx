@@ -210,17 +210,42 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               </div>
             </header>
 
-            <PriceIntelPanel
-              currentPrice={bike.currentPrice}
-              metrics={metrics}
-              window={window}
-              onWindowChange={(w) => {
-                setWindow(w);
-                trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
-              }}
-              firstObservedAt={bike.firstObservedAt}
-              lastObservedAt={bike.lastObservedAt}
-            />
+            {hasOffer && metrics && currentPrice !== null ? (
+              <PriceIntelPanel
+                currentPrice={currentPrice}
+                metrics={metrics}
+                window={window}
+                onWindowChange={(w) => {
+                  setWindow(w);
+                  trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
+                }}
+                firstObservedAt={bike.firstObservedAt}
+                lastObservedAt={bike.lastObservedAt}
+              />
+            ) : (
+              archivedSeries.length > 0 && (
+                <section aria-labelledby="hist-arquivado" className="mt-8 overflow-hidden rounded-2xl border border-line bg-card">
+                  <div className="border-b border-line px-4 py-4 sm:px-6">
+                    <h2 id="hist-arquivado" className="text-lg font-bold text-ink">Histórico registrado</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Sem oferta atual, não classificamos se o preço está bom ou caro. Abaixo está apenas o que já
+                      registramos: {archivedCounts.verified} dia(s) confirmados e {archivedCounts.reconstructed}{" "}
+                      reconstruído(s)
+                      {archivedCounts.firstDay && `, desde ${formatDateBR(archivedCounts.firstDay)}`}.
+                    </p>
+                  </div>
+                  <div className="px-4 py-4 sm:px-6">
+                    <DailyPriceChart series={archivedSeries} compact />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
+                      sem verificação — nunca repetimos um preço que não confirmamos.
+                    </p>
+                  </div>
+                </section>
+              )
+            )}
+
+
 
 
             <section aria-labelledby="combina" className="relative isolate mt-12 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
