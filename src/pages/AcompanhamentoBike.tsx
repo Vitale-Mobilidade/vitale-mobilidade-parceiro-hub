@@ -68,7 +68,7 @@ const AcompanhamentoBike = () => {
     [bike, window],
   );
 
-  const loading = bike === undefined;
+  const loading = false; // dados já chegam no SSR
   const canBuy = !!bike && isSafePurchaseLink(bike.link);
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
   const goodFor = bike?.shortDescription || bike?.perfilIndicado || bike?.description || null;

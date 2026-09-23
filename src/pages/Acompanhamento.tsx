@@ -67,7 +67,7 @@ const Acompanhamento = () => {
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
   const featuredIsOpportunity = isOpportunity(featured);
-  const loading = bikes === null;
+  const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
@@ -112,7 +112,7 @@ const Acompanhamento = () => {
                 <div className="mt-6 max-w-xl">
                   <BikeSearchCombobox
                     entries={entries}
-                    loading={bikes === null}
+                    loading={false}
                     query={query}
                     onQueryChange={setQuery}
                     onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
