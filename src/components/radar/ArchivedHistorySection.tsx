@@ -8,7 +8,10 @@ export interface ArchivedBike {
   id: string;
   name: string;
   image: string | null;
+  /** Última ALTERAÇÃO de preço (evento). */
   lastObservedAt: string | null;
+  /** Último dia CONFIRMADO na série diária — é a data de "verificado". */
+  lastConfirmedAt: string | null;
   lastObservedPrice: number | null;
   observations: number;
 }
