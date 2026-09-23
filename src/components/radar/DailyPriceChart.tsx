@@ -76,6 +76,9 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
       )}
       {p.lastVerifiedAt && <p className="text-muted-foreground">Última verificação: {formatDateTimeBR(p.lastVerifiedAt)}</p>}
       <p className="text-muted-foreground">{VERIFICATION_LABEL[p.verification]}</p>
+      {row.unavailable && (
+        <p className="mt-1 max-w-[16rem] font-medium text-destructive">{unavailableMessage(row.date)}</p>
+      )}
     </div>
   );
 }
