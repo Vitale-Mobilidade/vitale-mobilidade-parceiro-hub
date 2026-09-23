@@ -90,7 +90,13 @@ const AcompanhamentoBike = () => {
           </div>
         )}
 
-        {!loading && (error || !bike) && (
+        {!loading && error && (
+          <p className="mt-8 rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
+            Radar de preços temporariamente indisponível. Tente recarregar em alguns minutos.
+          </p>
+        )}
+
+        {!loading && !error && !bike && (
           <p className="mt-8 rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
             Não encontramos acompanhamento para esta bike no momento.
           </p>
