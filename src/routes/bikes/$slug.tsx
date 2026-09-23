@@ -150,8 +150,9 @@ function BikeDetail() {
           <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-ink md:text-5xl">{bike.name}</h1>
           {specs.length > 0 && <p className="mt-2 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ")}</p>}
           <div className="mt-5 rounded-2xl bg-ink p-5 text-ink-foreground">
-            {/* Oferta atual: preço e link vêm SEMPRE do mesmo registro. */}
-            {radar && metrics && <PriceStatus classification={metrics.classification} />}
+            {/* Oferta atual: preço e link vêm SEMPRE do mesmo registro.
+                O selo do Radar só aparece com oferta ativa, para não parecer status de algo comprável. */}
+            {offer && radar && metrics && <PriceStatus classification={metrics.classification} />}
             {offer ? (
               <>
                 <p className="mt-3 text-4xl font-black tracking-tight">{formatBRL(offer.price)}</p>
