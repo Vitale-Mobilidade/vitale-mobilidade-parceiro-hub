@@ -90,16 +90,39 @@ export interface BikeOfferProjectionResult {
   error?: string;
 }
 
-export function buildBikeOfferRows(bikes: SnapshotBike[]): BikeOfferRow[] {
+/** Linha pendente da planilha (fonte da verdade comercial do run atual). */
+export interface PendingOfferRow {
+  id: string | null;
+  missingFields?: string[];
+}
+
+/**
+ * IDs cuja linha atual da planilha está sem "Link Vitale" e/ou "Preço R$".
+ * A bike segue preservada em public.bikes (draft), mas a oferta comercial
+ * NÃO pode continuar ativa com link/preço antigos.
+ */
+export function commerciallyPendingIds(pending: PendingOfferRow[] = []): Set<string> {
+  const ids = new Set<string>();
+  for (const p of pending) {
+    if (!p?.id) continue;
+    const missing = Array.isArray(p.missingFields) ? p.missingFields : [];
+    if (missing.includes("Link Vitale") || missing.includes("Preço R$")) ids.add(p.id);
+  }
+  return ids;
+}
+
+export function buildBikeOfferRows(bikes: SnapshotBike[], pending: PendingOfferRow[] = []): BikeOfferRow[] {
   const seen = new Set<string>();
   const rows: BikeOfferRow[] = [];
+  const pendingIds = commerciallyPendingIds(pending);
   for (const b of bikes) {
     if (!b?.id || seen.has(b.id)) continue;
     seen.add(b.id);
+    const commercialBlocked = pendingIds.has(b.id);
     rows.push({
       bike_id: b.id,
-      url: typeof b.linkVitale === "string" ? b.linkVitale : null,
-      price: typeof b.price === "number" && Number.isFinite(b.price) ? b.price : null,
+      url: !commercialBlocked && typeof b.linkVitale === "string" ? b.linkVitale : null,
+      price: !commercialBlocked && typeof b.price === "number" && Number.isFinite(b.price) ? b.price : null,
       sheet_status: typeof b.status === "string" ? b.status : null,
       sheet_eligible: typeof b.sheetEligible === "boolean" ? b.sheetEligible : null,
     });
@@ -107,9 +130,13 @@ export function buildBikeOfferRows(bikes: SnapshotBike[]): BikeOfferRow[] {
   return rows;
 }
 
-export async function projectBikeOffers(supabase: RpcClient, bikes: SnapshotBike[]): Promise<BikeOfferProjectionResult> {
+export async function projectBikeOffers(
+  supabase: RpcClient,
+  bikes: SnapshotBike[],
+  pending: PendingOfferRow[] = [],
+): Promise<BikeOfferProjectionResult> {
   try {
-    const { data, error } = await supabase.rpc("project_bike_offers_from_snapshot", { p_rows: buildBikeOfferRows(bikes) });
+    const { data, error } = await supabase.rpc("project_bike_offers_from_snapshot", { p_rows: buildBikeOfferRows(bikes, pending) });
     if (error) return { ok: false, error: String(error.message ?? error).slice(0, 300) };
     const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
     if (skipped.length) console.warn("[sync] offers projection skipped:", JSON.stringify(skipped));

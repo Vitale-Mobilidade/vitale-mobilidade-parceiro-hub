@@ -200,3 +200,13 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 **Rollback não destrutivo:** nenhum leitor consome os campos novos; reverter a projeção no código e reimplantar; colunas e dados preservados.
 
 **Revisão compacta:** Produto — entidade Bike passa a ter o conteúdo necessário para o futuro cutover de `/bikes`. CTO — mesma rotina única, idempotente, um lote por transação. IA — nenhum texto gerado; tudo vem do snapshot. Segurança — tabela segue fechada a anon/authenticated; função só `service_role`. UX/CX — nada visível muda. Growth — links e analytics intocados. PMO — cutover de leitura permanece pendente.
+
+## 17. Correção — draft preservado não sustenta oferta comercial (23/09/2026)
+
+**Defeito encontrado:** `mergeWithPreserved` mantém a versão anterior das bikes cuja linha atual da planilha ficou pendente (status `draft`), inclusive `linkVitale` e `price` antigos. Esse array mesclado alimentava `buildBikeOfferRows`, então `v29_pro`, `v35` e `x50_action_pro` seguiam com oferta `is_current = true` mesmo sem **Link Vitale** e **Preço R$** na planilha — contrariando a regra de exibir "Link indisponível no momento".
+
+**Correção (somente projeção de ofertas):** `buildBikeOfferRows(bikes, pending)` e `projectBikeOffers(supabase, bikes, pending)` passam a receber `result.pending` — a fonte de verdade do run — e não derivam nada do link antigo preservado. `commerciallyPendingIds` marca os IDs cuja linha atual tem `Link Vitale` e/ou `Preço R$` em `missingFields`; para esses, `url` e `price` vão **NULL** à RPC existente `project_bike_offers_from_snapshot`, que já encerra a oferta atual sem apagar histórico. Pendência não comercial (ex.: só `Autonomia`) não encerra oferta. `bike-sync.ts` apenas repassa `result.pending`. Nada mudou em `public.bikes`, snapshot de recuperação, Quiz, Radar, RPCs públicos, histórico ou nas URLs das bikes válidas.
+
+**Verificação no vivo (run `f5ad8c04`, forçado apenas por antecipação de `next_run_at`):** 30 bikes preservadas; 3 drafts preservados no snapshot; ofertas: 27 atuais, 3 encerradas com `end_reason = invalid_price` e `ended_at` preenchido, 0 registros apagados; 20 `radar_eligible` conforme a fonte; 0 divergências de preço/URL entre ofertas atuais e snapshot. Testes dirigidos: `bike-offers-projection.test.ts` (5) + `bike-projection.test.ts` (4) — 9 passaram. Edge Functions reimplantadas: `sync-bike-catalog` e `bike-panel` (as únicas que usam o módulo compartilhado).
+
+**Nota de leitura:** `recognized_count` do snapshot (27) é metadado da planilha e **não** o tamanho do array de bikes (30, incluindo os 3 drafts preservados).

@@ -196,3 +196,11 @@ Próximo gate: completar os campos reais de imagem/descrição na entidade Bike,
 ## Atualização — campos editoriais em `public.bikes` (23/09/2026)
 
 Migration aditiva `20260923125414` adiciona `image_url` (CHECK https), `description` e `short_description` a `public.bikes`, atualiza `project_bikes_from_snapshot` para projetá-los a partir do snapshot (`image`, `description`, `shortDescription`) e faz backfill idempotente. Valor ausente/inválido nunca sobrescreve o que já existe; sem regravação quando nada muda. Verificação no vivo: 30 bikes, 30 com `image_url`, `description` e `short_description`, 0 divergências vs snapshot; 30 ofertas atuais inalteradas. Edge Functions `sync-bike-catalog` e `bike-panel` reimplantadas. Etapa 6 passa a **operando (schema + backfill + campos editoriais)**; Etapa 7 segue operando com a mesma rotina única. Quiz, Radar, ofertas, preço, links afiliados e leitores web **não** foram alterados; leitura de `/bikes` continua vindo da planilha.
+
+## Correção — ofertas de bikes preservadas como draft (23/09/2026)
+
+Auditoria após a migration `20260923125414` mostrou que `v29_pro`, `v35` e `x50_action_pro` mantinham oferta atual com link/preço **antigos**, porque `mergeWithPreserved` preserva a versão anterior das linhas pendentes e esse array mesclado alimentava a projeção de ofertas.
+
+Correção restrita à projeção de ofertas (`supabase/functions/_shared/bike-projection.ts` + repasse em `bike-sync.ts`): `result.pending` passa a ser a fonte; IDs sem **Link Vitale** e/ou **Preço R$** vão com `url`/`price` NULL à RPC existente `project_bike_offers_from_snapshot`, que encerra a oferta atual sem apagar histórico. Nenhuma alteração em schema, RPCs públicos, Quiz, Radar, `public.bikes`, snapshot de recuperação ou nas URLs das 27 bikes válidas.
+
+Verificação no vivo (run `f5ad8c04`): 30 bikes preservadas, 27 ofertas atuais, 3 encerradas (`invalid_price`, `ended_at` preenchido, 0 deleções), 20 `radar_eligible`, 0 divergências de preço/URL vs snapshot. Testes dirigidos 9/9. Edge Functions `sync-bike-catalog` e `bike-panel` reimplantadas. Etapa 8 segue **operando (shadow)**: leitores de `/bikes` **não** foram trocados; cutover continua pendente e nada foi publicado.

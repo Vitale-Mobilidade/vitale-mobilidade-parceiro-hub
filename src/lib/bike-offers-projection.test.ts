@@ -17,6 +17,31 @@ describe("offers projection rows", () => {
     expect(r.url).toBeNull();
     expect(r.sheet_eligible).toBeNull();
   });
+  it("encerra a oferta de bike preservada como draft cuja linha atual perdeu link/preço", () => {
+    const valid = [bike({ id: "a" }), bike({ id: "b" })];
+    const drafts = ["v29_pro", "v35", "x50_action_pro"].map((id) =>
+      bike({ id, status: "draft", linkVitale: url, price: 3999 })
+    );
+    const pending = [
+      { id: "v29_pro", missingFields: ["Link Vitale", "Preço R$"] },
+      { id: "v35", missingFields: ["Link Vitale"] },
+      { id: "x50_action_pro", missingFields: ["Preço R$"] },
+    ];
+    const rows = buildBikeOfferRows([...valid, ...drafts], pending);
+    expect(rows).toHaveLength(5);
+    const ended = rows.filter((r) => r.url === null && r.price === null);
+    expect(ended.map((r) => r.bike_id).sort()).toEqual(["v29_pro", "v35", "x50_action_pro"]);
+    for (const r of rows.filter((r) => ["a", "b"].includes(r.bike_id))) {
+      expect(r.url).toBe(url);
+      expect(r.price).toBe(4999.9);
+      expect(r.sheet_eligible).toBe(false);
+    }
+  });
+  it("não encerra oferta por pendência não comercial", () => {
+    const [r] = buildBikeOfferRows([bike({ id: "c" })], [{ id: "c", missingFields: ["Autonomia"] }]);
+    expect(r.url).toBe(url);
+    expect(r.price).toBe(4999.9);
+  });
   it("isolates RPC failure", async () => {
     const res = await projectBikeOffers({ rpc: async () => ({ data: null, error: { message: "x" } }) }, [bike({})]);
     expect(res).toEqual({ ok: false, error: "x" });
