@@ -101,13 +101,19 @@ function BikesIndex() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <section className="bg-ink text-ink-foreground" aria-labelledby="bikes-h1">
-        <div className="responsive-container py-10 md:py-16">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-mint">Catálogo Vitale</p>
-          <h1 id="bikes-h1" className="mt-3 max-w-3xl text-3xl font-black leading-tight tracking-tight md:text-5xl">
+      <section className="entry-hero" aria-labelledby="bikes-h1">
+        <picture>
+          <source media="(max-width: 767px)" srcSet="/vitale-hero-v2-mobile.webp" width={600} height={909} />
+          <source media="(max-width: 1400px)" srcSet="/vitale-hero-v2-1280.webp" width={1280} height={720} />
+          <img src="/vitale-hero-v2.webp" width={1672} height={941} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[80%_75%] md:origin-[85%_80%] md:scale-125" />
+        </picture>
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/10 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/80 max-md:to-ink/30" aria-hidden="true" />
+        <div className="responsive-container entry-hero-inner">
+          <p className="entry-eyebrow">Catálogo Vitale</p>
+          <h1 id="bikes-h1" className="entry-h1">
             Encontre a bike elétrica certa para o seu perfil
           </h1>
-          <p className="mt-4 max-w-2xl text-ink-foreground/80 md:text-lg">
+          <p className="entry-lead">
             {ok ? `${bikes.length} modelos` : "Modelos"} com especificações, preços com fonte explícita e testes reais em vídeo do nosso canal.
           </p>
           {ok && (
@@ -208,13 +214,13 @@ function BikesIndex() {
             <section className="mt-14 grid gap-4 md:grid-cols-2" aria-label="Próximos passos">
               <div className="rounded-2xl bg-ink p-6 text-ink-foreground md:p-8">
                 <Sparkles className="h-6 w-6 text-mint" aria-hidden="true" />
-                <h2 className="mt-3 text-2xl font-black">Não sabe por onde começar?</h2>
+                <h2 className="section-h2 mt-3">Não sabe por onde começar?</h2>
                 <p className="mt-2 text-ink-foreground/80">Responda sete perguntas rápidas e veja o modelo indicado para o seu perfil.</p>
                 <Link to="/escolherbike" className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Fazer o Quiz</Link>
               </div>
               <div className="rounded-2xl bg-surface p-6 ring-1 ring-line md:p-8">
                 <LineChart className="h-6 w-6 text-action" aria-hidden="true" />
-                <h2 className="mt-3 text-2xl font-black text-ink">O preço de hoje está bom?</h2>
+                <h2 className="section-h2 mt-3 text-ink">O preço de hoje está bom?</h2>
                 <p className="mt-2 text-muted-foreground">Compare o preço atual com o histórico registrado pelo Radar Vitale.</p>
                 <Link to="/acompanhamento" className="mt-5 inline-flex h-11 items-center rounded-xl bg-ink px-5 text-sm font-bold text-ink-foreground hover:opacity-90">Abrir o Radar de preços</Link>
               </div>
