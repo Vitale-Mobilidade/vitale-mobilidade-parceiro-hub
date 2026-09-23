@@ -723,9 +723,12 @@ export type Database = {
           bike_id: string
           capacity_people: number | null
           created_at: string
+          description: string | null
+          image_url: string | null
           max_speed_kmh: number | null
           motor_w: number | null
           name: string
+          short_description: string | null
           slug: string
           source: string
           updated_at: string
@@ -736,9 +739,12 @@ export type Database = {
           bike_id: string
           capacity_people?: number | null
           created_at?: string
+          description?: string | null
+          image_url?: string | null
           max_speed_kmh?: number | null
           motor_w?: number | null
           name: string
+          short_description?: string | null
           slug: string
           source?: string
           updated_at?: string
@@ -749,9 +755,12 @@ export type Database = {
           bike_id?: string
           capacity_people?: number | null
           created_at?: string
+          description?: string | null
+          image_url?: string | null
           max_speed_kmh?: number | null
           motor_w?: number | null
           name?: string
+          short_description?: string | null
           slug?: string
           source?: string
           updated_at?: string
