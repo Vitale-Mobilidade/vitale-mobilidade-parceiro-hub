@@ -13,7 +13,7 @@ export type HomeProduct = { key: string; title: string; sub: string; icon: Lucid
 export const HOME_PRODUCTS: HomeProduct[] = [
   { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: "#comparar" },
   { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/acompanhamento" },
-  { key: "calculadora", title: "Calculadora", sub: "Entenda seus custos", icon: Calculator, to: "#calc" },
+  { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "#calc" },
   { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "#conteudos" },
   { key: "grupo", title: "Grupo de ofertas", sub: "Ofertas selecionadas", icon: Users, to: "/grupodeofertas" },
 ];

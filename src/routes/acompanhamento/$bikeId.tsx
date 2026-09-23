@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import Footer from "@/components/Footer";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { getRadarBike, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 import { BIKE_ID_RE } from "@/lib/bike-identity";
@@ -23,7 +23,8 @@ function validBike(loaderData: unknown): { name: string; price: number | null; i
 
 function BikeNotFound() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
       <main className="responsive-container py-8 md:py-12">
         <Link
           to="/acompanhamento"
@@ -35,7 +36,7 @@ function BikeNotFound() {
           Não encontramos acompanhamento para esta bike no momento.
         </p>
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

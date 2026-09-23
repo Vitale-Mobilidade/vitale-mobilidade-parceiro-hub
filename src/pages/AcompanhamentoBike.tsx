@@ -5,7 +5,7 @@ import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/Footer";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
@@ -73,7 +73,8 @@ const AcompanhamentoBike = () => {
   const goodFor = bike?.shortDescription || bike?.perfilIndicado || bike?.description || null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
 
       <main className="responsive-container py-8 md:py-12">
         <Link
@@ -105,7 +106,7 @@ const AcompanhamentoBike = () => {
         {!loading && bike && metrics && (
           <>
             <header className="mt-6 grid gap-8 lg:grid-cols-2">
-              <div className="flex h-[320px] items-center justify-center overflow-hidden rounded-3xl bg-green-50/70 md:h-[460px]">
+              <div className="flex h-[320px] items-center justify-center overflow-hidden rounded-3xl bg-surface md:h-[460px]">
                 {bike.image ? (
                   <img
                     src={bike.image}
@@ -283,7 +284,7 @@ const AcompanhamentoBike = () => {
         />
       )}
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 };

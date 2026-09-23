@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Flame, Target, TrendingDown } from "lucide-react";
+import { ArrowDown, ArrowRight, BarChart3, BellRing, ExternalLink, Flame, LineChart, Target, TrendingDown, Youtube, BookOpen } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useLoaderData } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/Footer";
+import { Badge } from "@/components/ui/badge";
+import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, PriceStatus, DisabledCta } from "@/components/site/site-ui";
+import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
+import { shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
@@ -78,71 +81,103 @@ const Acompanhamento = () => {
   ].filter((b) => b.list.length > 0);
 
   return (
-    <div className="min-h-screen bg-white">
-
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
       <main>
-        <section className="border-b border-border/60 bg-gradient-to-br from-green-50 via-white to-white">
-          <div className="responsive-container py-10 md:py-14">
-            <div className="grid items-start gap-8 lg:grid-cols-[1.1fr,0.9fr]">
-              <div>
-                <h1 className="text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl">
-                  <span className="text-gradient-green">Veja se hoje é um bom momento para comprar sua bike</span>
-                </h1>
-                <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
-                  Compare o preço atual com o histórico e acompanhe as melhores oportunidades.
-                </p>
-
-                <div className="mt-6 max-w-xl">
-                  <BikeSearchCombobox
-                    entries={entries}
-                    loading={false}
-                    query={query}
-                    onQueryChange={setQuery}
-                    onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  />
-                </div>
-
-                {!loading && !error && entries.length > 0 && (
-                  <dl className="mt-6 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-border/60 bg-white p-4">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Bikes monitoradas</dt>
-                      <dd className="mt-1 text-2xl font-bold">{summary.tracked}</dd>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-white p-4">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">No menor registrado</dt>
-                      <dd className="mt-1 text-2xl font-bold text-primary">{summary.atLowest}</dd>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-white p-4">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Maior queda recente</dt>
-                      <dd className="mt-1 text-2xl font-bold text-primary">
-                        {summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1)}%`}
-                      </dd>
-                    </div>
-                  </dl>
-                )}
-
-                {trackingSince && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Com base no histórico registrado desde {formatDateBR(trackingSince)}.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                {loading ? (
-                  <Skeleton className="h-[420px] w-full rounded-3xl" />
-                ) : featured ? (
-                  <div>
-                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-primary">
-                      {featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"}
-                    </p>
-                    <RadarBikeCard entry={featured} onAlert={setAlertBike} highlight />
-                  </div>
-                ) : null}
-              </div>
+        <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/vitale-hero-mobile.webp" width={480} height={728} />
+            <img src="/vitale-hero-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+          </picture>
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-ink/80" aria-hidden="true" />
+          <div className="responsive-container py-12 md:py-16">
+            <p className="text-xs font-bold tracking-[0.25em] text-mint">RADAR DE PREÇOS</p>
+            <h1 className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
+              Veja se hoje é um bom momento para <span className="text-mint">comprar sua bike elétrica</span>
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-ink-foreground/90 md:text-lg">
+              Registramos os preços das bikes elétricas acompanhadas e comparamos o valor atual com o histórico real de cada modelo.
+            </p>
+            <div className="mt-6 max-w-xl text-foreground [&_label]:text-ink-foreground">
+              <BikeSearchCombobox
+                entries={entries}
+                loading={false}
+                query={query}
+                onQueryChange={setQuery}
+                onSeeAll={() => catalogRef.current?.scrollIntoView({ behavior: "smooth" })}
+              />
             </div>
+            {!error && entries.length > 0 && (
+              <dl className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  { k: "Bikes monitoradas", v: String(summary.tracked) },
+                  { k: "No menor preço registrado", v: String(summary.atLowest) },
+                  { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1).replace(".", ",")}%` },
+                ].map((i) => (
+                  <div key={i.k} className="rounded-2xl bg-card p-4 text-card-foreground">
+                    <dd className="text-2xl font-extrabold text-ink">{i.v}</dd>
+                    <dt className="text-sm text-muted-foreground">{i.k}</dt>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {trackingSince && (
+              <p className="mt-3 text-sm text-ink-foreground/75">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
+            )}
           </div>
         </section>
+
+        {!error && featured && (
+          <section aria-labelledby="destaque" className="responsive-container pt-10">
+            <SectionHeading id="destaque" title={featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"} action={<Link to="/acompanhamento/$bikeId" params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+            <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+              <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
+                <div className="flex min-w-0 flex-col">
+                  <PriceStatus classification={featured.metrics.classification} />
+                  <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
+                  <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
+                  <div className="mt-auto space-y-2 pt-4">
+                    <a href={featured.link} target="_blank" rel="noopener noreferrer nofollow sponsored" onClick={() => trackRadar("radar_ml_click", { bike_id: featured.id, position: "highlight" })} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">
+                      Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    </a>
+                    <button type="button" onClick={() => { trackRadar("radar_alert_opened", { bike_id: featured.id, source: "card" }); setAlertBike(featured); }} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold text-ink hover:bg-surface">
+                      <BellRing className="h-4 w-4" aria-hidden="true" /> Avise-me quando baixar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><LineChart className="h-4 w-4 text-action" aria-hidden="true" /> Histórico diário registrado</p>
+                <DailyPriceChart series={featured.daily} />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {!error && blocks.length > 0 && (
+          <section aria-label="Rankings do Radar" className="responsive-container grid gap-5 pt-10 md:grid-cols-3">
+            {blocks.map((block) => (
+              <div key={block.title} className="rounded-2xl border border-line bg-card p-5">
+                <h2 className="flex items-center gap-2 font-bold text-ink"><block.icon className="h-5 w-5 text-action" aria-hidden="true" /> {block.title}</h2>
+                <ul className="mt-3 divide-y divide-line">
+                  {block.list.map((e) => (
+                    <li key={e.id}>
+                      <Link to="/acompanhamento/$bikeId" params={{ bikeId: e.id }} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 py-3 hover:text-action">
+                        <BikeMedia src={e.image} name={e.name} className="h-12 w-14 rounded-lg" />
+                        <span className="min-w-0"><span className="block truncate font-semibold">{e.name}</span><span className="block font-bold text-action">{formatBRL(e.currentPrice)}</span></span>
+                        {typeof e.dropPct === "number" && e.dropPct < 0 ? (
+                          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-action"><ArrowDown className="h-4 w-4" aria-hidden="true" />{Math.abs(e.dropPct).toFixed(1).replace(".", ",")}%</span>
+                        ) : <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        )}
 
         <div className="responsive-container py-10">
           {loading && (
@@ -167,29 +202,13 @@ const Acompanhamento = () => {
 
           {!loading && !error && entries.length > 0 && (
             <>
-              {blocks.map((block) => (
-                <section key={block.title} className="mb-12" aria-label={block.title}>
-                  <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold md:text-2xl">
-                    <block.icon className="h-5 w-5 text-primary" aria-hidden="true" /> {block.title}
-                  </h2>
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {block.list.map((entry) => (
-                      <RadarBikeCard key={`${block.title}-${entry.id}`} entry={entry} onAlert={setAlertBike} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-
               <div className="mb-10">
                 <OffersGroupCta source="radar_home" />
               </div>
 
               <section ref={catalogRef} aria-label="Catálogo acompanhado" className="scroll-mt-8">
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                  <h2 className="text-xl font-semibold md:text-2xl">
-                    Bikes acompanhadas{" "}
-                    <span className="text-sm font-normal text-muted-foreground">({filtered.length})</span>
-                  </h2>
+                  <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
                   <div>
                     <label htmlFor="radar-sort" className="mr-2 text-sm text-muted-foreground">
                       Ordenar por
@@ -262,7 +281,16 @@ const Acompanhamento = () => {
                 )}
               </section>
 
-              <div className="mt-10 space-y-2 text-xs text-muted-foreground">
+              <section aria-label="Vídeos e conteúdos" className="mt-12 grid gap-5 md:grid-cols-2">
+                {[{ t: "Testes e análises em vídeo", i: Youtube, c: "Ver no YouTube" }, { t: "Conteúdos relacionados", i: BookOpen, c: "Ver conteúdos" }].map((x) => (
+                  <div key={x.t} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-5">
+                    <p className="flex items-center gap-2 font-bold text-ink"><x.i className="h-5 w-5 text-action" aria-hidden="true" /> {x.t}</p>
+                    <DisabledCta className="shrink-0 text-sm font-semibold text-action">{x.c}</DisabledCta>
+                  </div>
+                ))}
+              </section>
+
+              <div className="mt-10 space-y-2 text-sm text-muted-foreground">
                 <p>
                   Os preços exibidos são os que registramos nas nossas verificações. Preço e disponibilidade podem mudar
                   no Mercado Livre. Usamos links de afiliado.
@@ -289,7 +317,7 @@ const Acompanhamento = () => {
         />
       )}
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 };

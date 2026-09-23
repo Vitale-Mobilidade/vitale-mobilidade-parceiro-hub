@@ -1,63 +1,15 @@
 import { Link, useLoaderData } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Calculator, GitCompareArrows, Mail, Menu, PlayCircle, Search, ShieldCheck, Users, Youtube } from "lucide-react";
-import logo96 from "@/assets/logo-96.webp";
-import logo192 from "@/assets/logo-192.webp";
+import { ArrowRight, BarChart3, Bike, Calculator, GitCompareArrows, Mail, PlayCircle, Search, ShieldCheck, Users, Youtube } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { RadarPreview } from "@/components/home/RadarPreview";
-import { HomeSearch } from "@/components/home/HomeSearch";
-import { HOME_PRODUCTS, NAV_ITEMS, ProductLink, InactiveButton } from "@/components/home/home-products";
-import type { HomeSearchItem } from "@/lib/home-cards.functions";
+import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
+import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
 
 /*
  * Comparador, calculadora, conteúdos e newsletter aparecem na arquitetura visual, mas
  * seus CTAs são inativos (aria-disabled, sem href/submit) até as rotas existirem.
  * Nenhum email é coletado. Ligue-os preenchendo `to` em home-products.tsx.
  */
-
-function Brand() {
-  return (
-    <Link to="/" className="flex min-w-0 items-center gap-2" aria-label="Vitale Mobilidade — início">
-      <img src={logo96} srcSet={`${logo96} 1x, ${logo192} 2x`} alt="" width={40} height={40} decoding="async" className="h-10 w-10 shrink-0 rounded bg-background" />
-      <span className="leading-none">
-        <span className="block text-base font-extrabold tracking-tight text-ink-foreground">VITALE</span>
-        <span className="block text-[11px] font-bold tracking-[0.2em] text-mint">MOBILIDADE</span>
-      </span>
-    </Link>
-  );
-}
-
-function HomeHeader({ search }: { search: HomeSearchItem[] }) {
-  return (
-    <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
-      <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
-        <Brand />
-        <nav aria-label="Principal" className="hidden items-center gap-7 text-sm font-semibold text-ink-foreground lg:flex">
-          {NAV_ITEMS.map((n) => (
-            <ProductLink key={n.label} to={n.to} className="hover:text-mint">{n.label}</ProductLink>
-          ))}
-        </nav>
-        <div className="hidden items-center gap-3 lg:flex">
-          <HomeSearch items={search} className="w-56" />
-          <Link to="/grupodeofertas" className="inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">
-            Grupo de Ofertas
-          </Link>
-        </div>
-        <details className="relative lg:hidden">
-          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">
-            <Menu className="h-5 w-5" aria-hidden="true" /> Menu
-          </summary>
-          <div className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
-            <HomeSearch items={search} className="mb-2" />
-            {NAV_ITEMS.map((n) => (
-              <ProductLink key={n.label} to={n.to} className="block rounded-lg px-3 py-2 font-medium hover:bg-muted">{n.label}</ProductLink>
-            ))}
-            <Link to="/grupodeofertas" className="mt-2 block rounded-lg bg-mint px-3 py-2 text-center font-bold text-mint-foreground">Grupo de Ofertas</Link>
-          </div>
-        </details>
-      </div>
-    </header>
-  );
-}
 
 function Hero() {
   return (
@@ -101,7 +53,7 @@ function Shortcuts() {
         {HOME_PRODUCTS.map(({ key, to, icon: Icon, title, sub }) => (
           <li key={key}>
             <ProductLink to={to} className="flex items-center gap-3 rounded-xl p-3 hover:bg-muted">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-mint/25 text-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Icon className="h-5 w-5" aria-hidden="true" /></span>
               <span className="min-w-0"><span className="block font-bold">{title}</span><span className="block text-sm text-muted-foreground">{sub}</span></span>
             </ProductLink>
           </li>
@@ -120,7 +72,7 @@ function CalculatorBlock() {
           <h2 id="calc" className="mt-5 text-2xl font-bold sm:text-3xl">Calculadora de economia</h2>
           <p className="mt-3 max-w-md text-ink-foreground/80">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
           <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground">
-            Calcular meus custos <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </InactiveButton>
         </div>
         <div aria-hidden="true" className="grid gap-3 rounded-2xl border border-ink-foreground/15 bg-ink-foreground/5 p-5">
@@ -142,17 +94,17 @@ function CompareBlock({ names }: { names: string[] }) {
     <section aria-labelledby="comparar" className="rounded-3xl border border-border bg-card p-6 sm:p-10">
       <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:items-center">
         <div>
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-primary"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
           <h2 id="comparar" className="mt-5 text-2xl font-bold sm:text-3xl">Comparar bikes</h2>
           <p className="mt-3 max-w-md text-muted-foreground">Coloque modelos lado a lado e veja as diferenças antes de decidir.</p>
-          <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-primary-foreground">
+          <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-6 font-bold text-action-foreground">
             Comparar modelos <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </InactiveButton>
         </div>
         <div aria-hidden="true" className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           {[a, b].map((n, i) => (
             <div key={i} className={`rounded-2xl border border-border bg-muted p-5 text-center ${i === 1 ? "col-start-3" : ""}`}>
-              <Bike className="mx-auto h-8 w-8 text-primary" />
+              <Bike className="mx-auto h-8 w-8 text-action" />
               <p className="mt-3 truncate font-semibold">{n ?? "Bike"}</p>
             </div>
           ))}
@@ -168,8 +120,8 @@ function ContentBlock() {
   return (
     <section aria-labelledby="conteudos">
       <div className="flex items-end justify-between gap-3">
-        <h2 id="conteudos" className="flex items-center gap-2 text-2xl font-bold"><Youtube className="h-6 w-6 text-primary" aria-hidden="true" /> Conteúdos e testes</h2>
-        <InactiveButton className="shrink-0 text-sm font-semibold text-primary">Ver no YouTube</InactiveButton>
+        <h2 id="conteudos" className="flex items-center gap-2 text-2xl font-bold"><Youtube className="h-6 w-6 text-action" aria-hidden="true" /> Conteúdos e testes</h2>
+        <InactiveButton className="shrink-0 text-sm font-semibold text-action">Ver no YouTube</InactiveButton>
       </div>
       <p className="mt-2 text-muted-foreground">Análises em vídeo e texto para ajudar na escolha.</p>
       <ul className="mt-5 grid gap-4 sm:grid-cols-3">
@@ -191,57 +143,17 @@ function Newsletter() {
     <section aria-labelledby="newsletter" className="rounded-3xl border border-border bg-muted p-6 sm:p-10">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center">
         <div>
-          <h2 id="newsletter" className="flex items-center gap-2 text-2xl font-bold"><Mail className="h-6 w-6 text-primary" aria-hidden="true" /> Newsletter Vitale</h2>
+          <h2 id="newsletter" className="flex items-center gap-2 text-2xl font-bold"><Mail className="h-6 w-6 text-action" aria-hidden="true" /> Newsletter Vitale</h2>
           <p className="mt-2 text-muted-foreground">Novidades sobre bikes elétricas, preços e ferramentas no seu email.</p>
         </div>
         {/* Sem <form>, sem name, sem submit: nenhum dado é coletado. */}
         <div className="flex flex-col gap-3 sm:flex-row">
           <label htmlFor="nl-email" className="sr-only">Seu email</label>
           <input id="nl-email" type="email" disabled aria-disabled="true" placeholder="seu@email.com" className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 text-sm" />
-          <InactiveButton className="h-12 rounded-xl bg-primary px-6 font-bold text-primary-foreground">Quero receber</InactiveButton>
+          <InactiveButton className="h-12 rounded-xl bg-primary px-6 font-bold text-action-foreground">Quero receber</InactiveButton>
         </div>
       </div>
     </section>
-  );
-}
-
-function HomeFooter() {
-  const cols: { title: string; items: { label: string; to: string | null }[] }[] = [
-    { title: "Produtos", items: [
-      { label: "Escolher minha bike", to: "/escolherbike" },
-      { label: "Radar de preços", to: "/acompanhamento" },
-      { label: "Comparar bikes", to: null },
-      { label: "Calculadora", to: null },
-    ] },
-    { title: "Conteúdo", items: [
-      { label: "Bikes monitoradas", to: "#bikes" },
-      { label: "Conteúdos e testes", to: null },
-      { label: "Newsletter", to: null },
-    ] },
-    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
-  ];
-  return (
-    <footer className="bg-ink text-ink-foreground/80">
-      <div className="responsive-container grid gap-10 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-        <div>
-          <Brand />
-          <p className="mt-4 max-w-xs">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
-        </div>
-        {cols.map((c) => (
-          <nav key={c.title} aria-label={c.title}>
-            <p className="font-bold text-ink-foreground">{c.title}</p>
-            <ul className="mt-3 space-y-2">
-              {c.items.map((i) => (
-                <li key={i.label}><ProductLink to={i.to} className="hover:text-mint">{i.label}</ProductLink></li>
-              ))}
-            </ul>
-          </nav>
-        ))}
-      </div>
-      <div className="border-t border-ink-foreground/10">
-        <p className="responsive-container py-5 text-xs">© 2026 Vitale Mobilidade</p>
-      </div>
-    </footer>
   );
 }
 
@@ -249,12 +161,11 @@ const HomeB2C = () => {
   const data = useLoaderData({ from: "/" });
   const ok = data?.ok === true;
   const cards = ok ? data.cards : [];
-  const search = ok ? data.search : [];
   const radar = ok ? data.radar : [];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <HomeHeader search={search} />
+      <SiteHeader />
       <main>
         <Hero />
         <Shortcuts />
@@ -264,18 +175,18 @@ const HomeB2C = () => {
           <RadarPreview items={radar} className="lg:order-2 lg:sticky lg:top-24" />
           {cards.length > 0 ? (
             <section id="bikes" aria-labelledby="bikes-monitoradas" className="scroll-mt-24 lg:order-1">
-              <div className="flex items-end justify-between gap-3">
-                <h2 id="bikes-monitoradas" className="text-2xl font-bold">Bikes com preço monitorado</h2>
-                <Link to="/acompanhamento" className="shrink-0 text-sm font-semibold text-primary hover:underline">Ver todas</Link>
-              </div>
+              <SectionHeading id="bikes-monitoradas" title="Bikes com preço monitorado" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/acompanhamento" className="hover:underline">Ver todas</Link>} />
               <ul className="mt-5 grid gap-4 sm:grid-cols-2">
                 {cards.map((e) => (
                   <li key={e.id}>
-                    <Link to="/acompanhamento/$bikeId" params={{ bikeId: e.id }} className="block h-full rounded-2xl border border-border bg-card p-5 transition-shadow hover:border-primary hover:shadow-md">
+                    <Link to="/acompanhamento/$bikeId" params={{ bikeId: e.id }} className="block h-full overflow-hidden rounded-2xl border border-line bg-card transition-shadow hover:border-action hover:shadow-md">
+                      <BikeMedia src={e.image} name={e.name} className="h-44" />
+                      <div className="p-5">
                       <h3 className="font-semibold">{e.name}</h3>
                       <p className="mt-3 text-xs text-muted-foreground">Preço atual registrado</p>
-                      <p className="text-2xl font-bold text-primary">{formatBRL(e.currentPrice)}</p>
-                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary">Ver histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                      <p className="text-2xl font-bold text-action">{formatBRL(e.currentPrice)}</p>
+                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-action">Ver histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                      </div>
                     </Link>
                   </li>
                 ))}
@@ -285,7 +196,7 @@ const HomeB2C = () => {
             <section id="bikes" className="scroll-mt-24 rounded-2xl border border-border p-6 lg:order-1">
               <h2 className="text-xl font-bold">Bikes monitoradas</h2>
               <p className="mt-2 text-muted-foreground">Veja todas as bikes acompanhadas no Radar de preços.</p>
-              <Link to="/acompanhamento" className="mt-4 inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+              <Link to="/acompanhamento" className="mt-4 inline-flex items-center gap-1 font-semibold text-action hover:underline">
                 <Search className="h-4 w-4" aria-hidden="true" /> Abrir o Radar
               </Link>
             </section>
@@ -314,7 +225,7 @@ const HomeB2C = () => {
           <Newsletter />
         </div>
       </main>
-      <HomeFooter />
+      <SiteFooter />
     </div>
   );
 };
