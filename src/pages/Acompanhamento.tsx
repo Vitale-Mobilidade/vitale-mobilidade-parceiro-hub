@@ -122,7 +122,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               {!error && entries.length > 0 && (
                 <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
-                    { k: "Bikes monitoradas", v: String(summary.tracked) },
+                    { k: "Modelos com histórico", v: String(summary.tracked + archived.length) },
                     { k: "No menor preço registrado", v: String(summary.atLowest) },
                     { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1).replace(".", ",")}%` },
                   ].map((i) => (

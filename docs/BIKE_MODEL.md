@@ -265,6 +265,6 @@ Fato operacional: em `bike_offers` as 3 linhas estão `is_current=false`, `end_r
 Contrato de exibição dessas bikes: preço **exibido** como "Último preço verificado" + data da confirmação, jamais apresentado como preço de hoje; ponto mais recente do gráfico em vermelho (significa **indisponibilidade da oferta**, não preço alto), legenda textual sempre visível, explicação por hover/foco/toque; sem CTA do Mercado Livre e sem alerta de preço. Série histórica inteira preservada.
 
 Estado da RPC hoje: `get_price_tracker_catalog()` está temporariamente limitada a **27 linhas** (só ofertas ativas). O código já tolera 27 ou 30:
-- `fetchTrackerSplit()` separa por `hasCurrentOffer` na leitura — com 27 a seção "Histórico arquivado" simplesmente não aparece; ao restaurar a cláusula para 30, as 3 entram automaticamente, sem novo deploy de código.
+- `fetchTrackerSplit()` separa por `hasCurrentOffer` na leitura — com 27 a seção pública "Sem oferta no momento" simplesmente não aparece; ao restaurar a cláusula para 30, as 3 entram automaticamente, sem novo deploy de código.
 - O **detalhe** `/radar/{bikeId}` não depende disso: usa `get_bike_price_history`, que já devolve as 3 com histórico e sem preço/link atual (verificado em `/radar/v35`).
 - `buildTrackerEntries()` ganhou `options.includeWithoutOffer` (padrão `false`, sem mudança para consumidores atuais) e o campo `hasCurrentOffer` por entrada; com a opção ligada, a bike sem link entra com o último preço registrado e `hasCurrentOffer:false` — nunca com CTA.
