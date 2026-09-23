@@ -46,13 +46,13 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
+        {/* Sem selo de classificação na listagem do Radar: só leitura factual. */}
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-base font-semibold leading-tight">
             <Link to={`${base}/${entry.id}`} className="hover:text-primary focus-visible:outline-none">
               {entry.name}
             </Link>
           </h3>
-          <Badge className={`shrink-0 border-0 text-[11px] ${CLASSIFICATION_COLOR[cls]}`}>{CLASSIFICATION_LABEL[cls]}</Badge>
         </div>
 
         <p className="mt-3 text-3xl font-bold tracking-tight text-primary">{formatBRL(entry.currentPrice)}</p>
