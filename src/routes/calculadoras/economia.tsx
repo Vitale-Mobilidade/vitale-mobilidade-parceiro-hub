@@ -71,6 +71,8 @@ const MODALS: { key: Modal; label: string; hint: string }[] = [
 
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+const dec = (v: number, d = 2) =>
+  v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: d });
 const numberOrNaN = (s: string) => (s.trim() === "" ? Number.NaN : Number(s.replace(",", ".")));
 
 function Field({
@@ -371,9 +373,9 @@ function CalculadoraEconomia() {
 
                     <dl className="grid gap-2 text-sm">
                       {[
-                        ["Dias no mês (52/12 semanas)", `${result.data.monthlyDays} dias`],
-                        ["Km no mês", `${result.data.monthlyKm} km`],
-                        ["Km substituídos pela bike", `${result.data.replacedKm} km`],
+                        ["Dias no mês (52/12 semanas)", `${dec(result.data.monthlyDays)} dias`],
+                        ["Km no mês", `${dec(result.data.monthlyKm)} km`],
+                        ["Km substituídos pela bike", `${dec(result.data.replacedKm)} km`],
                         ["Custo variável substituído", brl(result.data.currentVariableReplaced)],
                         ["Custos fixos deixados de pagar", brl(result.data.currentFixedRemoved)],
                         ["Energia da bike", brl(result.data.bikeEnergyCost)],
@@ -507,7 +509,7 @@ function CalculadoraEconomia() {
                 <div>
                   <p className="font-bold text-ink">As fórmulas</p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li>Dias no mês = dias por semana × {WEEKS_PER_MONTH.toFixed(4)} (52 semanas ÷ 12 meses)</li>
+                    <li>Dias no mês = dias por semana × {dec(WEEKS_PER_MONTH, 4)} (52 semanas ÷ 12 meses)</li>
                     <li>Km no mês = distância por dia × dias no mês</li>
                     <li>Km substituídos = km no mês × percentual substituível</li>
                     <li>Custo atual substituído = custo variável proporcional (+ custos fixos apenas se você deixar de manter o veículo)</li>
