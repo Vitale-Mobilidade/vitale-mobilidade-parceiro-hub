@@ -226,3 +226,64 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
 }
 
 export const MobilityCostEngine = { compute: computeMobilityCost, computeQuick: computeQuickMobilityCost };
+
+/**
+ * Custo anual de mobilidade (visão de gasto, NÃO de economia).
+ * total mensal = soma das categorias; anual = mensal × 12;
+ * parcela potencialmente substituível = total × percentual (informativa, não garantida:
+ * custos fixos de carro/moto mantidos continuam existindo).
+ */
+export type AnnualCostInput = {
+  carMoto: number;
+  rideHailing: number;
+  publicTransport: number;
+  parkingOther: number;
+  replaceablePercent: number;
+};
+
+export type AnnualCostResult =
+  | {
+      ok: true;
+      data: {
+        monthlyTotal: number;
+        annualTotal: number;
+        replaceableMonthly: number;
+        replaceableAnnual: number;
+        largestCategory: keyof Omit<AnnualCostInput, "replaceablePercent"> | null;
+      };
+    }
+  | { ok: false; errors: string[] };
+
+export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostResult {
+  const errors: string[] = [];
+  checkRange(errors, "Carro/moto", input.carMoto, LIMITS.monthlyMoney);
+  checkRange(errors, "Uber/99", input.rideHailing, LIMITS.monthlyMoney);
+  checkRange(errors, "Transporte público", input.publicTransport, LIMITS.monthlyMoney);
+  checkRange(errors, "Estacionamento e outros", input.parkingOther, LIMITS.monthlyMoney);
+  checkRange(errors, "Percentual substituível", input.replaceablePercent, LIMITS.replaceablePercent);
+  if (errors.length > 0) return { ok: false, errors };
+
+  const cats = {
+    carMoto: input.carMoto,
+    rideHailing: input.rideHailing,
+    publicTransport: input.publicTransport,
+    parkingOther: input.parkingOther,
+  };
+  const monthlyTotal = roundMoney(Object.values(cats).reduce((a, b) => a + b, 0));
+  const replaceableMonthly = roundMoney(monthlyTotal * (input.replaceablePercent / 100));
+  let largestCategory: AnnualCostResult extends { ok: true; data: infer D } ? D extends { largestCategory: infer L } ? L : never : never = null;
+  let max = 0;
+  for (const [key, value] of Object.entries(cats) as [keyof typeof cats, number][]) {
+    if (value > max) { max = value; largestCategory = key; }
+  }
+  return {
+    ok: true,
+    data: {
+      monthlyTotal,
+      annualTotal: roundMoney(monthlyTotal * 12),
+      replaceableMonthly,
+      replaceableAnnual: roundMoney(replaceableMonthly * 12),
+      largestCategory,
+    },
+  };
+}
