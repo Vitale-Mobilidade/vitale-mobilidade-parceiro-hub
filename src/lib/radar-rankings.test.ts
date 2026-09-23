@@ -156,9 +156,11 @@ describe("shortDiagnosis — texto factual, sem selo", () => {
     const e = entryWith({ daily, currentPrice: 7000 });
     const text = shortDiagnosis(e);
     expect(text).not.toMatch(/R\$ 0 /);
-    if (e.metrics.classification !== "typical" && e.metrics.classification !== "lowest") {
-      expect(text).toBe("Hoje está igual ao preço típico do período.");
-    }
+    expect(text).not.toMatch(/abaixo do preço típico/);
+
+    // Caso direto: classificação conclusiva com diferença zero.
+    const forced = { ...e, metrics: { ...e.metrics, classification: "good" as const, typicalPrice: e.currentPrice } };
+    expect(shortDiagnosis(forced)).toBe("Hoje está igual ao preço típico do período.");
   });
 
   it("histórico curto usa leitura factual, sem 'em formação'", () => {
