@@ -95,3 +95,12 @@ Estado de release (prévia / publicado por decisão explícita):
 - A associação de vídeos existe, mas requer reconciliação (ex.: "GT20" ambíguo; T2, Voltz EVS, EV1 Sport fora da aba de bikes). **Não prometer cobertura completa de vídeos** até reconciliar.
 - A leitura da planilha de catálogo é ponte temporária, não a arquitetura final apoiada em Supabase.
 - Trabalho pré-publicação: performance de imagem e payload (sem PageSpeed/CWV medido), `/bikes` e páginas de bike fora do sitemap, ausência de redirects/canonical entre `/acompanhamento/{bikeId}` e `/bikes/{slug}`.
+
+
+## Atualização — cutover do Radar no preview (Etapa 9)
+
+- Radar vigente: `/radar` e `/radar/{bikeId}`. `/acompanhamento` e `/acompanhamento/{bikeId}` respondem **301** para o equivalente em `/radar` (ID literal e query/UTM preservados). Válido após publicação.
+- Links internos do Radar (menu, rodapé, Home, `/bikes`, cards, busca, assistente) usam `/radar`. Canonical das páginas do Radar = `/radar…`.
+- `/bikes` continua sendo o destino para modelos sem preço monitorado; nada de histórico atribuído a eles.
+- Quiz `/escolherbike` não foi alterado; seu resultado segue terminal, focado no clique direto ao Mercado Livre.
+- Continuam proibidos links a `/comparar` e `/conteudos` (não existem).
