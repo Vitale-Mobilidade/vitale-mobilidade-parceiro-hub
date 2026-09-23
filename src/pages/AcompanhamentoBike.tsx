@@ -241,7 +241,14 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     </p>
                   </div>
                   <div className="px-4 py-4 sm:px-6">
-                    <DailyPriceChart series={archivedSeries} compact />
+                    <DailyPriceChart series={archivedSeries} compact markLastUnavailable />
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-destructive" />
+                        {UNAVAILABLE_LEGEND}
+                      </span>
+                      <UnavailableExplainer dateISO={bike.lastObservedAt} label="Entenda o ponto vermelho" />
+                    </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
                       sem verificação — nunca repetimos um preço que não confirmamos.
