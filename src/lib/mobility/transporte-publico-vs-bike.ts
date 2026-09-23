@@ -80,6 +80,6 @@ export function transportePublicoInsight(r: { cost: CostBreakdown; time: TimeBre
     case "tempo":
       return `Com esses dados, o ganho da bike é de tempo (${timeText}), mas com ${moneyText}. Não há retorno financeiro do investimento.`;
     default:
-      return `Com esses dados, o transporte público segue melhor: ${moneyText} e ${timeText}. Não há retorno do investimento.`;
+      return `Nos dados informados, não houve ganho com a bike: ${moneyText} e ${timeText}. Não há retorno do investimento.`;
   }
 }

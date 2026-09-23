@@ -37,7 +37,8 @@ describe("Transporte público vs bike", () => {
     if (!r.ok) throw new Error();
     expect(r.cost.monthlySavings).toBeLessThan(0);
     expect(r.dominant).toBe("nenhum");
-    expect(transportePublicoInsight(r)).toMatch(/transporte público segue melhor/);
+    expect(transportePublicoInsight(r)).toMatch(/não houve ganho com a bike/);
+    expect(transportePublicoInsight(r)).not.toMatch(/segue melhor/);
   });
   it("rejeita custo e tempo negativos, juntando os erros das duas fontes", () => {
     const r = computeTransportePublicoVsBike({ ...base, monthlySpend: -1, bikeMinutesPerDay: -5 });
