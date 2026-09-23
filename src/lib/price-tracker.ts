@@ -260,6 +260,21 @@ export function isSafePurchaseLink(link: string | null | undefined): boolean {
 
 export interface TrackerEntry extends TrackerBike {
   stats: PriceStats;
+  /**
+   * true  = oferta atual válida (preço + link da mesma linha de bike_offers) → pode ter CTA.
+   * false = sem oferta ativa no Mercado Livre. `currentPrice` é então o ÚLTIMO PREÇO
+   *         REGISTRADO (histórico, com `lastObservedAt`), nunca um preço verificado hoje,
+   *         e o item nunca recebe CTA nem alerta de preço.
+   */
+  hasCurrentOffer: boolean;
+}
+
+export interface BuildTrackerOptions {
+  /**
+   * Inclui bikes sem oferta atual (link inválido/ausente), preservando o último
+   * preço registrado. Padrão false: consumidores antigos continuam só com ofertas ativas.
+   */
+  includeWithoutOffer?: boolean;
 }
 
 /** Aplica os cálculos a todo o catálogo e ordena A-Z (pt-BR). */
@@ -267,9 +282,14 @@ export function buildTrackerEntries(
   bikes: TrackerBike[],
   days = 30,
   now: Date = new Date(),
+  options: BuildTrackerOptions = {},
 ): TrackerEntry[] {
+  const includeWithoutOffer = options.includeWithoutOffer === true;
   return (bikes ?? [])
-    .filter((b) => !!b && b.currentPrice > 0 && isSafePurchaseLink(b.link))
+    .filter((b) => !!b)
+    .map((b) => ({ ...b, hasCurrentOffer: b.currentPrice > 0 && isSafePurchaseLink(b.link) }))
+    // Sem oferta: só entra no catálogo público quando pedido E quando há preço histórico real.
+    .filter((b) => b.hasCurrentOffer || (includeWithoutOffer && b.currentPrice > 0 && b.observations > 0))
     .map((b) => ({ ...b, stats: computeStats(b, days, now) }))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
 }
