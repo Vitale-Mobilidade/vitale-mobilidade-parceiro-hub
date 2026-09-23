@@ -7,29 +7,30 @@ import { BarChart3, BookOpen, Calculator, GitCompareArrows, Users, type LucideIc
  * o CTA é renderizado inativo (aria-disabled, sem href). Para ligar, basta criar a
  * rota e preencher `to` aqui.
  */
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/acompanhamento" | "/escolherbike" | "/grupodeofertas" | null };
+export type HomeAnchor = "#comparar" | "#conteudos" | "#calc" | "#bikes";
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/acompanhamento" | "/escolherbike" | "/grupodeofertas" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
-  { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: null },
+  { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: "#comparar" },
   { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/acompanhamento" },
-  { key: "calculadora", title: "Calculadora", sub: "Entenda seus custos", icon: Calculator, to: null },
-  { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: null },
+  { key: "calculadora", title: "Calculadora", sub: "Entenda seus custos", icon: Calculator, to: "#calc" },
+  { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "#conteudos" },
   { key: "grupo", title: "Grupo de ofertas", sub: "Ofertas selecionadas", icon: Users, to: "/grupodeofertas" },
 ];
 
-export const NAV_ITEMS: { label: string; to: HomeProduct["to"] | "#bikes" }[] = [
+export const NAV_ITEMS: { label: string; to: HomeProduct["to"] }[] = [
   { label: "Bikes", to: "#bikes" },
-  { label: "Comparar", to: null },
-  { label: "Conteúdos", to: null },
-  { label: "Ferramentas", to: "/escolherbike" },
+  { label: "Comparar", to: "#comparar" },
+  { label: "Conteúdos", to: "#conteudos" },
+  { label: "Ferramentas", to: "#calc" },
   { label: "Radar", to: "/acompanhamento" },
 ];
 
-/** Link real quando há destino; caso contrário elemento inativo sem href nem ação. */
+/** Link real quando há destino; âncoras funcionais para seções da Home; caso contrário elemento inativo sem href nem ação. */
 export function ProductLink({ to, className, children }: { to: string | null; className: string; children: ReactNode }) {
   if (to === null) {
     return (
-      <span role="link" aria-disabled="true" className={`${className} cursor-default`}>
+      <span role="link" aria-disabled="true" className={`${className} cursor-not-allowed opacity-50`}>
         {children}
       </span>
     );
@@ -40,7 +41,7 @@ export function ProductLink({ to, className, children }: { to: string | null; cl
 
 export function InactiveButton({ className, children }: { className: string; children: ReactNode }) {
   return (
-    <button type="button" disabled aria-disabled="true" className={`${className} cursor-default opacity-90`}>
+    <button type="button" disabled aria-disabled="true" className={`${className} cursor-not-allowed opacity-50`}>
       {children}
     </button>
   );

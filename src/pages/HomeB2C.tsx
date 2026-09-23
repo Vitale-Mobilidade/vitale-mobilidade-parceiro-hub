@@ -117,8 +117,8 @@ function CalculatorBlock() {
       <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center">
         <div>
           <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
-          <h2 id="calc" className="mt-5 text-2xl font-bold sm:text-3xl">Calculadora de custos</h2>
-          <p className="mt-3 max-w-md text-ink-foreground/80">Entenda quanto uma bike elétrica custa no seu dia a dia, com base no seu trajeto e nos seus números.</p>
+          <h2 id="calc" className="mt-5 text-2xl font-bold sm:text-3xl">Calculadora de economia</h2>
+          <p className="mt-3 max-w-md text-ink-foreground/80">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
           <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground">
             Calcular meus custos <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </InactiveButton>
