@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
-import { formatBRL, formatDateBR, formatDateTimeBR, CLASSIFICATION_LABEL } from "@/lib/price-tracker";
+import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import {
   rangePosition,
   DAILY_WINDOWS,
