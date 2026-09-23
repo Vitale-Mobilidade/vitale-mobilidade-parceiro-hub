@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,10 +11,13 @@ import {
   Link,
 } from "@tanstack/react-router";
 import { HelmetProvider } from "react-helmet-async";
-import { RadarAssistant } from "@/components/radar/RadarAssistant";
 import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "../styles.css?url";
+
+const RadarAssistant = lazy(() =>
+  import("@/components/radar/RadarAssistant").then((m) => ({ default: m.RadarAssistant })),
+);
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
@@ -112,7 +115,9 @@ function RootComponent() {
       <HelmetProvider context={{}}>
         <Outlet />
         {/* Assistente Vitale: instância única. /escolherbike monta a sua própria. */}
-        <RadarAssistant />
+        <Suspense fallback={null}>
+          <RadarAssistant />
+        </Suspense>
       </HelmetProvider>
     </QueryClientProvider>
   );
