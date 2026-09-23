@@ -123,3 +123,7 @@ Estado de release (prévia / publicado por decisão explícita):
 - **Limites:** sem financiamento, inflação, revenda, depreciação ou valor do tempo; custos fixos de veículo mantido nunca entram.
 - **Privacidade:** nenhum nome, e-mail ou telefone é pedido ou enviado.
 - **Sinergia:** `/ferramentas` é a porta de entrada; `/radar` responde "este preço está bom hoje?"; `/escolherbike` continua sendo a conversão terminal e não é alterado por esta página.
+
+## Decisão 23/09/2026 — comparação passa a ser feature de /bikes (substitui /comparar)
+
+`/comparar` deixa de ser rota alvo. Menções anteriores a `/comparar` neste documento são históricas. Comparação agora é estado funcional de `/bikes?compare=bikeIdA,bikeIdB` (bikeId canônico, até 2 modelos): reload/back/compartilhamento preservam a seleção; canonical continua `/bikes`; nenhuma combinação entra no sitemap. Pontos de entrada: botão "Comparar" nos cards de `/bikes`, "Comparar com outra bike" em `/bikes/$slug` e `/radar/$bikeId`, "Comparar essas bikes" nas calculadoras com 2 recomendações, "Compare as especificações destes modelos" no bloco comparativo dos artigos e card "Comparar bikes" da Home. Header/footer sem link independente "Comparar". Eventos: `bike_compare_added`, `bike_compare_removed`, `bike_comparison_opened`, `comparison_bike_clicked`, `affiliate_click` (position `bikes_comparison`). Pendente: motor/bateria/peso não aparecem porque ainda não constam da leitura pública do catálogo; artigos "que comparam os dois" dependem de vídeos associados às duas bikes.
