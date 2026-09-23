@@ -34,10 +34,13 @@ export function mapCatalogRow(row: RpcRow): CatalogBike | null {
   const name = text(row.name);
   if (!bikeId || !slug || !name || !SLUG_RE.test(slug)) return null;
   const rawLink = typeof row.link === "string" ? row.link : "";
-  const link = MELI_RE.test(rawLink) ? rawLink : null;
+  const validLink = MELI_RE.test(rawLink) ? rawLink : null;
   const priceNum = typeof row.price === "number" ? row.price : Number(row.price);
-  // Preço e link vêm do MESMO registro de oferta atual: sem link válido, sem preço comercial.
-  const price = link && Number.isFinite(priceNum) && priceNum > 0 ? priceNum : null;
+  const validPrice = Number.isFinite(priceNum) && priceNum > 0 ? priceNum : null;
+  // Par atômico: preço e link vêm do MESMO registro de oferta atual — ou ambos, ou nenhum.
+  const hasOffer = validLink !== null && validPrice !== null;
+  const link = hasOffer ? validLink : null;
+  const price = hasOffer ? validPrice : null;
   return {
     bikeId,
     slug,

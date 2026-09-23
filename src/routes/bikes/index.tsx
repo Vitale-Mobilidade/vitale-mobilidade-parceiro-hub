@@ -31,8 +31,8 @@ const SORT_LABEL: Record<SortKey, string> = {
   autonomy_desc: "Maior autonomia",
 };
 
-/** Preço exibido no card: Radar quando existe; senão referência da planilha. */
-const priceOf = (b: DiscoveryBike) => b.radar?.currentPrice ?? b.sheetPrice ?? null;
+/** Preço comercial da oferta atual (card, filtro e ordenação). O Radar é histórico e nunca entra aqui. */
+const priceOf = (b: DiscoveryBike) => b.sheetPrice ?? null;
 
 /** Nulos sempre por último, independentemente da direção. */
 function cmpNullable(a: number | null, b: number | null, dir: 1 | -1) {
@@ -192,7 +192,7 @@ function BikesIndex() {
                 </select>
               </div>
               <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-5">
-                O filtro de preço usa o preço do Radar quando o modelo é monitorado; nos demais, o preço de referência cadastrado. Modelos sem o dado ficam fora do filtro correspondente e no fim da ordenação.
+                O filtro e a ordenação de preço usam o preço da oferta atual de cada modelo. Modelos sem oferta ativa ficam fora do filtro de preço e no fim da ordenação; o preço do Radar aparece apenas como histórico.
               </p>
             </form>
 
@@ -206,7 +206,7 @@ function BikesIndex() {
                 </button>
               )}
             </div>
-            {!radarOk && <p className="mt-2 text-xs text-muted-foreground">Os preços do Radar estão indisponíveis agora; exibimos apenas preços de referência.</p>}
+            {!radarOk && <p className="mt-2 text-xs text-muted-foreground">O histórico do Radar está indisponível agora; os preços exibidos são os das ofertas atuais.</p>}
 
             {results.length ? (
               <ul className="mt-4 grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 min-[1920px]:grid-cols-5">

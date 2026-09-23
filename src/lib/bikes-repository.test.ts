@@ -36,10 +36,13 @@ describe("leitura do catálogo (bikes + oferta atual)", () => {
     expect(b.sheetPrice).toBeNull();
   });
 
-  it("preço ausente não deixa o link sozinho fingindo oferta com preço", () => {
+  it("preço ausente também anula o link: nunca há CTA sem preço da mesma oferta", () => {
     const b = mapCatalogRow({ ...base, price: null })!;
-    expect(b.link).toBe("https://meli.la/abc123");
+    expect(b.link).toBeNull();
     expect(b.sheetPrice).toBeNull();
+    const zero = mapCatalogRow({ ...base, price: 0 })!;
+    expect(zero.link).toBeNull();
+    expect(zero.sheetPrice).toBeNull();
   });
 
   it("linha sem identidade válida é descartada", () => {
