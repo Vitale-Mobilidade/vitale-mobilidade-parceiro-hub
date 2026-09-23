@@ -61,8 +61,8 @@ COMMIT;
 --        'snapshot_backfill'
 -- FROM public.bike_catalog_snapshot s,
 --      jsonb_array_elements(s.data->'bikes') b
--- WHERE s.id = 'current'
--- ;  -- sem ON CONFLICT: conflito deve falhar e ser investigado.
+-- WHERE s.id = 'current';
+-- Sem ON CONFLICT: conflito deve falhar e ser investigado.
 -- Demais campos (autonomia, velocidade, motor, bateria, capacity_people)
 -- ficam NULL; preenchidos em tarefa separada com fonte validada.
 
