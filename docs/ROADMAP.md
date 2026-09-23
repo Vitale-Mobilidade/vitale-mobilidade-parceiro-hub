@@ -38,7 +38,7 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 
 - **Etapa 1**: em andamento. A conversão nativa no próprio Lovable foi feita e ainda **não foi publicada**.
 - Radar e Quiz possuem leitura SSR parcial (catálogo/histórico de preços).
-- Build da versão `44ed115b` passou.
+- Build da versão `77ab7b1a98d57e7379e029155236f6b9f195a197` passou; isso comprova compilação, não paridade funcional nem o 503 em falha real.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
 - **Etapa 2** tem apenas metadata parcial do Radar; **não está concluída**.
 - **Etapas 3 a 25**: não concluídas.
