@@ -1,3 +1,4 @@
+import type React from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
@@ -130,13 +131,6 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;
   if (block.type === "related") return null;
-  if (false) return <section className="my-8">
-    <h2 className="text-xl font-bold">Continue sua pesquisa</h2>
-    <div className="mt-3 flex flex-col gap-2">{relatedArticles.map(a =>
-      <a key={a.id} href={`/conteudos/${a.slug}`} className="text-emerald-800 underline">{a.title}</a>)}</div>
-    <div className="mt-4 flex flex-wrap gap-3"><a href="/radar" className="text-emerald-800 underline">Radar de preços</a>
-      <a href="/bikes" className="text-emerald-800 underline">Catálogo de bikes</a></div>
-  </section>;
   return null;
 }
 
