@@ -134,6 +134,16 @@ As referências de layout/hierarquia foram seguidas, mas sem dados inventados: n
 - Alturas medidas: desktop 1280px — Home 640, Bikes 640, Radar 640; mobile 390px — Home 640, Bikes 640, Radar 640; mobile 320px — Home ~704 (crescimento natural), Bikes 640, Radar 640.
 - `BikeCatalogCard`: o card inteiro é um único `<Link to="/bikes/$slug">` (foto, nome, selo Radar, preço, fonte, vídeos e CTA visual "Conhecer a bike"). Sem link separado para o Radar dentro do card; o acesso ao Radar fica no detalhe da bike. Hover/foco responde no card todo (`focus-visible:ring-4`), sem links aninhados nem `onClick` em div.
 
+## Página canônica da bike (`/bikes/{slug}`) — selo comercial
+
+Ajuste de escopo do responsável: **selos comerciais são bem-vindos aqui** (e só aqui; o painel `/radar/{bikeId}` continua sem selo de avaliação).
+
+- Componente `CommercialPriceBadge` (`src/components/site/CommercialPriceBadge.tsx`) sobre a lógica pura `commercialBadge` (`src/lib/commercial-badge.ts`); substitui o `PriceStatus` genérico no bloco de preço do hero.
+- Estados (derivados da `classification` já calculada por `dailyMetrics` sobre preços validados manualmente): `Menor preço registrado` (`lowest`, `bg-action`), `Oportunidade` (`good`, `bg-mint`), `Na faixa habitual` (`typical`, neutro), `Acima do habitual` (`above`, `bg-destructive`, sem alarmismo), `Preço registrado` (`forming`/sem histórico — neutro, nunca bom/mau), `Oferta indisponível` (sem link válido).
+- Cada selo traz uma frase curta factual abaixo; a cor é apoio, o texto sozinho comunica o estado.
+- **"Imperdível" nunca é automático**: fica reservado a decisão editorial humana futura — preço baixo isolado não comprova urgência nem estoque. Nenhum percentual de desconto é fabricado.
+- Sem oferta válida: nenhum CTA do Mercado Livre; o valor exibido é o **último preço registrado** com data ("Pode não ser o preço de hoje") e a seção "Preço no Radar" troca a faixa de preço por nota factual, para não posicionar um "preço atual" inexistente.
+
 ## Radar — detalhe da bike (`/radar/{bikeId}`): painel compacto de inteligência de preço
 
 Referência de **hierarquia/densidade** (padrão "price insights"), não de branding.
