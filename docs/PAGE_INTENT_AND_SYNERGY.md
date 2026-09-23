@@ -44,7 +44,7 @@ Regras de papel: Home permite escolher a jornada; página de Bike equilibra CTA 
 
 **Não editar o Quiz durante trabalho de hub/navegação.** **O RESULTADO é terminal; a North Star é o clique direto no link Mercado Livre.** **Sem novo header e sem links exploratórios para Radar/Bikes/Comparação/Conteúdo; sem assistente com autoabertura.** **A regra de elegibilidade vale só para os resultados do Quiz.**
 
-- Tensão pré-existente: a implementação atual pode ainda conter links residuais (compartilhar no WhatsApp, refazer quiz, eventual referência ao Radar). Isto é **registro para decisão explícita do responsável em tarefa separada do Quiz**, não instrução para alterar agora.
+- Ações secundárias pré-existentes no resultado: compartilhar no WhatsApp e refazer quiz. Este é **registro para decisão explícita do responsável em tarefa separada do Quiz**, não instrução para alterar agora.
 - As 30 bikes nomeadas da planilha, inclusive "Não Elegível", podem estar no catálogo editorial e em blocos factuais de modelos relacionados. **Nunca** chamar um modelo inelegível de recomendação do Quiz nem apresentá-lo como pior por ser inelegível.
 
 ## 4. Contratos de dados
