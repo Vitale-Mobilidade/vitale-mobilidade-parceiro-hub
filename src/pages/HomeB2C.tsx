@@ -3,7 +3,6 @@ import logo96 from "@/assets/logo-96.webp";
 import logo192 from "@/assets/logo-192.webp";
 import { formatBRL } from "@/lib/price-tracker";
 
-const MAX_CARDS = 6;
 
 function HomeHeader() {
   return (
