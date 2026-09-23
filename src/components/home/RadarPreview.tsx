@@ -14,7 +14,7 @@ export function RadarPreview({ items, className = "" }: { items: HomeRadarItem[]
             <BarChart3 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
             Radar de preços
           </h2>
-          <Link to="/acompanhamento" className="shrink-0 text-sm font-semibold text-primary hover:underline">
+          <Link to="/radar" className="shrink-0 text-sm font-semibold text-primary hover:underline">
             Ver todas
           </Link>
         </div>
@@ -22,7 +22,7 @@ export function RadarPreview({ items, className = "" }: { items: HomeRadarItem[]
           {items.map((i) => (
             <li key={i.id}>
               <Link
-                to="/acompanhamento/$bikeId"
+                to="/radar/$bikeId"
                 params={{ bikeId: i.id }}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 hover:text-primary"
               >

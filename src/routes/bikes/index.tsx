@@ -227,7 +227,7 @@ function BikesIndex() {
                 <LineChart className="h-6 w-6 text-action" aria-hidden="true" />
                 <h2 className="section-h2 mt-3 text-ink">O preço de hoje está bom?</h2>
                 <p className="mt-2 text-muted-foreground">Compare o preço atual com o histórico registrado pelo Radar Vitale.</p>
-                <Link to="/acompanhamento" className="mt-5 inline-flex h-11 items-center rounded-xl bg-ink px-5 text-sm font-bold text-ink-foreground hover:opacity-90">Abrir o Radar de preços</Link>
+                <Link to="/radar" className="mt-5 inline-flex h-11 items-center rounded-xl bg-ink px-5 text-sm font-bold text-ink-foreground hover:opacity-90">Abrir o Radar de preços</Link>
               </div>
             </section>
 

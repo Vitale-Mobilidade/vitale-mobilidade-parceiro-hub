@@ -1,19 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import { loadRadarBike, radarBikeHead, radarHeaders, RadarBikeNotFound } from "@/lib/radar-routes";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// Legado: o servidor responde 301 (src/server.ts). Aqui cobre navegação no cliente.
 export const Route = createFileRoute("/acompanhamento/$bikeId")({
-  loader: ({ params }) => loadRadarBike(params.bikeId),
-  headers: radarHeaders,
-  head: ({ params, loaderData }) => radarBikeHead("/acompanhamento", params.bikeId, loaderData),
-  component: LegacyRadarBikePage,
-  notFoundComponent: LegacyRadarBikeNotFound,
+  beforeLoad: ({ params, location }) => {
+    throw redirect({
+      href: `/radar/${encodeURIComponent(params.bikeId)}${location.searchStr ?? ""}`,
+      statusCode: 301,
+    });
+  },
 });
-
-function LegacyRadarBikePage() {
-  return <AcompanhamentoBike initial={Route.useLoaderData()} />;
-}
-
-function LegacyRadarBikeNotFound() {
-  return <RadarBikeNotFound base="/acompanhamento" />;
-}

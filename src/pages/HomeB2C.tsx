@@ -35,7 +35,7 @@ function Hero() {
           <Link to="/escolherbike" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90">
             <Bike className="h-5 w-5" aria-hidden="true" /> Escolher minha bike <ArrowRight className="h-5 w-5" aria-hidden="true" />
           </Link>
-          <Link to="/acompanhamento" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-mint/70 bg-ink/40 px-7 text-lg font-bold backdrop-blur-sm hover:bg-ink-foreground/10">
+          <Link to="/radar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-mint/70 bg-ink/40 px-7 text-lg font-bold backdrop-blur-sm hover:bg-ink-foreground/10">
             <BarChart3 className="h-5 w-5" aria-hidden="true" /> Ver Radar de preços
           </Link>
         </div>
@@ -65,7 +65,7 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
-        <SectionHeading id="bikes-monitoradas" title="Bikes monitoradas" sub="Veja todas as bikes acompanhadas no Radar de preços." action={<Link to="/acompanhamento" className="hover:underline">Abrir o Radar</Link>} />
+        <SectionHeading id="bikes-monitoradas" title="Bikes monitoradas" sub="Veja todas as bikes acompanhadas no Radar de preços." action={<Link to="/radar" className="hover:underline">Abrir o Radar</Link>} />
       </section>
     );
   }
@@ -120,7 +120,7 @@ function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number })
         <ul className="relative mt-6 grid gap-3 sm:grid-cols-3">
           {picks.map((it) => (
             <li key={it.id}>
-              <Link to="/acompanhamento/$bikeId" params={{ bikeId: it.id }} className="flex h-full items-center gap-3 rounded-2xl bg-ink-foreground/5 p-3 ring-1 ring-ink-foreground/10 transition hover:ring-mint/70 sm:flex-col sm:items-stretch">
+              <Link to="/radar/$bikeId" params={{ bikeId: it.id }} className="flex h-full items-center gap-3 rounded-2xl bg-ink-foreground/5 p-3 ring-1 ring-ink-foreground/10 transition hover:ring-mint/70 sm:flex-col sm:items-stretch">
                 <BikeMedia src={it.image} name={it.name} className="h-16 w-16 shrink-0 rounded-xl bg-background sm:aspect-[4/3] sm:h-auto sm:w-full" />
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-sm font-bold leading-tight">{it.name}</p>
@@ -132,7 +132,7 @@ function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number })
           ))}
         </ul>
       )}
-      <Link to="/acompanhamento" className="relative mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90 sm:w-fit">
+      <Link to="/radar" className="relative mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90 sm:w-fit">
         Explorar Radar de preços <ArrowRight className="h-5 w-5" aria-hidden="true" />
       </Link>
     </section>
@@ -191,14 +191,14 @@ function CompareBlock({ cards }: { cards: HomeCard[] }) {
           </div>
           <h2 id="comparar" className="section-h2 mt-4">Em dúvida entre dois modelos?</h2>
           <p className="mt-2 max-w-md text-ink-foreground/80">Coloque as opções lado a lado e decida com calma. Por enquanto, explore os modelos e preços no Radar.</p>
-          <Link to="/acompanhamento" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
+          <Link to="/radar" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
             Explorar modelos no Radar <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
         {pair.length === 2 && (
           <div className="relative grid grid-cols-2 gap-2 p-3 sm:p-4 md:pl-0">
             {pair.map((c) => (
-              <Link key={c.id} to="/acompanhamento/$bikeId" params={{ bikeId: c.id }} className="overflow-hidden rounded-2xl bg-card text-ink ring-1 ring-ink-foreground/10 transition hover:ring-mint">
+              <Link key={c.id} to="/radar/$bikeId" params={{ bikeId: c.id }} className="overflow-hidden rounded-2xl bg-card text-ink ring-1 ring-ink-foreground/10 transition hover:ring-mint">
                 <BikeMedia src={c.image} name={c.name} className="aspect-[4/3] w-full" />
                 <p className="truncate px-3 py-3 text-center text-sm font-bold">{c.name}</p>
               </Link>

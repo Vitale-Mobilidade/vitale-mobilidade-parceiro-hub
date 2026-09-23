@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { normalizeText } from "@/lib/price-daily";
 import type { HomeSearchItem } from "@/lib/home-cards.functions";
 
-/** Busca nas bikes reais do Radar; cada resultado abre /acompanhamento/{bikeId}. */
+/** Busca nas bikes reais do Radar; cada resultado abre /radar/{bikeId}. */
 export function HomeSearch({ items, className = "" }: { items: HomeSearchItem[]; className?: string }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -41,7 +41,7 @@ export function HomeSearch({ items, className = "" }: { items: HomeSearchItem[];
             results.map((r) => (
               <li key={r.id}>
                 <Link
-                  to="/acompanhamento/$bikeId"
+                  to="/radar/$bikeId"
                   params={{ bikeId: r.id }}
                   className="block rounded-lg px-3 py-2 text-sm hover:bg-muted"
                 >
