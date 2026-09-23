@@ -32,15 +32,3 @@ export const markRadarUnavailable = createServerOnlyFn(async () => {
   setResponseHeader("Cache-Control", "no-store");
   return null;
 });
-
-/**
- * Marca a resposta do documento SSR como não encontrada (404).
- * Chamado pelos loaders do Radar somente durante o SSR quando a leitura deu certo
- * mas a bike não existe (ID inválido ou desconhecido).
- */
-export const markRadarNotFound = createServerOnlyFn(async () => {
-  const { setResponseStatus, setResponseHeader } = await import("@tanstack/react-start/server");
-  setResponseStatus(404, "Not Found");
-  setResponseHeader("Cache-Control", "no-store");
-  return null;
-});
