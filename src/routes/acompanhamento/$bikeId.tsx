@@ -31,6 +31,10 @@ export const Route = createFileRoute("/acompanhamento/$bikeId")({
         meta: [
           { title: FALLBACK_TITLE },
           { name: "description", content: FALLBACK_DESCRIPTION },
+          { property: "og:title", content: FALLBACK_TITLE },
+          { property: "og:description", content: FALLBACK_DESCRIPTION },
+          { name: "twitter:title", content: FALLBACK_TITLE },
+          { name: "twitter:description", content: FALLBACK_DESCRIPTION },
           { name: "robots", content: "noindex, follow" },
           { name: "twitter:card", content: "summary_large_image" },
         ],
