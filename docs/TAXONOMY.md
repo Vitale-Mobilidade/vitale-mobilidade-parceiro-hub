@@ -55,7 +55,7 @@ A `Bike` é a raiz do domínio. Ela se relaciona com:
 
 ## 5. Slugs, aliases e redirects
 
-- **Feito:** `/acompanhamento[/{bikeId}]` → `/radar[/{bikeId}]` (301 real, publicado e verificado no domínio); `/calc` e `/calc/` → `/ferramentas` (301, em prévia).
+- **Feito:** `/acompanhamento[/{bikeId}]` → `/radar[/{bikeId}]` (301 real, publicado e verificado no domínio); `/calc` e `/calc/` → `/ferramentas` (301 publicado e verificado no domínio com query/UTM).
 - **Pendente:** mapeamento explícito entre `/bikes/{slug}` e IDs legados em redirects (hoje o slug é derivado por `_` → `-`, sem tabela de aliases).
 - Redirects são 301 centralizados em `src/lib/legacy-redirects.ts` + `src/server.ts`, nunca hardcoded em componentes.
 
@@ -109,6 +109,6 @@ Apenas Home, `/bikes` e o Radar (`/radar`) usam hero fotográfico com tema próp
 
 `/radar` e `/radar/{bikeId}` são as rotas canônicas do Radar, com canonical próprio. `/acompanhamento[/{bikeId}]` responde 301 antes do SSR, preservando `bikeId` literal e query/UTM. Menu, rodapé, Home, `/bikes`, cards, busca, assistente e sitemap apontam para `/radar`.
 
-## 9. `/ferramentas` (23/09/2026, prévia)
+## 9. `/ferramentas` (23/09/2026, publicada)
 
-Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/escolherbike`), Radar (`/radar`) e catálogo (`/bikes`). Comparador e calculadora aparecem em bloco "Em construção", sem CTA, sem número ou resultado. Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
+Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/escolherbike`), Radar (`/radar`) e catálogo (`/bikes`). Seção "Um caminho para decidir" ordena o percurso exploratório catálogo → Radar → Quiz (Quiz como passo terminal). Comparador e calculadora **não são citados** (sem "em construção" nem promessa pública). Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
