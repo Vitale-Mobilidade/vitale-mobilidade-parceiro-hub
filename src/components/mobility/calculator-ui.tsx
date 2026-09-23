@@ -370,6 +370,12 @@ export function RecommendationFooter({
         {hillsRequested &&
           " Para subidas, usamos apenas a marcação editorial disponível no catálogo; ela não substitui um teste de desempenho."}
       </p>
+      {bikes.length === 2 && (
+        <Link to="/bikes" search={{ compare: `${bikes[0].bikeId},${bikes[1].bikeId}` }}
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-line px-5 font-bold text-action hover:border-action">
+          Comparar essas bikes →
+        </Link>
+      )}
       <div className="grid gap-3 rounded-2xl bg-mint/20 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
         <div>
           <p className="text-lg font-black text-ink">Quer confirmar qual bike faz sentido para você?</p>

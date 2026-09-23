@@ -8,10 +8,10 @@ import { BarChart3, BookOpen, Calculator, GitCompareArrows, Users, type LucideIc
  * rota e preencher `to` aqui.
  */
 export type HomeAnchor = "#comparar" | "#conteudos" | "#ferramentas" | "#bikes";
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | HomeAnchor | null };
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | "/bikes" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
-  { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: "#comparar" },
+  { key: "comparar", title: "Comparar bikes", sub: "Escolha dois modelos e veja as diferenças lado a lado.", icon: GitCompareArrows, to: "/bikes" },
   { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/radar" },
   { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "/calculadoras/economia" },
   { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "#conteudos" },
@@ -20,7 +20,6 @@ export const HOME_PRODUCTS: HomeProduct[] = [
 
 export const NAV_ITEMS: { label: string; to: HomeProduct["to"] }[] = [
   { label: "Bikes", to: "#bikes" },
-  { label: "Comparar", to: "#comparar" },
   { label: "Conteúdos", to: "#conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
   { label: "Radar", to: "/radar" },

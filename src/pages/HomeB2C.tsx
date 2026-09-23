@@ -192,9 +192,9 @@ function CompareBlock({ cards }: { cards: HomeCard[] }) {
             <p className="text-xs font-bold tracking-[0.2em] text-mint">COMPARAR BIKES</p>
           </div>
           <h2 id="comparar" className="section-h2 mt-4">Em dúvida entre dois modelos?</h2>
-          <p className="mt-2 max-w-md text-ink-foreground/80">Coloque as opções lado a lado e decida com calma. Por enquanto, explore os modelos e preços no Radar.</p>
-          <Link to="/radar" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
-            Explorar modelos no Radar <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <p className="mt-2 max-w-md text-ink-foreground/80">Escolha dois modelos e veja as diferenças lado a lado.</p>
+          <Link to="/bikes" search={pair.length === 2 ? { compare: `${pair[0].id},${pair[1].id}` } : {}} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
+            Comparar bikes <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
         {pair.length === 2 && (
