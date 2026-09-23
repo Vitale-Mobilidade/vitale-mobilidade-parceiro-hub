@@ -19,12 +19,9 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
-import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
-import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getHomeCards } from "@/lib/home-cards.functions";
-import { PriceStatus } from "@/components/site/site-ui";
 import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData } from "@tanstack/react-router";
