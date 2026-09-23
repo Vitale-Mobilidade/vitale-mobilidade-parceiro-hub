@@ -33,6 +33,15 @@ const TOOLS = [
     body: "Informe seu gasto mensal e sua rotina para ver a estimativa na hora, além de até duas bikes compatíveis e suas projeções de custo.",
   },
   {
+    key: "custo-anual",
+    icon: Calculator,
+    title: "Custo anual de mobilidade",
+    to: "/calculadoras/custo-anual-mobilidade" as const,
+    cta: "Ver meu gasto anual",
+    question: "Quanto eu realmente gasto por ano para me locomover?",
+    body: "Some carro ou moto, aplicativos, transporte público e estacionamento e veja na hora seu custo mensal e anual, e quanto disso você acredita poder trocar por bike.",
+  },
+  {
     key: "payback",
     icon: Calculator,
     title: "Calculadora de payback",
