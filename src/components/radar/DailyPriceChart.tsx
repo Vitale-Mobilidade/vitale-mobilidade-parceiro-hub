@@ -69,7 +69,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   );
 }
 
-export function DailyPriceChart({ series }: Props) {
+export function DailyPriceChart({ series, compact = false }: Props) {
   const rows = toRows(series);
   if (rows.length === 0) {
     return (
