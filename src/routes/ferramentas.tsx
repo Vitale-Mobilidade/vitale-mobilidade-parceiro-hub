@@ -60,6 +60,15 @@ const TOOLS = [
     body: "Informe seu gasto mensal com corridas por app e sua rotina para ver a economia líquida mensal e anual e o custo acumulado de até duas bikes reais com oferta atual.",
   },
   {
+    key: "carro-vs-bike",
+    icon: Calculator,
+    title: "Carro vs bike",
+    to: "/calculadoras/carro-vs-bike" as const,
+    cta: "Comparar com meu carro",
+    question: "Carro ou bike: quanto custa cada um no trajeto?",
+    body: "Informe o gasto variável do carro nesses trajetos e sua rotina para ver a economia líquida estimada, o payback e o custo acumulado de até duas bikes reais.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",

@@ -18,6 +18,7 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
+import { Route as CalculadorasCarroVsBikeRouteImport } from './routes/calculadoras/carro-vs-bike'
 import { Route as CalculadorasCustoAnualMobilidadeRouteImport } from './routes/calculadoras/custo-anual-mobilidade'
 import { Route as CalculadorasEconomiaRouteImport } from './routes/calculadoras/economia'
 import { Route as CalculadorasPaybackRouteImport } from './routes/calculadoras/payback'
@@ -70,6 +71,11 @@ const BikesSlugRoute = BikesSlugRouteImport.update({
   path: '/bikes/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalculadorasCarroVsBikeRoute = CalculadorasCarroVsBikeRouteImport.update({
+  id: '/calculadoras/carro-vs-bike',
+  path: '/calculadoras/carro-vs-bike',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalculadorasCustoAnualMobilidadeRoute =
   CalculadorasCustoAnualMobilidadeRouteImport.update({
     id: '/calculadoras/custo-anual-mobilidade',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
+  '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
     | '/calculadoras/payback'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
     | '/calculadoras/payback'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
+    | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
     | '/calculadoras/payback'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   PainelBikesRoute: typeof PainelBikesRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   BikesSlugRoute: typeof BikesSlugRoute
+  CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
   CalculadorasCustoAnualMobilidadeRoute: typeof CalculadorasCustoAnualMobilidadeRoute
   CalculadorasEconomiaRoute: typeof CalculadorasEconomiaRoute
   CalculadorasPaybackRoute: typeof CalculadorasPaybackRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BikesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calculadoras/carro-vs-bike': {
+      id: '/calculadoras/carro-vs-bike'
+      path: '/calculadoras/carro-vs-bike'
+      fullPath: '/calculadoras/carro-vs-bike'
+      preLoaderRoute: typeof CalculadorasCarroVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calculadoras/custo-anual-mobilidade': {
       id: '/calculadoras/custo-anual-mobilidade'
       path: '/calculadoras/custo-anual-mobilidade'
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   PainelBikesRoute: PainelBikesRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   BikesSlugRoute: BikesSlugRoute,
+  CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
   CalculadorasCustoAnualMobilidadeRoute: CalculadorasCustoAnualMobilidadeRoute,
   CalculadorasEconomiaRoute: CalculadorasEconomiaRoute,
   CalculadorasPaybackRoute: CalculadorasPaybackRoute,

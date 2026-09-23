@@ -14,7 +14,7 @@ import {
   WEEKS_PER_MONTH,
 } from "@/lib/mobility/config";
 import { computeBikePaybacks } from "@/lib/mobility/payback-engine";
-import { computeUberVsBike, uberVsBikeInsight } from "@/lib/mobility/uber-vs-bike";
+import { carroVsBikeInsight, computeCarroVsBike } from "@/lib/mobility/carro-vs-bike";
 import { computeCostProjection } from "@/lib/mobility/projection-engine";
 import {
   QUICK_ORDER_CRITERION,
@@ -23,20 +23,20 @@ import {
 } from "@/lib/mobility/recommendation-engine";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
-const TITLE = "Uber/99 ou bike elétrica: qual sai mais barato? | Vitale Mobilidade";
+const TITLE = "Carro ou bike elétrica: quanto custa cada um no trajeto? | Vitale Mobilidade";
 const DESCRIPTION =
-  "Compare seu gasto com Uber/99 com o custo de uma bike elétrica real: economia mensal e anual, custo acumulado em 12, 24 e 36 meses e até duas bikes compatíveis.";
+  "Compare o gasto variável do carro no trajeto com o custo de uma bike elétrica real: economia líquida estimada, payback e custo acumulado em 12, 24 e 36 meses.";
 
-export const Route = createFileRoute("/calculadoras/uber-vs-bike")({
+export const Route = createFileRoute("/calculadoras/carro-vs-bike")({
   loader: () =>
     getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
-      path: "/calculadoras/uber-vs-bike",
+      path: "/calculadoras/carro-vs-bike",
       title: TITLE,
       description: DESCRIPTION,
-      ogTitle: "Uber/99 ou bike elétrica: qual sai mais barato?",
-      ogDescription: "Compare corridas por app com bikes reais com oferta atual, sem cadastro.",
+      ogTitle: "Carro ou bike elétrica: quanto custa cada um no trajeto?",
+      ogDescription: "Compare o gasto do carro no trajeto com bikes reais com oferta atual, sem cadastro.",
     });
     return {
       ...base,
@@ -46,8 +46,8 @@ export const Route = createFileRoute("/calculadoras/uber-vs-bike")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            name: "Calculadora Uber/99 vs bike elétrica",
-            url: canonicalUrl("/calculadoras/uber-vs-bike"),
+            name: "Calculadora carro vs bike elétrica",
+            url: canonicalUrl("/calculadoras/carro-vs-bike"),
             applicationCategory: "FinanceApplication",
             operatingSystem: "Web",
             inLanguage: "pt-BR",
@@ -59,10 +59,10 @@ export const Route = createFileRoute("/calculadoras/uber-vs-bike")({
       ],
     };
   },
-  component: CalculadoraUberVsBike,
+  component: CalculadoraCarroVsBike,
 });
 
-function CalculadoraUberVsBike() {
+function CalculadoraCarroVsBike() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
   const [monthlySpend, setMonthlySpend] = useState("");
   const [dailyKm, setDailyKm] = useState("");
@@ -71,6 +71,8 @@ function CalculadoraUberVsBike() {
   const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
+  const [keepsVehicle, setKeepsVehicle] = useState<boolean | null>(null);
+  const [fixedAvoided, setFixedAvoided] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
 
@@ -86,17 +88,21 @@ function CalculadoraUberVsBike() {
     dailyKm: validateNumber(dailyKm, "Distância por dia", LIMITS.dailyKm),
     daysPerWeek: validateNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek),
     replaceablePercent: validateNumber(replaceablePercent, "Percentual substituível", LIMITS.replaceablePercent),
+    fixedAvoided: keepsVehicle === false && fixedAvoided.trim() !== ""
+      ? validateNumber(fixedAvoided, "Custo fixo evitado", LIMITS.monthlyMoney)
+      : null,
     budget:
       budgetMode === "custom"
         ? validateNumber(customBudget, "Orçamento", LIMITS.budget)
         : null,
-  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget]);
+  }), [monthlySpend, dailyKm, daysPerWeek, replaceablePercent, budgetMode, customBudget, keepsVehicle, fixedAvoided]);
 
-  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget;
+  const requiredValid = !errors.monthlySpend && !errors.dailyKm && !errors.daysPerWeek && !errors.replaceablePercent && !errors.budget && keepsVehicle !== null && !errors.fixedAvoided;
   const costResult = useMemo(() => {
     if (!requiredValid) return null;
-    return computeUberVsBike(values);
-  }, [requiredValid, values]);
+    const fixed = keepsVehicle === false && fixedAvoided.trim() !== "" ? parseNumber(fixedAvoided) : undefined;
+    return computeCarroVsBike({ ...values, keepsVehicle: keepsVehicle as boolean, fixedAvoidedMonthly: fixed });
+  }, [requiredValid, values, keepsVehicle, fixedAvoided]);
   const data = costResult?.ok ? costResult.data : null;
   const hasBikeUse = data !== null && values.replaceablePercent > 0;
   const budget = resolveBudget(budgetMode, customBudget);
@@ -128,8 +134,12 @@ function CalculadoraUberVsBike() {
   const visibleError = (name: keyof typeof errors) => (touched[name] ? errors[name] : null);
   const paybacks = data ? computeBikePaybacks(bikes, data.currentTotalReplaced, data.bikeTotalCost) : [];
   const selectedPayback = paybacks.find((p) => p.bike.bikeId === selectedBike?.bikeId);
-  const insight = data ? uberVsBikeInsight({ replaceablePercent: values.replaceablePercent, monthlySavings: data.monthlySavings, annualSavings: data.annualSavings }) : null;
-  const annualCurrent = costResult?.ok ? costResult.annualCurrentSpend ?? 0 : 0;
+  const insight = data ? carroVsBikeInsight({ replaceablePercent: values.replaceablePercent, monthlySavings: data.monthlySavings, annualSavings: data.annualSavings, keepsVehicle: keepsVehicle === true, fixedIncluded: data.currentFixedRemoved }) : null;
+  const paybackLabel = !selectedPayback || !selectedPayback.projection.ok
+    ? "—"
+    : selectedPayback.projection.paybackMonths === null
+      ? "Sem retorno"
+      : `${decimal(selectedPayback.projection.paybackMonths)} meses`;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -137,12 +147,12 @@ function CalculadoraUberVsBike() {
       <main>
         <section className="bg-ink text-ink-foreground">
           <div className="responsive-container py-6 sm:py-8">
-            <p className="text-xs font-bold tracking-[0.2em] text-mint">UBER/99 VS BIKE</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-mint">CARRO VS BIKE</p>
             <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight sm:text-4xl">
-              Uber/99 ou bike elétrica: qual sai mais barato?
+              Carro ou bike elétrica: quanto custa cada um no trajeto?
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
-              Informe quanto gasta com corridas por app e sua rotina. A comparação com até duas bikes reais aparece na hora, sem cadastro.
+              Informe o gasto variável do carro nesses trajetos e sua rotina. A comparação com até duas bikes reais aparece na hora, sem cadastro.
             </p>
           </div>
         </section>
@@ -161,29 +171,50 @@ function CalculadoraUberVsBike() {
               <div className="mt-6 space-y-5">
                 <NumberField
                   name="monthlySpend"
-                  label="Gasto mensal total com Uber/99 hoje"
+                  label="Gasto mensal variável evitável do carro"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help="Some todas as corridas por aplicativo do mês, antes de qualquer troca pela bike. O percentual abaixo define quanto disso seria substituído."
+                  help="Só combustível, pedágio, estacionamento e outros gastos desses trajetos, antes da substituição. Não inclua seguro, IPVA, parcela ou outros custos fixos."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="dailyKm" label="Distância por dia nas corridas avaliadas" help="Trajeto total atual dessas corridas por dia, antes da substituição. O percentual é aplicado depois." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
+                  <NumberField name="dailyKm" label="Km por dia nos trajetos avaliados" help="Distância total atual desses deslocamentos de carro por dia, antes da substituição. O percentual é aplicado depois." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
                   <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
                 </div>
                 <NumberField
                   name="replaceablePercent"
-                  label="Percentual das corridas que a bike pode substituir"
+                  label="Percentual desses trajetos que a bike pode substituir"
                   value={replaceablePercent}
                   onChange={setReplaceablePercent}
                   onBlur={() => markTouched("replaceablePercent")}
                   suffix="%"
                   step="1"
-                  help="Considere só corridas de distância e condição viáveis de bike. Com 0%, a economia fica zerada e nenhum modelo é sugerido."
+                  help="Com 0%, a economia variável fica zerada e nenhum modelo é sugerido."
                   error={visibleError("replaceablePercent")}
                 />
+
+                <fieldset>
+                  <legend className="text-sm font-bold text-ink">Você continuará com o carro?</legend>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {([["Sim", true], ["Não", false]] as const).map(([label, v]) => (
+                      <label key={label} className={`flex min-h-11 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-bold ring-1 focus-within:ring-2 focus-within:ring-action ${keepsVehicle === v ? "bg-action text-action-foreground ring-action" : "bg-card text-ink ring-line"}`}>
+                        <input type="radio" name="keepsVehicle" className="sr-only" checked={keepsVehicle === v} onChange={() => setKeepsVehicle(v)} />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">Responder "Não" não adiciona nenhum valor sozinho. Seguro, IPVA e outros custos fixos só entram se você responder "Não" e digitar o valor em "Ajustar premissas".</p>
+                  {keepsVehicle === false && (
+                    <details className="mt-3 rounded-md bg-surface p-3 ring-1 ring-line">
+                      <summary className="min-h-11 cursor-pointer text-sm font-bold text-ink">Ajustar premissas (opcional)</summary>
+                      <div className="mt-3">
+                        <NumberField name="fixedAvoided" label="Custo fixo mensal que deixará de existir" value={fixedAvoided} onChange={setFixedAvoided} onBlur={() => markTouched("fixedAvoided")} suffix="R$/mês" help="Seguro, IPVA, licenciamento etc. que de fato desaparecem sem o carro. Em branco = nada somado." error={visibleError("fixedAvoided")} />
+                      </div>
+                    </details>
+                  )}
+                </fieldset>
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
                 <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
@@ -203,13 +234,14 @@ function CalculadoraUberVsBike() {
               ) : (
                 <div className="mt-5 space-y-5">
                   <dl className="grid grid-cols-2 gap-3">
-                    <Metric label="Gasto anual atual com apps" value={brl(annualCurrent, true)} />
-                    <Metric label="Corridas substituíveis por mês" value={brl(data.currentTotalReplaced, true)} />
+                    <Metric label="Gasto evitável do carro/mês" value={brl(data.currentTotalReplaced, true)} />
+                    <Metric label="Custo operacional da bike/mês" value={brl(data.bikeTotalCost, true)} />
                     <Metric label={data.monthlySavings >= 0 ? "Economia líquida mensal" : "Diferença líquida mensal"} value={brl(data.monthlySavings, true)} emphasis />
                     <Metric label={data.annualSavings >= 0 ? "Economia líquida anual" : "Diferença líquida anual"} value={brl(data.annualSavings, true)} emphasis />
+                    <Metric label={selectedBike ? `Payback estimado · ${selectedBike.name}` : "Payback estimado"} value={paybackLabel} />
                   </dl>
                   <p className={`rounded-md p-4 text-sm leading-relaxed ${data.monthlySavings > 0 ? "bg-mint/20 text-ink" : "bg-surface text-muted-foreground ring-1 ring-line"}`}>{insight}</p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">Estimativa operacional, sem incluir o preço da bike: custo estimado da bike {brl(data.bikeTotalCost, true)}/mês. O preço real entra no gráfico e nos cards.</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">Estimativa, não garantia. Economia sem o preço da bike; o preço real entra no payback, no gráfico e nos cards.</p>
 
                   {selectedBike && selectedProjection?.ok && hasBikeUse && (
                     <CostProjectionChart
@@ -240,7 +272,7 @@ function CalculadoraUberVsBike() {
               ) : (
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {paybacks.map(({ bike, projection }) => (
-                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_uber_vs_bike" />
+                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={projection} position="calculadora_carro_vs_bike" />
                   ))}
                 </div>
               )}
@@ -251,10 +283,10 @@ function CalculadoraUberVsBike() {
             <summary className="min-h-11 cursor-pointer text-xl font-black text-ink">Como calculamos?</summary>
             <div className="mt-5 grid gap-6 text-sm leading-relaxed text-muted-foreground lg:grid-cols-2">
               <div>
-                <h2 className="font-bold text-ink">Uber/99 vs bike</h2>
+                <h2 className="font-bold text-ink">Carro vs bike</h2>
                 <ul className="mt-2 list-disc space-y-2 pl-5">
-                  <li>Gasto anual atual = gasto mensal com apps × 12.</li>
-                  <li>Gasto substituível = gasto mensal com apps × percentual de corridas substituíveis.</li>
+                  <li>Gasto evitável = gasto variável informado × percentual substituível (+ custo fixo evitado, somente se você disser que não continuará com o carro e digitar o valor).</li>
+                  <li>Responder "não" sozinho não adiciona nenhum valor: não estimamos seguro, IPVA ou depreciação.</li>
                   <li>Km substituídos = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12) × percentual.</li>
                   <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
                   <li>Economia líquida = gasto substituível − custo operacional da bike; anual = mensal × 12.</li>
@@ -266,7 +298,7 @@ function CalculadoraUberVsBike() {
                   <li>Nos horizontes de {PROJECTION_MONTHS.join(", ")} meses, o custo da bike inclui seu preço real atual e o custo operacional acumulado.</li>
                   <li>Retorno estimado = preço atual ÷ economia mensal positiva. Com economia zero ou negativa, não existe payback positivo.</li>
                   <li>Valores são arredondados para centavos; as projeções não incluem financiamento, inflação, revenda, depreciação ou imprevistos.</li>
-                  <li>Tarifa dinâmica, gorjetas e variação de preço dos apps não são modeladas; usamos só o gasto que você informou.</li>
+                  <li>Venda do carro, depreciação, financiamento e custos fixos não informados ficam fora.</li>
                 </ul>
               </div>
               <div>
