@@ -8,6 +8,7 @@ import {
   Outlet,
   Scripts,
   useRouter,
+  useRouterState,
   Link,
 } from "@tanstack/react-router";
 import { HelmetProvider } from "react-helmet-async";
