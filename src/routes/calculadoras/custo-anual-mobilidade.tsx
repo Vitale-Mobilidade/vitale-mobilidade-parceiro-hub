@@ -68,23 +68,35 @@ function CustoAnualMobilidade() {
   const set = (key: keyof typeof values) => (v: string) => setValues((c) => ({ ...c, [key]: v }));
   const touch = (key: string) => () => setTouched((c) => ({ ...c, [key]: true }));
 
-  const errors = useMemo(() => ({
-    carMoto: validateNumber(values.carMoto, "Carro ou moto", LIMITS.monthlyMoney),
-    rideHailing: validateNumber(values.rideHailing, "Uber / 99", LIMITS.monthlyMoney),
-    publicTransport: validateNumber(values.publicTransport, "Transporte público", LIMITS.monthlyMoney),
-    parkingOther: validateNumber(values.parkingOther, "Estacionamento e outros", LIMITS.monthlyMoney),
-    replaceablePercent: validateNumber(values.replaceablePercent, "Percentual", LIMITS.replaceablePercent),
+  // Categorias de gasto são opcionais: branco = ausente (vira 0 só quando outra categoria
+  // tiver valor). Só preenchidas são validadas; negativos/NaN/limites continuam erro.
+  const fields = useMemo(() => ({
+    carMoto: normalizeOptionalSpend(values.carMoto, "Carro ou moto"),
+    rideHailing: normalizeOptionalSpend(values.rideHailing, "Uber / 99"),
+    publicTransport: normalizeOptionalSpend(values.publicTransport, "Transporte público"),
+    parkingOther: normalizeOptionalSpend(values.parkingOther, "Estacionamento e outros"),
   }), [values]);
-  const allValid = Object.values(errors).every((e) => e === null);
-  const result = useMemo(() => allValid
+  const errors = {
+    carMoto: fields.carMoto.error,
+    rideHailing: fields.rideHailing.error,
+    publicTransport: fields.publicTransport.error,
+    parkingOther: fields.parkingOther.error,
+    replaceablePercent: validateNumber(values.replaceablePercent, "Percentual", LIMITS.replaceablePercent),
+  };
+  const anySpendProvided = fields.carMoto.provided || fields.rideHailing.provided
+    || fields.publicTransport.provided || fields.parkingOther.provided;
+  const ready = anySpendProvided && errors.replaceablePercent === null
+    && !fields.carMoto.error && !fields.rideHailing.error
+    && !fields.publicTransport.error && !fields.parkingOther.error;
+  const result = useMemo(() => ready
     ? computeAnnualMobilityCost({
-        carMoto: parseNumber(values.carMoto),
-        rideHailing: parseNumber(values.rideHailing),
-        publicTransport: parseNumber(values.publicTransport),
-        parkingOther: parseNumber(values.parkingOther),
-        replaceablePercent: parseNumber(values.replaceablePercent),
+        carMoto: fields.carMoto.value,
+        rideHailing: fields.rideHailing.value,
+        publicTransport: fields.publicTransport.value,
+        parkingOther: fields.parkingOther.value,
+        replaceablePercent: Number(values.replaceablePercent.replace(",", ".")),
       })
-    : null, [allValid, values]);
+    : null, [ready, fields, values.replaceablePercent]);
   const data = result?.ok ? result.data : null;
   const err = (key: keyof typeof errors) => (touched[key] ? errors[key] : null);
 
