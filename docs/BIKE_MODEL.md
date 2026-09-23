@@ -52,7 +52,7 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 - **URLs afiliadas:** devem ser preservadas byte a byte. Não reescrever, normalizar nem copiar para conteúdo.
 - **Divergência Quiz × Radar:** as regras de elegibilidade diferem, e um modelo único não pode mudar silenciosamente nenhuma das duas.
 
-## 7. Evidência do schema vivo (read-only, 23/09/2026, informada pelo responsável)
+## 7. Evidência do schema vivo (read-only, 23/09/2026, auditoria desta task)
 - `public.bikes` **não existe**.
 - As seis tabelas (`bike_catalog_snapshot`, `bike_admin_overrides`, `bike_assets`, `bike_profiles`, `bike_price_history`, `bike_price_daily`) têm RLS habilitado.
 - Snapshot `current`: **30** `bike_id`. União snapshot/overrides/assets/profiles/history/daily: **32**.
