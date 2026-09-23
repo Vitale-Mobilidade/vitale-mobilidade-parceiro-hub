@@ -187,9 +187,9 @@ export function shortDiagnosis(entry: RadarEntry): string {
   }
   const diff = typicalPrice !== null ? Math.round(typicalPrice - entry.currentPrice) : 0;
   if (classification === "lowest") return "É o menor preço que já registramos para esta bike.";
+  if (classification === "typical") return "Está dentro da faixa de preço mais comum do período.";
   if (diff === 0) return "Hoje está igual ao preço típico do período.";
   if (diff > 0) return `Hoje está R$ ${diff.toLocaleString("pt-BR")} abaixo do preço típico.`;
-  if (classification === "typical") return "Está dentro da faixa de preço mais comum do período.";
   return `Hoje está R$ ${Math.abs(diff).toLocaleString("pt-BR")} acima do preço típico.`;
 }
 
