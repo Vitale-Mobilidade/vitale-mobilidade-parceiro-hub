@@ -56,6 +56,8 @@ export function LucasSDRWidget({
   manualOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
+  // Nas calculadoras, no mobile, o launcher fechado vira círculo de 56px para não cobrir resultados.
+  const compactOnMobile = useRouterState({ select: (s) => s.location.pathname.startsWith("/calculadoras/") });
   const [showInvite, setShowInvite] = useState(false);
   const [inviteDismissed, setInviteDismissed] = useState(() => readFlag(ctx.leadId, "invite_dismissed"));
   const [autoOpenBlocked, setAutoOpenBlocked] = useState(() =>
