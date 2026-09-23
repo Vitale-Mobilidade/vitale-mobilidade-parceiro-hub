@@ -645,6 +645,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bikes: {
+        Row: {
+          autonomy_km: number | null
+          battery: string | null
+          bike_id: string
+          capacity_people: number | null
+          created_at: string
+          max_speed_kmh: number | null
+          motor_w: number | null
+          name: string
+          slug: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          autonomy_km?: number | null
+          battery?: string | null
+          bike_id: string
+          capacity_people?: number | null
+          created_at?: string
+          max_speed_kmh?: number | null
+          motor_w?: number | null
+          name: string
+          slug: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          autonomy_km?: number | null
+          battery?: string | null
+          bike_id?: string
+          capacity_people?: number | null
+          created_at?: string
+          max_speed_kmh?: number | null
+          motor_w?: number | null
+          name?: string
+          slug?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
