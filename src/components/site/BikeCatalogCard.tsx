@@ -22,19 +22,20 @@ export function BikeCatalogCard({ bike }: { bike: DiscoveryBike }) {
         {bike.radar && <PriceStatus classification={bike.radar.classification} />}
         <h3 className="line-clamp-2 text-lg font-bold leading-snug text-ink group-hover:text-action">{bike.name}</h3>
         {specs && <p className="text-sm text-muted-foreground">{specs}</p>}
+        {/* Preço exibido é sempre o da oferta atual; o Radar entra só como contexto histórico. */}
         <div className="mt-1">
-          {bike.radar ? (
-            <>
-              <p className="text-xl font-black text-ink">{formatBRL(bike.radar.currentPrice)}</p>
-              <p className="text-xs text-muted-foreground">Preço registrado pelo Radar Vitale</p>
-            </>
-          ) : bike.sheetPrice ? (
+          {bike.sheetPrice !== null ? (
             <>
               <p className="text-xl font-black text-ink">{formatBRL(bike.sheetPrice)}</p>
-              <p className="text-xs text-muted-foreground">Preço de referência cadastrado (não monitorado)</p>
+              <p className="text-xs text-muted-foreground">Preço da oferta atual registrada pela Vitale</p>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Preço não informado</p>
+            <p className="text-sm text-muted-foreground">Sem oferta ativa no momento</p>
+          )}
+          {bike.radar && (
+            <p className="text-xs text-muted-foreground">
+              Radar (histórico): {formatBRL(bike.radar.currentPrice)}
+            </p>
           )}
         </div>
         {bike.videoCount !== null && bike.videoCount > 0 && (
