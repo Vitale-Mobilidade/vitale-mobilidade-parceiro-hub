@@ -99,34 +99,28 @@ export function PriceIntelPanel({
       <div className="px-4 py-4 sm:px-6">
         <p className="text-base font-medium text-ink">{verdict}</p>
 
-        {/* Farol segmentado */}
+        {/* Escala verde/amarelo/vermelho: referência visual sobre os registros reais. */}
         {hasRange ? (
           <div className="mt-4">
+            <p className="mb-2 text-4xl font-extrabold tracking-tight text-action">{formatBRL(currentPrice)}</p>
             <div
               className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
               role="img"
               aria-label={
                 forming
-                  ? `Escala de referência preliminar: de ${formatBRL(minPrice)} a ${formatBRL(maxPrice)}. Sem classificação — histórico em formação.`
+                  ? `Preço atual ${formatBRL(currentPrice)} na escala dos registros: menor ${formatBRL(minPrice)}, mediana ${formatBRL(typicalPrice)}, maior ${formatBRL(maxPrice)}. Referência visual, sem classificação.`
                   : `${markerLabel}. Faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}, entre ${formatBRL(minPrice)} e ${formatBRL(maxPrice)}.`
               }
             >
+              <div className="absolute inset-y-0 left-0 bg-action/70" style={{ width: `${bandStart * 100}%` }} />
               <div
-                className={`absolute inset-y-0 left-0 ${forming ? "bg-muted-foreground/20" : "bg-action/70"}`}
-                style={{ width: `${bandStart * 100}%` }}
-              />
-              <div
-                className={`absolute inset-y-0 ${forming ? "bg-muted-foreground/30" : "bg-amber-400/80"}`}
+                className="absolute inset-y-0 bg-amber-400/80"
                 style={{ left: `${bandStart * 100}%`, width: `${Math.max(bandEnd - bandStart, 0.02) * 100}%` }}
               />
-              <div
-                className={`absolute inset-y-0 right-0 ${forming ? "bg-muted-foreground/20" : "bg-destructive/70"}`}
-                style={{ left: `${bandEnd * 100}%` }}
-              />
-              {/* Marcador do preço atual: só quando há leitura válida. */}
-              {!forming && pos !== null && (
+              <div className="absolute inset-y-0 right-0 bg-destructive/70" style={{ left: `${bandEnd * 100}%` }} />
+              {pos !== null && (
                 <span
-                  className={`absolute top-1/2 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card ${markerTone}`}
+                  className={`absolute top-1/2 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card ${forming ? "bg-ink" : markerTone}`}
                   style={{ left: `${pos * 100}%` }}
                   aria-hidden="true"
                 />
@@ -135,29 +129,24 @@ export function PriceIntelPanel({
 
             <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
-                {forming ? "Menor (preliminar)" : "Baixo preço"}
+                {forming ? "Menor registrado" : "Baixo preço"}
                 <span className="block font-bold text-ink">{formatBRL(minPrice)}</span>
               </span>
               <span className="text-center">
-                {forming ? "Mediana (preliminar)" : "Faixa habitual"}
+                {forming ? "Mediana dos registros" : "Faixa habitual"}
                 <span className="block font-bold text-ink">
                   {forming ? formatBRL(typicalPrice) : `${formatBRL(p25)} – ${formatBRL(p75)}`}
                 </span>
               </span>
               <span className="text-right">
-                {forming ? "Maior (preliminar)" : "Preço alto"}
+                {forming ? "Maior registrado" : "Preço alto"}
                 <span className="block font-bold text-ink">{formatBRL(maxPrice)}</span>
               </span>
             </div>
-            {forming && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Escala apenas explicativa: valores preliminares, sem classificar esta bike.
-              </p>
-            )}
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
-            Até agora registramos um único preço nesse período, então ainda não há faixa para comparar.
+            Até agora registramos um único preço nesse período, então não há faixa para comparar.
           </p>
         )}
 
