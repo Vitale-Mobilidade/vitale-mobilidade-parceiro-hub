@@ -182,14 +182,15 @@ export function shortDiagnosis(entry: RadarEntry): string {
   const { classification, typicalPrice } = entry.metrics;
   if (classification === "forming") {
     return isAtRecordedMin(entry)
-      ? "É o menor preço que registramos até agora — histórico ainda em formação."
-      : "Histórico em formação — ainda observando este preço.";
+      ? "É o menor preço registrado por nós até agora."
+      : "Preço registrado no histórico da Vitale.";
   }
-  const diff = typicalPrice !== null ? typicalPrice - entry.currentPrice : 0;
+  const diff = typicalPrice !== null ? Math.round(typicalPrice - entry.currentPrice) : 0;
   if (classification === "lowest") return "É o menor preço que já registramos para esta bike.";
-  if (classification === "good") return `Hoje está R$ ${Math.round(diff).toLocaleString("pt-BR")} abaixo do preço típico.`;
+  if (diff === 0) return "Hoje está igual ao preço típico do período.";
+  if (diff > 0) return `Hoje está R$ ${diff.toLocaleString("pt-BR")} abaixo do preço típico.`;
   if (classification === "typical") return "Está dentro da faixa de preço mais comum do período.";
-  return `Hoje está R$ ${Math.round(Math.abs(diff)).toLocaleString("pt-BR")} acima do preço típico.`;
+  return `Hoje está R$ ${Math.abs(diff).toLocaleString("pt-BR")} acima do preço típico.`;
 }
 
 export const CLASSIFICATION_COLOR: Record<Classification, string> = {
