@@ -4,8 +4,11 @@
  * Valores são premissas explícitas, exibidas ao usuário na página e editáveis quando fazem parte do cenário dele.
  */
 
+/** Semanas por ano consideradas por padrão. Editável pelo usuário nas rotas de tempo. */
+export const WEEKS_PER_YEAR = 52;
+
 /** Semanas por mês: 52 semanas / 12 meses. Explícito para não usar "4 semanas" implícito. */
-export const WEEKS_PER_MONTH = 52 / 12;
+export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 
 /** Margem de segurança sobre a autonomia declarada do fabricante ao recomendar bikes. */
 export const AUTONOMY_SAFETY_MARGIN = 1.2;
@@ -20,6 +23,11 @@ export const LIMITS = {
   kmPerLiter: { min: 1, max: 100 },
   tripsPerDay: { min: 1, max: 10 },
   speedKmh: { min: 1, max: 120 },
+  /** Minutos por dia (ida + volta somados). */
+  minutesPerDay: { min: 0, max: 1440 },
+  weeksPerYear: { min: 1, max: 53 },
+  /** Orçamento máximo opcional: quando informado, precisa ser plausível — nunca vira "sem limite". */
+  budget: { min: 1, max: 200000 },
 } as const;
 
 /** Máximo de bikes sugeridas no resultado da calculadora. */

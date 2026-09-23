@@ -1,51 +1,91 @@
 /**
- * MobilityTimeEngine — base compartilhada de tempo de deslocamento.
- * Puro e determinístico; usa apenas velocidades informadas pelo usuário.
- * Fundação para rotas futuras (tempo/payback). Nenhuma velocidade é presumida aqui.
+ * MobilityTimeEngine — fundação pura de tempo de deslocamento.
+ *
+ * Contrato (alinhado às rotas futuras do hub): o usuário informa MINUTOS POR DIA
+ * (já somando ida + volta). Nenhuma velocidade é presumida nem derivada de distância.
+ * Quando existe cenário alternativo (bike), ele também vem em minutos por dia informados.
+ *
+ * Fórmulas:
+ *   minutosEconomizadosPorDia = minutosAtuais - minutosDeBike (0 quando não há cenário bike)
+ *   diasPorAno   = diasPorSemana * semanasPorAno (semanas por ano editáveis; padrão explícito 52)
+ *   horasPorAno  = (minutosPorDia * diasPorAno) / 60
+ *   diasCompletos (24h) = horasPorAno / 24
+ *   jornadas de 8h      = horasPorAno / 8
+ *
+ * Resultado negativo (bike mais lenta) é devolvido como está. Zero é zero.
  */
-import { LIMITS, WEEKS_PER_MONTH, roundMoney } from "./config";
+import { LIMITS, WEEKS_PER_YEAR } from "./config";
 
 export type TimeInput = {
-  dailyKm: number;
+  /** Minutos por dia no cenário atual, ida + volta, informados pelo usuário. */
+  currentMinutesPerDay: number;
+  /** Minutos por dia no cenário de bike, ida + volta. Omitido = sem cenário alternativo. */
+  bikeMinutesPerDay?: number;
   daysPerWeek: number;
-  /** Velocidade média atual porta a porta (km/h), informada pelo usuário. */
-  currentSpeedKmh: number;
-  /** Velocidade média estimada de bike (km/h), informada pelo usuário. */
-  bikeSpeedKmh: number;
+  /** Semanas por ano consideradas (editável; padrão explícito 52). */
+  weeksPerYear?: number;
 };
 
 export type TimeBreakdown = {
+  daysPerYear: number;
   currentMinutesPerDay: number;
-  bikeMinutesPerDay: number;
-  /** Positivo = a bike economiza tempo; negativo = a bike demora mais. */
+  bikeMinutesPerDay: number | null;
+  /** Positivo = a bike economiza tempo; negativo = a bike demora mais; 0 = igual ou sem cenário bike. */
   savedMinutesPerDay: number;
-  savedHoursPerMonth: number;
+  currentHoursPerYear: number;
+  bikeHoursPerYear: number | null;
+  savedHoursPerYear: number;
+  /** Horas economizadas por ano convertidas em dias de 24h. */
+  savedFullDaysPerYear: number;
+  /** Horas economizadas por ano convertidas em jornadas de 8h. */
+  savedWorkdaysPerYear: number;
 };
 
 export type TimeResult = { ok: true; data: TimeBreakdown } | { ok: false; errors: string[] };
 
-const valid = (v: unknown, min: number, max: number): v is number =>
+const inRange = (v: unknown, min: number, max: number): v is number =>
   typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
 export function computeMobilityTime(input: TimeInput): TimeResult {
   const errors: string[] = [];
-  if (!valid(input.dailyKm, LIMITS.dailyKm.min, LIMITS.dailyKm.max)) errors.push("Distância por dia inválida.");
-  if (!valid(input.daysPerWeek, LIMITS.daysPerWeek.min, LIMITS.daysPerWeek.max)) errors.push("Dias por semana inválidos.");
-  if (!valid(input.currentSpeedKmh, LIMITS.speedKmh.min, LIMITS.speedKmh.max)) errors.push("Velocidade média atual inválida.");
-  if (!valid(input.bikeSpeedKmh, LIMITS.speedKmh.min, LIMITS.speedKmh.max)) errors.push("Velocidade média de bike inválida.");
+
+  if (!inRange(input.currentMinutesPerDay, LIMITS.minutesPerDay.min, LIMITS.minutesPerDay.max)) {
+    errors.push("Minutos por dia hoje: informe um número entre 0 e 1440 (ida + volta).");
+  }
+  const hasBike = input.bikeMinutesPerDay !== undefined && input.bikeMinutesPerDay !== null;
+  if (hasBike && !inRange(input.bikeMinutesPerDay, LIMITS.minutesPerDay.min, LIMITS.minutesPerDay.max)) {
+    errors.push("Minutos por dia de bike: informe um número entre 0 e 1440 (ida + volta).");
+  }
+  if (!inRange(input.daysPerWeek, LIMITS.daysPerWeek.min, LIMITS.daysPerWeek.max)) {
+    errors.push("Dias por semana: informe um número entre 1 e 7.");
+  }
+  const weeks = input.weeksPerYear === undefined ? WEEKS_PER_YEAR : input.weeksPerYear;
+  if (!inRange(weeks, LIMITS.weeksPerYear.min, LIMITS.weeksPerYear.max)) {
+    errors.push("Semanas por ano: informe um número entre 1 e 53.");
+  }
   if (errors.length > 0) return { ok: false, errors };
 
-  const currentMinutesPerDay = (input.dailyKm / input.currentSpeedKmh) * 60;
-  const bikeMinutesPerDay = (input.dailyKm / input.bikeSpeedKmh) * 60;
-  const savedMinutesPerDay = currentMinutesPerDay - bikeMinutesPerDay;
-  const monthlyDays = input.daysPerWeek * WEEKS_PER_MONTH;
+  const current = input.currentMinutesPerDay;
+  const bike = hasBike ? (input.bikeMinutesPerDay as number) : null;
+  const savedMinutesPerDay = bike === null ? 0 : current - bike;
+  const daysPerYear = input.daysPerWeek * weeks;
+  const hoursPerYear = (minutes: number) => (minutes * daysPerYear) / 60;
+  const savedHoursPerYear = hoursPerYear(savedMinutesPerDay);
+
   return {
     ok: true,
     data: {
-      currentMinutesPerDay: roundMoney(currentMinutesPerDay),
-      bikeMinutesPerDay: roundMoney(bikeMinutesPerDay),
-      savedMinutesPerDay: roundMoney(savedMinutesPerDay),
-      savedHoursPerMonth: roundMoney((savedMinutesPerDay * monthlyDays) / 60),
+      daysPerYear: round2(daysPerYear),
+      currentMinutesPerDay: round2(current),
+      bikeMinutesPerDay: bike === null ? null : round2(bike),
+      savedMinutesPerDay: round2(savedMinutesPerDay),
+      currentHoursPerYear: round2(hoursPerYear(current)),
+      bikeHoursPerYear: bike === null ? null : round2(hoursPerYear(bike)),
+      savedHoursPerYear: round2(savedHoursPerYear),
+      savedFullDaysPerYear: round2(savedHoursPerYear / 24),
+      savedWorkdaysPerYear: round2(savedHoursPerYear / 8),
     },
   };
 }

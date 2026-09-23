@@ -5,7 +5,7 @@ import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
 import { pageHead, canonicalUrl } from "@/lib/seo";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
-import { WEEKS_PER_MONTH, AUTONOMY_SAFETY_MARGIN } from "@/lib/mobility/config";
+import { WEEKS_PER_MONTH, AUTONOMY_SAFETY_MARGIN, LIMITS } from "@/lib/mobility/config";
 import { computeMobilityCost, type CostInput, type Modal } from "@/lib/mobility/cost-engine";
 import {
   recommendBikes,
@@ -76,107 +76,221 @@ const dec = (v: number, d = 2) =>
 const numberOrNaN = (s: string) => (s.trim() === "" ? Number.NaN : Number(s.replace(",", ".")));
 
 function Field({
+  name,
   label,
   value,
   onChange,
   suffix,
   step = "0.01",
   help,
+  error,
 }: {
+  name: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   suffix?: string;
   step?: string;
   help?: string;
+  error?: string;
 }) {
+  const helpId = `${name}-help`;
+  const errorId = `${name}-error`;
   return (
-    <label className="block">
-      <span className="text-sm font-semibold text-ink">{label}</span>
-      <span className="mt-1 flex items-center gap-2 rounded-xl bg-surface px-3 ring-1 ring-line focus-within:ring-2 focus-within:ring-action">
+    <div className="block">
+      <label htmlFor={name} className="text-sm font-semibold text-ink">
+        {label}
+      </label>
+      <span
+        className={`mt-1 flex items-center gap-2 rounded-xl bg-surface px-3 ring-1 focus-within:ring-2 ${
+          error ? "ring-destructive focus-within:ring-destructive" : "ring-line focus-within:ring-action"
+        }`}
+      >
         <input
+          id={name}
+          name={name}
           type="number"
           inputMode="decimal"
           step={step}
           min="0"
           value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[help ? helpId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined}
           onChange={(e) => onChange(e.target.value)}
           className="h-12 w-full bg-transparent text-base text-ink outline-none"
         />
         {suffix && <span className="shrink-0 text-sm text-muted-foreground">{suffix}</span>}
       </span>
-      {help && <span className="mt-1 block text-xs text-muted-foreground">{help}</span>}
-    </label>
+      {help && (
+        <span id={helpId} className="mt-1 block text-xs text-muted-foreground">
+          {help}
+        </span>
+      )}
+      {error && (
+        <span id={errorId} className="mt-1 block text-xs font-semibold text-destructive">
+          {error}
+        </span>
+      )}
+    </div>
   );
+}
+
+/** Campo obrigatório: vazio é erro, nunca um número presumido pela Vitale. */
+function requireNumber(raw: string, label: string, range: { min: number; max: number }): string | null {
+  if (raw.trim() === "") return `${label}: preencha este campo. Não preenchemos nada por você.`;
+  const n = Number(raw.replace(",", "."));
+  if (!Number.isFinite(n) || n < 0) return `${label}: informe um número válido e não negativo.`;
+  if (n < range.min || n > range.max) return `${label}: use um valor entre ${range.min} e ${range.max}.`;
+  return null;
 }
 
 function CalculadoraEconomia() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
 
+  // Nenhum campo de cálculo começa preenchido: todo número exibido veio do usuário.
   const [step, setStep] = useState(0);
-  const [modal, setModal] = useState<Modal>("carro");
-  const [daysPerWeek, setDaysPerWeek] = useState("5");
-  const [dailyKm, setDailyKm] = useState("20");
-  const [percent, setPercent] = useState("70");
+  const [modal, setModal] = useState<Modal | null>(null);
+  const [daysPerWeek, setDaysPerWeek] = useState("");
+  const [dailyKm, setDailyKm] = useState("");
+  const [percent, setPercent] = useState("");
 
-  const [fuelPrice, setFuelPrice] = useState("6.00");
-  const [kmPerLiter, setKmPerLiter] = useState("10");
-  const [extras, setExtras] = useState("0");
-  const [fixedMonthly, setFixedMonthly] = useState("0");
-  const [keepsVehicle, setKeepsVehicle] = useState(true);
-  const [ridePerKm, setRidePerKm] = useState("3.00");
-  const [fare, setFare] = useState("4.40");
-  const [tripsPerDay, setTripsPerDay] = useState("2");
-  const [mixedSpend, setMixedSpend] = useState("500");
+  const [fuelPrice, setFuelPrice] = useState("");
+  const [kmPerLiter, setKmPerLiter] = useState("");
+  const [extras, setExtras] = useState("");
+  const [fixedMonthly, setFixedMonthly] = useState("");
+  const [keepsVehicle, setKeepsVehicle] = useState<boolean | null>(null);
+  const [ridePerKm, setRidePerKm] = useState("");
+  const [fare, setFare] = useState("");
+  const [tripsPerDay, setTripsPerDay] = useState("");
+  const [mixedSpend, setMixedSpend] = useState("");
 
-  const [energyPerKm, setEnergyPerKm] = useState("0.05");
-  const [maintenance, setMaintenance] = useState("30");
+  const [energyPerKm, setEnergyPerKm] = useState("");
+  const [maintenance, setMaintenance] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
   const [maxBudget, setMaxBudget] = useState("");
 
-  const isVehicle = modal === "carro" || modal === "moto";
+  // Erros por campo, preenchidos só quando o usuário tenta avançar.
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const input: CostInput = useMemo(
-    () => ({
-      modal,
-      daysPerWeek: numberOrNaN(daysPerWeek),
-      dailyKm: numberOrNaN(dailyKm),
-      replaceablePercent: numberOrNaN(percent),
-      vehicle: isVehicle
-        ? {
-            fuelPricePerLiter: numberOrNaN(fuelPrice),
-            kmPerLiter: numberOrNaN(kmPerLiter),
-            variableExtrasMonthly: numberOrNaN(extras),
-            fixedMonthly: numberOrNaN(fixedMonthly),
-            keepsVehicle,
-          }
-        : undefined,
-      ridePricePerKm: modal === "uber" ? numberOrNaN(ridePerKm) : undefined,
-      transit:
-        modal === "transporte_publico"
-          ? { farePerTrip: numberOrNaN(fare), tripsPerDay: numberOrNaN(tripsPerDay) }
-          : undefined,
-      mixedMonthlySpend: modal === "misto" ? numberOrNaN(mixedSpend) : undefined,
-      bike: { energyCostPerKm: numberOrNaN(energyPerKm), maintenanceMonthly: numberOrNaN(maintenance) },
-    }),
+  const isVehicle = modal === "carro" || modal === "moto";
+  const percentNum = numberOrNaN(percent);
+  const hasReplacement = Number.isFinite(percentNum) && percentNum > 0;
+
+  const input: CostInput | null = useMemo(
+    () =>
+      modal === null
+        ? null
+        : {
+            modal,
+            daysPerWeek: numberOrNaN(daysPerWeek),
+            dailyKm: numberOrNaN(dailyKm),
+            replaceablePercent: numberOrNaN(percent),
+            vehicle: isVehicle
+              ? {
+                  fuelPricePerLiter: numberOrNaN(fuelPrice),
+                  kmPerLiter: numberOrNaN(kmPerLiter),
+                  variableExtrasMonthly: numberOrNaN(extras),
+                  fixedMonthly: numberOrNaN(fixedMonthly),
+                  // `null` (sem resposta) chega ao motor como valor inválido e é recusado.
+                  keepsVehicle: keepsVehicle as boolean,
+                }
+              : undefined,
+            ridePricePerKm: modal === "uber" ? numberOrNaN(ridePerKm) : undefined,
+            transit:
+              modal === "transporte_publico"
+                ? { farePerTrip: numberOrNaN(fare), tripsPerDay: numberOrNaN(tripsPerDay) }
+                : undefined,
+            mixedMonthlySpend: modal === "misto" ? numberOrNaN(mixedSpend) : undefined,
+            bike: { energyCostPerKm: numberOrNaN(energyPerKm), maintenanceMonthly: numberOrNaN(maintenance) },
+          },
     [
       modal, daysPerWeek, dailyKm, percent, isVehicle, fuelPrice, kmPerLiter, extras, fixedMonthly,
       keepsVehicle, ridePerKm, fare, tripsPerDay, mixedSpend, energyPerKm, maintenance,
     ],
   );
 
-  const result = useMemo(() => (step === 2 ? computeMobilityCost(input) : null), [step, input]);
+  const result = useMemo(
+    () => (step === 2 && input ? computeMobilityCost(input) : null),
+    [step, input],
+  );
 
-  const bikes = useMemo(() => {
-    if (!result?.ok || !sourceOk) return [];
-    const km = numberOrNaN(dailyKm);
+  const recommendation = useMemo(() => {
+    // Sem resultado válido, sem catálogo ou com 0% de substituição não há o que recomendar.
+    if (!result?.ok || !sourceOk || !hasReplacement) return null;
     const budget = maxBudget.trim() === "" ? null : numberOrNaN(maxBudget);
     return recommendBikes(candidates, {
-      dailyKm: km,
+      dailyKm: numberOrNaN(dailyKm),
       needsPassenger,
-      maxBudget: Number.isFinite(budget) && (budget as number) > 0 ? (budget as number) : null,
+      maxBudget: budget,
     });
-  }, [result, sourceOk, candidates, dailyKm, needsPassenger, maxBudget]);
+  }, [result, sourceOk, hasReplacement, candidates, dailyKm, needsPassenger, maxBudget]);
+
+  /** Etapa 1: cenário de deslocamento. Nada avança sem modal escolhido e números informados. */
+  function validateStep0(): boolean {
+    const e: Record<string, string> = {};
+    if (modal === null) e.modal = "Escolha como você se desloca hoje.";
+    const d = requireNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek);
+    if (d) e.daysPerWeek = d;
+    const k = requireNumber(dailyKm, "Distância por dia", LIMITS.dailyKm);
+    if (k) e.dailyKm = k;
+    const p = requireNumber(percent, "Percentual substituível", LIMITS.replaceablePercent);
+    if (p) e.percent = p;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  /** Etapa 2: custos e premissas. O resultado só aparece depois daqui. */
+  function validateStep1(): boolean {
+    const e: Record<string, string> = {};
+    if (isVehicle) {
+      const f = requireNumber(fuelPrice, "Preço do combustível", LIMITS.moneyPerUnit);
+      if (f) e.fuelPrice = f;
+      const c = requireNumber(kmPerLiter, "Consumo (km/litro)", LIMITS.kmPerLiter);
+      if (c) e.kmPerLiter = c;
+      const x = requireNumber(extras, "Pedágio e estacionamento", LIMITS.monthlyMoney);
+      if (x) e.extras = x;
+      const fx = requireNumber(fixedMonthly, "Custos fixos do veículo", LIMITS.monthlyMoney);
+      if (fx) e.fixedMonthly = fx;
+      if (keepsVehicle === null) e.keepsVehicle = "Responda se você vai continuar mantendo o veículo.";
+    }
+    if (modal === "uber") {
+      const r = requireNumber(ridePerKm, "Custo por km no aplicativo", LIMITS.moneyPerUnit);
+      if (r) e.ridePerKm = r;
+    }
+    if (modal === "transporte_publico") {
+      const t = requireNumber(fare, "Tarifa por embarque", LIMITS.moneyPerUnit);
+      if (t) e.fare = t;
+      const n = requireNumber(tripsPerDay, "Embarques por dia", LIMITS.tripsPerDay);
+      if (n) e.tripsPerDay = n;
+    }
+    if (modal === "misto") {
+      const m = requireNumber(mixedSpend, "Gasto mensal atual com transporte", LIMITS.monthlyMoney);
+      if (m) e.mixedSpend = m;
+    }
+    const en = requireNumber(energyPerKm, "Energia por km da bike", LIMITS.moneyPerUnit);
+    if (en) e.energyPerKm = en;
+    const mt = requireNumber(maintenance, "Manutenção mensal da bike", LIMITS.monthlyMoney);
+    if (mt) e.maintenance = mt;
+    if (maxBudget.trim() !== "") {
+      const b = requireNumber(maxBudget, "Orçamento máximo", LIMITS.budget);
+      if (b) e.maxBudget = b;
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function goNext() {
+    const ok = step === 0 ? validateStep0() : validateStep1();
+    if (ok) setStep((s) => s + 1);
+  }
+
+  function goBack() {
+    // Voltar preserva tudo o que já foi digitado e limpa apenas as mensagens de erro.
+    setErrors({});
+    setStep((s) => s - 1);
+  }
+
+  const errorList = Object.values(errors);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -208,10 +322,27 @@ function CalculadoraEconomia() {
             </div>
             <p className="mt-2 text-sm text-muted-foreground">Etapa {step + 1} de 3</p>
 
+            {errorList.length > 0 && (
+              <div
+                role="alert"
+                tabIndex={-1}
+                className="mt-5 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive"
+              >
+                <p className="font-bold">Faltam informações para continuar:</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {errorList.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {step === 0 && (
               <div className="mt-6 space-y-5">
                 <fieldset>
-                  <legend className="text-sm font-semibold text-ink">Como você se desloca hoje?</legend>
+                  <legend className="text-sm font-semibold text-ink">
+                    Como você se desloca hoje? (escolha uma opção)
+                  </legend>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {MODALS.map((m) => (
                       <label
@@ -234,18 +365,39 @@ function CalculadoraEconomia() {
                       </label>
                     ))}
                   </div>
+                  {errors.modal && (
+                    <p className="mt-2 text-xs font-semibold text-destructive">{errors.modal}</p>
+                  )}
                 </fieldset>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} suffix="dias" step="1" />
-                  <Field label="Distância por dia" value={dailyKm} onChange={setDailyKm} suffix="km" step="0.1" />
+                  <Field
+                    name="daysPerWeek"
+                    label="Dias por semana"
+                    value={daysPerWeek}
+                    onChange={setDaysPerWeek}
+                    suffix="dias"
+                    step="1"
+                    error={errors.daysPerWeek}
+                  />
+                  <Field
+                    name="dailyKm"
+                    label="Distância por dia"
+                    value={dailyKm}
+                    onChange={setDailyKm}
+                    suffix="km"
+                    step="0.1"
+                    error={errors.dailyKm}
+                  />
                 </div>
                 <Field
+                  name="percent"
                   label="Quanto desse trajeto dá para fazer de bike?"
                   value={percent}
                   onChange={setPercent}
                   suffix="%"
                   step="1"
-                  help="0% significa nenhuma substituição: o resultado será zero, sem custo de bike."
+                  help="0% significa nenhuma substituição: o resultado será zero, sem custo de bike e sem sugestão de modelos."
+                  error={errors.percent}
                 />
               </div>
             )}
@@ -255,56 +407,113 @@ function CalculadoraEconomia() {
                 {isVehicle && (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Preço do combustível" value={fuelPrice} onChange={setFuelPrice} suffix="R$/litro" />
-                      <Field label="Consumo do veículo" value={kmPerLiter} onChange={setKmPerLiter} suffix="km/litro" step="0.1" />
+                      <Field
+                        name="fuelPrice"
+                        label="Preço do combustível"
+                        value={fuelPrice}
+                        onChange={setFuelPrice}
+                        suffix="R$/litro"
+                        error={errors.fuelPrice}
+                      />
+                      <Field
+                        name="kmPerLiter"
+                        label="Consumo do veículo"
+                        value={kmPerLiter}
+                        onChange={setKmPerLiter}
+                        suffix="km/litro"
+                        step="0.1"
+                        error={errors.kmPerLiter}
+                      />
                     </div>
                     <Field
+                      name="extras"
                       label="Pedágio e estacionamento por mês"
                       value={extras}
                       onChange={setExtras}
                       suffix="R$/mês"
-                      help="Custos variáveis ligados a esses trajetos."
+                      help="Custos variáveis ligados a esses trajetos. Digite 0 se você não tem esse custo."
+                      error={errors.extras}
                     />
                     <Field
+                      name="fixedMonthly"
                       label="Custos fixos do veículo por mês"
                       value={fixedMonthly}
                       onChange={setFixedMonthly}
                       suffix="R$/mês"
-                      help="Seguro, IPVA, licenciamento e manutenção periódica."
+                      help="Seguro, IPVA, licenciamento e manutenção periódica. Digite 0 se você não tem esse custo."
+                      error={errors.fixedMonthly}
                     />
-                    <label className="flex items-start gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
-                      <input
-                        type="checkbox"
-                        checked={keepsVehicle}
-                        onChange={(e) => setKeepsVehicle(e.target.checked)}
-                        className="mt-1 h-4 w-4"
-                      />
-                      <span className="text-sm text-ink">
-                        Vou continuar mantendo o veículo.
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          Mantendo o veículo, os custos fixos continuam existindo e por isso <strong>não</strong> entram
-                          como economia.
-                        </span>
-                      </span>
-                    </label>
+                    <fieldset className="rounded-xl bg-surface p-4 ring-1 ring-line">
+                      <legend className="text-sm font-semibold text-ink">
+                        Você vai continuar mantendo o veículo?
+                      </legend>
+                      <div className="mt-2 flex flex-wrap gap-4">
+                        {[
+                          { v: true, label: "Sim, vou manter" },
+                          { v: false, label: "Não, vou deixar de manter" },
+                        ].map((o) => (
+                          <label key={String(o.v)} className="flex items-center gap-2 text-sm text-ink">
+                            <input
+                              type="radio"
+                              name="keepsVehicle"
+                              className="h-4 w-4 accent-[var(--color-action,currentColor)]"
+                              checked={keepsVehicle === o.v}
+                              onChange={() => setKeepsVehicle(o.v)}
+                            />
+                            {o.label}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Mantendo o veículo, os custos fixos continuam existindo e por isso <strong>não</strong> entram
+                        como economia.
+                      </p>
+                      {errors.keepsVehicle && (
+                        <p className="mt-2 text-xs font-semibold text-destructive">{errors.keepsVehicle}</p>
+                      )}
+                    </fieldset>
                   </>
                 )}
                 {modal === "uber" && (
-                  <Field label="Custo médio por km no aplicativo" value={ridePerKm} onChange={setRidePerKm} suffix="R$/km" />
+                  <Field
+                    name="ridePerKm"
+                    label="Custo médio por km no aplicativo"
+                    value={ridePerKm}
+                    onChange={setRidePerKm}
+                    suffix="R$/km"
+                    error={errors.ridePerKm}
+                  />
                 )}
                 {modal === "transporte_publico" && (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Tarifa por embarque" value={fare} onChange={setFare} suffix="R$" />
-                    <Field label="Embarques por dia" value={tripsPerDay} onChange={setTripsPerDay} suffix="embarques" step="1" />
+                    <Field
+                      name="fare"
+                      label="Tarifa por embarque"
+                      value={fare}
+                      onChange={setFare}
+                      suffix="R$"
+                      error={errors.fare}
+                    />
+                    <Field
+                      name="tripsPerDay"
+                      label="Embarques por dia"
+                      value={tripsPerDay}
+                      onChange={setTripsPerDay}
+                      suffix="embarques"
+                      step="1"
+                      error={errors.tripsPerDay}
+                    />
                   </div>
                 )}
                 {modal === "misto" && (
                   <Field
-                    label="Gasto mensal atual com transporte"
+                    name="mixedSpend"
+                    label="Gasto mensal variável com transporte"
                     value={mixedSpend}
                     onChange={setMixedSpend}
                     suffix="R$/mês"
-                    help="Some o que você já gasta hoje com os meios que pretende substituir."
+                    help="Some só o que varia com o uso (combustível, corridas, passagens) e que você pretende substituir. Não inclua custo fixo de carro ou moto que você vai continuar mantendo: ele não deixa de existir."
+                    error={errors.mixedSpend}
                   />
                 )}
 
@@ -315,8 +524,24 @@ function CalculadoraEconomia() {
                     nesta conta (tempo de retorno virá em outra ferramenta).
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <Field label="Energia por km" value={energyPerKm} onChange={setEnergyPerKm} suffix="R$/km" step="0.001" />
-                    <Field label="Manutenção por mês" value={maintenance} onChange={setMaintenance} suffix="R$/mês" />
+                    <Field
+                      name="energyPerKm"
+                      label="Energia por km"
+                      value={energyPerKm}
+                      onChange={setEnergyPerKm}
+                      suffix="R$/km"
+                      step="0.001"
+                      error={errors.energyPerKm}
+                    />
+                    <Field
+                      name="maintenance"
+                      label="Manutenção por mês"
+                      value={maintenance}
+                      onChange={setMaintenance}
+                      suffix="R$/mês"
+                      help="Digite 0 se você não prevê esse custo."
+                      error={errors.maintenance}
+                    />
                   </div>
                 </div>
 
@@ -332,7 +557,15 @@ function CalculadoraEconomia() {
                       />
                       Preciso levar garupa
                     </label>
-                    <Field label="Orçamento máximo" value={maxBudget} onChange={setMaxBudget} suffix="R$" help="Deixe em branco se não quiser filtrar por preço." />
+                    <Field
+                      name="maxBudget"
+                      label="Orçamento máximo"
+                      value={maxBudget}
+                      onChange={setMaxBudget}
+                      suffix="R$"
+                      help="Deixe em branco se não quiser filtrar por preço. Se preencher, use um valor real — não tratamos valor inválido como 'sem limite'."
+                      error={errors.maxBudget}
+                    />
                   </div>
                 </div>
               </div>
@@ -402,7 +635,7 @@ function CalculadoraEconomia() {
               {step > 0 && (
                 <button
                   type="button"
-                  onClick={() => setStep((s) => s - 1)}
+                  onClick={goBack}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-surface px-5 font-bold text-ink ring-1 ring-line"
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Voltar
@@ -411,7 +644,7 @@ function CalculadoraEconomia() {
               {step < 2 && (
                 <button
                   type="button"
-                  onClick={() => setStep((s) => s + 1)}
+                  onClick={goNext}
                   className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-action px-5 font-bold text-primary-foreground hover:opacity-90"
                 >
                   {step === 0 ? "Continuar" : "Ver o resultado"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -420,7 +653,7 @@ function CalculadoraEconomia() {
               {step === 2 && (
                 <button
                   type="button"
-                  onClick={() => setStep(0)}
+                  onClick={() => { setErrors({}); setStep(0); }}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-surface px-5 font-bold text-ink ring-1 ring-line"
                 >
                   Refazer o cenário
@@ -443,7 +676,21 @@ function CalculadoraEconomia() {
                     </Link>
                     .
                   </p>
-                ) : bikes.length === 0 ? (
+                ) : !hasReplacement ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Você informou que 0% do trajeto seria feito de bike, então não há cenário de uso para comparar
+                    modelos.
+                  </p>
+                ) : recommendation && !recommendation.ok ? (
+                  <div className="mt-3 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive" role="alert">
+                    <p className="font-bold">Corrija os dados abaixo para ver modelos compatíveis:</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {recommendation.errors.map((e) => (
+                        <li key={e}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : !recommendation || recommendation.bikes.length === 0 ? (
                   <p className="mt-3 text-sm text-muted-foreground">
                     Nenhum modelo com oferta ativa atende à sua distância diária com margem de segurança
                     {needsPassenger ? ", capacidade para garupa" : ""}
@@ -457,7 +704,7 @@ function CalculadoraEconomia() {
                   <>
                     <p className="mt-2 text-xs text-muted-foreground">{ORDER_CRITERION}</p>
                     <ul className="mt-5 space-y-4">
-                      {bikes.map((b) => (
+                      {recommendation.bikes.map((b) => (
                         <li key={b.bikeId} className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
                           <BikeMedia src={b.image} name={b.name} className="h-40" />
                           <div className="p-4">
@@ -520,7 +767,9 @@ function CalculadoraEconomia() {
                 <div>
                   <p className="font-bold text-ink">O que entra e o que não entra</p>
                   <p className="mt-2">
-                    Entram apenas os valores que você informa. Não entram: preço de compra da bike e sua amortização,
+                    Entram apenas os valores que você informa — nenhum campo vem preenchido com número nosso.
+                    No modal misto, some só gastos variáveis: custo fixo de carro ou moto que você continuará mantendo
+                    não deve entrar no valor substituível, porque ele não deixa de existir. Não entram: preço de compra da bike e sua amortização,
                     financiamento, seguro da bike, depreciação do veículo, valor do seu tempo e imprevistos. Se você
                     mantém carro ou moto, os custos fixos deles não viram economia — só somem se o veículo sair da sua
                     vida.

@@ -4,7 +4,7 @@
  * oferta atômica atual do catálogo público). Não inventa score, preço, autonomia nem link.
  * Não altera nem reproduz o resultado do Quiz: aqui só há filtro verificável + ordenação explicada.
  */
-import { AUTONOMY_SAFETY_MARGIN, MAX_RECOMMENDATIONS, MELI_LINK_RE } from "./config";
+import { AUTONOMY_SAFETY_MARGIN, LIMITS, MAX_RECOMMENDATIONS, MELI_LINK_RE } from "./config";
 
 export type MobilityBikeCandidate = {
   bikeId: string;
@@ -24,10 +24,19 @@ export type MobilityBikeCandidate = {
 export type RecommendationCriteria = {
   dailyKm: number;
   needsPassenger: boolean;
+  /**
+   * Orçamento máximo é opcional: `null` significa "não filtrar por preço".
+   * Qualquer outro valor precisa ser plausível — entrada inválida é RECUSADA,
+   * nunca convertida silenciosamente em "sem limite".
+   */
   maxBudget: number | null;
 };
 
 export type RecommendedBike = MobilityBikeCandidate & { reason: string };
+
+export type RecommendationResult =
+  | { ok: true; bikes: RecommendedBike[] }
+  | { ok: false; errors: string[] };
 
 export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
@@ -37,8 +46,25 @@ const finitePositive = (v: unknown): v is number => typeof v === "number" && Num
 export function recommendBikes(
   candidates: MobilityBikeCandidate[],
   criteria: RecommendationCriteria,
-): RecommendedBike[] {
-  if (!Array.isArray(candidates) || !finitePositive(criteria.dailyKm)) return [];
+): RecommendationResult {
+  const errors: string[] = [];
+  if (!Array.isArray(candidates)) errors.push("Catálogo indisponível para comparar modelos.");
+  if (!finitePositive(criteria.dailyKm)) {
+    errors.push("Distância por dia: informe um número maior que zero para comparar modelos.");
+  }
+  // Orçamento é opcional, mas quando vem preenchido precisa ser válido: entrada ruim é recusada.
+  const budget = criteria.maxBudget;
+  const budgetInformed = budget !== null && budget !== undefined;
+  if (
+    budgetInformed &&
+    !(finitePositive(budget) && budget >= LIMITS.budget.min && budget <= LIMITS.budget.max)
+  ) {
+    errors.push(
+      `Orçamento máximo: informe um valor entre ${LIMITS.budget.min} e ${LIMITS.budget.max} reais, ou deixe o campo em branco para não filtrar por preço.`,
+    );
+  }
+  if (errors.length > 0) return { ok: false, errors };
+
   const requiredKm = criteria.dailyKm * AUTONOMY_SAFETY_MARGIN;
 
   const eligible = candidates.filter((b) => {
@@ -59,7 +85,10 @@ export function recommendBikes(
       a.bikeId.localeCompare(b.bikeId),
   );
 
-  return sorted.slice(0, MAX_RECOMMENDATIONS).map((b) => ({ ...b, reason: buildReason(b, criteria) }));
+  return {
+    ok: true,
+    bikes: sorted.slice(0, MAX_RECOMMENDATIONS).map((b) => ({ ...b, reason: buildReason(b, criteria) })),
+  };
 }
 
 function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): string {

@@ -279,3 +279,35 @@ Ajuste de copy pedido pelo responsável após verificar a produção: a listagem
 - **Verificação:** 15 testes dirigidos dos motores (zero, inválidos, 0%/100%, economia negativa, veículo mantido x vendido, arredondamento, autonomia/capacidade/orçamento, link/preço inválidos, lista vazia), `bun run validate` (typecheck + testes da validação geral + build) e conferência viva em desktop (1280px) e celular (390px) de `/calculadoras/economia`: resultado mensal/anual, detalhamento, 3 bikes reais com link `meli.la`, sem erro de console.
 - **Não comprovado:** comportamento em produção (nada publicado) e qualquer efeito em conversão.
 - **Rollback:** remover `src/routes/calculadoras/`, `src/lib/mobility/`, `src/lib/mobility-bikes.functions.ts`, a entrada do sitemap, a posição de analytics e reverter os links de Home/rodapé/`/ferramentas`. Nada de banco, RLS, Sheets, Edge Functions, Quiz, Radar ou preços foi tocado.
+
+### Correção de credibilidade da 1ª entrega (23/09/2026, PREVIEW, não publicado)
+
+Revisão do responsável sobre o commit `3637e505` apontou três quebras de contrato; contrato final:
+
+1. **Nenhum número é presumido pela Vitale.** `/calculadoras/economia` carrega com todos os campos de cálculo
+   **vazios** e **sem modal pré-selecionado** ("Como você se desloca hoje? (escolha uma opção)"). Campos que podem
+   legitimamente ser zero (pedágio/estacionamento, custos fixos, manutenção da bike) trazem a instrução explícita
+   "Digite 0 se você não tem esse custo" — o zero é uma declaração do usuário, não um valor nosso. A etapa 1
+   (modal, dias/semana, km/dia, % substituível) é validada antes de avançar e a etapa 2 (custos do modal, custos da
+   bike, orçamento opcional) antes de mostrar qualquer resultado. Erros aparecem junto ao campo (`aria-invalid` +
+   `aria-describedby`) e em um resumo `role="alert"`; os campos têm `id`/`label` ligados e são navegáveis por teclado.
+   Voltar preserva tudo o que já foi digitado. Com 0% de substituição não há sugestão de modelos, e o texto diz por quê.
+2. **Orçamento máximo é opcional, mas nunca "corrigido".** Em branco = não filtrar por preço. Preenchido, precisa
+   ficar entre `LIMITS.budget` (1 a 200000); valor inválido, ≤ 0 ou fora da faixa faz `recommendBikes` devolver
+   `{ ok: false, errors }` — **nenhuma bike é recomendada até o usuário corrigir**. `recommendBikes` passou a devolver
+   `RecommendationResult` (`{ ok: true; bikes }` | `{ ok: false; errors }`) em vez de array. No motor de custo,
+   `keepsVehicle` precisa ser booleano de verdade: `undefined` é erro ("Manter o veículo: responda…"), nunca
+   interpretado como "vendeu o veículo". No modal misto, campo e "Como calculamos" avisam que custo fixo de carro/moto
+   mantido não entra no valor substituível.
+3. **MobilityTimeEngine passou a falar em minutos.** Contrato: `currentMinutesPerDay` (ida + volta, informados),
+   `bikeMinutesPerDay` opcional, `daysPerWeek` e `weeksPerYear` editável (padrão explícito `WEEKS_PER_YEAR = 52`).
+   Saídas: `daysPerYear`, `savedMinutesPerDay`, `currentHoursPerYear`, `bikeHoursPerYear`, `savedHoursPerYear`,
+   `savedFullDaysPerYear` (÷24) e `savedWorkdaysPerYear` (÷8). Zero é zero, resultado negativo (bike mais lenta) é
+   devolvido como está e nenhuma velocidade é presumida — km/h saiu do contrato.
+
+**Provas:** 21 testes dos motores (10 custo, 4 tempo, 7 recomendação), incluindo orçamento inválido recusado,
+`keepsVehicle` ausente recusado, tempo zero/negativo e semanas por ano configuráveis; `bun run validate`
+(typecheck + testes + build); conferência viva em 1280px e 390px: nenhum campo preenchido ao carregar, nenhum modal
+marcado, etapas 1 e 2 bloqueadas quando vazias, orçamento negativo barrado, cenário 0% sem modelos e cenário real
+(Uber, 5 dias, 20 km, 70%) com economia calculada e 3 bikes com link `meli.la`. Nada publicado; Supabase, ofertas,
+links, Quiz e Radar intocados.

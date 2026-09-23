@@ -127,3 +127,35 @@ describe("MobilityCostEngine", () => {
     expect(misto.data.currentVariableReplaced).toBeCloseTo(300, 2);
   });
 });
+
+describe("MobilityCostEngine — decisão sobre o veículo", () => {
+  const base = {
+    modal: "carro" as const,
+    daysPerWeek: 5,
+    dailyKm: 20,
+    replaceablePercent: 100,
+    bike: { energyCostPerKm: 0.05, maintenanceMonthly: 30 },
+  };
+  const vehicle = {
+    fuelPricePerLiter: 6,
+    kmPerLiter: 10,
+    variableExtrasMonthly: 0,
+    fixedMonthly: 800,
+  };
+
+  it("recusa o cálculo quando a resposta sobre manter o veículo não foi dada", () => {
+    const r = computeMobilityCost({
+      ...base,
+      vehicle: { ...vehicle, keepsVehicle: undefined as unknown as boolean },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("Manter o veículo");
+  });
+
+  it("só inclui custo fixo quando o usuário declara que deixará de manter o veículo", () => {
+    const kept = computeMobilityCost({ ...base, vehicle: { ...vehicle, keepsVehicle: true } });
+    const sold = computeMobilityCost({ ...base, vehicle: { ...vehicle, keepsVehicle: false } });
+    expect(kept.ok && kept.data.currentFixedRemoved).toBe(0);
+    expect(sold.ok && sold.data.currentFixedRemoved).toBe(800);
+  });
+});
