@@ -270,3 +270,17 @@
     .cta-pulse { animation: none; }
   }
 }
+
+/* Home B2C: tinta escura do hero e verde menta dos CTAs. */
+:root {
+  --ink: 165 45% 11%;
+  --ink-foreground: 0 0% 100%;
+  --mint: 152 62% 66%;
+  --mint-foreground: 165 45% 11%;
+}
+@theme inline {
+  --color-ink: hsl(var(--ink));
+  --color-ink-foreground: hsl(var(--ink-foreground));
+  --color-mint: hsl(var(--mint));
+  --color-mint-foreground: hsl(var(--mint-foreground));
+}
