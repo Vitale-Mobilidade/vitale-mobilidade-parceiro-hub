@@ -3,6 +3,7 @@ import { fetchQuizCatalog } from "./quiz-catalog-repository.server";
 import { fetchBikeCatalogFromDb } from "./bikes-repository.server";
 import { fetchTrackerCatalog } from "./radar-repository.server";
 import { MELI_LINK_RE } from "./mobility/config";
+import { buildRadarEntries, type RadarBike } from "./radar-rankings";
 import type { MobilityBikeCandidate } from "./mobility/recommendation-engine";
 
 /**
@@ -46,9 +47,20 @@ export const getMobilityBikeCandidates = createServerFn({ method: "GET" }).handl
     }
 
     const monitored = new Set<string>();
+    const radarById = new Map<
+      string,
+      { currentPrice: number; link: string; classification: NonNullable<MobilityBikeCandidate["radarClassification"]> }
+    >();
     if (tracker.ok && Array.isArray(tracker.data)) {
       for (const it of tracker.data as Array<{ id?: unknown }>) {
         if (it && typeof it.id === "string") monitored.add(it.id);
+      }
+      for (const entry of buildRadarEntries(tracker.data as RadarBike[], "all")) {
+        radarById.set(entry.id, {
+          currentPrice: entry.currentPrice,
+          link: entry.link,
+          classification: entry.metrics.classification,
+        });
       }
     }
 
@@ -59,6 +71,7 @@ export const getMobilityBikeCandidates = createServerFn({ method: "GET" }).handl
       const price = num(b.sheetPrice);
       const link = typeof b.link === "string" && MELI_LINK_RE.test(b.link) ? b.link : null;
       if (!price || !link) continue;
+      const radar = radarById.get(b.bikeId);
       candidates.push({
         bikeId: b.bikeId,
         slug: b.slug,
@@ -69,6 +82,8 @@ export const getMobilityBikeCandidates = createServerFn({ method: "GET" }).handl
         autonomyKm: num(q.autonomyKm),
         capacity: num(q.capacity),
         monitored: monitored.has(b.bikeId),
+        radarClassification:
+          radar && Math.abs(radar.currentPrice - price) < 0.01 && radar.link === link ? radar.classification : null,
         hillTagged: hasHillTag(q),
       });
     }
