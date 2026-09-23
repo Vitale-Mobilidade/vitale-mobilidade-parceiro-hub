@@ -6,7 +6,29 @@
 
 Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + TypeScript com SSR, usando o Supabase/Lovable Cloud e as planilhas Google Sheets existentes como fontes de dados.
 
-## 2. Etapas (ordem definida pelo responsável)
+## 2. Mapa de fases (25 etapas agrupadas)
+
+As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem marcar nenhuma como concluída**.
+
+- **Fase A — Fundação (etapas 1–5):** base TanStack Start, SEO/GEO, performance, taxonomia de rotas/slugs e Home B2C.
+- **Fase B — Entidade Bike e operações (etapas 6–11):** modelagem central da bike no Supabase, sincronização Sheets → Supabase, oferta/preço/link afiliado, novo Radar, página `/bikes/{slug}` e analytics de clique.
+- **Fase C — Conteúdo e publicação piloto (etapas 12–18):** vídeos, artigos, CMS, Article Compiler IA, primeiros artigos, escala para 98 artigos e Content Graph.
+- **Fase D — Ferramentas e engajamento (etapas 19–23):** comparador, newsletter, alertas de preço, podcast e calculadora de economia.
+- **Fase E — Inteligência e automação (etapas 24–25):** Hotpipe IA e loop de inteligência de conteúdo.
+
+**Dependências-chave:** o `bike_id` estável conecta preço, oferta, quiz, vídeo, artigo e comparação; as planilhas continuam como interface humana; o Supabase é a fonte central; conteúdo e comportamento dos usuários retroalimentam a pauta. Links do Mercado Livre continuam **diretos** e analytics **não bloqueantes**. A menção a “redirect intermediário” em qualquer briefing não autoriza alterar links nesta task.
+
+### Revisão compacta squad (atualização documental)
+
+- **Produto:** agrupamento clarifica sequência e dependências; nenhuma funcionalidade entregue.
+- **CTO:** fases espelham ordem de risco técnico (Bike ID → dados → conteúdo → ferramentas).
+- **IA:** Fase E depende de dados estruturados das Fases B/C; nada gerado agora.
+- **Segurança:** nenhuma mudança de acesso; proposta SQL continua fora do vivo.
+- **UX/CX:** nenhuma alteração de interface; links diretos preservados.
+- **Growth:** prioridade de conversão na Fase B antes de escalar conteúdo.
+- **PMO/QA:** status das etapas não muda; Gate 0 e Etapa 6 ainda abertos.
+
+## 3. Etapas (ordem definida pelo responsável)
 
 1. Fundação TanStack Start / SSR / Supabase / estrutura / testes / build
 2. SEO/GEO: metadata, OG, canonical, JSON-LD, sitemap, robots
