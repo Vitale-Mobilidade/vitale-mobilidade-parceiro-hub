@@ -5,27 +5,30 @@ Fontes: migrations em `supabase/migrations/`, código do repositório e auditori
 
 ## 1. Modelo atual (chave comum: `bike_id` texto)
 
-| Estrutura | Chave | Papel atual |
-|---|---|---|
-| `bike_catalog_snapshot` | `id = 'current'` | JSONB `data.bikes[]` gravado pelo `sync-bike-catalog` a partir da planilha (Sheets). Traz id, nome, preço, `linkVitale`, specs, `status`, `sheetEligible`, `isNew`. Leitura pública por policy. |
-| `bike_admin_overrides` | `bike_id` PK | `eligible` espelha o Status oficial da planilha (painel/sync). |
-| `bike_assets` | `bike_id` PK | Imagem espelhada no Storage (`status`, `public_url`, checksum), gerada pelo worker de imagem. |
-| `bike_profiles` | `bike_id` PK | Perfil IA (`data` JSONB, `status` ready/needs_review, `technical_hash`), gerado pelo worker de perfil. |
-| `bike_price_history` | uuid, `bike_id` | Eventos de preço (`price`, `link_vitale`, `source`, `confidence` observed/reconstructed). |
-| `bike_price_daily` | (`bike_id`, `day`) | Consolidado diário (close/low/high, `verification`). |
+| Estrutura               | Chave              | Papel atual                                                                                                                                                                                     |
+| ----------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bike_catalog_snapshot` | `id = 'current'`   | JSONB `data.bikes[]` gravado pelo `sync-bike-catalog` a partir da planilha (Sheets). Traz id, nome, preço, `linkVitale`, specs, `status`, `sheetEligible`, `isNew`. Leitura pública por policy. |
+| `bike_admin_overrides`  | `bike_id` PK       | `eligible` espelha o Status oficial da planilha (painel/sync).                                                                                                                                  |
+| `bike_assets`           | `bike_id` PK       | Imagem espelhada no Storage (`status`, `public_url`, checksum), gerada pelo worker de imagem.                                                                                                   |
+| `bike_profiles`         | `bike_id` PK       | Perfil IA (`data` JSONB, `status` ready/needs_review, `technical_hash`), gerado pelo worker de perfil.                                                                                          |
+| `bike_price_history`    | uuid, `bike_id`    | Eventos de preço (`price`, `link_vitale`, `source`, `confidence` observed/reconstructed).                                                                                                       |
+| `bike_price_daily`      | (`bike_id`, `day`) | Consolidado diário (close/low/high, `verification`).                                                                                                                                            |
 
 RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta das tabelas de preço):
+
 - `get_quiz_catalog()`: lê o snapshot com `status = eligible` e `overrides.eligible = true`. Bikes novas só entram com imagem e perfil prontos. O perfil `ready` tem prioridade sobre o dado da planilha.
 - `get_price_tracker_catalog()`: mesma base, mais `sheetEligible = true`, `price > 0` e `linkVitale` https, com agregados de histórico/diário.
 - `get_bike_price_history(p_bike_id, p_days)`: detalhe de uma bike.
 
 ## 2. Fontes de autoridade (hoje)
+
 - **Identidade, nome, specs, preço e link:** planilha → `sync-bike-catalog` → snapshot. O snapshot é a cópia operacional, não a origem.
 - **Elegibilidade:** Status da planilha, espelhado em `bike_admin_overrides`, somado aos filtros das RPCs. Quiz e Radar têm regras **diferentes**.
 - **Preço/link observados ao longo do tempo:** `bike_price_history` / `bike_price_daily`.
 - **Imagem e perfil:** `bike_assets` / `bike_profiles` (derivados, não autoritativos para preço).
 
 ## 3. Entidades alvo (conceituais, sem tabela)
+
 - **Bike** (raiz): `bike_id` legado imutável, nome, specs.
 - **Offer**: loja, URL afiliada (byte a byte), preço atual, elegibilidade.
 - **PriceObservation**: evento/dia ligado a Bike + Offer.
@@ -33,10 +36,12 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 - **ContentRelations**: Article/Video/Comparison → Bike, **sem copiar** preço, link ou estoque (ver `docs/TAXONOMY.md`).
 
 ## 4. `bike_id` vs slug
+
 - `bike_id` é a chave técnica atual (`BIKE_ID_RE`, pode ter underscore). Nunca é convertido nem renomeado.
 - `slug` é editorial, separado e explícito, e mapeado para `bike_id`. **Nenhum slug oficial foi declarado.** Aliases e redirects ficam pendentes.
 
 ## 5. Sequência de reconciliação (antes de qualquer tabela nova)
+
 1. Ensaio de restauração de banco/Storage concluído.
 2. Leitura read-only do schema vivo e comparação com as migrations.
 3. Inventário de 100% dos `bike_id` em snapshot, overrides, assets, profiles, history e daily, classificando cada um: ativo, inelegível, órfão ou duplicado.
@@ -45,6 +50,7 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 6. Backfill só leitura/cópia, com checagem de paridade das RPCs atuais (mesmo JSON, mesmos hrefs).
 
 ## 6. Riscos
+
 - **20 elegíveis vs 32 registros auxiliares** observados na auditoria: há `bike_id` em estruturas auxiliares sem bike elegível correspondente. Não presumir que sejam lixo nem aliases.
 - **RLS:** as tabelas de preço/alertas negam acesso direto. Uma tabela nova sem policies e GRANTs corretos quebra a leitura ou expõe dados.
 - **Aliases:** renomear ou normalizar id quebra URLs `/acompanhamento/{bikeId}`, alertas e histórico.
@@ -53,6 +59,7 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 - **Divergência Quiz × Radar:** as regras de elegibilidade diferem, e um modelo único não pode mudar silenciosamente nenhuma das duas.
 
 ## 7. Evidência do schema vivo (read-only, 23/09/2026, auditoria desta task)
+
 - `public.bikes` **não existe**.
 - As seis tabelas (`bike_catalog_snapshot`, `bike_admin_overrides`, `bike_assets`, `bike_profiles`, `bike_price_history`, `bike_price_daily`) têm RLS habilitado.
 - Snapshot `current`: **30** `bike_id`. União snapshot/overrides/assets/profiles/history/daily: **32**.
@@ -60,14 +67,17 @@ RPCs públicas (SECURITY DEFINER, somente leitura; RLS fecha a leitura direta da
 - Aba `gid=0` (bikes): **30 linhas nomeadas** e **zero valores preenchidos na coluna ID**. Portanto o ajuste de precedência no leitor editorial (`ID explícito → nome → ID gerado`) não altera os slugs/URLs atuais, mas protege a identidade se um ID explícito for introduzido futuramente.
 
 Classificação cautelosa (sem apagar nada, sem decisão tomada):
+
 - `v9_max_duas_baterias` e `jflsjdlksjdl`: **IDs fora do snapshot a investigar**. Não classificar `v9_max_duas_baterias` como alias só porque o nome de um vídeo contém "Duas Baterias"; a correspondência exata de `bike_id` com a planilha ainda não foi confirmada. Não chamar `jflsjdlksjdl` de lixo nem remover. Ambos precisam de decisão explícita antes de serem incluídos em qualquer tabela normalizada.
 
 ## 8. Paridade de identidade (código)
+
 - `buildBikeCatalog` (leitura editorial de `/bikes`) agora usa a **mesma precedência** do writer `buildSnapshotFromCsv`: `resolveBikeId(ID)` → `resolveBikeId(Nome)` → `buildStableId(ID bruto, Nome)`. Antes ignorava a coluna ID e podia divergir do banco.
 - Teste direcionado: `src/lib/editorial-bikes-id-parity.test.ts` (ID explícito, alias conhecido, nome novo com e sem ID bruto). Writer inalterado.
 - Preservados: bikes "Não Elegível", link `meli.la` byte a byte, slug derivado (`_`→`-`), visual e URLs.
 
 ## 9. Sequência segura para a tabela normalizada `bikes`
+
 1. **Gate 0:** restauração isolada de banco/Storage validada (parcial: schema `public` ensaiado; pendentes reconciliação de escritas, Storage, Edge Functions, secrets, jobs, ACLs e paridade de RPC).
 2. Decisão escrita sobre os 2 IDs fora do snapshot (manter como alias, órfão ou legado; nunca apagar histórico).
 3. Proposta de DDL revisada: `bike_id` texto PK imutável (`BIKE_ID_RE`), sem preço/link (ficam em Offer/snapshot); GRANTs explícitos; RLS; leitura pública só via RPC.
@@ -80,6 +90,7 @@ Critérios de aceite: conjunto de IDs aprovado após investigar os 2 extras (nã
 Rollback (não destrutivo): manter RPCs e writer antigos como fonte de verdade; desativar/desfazer qualquer novo leitor/writer por flag ou reversão de código; preservar a tabela `public.bikes` e seus dados para análise. Eventual exclusão da tabela só em tarefa separada, com backup e autorizações explícitas.
 
 ## 10. Revisão pelas 8 perspectivas (pré → pós)
+
 - **Produto:** risco de `/bikes` mostrar ID diferente do Radar → mesma identidade em ambos.
 - **CTO:** duas regras de ID em paralelo → uma precedência, coberta por teste; writer intocado.
 - **IA:** perfis futuros dependem de `bike_id` estável → garantido na leitura editorial; nada gerado.
@@ -92,7 +103,9 @@ Rollback (não destrutivo): manter RPCs e writer antigos como fonte de verdade; 
 Observação: `docs/SQUAD_GOVERNANCE.md` e `AGENTS.md` não existem neste repositório; a revisão segue `docs/PAGE_INTENT_AND_SYNERGY.md`.
 
 ## 11. Proposta de schema `bikes` (não aplicada)
+
 Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`, para teste manual isolado pelo responsável. **Não testado pelo Lovable.**
+
 - Aditiva e **fail-fast**, não idempotente: `CREATE TABLE`, `CREATE FUNCTION` e `CREATE TRIGGER` sem `IF NOT EXISTS`/`OR REPLACE`/`DROP` prévio; reexecução falha em vez de substituir ou ocultar drift.
 - `bike_id` texto PK imutável (trigger bloqueia alteração); `slug` editorial explícito `UNIQUE`; `name`; campos estruturados nullable: `autonomy_km`, `max_speed_kmh`, `motor_w`, `battery`, `capacity_people` (smallint, 1 ou 2, alinhado ao snapshot).
 - Sem campo JSONB livre de specs: um CHECK de chaves de topo não impediria preço/link aninhados. Demais fatos entram depois, com fonte validada.
@@ -106,6 +119,7 @@ Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`
 **Ensaio da proposta revisada (responsável, PostgreSQL 17 isolado/restaurado, commit 5689bf7):** DDL fail-fast aplicado após limpar somente a tabela/função de ensaio local; backfill manual inseriu **30 bikes**; **0 IDs faltantes**, **0 IDs extras**; **30 slugs únicos**; RLS `true`; `SELECT` para `anon`/`authenticated` `false`, `service_role` `true`. A versão revisada removeu o campo `specs` JSONB livre e trocou `capacity` texto por `capacity_people smallint` (1 ou 2), alinhado ao snapshot. Não testou writer, Storage, Edge Functions, secrets, jobs, ACLs nem paridade das RPCs contra o vivo. **Não libera o Gate 0 nem autoriza aplicação no banco vivo.**
 
 ## 12. Revisão compacta (8 perspectivas) — incremento Gate 0 + proposta
+
 - **Produto:** nenhuma mudança visível; entidade Bike ganha forma sem afetar Quiz/Radar.
 - **CTO:** proposta aditiva e fail-fast (reexecução falha, sem mascarar drift), fora do fluxo de migrations; nenhuma dependência nova.
 - **IA:** `bike_id` estável como âncora; nenhum dado gerado; specs só da planilha.
@@ -118,6 +132,7 @@ Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`
 ## 13. Aplicação no banco vivo (23/09/2026)
 
 Migration: `supabase/migrations/20260923063339_a73a6a10-69e2-4993-8dbc-d98318850dc1.sql` — aplicada com sucesso, numa única transação.
+
 - Pré-checagem fail-fast: `public.bikes` e `bikes_block_id_change()` inexistentes; snapshot `current` com 30 linhas, 30 IDs, 30 slugs e 30 nomes distintos/não vazios; senão aborta.
 - DDL da proposta sem `IF NOT EXISTS`/`OR REPLACE`/`DROP`; backfill `bike_id`/`slug = replace(bike_id,'_','-')`/`name` sem `ON CONFLICT`; asserção final count=30.
 - Inclui bikes não elegíveis; exclui `jflsjdlksjdl` e `v9_max_duas_baterias` (seguem a investigar).
@@ -170,7 +185,8 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 
 **Objetivo:** guardar na entidade Bike os fatos editoriais já existentes no snapshot (foto, descrição, descrição curta), sem tocar em preço, link, oferta, elegibilidade ou PII.
 
-**Migration aditiva `20260923125500`:**
+**Migration aditiva `20260923125414`:**
+
 - `ALTER TABLE public.bikes` adiciona `image_url`, `description`, `short_description` (todas nullable). CHECK `bikes_image_url_https_chk`: `image_url` NULL ou `^https://[^\s"'<>]+$`.
 - `project_bikes_from_snapshot` atualizada (mesma rotina, INVOKER, `search_path` fixo, EXECUTE só `service_role`): projeta os três campos quando presentes e válidos; ausente/inválido **não** sobrescreve valor existente (`coalesce`); update só quando algo mudou.
 - Backfill idempotente a partir do snapshot `current` (`image`, `description`, `shortDescription`), com assert final `count = 30`.
