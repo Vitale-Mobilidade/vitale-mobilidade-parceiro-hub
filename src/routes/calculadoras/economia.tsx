@@ -24,7 +24,7 @@ import { canonicalUrl, pageHead } from "@/lib/seo";
 
 const TITLE = "Calculadora de economia: transporte x bike elétrica | Vitale Mobilidade";
 const DESCRIPTION =
-  "Estime quanto pode economizar por mês ao substituir parte do transporte por uma bike elétrica e veja até duas opções compatíveis com seu cenário.";
+  "Estime quanto pode economizar por mês fazendo de bike elétrica os trajetos que você escolher e veja até duas opções reais compatíveis.";
 
 export const Route = createFileRoute("/calculadoras/economia")({
   loader: () =>
@@ -152,7 +152,7 @@ function CalculadoraEconomia() {
               Quanto você pode economizar por mês usando uma bike elétrica?
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
-              Informe seu gasto aproximado e sua rotina. A estimativa aparece automaticamente, sem cadastro e sem presumir economia.
+              Informe o gasto e a distância só dos trajetos que faria de bike. A estimativa aparece na hora, sem cadastro e sem presumir economia.
             </p>
           </div>
         </section>
@@ -191,17 +191,17 @@ function CalculadoraEconomia() {
 
                 <NumberField
                   name="monthlySpend"
-                  label="Gasto mensal aproximado com esse transporte"
+                  label="Gasto mensal só nos trajetos que faria de bike"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help={modal === "carro" || modal === "moto" ? "Informe apenas combustível, pedágio, estacionamento e outros custos do trajeto que deixam de existir. Não inclua seguro, IPVA ou custos fixos do veículo mantido." : "Informe somente a parte mensal ligada aos deslocamentos que você está avaliando."}
+                  help={`Exemplo: se gasta R$ 1.000 no mês, mas R$ 600 são dos trajetos que faria de bike, informe R$ 600.${modal === "carro" || modal === "moto" ? " Só combustível, pedágio e estacionamento desses trajetos; não inclua seguro, IPVA ou custos fixos do veículo mantido." : ""}`}
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="dailyKm" label="Distância por dia" value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
-                  <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
+                  <NumberField name="dailyKm" label="Km por dia desses trajetos" help="Ida + volta, somando só os trajetos que faria de bike." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
+                  <NumberField name="daysPerWeek" label="Dias por semana de bike" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
                 </div>
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
@@ -277,7 +277,7 @@ function CalculadoraEconomia() {
                 <ul className="mt-2 list-disc space-y-2 pl-5">
                   <li>Você informa só o gasto, a distância e os dias dos trajetos que faria de bike; todo esse conjunto é considerado substituído. Nada é presumido sobre o restante dos seus gastos.</li>
                   <li>Km de bike por mês = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12).</li>
-                  <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
+                  <li>Custo da bike = km de bike por mês × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
                   <li>Economia líquida = gasto desses trajetos − custo operacional da bike; anual = mensal × 12.</li>
                 </ul>
               </div>

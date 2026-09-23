@@ -144,7 +144,7 @@ function CalculadoraPayback() {
               Em quanto tempo uma bike elétrica se paga?
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
-              Informe o gasto que a bike evitaria e sua rotina. O prazo de retorno de até duas bikes reais aparece na hora, sem cadastro.
+              Informe o gasto e a distância só dos trajetos que faria de bike. O prazo de retorno de até duas bikes reais aparece na hora, sem cadastro.
             </p>
           </div>
         </section>
@@ -163,17 +163,17 @@ function CalculadoraPayback() {
               <div className="mt-6 space-y-5">
                 <NumberField
                   name="monthlySpend"
-                  label="Quanto você gasta hoje por mês nesses deslocamentos"
+                  label="Gasto mensal só nos trajetos que faria de bike"
                   value={monthlySpend}
                   onChange={setMonthlySpend}
                   onBlur={() => markTouched("monthlySpend")}
                   suffix="R$/mês"
-                  help="Informe o gasto atual total desses trajetos, antes de qualquer troca pela bike — o percentual abaixo define quanto dele seria substituído. Inclua só custos que deixariam de existir (passagens, corridas, combustível, pedágio, estacionamento); não inclua seguro, IPVA ou outros custos fixos de veículo que continuará com você."
+                  help="Exemplo: se gasta R$ 1.000 no mês, mas R$ 600 são dos trajetos que faria de bike, informe R$ 600. Só custos que deixariam de existir; não inclua seguro, IPVA ou custos fixos de veículo mantido."
                   error={visibleError("monthlySpend")}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="dailyKm" label="Distância por dia" value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
-                  <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
+                  <NumberField name="dailyKm" label="Km por dia desses trajetos" help="Ida + volta, somando só os trajetos que faria de bike." value={dailyKm} onChange={setDailyKm} onBlur={() => markTouched("dailyKm")} suffix="km" step="0.1" error={visibleError("dailyKm")} />
+                  <NumberField name="daysPerWeek" label="Dias por semana de bike" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => markTouched("daysPerWeek")} suffix="dias" step="1" error={visibleError("daysPerWeek")} />
                 </div>
 
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
@@ -249,7 +249,7 @@ function CalculadoraPayback() {
                 <ul className="mt-2 list-disc space-y-2 pl-5">
                   <li>Você informa só o gasto, a distância e os dias dos trajetos que faria de bike; todo esse conjunto é considerado substituído. Nada é presumido sobre o restante dos seus gastos.</li>
                   <li>Km de bike por mês = km/dia × dias/semana × {decimal(WEEKS_PER_MONTH, 4)} (52 ÷ 12).</li>
-                  <li>Custo da bike = km substituídos × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
+                  <li>Custo da bike = km de bike por mês × {brl(QUICK_BIKE_COST.energyPerKm, true)}/km + {brl(QUICK_BIKE_COST.maintenanceMonthly, true)}/mês quando há uso.</li>
                   <li>Economia líquida = gasto desses trajetos − custo operacional da bike; anual = mensal × 12.</li>
                 </ul>
               </div>

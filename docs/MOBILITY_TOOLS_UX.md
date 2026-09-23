@@ -16,8 +16,8 @@ Status em 23/09/2026. Nada aqui está publicado em produção; rotas implementad
 
 | # | Rota | Pergunta | Entradas principais | Bikes | Estado |
 |---|------|----------|---------------------|-------|--------|
-| 1 | `/calculadoras/economia` | Quanto posso economizar por mês? | modal, gasto mensal, km/dia, dias/sem, %, orçamento (+garupa) | até 2 | PREVIEW |
-| 2 | `/calculadoras/payback` | Em quanto tempo a bike se paga? | gasto mensal, %, km/dia, dias/sem, orçamento (+garupa) | até 2 | PREVIEW |
+| 1 | `/calculadoras/economia` | Quanto posso economizar por mês? | modal, gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo % (100% interno do subconjunto) | até 2 | PREVIEW |
+| 2 | `/calculadoras/payback` | Em quanto tempo a bike se paga? | gasto mensal só nos trajetos que faria de bike, km/dia desses trajetos, dias/sem de bike, orçamento (+garupa); sem campo % | até 2 | PREVIEW |
 | 3 | `/calculadoras/custo-anual-mobilidade` | Quanto gasto por ano para me locomover? | carro/moto, Uber/99, transporte público, estacionamento/outros, % | não (sem km/dia) | PREVIEW |
 | 4 | `/calculadoras/uber-vs-bike` | Uber/99 ou bike: qual sai mais barato? | gasto mensal total com Uber/99, % de corridas substituíveis, km/dia, dias/sem, orçamento opcional, garupa (toggle) | até 2 | PREVIEW |
 | 5 | `/calculadoras/carro-vs-bike` | Carro ou bike: quanto cada um custa no trajeto? | gasto mensal variável evitável do carro (sem fixos), km/dia total antes da substituição, dias/sem, %, continuará com o carro? (sim/não), orçamento opcional, garupa (toggle); "Ajustar premissas" opcional com 1 campo de custo fixo evitado, só se "não" | até 2 | PREVIEW |
@@ -31,3 +31,12 @@ As rotas 5–9 seguem o briefing já fechado: rápidas/reativas, sem wizard, sem
 
 Semanas/ano (52) é premissa central documentada em "Como calculamos?" para todas as rotas de tempo, nunca input principal.
 
+
+
+## Decisão de UX: subconjunto concreto em vez de "% substituível" (23/09/2026, PREVIEW)
+
+Economia e Payback não pedem mais percentual. A pessoa informa gasto, km/dia e dias/semana **somente dos trajetos que faria de bike**; internamente o motor recebe `replaceablePercent = 100` (100% desse subconjunto — não é suposição sobre o gasto total, e "100%" nunca aparece na tela). Gasto 0 mostra o resultado real (zero/negativo) e não sugere bike. As demais rotas com % (Uber, Carro, Moto, Custo anual) migram na sequência.
+
+## Recomendação de duas bikes
+
+Filtros rígidos inalterados (elegível/ativa no Quiz ∩ oferta atual atômica, preço > 0, link meli.la, autonomia ≥ km/dia × 1,2, garupa, teto). 1ª = menor preço compatível. 2ª só aparece se tiver ≥ 25% mais autonomia declarada (`RELEVANT_AUTONOMY_GAIN`) ou mais lugares, sendo a mais barata com essa vantagem; senão, uma só. Cards mostram o tradeoff (R$ a mais por +km/+lugar) e quanto falta até o teto quando informado. O rodapé explica que a seleção só varia com distância, garupa e teto, e oferece "Refine no Quiz" como link opcional. O contrato atual de candidatas não traz atributos confiáveis de uso/terreno do Quiz, então nenhum contexto desses é usado e o /escolherbike não foi alterado.
