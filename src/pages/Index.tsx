@@ -30,12 +30,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Vitale Mobilidade | Consultoria em Veículos Elétricos</title>
-        <meta name="description" content="Consultoria estratégica em veículos elétricos: escolha fornecedores confiáveis, estruture operações B2B/B2C e cresça com segurança no Brasil." />
-        <link rel="canonical" href="https://vitalemobilidade.com/" />
-        <meta property="og:url" content="https://vitalemobilidade.com/" />
-        <meta property="og:title" content="Vitale Mobilidade | Consultoria em Veículos Elétricos" />
-        <meta property="og:description" content="Consultoria estratégica em veículos elétricos. Fornecedores confiáveis, operações B2B/B2C e crescimento seguro." />
         <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
 
