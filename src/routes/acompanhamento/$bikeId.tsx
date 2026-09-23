@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
+import { safeVideos } from "@/lib/videos.functions";
 import { getRadarBike, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 import { BIKE_ID_RE } from "@/lib/bike-identity";
@@ -43,10 +44,13 @@ function BikeNotFound() {
 
 export const Route = createFileRoute("/acompanhamento/$bikeId")({
   loader: async ({ params }) => {
-    const r = await getRadarBike({ data: { bikeId: params.bikeId } });
+    const [r, videos] = await Promise.all([
+      getRadarBike({ data: { bikeId: params.bikeId } }),
+      safeVideos({ bikeId: params.bikeId, limit: 4 }),
+    ]);
     // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404 nativo.
     if (r.ok && (r.bike === null || r.bike === undefined)) throw notFound();
-    return r;
+    return { ...r, videos };
   },
   // Falha temporária: marcador + Retry-After/no-store; src/server.ts troca o status para 503.
   headers: ({ loaderData }) =>

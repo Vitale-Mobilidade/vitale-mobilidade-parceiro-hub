@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Acompanhamento from "@/pages/Acompanhamento";
+import { safeVideos } from "@/lib/videos.functions";
 import { getRadarCatalog, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 
 const URL = "https://vitalemobilidade.com/acompanhamento";
@@ -12,8 +13,8 @@ const OG_DESCRIPTION =
 
 export const Route = createFileRoute("/acompanhamento/")({
   loader: async () => {
-    const r = await getRadarCatalog();
-    return r;
+    const [r, videos] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 })]);
+    return { ...r, videos };
   },
   // Falha temporária: marcador + Retry-After/no-store; src/server.ts troca o status para 503.
   headers: ({ loaderData }) =>
