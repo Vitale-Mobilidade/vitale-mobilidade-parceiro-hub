@@ -11,6 +11,10 @@ export interface BikeProjectionRow {
   name: string;
   autonomy_km: number | null;
   capacity_people: 1 | 2 | null;
+  /** Editorial opcional, somente do snapshot. Null nunca sobrescreve valor existente. */
+  image_url: string | null;
+  description: string | null;
+  short_description: string | null;
 }
 
 export interface BikeProjectionResult {
