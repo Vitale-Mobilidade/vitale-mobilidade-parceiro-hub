@@ -118,4 +118,5 @@ export const Route = createFileRoute("/acompanhamento/$bikeId")({
     };
   },
   component: AcompanhamentoBike,
+  notFoundComponent: BikeNotFound,
 });
