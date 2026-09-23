@@ -165,3 +165,22 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 - **`synced_at`:** passa a significar última projeção bem-sucedida — atualizado em todo run, mesmo sem mudança comercial (junto com `updated_at`), sem criar oferta nova nem evento de preço. `verified_at` segue NULL (verificação humana).
 - Verificação no vivo: 30 atuais, 0 URLs fora do padrão, 20 `radar_eligible` (0/0 vs Radar), Quiz 20, 0 divergências preço/URL vs snapshot, anon/authenticated sem SELECT/EXECUTE.
 - Squad pós-fix: Produto/UX/CX sem mudança visível; CTO contrato mais estrito e nome preciso; Segurança acessos fechados; Growth links byte a byte; IA N/A; PMO primeira execução automática ainda não ocorreu, cutover não feito.
+
+## 16. Campos editoriais em `public.bikes` (23/09/2026)
+
+**Objetivo:** guardar na entidade Bike os fatos editoriais já existentes no snapshot (foto, descrição, descrição curta), sem tocar em preço, link, oferta, elegibilidade ou PII.
+
+**Migration aditiva `20260923125500`:**
+- `ALTER TABLE public.bikes` adiciona `image_url`, `description`, `short_description` (todas nullable). CHECK `bikes_image_url_https_chk`: `image_url` NULL ou `^https://[^\s"'<>]+$`.
+- `project_bikes_from_snapshot` atualizada (mesma rotina, INVOKER, `search_path` fixo, EXECUTE só `service_role`): projeta os três campos quando presentes e válidos; ausente/inválido **não** sobrescreve valor existente (`coalesce`); update só quando algo mudou.
+- Backfill idempotente a partir do snapshot `current` (`image`, `description`, `shortDescription`), com assert final `count = 30`.
+
+**Código:** `buildBikeProjectionRows` passa a emitir `image_url`/`description`/`short_description` a partir de `SnapshotBike.image`, `.description`, `.shortDescription`, com validação https e trim. Nada além disso mudou no writer. Testes dirigidos: `src/lib/bike-projection.test.ts` (4) + `bike-offers-projection.test.ts` (3) — 7 passaram.
+
+**Verificação no vivo:** 30 bikes; 30 com `image_url`, 30 com `description`, 30 com `short_description`; 0 divergências de imagem e descrição vs snapshot; 30 ofertas atuais intactas.
+
+**Não alterado:** Quiz, Radar, RPCs comerciais, `bike_offers`, preço, URLs `meli.la`, analytics, páginas e leitores web (`/bikes` continua lendo a planilha).
+
+**Rollback não destrutivo:** nenhum leitor consome os campos novos; reverter a projeção no código e reimplantar; colunas e dados preservados.
+
+**Revisão compacta:** Produto — entidade Bike passa a ter o conteúdo necessário para o futuro cutover de `/bikes`. CTO — mesma rotina única, idempotente, um lote por transação. IA — nenhum texto gerado; tudo vem do snapshot. Segurança — tabela segue fechada a anon/authenticated; função só `service_role`. UX/CX — nada visível muda. Growth — links e analytics intocados. PMO — cutover de leitura permanece pendente.
