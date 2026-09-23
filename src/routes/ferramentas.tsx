@@ -78,6 +78,15 @@ const TOOLS = [
     body: "Informe gasto, tempo e distância só das viagens que pensa em trocar para ver economia, tempo por ano e o custo acumulado de até duas bikes reais.",
   },
   {
+    key: "moto-vs-bike",
+    icon: Calculator,
+    title: "Moto vs bike",
+    to: "/calculadoras/moto-vs-bike" as const,
+    cta: "Comparar com minha moto",
+    question: "Moto ou bike elétrica no trajeto?",
+    body: "Informe o gasto variável da moto nesses trajetos e sua rotina para ver a economia líquida estimada, o payback e o custo acumulado de até duas bikes reais.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",

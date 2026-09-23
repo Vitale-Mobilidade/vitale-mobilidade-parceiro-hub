@@ -4,20 +4,20 @@ import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
 import type { MobilityBikeCandidate } from "@/lib/mobility/recommendation-engine";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
-const TITLE = "Carro ou bike elétrica: quanto custa cada um no trajeto? | Vitale Mobilidade";
+const TITLE = "Moto ou bike elétrica: quanto custa cada um no trajeto? | Vitale Mobilidade";
 const DESCRIPTION =
-  "Compare o gasto variável do carro no trajeto com o custo de uma bike elétrica real: economia líquida estimada, payback e custo acumulado em 12, 24 e 36 meses.";
+  "Compare o gasto variável da moto no trajeto com o custo de uma bike elétrica real: economia líquida estimada, payback e custo acumulado em 12, 24 e 36 meses.";
 
-export const Route = createFileRoute("/calculadoras/carro-vs-bike")({
+export const Route = createFileRoute("/calculadoras/moto-vs-bike")({
   loader: () =>
     getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
-      path: "/calculadoras/carro-vs-bike",
+      path: "/calculadoras/moto-vs-bike",
       title: TITLE,
       description: DESCRIPTION,
-      ogTitle: "Carro ou bike elétrica: quanto custa cada um no trajeto?",
-      ogDescription: "Compare o gasto do carro no trajeto com bikes reais com oferta atual, sem cadastro.",
+      ogTitle: "Moto ou bike elétrica: quanto custa cada um no trajeto?",
+      ogDescription: "Compare o gasto da moto no trajeto com bikes reais com oferta atual, sem cadastro.",
     });
     return {
       ...base,
@@ -27,8 +27,8 @@ export const Route = createFileRoute("/calculadoras/carro-vs-bike")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            name: "Calculadora carro vs bike elétrica",
-            url: canonicalUrl("/calculadoras/carro-vs-bike"),
+            name: "Calculadora moto vs bike elétrica",
+            url: canonicalUrl("/calculadoras/moto-vs-bike"),
             applicationCategory: "FinanceApplication",
             operatingSystem: "Web",
             inLanguage: "pt-BR",
@@ -40,23 +40,23 @@ export const Route = createFileRoute("/calculadoras/carro-vs-bike")({
       ],
     };
   },
-  component: CalculadoraCarroVsBike,
+  component: CalculadoraMotoVsBike,
 });
 
 
 const COPY: VehicleCopy = {
-  vehicle: "carro",
-  eyebrow: "CARRO VS BIKE",
-  h1: "Carro ou bike elétrica: quanto custa cada um no trajeto?",
-  intro: "Informe o gasto variável do carro nesses trajetos e sua rotina. A comparação com até duas bikes reais aparece na hora, sem cadastro.",
-  noun: "carro",
-  withArticle: "o carro",
-  ofArticle: "do carro",
-  methodTitle: "Carro vs bike",
-  position: "calculadora_carro_vs_bike",
+  vehicle: "moto",
+  eyebrow: "MOTO VS BIKE",
+  h1: "Moto ou bike elétrica: quanto custa cada um no trajeto?",
+  intro: "Informe o gasto variável da moto nesses trajetos e sua rotina. A comparação com até duas bikes reais aparece na hora, sem cadastro.",
+  noun: "moto",
+  withArticle: "a moto",
+  ofArticle: "da moto",
+  methodTitle: "Moto vs bike",
+  position: "calculadora_moto_vs_bike",
 };
 
-function CalculadoraCarroVsBike() {
+function CalculadoraMotoVsBike() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
   return <VehicleVsBikeCalculator sourceOk={sourceOk} candidates={candidates} copy={COPY} />;
 }
