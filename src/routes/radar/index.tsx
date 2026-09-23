@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import Acompanhamento from "@/pages/Acompanhamento";
 import { loadRadarCatalog, radarCatalogHead, radarHeaders } from "@/lib/radar-routes";
 
-export const Route = createFileRoute("/acompanhamento/")({
+// Rota-alvo do Radar: mesmo loader/página de /acompanhamento; cutover/redirect ainda não aprovado.
+export const Route = createFileRoute("/radar/")({
   loader: loadRadarCatalog,
   headers: radarHeaders,
-  head: () => radarCatalogHead("/acompanhamento"),
-  component: LegacyRadarPage,
+  head: () => radarCatalogHead("/radar"),
+  component: RadarPage,
 });
 
-function LegacyRadarPage() {
+function RadarPage() {
   return <Acompanhamento initial={Route.useLoaderData()} />;
 }
