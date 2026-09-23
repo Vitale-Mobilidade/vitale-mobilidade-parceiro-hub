@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, BellRing, Check, ExternalLink } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

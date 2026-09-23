@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Flame, Target, TrendingDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Footer from "@/components/Footer";

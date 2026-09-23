@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { Json } from "@/integrations/supabase/types";
 import { fetchBikeHistory, fetchTrackerCatalog } from "./radar-repository.server";
 
 export const getRadarCatalog = createServerFn({ method: "GET" }).handler(async () => {
   const r = await fetchTrackerCatalog();
   // JSON serializável: dados já vêm como JSON da RPC.
-  return r.ok ? { ok: true as const, bikes: JSON.parse(JSON.stringify(r.data)) as unknown[] } : { ok: false as const };
+  return r.ok ? { ok: true as const, bikes: JSON.parse(JSON.stringify(r.data)) as Json[] } : { ok: false as const };
 });
 
 export const getRadarBike = createServerFn({ method: "GET" })
@@ -15,6 +16,6 @@ export const getRadarBike = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const r = await fetchBikeHistory(data.bikeId);
     return r.ok
-      ? { ok: true as const, bike: JSON.parse(JSON.stringify(r.data ?? null)) as unknown }
+      ? { ok: true as const, bike: JSON.parse(JSON.stringify(r.data ?? null)) as Json }
       : { ok: false as const };
   });
