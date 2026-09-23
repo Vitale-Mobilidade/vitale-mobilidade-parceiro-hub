@@ -1358,6 +1358,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           },
         } satisfies SDRContext}
         buyClicked={mainActionClicked}
+        manualOnly
         onBuyLink={(bikeId) => {
           const bike = [recommendation.primary, recommendation.secondary].find((b: any) => b?.id === bikeId);
           if (bike) {
