@@ -228,8 +228,22 @@ function parseDateOnly(iso: string): { y: number; m: number; d: number } | null 
 
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const civil = parseDateOnly(iso);
-  if (civil) {
+  if (DATE_ONLY_RE.test(iso.trim())) {
+    const civil = parseDateOnly(iso);
+    if (!civil) return "—"; // data civil impossível (ex.: 2026-02-30)
+    return `${String(civil.d).padStart(2, "0")}/${String(civil.m).padStart(2, "0")}/${civil.y}`;
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: TIMEZONE_BR,
+  });
+}
+
+function _unused() {
     return `${String(civil.d).padStart(2, "0")}/${String(civil.m).padStart(2, "0")}/${civil.y}`;
   }
   const d = new Date(iso);
