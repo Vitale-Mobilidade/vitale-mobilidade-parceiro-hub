@@ -87,6 +87,10 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
     };
   }, [archivedSeries]);
 
+  // Data do último preço VERIFICADO (confirmação diária). `lastObservedAt` é a
+  // última ALTERAÇÃO de preço e só aparece rotulada como tal.
+  const lastConfirmed = useMemo(() => lastConfirmedDay(archivedSeries), [archivedSeries]);
+
   const loading = false; // dados já chegam no SSR
   const canBuy = hasOffer;
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
