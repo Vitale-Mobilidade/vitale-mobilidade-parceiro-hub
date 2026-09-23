@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bike, Calculator, ExternalLink, LineChart, Users } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { CostProjectionChart } from "@/components/mobility/CostProjectionChart";
-import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
-import { Button } from "@/components/ui/button";
-import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle } from "@/components/mobility/calculator-ui";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
+import { brl, decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
 import {
   AUTONOMY_SAFETY_MARGIN,
@@ -19,7 +19,6 @@ import {
   QUICK_ORDER_CRITERION,
   recommendQuickComparison,
   type MobilityBikeCandidate,
-  type RecommendedBike,
 } from "@/lib/mobility/recommendation-engine";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
@@ -69,162 +68,6 @@ const MODALS: { key: Modal; label: string }[] = [
   { key: "moto", label: "Moto" },
   { key: "misto", label: "Misto" },
 ];
-const BUDGET_PRESETS = [5000, 7000, 10000, 15000] as const;
-
-const brl = (value: number, cents = false) =>
-  value.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: cents ? 2 : 0,
-    maximumFractionDigits: cents ? 2 : 0,
-  });
-const decimal = (value: number, digits = 1) =>
-  value.toLocaleString("pt-BR", { maximumFractionDigits: digits });
-const parseNumber = (raw: string) => (raw.trim() === "" ? Number.NaN : Number(raw.replace(",", ".")));
-
-function validateNumber(raw: string, label: string, range: { min: number; max: number }) {
-  if (raw.trim() === "") return `${label}: preencha este campo.`;
-  const value = parseNumber(raw);
-  if (!Number.isFinite(value) || value < 0) return `${label}: informe um número válido e não negativo.`;
-  if (value < range.min || value > range.max) return `${label}: use um valor entre ${range.min} e ${range.max}.`;
-  return null;
-}
-
-function NumberField({
-  name,
-  label,
-  value,
-  onChange,
-  onBlur,
-  suffix,
-  help,
-  error,
-  step = "0.01",
-}: {
-  name: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  onBlur: () => void;
-  suffix: string;
-  help?: string;
-  error?: string | null;
-  step?: string;
-}) {
-  const helpId = `${name}-help`;
-  const errorId = `${name}-error`;
-  return (
-    <div>
-      <label htmlFor={name} className="text-sm font-bold text-ink">{label}</label>
-      <div className={`mt-1 flex min-h-12 items-center gap-2 rounded-md bg-background px-3 ring-1 focus-within:ring-2 ${error ? "ring-destructive focus-within:ring-destructive" : "ring-line focus-within:ring-action"}`}>
-        <input
-          id={name}
-          name={name}
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step={step}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onBlur={onBlur}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={[help ? helpId : "", error ? errorId : ""].filter(Boolean).join(" ") || undefined}
-          className="h-12 min-w-0 flex-1 bg-transparent text-base text-ink outline-none"
-        />
-        <span className="shrink-0 text-xs text-muted-foreground">{suffix}</span>
-      </div>
-      {help && <p id={helpId} className="mt-1 text-xs leading-relaxed text-muted-foreground">{help}</p>}
-      {error && <p id={errorId} className="mt-1 text-xs font-semibold text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-function Metric({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
-  return (
-    <div className={`min-w-0 rounded-md p-4 ${emphasis ? "bg-mint/25" : "bg-surface ring-1 ring-line"}`}>
-      <dt className="text-xs font-semibold leading-snug text-muted-foreground">{label}</dt>
-      <dd className={`mt-1 break-words font-black text-ink ${emphasis ? "text-2xl sm:text-3xl" : "text-xl"}`}>{value}</dd>
-    </div>
-  );
-}
-
-function BikeResultCard({
-  bike,
-  selected,
-  onSelect,
-  monthlyCurrentCost,
-  monthlyBikeCost,
-}: {
-  bike: RecommendedBike;
-  selected: boolean;
-  onSelect: () => void;
-  monthlyCurrentCost: number;
-  monthlyBikeCost: number;
-}) {
-  const projection = computeCostProjection({ monthlyCurrentCost, monthlyBikeCost, bikePrice: bike.price });
-  return (
-    <article className={`overflow-hidden rounded-lg bg-card ring-2 ${selected ? "ring-action" : "ring-line"}`}>
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-pressed={selected}
-        className="grid min-h-12 w-full grid-cols-[112px_minmax(0,1fr)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-inset sm:grid-cols-[150px_minmax(0,1fr)]"
-      >
-        <BikeMedia src={bike.image} name={bike.name} className="h-full min-h-36" />
-        <span className="p-4">
-          <span className="text-xs font-bold text-action">{selected ? "Opção selecionada" : "Selecionar para projeção"}</span>
-          <strong className="mt-1 block text-lg text-ink">{bike.name}</strong>
-          <span className="mt-1 block text-xl font-black text-ink">{brl(bike.price)}</span>
-          <span className="mt-1 block text-xs text-muted-foreground">Oferta atual registrada pela Vitale no Mercado Livre.</span>
-          <span className="mt-2 block text-sm text-ink">
-            {bike.autonomyKm} km de autonomia{bike.capacity ? ` · ${bike.capacity} pessoa${bike.capacity > 1 ? "s" : ""}` : ""}
-          </span>
-        </span>
-      </button>
-      <div className="border-t border-line p-4">
-        <p className="text-sm text-ink">{bike.reason}</p>
-        {projection.ok && (
-          <div className="mt-3 rounded-md bg-surface p-3 text-sm ring-1 ring-line">
-            <p className="font-bold text-ink">
-              {projection.paybackMonths === null
-                ? "Sem retorno financeiro positivo neste cenário"
-                : `Retorno estimado em ${decimal(projection.paybackMonths)} meses`}
-            </p>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-              {projection.points.map((point) => (
-                <span key={point.months}>
-                  <strong className="block text-ink">{point.months}m</strong>
-                  {brl(point.netBalance)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Button asChild variant="outline" className="min-h-11 border-line text-action">
-            <Link to="/bikes/$slug" params={{ slug: bike.slug }}><Bike aria-hidden="true" /> Conhecer a bike</Link>
-          </Button>
-          {bike.monitored && (
-            <Button asChild variant="outline" className="min-h-11 border-line text-action">
-              <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }}><LineChart aria-hidden="true" /> Ver preço e histórico</Link>
-            </Button>
-          )}
-          <Button asChild className="min-h-11 bg-action text-primary-foreground hover:bg-action/90 sm:col-span-2">
-            <a
-              href={bike.link}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              onClick={() => trackAffiliateClick({ bike_id: bike.bikeId, position: "calculadora_economia" })}
-            >
-              Ver oferta no Mercado Livre <ExternalLink aria-hidden="true" />
-            </a>
-          </Button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function CalculadoraEconomia() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
   const [modal, setModal] = useState<Modal | null>(null);
@@ -232,7 +75,7 @@ function CalculadoraEconomia() {
   const [dailyKm, setDailyKm] = useState("");
   const [daysPerWeek, setDaysPerWeek] = useState("");
   const [replaceablePercent, setReplaceablePercent] = useState("");
-  const [budgetMode, setBudgetMode] = useState<"none" | "custom" | `${number}`>("none");
+  const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -264,7 +107,7 @@ function CalculadoraEconomia() {
   }, [requiredValid, modal, values]);
   const data = costResult?.ok ? costResult.data : null;
   const hasBikeUse = data !== null && values.replaceablePercent > 0;
-  const budget = budgetMode === "none" ? null : budgetMode === "custom" ? parseNumber(customBudget) : Number(budgetMode);
+  const budget = resolveBudget(budgetMode, customBudget);
 
   const recommendations = useMemo(() => {
     if (!hasBikeUse || !sourceOk || errors.budget) return null;
@@ -373,26 +216,8 @@ function CalculadoraEconomia() {
                   error={visibleError("replaceablePercent")}
                 />
 
-                <fieldset>
-                  <legend className="text-sm font-bold text-ink">Orçamento da bike <span className="font-normal text-muted-foreground">(opcional)</span></legend>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Button type="button" variant={budgetMode === "none" ? "default" : "outline"} onClick={() => { setBudgetMode("none"); markTouched("budget"); }} className={budgetMode === "none" ? "min-h-11 bg-action" : "min-h-11 border-line"}>Sem limite</Button>
-                    {BUDGET_PRESETS.map((amount) => (
-                      <Button key={amount} type="button" variant={budgetMode === String(amount) ? "default" : "outline"} onClick={() => { setBudgetMode(String(amount) as `${number}`); markTouched("budget"); }} className={budgetMode === String(amount) ? "min-h-11 bg-action" : "min-h-11 border-line"}>Até {brl(amount)}</Button>
-                    ))}
-                    <Button type="button" variant={budgetMode === "custom" ? "default" : "outline"} onClick={() => { setBudgetMode("custom"); markTouched("budget"); }} className={budgetMode === "custom" ? "min-h-11 bg-action" : "min-h-11 border-line"}>Outro valor</Button>
-                  </div>
-                  {budgetMode === "custom" && (
-                    <div className="mt-3 max-w-xs">
-                      <NumberField name="customBudget" label="Outro orçamento máximo" value={customBudget} onChange={setCustomBudget} onBlur={() => markTouched("budget")} suffix="R$" error={visibleError("budget")} />
-                    </div>
-                  )}
-                </fieldset>
-
-                <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4 rounded-md bg-surface px-4 py-3 ring-1 ring-line">
-                  <span className="flex items-center gap-3 text-sm font-bold text-ink"><Users className="h-5 w-5 text-action" aria-hidden="true" /> Preciso levar garupa</span>
-                  <input type="checkbox" checked={needsPassenger} onChange={(event) => setNeedsPassenger(event.target.checked)} className="h-5 w-5 accent-[var(--color-action,currentColor)]" />
-                </label>
+                <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => markTouched("budget")} error={visibleError("budget")} />
+                <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
               </div>
             </div>
 
@@ -446,7 +271,7 @@ function CalculadoraEconomia() {
               ) : (
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {bikes.map((bike) => (
-                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} monthlyCurrentCost={data.currentTotalReplaced} monthlyBikeCost={data.bikeTotalCost} />
+                    <BikeResultCard key={bike.bikeId} bike={bike} selected={selectedBike?.bikeId === bike.bikeId} onSelect={() => setSelectedBikeId(bike.bikeId)} projection={computeCostProjection({ monthlyCurrentCost: data.currentTotalReplaced, monthlyBikeCost: data.bikeTotalCost, bikePrice: bike.price })} position="calculadora_economia" />
                   ))}
                 </div>
               )}
