@@ -38,7 +38,8 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 
 - **Etapa 1**: em andamento. A conversão nativa no próprio Lovable foi feita e ainda **não foi publicada**.
 - Radar e Quiz possuem leitura SSR parcial (catálogo/histórico de preços).
-- Build da versão `77ab7b1a98d57e7379e029155236f6b9f195a197` passou; isso comprova compilação, não paridade funcional nem o 503 em falha real.
+- Build da versão `f934d4104baaf172e82296ff6249caea2fd85a95` passou; isso comprova compilação, não paridade funcional nem o 503 em falha real.
+- No detalhe legado do Radar, o código agora distingue bike inexistente (marcador SSR 404) de falha temporária (marcador SSR 503 e mensagem própria), mas os status reais ainda não foram confirmados em runtime.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
 - **Etapa 2** tem apenas metadata parcial do Radar; **não está concluída**.
 - **Etapas 3 a 25**: não concluídas.
