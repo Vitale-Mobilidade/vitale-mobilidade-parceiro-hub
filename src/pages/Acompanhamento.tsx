@@ -148,7 +148,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
-                  <PriceStatus classification={featured.metrics.classification} />
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
