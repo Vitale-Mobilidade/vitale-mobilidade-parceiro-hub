@@ -36,7 +36,21 @@ Vivo também tem 22 tabelas. As diferenças indicam **escritas posteriores ao ba
 - `get_bike_price_history('v8_ultra', 90)`: executou e retornou objeto.
 Paridade byte a byte do JSON com o vivo **não** foi medida.
 
-## 5. NÃO restaurado / NÃO validado
+## 5. Ensaio da proposta SQL revisada (commit 5689bf7)
+
+Testado pelo responsável no PostgreSQL 17 isolado/restaurado, **após limpar SOMENTE a tabela/função de ensaio local**; nenhum objeto do banco de produção foi alterado.
+
+- DDL aplicado: tabela `bikes`, função e trigger imutáveis, sem `IF NOT EXISTS`/`OR REPLACE` (fail-fast).
+- Backfill manual inseriu **30 bikes**.
+- Paridade de identidade: **0 IDs faltantes**, **0 IDs extras**, **30 slugs únicos**.
+- RLS: habilitado (`true`).
+- Leitura direta: `anon` e `authenticated` sem `SELECT`; `service_role` com acesso.
+- A proposta revisada removeu o campo `specs` JSONB livre e ajustou `capacity` para `capacity_people smallint` (1 ou 2), alinhado ao snapshot.
+- Não foi testado writer, Storage, Edge Functions, secrets, jobs, ACLs nem paridade das RPCs contra o vivo.
+
+**Este ensaio não fecha o Gate 0 nem autoriza aplicação da proposta no Supabase vivo.**
+
+## 6. NÃO restaurado / NÃO validado
 - Storage (imagens espelhadas em `bike_assets`).
 - Edge Functions e seus deploys.
 - Secrets.

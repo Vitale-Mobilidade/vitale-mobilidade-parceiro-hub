@@ -103,7 +103,7 @@ Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`
 - Rollback não destrutivo: nada lê a tabela; RPCs/writer continuam fonte; preservar tabela e dados; DROP só em tarefa separada com backup e autorização.
 - CHECK de `bike_id` espelha `BIKE_ID_RE` (`^[a-z0-9][a-z0-9_-]{0,63}$`, case-insensitive).
 
-**Ensaio da proposta anterior (responsável, PostgreSQL 17 isolado/restaurado, 23/09/2026):** tabela criada; backfill manual inseriu 30 IDs; 0 faltantes, 0 extras; 30 slugs únicos; RLS `true`; `SELECT` anon/authenticated `false`, service_role `true`. Esse ensaio usou a versão anterior (com `specs` JSONB, `capacity` texto e comandos tolerantes a reexecução); a versão fail-fast atual será reaplicada pelo responsável. **Não libera o Gate 0** nem autoriza aplicação no vivo.
+**Ensaio da proposta revisada (responsável, PostgreSQL 17 isolado/restaurado, commit 5689bf7):** DDL fail-fast aplicado após limpar somente a tabela/função de ensaio local; backfill manual inseriu **30 bikes**; **0 IDs faltantes**, **0 IDs extras**; **30 slugs únicos**; RLS `true`; `SELECT` para `anon`/`authenticated` `false`, `service_role` `true`. A versão revisada removeu o campo `specs` JSONB livre e trocou `capacity` texto por `capacity_people smallint` (1 ou 2), alinhado ao snapshot. Não testou writer, Storage, Edge Functions, secrets, jobs, ACLs nem paridade das RPCs contra o vivo. **Não libera o Gate 0 nem autoriza aplicação no banco vivo.**
 
 ## 12. Revisão compacta (8 perspectivas) — incremento Gate 0 + proposta
 - **Produto:** nenhuma mudança visível; entidade Bike ganha forma sem afetar Quiz/Radar.
