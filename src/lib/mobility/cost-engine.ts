@@ -306,3 +306,9 @@ export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostRes
     },
   };
 }
+
+export const MobilityCostEngine = {
+  compute: computeMobilityCost,
+  computeQuick: computeQuickMobilityCost,
+  computeAnnual: computeAnnualMobilityCost,
+};
