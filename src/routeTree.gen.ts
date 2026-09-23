@@ -14,6 +14,7 @@ import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as FerramentasRouteImport } from './routes/ferramentas'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
@@ -53,6 +54,11 @@ const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
 const PainelBikesRoute = PainelBikesRouteImport.update({
   id: '/painel-bikes',
   path: '/painel-bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcompanhamentoIndexRoute = AcompanhamentoIndexRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   FerramentasRoute: typeof FerramentasRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   PainelBikesRoute: typeof PainelBikesRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   BikesSlugRoute: typeof BikesSlugRoute
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/painel-bikes'
       fullPath: '/painel-bikes'
       preLoaderRoute: typeof PainelBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/acompanhamento/': {
@@ -445,6 +465,7 @@ const rootRouteChildren: RootRouteChildren = {
   FerramentasRoute: FerramentasRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
   PainelBikesRoute: PainelBikesRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   BikesSlugRoute: BikesSlugRoute,
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
