@@ -10,11 +10,11 @@ const cands = [mk("a", 3000, 40), mk("b", 4000, 40, true), mk("c", 5000, 80, tru
 
 describe("filtro de subidas", () => {
   it("desmarcado mantém o filtro atual", () => {
-    const r = recommendQuickComparison(cands, { dailyKm: 10, needsPassenger: false, maxBudget: null });
+    const r = recommendQuickComparison(cands, { dailyKm: 10, needsPassenger: false, maxBudget: 10000 });
     expect(r.ok && r.bikes.map((b) => b.bikeId)).toEqual(["d", "c"]);
   });
   it("marcado só aceita evidência positiva; desconhecido não entra", () => {
-    const r = recommendQuickComparison(cands, { dailyKm: 10, needsPassenger: false, maxBudget: null, needsHills: true });
+    const r = recommendQuickComparison(cands, { dailyKm: 10, needsPassenger: false, maxBudget: 10000, needsHills: true });
     expect(r.ok && r.bikes.map((b) => b.bikeId)).toEqual(["b", "c"]);
     expect(r.ok && r.bikes[0].reason).toContain("indicada para trajetos com subidas");
   });
