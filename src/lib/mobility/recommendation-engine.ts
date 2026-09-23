@@ -4,7 +4,13 @@
  * oferta atômica atual do catálogo público). Não inventa score, preço, autonomia nem link.
  * Não altera nem reproduz o resultado do Quiz: aqui só há filtro verificável + ordenação explicada.
  */
-import { AUTONOMY_SAFETY_MARGIN, LIMITS, MAX_RECOMMENDATIONS, MELI_LINK_RE } from "./config";
+import {
+  AUTONOMY_SAFETY_MARGIN,
+  LIMITS,
+  MAX_QUICK_RECOMMENDATIONS,
+  MAX_RECOMMENDATIONS,
+  MELI_LINK_RE,
+} from "./config";
 
 export type MobilityBikeCandidate = {
   bikeId: string;
@@ -40,6 +46,9 @@ export type RecommendationResult =
 
 export const ORDER_CRITERION =
   "Ordenamos pelo menor preço da oferta atual entre as bikes que atendem à sua distância diária (com margem de 20% sobre a autonomia declarada) e, em caso de empate, pela maior autonomia.";
+
+export const QUICK_ORDER_CRITERION =
+  "Mostramos primeiro a opção compatível de menor preço e, quando existe, uma alternativa distinta com maior autonomia ou capacidade.";
 
 const finitePositive = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -91,6 +100,48 @@ export function recommendBikes(
   };
 }
 
+/** Seleciona até duas opções complementares sem score ou rótulo de “melhor bike”. */
+export function recommendQuickComparison(
+  candidates: MobilityBikeCandidate[],
+  criteria: RecommendationCriteria,
+): RecommendationResult {
+  const all = recommendBikes(candidates, criteria);
+  if (!all.ok) return all;
+
+  // recommendBikes preserva o contrato público antigo de até 3; refazemos apenas o conjunto
+  // elegível quando há mais candidatas para que a alternativa considere toda a base real.
+  const requiredKm = criteria.dailyKm * AUTONOMY_SAFETY_MARGIN;
+  const eligible = candidates.filter((b) => {
+    if (!b || typeof b.bikeId !== "string" || !b.bikeId) return false;
+    if (typeof b.link !== "string" || !MELI_LINK_RE.test(b.link) || !finitePositive(b.price)) return false;
+    if (!finitePositive(b.autonomyKm) || b.autonomyKm < requiredKm) return false;
+    if (criteria.needsPassenger && !(finitePositive(b.capacity) && b.capacity >= 2)) return false;
+    if (finitePositive(criteria.maxBudget) && b.price > criteria.maxBudget) return false;
+    return true;
+  });
+  const byPrice = [...eligible].sort(
+    (a, b) => a.price - b.price || (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) || a.bikeId.localeCompare(b.bikeId),
+  );
+  const first = byPrice[0];
+  if (!first) return { ok: true, bikes: [] };
+  const alternative = [...eligible]
+    .filter((b) => b.bikeId !== first.bikeId)
+    .sort(
+      (a, b) =>
+        (b.autonomyKm ?? 0) - (a.autonomyKm ?? 0) ||
+        (b.capacity ?? 0) - (a.capacity ?? 0) ||
+        a.price - b.price ||
+        a.bikeId.localeCompare(b.bikeId),
+    )[0];
+  return {
+    ok: true,
+    bikes: [first, alternative]
+      .filter((b): b is MobilityBikeCandidate => Boolean(b))
+      .slice(0, MAX_QUICK_RECOMMENDATIONS)
+      .map((b) => ({ ...b, reason: buildReason(b, criteria) })),
+  };
+}
+
 function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): string {
   const parts = [
     `Autonomia declarada de ${b.autonomyKm} km cobre os ${c.dailyKm} km do seu dia com margem de 20%`,
@@ -100,4 +151,9 @@ function buildReason(b: MobilityBikeCandidate, c: RecommendationCriteria): strin
   return `${parts.join("; ")}.`;
 }
 
-export const BikeRecommendationEngine = { recommend: recommendBikes, orderCriterion: ORDER_CRITERION };
+export const BikeRecommendationEngine = {
+  recommend: recommendBikes,
+  recommendQuick: recommendQuickComparison,
+  orderCriterion: ORDER_CRITERION,
+  quickOrderCriterion: QUICK_ORDER_CRITERION,
+};

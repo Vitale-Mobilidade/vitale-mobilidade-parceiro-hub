@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { recommendBikes, type MobilityBikeCandidate, type RecommendedBike } from "./recommendation-engine";
+import {
+  recommendBikes,
+  recommendQuickComparison,
+  type MobilityBikeCandidate,
+  type RecommendedBike,
+} from "./recommendation-engine";
 
 const base: MobilityBikeCandidate = {
   bikeId: "a1",
@@ -97,5 +102,36 @@ describe("BikeRecommendationEngine", () => {
     );
     expect(out.map((b) => b.bikeId)).toEqual(["a", "b", "c"]);
     expect(out[0].reason).toContain("80 km");
+  });
+});
+
+describe("BikeRecommendationEngine — comparação rápida", () => {
+  it("escolhe a mais barata e uma alternativa distinta de maior autonomia", () => {
+    const r = recommendQuickComparison(
+      [
+        make({ bikeId: "barata", price: 5000, autonomyKm: 40, capacity: 1 }),
+        make({ bikeId: "intermediaria", price: 6000, autonomyKm: 55, capacity: 2 }),
+        make({ bikeId: "longa", price: 9000, autonomyKm: 90, capacity: 1 }),
+      ],
+      criteria,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["barata", "longa"]);
+  });
+
+  it("retorna somente as bikes reais disponíveis e respeita orçamento e garupa", () => {
+    const r = recommendQuickComparison(
+      [
+        make({ bikeId: "solo", price: 5000, capacity: 1 }),
+        make({ bikeId: "garupa", price: 7000, capacity: 2 }),
+        make({ bikeId: "cara", price: 12000, capacity: 2 }),
+      ],
+      { dailyKm: 20, needsPassenger: true, maxBudget: 8000 },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.bikes.map((bike) => bike.bikeId)).toEqual(["garupa"]);
+    expect(recommendQuickComparison([], criteria)).toEqual({ ok: true, bikes: [] });
   });
 });
