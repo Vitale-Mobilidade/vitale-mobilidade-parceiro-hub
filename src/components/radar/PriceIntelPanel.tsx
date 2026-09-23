@@ -125,7 +125,7 @@ export function PriceIntelPanel({
                 </span>
               </span>
               <span className="text-right">
-                {forming ? "Maior registrado" : "Preço alto"}
+                Maior registrado
                 <span className="block font-bold text-ink">{formatBRL(maxPrice)}</span>
               </span>
             </div>
