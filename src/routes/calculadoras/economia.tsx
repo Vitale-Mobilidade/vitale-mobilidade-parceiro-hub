@@ -147,28 +147,34 @@ function requireNumber(raw: string, label: string, range: { min: number; max: nu
 function CalculadoraEconomia() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
 
+  // Nenhum campo de cálculo começa preenchido: todo número exibido veio do usuário.
   const [step, setStep] = useState(0);
-  const [modal, setModal] = useState<Modal>("carro");
-  const [daysPerWeek, setDaysPerWeek] = useState("5");
-  const [dailyKm, setDailyKm] = useState("20");
-  const [percent, setPercent] = useState("70");
+  const [modal, setModal] = useState<Modal | null>(null);
+  const [daysPerWeek, setDaysPerWeek] = useState("");
+  const [dailyKm, setDailyKm] = useState("");
+  const [percent, setPercent] = useState("");
 
-  const [fuelPrice, setFuelPrice] = useState("6.00");
-  const [kmPerLiter, setKmPerLiter] = useState("10");
-  const [extras, setExtras] = useState("0");
-  const [fixedMonthly, setFixedMonthly] = useState("0");
-  const [keepsVehicle, setKeepsVehicle] = useState(true);
-  const [ridePerKm, setRidePerKm] = useState("3.00");
-  const [fare, setFare] = useState("4.40");
-  const [tripsPerDay, setTripsPerDay] = useState("2");
-  const [mixedSpend, setMixedSpend] = useState("500");
+  const [fuelPrice, setFuelPrice] = useState("");
+  const [kmPerLiter, setKmPerLiter] = useState("");
+  const [extras, setExtras] = useState("");
+  const [fixedMonthly, setFixedMonthly] = useState("");
+  const [keepsVehicle, setKeepsVehicle] = useState<boolean | null>(null);
+  const [ridePerKm, setRidePerKm] = useState("");
+  const [fare, setFare] = useState("");
+  const [tripsPerDay, setTripsPerDay] = useState("");
+  const [mixedSpend, setMixedSpend] = useState("");
 
-  const [energyPerKm, setEnergyPerKm] = useState("0.05");
-  const [maintenance, setMaintenance] = useState("30");
+  const [energyPerKm, setEnergyPerKm] = useState("");
+  const [maintenance, setMaintenance] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
   const [maxBudget, setMaxBudget] = useState("");
 
+  // Erros por campo, preenchidos só quando o usuário tenta avançar.
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const isVehicle = modal === "carro" || modal === "moto";
+  const percentNum = numberOrNaN(percent);
+  const hasReplacement = Number.isFinite(percentNum) && percentNum > 0;
 
   const input: CostInput = useMemo(
     () => ({
