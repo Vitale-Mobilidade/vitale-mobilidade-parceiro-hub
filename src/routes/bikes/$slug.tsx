@@ -141,6 +141,8 @@ function BuyCta({ link, bikeId, position, className = "" }: { link: string | nul
 function BikeDetail() {
   const { bike, radar, radarOk, videos, alternatives } = Route.useLoaderData();
   const metrics = useMemo(() => (radar ? dailyMetrics({ daily: radar.daily, currentPrice: radar.currentPrice }, 30) : null), [radar]);
+  // Última confirmação diária: data correta de "preço verificado".
+  const lastConfirmed = useMemo(() => lastConfirmedDay(radar?.daily ?? []), [radar]);
   // Oferta atual coesa: só existe quando preço E link vêm do mesmo registro válido.
   const offer = bike.link && bike.sheetPrice != null ? { link: bike.link, price: bike.sheetPrice } : null;
   const paragraphs = (bike.description ?? "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
