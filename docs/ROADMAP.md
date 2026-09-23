@@ -26,7 +26,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 - **Segurança:** nenhuma mudança de acesso; proposta SQL continua fora do vivo.
 - **UX/CX:** nenhuma alteração de interface; links diretos preservados.
 - **Growth:** prioridade de conversão na Fase B antes de escalar conteúdo.
-- **PMO/QA:** status das etapas não muda; Gate 0 retirado como impedimento pelo responsável; Etapa 6 schema/backfill fechados; Etapa 7 pendente.
+- **PMO/QA:** status das etapas não muda; Gate 0 retirado como impedimento pelo responsável; Etapa 6 schema/backfill fechados; Etapa 7 implantada, aguardando confirmação no próximo run.
 
 ## 3. Etapas (ordem definida pelo responsável)
 
@@ -80,7 +80,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 
 ### Etapas 6–25
 
-- **Etapa 6 — Bike:** **schema + backfill concluídos** no banco vivo (migration `20260923063339_a73a6a10-…`, 30 bikes, paridade snapshot 0/0, RLS sem acesso anon/authenticated; `docs/BIKE_MODEL.md` §13). Specs estruturadas pendentes de fonte validada; 2 IDs órfãos a investigar. **Etapa 7 (writer único para `bikes`) pendente.**
+- **Etapa 6 — Bike:** **schema + backfill concluídos** no banco vivo (migration `20260923063339_a73a6a10-…`, 30 bikes, paridade snapshot 0/0, RLS sem acesso anon/authenticated; `docs/BIKE_MODEL.md` §13). Specs estruturadas pendentes de fonte validada; 2 IDs órfãos a investigar. **Etapa 7:** projeção pelo sync existente implantada (RPC `project_bikes_from_snapshot`, `docs/BIKE_MODEL.md` §14); aguarda confirmação na próxima execução agendada.
 - **Gate 0 — Restauração:** ensaio parcial do schema `public` executado fora do Lovable em cluster isolado (`docs/GATE0_RESTORE_REHEARSAL.md`). Backup anterior a escritas vivas; Storage, Edge Functions, secrets, jobs e ACLs não validados. **Não fechado.**
 
 Demais etapas não concluídas. Algumas estruturas e documentos preparatórios existem (contrato de bike, taxonomia, DS), mas nenhum módulo alvo está finalizado.

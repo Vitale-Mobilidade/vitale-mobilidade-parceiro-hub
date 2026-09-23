@@ -1218,6 +1218,7 @@ export type Database = {
       }
       get_price_tracker_catalog: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
+      project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

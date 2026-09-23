@@ -130,3 +130,13 @@ Linter: avisos existentes (RLS sem policy — intencional, inclui `bikes`; RPCs 
 Rollback não destrutivo: nada consome a tabela; preservar dados; DROP só em tarefa separada.
 
 Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/artigo/comparação. **CTO** aditiva, fail-fast, sem segundo writer. **IA** sem fatos inventados; specs NULL. **Segurança** RLS + zero acesso direto público. **UX/CX** sem mudança visível. **Growth** links ML diretos intactos. **PMO/QA** Etapa 6 schema/backfill fechados; Etapa 7 writer pendente.
+
+## 14. Etapa 7 — projeção do sync em `bikes` (23/09/2026)
+
+- Único escritor: `sync-bike-catalog` (e sync-now do `bike-panel`, que reutiliza `runBikeCatalogSync`). Nenhuma função/scheduler nova. Ambas reimplantadas.
+- Migration aditiva: RPC `public.project_bikes_from_snapshot(jsonb)` — SECURITY INVOKER, `search_path` fixo, EXECUTE só `service_role`. Um lote = uma chamada = uma transação.
+- Código: `_shared/bike-projection.ts` (linhas a partir do snapshot pós-`mergeWithPreserved`), chamado a cada execução bem-sucedida em `_shared/bike-sync.ts`, após overrides e antes do histórico de preço. Resultado em `bike_sync_runs.detail.bikesProjection`.
+- Regras: projeta só `bike_id` literal, `name`, `autonomy_km` (autonomyKm > 0) e `capacity_people` (1|2). Spec ausente não sobrescreve valor existente nem vira número. Sem preço, link, elegibilidade, oferta ou PII. Nunca apaga linhas nem muda `bike_id`/`slug` existente. ID novo válido entra com slug `_`→`-`; colisão de slug ou ID/nome inválido → `conflicts` registrado, sem sobrescrever. Update só se algo mudou.
+- Falha isolada: erro na RPC é logado; snapshot, overrides, Radar, Quiz, histórico, afiliados e jobs seguem. Próxima execução repara (idempotente).
+- Testes dirigidos: `src/lib/bike-projection.test.ts` (3) + `bike-catalog.test.ts` — 35 passaram.
+- Pendente: confirmar na próxima execução agendada (HH:07) via `detail.bikesProjection`; sync manual em produção não foi forçado.

@@ -1,0 +1,54 @@
+/**
+ * Etapa 7 — projeção do snapshot validado em public.bikes.
+ * Somente identidade + specs estruturadas presentes/validadas.
+ * NUNCA inclui preço, link, elegibilidade, oferta ou PII.
+ * Falha aqui é isolada: não interrompe snapshot, Radar, Quiz, histórico ou jobs.
+ */
+import type { SnapshotBike } from "./bike-sheet.ts";
+
+export interface BikeProjectionRow {
+  bike_id: string;
+  name: string;
+  autonomy_km: number | null;
+  capacity_people: 1 | 2 | null;
+}
+
+export interface BikeProjectionResult {
+  ok: boolean;
+  inserted?: number;
+  updated?: number;
+  unchanged?: number;
+  conflicts?: Array<{ bike_id: string | null; reason: string; slug?: string }>;
+  error?: string;
+}
+
+export function buildBikeProjectionRows(bikes: SnapshotBike[]): BikeProjectionRow[] {
+  const seen = new Set<string>();
+  const rows: BikeProjectionRow[] = [];
+  for (const b of bikes) {
+    if (!b?.id || seen.has(b.id)) continue;
+    seen.add(b.id);
+    const aut = typeof b.autonomyKm === "number" && Number.isFinite(b.autonomyKm) && b.autonomyKm > 0
+      ? b.autonomyKm
+      : null;
+    const cap = b.capacity === 1 || b.capacity === 2 ? b.capacity : null;
+    rows.push({ bike_id: b.id, name: String(b.name ?? "").trim(), autonomy_km: aut, capacity_people: cap });
+  }
+  return rows;
+}
+
+// deno-lint-ignore no-explicit-any
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: any; error: any }> };
+
+export async function projectBikes(supabase: RpcClient, bikes: SnapshotBike[]): Promise<BikeProjectionResult> {
+  try {
+    const rows = buildBikeProjectionRows(bikes);
+    const { data, error } = await supabase.rpc("project_bikes_from_snapshot", { p_rows: rows });
+    if (error) return { ok: false, error: String(error.message ?? error).slice(0, 300) };
+    const conflicts = Array.isArray(data?.conflicts) ? data.conflicts : [];
+    if (conflicts.length) console.warn("[sync] bikes projection conflicts:", JSON.stringify(conflicts));
+    return { ok: true, inserted: data?.inserted, updated: data?.updated, unchanged: data?.unchanged, conflicts };
+  } catch (e) {
+    return { ok: false, error: String((e as Error)?.message ?? e).slice(0, 300) };
+  }
+}
