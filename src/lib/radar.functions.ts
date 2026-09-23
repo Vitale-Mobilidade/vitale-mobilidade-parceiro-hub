@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import { fetchBikeHistory, fetchTrackerCatalog } from "./radar-repository.server";
 
