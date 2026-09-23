@@ -26,28 +26,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-NM9MGXNM');`;
 
+// Organization factual e global; serviços específicos não são atribuídos a todas as páginas.
 const ORG_JSONLD = {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
+  "@type": "Organization",
+  "@id": "https://vitalemobilidade.com/#organization",
   name: "Vitale Mobilidade",
-  description:
-    "Consultoria estratégica em veículos elétricos para empresas e empreendedores no Brasil. Avaliação de fornecedores, estruturação comercial B2B/B2C, treinamento de equipes e expansão de operações.",
   url: "https://vitalemobilidade.com/",
   logo: "https://vitalemobilidade.com/logo-192.webp",
-  image: "https://vitalemobilidade.com/logo-192.webp",
-  telephone: "+55-11-99869-3904",
-  priceRange: "$$",
-  areaServed: { "@type": "Country", name: "Brasil" },
-  address: { "@type": "PostalAddress", addressCountry: "BR", addressRegion: "SP" },
   founder: { "@type": "Person", name: "Lucas Vitale", sameAs: "https://www.linkedin.com/in/lucasvitale1/" },
   sameAs: ["https://www.linkedin.com/in/lucasvitale1/"],
-  serviceType: [
-    "Consultoria em veículos elétricos",
-    "Diagnóstico de mercado",
-    "Avaliação de fornecedores",
-    "Estruturação comercial B2B e B2C",
-    "Treinamento de equipes de vendas",
-  ],
 };
 
 const SITE_JSONLD = {
@@ -56,7 +44,7 @@ const SITE_JSONLD = {
   name: "Vitale Mobilidade",
   url: "https://vitalemobilidade.com/",
   inLanguage: "pt-BR",
-  publisher: { "@type": "Organization", name: "Vitale Mobilidade" },
+  publisher: { "@id": "https://vitalemobilidade.com/#organization" },
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
