@@ -136,13 +136,8 @@ export function BikeResultCard({
   const selectable = projection !== undefined;
   return (
     <article className={`overflow-hidden rounded-lg bg-card ring-2 ${selectable && selected ? "ring-action" : "ring-line"}`}>
-      <button
-        type="button"
-        onClick={selectable ? onSelect : undefined}
-        aria-pressed={selectable ? selected : undefined}
-        tabIndex={selectable ? undefined : -1}
-        className="grid min-h-12 w-full grid-cols-[112px_minmax(0,1fr)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-inset sm:grid-cols-[150px_minmax(0,1fr)]"
-      >
+      {selectable ? (
+        <button type="button" onClick={onSelect} aria-pressed={selected} className="grid min-h-12 w-full grid-cols-[112px_minmax(0,1fr)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-inset sm:grid-cols-[150px_minmax(0,1fr)]">
         <BikeMedia src={bike.image} name={bike.name} className="h-full min-h-36" />
         <span className="p-4">
           {selectable && <span className="text-xs font-bold text-action">{selected ? "Opção selecionada" : "Selecionar para projeção"}</span>}
@@ -153,7 +148,21 @@ export function BikeResultCard({
             {bike.autonomyKm} km de autonomia{bike.capacity ? ` · ${bike.capacity} pessoa${bike.capacity > 1 ? "s" : ""}` : ""}
           </span>
         </span>
-      </button>
+        </button>
+      ) : (
+        <div className="grid w-full grid-cols-[112px_minmax(0,1fr)] sm:grid-cols-[150px_minmax(0,1fr)]">
+        <BikeMedia src={bike.image} name={bike.name} className="h-full min-h-36" />
+        <span className="p-4">
+          {selectable && <span className="text-xs font-bold text-action">{selected ? "Opção selecionada" : "Selecionar para projeção"}</span>}
+          <strong className="mt-1 block text-lg text-ink">{bike.name}</strong>
+          <span className="mt-1 block text-xl font-black text-ink">{brl(bike.price)}</span>
+          <span className="mt-1 block text-xs text-muted-foreground">Oferta atual registrada pela Vitale no Mercado Livre.</span>
+          <span className="mt-2 block text-sm text-ink">
+            {bike.autonomyKm} km de autonomia{bike.capacity ? ` · ${bike.capacity} pessoa${bike.capacity > 1 ? "s" : ""}` : ""}
+          </span>
+        </span>
+        </div>
+      )}
       <div className="border-t border-line p-4">
         <p className="text-sm text-ink">{bike.reason}</p>
         {projection?.ok && (

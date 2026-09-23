@@ -24,6 +24,7 @@ import { Route as CalculadorasEconomiaRouteImport } from './routes/calculadoras/
 import { Route as CalculadorasMotoVsBikeRouteImport } from './routes/calculadoras/moto-vs-bike'
 import { Route as CalculadorasPaybackRouteImport } from './routes/calculadoras/payback'
 import { Route as CalculadorasTempoNoTransitoRouteImport } from './routes/calculadoras/tempo-no-transito'
+import { Route as CalculadorasTempoRecuperadoRouteImport } from './routes/calculadoras/tempo-recuperado'
 import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './routes/calculadoras/transporte-publico-vs-bike'
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
@@ -106,6 +107,12 @@ const CalculadorasTempoNoTransitoRoute =
     path: '/calculadoras/tempo-no-transito',
     getParentRoute: () => rootRouteImport,
   } as any)
+const CalculadorasTempoRecuperadoRoute =
+  CalculadorasTempoRecuperadoRouteImport.update({
+    id: '/calculadoras/tempo-recuperado',
+    path: '/calculadoras/tempo-recuperado',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CalculadorasTransportePublicoVsBikeRoute =
   CalculadorasTransportePublicoVsBikeRouteImport.update({
     id: '/calculadoras/transporte-publico-vs-bike',
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/tempo-no-transito': typeof CalculadorasTempoNoTransitoRoute
+  '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
@@ -163,6 +171,7 @@ export interface FileRoutesByTo {
   '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/tempo-no-transito': typeof CalculadorasTempoNoTransitoRoute
+  '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
@@ -185,6 +194,7 @@ export interface FileRoutesById {
   '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/tempo-no-transito': typeof CalculadorasTempoNoTransitoRoute
+  '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/tempo-no-transito'
+    | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/radar/$bikeId'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/tempo-no-transito'
+    | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/radar/$bikeId'
@@ -250,6 +262,7 @@ export interface FileRouteTypes {
     | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/tempo-no-transito'
+    | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/radar/$bikeId'
@@ -272,6 +285,7 @@ export interface RootRouteChildren {
   CalculadorasMotoVsBikeRoute: typeof CalculadorasMotoVsBikeRoute
   CalculadorasPaybackRoute: typeof CalculadorasPaybackRoute
   CalculadorasTempoNoTransitoRoute: typeof CalculadorasTempoNoTransitoRoute
+  CalculadorasTempoRecuperadoRoute: typeof CalculadorasTempoRecuperadoRoute
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
@@ -387,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalculadorasTempoNoTransitoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calculadoras/tempo-recuperado': {
+      id: '/calculadoras/tempo-recuperado'
+      path: '/calculadoras/tempo-recuperado'
+      fullPath: '/calculadoras/tempo-recuperado'
+      preLoaderRoute: typeof CalculadorasTempoRecuperadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calculadoras/transporte-publico-vs-bike': {
       id: '/calculadoras/transporte-publico-vs-bike'
       path: '/calculadoras/transporte-publico-vs-bike'
@@ -432,6 +453,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalculadorasMotoVsBikeRoute: CalculadorasMotoVsBikeRoute,
   CalculadorasPaybackRoute: CalculadorasPaybackRoute,
   CalculadorasTempoNoTransitoRoute: CalculadorasTempoNoTransitoRoute,
+  CalculadorasTempoRecuperadoRoute: CalculadorasTempoRecuperadoRoute,
   CalculadorasTransportePublicoVsBikeRoute:
     CalculadorasTransportePublicoVsBikeRoute,
   CalculadorasUberVsBikeRoute: CalculadorasUberVsBikeRoute,

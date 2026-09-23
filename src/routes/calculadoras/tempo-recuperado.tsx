@@ -11,12 +11,12 @@ import { computeMobilityTime, computeTimeProjection } from "@/lib/mobility/time-
 import { QUICK_ORDER_CRITERION, recommendQuickComparison, type MobilityBikeCandidate } from "@/lib/mobility/recommendation-engine";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
-const PATH = "/calculadoras/tempo-no-transito";
-const TITLE = "Quanto tempo você passa no trânsito por ano? Compare com bike | Vitale Mobilidade";
+const PATH = "/calculadoras/tempo-recuperado";
+const TITLE = "Quanto tempo uma bike elétrica devolve por mês e por ano? | Vitale Mobilidade";
 const DESCRIPTION =
-  "Veja quantas horas e dias por ano você passa no trajeto hoje e quanto isso mudaria fazendo os mesmos trajetos de bike, com projeção de 1, 3 e 5 anos.";
+  "Compare seu tempo diário de trajeto hoje com sua estimativa de bike e veja as horas recuperadas (ou adicionais) por mês, ano, 3 e 5 anos.";
 
-export const Route = createFileRoute("/calculadoras/tempo-no-transito")({
+export const Route = createFileRoute("/calculadoras/tempo-recuperado")({
   loader: () =>
     getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
@@ -24,8 +24,8 @@ export const Route = createFileRoute("/calculadoras/tempo-no-transito")({
       path: PATH,
       title: TITLE,
       description: DESCRIPTION,
-      ogTitle: "Quanto tempo você passa no trânsito por ano?",
-      ogDescription: "Horas no trajeto hoje e de bike, com seus próprios tempos, sem cadastro.",
+      ogTitle: "Quanto tempo a bike elétrica devolve por ano?",
+      ogDescription: "Horas recuperadas com seus próprios tempos, sem cadastro.",
     });
     return {
       ...base,
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/calculadoras/tempo-no-transito")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            name: "Calculadora de tempo no trânsito",
+            name: "Calculadora de tempo recuperado com bike",
             url: canonicalUrl(PATH),
             applicationCategory: "UtilitiesApplication",
             operatingSystem: "Web",
@@ -48,15 +48,14 @@ export const Route = createFileRoute("/calculadoras/tempo-no-transito")({
       ],
     };
   },
-  component: TempoNoTransito,
+  component: TempoRecuperado,
 });
 
 const hours = (h: number) => `${decimal(Math.abs(h))} h`;
 
-function TempoNoTransito() {
+function TempoRecuperado() {
   const { ok: sourceOk, candidates } = Route.useLoaderData();
-  const [outboundMinutes, setOutboundMinutes] = useState("");
-  const [returnMinutes, setReturnMinutes] = useState("");
+  const [currentMinutes, setCurrentMinutes] = useState("");
   const [bikeMinutes, setBikeMinutes] = useState("");
   const [daysPerWeek, setDaysPerWeek] = useState("");
   const [dailyKm, setDailyKm] = useState("");
@@ -67,8 +66,7 @@ function TempoNoTransito() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const errors = {
-    outboundMinutes: validateNumber(outboundMinutes, "Minutos de ida", LIMITS.minutesPerDay),
-    returnMinutes: validateNumber(returnMinutes, "Minutos de volta", LIMITS.minutesPerDay),
+    currentMinutes: validateNumber(currentMinutes, "Tempo atual", LIMITS.minutesPerDay),
     bikeMinutes: validateNumber(bikeMinutes, "Tempo de bike", LIMITS.minutesPerDay),
     daysPerWeek: validateNumber(daysPerWeek, "Dias por semana", LIMITS.daysPerWeek),
     dailyKm: dailyKm.trim() === "" ? null : validateNumber(dailyKm, "Km por dia", LIMITS.dailyKm),
@@ -78,18 +76,17 @@ function TempoNoTransito() {
   const mark = (n: string) => setTouched((c) => ({ ...c, [n]: true }));
   const err = (n: keyof typeof errors) => (touched[n] ? errors[n] : null);
 
-  const ready = !errors.outboundMinutes && !errors.returnMinutes && !errors.bikeMinutes && !errors.daysPerWeek && !errors.weeksPerYear;
+  const ready = !errors.currentMinutes && !errors.bikeMinutes && !errors.daysPerWeek && !errors.weeksPerYear;
   const time = useMemo(() => {
     if (!ready) return null;
     const r = computeMobilityTime({
-      // Adaptador: ida + volta informadas separadamente viram o total diário do motor.
-      currentMinutesPerDay: parseNumber(outboundMinutes) + parseNumber(returnMinutes),
+      currentMinutesPerDay: parseNumber(currentMinutes),
       bikeMinutesPerDay: parseNumber(bikeMinutes),
       daysPerWeek: parseNumber(daysPerWeek),
       weeksPerYear: parseNumber(weeksPerYear),
     });
     return r.ok ? r.data : null;
-  }, [ready, outboundMinutes, returnMinutes, bikeMinutes, daysPerWeek, weeksPerYear]);
+  }, [ready, currentMinutes, bikeMinutes, daysPerWeek, weeksPerYear]);
   const projection = time ? computeTimeProjection(time) : [];
 
   const km = dailyKm.trim() === "" || errors.dailyKm ? null : parseNumber(dailyKm);
@@ -103,6 +100,7 @@ function TempoNoTransito() {
   const saved = time?.savedHoursPerYear ?? 0;
   const weeks = parseNumber(weeksPerYear);
   const savedPerWeek = time && weeks > 0 ? saved / weeks : 0;
+  const label = (period: string) => `${saved >= 0 ? "Horas recuperadas" : "Tempo adicional"} por ${period}`;
   const insight = !time
     ? null
     : saved > 0
@@ -117,8 +115,8 @@ function TempoNoTransito() {
       <main>
         <section className="bg-ink text-ink-foreground">
           <div className="responsive-container py-6 sm:py-8">
-            <p className="text-xs font-bold tracking-[0.2em] text-mint">TEMPO NO TRÂNSITO</p>
-            <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight sm:text-4xl">Quanto tempo você passa no trânsito por ano?</h1>
+            <p className="text-xs font-bold tracking-[0.2em] text-mint">TEMPO RECUPERADO</p>
+            <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight sm:text-4xl">Quanto tempo a bike elétrica devolve por mês e por ano?</h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-foreground/80 sm:text-base">
               Informe seu tempo de trajeto hoje e sua estimativa de bike. O resultado aparece na hora, sem cadastro.
             </p>
@@ -137,10 +135,9 @@ function TempoNoTransito() {
               </div>
               <div className="mt-6 space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <NumberField name="outboundMinutes" label="Minutos de ida hoje" value={outboundMinutes} onChange={setOutboundMinutes} onBlur={() => mark("outboundMinutes")} suffix="min" step="1" help="Incluindo espera." error={err("outboundMinutes")} />
-                  <NumberField name="returnMinutes" label="Minutos de volta hoje" value={returnMinutes} onChange={setReturnMinutes} onBlur={() => mark("returnMinutes")} suffix="min" step="1" help="Incluindo espera." error={err("returnMinutes")} />
+                  <NumberField name="currentMinutes" label="Tempo atual por dia (ida + volta)" value={currentMinutes} onChange={setCurrentMinutes} onBlur={() => mark("currentMinutes")} suffix="min" step="1" help="Incluindo espera." error={err("currentMinutes")} />
+                  <NumberField name="bikeMinutes" label="Tempo de bike por dia (ida + volta)" value={bikeMinutes} onChange={setBikeMinutes} onBlur={() => mark("bikeMinutes")} suffix="min" step="1" help="Sua estimativa para os mesmos trajetos." error={err("bikeMinutes")} />
                 </div>
-                <NumberField name="bikeMinutes" label="Minutos de bike por dia (ida + volta)" value={bikeMinutes} onChange={setBikeMinutes} onBlur={() => mark("bikeMinutes")} suffix="min" step="1" help="Sua estimativa total para os mesmos trajetos." error={err("bikeMinutes")} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <NumberField name="daysPerWeek" label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} onBlur={() => mark("daysPerWeek")} suffix="dias" step="1" error={err("daysPerWeek")} />
                   <NumberField name="dailyKm" label="Km por dia (opcional)" value={dailyKm} onChange={setDailyKm} onBlur={() => mark("dailyKm")} suffix="km" step="0.1" help="Só para sugerir bikes com autonomia suficiente." error={err("dailyKm")} />
@@ -156,7 +153,7 @@ function TempoNoTransito() {
             </div>
 
             <section aria-labelledby="resultado" aria-live="polite" className="rounded-lg bg-card p-5 ring-1 ring-line sm:p-6">
-              <h2 id="resultado" className="text-2xl font-black text-ink">Seu tempo</h2>
+              <h2 id="resultado" className="text-2xl font-black text-ink">Tempo recuperado</h2>
               {!time ? (
                 <div className="mt-5 grid min-h-48 place-items-center rounded-md bg-surface p-6 text-center ring-1 ring-line">
                   <div className="max-w-sm">
@@ -168,10 +165,10 @@ function TempoNoTransito() {
               ) : (
                 <div className="mt-5 space-y-5">
                   <dl className="grid grid-cols-2 gap-3">
-                    <Metric label="Hoje por ano" value={`${hours(time.currentHoursPerYear)} · ${decimal(time.currentHoursPerYear / 24)} dias`} />
-                    <Metric label="De bike por ano" value={`${hours(time.bikeHoursPerYear ?? 0)} · ${decimal((time.bikeHoursPerYear ?? 0) / 24)} dias`} />
-                    <Metric label={saved >= 0 ? "Tempo recuperado por semana" : "Tempo adicional por semana"} value={hours(savedPerWeek)} emphasis />
-                    <Metric label={saved >= 0 ? "Tempo recuperado por ano" : "Tempo adicional por ano"} value={`${hours(saved)} · ${decimal(Math.abs(time.savedFullDaysPerYear))} dias`} emphasis />
+                    <Metric label={label("mês")} value={hours(saved / 12)} emphasis />
+                    <Metric label={label("ano")} value={`${hours(saved)} · ${decimal(Math.abs(time.savedFullDaysPerYear))} dias`} emphasis />
+                    <Metric label={label("3 anos")} value={hours(projection[1]?.savedHours ?? 0)} />
+                    <Metric label={label("5 anos")} value={hours(projection[2]?.savedHours ?? 0)} />
                   </dl>
                   <p className={`rounded-md p-4 text-sm leading-relaxed ${saved > 0 ? "bg-mint/20 text-ink" : "bg-surface text-muted-foreground ring-1 ring-line"}`}>{insight}</p>
                   <p className="text-xs text-muted-foreground">Estimativa com {decimal(time.daysPerYear)} dias de trajeto por ano. "Dias" = blocos de 24 h.</p>
@@ -200,7 +197,7 @@ function TempoNoTransito() {
               ) : (
                 <div className="mt-6 grid gap-5 lg:grid-cols-2">
                   {bikes.map((bike) => (
-                    <BikeResultCard key={bike.bikeId} bike={bike} selected={false} onSelect={() => {}} position="calculadora_tempo_no_transito" />
+                    <BikeResultCard key={bike.bikeId} bike={bike} selected={false} onSelect={() => {}} position="calculadora_tempo_recuperado" />
                   ))}
                 </div>
               )}
@@ -214,8 +211,8 @@ function TempoNoTransito() {
                 <h2 className="font-bold text-ink">Tempo</h2>
                 <ul className="mt-2 list-disc space-y-2 pl-5">
                   <li>Dias por ano = dias/semana × semanas/ano.</li>
-                  <li>Minutos por dia hoje = ida + volta informadas.</li>
-                  <li>Horas por ano = minutos por dia × dias por ano ÷ 60 (hoje e de bike).</li>
+                  <li>Horas por mês = horas por ano ÷ 12 (equivale a semanas/ano ÷ 12 semanas por mês; com 52, 4,33).</li>
+                                    <li>Horas por ano = minutos por dia × dias por ano ÷ 60 (hoje e de bike).</li>
                   <li>Diferença = horas de hoje − horas de bike. Negativa = a bike demora mais.</li>
                   <li>Projeção de 1, 3 e 5 anos = horas por ano × anos, sem outros ajustes.</li>
                   <li>Os tempos são os que você informou: não usamos mapas, velocidade presumida nem IA.</li>
