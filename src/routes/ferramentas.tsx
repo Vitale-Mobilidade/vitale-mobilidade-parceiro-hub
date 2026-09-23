@@ -87,6 +87,15 @@ const TOOLS = [
     body: "Informe o gasto variável da moto nesses trajetos e sua rotina para ver a economia líquida estimada, o payback e o custo acumulado de até duas bikes reais.",
   },
   {
+    key: "tempo-no-transito",
+    icon: Calculator,
+    title: "Tempo no trânsito",
+    to: "/calculadoras/tempo-no-transito" as const,
+    cta: "Ver meu tempo no trajeto",
+    question: "Quanto tempo passo no trânsito por ano?",
+    body: "Informe seus minutos de trajeto hoje e sua estimativa de bike para ver horas e dias por ano e a projeção em 1, 3 e 5 anos.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",
