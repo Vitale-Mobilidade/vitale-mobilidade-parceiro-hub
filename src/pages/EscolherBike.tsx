@@ -1301,9 +1301,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           onMainAction={markMainActionClicked}
         />
       </div>
-      <div className="pb-20 lg:pb-0">
-        <SiteFooter />
-      </div>
+      {/* Espaço inferior para o botão flutuante do assistente não cobrir o conteúdo */}
+      <div className="h-20 lg:h-10" />
 
       {/* Sticky CTA mobile */}
       {showSticky && (
