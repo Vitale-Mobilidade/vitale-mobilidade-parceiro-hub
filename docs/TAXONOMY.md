@@ -68,7 +68,7 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 - Busca por nome no hero; atalhos: "Para 2 pessoas", "Autonomia de 100 km ou mais", "Com preço no Radar" (só aparecem se os dados existem).
 - Filtros combináveis: preço mín./máx. (preço do Radar quando monitorado, senão referência da planilha), autonomia mínima (km extraído de "Até N km"), capacidade (1/2 pessoas). Categoria omitida: todas as linhas têm o mesmo valor ("Bike elétrica").
 - Ordenação: nome, menor/maior preço, maior autonomia; dados ausentes sempre por último.
-- Card: foto 4:3, status do Radar só quando existe, preço com fonte explícita ("Preço registrado pelo Radar Vitale" ou "Preço de referência cadastrado (não monitorado)"), autonomia/capacidade, nº de vídeos, CTA "Conhecer a bike" → `/bikes/{slug}` e, só para bikes no Radar, "Analisar preço no Radar" → `/acompanhamento/{bikeId}`. Sem link direto ao Mercado Livre.
+- Card: o card inteiro é um único link para `/bikes/{slug}` (foto 4:3, nome, status do Radar quando existe, preço com fonte explícita, autonomia/capacidade, nº de vídeos e CTA visual "Conhecer a bike"). Selo/preço/fonte são informativos e não têm destino próprio. Acesso ao Radar fica na página de detalhe da bike. Sem link direto ao Mercado Livre.
 - Blocos: Quiz (`/escolherbike`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
 - Pendências: `/radar` e `/comparar` não existem (sem links para eles; seleção de comparação não implementada); `/bikes` fora do sitemap; filtros não persistem na URL.
 
