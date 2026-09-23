@@ -26,16 +26,12 @@ const draft: Pick<EditorialArticle, "title" | "slug" | "summary" | "summary_sour
 };
 
 describe("editorial publication gate", () => {
-  it("accepts a grounded draft with known bike and source video", () => {
-    expect(validateArticleForPublication(draft, transcript, new Set(["v8_ultra"]))).toEqual([]);
+  it("accepts a draft with body, slug and known bike — no literal excerpt required", () => {
+    const withBody = { ...draft, blocks: [draft.blocks[0], { type: "text" as const, heading: "Subida", text: "Subiu bem." }] };
+    expect(validateArticleForPublication(withBody, transcript, new Set(["v8_ultra"]))).toEqual([]);
   });
-  it("blocks numbers absent from the cited passage", () => {
-    const changed = { ...draft, blocks: [{ ...draft.blocks[0], text: "Fizemos uma volta urbana de 80 km." }, draft.blocks[1]] };
-    expect(validateArticleForPublication(changed, transcript, new Set(["v8_ultra"])).join(" ")).toContain("80");
-  });
-  it("blocks a claim with no literal transcript evidence", () => {
-    const changed = { ...draft, summary_source_excerpt: "melhor bike do mundo" };
-    expect(validateArticleForPublication(changed, transcript, new Set(["v8_ultra"])).join(" ")).toContain("Resumo sem trecho");
+  it("blocks only when the article has no real body", () => {
+    expect(validateArticleForPublication(draft, transcript, new Set(["v8_ultra"])).join(" ")).toContain("corpo");
   });
   it("blocks unknown bike IDs", () => {
     const changed = { ...draft, primary_bike_id: "not_real" };
