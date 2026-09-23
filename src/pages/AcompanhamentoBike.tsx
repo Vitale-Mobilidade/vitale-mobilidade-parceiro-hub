@@ -6,19 +6,23 @@ import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, BikeMedia, PriceStatus, SectionHeading } from "@/components/site/site-ui";
+import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
-import { formatBRL, isSafePurchaseLink } from "@/lib/price-tracker";
-import { dailyMetrics, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
+import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
+import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 
 interface RadarBikeDetail {
   id: string;
   name: string;
-  currentPrice: number;
-  link: string;
+  /** Só existe quando há oferta atual válida (mesma linha de bike_offers). */
+  currentPrice?: number | null;
+  link?: string | null;
+  hasCurrentOffer?: boolean;
+  lastObservedPrice?: number | null;
   image: string | null;
   shortDescription?: string | null;
   description?: string | null;
@@ -51,13 +55,38 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
     if (bike) trackRadar("radar_detail_viewed", { bike_id: bike.id });
   }, [bike]);
 
+  // Preço e link só existem juntos, vindos da mesma oferta atual válida.
+  const currentPrice =
+    typeof bike?.currentPrice === "number" && Number.isFinite(bike.currentPrice) && bike.currentPrice > 0
+      ? bike.currentPrice
+      : null;
+  const link = typeof bike?.link === "string" && isSafePurchaseLink(bike.link) ? bike.link : null;
+  const hasOffer = currentPrice !== null && link !== null;
+
   const metrics = useMemo(
-    () => (bike ? dailyMetrics({ daily: bike.daily ?? [], currentPrice: bike.currentPrice }, window) : null),
-    [bike, window],
+    () =>
+      bike && currentPrice !== null
+        ? dailyMetrics({ daily: bike.daily ?? [], currentPrice }, window)
+        : null,
+    [bike, currentPrice, window],
   );
 
+  // Série completa para o histórico arquivado (sem classificação, sem preço atual).
+  const archivedSeries = useMemo(
+    () => (bike && !hasOffer ? expandDaily(bike.daily ?? [], "all") : []),
+    [bike, hasOffer],
+  );
+  const archivedCounts = useMemo(() => {
+    const real = archivedSeries.filter((p) => p.verification !== "missing");
+    return {
+      verified: real.filter((p) => p.verification === "observed_change" || p.verification === "confirmed_unchanged").length,
+      reconstructed: real.filter((p) => p.verification === "reconstructed").length,
+      firstDay: real[0]?.date ?? null,
+    };
+  }, [archivedSeries]);
+
   const loading = false; // dados já chegam no SSR
-  const canBuy = !!bike && isSafePurchaseLink(bike.link);
+  const canBuy = hasOffer;
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
   // Descrições legadas (slogans) não são exibidas; só campos factuais.
   const specs = [
@@ -100,49 +129,74 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
           </p>
         )}
 
-        {!loading && bike && metrics && (
+        {!loading && bike && (
           <>
             <header className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <BikeMedia src={bike.image} name={bike.name} eager className="h-[260px] rounded-3xl border border-line md:h-[340px]" />
 
               <div className="flex min-w-0 flex-col">
-                <PriceStatus classification={metrics.classification} />
+                {hasOffer && metrics ? (
+                  <PriceStatus classification={metrics.classification} />
+                ) : (
+                  <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
+                    Histórico arquivado
+                  </span>
+                )}
                 <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">{bike.name}</h1>
                 {bike.perfilIndicado && <p className="mt-2 text-base text-muted-foreground">Boa para: {bike.perfilIndicado}</p>}
 
-                <p className="mt-5 text-4xl font-extrabold tracking-tight text-action md:text-5xl">{formatBRL(bike.currentPrice)}</p>
-                {metrics.deltaAbs !== null && metrics.deltaAbs !== 0 && (
-                  <p className={`mt-2 inline-flex w-fit rounded-lg px-3 py-1 text-sm font-semibold ${metrics.deltaAbs < 0 ? "bg-mint/25 text-ink" : "bg-destructive/10 text-destructive"}`}>
-                    {metrics.deltaAbs < 0 ? "▼" : "▲"} {formatBRL(Math.abs(metrics.deltaAbs))} ({Math.abs(metrics.deltaPct ?? 0).toFixed(1).replace(".", ",")}%) desde o preço anterior
-                  </p>
+                {hasOffer && metrics ? (
+                  <>
+                    <p className="mt-5 text-4xl font-extrabold tracking-tight text-action md:text-5xl">{formatBRL(currentPrice)}</p>
+                    {metrics.deltaAbs !== null && metrics.deltaAbs !== 0 && (
+                      <p className={`mt-2 inline-flex w-fit rounded-lg px-3 py-1 text-sm font-semibold ${metrics.deltaAbs < 0 ? "bg-mint/25 text-ink" : "bg-destructive/10 text-destructive"}`}>
+                        {metrics.deltaAbs < 0 ? "▼" : "▲"} {formatBRL(Math.abs(metrics.deltaAbs))} ({Math.abs(metrics.deltaPct ?? 0).toFixed(1).replace(".", ",")}%) desde o preço anterior
+                      </p>
+                    )}
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                      {canBuy && link && (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow sponsored"
+                          onClick={() => { trackRadar("radar_ml_click", { bike_id: bike.id, position: "detail" }); trackAffiliateClick({ bike_id: bike.id, position: "radar_detail" }); }}
+                          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
+                        >
+                          Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          trackRadar("radar_alert_opened", { bike_id: bike.id, source: "detail" });
+                          setAlertOpen(true);
+                        }}
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 font-semibold text-ink hover:bg-surface"
+                      >
+                        <BellRing className="h-4 w-4" aria-hidden="true" /> Registrar alerta de preço
+                      </button>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Link de afiliado. Preço e disponibilidade podem mudar no Mercado Livre. O envio automático de alertas ainda não está ativo.
+                    </p>
+                  </>
+                ) : (
+                  /* Sem oferta atual: nenhum preço atual, farol, CTA de compra ou alerta. */
+                  <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
+                    <p className="font-bold text-ink">Link indisponível no momento</p>
+                    {bike.lastObservedAt ? (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Último preço registrado em {formatDateBR(bike.lastObservedAt)}
+                        {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 && `: ${formatBRL(bike.lastObservedPrice)}`}.
+                        Esse valor é histórico e não representa o preço de hoje.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-muted-foreground">Não há preço atual registrado para este modelo.</p>
+                    )}
+                  </div>
                 )}
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {canBuy && (
-                    <a
-                      href={bike.link}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow sponsored"
-                      onClick={() => { trackRadar("radar_ml_click", { bike_id: bike.id, position: "detail" }); trackAffiliateClick({ bike_id: bike.id, position: "radar_detail" }); }}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
-                    >
-                      Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      trackRadar("radar_alert_opened", { bike_id: bike.id, source: "detail" });
-                      setAlertOpen(true);
-                    }}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 font-semibold text-ink hover:bg-surface"
-                  >
-                    <BellRing className="h-4 w-4" aria-hidden="true" /> Registrar alerta de preço
-                  </button>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Link de afiliado. Preço e disponibilidade podem mudar no Mercado Livre. O envio automático de alertas ainda não está ativo.
-                </p>
 
                 {specs.length > 0 && (
                   <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -157,17 +211,42 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               </div>
             </header>
 
-            <PriceIntelPanel
-              currentPrice={bike.currentPrice}
-              metrics={metrics}
-              window={window}
-              onWindowChange={(w) => {
-                setWindow(w);
-                trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
-              }}
-              firstObservedAt={bike.firstObservedAt}
-              lastObservedAt={bike.lastObservedAt}
-            />
+            {hasOffer && metrics && currentPrice !== null ? (
+              <PriceIntelPanel
+                currentPrice={currentPrice}
+                metrics={metrics}
+                window={window}
+                onWindowChange={(w) => {
+                  setWindow(w);
+                  trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
+                }}
+                firstObservedAt={bike.firstObservedAt}
+                lastObservedAt={bike.lastObservedAt}
+              />
+            ) : (
+              archivedSeries.length > 0 && (
+                <section aria-labelledby="hist-arquivado" className="mt-8 overflow-hidden rounded-2xl border border-line bg-card">
+                  <div className="border-b border-line px-4 py-4 sm:px-6">
+                    <h2 id="hist-arquivado" className="text-lg font-bold text-ink">Histórico registrado</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Sem oferta atual, não classificamos se o preço está bom ou caro. Abaixo está apenas o que já
+                      registramos: {archivedCounts.verified} dia(s) confirmados e {archivedCounts.reconstructed}{" "}
+                      reconstruído(s)
+                      {archivedCounts.firstDay && `, desde ${formatDateBR(archivedCounts.firstDay)}`}.
+                    </p>
+                  </div>
+                  <div className="px-4 py-4 sm:px-6">
+                    <DailyPriceChart series={archivedSeries} compact />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
+                      sem verificação — nunca repetimos um preço que não confirmamos.
+                    </p>
+                  </div>
+                </section>
+              )
+            )}
+
+
 
 
             <section aria-labelledby="combina" className="relative isolate mt-12 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
@@ -216,13 +295,14 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
         )}
       </main>
 
-      {bike && (
+      {/* Alerta só existe com preço atual de referência. */}
+      {bike && hasOffer && currentPrice !== null && (
         <PriceAlertDialog
           open={alertOpen}
           onOpenChange={setAlertOpen}
           bikeId={bike.id}
           bikeName={bike.name}
-          currentPrice={bike.currentPrice}
+          currentPrice={currentPrice}
         />
       )}
 

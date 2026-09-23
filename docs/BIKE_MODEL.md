@@ -228,3 +228,24 @@ Revisão compacta: **Produto** identidade canônica pronta para ligar vídeo/art
 **Rollback.** Reverter apenas os dois `*.functions.ts` para `fetchBikeCatalog()` (CSV). Nenhuma tabela, RPC, oferta ou histórico precisa ser apagado.
 
 **Publicação.** Publicado em 23/09/2026 (commit `c63c598`, deploy `c8b1f67e-f4dc-4ed6-bccf-440847d0269a`). Verificado no domínio: `/bikes`, `/bikes/v8-ultra`, `/radar` e `/escolherbike` 200; `/bikes/v29-pro` exibe "Sem oferta ativa registrada" e "Link indisponível no momento" no SSR; redirect legado 301 com UTM preservado. Pendências: sem prova de ganho de experiência/conversão até a análise de cliques reais (Etapa 11); descrição da V8 Ultra na planilha contradiz a autonomia estruturada (50 km vs alegação de até 80 km) — correção é editorial, na fonte; imagens ainda grandes.
+
+## 16. Radar público desacoplado da elegibilidade do Quiz (migration 20260923142233)
+
+Substituição apenas das duas funções de LEITURA existentes (`get_price_tracker_catalog`, `get_bike_price_history`). Sem INSERT/UPDATE/DELETE, sem mudança de schema, RLS, grants ou writer; `get_quiz_catalog()` intocada.
+
+Contrato novo, explícito:
+- Origem: `public.bikes` + LATERAL para **no máximo uma** `public.bike_offers` com `is_current`, `ended_at IS NULL`, `price > 0` e `url ~ '^https://meli\.la/[A-Za-z0-9]+$'`. Preço e link vêm sempre da MESMA linha; o snapshot não é mais fonte comercial (as 3 drafts guardam preço/link antigos e por isso ficariam erradas).
+- Campos editoriais (nome, imagem, textos, specs) continuam vindo de `bikes`/`bike_assets`/`bike_profiles`/snapshot.
+- `hasCurrentOffer = false` → `currentPrice` e `link` ausentes (histórico arquivado). `lastObservedPrice` e `lastObservedAt` expõem só o que já foi registrado.
+- Entram no catálogo do Radar as bikes com oferta atual válida OU com histórico registrado.
+
+Evidência verificada após a migration (leitura via chave publicável):
+- 30 itens: **27 ativos** (oferta atual válida) + **3 arquivados** (`v29_pro`, `v35`, `x50_action_pro`), nenhum deles com preço ou link.
+- Paridade dos 20 antes públicos: **0 divergências** de preço/link, nenhum desapareceu; 7 novos no Radar (`f6_pro_s`, `s12`, `s14`, `s8`, `v10_max`, `v20_mini`, `bw02`).
+- Todos os 27 links no padrão `meli.la` exato, byte a byte iguais a `bike_offers`.
+- `get_quiz_catalog()` continua com **20** itens.
+- ID inexistente continua retornando `null` (404 na rota).
+
+Ressalva: o linter do Supabase segue apontando os mesmos avisos pré-existentes (15 tabelas com RLS sem policy; funções SECURITY DEFINER executáveis por anon/authenticated — que é o desenho intencional das RPCs públicas). Nenhum aviso novo foi introduzido.
+
+Rollback: reexecutar as definições anteriores das duas funções (migrations `20260910232458`/`20260910235455`) e reverter o código de leitura; nenhum dado precisa ser tocado.

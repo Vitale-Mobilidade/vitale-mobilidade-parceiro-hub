@@ -158,11 +158,18 @@ export function PriceIntelPanel({
         )}
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Cobertura: {metrics.verifiedDays} de {metrics.expectedDays} dias verificados
-          {metrics.reconstructedDays > 0 && ` · ${metrics.reconstructedDays} dia(s) reconstruídos`}
+          Dados usados nesta janela: {metrics.verifiedDays} dia(s) confirmados e {metrics.reconstructedDays}{" "}
+          reconstruído(s), em {metrics.expectedDays} dia(s) do período
+          {metrics.firstDay && ` · a partir de ${formatDateBR(metrics.firstDay)}`}
           {firstObservedAt && ` · acompanhando desde ${formatDateBR(firstObservedAt)}`}
           {` · última verificação em ${formatDateTimeBR(metrics.lastVerifiedAt ?? lastObservedAt)}`}
         </p>
+        {forming && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Ainda em formação porque o período precisa de pelo menos 14 dias confirmados, 80% de cobertura e mais de um
+            preço distinto. No período “Tudo” você vê toda a série já registrada.
+          </p>
+        )}
       </div>
 
       {/* Histórico */}
