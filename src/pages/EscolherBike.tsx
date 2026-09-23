@@ -846,11 +846,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       console.error("[GTM] event_click_buy push failed", err);
     }
 
-    // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
-    setTimeout(() => {
-      if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
-      else console.error("[quiz] Sem link de compra disponível para", bike.id);
-    }, 300);
+    // Abertura imediata do link de compra — tracking já foi enviado de forma não bloqueante.
+    if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
+    else console.error("[quiz] Sem link de compra disponível para", bike.id);
 
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
     const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
