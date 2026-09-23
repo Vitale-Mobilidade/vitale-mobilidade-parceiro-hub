@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CLASSIFICATION_LABEL, formatBRL } from "@/lib/price-tracker";
 import { CLASSIFICATION_COLOR, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
+import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
   entry: RadarEntry;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
+  const base = useRadarBase();
   const cls = entry.metrics.classification;
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
 

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
 import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
 import { trackRadar } from "@/lib/radar-analytics";
+import { radarBaseFromPath } from "@/lib/radar-base";
 import type { SDRContext } from "@/components/LucasSDR/types";
 
 interface CatalogItem {

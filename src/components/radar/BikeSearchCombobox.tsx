@@ -7,6 +7,7 @@ import { formatBRL } from "@/lib/price-tracker";
 import { normalizeText } from "@/lib/price-daily";
 import { CLASSIFICATION_COLOR, type RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
+import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
   entries: RadarEntry[];
@@ -19,6 +20,7 @@ interface Props {
 
 /** Busca com autocomplete acessível: abre com todas as bikes elegíveis. */
 export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, loading = false }: Props) {
+  const base = useRadarBase();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
