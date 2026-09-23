@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { TimeProjectionChart } from "@/components/mobility/TimeProjectionChart";
-import { BikeResultCard, BudgetSelector, Metric, NumberField, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
+import { BikeResultCard, BudgetSelector, Metric, NumberField, HillsToggle, PassengerToggle, RecommendationFooter } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
@@ -63,6 +63,7 @@ function TempoRecuperado() {
   const [budgetMode, setBudgetMode] = useState<BudgetMode>("none");
   const [customBudget, setCustomBudget] = useState("");
   const [needsPassenger, setNeedsPassenger] = useState(false);
+  const [needsHills, setNeedsHills] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const errors = {
@@ -93,8 +94,8 @@ function TempoRecuperado() {
   const budget = resolveBudget(budgetMode, customBudget);
   const recommendations = useMemo(() => {
     if (!time || km === null || km <= 0 || !sourceOk || errors.budget) return null;
-    return recommendQuickComparison(candidates, { dailyKm: km, needsPassenger, maxBudget: budget });
-  }, [time, km, sourceOk, errors.budget, candidates, needsPassenger, budget]);
+    return recommendQuickComparison(candidates, { dailyKm: km, needsPassenger, needsHills, maxBudget: budget });
+  }, [time, km, sourceOk, errors.budget, candidates, needsPassenger, needsHills, budget]);
   const bikes = recommendations?.ok ? recommendations.bikes : [];
 
   const saved = time?.savedHoursPerYear ?? 0;
@@ -180,6 +181,7 @@ function TempoRecuperado() {
               <div className="mt-5 grid gap-4 rounded-md bg-surface p-4 ring-1 ring-line lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                 <BudgetSelector mode={budgetMode} onModeChange={setBudgetMode} custom={customBudget} onCustomChange={setCustomBudget} onTouched={() => mark("budget")} error={err("budget")} />
                 <PassengerToggle checked={needsPassenger} onChange={setNeedsPassenger} />
+                <HillsToggle checked={needsHills} onChange={setNeedsHills} />
               </div>
               {km === null || km <= 0 ? (
                 <p className="mt-5 rounded-md bg-surface p-4 text-sm text-muted-foreground ring-1 ring-line">Informe os km por dia para vermos quais bikes têm autonomia suficiente. Sem essa informação, não sugerimos modelos.</p>
@@ -198,7 +200,7 @@ function TempoRecuperado() {
                     <BikeResultCard key={bike.bikeId} bike={bike} selected={false} onSelect={() => {}} position="calculadora_tempo_recuperado" />
                   ))}
                 </div>
-                <RecommendationFooter budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
+                <RecommendationFooter hillsRequested={needsHills} budgetInformed={budget !== null} eligibleCount={recommendations?.ok ? recommendations.eligibleCount ?? bikes.length : bikes.length} />
                 </>
               )}
             </section>

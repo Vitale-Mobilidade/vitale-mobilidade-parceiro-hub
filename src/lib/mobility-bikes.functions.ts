@@ -17,7 +17,17 @@ type QuizItem = {
   status?: unknown;
   autonomyKm?: unknown;
   capacity?: unknown;
+  terrains?: unknown;
+  bestFor?: unknown;
 };
+
+const strArr = (v: unknown): string[] | null =>
+  Array.isArray(v) && v.every((x) => typeof x === "string") ? (v as string[]) : null;
+
+/** Só evidência positiva e exata; nada de regex/IA sobre descrições. */
+export function hasHillTag(q: { terrains?: unknown; bestFor?: unknown }): boolean {
+  return Boolean(strArr(q.terrains)?.includes("muitas_subidas") || strArr(q.bestFor)?.includes("subidas"));
+}
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
 
@@ -59,6 +69,7 @@ export const getMobilityBikeCandidates = createServerFn({ method: "GET" }).handl
         autonomyKm: num(q.autonomyKm),
         capacity: num(q.capacity),
         monitored: monitored.has(b.bikeId),
+        hillTagged: hasHillTag(q),
       });
     }
     return { ok: true, candidates };
