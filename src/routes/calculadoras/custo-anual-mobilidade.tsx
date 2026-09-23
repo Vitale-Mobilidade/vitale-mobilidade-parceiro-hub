@@ -5,8 +5,8 @@ import { Metric, NumberField } from "@/components/mobility/calculator-ui";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { Button } from "@/components/ui/button";
 import { LIMITS } from "@/lib/mobility/config";
-import { computeAnnualMobilityCost, type AnnualCategory } from "@/lib/mobility/cost-engine";
-import { brl, parseNumber, validateNumber } from "@/lib/mobility/format";
+import { computeAnnualMobilityCost, normalizeOptionalSpend, type AnnualCategory } from "@/lib/mobility/cost-engine";
+import { brl, validateNumber } from "@/lib/mobility/format";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
 const PATH = "/calculadoras/custo-anual-mobilidade";
@@ -48,10 +48,10 @@ export const Route = createFileRoute("/calculadoras/custo-anual-mobilidade")({
 });
 
 const FIELDS: { key: AnnualCategory; label: string; help: string }[] = [
-  { key: "carMoto", label: "Carro ou moto", help: "Combustível, seguro, IPVA, manutenção, parcela — o que você gasta hoje por mês. Use 0 se não tiver." },
-  { key: "rideHailing", label: "Uber / 99", help: "Corridas por aplicativo no mês. Use 0 se não usar." },
-  { key: "publicTransport", label: "Transporte público", help: "Ônibus, metrô, trem no mês. Use 0 se não usar." },
-  { key: "parkingOther", label: "Estacionamento e outros", help: "Estacionamento, pedágio e outros custos de deslocamento. Use 0 se não houver." },
+  { key: "carMoto", label: "Carro ou moto", help: "Combustível, seguro, IPVA, manutenção, parcela — o que você gasta hoje por mês. Deixe em branco se não tiver." },
+  { key: "rideHailing", label: "Uber / 99", help: "Corridas por aplicativo no mês. Deixe em branco se não usar." },
+  { key: "publicTransport", label: "Transporte público", help: "Ônibus, metrô, trem no mês. Deixe em branco se não usar." },
+  { key: "parkingOther", label: "Estacionamento e outros", help: "Estacionamento, pedágio e outros custos de deslocamento. Deixe em branco se não houver." },
 ];
 const CATEGORY_LABEL: Record<AnnualCategory, string> = {
   carMoto: "carro/moto",
@@ -68,23 +68,35 @@ function CustoAnualMobilidade() {
   const set = (key: keyof typeof values) => (v: string) => setValues((c) => ({ ...c, [key]: v }));
   const touch = (key: string) => () => setTouched((c) => ({ ...c, [key]: true }));
 
-  const errors = useMemo(() => ({
-    carMoto: validateNumber(values.carMoto, "Carro ou moto", LIMITS.monthlyMoney),
-    rideHailing: validateNumber(values.rideHailing, "Uber / 99", LIMITS.monthlyMoney),
-    publicTransport: validateNumber(values.publicTransport, "Transporte público", LIMITS.monthlyMoney),
-    parkingOther: validateNumber(values.parkingOther, "Estacionamento e outros", LIMITS.monthlyMoney),
-    replaceablePercent: validateNumber(values.replaceablePercent, "Percentual", LIMITS.replaceablePercent),
+  // Categorias de gasto são opcionais: branco = ausente (vira 0 só quando outra categoria
+  // tiver valor). Só preenchidas são validadas; negativos/NaN/limites continuam erro.
+  const fields = useMemo(() => ({
+    carMoto: normalizeOptionalSpend(values.carMoto, "Carro ou moto"),
+    rideHailing: normalizeOptionalSpend(values.rideHailing, "Uber / 99"),
+    publicTransport: normalizeOptionalSpend(values.publicTransport, "Transporte público"),
+    parkingOther: normalizeOptionalSpend(values.parkingOther, "Estacionamento e outros"),
   }), [values]);
-  const allValid = Object.values(errors).every((e) => e === null);
-  const result = useMemo(() => allValid
+  const errors = {
+    carMoto: fields.carMoto.error,
+    rideHailing: fields.rideHailing.error,
+    publicTransport: fields.publicTransport.error,
+    parkingOther: fields.parkingOther.error,
+    replaceablePercent: validateNumber(values.replaceablePercent, "Percentual", LIMITS.replaceablePercent),
+  };
+  const anySpendProvided = fields.carMoto.provided || fields.rideHailing.provided
+    || fields.publicTransport.provided || fields.parkingOther.provided;
+  const ready = anySpendProvided && errors.replaceablePercent === null
+    && !fields.carMoto.error && !fields.rideHailing.error
+    && !fields.publicTransport.error && !fields.parkingOther.error;
+  const result = useMemo(() => ready
     ? computeAnnualMobilityCost({
-        carMoto: parseNumber(values.carMoto),
-        rideHailing: parseNumber(values.rideHailing),
-        publicTransport: parseNumber(values.publicTransport),
-        parkingOther: parseNumber(values.parkingOther),
-        replaceablePercent: parseNumber(values.replaceablePercent),
+        carMoto: fields.carMoto.value,
+        rideHailing: fields.rideHailing.value,
+        publicTransport: fields.publicTransport.value,
+        parkingOther: fields.parkingOther.value,
+        replaceablePercent: Number(values.replaceablePercent.replace(",", ".")),
       })
-    : null, [allValid, values]);
+    : null, [ready, fields, values.replaceablePercent]);
   const data = result?.ok ? result.data : null;
   const err = (key: keyof typeof errors) => (touched[key] ? errors[key] : null);
 
@@ -121,7 +133,7 @@ function CustoAnualMobilidade() {
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-mint/25 text-action"><Wallet className="h-5 w-5" aria-hidden="true" /></span>
                 <div>
                   <h2 id="gastos" className="text-2xl font-black text-ink">Seus gastos por mês</h2>
-                  <p className="text-sm text-muted-foreground">Preencha todos; use 0 quando não houver.</p>
+                  <p className="text-sm text-muted-foreground">Preencha só os gastos que você tem; deixe em branco o que não existe.</p>
                 </div>
               </div>
               <div className="mt-6 space-y-5">
@@ -150,8 +162,8 @@ function CustoAnualMobilidade() {
                 <div className="mt-5 grid min-h-72 place-items-center rounded-lg bg-surface p-6 text-center ring-1 ring-line">
                   <div className="max-w-sm">
                     <Wallet className="mx-auto h-9 w-9 text-action" aria-hidden="true" />
-                    <p className="mt-3 font-bold text-ink">Preencha os cinco campos para ver o total</p>
-                    <p className="mt-2 text-sm text-muted-foreground">Nenhum resultado aparece até todos os valores serem válidos.</p>
+                    <p className="mt-3 font-bold text-ink">Informe pelo menos um gasto e o percentual para ver o total</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Nenhum resultado aparece enquanto esses valores estiverem vazios ou inválidos.</p>
                   </div>
                 </div>
               ) : (

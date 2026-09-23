@@ -376,7 +376,7 @@ continuam não implementadas e sem links públicos.
 ## Custo anual de mobilidade (23/09/2026, PREVIEW, não publicado)
 
 - Rota `/calculadoras/custo-anual-mobilidade` (SSR, head/canonical/JSON-LD próprios, sitemap, card em /ferramentas). Pergunta: "Quanto você realmente gasta por ano para se locomover?".
-- 5 entradas vazias ao carregar (carro/moto, Uber/99, transporte público, estacionamento/outros em R$/mês, aceitam 0; percentual substituível 0–100). Resultado imediato quando todas válidas.
+- 5 entradas vazias ao carregar (carro/moto, Uber/99, transporte público, estacionamento/outros em R$/mês; percentual substituível 0–100). Gastos são OPCIONAIS: branco = ausente (vira 0 só quando outra categoria tiver valor, via `normalizeOptionalSpend`); 0 digitado é resposta honesta. Resultado só aparece com pelo menos um gasto preenchido e percentual válido; tudo vazio = estado inicial. Negativos/NaN/fora de limite seguem erro local.
 - Cálculo em `computeAnnualMobilityCost` (`src/lib/mobility/cost-engine.ts`): mensal = soma; anual = × 12; substituível = mensal × % (e × 12). 4 métricas + insight determinístico (maior categoria). Parcela substituível é rotulada como potencial, nunca economia garantida.
 - Sem recomendação de bikes (sem km/dia não há filtro honesto). CTA "Simular economia com bike" → `/calculadoras/economia` sem repassar valores; lá a pessoa confirma só custos que desapareceriam.
-- Contrato global das 9 rotas: `docs/MOBILITY_TOOLS_UX.md`. Testes: `src/lib/mobility/annual-cost.test.ts`.
+- Contrato global das 9 rotas: `docs/MOBILITY_TOOLS_UX.md` (6 restantes nomeadas e PLANEJADAS, sem link). Testes: `src/lib/mobility/annual-cost.test.ts` e casos de gasto opcional em `src/lib/mobility/cost-engine.test.ts`.
