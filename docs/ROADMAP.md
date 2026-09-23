@@ -371,3 +371,12 @@ continuam não implementadas e sem links públicos.
 - Contrato (`src/lib/mobility/payback-engine.ts`): custo = `computeQuickMobilityCost` com gasto já evitável (nenhum custo fixo somado); por bike, `computeCostProjection` (payback = preço ÷ economia mensal positiva, ↑0,1 mês; saldos 12/24/36 = economia × meses − preço; economia ≤ 0 → sem payback). Insight determinístico usa o menor payback real.
 - Bikes: `getMobilityBikeCandidates` + `recommendQuickComparison` (máx. 2; mesmos filtros estritos). Gráfico compartilhado inicia com preço real no mês 0. Analytics `position: "calculadora_payback"`, não bloqueante.
 - Demais 7 calculadoras seguem apenas planejadas; não são exibidas ao público.
+
+
+## Custo anual de mobilidade (23/09/2026, PREVIEW, não publicado)
+
+- Rota `/calculadoras/custo-anual-mobilidade` (SSR, head/canonical/JSON-LD próprios, sitemap, card em /ferramentas). Pergunta: "Quanto você realmente gasta por ano para se locomover?".
+- 5 entradas vazias ao carregar (carro/moto, Uber/99, transporte público, estacionamento/outros em R$/mês, aceitam 0; percentual substituível 0–100). Resultado imediato quando todas válidas.
+- Cálculo em `computeAnnualMobilityCost` (`src/lib/mobility/cost-engine.ts`): mensal = soma; anual = × 12; substituível = mensal × % (e × 12). 4 métricas + insight determinístico (maior categoria). Parcela substituível é rotulada como potencial, nunca economia garantida.
+- Sem recomendação de bikes (sem km/dia não há filtro honesto). CTA "Simular economia com bike" → `/calculadoras/economia` sem repassar valores; lá a pessoa confirma só custos que desapareceriam.
+- Contrato global das 9 rotas: `docs/MOBILITY_TOOLS_UX.md`. Testes: `src/lib/mobility/annual-cost.test.ts`.
