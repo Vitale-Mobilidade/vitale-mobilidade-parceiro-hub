@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { Search, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { CLASSIFICATION_LABEL } from "@/lib/price-tracker";
 import { formatBRL } from "@/lib/price-tracker";
 import { normalizeText } from "@/lib/price-daily";
-import { CLASSIFICATION_COLOR, type RadarEntry } from "@/lib/radar-rankings";
+import type { RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
 import { useRadarBase } from "@/lib/radar-base";
 
