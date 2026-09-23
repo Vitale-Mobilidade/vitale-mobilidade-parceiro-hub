@@ -1,4 +1,4 @@
-# Vitale Design System (rascunho, não publicado)
+# Vitale Design System
 
 ## Tokens (src/styles.css)
 
@@ -14,7 +14,7 @@
 
 ## Home v2 — revisão visual da página inicial
 
-A Home foi redesenhada no rascunho para aproximar a composição da referência visual aprovada. **Ainda não foi publicada.**
+A Home foi redesenhada no rascunho para aproximar a composição da referência visual aprovada. (Texto original dizia "ainda não publicada"; **publicada em 23/09/2026**.)
 
 ### Layout e superfície
 
@@ -101,3 +101,11 @@ Caminho local das evidências (não incluídas no deploy):
 ## Diferenças em relação às referências visuais
 
 As referências de layout/hierarquia foram seguidas, mas sem dados inventados: não há vídeos, artigos, modelos relacionados, thumbnails fictícias, badges de autonomia percentual, scores de economia ou slogans promocionais. O que existe no acervo real (foto, nome, preço, histórico, specs, perfilIndicado) foi usado; o restante foi omitido.
+
+## Home v2.1 — painéis (rascunho, não publicado)
+
+- Painéis com eyebrow em caixa alta, título-pergunta `font-black` 3xl/4xl, CTA ativo largura total no mobile.
+- Radar: `bg-vt-dark`, até 3 mini-cards reais (`BikeMedia`, `formatBRL`, `PriceStatus`), contagem `search.length`; decoração só SVG abstrato `aria-hidden`.
+- Calculadora: sequência de modais → bike (`role="img"` com rótulo), sem campos/resultados; CTA para `/escolherbike`.
+- Comparador: `bg-ink`, duas fotos reais com selo VS `mint`, sem specs/vencedor; CTA para `/acompanhamento`.
+- Assistente global com `manualOnly`: sem convite/autoabertura; só clique.

@@ -67,6 +67,16 @@ O site legado publicado permanece no ar.
 - A barra de atalhos e o menu superior usam âncoras reais (`#bikes`, `#comparar`, `#conteudos`, `#calc`) e rotas já existentes (`/acompanhamento`, `/escolherbike`, `/grupodeofertas`); nenhum link falso foi criado.
 - Build/typecheck/testes direcionados passaram quando a alteração visual foi entregue, mas esta atualização documental não repetiu a suíte completa.
 
+> **Atualização pós-publicação (23/09/2026):** o texto acima (3.1) registra o estado antes da publicação e está obsoleto quanto à produção. A Home v2 foi **publicada em 23/09/2026** por autorização explícita do responsável. Isso não comprova a conclusão dos gates da seção 4 nem das etapas 1–5.
+
+## 3.2 Revisão Home v2.1 — somente rascunho (23/09/2026, não publicada)
+
+- Painel Radar virou vitrine: até 3 bikes reais do array `radar` (foto/nome/preço/selo), contagem real `search.length`, SVG decorativo abstrato (não é dado), CTA ativo "Explorar Radar de preços" → `/acompanhamento`. Sem gráfico temporal, quedas ou economia.
+- Calculadora: narrativa visual carro/Uber/ônibus → bike, sem valores nem botão "Calcular"; CTA ativo "Escolher minha bike" → `/escolherbike`. Calculadora funcional segue dependente da etapa 23. Âncora `#calc` mantida.
+- Comparador: duas bikes reais lado a lado com VS, sem specs nem vencedor; CTA ativo "Explorar modelos no Radar" → `/acompanhamento`. `/comparar` não existe. Âncora `#comparar` mantida.
+- Assistente Vitale global (`RadarAssistant`): prop `manualOnly` no `LucasSDRWidget` remove convite e autoabertura temporizados (e seus eventos); abre só por clique. Widget do Quiz inalterado (default `false`).
+- Dependências reais pendentes: backend/rotas de comparador, calculadora, conteúdos e newsletter.
+
 ## 4. Gates antes de publicar (cutover)
 
 - [ ] Paridade das rotas e jornadas críticas: `/escolherbike`, `/acompanhamento`, detalhe de bike e `/painel-bikes`.

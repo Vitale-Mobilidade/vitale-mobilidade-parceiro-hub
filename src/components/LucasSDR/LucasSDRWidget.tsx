@@ -22,6 +22,8 @@ interface Props {
   /** Convite contextual. Padrão preserva o texto do quiz. */
   inviteTitle?: string;
   inviteText?: string;
+  /** Quando true: sem convite automático e sem autoabertura; abre só por clique. */
+  manualOnly?: boolean;
 }
 
 
@@ -50,6 +52,7 @@ export function LucasSDRWidget({
   assistantName = "Lucas",
   inviteTitle = "Ainda em dúvida?",
   inviteText = "Fale com o Lucas e entenda qual bike faz mais sentido para você.",
+  manualOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -66,7 +69,7 @@ export function LucasSDRWidget({
   }, [open]);
 
   useEffect(() => {
-    if (inviteDismissed) return;
+    if (manualOnly || inviteDismissed) return;
     const t = window.setTimeout(() => {
       setShowInvite(true);
       if (!inviteViewedRef.current) {
@@ -75,10 +78,10 @@ export function LucasSDRWidget({
       }
     }, INVITE_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [inviteDismissed, onEvent]);
+  }, [manualOnly, inviteDismissed, onEvent]);
 
   useEffect(() => {
-    if (autoOpenBlocked || open) return;
+    if (manualOnly || autoOpenBlocked || open) return;
     const delay = isMobile() ? AUTO_OPEN_DELAY_MOBILE_MS : AUTO_OPEN_DELAY_DESKTOP_MS;
     onEvent("sdr_auto_open_scheduled", { delay_ms: delay });
     const t = window.setTimeout(() => {
@@ -97,14 +100,14 @@ export function LucasSDRWidget({
     }, delay);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoOpenBlocked, buyClicked, ctx.leadId]);
+  }, [manualOnly, autoOpenBlocked, buyClicked, ctx.leadId]);
 
   useEffect(() => {
-    if (buyClicked && !autoOpenBlocked) {
+    if (!manualOnly && buyClicked && !autoOpenBlocked) {
       setAutoOpenBlocked(true);
       onEvent("sdr_auto_open_cancelled", { reason: "buy_clicked" });
     }
-  }, [buyClicked, autoOpenBlocked, onEvent]);
+  }, [manualOnly, buyClicked, autoOpenBlocked, onEvent]);
 
   const openChat = useCallback((source: "invite" | "button") => {
     writeFlag(ctx.leadId, "opened_manually");

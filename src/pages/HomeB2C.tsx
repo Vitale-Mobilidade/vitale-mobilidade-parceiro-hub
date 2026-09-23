@@ -6,7 +6,7 @@ import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/ho
 import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
 
 /*
- * Sem backend ainda: comparador, calculadora, conteúdos editoriais e newsletter.
+ * Sem backend ainda: comparador, calculadora (CTAs ativos levam só a rotas reais), conteúdos editoriais e newsletter.
  * CTAs inativos (disabled/aria-disabled, sem href/submit); nenhum email coletado;
  * nenhum vídeo/artigo/valor inventado. Dados de bikes vêm só de getHomeCards.
  */
@@ -87,71 +87,81 @@ function BikesRow({ cards }: { cards: HomeCard[] }) {
   );
 }
 
-function RadarPanel({ item }: { item: HomeRadarItem | undefined }) {
-  const typ = item?.typicalPrice ?? null;
-  const max = item && typ ? Math.max(item.currentPrice, typ) : 0;
+function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number }) {
+  const picks = items.slice(0, 3);
   return (
-    <section aria-labelledby="radar-home" className="flex flex-col overflow-hidden rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:p-8">
-      <div className="flex items-center gap-3">
+    <section aria-labelledby="radar-home" className="relative flex flex-col overflow-hidden rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:p-8">
+      {/* Decoração abstrata (não é dado) */}
+      <svg aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 text-mint/15" viewBox="0 0 200 200" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="100" cy="100" r="30" /><circle cx="100" cy="100" r="60" /><circle cx="100" cy="100" r="90" /><path d="M100 100 L180 60" strokeWidth="3" />
+      </svg>
+      <div className="relative flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><BarChart3 className="h-6 w-6" aria-hidden="true" /></span>
-        <h2 id="radar-home" className="text-2xl font-bold sm:text-3xl">Radar de preços</h2>
+        <p className="text-xs font-bold tracking-[0.2em] text-mint">RADAR DE PREÇOS</p>
       </div>
-      <p className="mt-3 max-w-md text-ink-foreground/80">Acompanhe o preço das bikes monitoradas e veja se o momento é bom para comprar.</p>
-      {item && (
-        <Link to="/acompanhamento/$bikeId" params={{ bikeId: item.id }} className="mt-6 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 rounded-2xl bg-ink-foreground/5 p-4 ring-1 ring-ink-foreground/10 hover:ring-mint/60">
-          <BikeMedia src={item.image} name={item.name} className="h-24 w-24 rounded-xl bg-background" />
-          <div className="min-w-0">
-            <p className="truncate font-bold">{item.name}</p>
-            <div className="mt-1"><PriceStatus classification={item.classification} /></div>
-            <div className="mt-3 space-y-1.5 text-sm">
-              <PriceBar label="Atual" value={item.currentPrice} max={max || item.currentPrice} tone="bg-mint" />
-              {typ !== null && <PriceBar label="Típico" value={typ} max={max} tone="bg-ink-foreground/40" />}
-            </div>
-          </div>
-        </Link>
+      <h2 id="radar-home" className="relative mt-4 text-3xl font-black leading-tight sm:text-4xl">O preço de hoje está bom?</h2>
+      <p className="relative mt-2 max-w-md text-ink-foreground/80">
+        {total > 0 ? <><strong className="text-mint">{total} bikes</strong> monitoradas. Veja o preço atual e a classificação do Radar antes de comprar.</> : "Veja o preço atual e a classificação do Radar antes de comprar."}
+      </p>
+      {picks.length > 0 && (
+        <ul className="relative mt-6 grid gap-3 sm:grid-cols-3">
+          {picks.map((it) => (
+            <li key={it.id}>
+              <Link to="/acompanhamento/$bikeId" params={{ bikeId: it.id }} className="flex h-full items-center gap-3 rounded-2xl bg-ink-foreground/5 p-3 ring-1 ring-ink-foreground/10 transition hover:ring-mint/70 sm:flex-col sm:items-stretch">
+                <BikeMedia src={it.image} name={it.name} className="h-16 w-16 shrink-0 rounded-xl bg-background sm:aspect-[4/3] sm:h-auto sm:w-full" />
+                <div className="min-w-0">
+                  <p className="line-clamp-2 text-sm font-bold leading-tight">{it.name}</p>
+                  <p className="mt-1 text-lg font-black text-mint tabular-nums">{formatBRL(it.currentPrice)}</p>
+                  <div className="mt-1"><PriceStatus classification={it.classification} /></div>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
-      <Link to="/acompanhamento" className="mt-6 inline-flex min-h-12 w-fit items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90">
-        Ver Radar <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      <Link to="/acompanhamento" className="relative mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90 sm:w-fit">
+        Explorar Radar de preços <ArrowRight className="h-5 w-5" aria-hidden="true" />
       </Link>
     </section>
   );
 }
 
-function PriceBar({ label, value, max, tone }: { label: string; value: number; max: number; tone: string }) {
-  return (
-    <div className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-2">
-      <span className="text-xs text-ink-foreground/70">{label}</span>
-      <span className="h-2 overflow-hidden rounded-full bg-ink-foreground/10"><span className={`block h-full rounded-full ${tone}`} style={{ width: `${Math.round((value / max) * 100)}%` }} /></span>
-      <span className="text-xs font-bold tabular-nums">{formatBRL(value)}</span>
-    </div>
-  );
-}
-
 function CalculatorPanel() {
-  const modes = [
+  const from = [
     { icon: Car, label: "Carro" },
     { icon: CarTaxiFront, label: "Uber" },
     { icon: Bus, label: "Ônibus" },
-    { icon: Bike, label: "Bike elétrica" },
   ];
   return (
-    <section aria-labelledby="calc" className="scroll-mt-24 rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
-      <div className="flex items-center gap-3">
+    <section aria-labelledby="calc" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-48 w-48 rounded-full bg-mint/20" />
+      <div className="relative flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
-        <h2 id="calc" className="text-2xl font-bold text-ink sm:text-3xl">Calculadora de economia</h2>
+        <p className="text-xs font-bold tracking-[0.2em] text-action">CALCULADORA DE ECONOMIA</p>
       </div>
-      <p className="mt-3 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
-      <ul aria-label="Meios de transporte comparados" className="mt-6 grid grid-cols-4 gap-2 rounded-2xl bg-surface p-4">
-        {modes.map(({ icon: Icon, label }, i) => (
-          <li key={label} className="flex flex-col items-center gap-2 text-center">
-            <span className={`grid h-12 w-12 place-items-center rounded-full ${i === 3 ? "bg-action text-primary-foreground" : "bg-card text-ink ring-1 ring-line"}`}><Icon className="h-6 w-6" aria-hidden="true" /></span>
-            <span className="text-xs font-semibold text-ink">{label}</span>
-          </li>
-        ))}
-      </ul>
-      <InactiveButton className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground">
-        Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </InactiveButton>
+      <h2 id="calc" className="relative mt-4 text-3xl font-black leading-tight text-ink sm:text-4xl">E se o seu trajeto fosse de bike?</h2>
+      <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
+      <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
+        <ul className="flex flex-1 justify-around gap-2">
+          {from.map(({ icon: Icon, label }) => (
+            <li key={label} className="flex flex-col items-center gap-1.5 text-center">
+              <span className="grid h-12 w-12 place-items-center rounded-full bg-card text-muted-foreground ring-1 ring-line"><Icon className="h-6 w-6" aria-hidden="true" /></span>
+              <span className="text-xs font-semibold text-ink">{label}</span>
+            </li>
+          ))}
+        </ul>
+        <ArrowRight className="h-7 w-7 shrink-0 text-action" aria-hidden="true" />
+        <div className="flex flex-col items-center gap-1.5 text-center">
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-action text-primary-foreground shadow-lg ring-4 ring-mint/40"><Bike className="h-8 w-8" aria-hidden="true" /></span>
+          <span className="text-xs font-bold text-action">Bike elétrica</span>
+        </div>
+      </div>
+      <div className="relative mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <Link to="/escolherbike" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
+          Escolher minha bike <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+        <p className="text-xs text-muted-foreground">A calculadora completa ainda está em desenvolvimento.</p>
+      </div>
     </section>
   );
 }
@@ -159,27 +169,28 @@ function CalculatorPanel() {
 function CompareBlock({ cards }: { cards: HomeCard[] }) {
   const pair = cards.slice(0, 2);
   return (
-    <section aria-labelledby="comparar" className="scroll-mt-24 rounded-3xl bg-surface p-6 sm:p-8">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:items-center">
-        <div>
+    <section aria-labelledby="comparar" className="scroll-mt-24 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
+      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-center">
+        <div className="p-6 sm:p-8">
           <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
-            <h2 id="comparar" className="text-2xl font-bold text-ink sm:text-3xl">Comparar bikes</h2>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
+            <p className="text-xs font-bold tracking-[0.2em] text-mint">COMPARAR BIKES</p>
           </div>
-          <p className="mt-3 max-w-md text-muted-foreground">Coloque modelos lado a lado e veja as diferenças antes de decidir.</p>
-          <InactiveButton className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground">
-            Comparar modelos <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </InactiveButton>
+          <h2 id="comparar" className="mt-4 text-3xl font-black leading-tight sm:text-4xl">Em dúvida entre dois modelos?</h2>
+          <p className="mt-2 max-w-md text-ink-foreground/80">Coloque as opções lado a lado e decida com calma. Por enquanto, explore os modelos e preços no Radar.</p>
+          <Link to="/acompanhamento" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
+            Explorar modelos no Radar <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </div>
         {pair.length === 2 && (
-          <div aria-hidden="true" className="relative grid grid-cols-2 gap-3">
+          <div className="relative grid grid-cols-2 gap-2 p-3 sm:p-4 md:pl-0">
             {pair.map((c) => (
-              <div key={c.id} className="overflow-hidden rounded-2xl bg-card ring-1 ring-line">
+              <Link key={c.id} to="/acompanhamento/$bikeId" params={{ bikeId: c.id }} className="overflow-hidden rounded-2xl bg-card text-ink ring-1 ring-ink-foreground/10 transition hover:ring-mint">
                 <BikeMedia src={c.image} name={c.name} className="aspect-[4/3] w-full" />
-                <p className="truncate px-3 pb-3 text-center text-sm font-bold text-ink">{c.name}</p>
-              </div>
+                <p className="truncate px-3 py-3 text-center text-sm font-bold">{c.name}</p>
+              </Link>
             ))}
-            <span className="absolute left-1/2 top-[38%] grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ink text-sm font-black text-ink-foreground ring-4 ring-surface">VS</span>
+            <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[42%] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-mint text-lg font-black text-mint-foreground ring-4 ring-ink sm:h-16 sm:w-16">VS</span>
           </div>
         )}
       </div>
@@ -255,6 +266,7 @@ const HomeB2C = () => {
   const ok = data?.ok === true;
   const cards = ok ? data.cards : [];
   const radar = ok ? data.radar : [];
+  const total = ok ? data.search.length : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -265,7 +277,7 @@ const HomeB2C = () => {
         <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
-            <RadarPanel item={radar[0]} />
+            <RadarPanel items={radar} total={total} />
             <CalculatorPanel />
           </div>
           <CompareBlock cards={cards} />

@@ -77,6 +77,7 @@ export function RadarAssistant() {
       <LucasSDRWidget
         ctx={ctx}
         assistantName="Assistente Vitale"
+        manualOnly
         inviteTitle={isDetail ? "Dúvida nesta bike?" : isRadar ? "Este preço está bom?" : "Qual bike é a sua?"}
         inviteText={
           isDetail
