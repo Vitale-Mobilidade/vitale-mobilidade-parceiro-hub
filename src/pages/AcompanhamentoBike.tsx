@@ -5,7 +5,7 @@ import { useLoaderData } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/Footer";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
@@ -283,7 +283,7 @@ const AcompanhamentoBike = () => {
         />
       )}
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 };

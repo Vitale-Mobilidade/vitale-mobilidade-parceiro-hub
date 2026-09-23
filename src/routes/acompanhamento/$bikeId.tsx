@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import Footer from "@/components/Footer";
+import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { getRadarBike, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 import { BIKE_ID_RE } from "@/lib/bike-identity";
@@ -35,7 +35,7 @@ function BikeNotFound() {
           Não encontramos acompanhamento para esta bike no momento.
         </p>
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }
