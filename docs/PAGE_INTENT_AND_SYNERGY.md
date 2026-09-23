@@ -107,3 +107,14 @@ Estado de release (prévia / publicado por decisão explícita):
 - `/bikes` continua sendo o destino para modelos sem preço monitorado; nada de histórico atribuído a eles.
 - Quiz `/escolherbike` não foi alterado; seu resultado segue terminal, focado no clique direto ao Mercado Livre.
 - Continuam proibidos links a `/comparar` e `/conteudos` (não existem).
+
+## `/calculadoras/economia` — calculadora de economia (prévia, 23/09/2026)
+
+- **Decisão do visitante:** "trocar parte dos meus trajetos por uma bike elétrica compensa financeiramente no meu caso?"
+- **Resposta acima da dobra (mobile):** H1 direto + etapa 1 do formulário; o número mensal e anual aparece na etapa 3, com o detalhamento logo abaixo.
+- **CTA principal:** calcular o cenário. CTAs condicionais depois do resultado: ficha da bike, Radar (só quando monitorada) e anúncio no Mercado Livre — nunca antes de haver resultado.
+- **Fontes e recência:** cálculo 100% local com premissas do próprio usuário; bikes sugeridas vêm de `get_quiz_catalog` (elegíveis) ∩ `get_bikes_public_catalog` (oferta atual), lidas no carregamento da página. Sem fallback estático.
+- **Estados sem dados:** fonte indisponível ou nenhuma bike compatível → texto explícito e link para `/bikes`, sem afrouxar filtro nem exibir preço/link inventado. Economia zero ou negativa é exibida como tal.
+- **Limites:** não inclui preço/amortização da bike, financiamento, seguro da bike, depreciação do veículo nem valor do tempo; custos fixos de carro/moto só entram quando o usuário declara que deixará de manter o veículo.
+- **Privacidade:** nenhum nome, e-mail ou telefone é pedido ou enviado.
+- **Sinergia:** `/ferramentas` é a porta de entrada; `/radar` responde "este preço está bom hoje?"; `/escolherbike` continua sendo a conversão terminal e não é alterado por esta página.
