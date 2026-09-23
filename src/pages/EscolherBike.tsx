@@ -1375,13 +1375,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 }
 
 // ---------- Bike specs row ----------
-function RadarPriceLine({ item }: { item?: { currentPrice: number; classification: import("@/lib/price-tracker").Classification } }) {
+function RadarPriceLine({ item }: { item?: { currentPrice: number } }) {
   if (!item) return null;
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <span className="text-2xl font-extrabold text-action">{formatBRL(item.currentPrice)}</span>
-      <PriceStatus classification={item.classification} />
-      <span className="w-full text-sm text-muted-foreground">Preço atual registrado pelo Radar da Vitale.</span>
+      <span className="text-sm text-muted-foreground">Preço indicativo no Mercado Livre.</span>
     </div>
   );
 }
