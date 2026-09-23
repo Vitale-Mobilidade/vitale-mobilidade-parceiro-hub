@@ -12,8 +12,9 @@ export type HomeRadarItem = {
   currentPrice: number;
   typicalPrice: number | null;
   classification: Classification;
+  image: string | null;
 };
-const MAX_CARDS = 6;
+const MAX_CARDS = 5;
 const MAX_RADAR = 4;
 
 /**
@@ -37,6 +38,7 @@ export const getHomeCards = createServerFn({ method: "GET" }).handler(
           typeof e.currentPrice === "number" &&
           Number.isFinite(e.currentPrice),
       );
+      const safeImg = (v: unknown) => (typeof v === "string" && /^https:\/\/[^\s"<>]+$/.test(v) ? v : null);
       const cards = valid
         .slice(0, MAX_CARDS)
         .map((e) => ({
@@ -58,6 +60,7 @@ export const getHomeCards = createServerFn({ method: "GET" }).handler(
               ? e.metrics.typicalPrice
               : null,
           classification: e.metrics.classification,
+          image: safeImg(e.image),
         }));
       return { ok: true, cards, search, radar };
     } catch {
