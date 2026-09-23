@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import { getRadarBike } from "@/lib/radar.functions";
+import { getRadarBike, markRadarUnavailable } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 
 const BASE = "https://vitalemobilidade.com/acompanhamento";
@@ -20,13 +20,36 @@ function validBike(loaderData: unknown): { name: string; price: number | null; i
 }
 
 export const Route = createFileRoute("/acompanhamento/$bikeId")({
-  loader: ({ params }) => getRadarBike({ data: { bikeId: params.bikeId } }),
+  loader: async ({ params }) => {
+    const r = await getRadarBike({ data: { bikeId: params.bikeId } });
+    // Falha temporária: 503 + Retry-After no SSR; não é tratada como bike inexistente.
+    if (!r.ok && typeof window === "undefined") await markRadarUnavailable();
+    return r;
+  },
   head: ({ params, loaderData }) => {
     const bike = validBike(loaderData);
     const idOk = BIKE_ID_RE.test(params.bikeId);
     const canonical = idOk ? `${BASE}/${encodeURIComponent(params.bikeId)}` : BASE;
 
+    const failed = !(loaderData as { ok?: boolean } | undefined)?.ok;
+    if (failed) {
+      // Erro temporário: sem noindex e sem nome/preço/imagem; o status 503 sinaliza a indisponibilidade.
+      return {
+        meta: [
+          { title: FALLBACK_TITLE },
+          { name: "description", content: FALLBACK_DESCRIPTION },
+          { property: "og:title", content: FALLBACK_TITLE },
+          { property: "og:description", content: FALLBACK_DESCRIPTION },
+          { name: "twitter:title", content: FALLBACK_TITLE },
+          { name: "twitter:description", content: FALLBACK_DESCRIPTION },
+          { name: "twitter:card", content: "summary_large_image" },
+        ],
+        links: [{ rel: "canonical", href: canonical }],
+      };
+    }
+
     if (!bike) {
+      // Leitura bem-sucedida sem bike (ou ID inválido): inexistente de fato.
       return {
         meta: [
           { title: FALLBACK_TITLE },
