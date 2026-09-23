@@ -5,7 +5,11 @@ const HEIGHT = 240;
 const PAD_X = 48;
 const PAD_Y = 28;
 
-export type ChartProjectionPoint = Pick<ProjectionPoint, "months" | "currentRouteCost" | "bikeCostWithPurchase">;
+export type ChartProjectionPoint = {
+  months: number;
+  currentRouteCost: number;
+  bikeCostWithPurchase: number;
+};
 
 /** Acrescenta o investimento inicial real sem alterar os pontos calculados pelo motor. */
 export function buildProjectionChartPoints(points: ProjectionPoint[], bikePrice: number): ChartProjectionPoint[] {
