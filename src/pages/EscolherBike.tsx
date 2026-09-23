@@ -245,7 +245,7 @@ export default function EscolherBike() {
 
   // Catálogo dinâmico (planilha oficial via snapshot) com fallback estático.
   const quizInitial = useLoaderData({ from: "/escolherbike" });
-  const { catalog } = useBikeCatalog(quizInitial.ok ? (quizInitial.bikes as unknown[]) : null);
+  const { catalog } = useBikeCatalog(quizInitial?.ok ? (quizInitial.bikes as unknown[]) : null);
   const catalogRef = useRef(catalog);
   useEffect(() => { catalogRef.current = catalog; }, [catalog]);
 
