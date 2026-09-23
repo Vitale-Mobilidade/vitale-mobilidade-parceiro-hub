@@ -1,17 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Index from "@/pages/Index";
+import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
+import { getRadarCatalog } from "@/lib/radar.functions";
 
-// Metadata provisória fiel à Home atual (consultoria); será revista na Etapa 5.
+// Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
 export const Route = createFileRoute("/")({
+  // Leitura read-only do catálogo do Radar; falha apenas omite os cards.
+  loader: async () => {
+    try {
+      return await getRadarCatalog();
+    } catch {
+      return { ok: false as const };
+    }
+  },
   head: () =>
     pageHead({
       path: "/",
-      title: "Vitale Mobilidade | Consultoria em Veículos Elétricos",
+      title: "Vitale Mobilidade | Escolha sua bike elétrica e acompanhe preços",
       description:
-        "Consultoria estratégica em veículos elétricos: escolha fornecedores confiáveis, estruture operações B2B/B2C e cresça com segurança no Brasil.",
+        "Descubra a bike elétrica ideal para o seu perfil com o quiz da Vitale e consulte o histórico de preços antes de decidir a compra.",
+      ogTitle: "Escolha sua bike elétrica com clareza",
       ogDescription:
-        "Consultoria estratégica em veículos elétricos. Fornecedores confiáveis, operações B2B/B2C e crescimento seguro.",
+        "Quiz para descobrir a bike ideal e histórico de preços para decidir a compra com segurança.",
     }),
-  component: Index,
+  component: HomeB2C,
 });
