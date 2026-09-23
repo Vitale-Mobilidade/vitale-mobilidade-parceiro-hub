@@ -45,6 +45,7 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
   - **Nota:** revisão estática do código instalado (`@tanstack/react-router` v1.170.18) indica que `renderRouterToStream` usa o status do router (200/404/500/redirect) e não garante a propagação de `setResponseStatus(503)` chamado por `markRadarUnavailable`; portanto o 503, `Retry-After` e `Cache-Control` ainda não estão comprovados no documento SSR e devem ser tratados como bloqueio de release. A correção de servidor/middleware e a validação com falha controlada ficam pendentes de escopo/autorização, sem afetar o Supabase real.
 - `/painel-bikes` sem sessão apresentou apenas shell vazia no HTML inicial e herdou metadata geral indexável.
 - Rota desconhecida respondeu 404, mas também herdou metadata geral.
+- O commit `127ed61c6f6d2e61cd414ddcda2a4d49478181a5` adicionou title e `robots: noindex, nofollow` via `head()` SSR à rota `/painel-bikes` e removeu o efeito cliente redundante; `bun run build` passou; o HTML inicial após esse commit e o comportamento pós-login ainda **não foram verificados**.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
 - **Etapa 2** tem apenas metadata parcial do Radar; **não está concluída**.
 - **Etapas 3 a 25**: não concluídas.
