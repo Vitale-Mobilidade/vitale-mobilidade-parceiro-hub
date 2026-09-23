@@ -144,6 +144,17 @@ Ajuste de escopo do responsável: **selos comerciais são bem-vindos aqui** (e s
 - **"Imperdível" nunca é automático**: fica reservado a decisão editorial humana futura — preço baixo isolado não comprova urgência nem estoque. Nenhum percentual de desconto é fabricado.
 - Sem oferta válida: nenhum CTA do Mercado Livre; o valor exibido é o **último preço registrado** com data ("Pode não ser o preço de hoje") e a seção "Preço no Radar" troca a faixa de preço por nota factual, para não posicionar um "preço atual" inexistente.
 
+## Radar — listagem (`/radar`): sem selos automáticos de classificação
+
+Regra do responsável (23/09/2026): selos comerciais valem **somente** na página canônica `/bikes/{slug}`. A listagem do Radar é leitura factual.
+
+- `RadarBikeCard` não exibe mais o `Badge` de `CLASSIFICATION_LABEL`/`CLASSIFICATION_COLOR`; mantém foto, nome, preço atual, comparação numérica com o preço típico, `shortDiagnosis`, CTA do Mercado Livre (link afiliado byte a byte), "Ver análise" e alerta.
+- `BikeSearchCombobox` também perdeu o selo; cada sugestão mostra foto, nome e preço.
+- Destaque: o título é fixo **"Destaque do Radar"** (era "Oportunidade em destaque"/"Bike em destaque") — é seção, não selo — e o bloco não renderiza mais `PriceStatus`.
+- Rodapé da listagem: a explicação de "menor preço registrado" virou texto corrido, sem `Badge`.
+- `shortDiagnosis` (`src/lib/radar-rankings.ts`) nunca escreve "R$ 0 abaixo do típico": diferença zero vira "Hoje está igual ao preço típico do período."; com histórico curto (`forming`) o texto é "É o menor preço registrado por nós até agora." quando verdadeiro, senão "Preço registrado no histórico da Vitale." — sem mencionar "histórico em formação" e sem insinuar que o preço é inválido.
+- Cálculo, `classification`, thresholds, rankings, preços, datas e links permanecem inalterados; a mudança é de apresentação.
+
 ## Radar — detalhe da bike (`/radar/{bikeId}`): painel compacto de inteligência de preço
 
 Referência de **hierarquia/densidade** (padrão "price insights"), não de branding.

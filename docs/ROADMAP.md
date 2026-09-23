@@ -246,3 +246,17 @@ Arquivos: `src/lib/radar-repository.server.ts` (`fetchTrackerSplit`), `src/lib/r
 Ressalva: o linter do Supabase mantém os avisos pré-existentes (RLS sem policy em 15 tabelas; RPCs SECURITY DEFINER executáveis por anon/authenticated, que é o desenho público intencional). Nenhum aviso novo.
 
 Rollback: restaurar as definições anteriores das duas funções e reverter os arquivos acima; nenhum dado de preço/histórico é tocado.
+
+---
+
+**Etapa 12 (incremento) — Radar sem selos automáticos na listagem (23/09/2026, PREVIEW, não publicado).**
+
+Ajuste de copy pedido pelo responsável após verificar a produção: a listagem `/radar` ainda exibia badges "Bom preço", "Menor preço observado" e "Histórico em formação" (inclusive na FT03). Selos comerciais ficam restritos a `/bikes/{slug}` (`CommercialPriceBadge`, intacto); `/radar/{bikeId}` continua sem selo.
+
+- `src/components/radar/RadarBikeCard.tsx`: removido o `Badge` de classificação.
+- `src/components/radar/BikeSearchCombobox.tsx`: removido o selo das sugestões.
+- `src/pages/Acompanhamento.tsx`: título fixo "Destaque do Radar", `PriceStatus` removido do destaque, legenda do rodapé sem `Badge`.
+- `src/lib/radar-rankings.ts` — `shortDiagnosis`: diferença zero → "Hoje está igual ao preço típico do período."; `forming` → "É o menor preço registrado por nós até agora." (quando verdadeiro) ou "Preço registrado no histórico da Vitale."; nenhuma frase de "formação".
+- Sem mudança em cálculo, `classification`, backend, rankings, preços, datas, links/CTA ou Quiz. As 27 ativas + 3 sem oferta já em produção via RPC seguem iguais.
+- Verificação: typecheck, build, testes dirigidos (radar-rankings 14, radar-archived, radar-unavailable, commercial-badge) e conferência ao vivo em `/radar` (nenhum dos textos removidos aparece; "Destaque do Radar" presente).
+
