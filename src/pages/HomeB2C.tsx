@@ -1,7 +1,6 @@
 import { Link, useLoaderData } from "@tanstack/react-router";
 import logo96 from "@/assets/logo-96.webp";
 import logo192 from "@/assets/logo-192.webp";
-import { buildRadarEntries, type RadarBike } from "@/lib/radar-rankings";
 import { formatBRL } from "@/lib/price-tracker";
 
 const MAX_CARDS = 6;
@@ -52,12 +51,7 @@ function HomeFooter() {
 
 const HomeB2C = () => {
   const data = useLoaderData({ from: "/" });
-  const entries =
-    data?.ok === true
-      ? buildRadarEntries(data.bikes as unknown as RadarBike[], "all")
-          .filter((e) => typeof e.id === "string" && typeof e.name === "string" && e.name.trim() !== "")
-          .slice(0, MAX_CARDS)
-      : [];
+  const entries = data?.ok === true ? data.cards : [];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
