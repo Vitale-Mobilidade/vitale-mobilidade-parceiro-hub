@@ -16,24 +16,56 @@ describe("affiliate analytics", () => {
     setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
   });
 
-  it("emite payload mínimo permitido, com rota e destino", () => {
+  it("emite payload mínimo permitido, com rota e destino gerados no helper", () => {
     trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero" });
     expect(layer()).toEqual([
-      { event: AFFILIATE_CLICK_EVENT, destination: "mercado_livre", route: "/bikes/v8-ultra", bike_id: "v8_ultra", position: "bike_detail_hero" },
+      { event: AFFILIATE_CLICK_EVENT, destination: "mercado_livre", bike_id: "v8_ultra", position: "bike_detail_hero", route: "/bikes/v8-ultra" },
     ]);
   });
 
-  it("descarta chaves fora do contrato, URL completa e PII", () => {
+  it("rejeita bike_id fora da regex canônica e position fora da allowlist", () => {
+    trackAffiliateClick({ bike_id: "../admin", position: "bike_detail_hero" });
+    trackAffiliateClick({ bike_id: "v8 ultra", position: "bike_detail_hero" });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero " as never });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "cta_top" as never });
+    expect(layer()).toHaveLength(0);
+  });
+
+  it("não aceita route/destination do chamador nem campos extras (sem PII, sem URL)", () => {
     trackAffiliateClick({
       bike_id: "v8_ultra",
       position: "radar_detail",
-      route: "https://meli.la/abc123",
-      // chaves não permitidas propositalmente
-      ...({ email: "a@b.com", name: "Guilherme", url: "https://meli.la/abc123", price: 4999 } as Record<string, unknown>),
+      // campos fora do contrato propositalmente
+      ...({
+        route: "https://meli.la/abc123",
+        destination: "outro",
+        email: "a@b.com",
+        name: "Guilherme",
+        url: "https://meli.la/abc123",
+        price: 4999,
+      } as Record<string, unknown>),
     });
     const evt = layer()[0] as Record<string, unknown>;
-    expect(Object.keys(evt).sort()).toEqual(["bike_id", "destination", "event", "position"]);
-    expect(JSON.stringify(evt)).not.toMatch(/meli\.la|@|Guilherme/);
+    expect(Object.keys(evt).sort()).toEqual(["bike_id", "destination", "event", "position", "route"]);
+    expect(evt.destination).toBe("mercado_livre");
+    expect(evt.route).toBe("/bikes/v8-ultra"); // pathname real, não o valor forjado
+    expect(JSON.stringify(evt)).not.toMatch(/meli\.la|@|Guilherme|outro/);
+  });
+
+  it("omite route fora das rotas permitidas (sem texto livre)", () => {
+    setWindow({ dataLayer: [], location: { pathname: "/escolherbike" } });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_final" });
+    const evt = layer()[0] as Record<string, unknown>;
+    expect(evt).not.toHaveProperty("route");
+    expect(evt.destination).toBe("mercado_livre");
+  });
+
+  it("aceita as rotas canônicas /radar e /radar/{bikeId}", () => {
+    setWindow({ dataLayer: [], location: { pathname: "/radar" } });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_catalog" });
+    setWindow({ dataLayer: layer(), location: { pathname: "/radar/v8_ultra" } });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail" });
+    expect(layer().map((e) => e.route)).toEqual(["/radar", "/radar/v8_ultra"]);
   });
 
   it("não emite sem bike_id", () => {
