@@ -84,3 +84,7 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 ### 7.3 Card do catálogo como link único (23/09/2026, prévia)
 
 `BikeCatalogCard` é um único link `bikeId → slug → /bikes/$slug`. A classificação do Radar é selo informativo, sem destino próprio; o CTA secundário "Analisar preço no Radar" saiu do card e o Radar continua acessível pelo detalhe da bike. Preços, fontes ("Preço registrado pelo Radar Vitale" / "Preço de referência cadastrado (não monitorado)" / "Preço não informado") e status inalterados.
+
+### 7.4 Heróis temáticos das páginas estruturais (23/09/2026, prévia)
+
+Apenas Home, `/bikes` e `/acompanhamento` usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, detalhe de bike e páginas internas não seguem esse padrão.

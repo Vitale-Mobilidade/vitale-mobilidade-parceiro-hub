@@ -91,7 +91,7 @@ const Acompanhamento = () => {
             <source media="(max-width: 1400px)" srcSet="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} />
             <img src="/vitale-hero-radar-2026.webp" width={1672} height={941} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
           </picture>
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/80 max-md:to-ink/40" aria-hidden="true" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/60 max-md:to-ink/10" aria-hidden="true" />
           <div className="responsive-container entry-hero-inner">
             <p className="entry-eyebrow">RADAR DE PREÇOS</p>
             <h1 className="entry-h1">
