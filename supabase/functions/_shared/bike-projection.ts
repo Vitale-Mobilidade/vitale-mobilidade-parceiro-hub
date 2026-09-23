@@ -52,3 +52,53 @@ export async function projectBikes(supabase: RpcClient, bikes: SnapshotBike[]): 
     return { ok: false, error: String((e as Error)?.message ?? e).slice(0, 300) };
   }
 }
+
+// ---------------- Etapa 8 — ofertas (shadow; leitores comerciais não trocados) ----------------
+
+export interface BikeOfferRow {
+  bike_id: string;
+  /** URL exata do snapshot — nunca normalizada/reescrita. */
+  url: string | null;
+  price: number | null;
+  sheet_status: string | null;
+  sheet_eligible: boolean | null;
+}
+
+export interface BikeOfferProjectionResult {
+  ok: boolean;
+  inserted?: number;
+  updated?: number;
+  unchanged?: number;
+  ended?: number;
+  skipped?: Array<{ bike_id: string | null; reason: string }>;
+  error?: string;
+}
+
+export function buildBikeOfferRows(bikes: SnapshotBike[]): BikeOfferRow[] {
+  const seen = new Set<string>();
+  const rows: BikeOfferRow[] = [];
+  for (const b of bikes) {
+    if (!b?.id || seen.has(b.id)) continue;
+    seen.add(b.id);
+    rows.push({
+      bike_id: b.id,
+      url: typeof b.linkVitale === "string" ? b.linkVitale : null,
+      price: typeof b.price === "number" && Number.isFinite(b.price) ? b.price : null,
+      sheet_status: typeof b.status === "string" ? b.status : null,
+      sheet_eligible: typeof b.sheetEligible === "boolean" ? b.sheetEligible : null,
+    });
+  }
+  return rows;
+}
+
+export async function projectBikeOffers(supabase: RpcClient, bikes: SnapshotBike[]): Promise<BikeOfferProjectionResult> {
+  try {
+    const { data, error } = await supabase.rpc("project_bike_offers_from_snapshot", { p_rows: buildBikeOfferRows(bikes) });
+    if (error) return { ok: false, error: String(error.message ?? error).slice(0, 300) };
+    const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+    if (skipped.length) console.warn("[sync] offers projection skipped:", JSON.stringify(skipped));
+    return { ok: true, inserted: data?.inserted, updated: data?.updated, unchanged: data?.unchanged, ended: data?.ended, skipped };
+  } catch (e) {
+    return { ok: false, error: String((e as Error)?.message ?? e).slice(0, 300) };
+  }
+}

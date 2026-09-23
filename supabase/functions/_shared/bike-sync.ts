@@ -31,7 +31,7 @@ import {
   type SnapshotBike,
 } from "./bike-sheet.ts";
 import { technicalHash } from "./bike-hash.ts";
-import { projectBikes } from "./bike-projection.ts";
+import { projectBikeOffers, projectBikes } from "./bike-projection.ts";
 import { buildDailyRows, saoPauloDay, type DailyCandidate, type DailyExisting } from "./price-daily.ts";
 import {
   countChangedBikes,
@@ -642,6 +642,9 @@ export async function runBikeCatalogSync(
     // Etapa 7: projeção idempotente em public.bikes a cada execução; falha isolada.
     const bikesProjection = await projectBikes(supabase, bikes);
     if (!bikesProjection.ok) console.error("[sync] bikes projection failed:", bikesProjection.error);
+    // Etapa 8: ofertas shadow (após overrides e bikes; bike ausente em `bikes` é pulada, sem oferta órfã).
+    const offersProjection = await projectBikeOffers(supabase, bikes);
+    if (!offersProjection.ok) console.error("[sync] offers projection failed:", offersProjection.error);
 
     // Analytics do Radar de Preços: idempotente e isolado do catálogo/quiz.
     const priceHistory = await recordPriceHistory(supabase, bikes, runId);
@@ -690,6 +693,7 @@ export async function runBikeCatalogSync(
         dailyRows,
         overridesSynced: overrides.synced,
         bikesProjection,
+        offersProjection,
       },
     });
 
@@ -714,6 +718,7 @@ export async function runBikeCatalogSync(
         assetsReview: downstream.assetsReview,
         overridesSynced: overrides.synced,
         bikesProjection: { ok: bikesProjection.ok, conflicts: bikesProjection.conflicts?.length ?? 0 },
+        offersProjection: { ok: offersProjection.ok, skipped: offersProjection.skipped?.length ?? 0 },
         eligible: overrides.eligible,
         notEligible: overrides.notEligible,
         changedBikes: countChangedBikes(changes),

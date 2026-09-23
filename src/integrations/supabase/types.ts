@@ -191,6 +191,77 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_offers: {
+        Row: {
+          bike_id: string
+          created_at: string
+          currency: string
+          end_reason: string | null
+          ended_at: string | null
+          first_seen_at: string
+          id: string
+          is_current: boolean
+          override_eligible: boolean | null
+          price: number
+          quiz_eligible: boolean
+          sheet_eligible: boolean | null
+          sheet_status: string | null
+          source: string
+          synced_at: string
+          updated_at: string
+          url: string
+          verified_at: string | null
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          currency?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          first_seen_at?: string
+          id?: string
+          is_current?: boolean
+          override_eligible?: boolean | null
+          price: number
+          quiz_eligible?: boolean
+          sheet_eligible?: boolean | null
+          sheet_status?: string | null
+          source?: string
+          synced_at?: string
+          updated_at?: string
+          url: string
+          verified_at?: string | null
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          currency?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          first_seen_at?: string
+          id?: string
+          is_current?: boolean
+          override_eligible?: boolean | null
+          price?: number
+          quiz_eligible?: boolean
+          sheet_eligible?: boolean | null
+          sheet_status?: string | null
+          source?: string
+          synced_at?: string
+          updated_at?: string
+          url?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_offers_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["bike_id"]
+          },
+        ]
+      }
       bike_panel_credentials: {
         Row: {
           created_at: string
@@ -1218,6 +1289,10 @@ export type Database = {
       }
       get_price_tracker_catalog: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
+      project_bike_offers_from_snapshot: {
+        Args: { p_rows: Json }
+        Returns: Json
+      }
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
     }
     Enums: {
