@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import AcompanhamentoBike from "@/pages/AcompanhamentoBike";
-import { getRadarBike, markRadarNotFound, markRadarUnavailable } from "@/lib/radar.functions";
+import Footer from "@/components/Footer";
+import { getRadarBike, markRadarUnavailable } from "@/lib/radar.functions";
 import { formatBRL } from "@/lib/price-tracker";
 
 const BASE = "https://vitalemobilidade.com/acompanhamento";
@@ -19,13 +21,32 @@ function validBike(loaderData: unknown): { name: string; price: number | null; i
   return { name: b.name.trim(), price, image };
 }
 
+function BikeNotFound() {
+  return (
+    <div className="min-h-screen bg-white">
+      <main className="responsive-container py-8 md:py-12">
+        <Link
+          to="/acompanhamento"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Voltar para o Radar de Preços
+        </Link>
+        <p className="mt-8 rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
+          Não encontramos acompanhamento para esta bike no momento.
+        </p>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/acompanhamento/$bikeId")({
   loader: async ({ params }) => {
     const r = await getRadarBike({ data: { bikeId: params.bikeId } });
     // Falha temporária: 503 + Retry-After no SSR; não é tratada como bike inexistente.
     if (!r.ok && typeof window === "undefined") await markRadarUnavailable();
-    // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404.
-    if (r.ok && (r.bike === null || r.bike === undefined) && typeof window === "undefined") await markRadarNotFound();
+    // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404 nativo.
+    if (r.ok && (r.bike === null || r.bike === undefined)) throw notFound();
     return r;
   },
   head: ({ params, loaderData }) => {
@@ -33,7 +54,9 @@ export const Route = createFileRoute("/acompanhamento/$bikeId")({
     const idOk = BIKE_ID_RE.test(params.bikeId);
     const canonical = idOk ? `${BASE}/${encodeURIComponent(params.bikeId)}` : BASE;
 
-    const failed = !(loaderData as { ok?: boolean } | undefined)?.ok;
+    // loaderData ausente = notFound() lançado (leitura ok, bike inexistente).
+    const notFoundCase = loaderData === undefined;
+    const failed = !notFoundCase && !(loaderData as { ok?: boolean } | undefined)?.ok;
     if (failed) {
       // Erro temporário: sem noindex e sem nome/preço/imagem; o status 503 sinaliza a indisponibilidade.
       return {
@@ -95,4 +118,5 @@ export const Route = createFileRoute("/acompanhamento/$bikeId")({
     };
   },
   component: AcompanhamentoBike,
+  notFoundComponent: BikeNotFound,
 });
