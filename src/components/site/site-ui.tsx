@@ -73,7 +73,7 @@ export function SiteHeader() {
 
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter() {
-  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/bikes" | "/ferramentas" }[] }[] = [
+  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/bikes" | "/ferramentas" | "/calculadoras/economia" }[] }[] = [
     { title: "Explorar", items: [
       { label: "Bikes", to: "/bikes" },
       { label: "Escolher minha bike", to: "/escolherbike" },
@@ -82,7 +82,7 @@ export function SiteFooter() {
     { title: "Ferramentas", items: [
       { label: "Todas as ferramentas", to: "/ferramentas" },
       { label: "Comparar bikes", href: "/#comparar" },
-      { label: "Calculadora de economia", href: "/#ferramentas" },
+      { label: "Calculadora de economia", to: "/calculadoras/economia" },
       { label: "Conteúdos e testes", href: "/#conteudos" },
     ] },
     { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }, { label: "Quiz de perfil", to: "/escolherbike" }] },

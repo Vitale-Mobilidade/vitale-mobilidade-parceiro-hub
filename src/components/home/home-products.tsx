@@ -8,12 +8,12 @@ import { BarChart3, BookOpen, Calculator, GitCompareArrows, Users, type LucideIc
  * rota e preencher `to` aqui.
  */
 export type HomeAnchor = "#comparar" | "#conteudos" | "#ferramentas" | "#bikes";
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | HomeAnchor | null };
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
   { key: "comparar", title: "Comparar bikes", sub: "Modelos lado a lado", icon: GitCompareArrows, to: "#comparar" },
   { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/radar" },
-  { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "#ferramentas" },
+  { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "/calculadoras/economia" },
   { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "#conteudos" },
   { key: "grupo", title: "Grupo de ofertas", sub: "Ofertas selecionadas", icon: Users, to: "/grupodeofertas" },
 ];

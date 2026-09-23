@@ -24,6 +24,15 @@ export const Route = createFileRoute("/ferramentas")({
 
 const TOOLS = [
   {
+    key: "calculadora",
+    icon: Calculator,
+    title: "Calculadora de economia",
+    to: "/calculadoras/economia" as const,
+    cta: "Calcular minha economia",
+    question: "Vale a pena trocar meu transporte por uma bike?",
+    body: "Você informa seus custos de hoje e quanto do trajeto pretende substituir. A conta aparece inteira, com premissas editáveis, e o resultado pode ser zero ou negativo — mostramos assim mesmo.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",
