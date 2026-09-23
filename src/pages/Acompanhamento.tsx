@@ -5,7 +5,7 @@ import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, PriceStatus, DisabledCta } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, DisabledCta } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
