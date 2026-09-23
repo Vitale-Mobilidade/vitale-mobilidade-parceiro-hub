@@ -322,10 +322,27 @@ function CalculadoraEconomia() {
             </div>
             <p className="mt-2 text-sm text-muted-foreground">Etapa {step + 1} de 3</p>
 
+            {errorList.length > 0 && (
+              <div
+                role="alert"
+                tabIndex={-1}
+                className="mt-5 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive"
+              >
+                <p className="font-bold">Faltam informações para continuar:</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {errorList.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {step === 0 && (
               <div className="mt-6 space-y-5">
                 <fieldset>
-                  <legend className="text-sm font-semibold text-ink">Como você se desloca hoje?</legend>
+                  <legend className="text-sm font-semibold text-ink">
+                    Como você se desloca hoje? (escolha uma opção)
+                  </legend>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {MODALS.map((m) => (
                       <label
@@ -348,18 +365,39 @@ function CalculadoraEconomia() {
                       </label>
                     ))}
                   </div>
+                  {errors.modal && (
+                    <p className="mt-2 text-xs font-semibold text-destructive">{errors.modal}</p>
+                  )}
                 </fieldset>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Dias por semana" value={daysPerWeek} onChange={setDaysPerWeek} suffix="dias" step="1" />
-                  <Field label="Distância por dia" value={dailyKm} onChange={setDailyKm} suffix="km" step="0.1" />
+                  <Field
+                    name="daysPerWeek"
+                    label="Dias por semana"
+                    value={daysPerWeek}
+                    onChange={setDaysPerWeek}
+                    suffix="dias"
+                    step="1"
+                    error={errors.daysPerWeek}
+                  />
+                  <Field
+                    name="dailyKm"
+                    label="Distância por dia"
+                    value={dailyKm}
+                    onChange={setDailyKm}
+                    suffix="km"
+                    step="0.1"
+                    error={errors.dailyKm}
+                  />
                 </div>
                 <Field
+                  name="percent"
                   label="Quanto desse trajeto dá para fazer de bike?"
                   value={percent}
                   onChange={setPercent}
                   suffix="%"
                   step="1"
-                  help="0% significa nenhuma substituição: o resultado será zero, sem custo de bike."
+                  help="0% significa nenhuma substituição: o resultado será zero, sem custo de bike e sem sugestão de modelos."
+                  error={errors.percent}
                 />
               </div>
             )}
@@ -369,56 +407,113 @@ function CalculadoraEconomia() {
                 {isVehicle && (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Preço do combustível" value={fuelPrice} onChange={setFuelPrice} suffix="R$/litro" />
-                      <Field label="Consumo do veículo" value={kmPerLiter} onChange={setKmPerLiter} suffix="km/litro" step="0.1" />
+                      <Field
+                        name="fuelPrice"
+                        label="Preço do combustível"
+                        value={fuelPrice}
+                        onChange={setFuelPrice}
+                        suffix="R$/litro"
+                        error={errors.fuelPrice}
+                      />
+                      <Field
+                        name="kmPerLiter"
+                        label="Consumo do veículo"
+                        value={kmPerLiter}
+                        onChange={setKmPerLiter}
+                        suffix="km/litro"
+                        step="0.1"
+                        error={errors.kmPerLiter}
+                      />
                     </div>
                     <Field
+                      name="extras"
                       label="Pedágio e estacionamento por mês"
                       value={extras}
                       onChange={setExtras}
                       suffix="R$/mês"
-                      help="Custos variáveis ligados a esses trajetos."
+                      help="Custos variáveis ligados a esses trajetos. Digite 0 se você não tem esse custo."
+                      error={errors.extras}
                     />
                     <Field
+                      name="fixedMonthly"
                       label="Custos fixos do veículo por mês"
                       value={fixedMonthly}
                       onChange={setFixedMonthly}
                       suffix="R$/mês"
-                      help="Seguro, IPVA, licenciamento e manutenção periódica."
+                      help="Seguro, IPVA, licenciamento e manutenção periódica. Digite 0 se você não tem esse custo."
+                      error={errors.fixedMonthly}
                     />
-                    <label className="flex items-start gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
-                      <input
-                        type="checkbox"
-                        checked={keepsVehicle}
-                        onChange={(e) => setKeepsVehicle(e.target.checked)}
-                        className="mt-1 h-4 w-4"
-                      />
-                      <span className="text-sm text-ink">
-                        Vou continuar mantendo o veículo.
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          Mantendo o veículo, os custos fixos continuam existindo e por isso <strong>não</strong> entram
-                          como economia.
-                        </span>
-                      </span>
-                    </label>
+                    <fieldset className="rounded-xl bg-surface p-4 ring-1 ring-line">
+                      <legend className="text-sm font-semibold text-ink">
+                        Você vai continuar mantendo o veículo?
+                      </legend>
+                      <div className="mt-2 flex flex-wrap gap-4">
+                        {[
+                          { v: true, label: "Sim, vou manter" },
+                          { v: false, label: "Não, vou deixar de manter" },
+                        ].map((o) => (
+                          <label key={String(o.v)} className="flex items-center gap-2 text-sm text-ink">
+                            <input
+                              type="radio"
+                              name="keepsVehicle"
+                              className="h-4 w-4 accent-[var(--color-action,currentColor)]"
+                              checked={keepsVehicle === o.v}
+                              onChange={() => setKeepsVehicle(o.v)}
+                            />
+                            {o.label}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Mantendo o veículo, os custos fixos continuam existindo e por isso <strong>não</strong> entram
+                        como economia.
+                      </p>
+                      {errors.keepsVehicle && (
+                        <p className="mt-2 text-xs font-semibold text-destructive">{errors.keepsVehicle}</p>
+                      )}
+                    </fieldset>
                   </>
                 )}
                 {modal === "uber" && (
-                  <Field label="Custo médio por km no aplicativo" value={ridePerKm} onChange={setRidePerKm} suffix="R$/km" />
+                  <Field
+                    name="ridePerKm"
+                    label="Custo médio por km no aplicativo"
+                    value={ridePerKm}
+                    onChange={setRidePerKm}
+                    suffix="R$/km"
+                    error={errors.ridePerKm}
+                  />
                 )}
                 {modal === "transporte_publico" && (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Tarifa por embarque" value={fare} onChange={setFare} suffix="R$" />
-                    <Field label="Embarques por dia" value={tripsPerDay} onChange={setTripsPerDay} suffix="embarques" step="1" />
+                    <Field
+                      name="fare"
+                      label="Tarifa por embarque"
+                      value={fare}
+                      onChange={setFare}
+                      suffix="R$"
+                      error={errors.fare}
+                    />
+                    <Field
+                      name="tripsPerDay"
+                      label="Embarques por dia"
+                      value={tripsPerDay}
+                      onChange={setTripsPerDay}
+                      suffix="embarques"
+                      step="1"
+                      error={errors.tripsPerDay}
+                    />
                   </div>
                 )}
                 {modal === "misto" && (
                   <Field
-                    label="Gasto mensal atual com transporte"
+                    name="mixedSpend"
+                    label="Gasto mensal variável com transporte"
                     value={mixedSpend}
                     onChange={setMixedSpend}
                     suffix="R$/mês"
-                    help="Some o que você já gasta hoje com os meios que pretende substituir."
+                    help="Some só o que varia com o uso (combustível, corridas, passagens) e que você pretende substituir. Não inclua custo fixo de carro ou moto que você vai continuar mantendo: ele não deixa de existir."
+                    error={errors.mixedSpend}
                   />
                 )}
 
@@ -429,8 +524,24 @@ function CalculadoraEconomia() {
                     nesta conta (tempo de retorno virá em outra ferramenta).
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <Field label="Energia por km" value={energyPerKm} onChange={setEnergyPerKm} suffix="R$/km" step="0.001" />
-                    <Field label="Manutenção por mês" value={maintenance} onChange={setMaintenance} suffix="R$/mês" />
+                    <Field
+                      name="energyPerKm"
+                      label="Energia por km"
+                      value={energyPerKm}
+                      onChange={setEnergyPerKm}
+                      suffix="R$/km"
+                      step="0.001"
+                      error={errors.energyPerKm}
+                    />
+                    <Field
+                      name="maintenance"
+                      label="Manutenção por mês"
+                      value={maintenance}
+                      onChange={setMaintenance}
+                      suffix="R$/mês"
+                      help="Digite 0 se você não prevê esse custo."
+                      error={errors.maintenance}
+                    />
                   </div>
                 </div>
 
@@ -446,7 +557,15 @@ function CalculadoraEconomia() {
                       />
                       Preciso levar garupa
                     </label>
-                    <Field label="Orçamento máximo" value={maxBudget} onChange={setMaxBudget} suffix="R$" help="Deixe em branco se não quiser filtrar por preço." />
+                    <Field
+                      name="maxBudget"
+                      label="Orçamento máximo"
+                      value={maxBudget}
+                      onChange={setMaxBudget}
+                      suffix="R$"
+                      help="Deixe em branco se não quiser filtrar por preço. Se preencher, use um valor real — não tratamos valor inválido como 'sem limite'."
+                      error={errors.maxBudget}
+                    />
                   </div>
                 </div>
               </div>
