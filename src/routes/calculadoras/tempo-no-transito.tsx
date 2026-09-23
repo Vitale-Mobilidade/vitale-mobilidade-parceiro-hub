@@ -11,7 +11,7 @@ import {
   RelatedContent,
   RelatedTools,
   TimeBenefitChart,
-} from "@/components/mobility/time-decision-ui";
+} from "@/components/mobility/TimeProjectionChart";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { decimal, parseNumber, resolveBudget, validateNumber, type BudgetMode } from "@/lib/mobility/format";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
