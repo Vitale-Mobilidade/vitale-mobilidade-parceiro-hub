@@ -48,7 +48,7 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 - Rota desconhecida respondeu 404, mas também herdou metadata geral.
 - O commit `127ed61c6f6d2e61cd414ddcda2a4d49478181a5` adicionou title e `robots: noindex, nofollow` via `head()` SSR à rota `/painel-bikes` e removeu o efeito cliente redundante; `bun run build` passou; o HTML inicial após esse commit e o comportamento pós-login ainda **não foram verificados**.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
-- **Etapa 2** tem apenas metadata parcial do Radar; **não está concluída**.
+- **Etapa 2**: implementação avançou no rascunho (helper `src/lib/seo.ts` com canonical sem query/UTM; `head()` SSR na Home atual — provisória até a Etapa 5 — e em `/escolherbike`; JSON-LD global reduzido a Organization + WebSite, sem ProfessionalService; `robots.txt` com `Disallow: /painel-bikes`; `sitemap.xml` só com `/`, `/escolherbike` e `/acompanhamento`). `bun run build` passou, mas **não foi validada no HTML final nem publicada**; **não está concluída**. Novas rotas e detalhes de bike só entram no sitemap depois do contrato Bike/oferta.
 - **Etapas 3 a 25**: não concluídas.
 
 O site legado publicado permanece no ar.
