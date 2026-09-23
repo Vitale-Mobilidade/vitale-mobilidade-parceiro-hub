@@ -315,10 +315,10 @@ function BikeDetail() {
       </section>
 
       {/* CTA final */}
-      {bike.link && (
+      {offer && (
         <section aria-label="Comprar" className="mt-10 flex flex-col items-center gap-3 rounded-2xl bg-surface p-6 text-center ring-1 ring-line">
           <p className="text-lg font-black text-ink">Decidiu pelo {bike.name}?</p>
-          <BuyCta link={bike.link} />
+          <BuyCta link={offer.link} bikeId={bike.bikeId} position="bike_detail_final" />
           <p className="text-xs text-muted-foreground">Preço e disponibilidade devem ser confirmados no Mercado Livre.</p>
         </section>
       )}
