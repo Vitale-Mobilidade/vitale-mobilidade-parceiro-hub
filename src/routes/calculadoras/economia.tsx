@@ -5,7 +5,7 @@ import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
 import { pageHead, canonicalUrl } from "@/lib/seo";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { getMobilityBikeCandidates } from "@/lib/mobility-bikes.functions";
-import { WEEKS_PER_MONTH, AUTONOMY_SAFETY_MARGIN } from "@/lib/mobility/config";
+import { WEEKS_PER_MONTH, AUTONOMY_SAFETY_MARGIN, LIMITS } from "@/lib/mobility/config";
 import { computeMobilityCost, type CostInput, type Modal } from "@/lib/mobility/cost-engine";
 import {
   recommendBikes,
@@ -635,7 +635,7 @@ function CalculadoraEconomia() {
               {step > 0 && (
                 <button
                   type="button"
-                  onClick={() => setStep((s) => s - 1)}
+                  onClick={goBack}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-surface px-5 font-bold text-ink ring-1 ring-line"
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Voltar
@@ -644,7 +644,7 @@ function CalculadoraEconomia() {
               {step < 2 && (
                 <button
                   type="button"
-                  onClick={() => setStep((s) => s + 1)}
+                  onClick={goNext}
                   className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-action px-5 font-bold text-primary-foreground hover:opacity-90"
                 >
                   {step === 0 ? "Continuar" : "Ver o resultado"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -653,7 +653,7 @@ function CalculadoraEconomia() {
               {step === 2 && (
                 <button
                   type="button"
-                  onClick={() => setStep(0)}
+                  onClick={() => { setErrors({}); setStep(0); }}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-surface px-5 font-bold text-ink ring-1 ring-line"
                 >
                   Refazer o cenário
@@ -704,7 +704,7 @@ function CalculadoraEconomia() {
                   <>
                     <p className="mt-2 text-xs text-muted-foreground">{ORDER_CRITERION}</p>
                     <ul className="mt-5 space-y-4">
-                      {bikes.map((b) => (
+                      {recommendation.bikes.map((b) => (
                         <li key={b.bikeId} className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
                           <BikeMedia src={b.image} name={b.name} className="h-40" />
                           <div className="p-4">
