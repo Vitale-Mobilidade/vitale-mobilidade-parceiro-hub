@@ -28,16 +28,40 @@ const STATIC_CATALOG = [...BIKES].sort((a, b) => a.internalPrice - b.internalPri
  * - Fallback: snapshot público `bike_catalog_snapshot` (merge com overrides).
  * - Último recurso: catálogo estático embutido.
  */
-export function useBikeCatalog(): CatalogState {
-  const [state, setState] = useState<CatalogState>({
-    catalog: STATIC_CATALOG,
+function fromInitial(initialBikes: unknown[]): CatalogState | null {
+  if (!Array.isArray(initialBikes) || initialBikes.length === 0) return null;
+  const ids = new Set(initialBikes.map((b) => (b as { id?: string })?.id));
+  const merged = mergeCatalog(STATIC_CATALOG, initialBikes).filter((b) => ids.has(b.id));
+  if (merged.length === 0) return null;
+  return {
+    catalog: merged,
     rows: buildCatalogRows(STATIC_CATALOG, []),
-    origin: "static",
+    origin: "sheet",
     snapshotUpdatedAt: null,
-    loading: true,
-  });
+    loading: false,
+  };
+}
+
+/**
+ * `initialBikes`: resultado válido de `get_quiz_catalog` lido no SSR. Quando presente,
+ * o hook não repete a chamada automática ao hidratar. Sem ele, mantém o fluxo original
+ * (RPC + snapshot + estático).
+ */
+export function useBikeCatalog(initialBikes?: unknown[] | null): CatalogState {
+  const [hydrated] = useState(() => (initialBikes ? fromInitial(initialBikes) : null));
+  const [state, setState] = useState<CatalogState>(
+    () =>
+      hydrated ?? {
+        catalog: STATIC_CATALOG,
+        rows: buildCatalogRows(STATIC_CATALOG, []),
+        origin: "static",
+        snapshotUpdatedAt: null,
+        loading: true,
+      },
+  );
 
   useEffect(() => {
+    if (hydrated) return;
     let cancelled = false;
     (async () => {
       try {
@@ -82,7 +106,7 @@ export function useBikeCatalog(): CatalogState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hydrated]);
 
   return state;
 }

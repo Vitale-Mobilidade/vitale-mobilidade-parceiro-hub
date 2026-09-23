@@ -20,6 +20,7 @@ import {
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
+import { useLoaderData } from "@tanstack/react-router";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
@@ -243,7 +244,8 @@ export default function EscolherBike() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Catálogo dinâmico (planilha oficial via snapshot) com fallback estático.
-  const { catalog } = useBikeCatalog();
+  const quizInitial = useLoaderData({ from: "/escolherbike" });
+  const { catalog } = useBikeCatalog(quizInitial?.ok ? (quizInitial.bikes as unknown[]) : null);
   const catalogRef = useRef(catalog);
   useEffect(() => { catalogRef.current = catalog; }, [catalog]);
 
