@@ -63,14 +63,39 @@ export function parseBrDate(raw: string): string | null {
   return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-/** Token de modelo -> id oficial por igualdade exata normalizada; null se não houver. */
+/**
+ * IDs canônicos das linhas nomeadas atuais da aba de bikes (gid=0), inclusive "Não Elegível" e
+ * pendentes — elegibilidade só afeta o Quiz, não a relação editorial com vídeos. Uso exclusivo de vídeos.
+ */
+export const VIDEO_BIKE_IDS = [
+  ...KNOWN_BIKE_IDS,
+  "bw1", "vl20", "l10", "l20_cross", "v9_pro", "v9_max_s", "v9_max_20ah",
+  "v9_max_ufofast_duas_baterias", "x50_action_pro", "s12", "s14",
+] as const;
+
+/**
+ * Aliases exclusivos de vídeo (chave = token em minúsculas com espaços colapsados, SEM normalizar
+ * parênteses) -> ID canônico. Só nomes inequívocos na aba de bikes atual.
+ * "GT20" sozinho continua ambíguo (Coswheel GT20 x Ouxi GT20) e não é mapeado.
+ */
+export const VIDEO_ONLY_ALIASES: Record<string, string> = {
+  "streetgo s12": "s12",
+  "streetgo s14": "s14",
+  "v9 max (duas baterias)": "v9_max_ufofast_duas_baterias",
+  "gt20 pro": "ouxi_gt20_pro", // único GT20 Pro na aba de bikes
+};
+
+/** Token de modelo -> id oficial por igualdade exata; null se não houver. Nunca substring. */
 export function matchBikeToken(token: string): string | null {
   const t = token.trim();
-  if (!t || /[()]/.test(t)) return null;
+  if (!t) return null;
+  const raw = t.toLowerCase().replace(/\s+/g, " ");
+  if (VIDEO_ONLY_ALIASES[raw]) return VIDEO_ONLY_ALIASES[raw];
+  if (/[()]/.test(t)) return null; // variantes entre parênteses sem alias explícito
   const key = normalizeName(t);
   if (!key) return null;
   if (SHEET_NAME_ALIASES[key]) return SHEET_NAME_ALIASES[key];
-  return (KNOWN_BIKE_IDS as readonly string[]).includes(key) ? key : null;
+  return (VIDEO_BIKE_IDS as readonly string[]).includes(key) ? key : null;
 }
 
 export function buildVideoCatalog(csv: string): VideoItem[] {
