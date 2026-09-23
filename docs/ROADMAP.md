@@ -311,3 +311,23 @@ Revisão do responsável sobre o commit `3637e505` apontou três quebras de cont
 marcado, etapas 1 e 2 bloqueadas quando vazias, orçamento negativo barrado, cenário 0% sem modelos e cenário real
 (Uber, 5 dias, 20 km, 70%) com economia calculada e 3 bikes com link `meli.la`. Nada publicado; Supabase, ofertas,
 links, Quiz e Radar intocados.
+
+### Ajuste visual do topo da calculadora (23/09/2026, PREVIEW, não publicado)
+
+O hero escuro de `/calculadoras/economia` ocupava ~620 px no desktop 1280x720 e empurrava o formulário inteiro para
+abaixo da dobra; no mobile 390x844 o H1 longo ocupava 6 linhas. Ajuste **local desta rota** (sem tocar no hero da
+Home, Bikes ou Radar, nem nos estilos globais `entry-h1`/`section-h2`):
+
+- H1 direto conforme o briefing: "Quanto você pode economizar por mês usando uma bike elétrica?", com override de
+  tamanho apenas nesta página (`text-2xl sm:text-3xl lg:text-4xl`).
+- Suporte reduzido a 2 frases; paddings do topo de `py-12 sm:py-16` para `py-7 sm:py-9` e da área do formulário de
+  `py-10 lg:py-14` para `py-8 lg:py-10`.
+- Primeira escolha do formulário (os 5 modais) visível acima da dobra no desktop 1280x720 e no mobile 390x844.
+
+**Pendência registrada — imagem OG da rota:** a página não exibe imagem própria no hero (topo escuro só com texto),
+e nenhum ativo de marca existente em `public/` é a imagem que a página mostra. Pela regra de OG do projeto
+(`og:image`/`twitter:image` só apontam para a imagem que a página exibe, em tamanho de compartilhamento ~1200x630),
+**nenhuma tag de imagem foi adicionada** — `logo-192.webp` é pequeno demais e os `vitale-hero-*.webp` (1280x720)
+não são exibidos nesta página. Pendência: quando houver uma imagem real desta página (ou decisão de criar uma
+arte 1200x630 aprovada), adicionar `og:image`/`twitter:image` no `head()` da rota. Até lá, o compartilhamento usa
+título e descrição.
