@@ -10,7 +10,7 @@ import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
 import { formatBRL, isSafePurchaseLink } from "@/lib/price-tracker";
-import { dailyMetrics, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
+import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 
