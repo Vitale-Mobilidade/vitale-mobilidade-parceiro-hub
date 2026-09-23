@@ -1105,11 +1105,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
-              {radarIds.has(recommendation.primary.id) && (
-                <Link to="/acompanhamento/$bikeId" params={{ bikeId: recommendation.primary.id }} className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-line text-[15px] font-semibold text-action hover:bg-surface">
-                  Ver histórico de preços no Radar
-                </Link>
-              )}
 
               {reasonPrimary && (
                 <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />
