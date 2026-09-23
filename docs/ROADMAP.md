@@ -58,6 +58,15 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 
 O site legado publicado permanece no ar.
 
+## 3.1 Estado da Home v2 — 23/09/2026
+
+- A Home B2C em `src/pages/HomeB2C.tsx` recebeu **revisão visual substancial** no rascunho: novo hero com a foto original otimizada (`vitale-hero-v2.webp` e variações), barra de atalhos, seção de bikes em destaque, painéis de Radar/calculadora/comparador/conteúdos e bloco de grupo + newsletter.
+- A prévia do rascunho foi inspecionada visualmente (desktop e mobile), mas **a Home v2 continua somente na prévia**. A **versão publicada anterior permanece em produção**; não houve cutover.
+- Nenhuma URL pública foi alterada nesta revisão. O deploy publicado serve ainda a Home anterior.
+- Os CTAs de **comparador**, **calculadora**, **conteúdos** e **newsletter** continuam semanticamente desativados: dependem de backend/rotas (`/comparar`, `/calc`, `/conteudos`, funcionalidade de newsletter) que ainda não existem.
+- A barra de atalhos e o menu superior usam âncoras reais (`#bikes`, `#comparar`, `#conteudos`, `#calc`) e rotas já existentes (`/acompanhamento`, `/escolherbike`, `/grupodeofertas`); nenhum link falso foi criado.
+- Build/typecheck/testes direcionados passaram quando a alteração visual foi entregue, mas esta atualização documental não repetiu a suíte completa.
+
 ## 4. Gates antes de publicar (cutover)
 
 - [ ] Paridade das rotas e jornadas críticas: `/escolherbike`, `/acompanhamento`, detalhe de bike e `/painel-bikes`.
@@ -67,13 +76,14 @@ O site legado publicado permanece no ar.
 - [ ] Baseline do ambiente e recuperação isolada a partir do backup validada.
 - [ ] Aceite operacional e plano de rollback.
 
-> **Nota de baseline/rollback:** O Lovable History registra a ação “Adicionou rota /grupodeofertas” como **Published** em 20/09/2026 18:28 BRT, e essa versão está favoritada. O commit Git legado `6095147846fb1279ee88a77770f5ccb4832f8f79` tem o mesmo título e timestamp `2026-09-20T21:28:54Z`. Essa correspondência indica o ponto de retorno do código publicado, mas **não comprova equivalência byte a byte do artefato servido**, nem substitui o ensaio de restauração de banco/Storage. As mudanças TanStack posteriores a essa marca continuam **não publicadas**.
+> **Nota de baseline/rollback:** O Lovable History registra a ação "Adicionou rota /grupodeofertas" como **Published** em 20/09/2026 18:28 BRT, e essa versão está favoritada. O commit Git legado `6095147846fb1279ee88a77770f5ccb4832f8f79` tem o mesmo título e timestamp `2026-09-20T21:28:54Z`. Essa correspondência indica o ponto de retorno do código publicado, mas **não comprova equivalência byte a byte do artefato servido**, nem substitui o ensaio de restauração de banco/Storage. As mudanças TanStack posteriores a essa marca continuam **não publicadas**.
 
 - Etapa 5 (rascunho): cards da Home B2C agora vêm prontos da server function read-only `getHomeCards` (mesma RPC `get_price_tracker_catalog` via `fetchTrackerCatalog`, mesma regra `buildRadarEntries`, até 6 em ordem alfabética, apenas `{id,name,currentPrice}`; id validado por `BIKE_ID_RE`). Otimização estática: payload menor para o cliente, sem daily/histórico/link afiliado; **sem medida real** de payload, PageSpeed ou CWV; não validada no preview nem publicada. Radar original e suas RPCs intactos.
 
 - Etapa 6 (Main não publicada): contrato preparatório em `docs/BIKE_MODEL.md` (mapa do modelo atual por `bike_id`, autoridade, entidades alvo, `bike_id` vs slug, sequência de reconciliação, riscos). `quiz-catalog-repository.server.ts` passou a usar `BIKE_ID_RE` (comportamento idêntico). **Nenhuma tabela Bike foi criada**, nenhuma migration; ensaio de restauração e schema vivo seguem bloqueando escrita. **Etapa 6 NÃO concluída.**
 
 ## Design System (rascunho)
+
 - Parte 1 e 2 do DS aplicadas no rascunho (Home, Radar, detalhe, resultado do Quiz). Ver docs/DESIGN_SYSTEM.md.
 - Evidências capturadas: 8 screenshots (Home, Radar, detalhe V8 Ultra e resultado do Quiz). Resultado do Quiz fotografado localmente com fixture temporária não comitada, respostas sintéticas, catálogo real/read-only e `leadId` nulo — sem criação de lead, alerta ou webhook.
 - `pnpm validate` passou no commit `82bc781` (typecheck + 26 testes direcionados + build).
