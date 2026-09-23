@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import { fetchBikeHistory, fetchTrackerCatalog } from "./radar-repository.server";
 
@@ -25,7 +25,7 @@ export const getRadarBike = createServerFn({ method: "GET" })
  * Chamado pelos loaders do Radar somente durante o SSR (mesma requisição do documento),
  * nunca em navegação no cliente — assim a resposta RPC das server functions não é afetada.
  */
-export const markRadarUnavailable = createServerFn({ method: "GET" }).handler(async () => {
+export const markRadarUnavailable = createServerOnlyFn(async () => {
   const { setResponseStatus, setResponseHeader } = await import("@tanstack/react-start/server");
   setResponseStatus(503, "Service Unavailable");
   setResponseHeader("Retry-After", "120");
