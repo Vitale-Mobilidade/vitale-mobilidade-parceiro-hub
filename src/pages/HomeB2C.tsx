@@ -146,13 +146,15 @@ function CalculatorPanel() {
     { icon: Bus, label: "Ônibus" },
   ];
   return (
-    <section aria-labelledby="calc" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+    <section aria-labelledby="ferramentas" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+      {/* Alias de âncora para backlinks antigos (/#calc). Sem título duplicado. */}
+      <span id="calc" aria-hidden="true" className="block scroll-mt-24" />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-16 h-48 w-48 rounded-full bg-mint/20" />
       <div className="relative flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Calculator className="h-6 w-6" aria-hidden="true" /></span>
         <p className="text-xs font-bold tracking-[0.2em] text-action">CALCULADORA DE ECONOMIA</p>
       </div>
-      <h2 id="calc" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
+      <h2 id="ferramentas" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
       <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
       <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
         <ul className="flex flex-1 justify-around gap-2">

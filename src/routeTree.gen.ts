@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
+import { Route as FerramentasRouteImport } from './routes/ferramentas'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 const EscolherbikeRoute = EscolherbikeRouteImport.update({
   id: '/escolherbike',
   path: '/escolherbike',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasRoute = FerramentasRouteImport.update({
+  id: '/ferramentas',
+  path: '/ferramentas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
@@ -74,6 +80,7 @@ const RadarBikeIdRoute = RadarBikeIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
+  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
+  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
+  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/escolherbike'
+    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/escolherbike'
+    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/escolherbike'
+    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/acompanhamento/$bikeId'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
+  FerramentasRoute: typeof FerramentasRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   PainelBikesRoute: typeof PainelBikesRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/escolherbike'
       fullPath: '/escolherbike'
       preLoaderRoute: typeof EscolherbikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas': {
+      id: '/ferramentas'
+      path: '/ferramentas'
+      fullPath: '/ferramentas'
+      preLoaderRoute: typeof FerramentasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/grupodeofertas': {
@@ -238,6 +258,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EscolherbikeRoute: EscolherbikeRoute,
+  FerramentasRoute: FerramentasRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
   PainelBikesRoute: PainelBikesRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,

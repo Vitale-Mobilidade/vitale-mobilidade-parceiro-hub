@@ -1,26 +1,40 @@
 # Taxonomia e contrato de rotas — Vitale Mobilidade
 
-> **Status:** contrato inicial da Etapa 4. Slugs, aliases e redirects ainda estão pendentes de reconciliação com 100% dos IDs legados.
+> **Status (23/09/2026):** rotas canônicas vigentes abaixo. `/radar` e `/ferramentas` são rotas reais; `/acompanhamento` e `/calc` são aliases 301. Reconciliação de slugs `/bikes/{slug}` ↔ IDs legados segue pendente.
 
-## 1. Rotas legadas ativas (até paridade/cutover)
+## 1. Rotas públicas vigentes
 
-| Rota                       | Propósito                             | Observação                                                          |
-| -------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
-| `/escolherbike`            | Quiz de recomendação de bike elétrica | Preservada indefinidamente; canonical fixo.                         |
-| `/acompanhamento`          | Radar de preços (listagem)            | Ativa durante a paridade; futuramente redirecionável para `/radar`. |
-| `/acompanhamento/{bikeId}` | Radar de preços (detalhe da bike)     | Usa o `bike_id` legado original. Ativa durante a paridade.          |
+| Rota                | Propósito                             | Observação                                                                        |
+| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
+| `/`                 | Home B2C (orientação)                 | Âncoras internas `#bikes`, `#comparar`, `#ferramentas`, `#conteudos`.             |
+| `/escolherbike`     | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo.    |
+| `/radar`            | Radar de preços (listagem)            | **Canônica.** Publicada e verificada.                                             |
+| `/radar/{bikeId}`   | Radar de preços (detalhe)             | Usa o `bike_id` legado literal, incluindo `_`, sem conversão de formato.          |
+| `/bikes`            | Catálogo/descoberta de bikes          | Lê `get_bikes_public_catalog` (Supabase).                                         |
+| `/bikes/{slug}`     | Página de decisão de uma bike         | `slug` = `bike_id` com `_` → `-`.                                                 |
+| `/ferramentas`      | Hub de ferramentas de decisão         | **Canônica.** Lista só Quiz, Radar e catálogo; comparador/calculadora sem CTA.    |
+| `/grupodeofertas`   | Grupo de ofertas (WhatsApp)           | Retenção.                                                                         |
+| `/painel-bikes`     | Painel operacional                    | `Disallow` no robots.txt.                                                         |
 
-## 2. Rotas futuras reservadas (sem páginas criadas nesta etapa)
+### 1.1 Aliases 301 (compatibilidade)
+
+| Alias                      | Destino               | Regra                                                                     |
+| -------------------------- | --------------------- | ------------------------------------------------------------------------- |
+| `/acompanhamento`          | `/radar`              | 301 server-side, query/UTM preservados.                                   |
+| `/acompanhamento/{bikeId}` | `/radar/{bikeId}`     | 301, `bikeId` literal (sem decodificar/normalizar) + query.               |
+| `/calc`, `/calc/`          | `/ferramentas`        | 301, query/UTM preservados. Não captura `/calculadoras/*`.                |
+| `/#calc` (fragmento)       | bloco da calculadora  | Âncora alias mantida na Home; o ID canônico do bloco é `#ferramentas`.    |
+
+Implementação única em `src/lib/legacy-redirects.ts`, avaliada em `src/server.ts` antes do SSR. Rollback = remover o bloco de redirect e reverter os links de navegação; nada no banco muda.
+
+## 2. Rotas futuras reservadas (sem páginas criadas)
 
 | Rota                | Propósito                    | Restrição                                                                                                                    |
 | ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `/radar`            | Listagem do Radar de preços  | Somente após contrato Bike/oferta validado.                                                                                  |
-| `/radar/{bikeId}`   | Detalhe do Radar             | Usa **o `bike_id` legado original**, incluindo underscore (`_`), sem conversão automática de formato.                        |
-| `/bikes`            | Índice de bikes              | Editorial; requer entidade Bike consolidada.                                                                                 |
-| `/bikes/{slug}`     | Página editorial de uma bike | Usa **slug editorial separado e explícito**, distinto do `bike_id` técnico. Nenhum slug oficial é declarado neste documento. |
-| `/conteudos`        | Hub de conteúdo              | Reservado.                                                                                                                   |
+| `/conteudos`        | Hub de conteúdo              | Reservado. Sem links internos até existir.                                                                                   |
 | `/conteudos/{slug}` | Artigo ou vídeo              | Reservado.                                                                                                                   |
-| `/comparar`         | Comparador de bikes          | Reservado (Etapa 19).                                                                                                        |
+| `/comparar`         | Comparador de bikes          | Reservado (Etapa 19). Sem links internos até existir.                                                                        |
+| `/calculadoras/*`   | Calculadoras futuras         | Reservado; o redirect de `/calc` não interfere neste prefixo.                                                                |
 
 ## 3. Entidade central: Bike
 
@@ -41,9 +55,9 @@ A `Bike` é a raiz do domínio. Ela se relaciona com:
 
 ## 5. Slugs, aliases e redirects
 
-- **Pendentes:** mapeamento de aliases e redirects entre `/acompanhamento/{bikeId}` e `/radar/{bikeId}`, e entre `/bikes/{slug}` e os IDs legados.
-- **Não declarar slug oficial de nenhuma bike neste documento.** A reconciliação deve cobrir 100% dos IDs legados antes do cutover.
-- Futuros redirects (quando aprovados) devem ser 301 e centralizados em configuração de rota, nunca hardcoded em componentes.
+- **Feito:** `/acompanhamento[/{bikeId}]` → `/radar[/{bikeId}]` (301 real, publicado e verificado no domínio); `/calc` e `/calc/` → `/ferramentas` (301, em prévia).
+- **Pendente:** mapeamento explícito entre `/bikes/{slug}` e IDs legados em redirects (hoje o slug é derivado por `_` → `-`, sem tabela de aliases).
+- Redirects são 301 centralizados em `src/lib/legacy-redirects.ts` + `src/server.ts`, nunca hardcoded em componentes.
 
 ## 6. Sitemap
 
@@ -51,11 +65,13 @@ O sitemap só inclui páginas públicas existentes e elegíveis à indexação. 
 
 - `/`
 - `/escolherbike`
-- `/acompanhamento`
+- `/radar`
+- `/bikes`
+- `/ferramentas`
 
-Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `/conteudos`, `/comparar`) ficam fora até que cada uma tenha `head()` SSR e regra de indexação definida.
+Fora do sitemap: painel (bloqueado no robots.txt), aliases 301 (`/acompanhamento`, `/calc`), rotas inexistentes (`/conteudos`, `/comparar`) e páginas de detalhe (`/radar/{bikeId}`, `/bikes/{slug}`) — estas dependem de geração dinâmica do sitemap, para não fixar uma lista que envelhece.
 
-## 7. `/bikes` e `/bikes/{slug}` — implementado em rascunho (23/09/2026)
+## 7. `/bikes` e `/bikes/{slug}` (histórico do rascunho de 23/09/2026 — links de `/acompanhamento` já migrados para `/radar`)
 
 - Fonte: aba oficial de bikes (gid=0), leitura read-only no servidor com cache; inclui todas as linhas nomeadas, inclusive "Não Elegível" (elegibilidade só afeta o Quiz).
 - `bikeId` canônico = mesmo resolvedor do sync (`resolveBikeId`/`normalizeName`); `slug` = `bikeId` com `_` → `-` (ex.: `v9_max_20ah` → `v9-max-20ah`). Colisões de ID/slug descartam a linha repetida, nunca sobrescrevem.
@@ -87,9 +103,12 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 
 ### 7.4 Heróis temáticos das páginas estruturais (23/09/2026, prévia)
 
-Apenas Home, `/bikes` e `/acompanhamento` usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, detalhe de bike e páginas internas não seguem esse padrão.
+Apenas Home, `/bikes` e o Radar (`/radar`) usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, `/ferramentas`, detalhe de bike e páginas internas não seguem esse padrão.
 
+## 8. Radar canônico em `/radar` (Etapa 9 — publicada)
 
-## Radar: rotas-alvo em preview (Etapa 9)
+`/radar` e `/radar/{bikeId}` são as rotas canônicas do Radar, com canonical próprio. `/acompanhamento[/{bikeId}]` responde 301 antes do SSR, preservando `bikeId` literal e query/UTM. Menu, rodapé, Home, `/bikes`, cards, busca, assistente e sitemap apontam para `/radar`.
 
-`/radar` e `/radar/{bikeId}` existem em preview reutilizando a mesma implementação de `/acompanhamento` (loader, página, 503/404). Cada rota tem canonical próprio até o cutover. O menu global, a Home e o sitemap continuam apontando para `/acompanhamento`; sem redirect até aprovação.
+## 9. `/ferramentas` (23/09/2026, prévia)
+
+Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/escolherbike`), Radar (`/radar`) e catálogo (`/bikes`). Comparador e calculadora aparecem em bloco "Em construção", sem CTA, sem número ou resultado. Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
