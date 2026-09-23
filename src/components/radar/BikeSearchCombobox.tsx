@@ -41,7 +41,7 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, lo
   const select = (entry: RadarEntry) => {
     trackRadar("radar_search_selected", { bike_id: entry.id });
     setOpen(false);
-    navigate(`/acompanhamento/${entry.id}`);
+    navigate(`${base}/${entry.id}`);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, BarChart3, BellRing, ExternalLink, Flame, LineChart, Target, TrendingDown, Youtube, BookOpen } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useLoaderData } from "@tanstack/react-router";
+import type { RadarCatalogData } from "@/lib/radar-routes";
+import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +34,9 @@ import {
 const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k"];
 const SORTS: SortKey[] = ["opportunity", "drop", "price", "name"];
 
-const Acompanhamento = () => {
+const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
+  const base = useRadarBase();
   // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
-  const initial = useLoaderData({ from: "/acompanhamento/" });
   const bikes = useMemo<RadarBike[]>(
     () => (initial.ok ? (initial.bikes as unknown as RadarBike[]) : []),
     [initial],
@@ -135,7 +136,7 @@ const Acompanhamento = () => {
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
-            <SectionHeading id="destaque" title={featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"} action={<Link to="/acompanhamento/$bikeId" params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+            <SectionHeading id="destaque" title={featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"} action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
             <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
@@ -170,7 +171,7 @@ const Acompanhamento = () => {
                 <ul className="mt-3 divide-y divide-line">
                   {block.list.map((e) => (
                     <li key={e.id}>
-                      <Link to="/acompanhamento/$bikeId" params={{ bikeId: e.id }} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 py-3 hover:text-action">
+                      <Link to={`${base}/$bikeId` as const} params={{ bikeId: e.id }} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 py-3 hover:text-action">
                         <BikeMedia src={e.image} name={e.name} className="h-12 w-14 rounded-lg" />
                         <span className="min-w-0"><span className="block truncate font-semibold">{e.name}</span><span className="block font-bold text-action">{formatBRL(e.currentPrice)}</span></span>
                         {typeof e.dropPct === "number" && e.dropPct < 0 ? (

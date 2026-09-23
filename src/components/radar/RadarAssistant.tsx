@@ -24,8 +24,9 @@ export function RadarAssistant() {
 
   const path = location.pathname;
   const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes");
-  const isDetail = /^\/acompanhamento\/[^/]+$/.test(path);
-  const isRadar = path === "/acompanhamento";
+  const base = radarBaseFromPath(path);
+  const isDetail = /^\/(?:acompanhamento|radar)\/[^/]+$/.test(path);
+  const isRadar = path === "/acompanhamento" || path === "/radar";
 
   useEffect(() => {
     if (excluded) return;
@@ -91,12 +92,12 @@ export function RadarAssistant() {
           // Nunca aceitamos URL vinda da IA: resolvemos o id no catálogo público.
           const bike = catalog.find((b) => b.id === bikeId);
           if (!bike) {
-            navigate("/acompanhamento");
-            trackRadar("radar_assistant_navigation", { route: "/acompanhamento", reason: "unknown_bike" });
+            navigate(base);
+            trackRadar("radar_assistant_navigation", { route: base, reason: "unknown_bike" });
             return;
           }
-          navigate(`/acompanhamento/${bike.id}`);
-          trackRadar("radar_assistant_navigation", { route: "/acompanhamento/:bikeId", bike_id: bike.id });
+          navigate(`${base}/${bike.id}`);
+          trackRadar("radar_assistant_navigation", { route: `${base}/:bikeId`, bike_id: bike.id });
         }}
         onEvent={(name) => {
           if (name === "sdr_opened") trackRadar("radar_assistant_navigation", { route: path, source: "assistant_open" });
