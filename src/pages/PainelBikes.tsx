@@ -52,7 +52,15 @@ const SHEET_PUBLIC_URL =
 
 const PANEL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bike-panel`;
 
-const storages: PanelStorages = { session: sessionStorage, persistent: localStorage };
+// Lazy getters: this module is also evaluated on the server, where storage doesn't exist.
+const storages: PanelStorages = {
+  get session() {
+    return window.sessionStorage;
+  },
+  get persistent() {
+    return window.localStorage;
+  },
+};
 
 interface PanelData {
   snapshot: { id: string; data: CatalogSnapshot; updated_at: string } | null;

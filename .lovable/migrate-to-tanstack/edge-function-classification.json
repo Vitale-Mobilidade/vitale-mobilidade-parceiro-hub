@@ -1,0 +1,13 @@
+{"functions": [
+  {"name": "bike-image", "classification": "unknown", "signal": "public image URL persisted in catalog data (external caller)", "outcome": "left"},
+  {"name": "bike-image-worker", "classification": "cron target", "signal": "net.http_post in supabase/migrations", "outcome": "left"},
+  {"name": "bike-panel", "classification": "internal-only", "signal": "fetch from PainelBikes; user constraint: do not alter admin panel", "outcome": "left"},
+  {"name": "bike-price-alert", "classification": "internal-only", "signal": "invoked from PriceAlertDialog; left to keep radar backend unchanged", "outcome": "left"},
+  {"name": "bike-profile-worker", "classification": "cron target", "signal": "net.http_post in supabase/migrations", "outcome": "left"},
+  {"name": "quiz-reprocess", "classification": "unknown", "signal": "no src/ call sites", "outcome": "left"},
+  {"name": "quiz-track", "classification": "internal-only", "signal": "invoked from quiz; user constraint: do not alter quiz", "outcome": "left"},
+  {"name": "quiz-webhook", "classification": "internal-only", "signal": "Zoho CRM integration from quiz; user constraint: do not alter quiz/Hotpipe", "outcome": "left"},
+  {"name": "sdr-lucas-chat", "classification": "internal-only", "signal": "invoked from useLucasChat; shared with quiz, kept unchanged", "outcome": "left"},
+  {"name": "sync-bike-catalog", "classification": "cron target", "signal": "net.http_post / cron in supabase/migrations", "outcome": "left"},
+  {"name": "zoho-verify", "classification": "unknown", "signal": "no src/ call sites", "outcome": "left"}
+]}

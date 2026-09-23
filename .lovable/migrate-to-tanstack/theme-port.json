@@ -1,0 +1,16 @@
+{
+  "customizations": [
+    { "token": "HSL color tokens (--primary green, --accent, --ring, sidebar set)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "screens 3xl/4xl", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "maxWidth container-*", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "container centered padding", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "fontFamily sans Inter", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "fontSize hero-sm/md/lg", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "animation fade-in", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "bg-gradient-green", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "text-gradient-green", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "responsive-container", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "full-width-container", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "cta-pulse", "source": "src/index.css", "reappliedIn": "src/styles.css" }
+  ]
+}

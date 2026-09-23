@@ -132,7 +132,7 @@ export async function resolvePageImageUrl(pageUrl: string): Promise<string> {
     const check = checkImageUrl(current);
     if (!check.ok) throw new PageImageError(`Link rejeitado: ${check.reason}`);
 
-    const res = await fetchPage(check.url);
+    const res = await fetchPage(check.url as string);
 
     if (isRedirectStatus(res.status)) {
       const location = res.headers.get("location");
