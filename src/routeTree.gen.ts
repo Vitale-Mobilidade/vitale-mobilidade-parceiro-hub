@@ -21,6 +21,7 @@ import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
 import { Route as CalculadorasCarroVsBikeRouteImport } from './routes/calculadoras/carro-vs-bike'
 import { Route as CalculadorasCustoAnualMobilidadeRouteImport } from './routes/calculadoras/custo-anual-mobilidade'
 import { Route as CalculadorasEconomiaRouteImport } from './routes/calculadoras/economia'
+import { Route as CalculadorasMotoVsBikeRouteImport } from './routes/calculadoras/moto-vs-bike'
 import { Route as CalculadorasPaybackRouteImport } from './routes/calculadoras/payback'
 import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './routes/calculadoras/transporte-publico-vs-bike'
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
@@ -88,6 +89,11 @@ const CalculadorasEconomiaRoute = CalculadorasEconomiaRouteImport.update({
   path: '/calculadoras/economia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CalculadorasMotoVsBikeRoute = CalculadorasMotoVsBikeRouteImport.update({
+  id: '/calculadoras/moto-vs-bike',
+  path: '/calculadoras/moto-vs-bike',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalculadorasPaybackRoute = CalculadorasPaybackRouteImport.update({
   id: '/calculadoras/payback',
   path: '/calculadoras/payback',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
   '/calculadoras/economia': typeof CalculadorasEconomiaRoute
+  '/calculadoras/moto-vs-bike': typeof CalculadorasMotoVsBikeRoute
   '/calculadoras/payback': typeof CalculadorasPaybackRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
+    | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
+    | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
     | '/calculadoras/economia'
+    | '/calculadoras/moto-vs-bike'
     | '/calculadoras/payback'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
   CalculadorasCustoAnualMobilidadeRoute: typeof CalculadorasCustoAnualMobilidadeRoute
   CalculadorasEconomiaRoute: typeof CalculadorasEconomiaRoute
+  CalculadorasMotoVsBikeRoute: typeof CalculadorasMotoVsBikeRoute
   CalculadorasPaybackRoute: typeof CalculadorasPaybackRoute
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalculadorasEconomiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calculadoras/moto-vs-bike': {
+      id: '/calculadoras/moto-vs-bike'
+      path: '/calculadoras/moto-vs-bike'
+      fullPath: '/calculadoras/moto-vs-bike'
+      preLoaderRoute: typeof CalculadorasMotoVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calculadoras/payback': {
       id: '/calculadoras/payback'
       path: '/calculadoras/payback'
@@ -388,6 +408,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
   CalculadorasCustoAnualMobilidadeRoute: CalculadorasCustoAnualMobilidadeRoute,
   CalculadorasEconomiaRoute: CalculadorasEconomiaRoute,
+  CalculadorasMotoVsBikeRoute: CalculadorasMotoVsBikeRoute,
   CalculadorasPaybackRoute: CalculadorasPaybackRoute,
   CalculadorasTransportePublicoVsBikeRoute:
     CalculadorasTransportePublicoVsBikeRoute,
