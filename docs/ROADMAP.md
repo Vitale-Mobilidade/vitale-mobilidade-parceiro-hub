@@ -38,8 +38,12 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 
 - **Etapa 1**: em andamento. A conversão nativa no próprio Lovable foi feita e ainda **não foi publicada**.
 - Radar e Quiz possuem leitura SSR parcial (catálogo/histórico de preços).
-- Build da versão `f934d4104baaf172e82296ff6249caea2fd85a95` passou; isso comprova compilação, não paridade funcional nem o 503 em falha real.
-- No detalhe legado do Radar, o código agora distingue bike inexistente (marcador SSR 404) de falha temporária (marcador SSR 503 e mensagem própria), mas os status reais ainda não foram confirmados em runtime.
+- Build do commit `16e6bbe741d867a07ba9af73ac7926fface8d15e` passou; isso comprova compilação, não paridade funcional.
+- `/acompanhamento/d50_cross` respondeu 200 no preview com nome e preço no HTML inicial.
+- A bike ausente (`/acompanhamento/zz_vitale_inexistente_404`) inicialmente respondeu 200; após a correção nativa `throw notFound()` no commit `16e6bbe741d867a07ba9af73ac7926fface8d15e`, passou a responder 404 com `noindex, follow`, sem preço nem link de compra.
+- Falha real 503 **não foi simulada**.
+- `/painel-bikes` sem sessão apresentou apenas shell vazia no HTML inicial e herdou metadata geral indexável.
+- Rota desconhecida respondeu 404, mas também herdou metadata geral.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
 - **Etapa 2** tem apenas metadata parcial do Radar; **não está concluída**.
 - **Etapas 3 a 25**: não concluídas.
