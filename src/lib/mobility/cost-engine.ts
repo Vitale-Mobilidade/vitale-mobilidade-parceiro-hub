@@ -241,6 +241,8 @@ export type AnnualCostInput = {
   replaceablePercent: number;
 };
 
+export type AnnualCategory = "carMoto" | "rideHailing" | "publicTransport" | "parkingOther";
+
 export type AnnualCostResult =
   | {
       ok: true;
@@ -249,7 +251,7 @@ export type AnnualCostResult =
         annualTotal: number;
         replaceableMonthly: number;
         replaceableAnnual: number;
-        largestCategory: keyof Omit<AnnualCostInput, "replaceablePercent"> | null;
+        largestCategory: AnnualCategory | null;
       };
     }
   | { ok: false; errors: string[] };
@@ -271,7 +273,7 @@ export function computeAnnualMobilityCost(input: AnnualCostInput): AnnualCostRes
   };
   const monthlyTotal = roundMoney(Object.values(cats).reduce((a, b) => a + b, 0));
   const replaceableMonthly = roundMoney(monthlyTotal * (input.replaceablePercent / 100));
-  let largestCategory: AnnualCostResult extends { ok: true; data: infer D } ? D extends { largestCategory: infer L } ? L : never : never = null;
+  let largestCategory: AnnualCategory | null = null;
   let max = 0;
   for (const [key, value] of Object.entries(cats) as [keyof typeof cats, number][]) {
     if (value > max) { max = value; largestCategory = key; }
