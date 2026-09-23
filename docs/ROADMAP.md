@@ -1,6 +1,6 @@
 # Roadmap Vitale Mobilidade
 
-> **Nota de desenvolvimento de 23/09/2026:** a branch `feat/admin-editorial-p0` prepara localmente a base do Admin editorial, Article/Relations, Compiler, preview e publicação. **Nada foi aplicado no Supabase nem publicado.** Etapas 12–14 continuam parciais/em desenvolvimento e a Etapa 15 (primeiro artigo real) ainda não ocorreu. O painel `/painel-bikes` continua operacional. Veja [ADMIN_EDITORIAL_P0.md](./ADMIN_EDITORIAL_P0.md) para escopo, papéis, gates e rollback.
+> **Atualização de release em 23/09/2026:** o Admin editorial P0, as rotas públicas de conteúdo, seis tabelas privadas, RLS e a Edge Function `editorial-admin` foram integrados e publicados no Lovable. **Etapas 12–14 estão parciais, não concluídas:** ainda não existe usuário Auth provisionado, fluxo editorial exercitado com transcrição real nem artigo publicado. A Etapa 15 permanece pendente. O painel `/painel-bikes` e a operação comercial continuam intactos. A tabela histórica abaixo precisa de reauditoria geral antes de ser usada como status atual. Veja [ADMIN_EDITORIAL_P0.md](./ADMIN_EDITORIAL_P0.md).
 
 > Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).
 
