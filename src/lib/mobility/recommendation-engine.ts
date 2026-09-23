@@ -162,7 +162,7 @@ export function recommendQuickComparison(
       role: "alternativa",
       budgetRemaining: remaining(alternative),
       tradeoff,
-      reason: `Alternativa à ${first.name}: ${priceText} por ${gains}. ${buildReason(alternative, criteria)}`,
+      reason: `Alternativa à ${first.name}: ${priceText} por ${gains}${tradeoff.extraAutonomyKm < 0 ? `, com ${Math.abs(tradeoff.extraAutonomyKm)} km a menos de autonomia` : ""}. ${buildReason(alternative, criteria)}`,
     });
   }
   return { ok: true, bikes: bikes.slice(0, MAX_QUICK_RECOMMENDATIONS), eligibleCount: byPrice.length };
