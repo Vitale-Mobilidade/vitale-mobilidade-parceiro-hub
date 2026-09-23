@@ -1,18 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { trackAffiliateClick, AFFILIATE_CLICK_EVENT } from "./affiliate-analytics";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var window: any;
+const g = globalThis as unknown as { window?: { dataLayer?: Record<string, unknown>[]; location?: { pathname: string } } };
+
+function setWindow(win: unknown) {
+  g.window = win as typeof g.window;
 }
 
 function layer() {
-  return (globalThis.window as { dataLayer?: Record<string, unknown>[] }).dataLayer ?? [];
+  return g.window?.dataLayer ?? [];
 }
 
 describe("affiliate analytics", () => {
   beforeEach(() => {
-    globalThis.window = { dataLayer: [], location: { pathname: "/bikes/v8-ultra" } };
+    setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
   });
 
   it("emite payload mínimo permitido, com rota e destino", () => {
@@ -28,7 +29,7 @@ describe("affiliate analytics", () => {
       position: "radar_detail",
       route: "https://meli.la/abc123",
       // chaves não permitidas propositalmente
-      ...({ email: "a@b.com", name: "Guilherme", url: "https://meli.la/abc123", price: 4999 } as never),
+      ...({ email: "a@b.com", name: "Guilherme", url: "https://meli.la/abc123", price: 4999 } as Record<string, unknown>),
     });
     const evt = layer()[0] as Record<string, unknown>;
     expect(Object.keys(evt).sort()).toEqual(["bike_id", "destination", "event", "position"]);
@@ -41,27 +42,26 @@ describe("affiliate analytics", () => {
   });
 
   it("nunca lança quando o dataLayer falha (não bloqueante)", () => {
-    globalThis.window = {
+    setWindow({
       location: { pathname: "/bikes" },
-      get dataLayer() {
+      get dataLayer(): never {
         throw new Error("bloqueado");
       },
-    };
+    });
     expect(() => trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_catalog" })).not.toThrow();
   });
 
   it("é no-op no servidor (SSR)", () => {
-    const w = globalThis.window;
-    // @ts-expect-error simulando SSR
-    delete globalThis.window;
+    const w = g.window;
+    delete g.window;
     expect(() => trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_highlight" })).not.toThrow();
-    globalThis.window = w;
+    g.window = w;
   });
 });
 
 describe("CTA de compra preserva href exato e não bloqueia", () => {
   it("o handler não chama preventDefault nem retorna promise", () => {
-    globalThis.window = { dataLayer: [], location: { pathname: "/bikes/v8-ultra" } };
+    setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
     const preventDefault = vi.fn();
     const handler = () => trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero" });
     const result = handler() as unknown;
