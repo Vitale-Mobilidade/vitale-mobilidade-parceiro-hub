@@ -295,13 +295,14 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
         )}
       </main>
 
-      {bike && (
+      {/* Alerta só existe com preço atual de referência. */}
+      {bike && hasOffer && currentPrice !== null && (
         <PriceAlertDialog
           open={alertOpen}
           onOpenChange={setAlertOpen}
           bikeId={bike.id}
           bikeName={bike.name}
-          currentPrice={bike.currentPrice}
+          currentPrice={currentPrice}
         />
       )}
 
