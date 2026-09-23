@@ -42,6 +42,7 @@ O legado publicado continua no ar até que a paridade funcional seja validada e 
 - `/acompanhamento/d50_cross` respondeu 200 no preview com nome e preço no HTML inicial.
 - A bike ausente (`/acompanhamento/zz_vitale_inexistente_404`) inicialmente respondeu 200; após a correção nativa `throw notFound()` no commit `16e6bbe741d867a07ba9af73ac7926fface8d15e`, passou a responder 404 com `noindex, follow`, sem preço nem link de compra.
 - Falha real 503 **não foi simulada**.
+  - **Nota:** revisão estática do código instalado (`@tanstack/react-router` v1.170.18) indica que `renderRouterToStream` usa o status do router (200/404/500/redirect) e não garante a propagação de `setResponseStatus(503)` chamado por `markRadarUnavailable`; portanto o 503, `Retry-After` e `Cache-Control` ainda não estão comprovados no documento SSR e devem ser tratados como bloqueio de release. A correção de servidor/middleware e a validação com falha controlada ficam pendentes de escopo/autorização, sem afetar o Supabase real.
 - `/painel-bikes` sem sessão apresentou apenas shell vazia no HTML inicial e herdou metadata geral indexável.
 - Rota desconhecida respondeu 404, mas também herdou metadata geral.
 - **Testes posteriores ao último commit não foram executados**, por instrução do responsável.
