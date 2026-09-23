@@ -70,11 +70,16 @@ export function ArchivedHistorySection({ bikes, base }: { bikes: ArchivedBike[];
               <BikeMedia src={b.image} name={b.name} className="h-14 w-16 shrink-0 rounded-lg" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold text-ink">{b.name}</span>
-                <span className="block text-sm text-muted-foreground">Link indisponível no momento</span>
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-destructive">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-destructive" />
+                  Sem oferta no Mercado Livre
+                </span>
+                {b.lastObservedPrice !== null && (
+                  <span className="block font-bold text-ink">Último preço registrado: {formatBRL(b.lastObservedPrice)}</span>
+                )}
                 {b.lastObservedAt && (
                   <span className="block text-sm text-muted-foreground">
-                    Último preço registrado em {formatDateBR(b.lastObservedAt)}
-                    {b.lastObservedPrice !== null && `: ${formatBRL(b.lastObservedPrice)}`}
+                    Registrado em {formatDateBR(b.lastObservedAt)} · pode não ser o preço de hoje
                   </span>
                 )}
               </span>

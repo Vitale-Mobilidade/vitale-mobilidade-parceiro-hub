@@ -1,11 +1,14 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import { VERIFICATION_LABEL, type DailyPoint } from "@/lib/price-daily";
+import { lastRealIndex, unavailableMessage } from "@/lib/radar-unavailable";
 
 interface Props {
   series: DailyPoint[];
   /** Altura reduzida para o painel compacto do Radar (padrão: altura original). */
   compact?: boolean;
+  /** Marca em vermelho o ponto mais recente: oferta indisponível no Mercado Livre. */
+  markLastUnavailable?: boolean;
 }
 
 interface Row {
@@ -14,11 +17,13 @@ interface Row {
   /** Linha-base contínua: valor em todo dia com preço; null apenas em lacuna real. */
   value: number | null;
   reconstructed: boolean;
+  unavailable: boolean;
   point: DailyPoint | null;
 }
 
-function toRows(series: DailyPoint[]): Row[] {
-  return series.map((p) => {
+function toRows(series: DailyPoint[], markLastUnavailable: boolean): Row[] {
+  const unavailableIdx = markLastUnavailable ? lastRealIndex(series) : -1;
+  return series.map((p, i) => {
     const missing = p.verification === "missing";
     const value = !missing && Number.isFinite(p.close) ? p.close : null;
     return {
@@ -26,6 +31,7 @@ function toRows(series: DailyPoint[]): Row[] {
       label: formatDateBR(p.date),
       value,
       reconstructed: p.verification === "reconstructed",
+      unavailable: i === unavailableIdx,
       point: missing ? null : p,
     };
   });
@@ -35,6 +41,11 @@ function toRows(series: DailyPoint[]): Row[] {
 function DayDot(props: { cx?: number; cy?: number; payload?: Row }) {
   const { cx, cy, payload } = props;
   if (cx === undefined || cy === undefined || !payload || payload.value === null) return null;
+  if (payload.unavailable) {
+    return (
+      <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth={1.5} />
+    );
+  }
   return payload.reconstructed ? (
     <circle cx={cx} cy={cy} r={2.5} fill="hsl(var(--background))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
   ) : (
@@ -65,12 +76,15 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
       )}
       {p.lastVerifiedAt && <p className="text-muted-foreground">Última verificação: {formatDateTimeBR(p.lastVerifiedAt)}</p>}
       <p className="text-muted-foreground">{VERIFICATION_LABEL[p.verification]}</p>
+      {row.unavailable && (
+        <p className="mt-1 max-w-[16rem] font-medium text-destructive">{unavailableMessage(row.date)}</p>
+      )}
     </div>
   );
 }
 
-export function DailyPriceChart({ series, compact = false }: Props) {
-  const rows = toRows(series);
+export function DailyPriceChart({ series, compact = false, markLastUnavailable = false }: Props) {
+  const rows = toRows(series, markLastUnavailable);
   if (rows.length === 0) {
     return (
       <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">

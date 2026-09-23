@@ -10,6 +10,8 @@ import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
+import { UnavailableExplainer } from "@/components/radar/UnavailableExplainer";
+import { UNAVAILABLE_LEGEND } from "@/lib/radar-unavailable";
 import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
@@ -181,18 +183,22 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     </p>
                   </>
                 ) : (
-                  /* Sem oferta atual: nenhum preço atual, farol, CTA de compra ou alerta. */
+                  /* Sem oferta atual: mantemos o último preço REAL registrado, rotulado como histórico.
+                     Sem farol, sem CTA de compra e sem alerta que prometa oferta. */
                   <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
-                    <p className="font-bold text-ink">Link indisponível no momento</p>
-                    {bike.lastObservedAt ? (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Último preço registrado em {formatDateBR(bike.lastObservedAt)}
-                        {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 && `: ${formatBRL(bike.lastObservedPrice)}`}.
-                        Esse valor é histórico e não representa o preço de hoje.
+                    <p className="text-sm font-semibold text-muted-foreground">Último preço registrado</p>
+                    {typeof bike.lastObservedPrice === "number" && bike.lastObservedPrice > 0 ? (
+                      <p className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
+                        {formatBRL(bike.lastObservedPrice)}
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm text-muted-foreground">Não há preço atual registrado para este modelo.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Não temos preço registrado para este modelo.</p>
                     )}
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Sem oferta disponível no Mercado Livre no momento.
+                      {bike.lastObservedAt && ` Registrado pela Vitale em ${formatDateBR(bike.lastObservedAt)}; pode não ser o preço de hoje.`}
+                    </p>
+                    <UnavailableExplainer dateISO={bike.lastObservedAt} className="mt-3" />
                   </div>
                 )}
 
@@ -235,7 +241,14 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     </p>
                   </div>
                   <div className="px-4 py-4 sm:px-6">
-                    <DailyPriceChart series={archivedSeries} compact />
+                    <DailyPriceChart series={archivedSeries} compact markLastUnavailable />
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-destructive" />
+                        {UNAVAILABLE_LEGEND}
+                      </span>
+                      <UnavailableExplainer dateISO={bike.lastObservedAt} label="Entenda o ponto vermelho" />
+                    </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
                       sem verificação — nunca repetimos um preço que não confirmamos.
