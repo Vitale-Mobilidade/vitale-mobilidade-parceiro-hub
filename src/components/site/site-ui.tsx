@@ -16,10 +16,10 @@ export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
   const sub = tone === "dark" ? "text-mint" : "text-action";
   return (
     <Link to="/" className="flex min-w-0 items-center gap-2" aria-label="Vitale Mobilidade — início">
-      <img src={logo96} srcSet={`${logo96} 1x, ${logo192} 2x`} alt="" width={40} height={40} decoding="async" className="h-10 w-10 shrink-0 rounded bg-background" />
+      <img src={logo96} srcSet={`${logo96} 1x, ${logo192} 2x`} alt="" width={48} height={48} decoding="async" className="h-12 w-12 shrink-0 rounded bg-background" />
       <span className="leading-none">
-        <span className={`block text-base font-extrabold tracking-tight ${name}`}>VITALE</span>
-        <span className={`block text-xs font-bold tracking-[0.2em] ${sub}`}>MOBILIDADE</span>
+        <span className={`block text-xl font-black tracking-tight ${name}`}>VITALE</span>
+        <span className={`block text-[11px] font-bold tracking-[0.28em] ${sub}`}>MOBILIDADE</span>
       </span>
     </Link>
   );
@@ -51,8 +51,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
       <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
         <Brand />
-        <nav aria-label="Principal" className="hidden items-center gap-8 text-[15px] font-semibold text-ink-foreground lg:flex">
-          {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="hover:text-mint" />)}
+        <nav aria-label="Principal" className="hidden items-center gap-9 text-base font-semibold text-ink-foreground lg:flex">
+          {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="relative py-2 transition-colors hover:text-mint after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:scale-x-0 after:bg-mint after:transition-transform hover:after:scale-x-100" />)}
         </nav>
         <Link to="/grupodeofertas" className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
           Grupo de Ofertas
@@ -84,14 +84,15 @@ export function SiteFooter() {
       { label: "Calculadora de economia", href: "/#calc" },
       { label: "Conteúdos e testes", href: "/#conteudos" },
     ] },
-    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
+    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }, { label: "Quiz de perfil", to: "/escolherbike" }] },
   ];
   return (
     <footer className="bg-vt-dark text-ink-foreground/80">
-      <div className="responsive-container grid gap-10 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <div className="responsive-container grid gap-10 py-14 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
           <Brand />
-          <p className="mt-4 max-w-xs">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
+          <p className="mt-4 max-w-xs leading-relaxed">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
+          <Link to="/escolherbike" className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Escolher minha bike</Link>
         </div>
         {cols.map((c) => (
           <nav key={c.title} aria-label={c.title}>
