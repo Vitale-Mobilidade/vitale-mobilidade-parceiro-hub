@@ -297,14 +297,14 @@ function CalculadoraEconomia() {
       <SiteHeader />
       <main>
         <section className="bg-ink text-ink-foreground">
-          <div className="responsive-container py-12 sm:py-16">
+          <div className="responsive-container py-7 sm:py-9">
             <p className="text-xs font-bold tracking-[0.2em] text-mint">CALCULADORA DE ECONOMIA</p>
-            <h1 className="entry-h1 mt-3 max-w-3xl">
-              Quanto você economiza trocando parte dos seus trajetos por uma bike elétrica
+            <h1 className="entry-h1 mt-2 max-w-3xl text-2xl sm:text-3xl lg:text-4xl">
+              Quanto você pode economizar por mês usando uma bike elétrica?
             </h1>
-            <p className="mt-4 max-w-2xl text-lg text-ink-foreground/80">
-              Você informa os seus custos de hoje e quanto do trajeto pretende substituir. O cálculo é o mesmo para
-              todo mundo, aparece na tela inteiro e não pede nome, e-mail nem telefone.
+            <p className="mt-3 max-w-2xl text-base text-ink-foreground/80 sm:text-lg">
+              Informe seus custos de hoje e quanto do trajeto pretende substituir: o cálculo aparece inteiro na tela,
+              sem pedir nome, e-mail nem telefone.
             </p>
           </div>
         </section>
