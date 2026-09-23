@@ -8,18 +8,18 @@ interface State { hasError: boolean }
  * Falhas dentro do widget NUNCA devem derrubar a página /escolherbike.
  */
 export class LucasSDRErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false };
+  override state: State = { hasError: false };
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
-  componentDidCatch(error: unknown, info: unknown) {
+  override componentDidCatch(error: unknown, info: unknown) {
     // Log only — do not rethrow.
     console.error("[LucasSDR] runtime error captured by boundary:", error, info);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) return this.props.fallback ?? null;
     return this.props.children;
   }
