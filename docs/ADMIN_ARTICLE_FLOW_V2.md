@@ -42,3 +42,12 @@ Na prévia, o operador vê o artigo como público, imagem social, bike detectada
 4. Conferir HTML SSR e metadata por artigo, além de ausência de regressão em Quiz, Sheets e Radar.
 
 Rollback do código: reverter somente a branch/commit editorial; não há migration nesta revisão. Dados editoriais existentes permanecem preservados. Não publicar o fluxo enquanto estes gates operacionais não forem concluídos.
+
+## Revisão 23/09/2026 (noite) — artigo independente e publicação por status
+
+- Criação: URL + título + transcrição → **Gerar artigo** (uma chamada com progresso) → rascunho completo. O modelo escreve um artigo independente do vídeo (prompt v2, `openai/gpt-6-astra`); menções ao vídeo passam por uma reescrita automática.
+- Sem revisão humana obrigatória e sem trecho literal por parágrafo. O QA automático remove preços em reais, links, FAQ sem resposta e seções "Seção" sem título; também completa SEO/OG. Só bloqueia artigo sem corpo, URL inválida, IA indisponível ou falha ao salvar.
+- Status visível: Rascunho, Publicado e Arquivado. Mudar para Publicado coloca a página no ar, atualiza o sitemap e os relacionados. Editar um artigo publicado atualiza a página pública.
+- Vídeo, comparação, Radar (as duas bikes em comparativos), oferta, FAQ e Quiz entram por layout determinístico, sempre com dados reais das entidades. Sem link para /comparar enquanto a rota não existir.
+- Migração: a regra de publicação no banco não exige mais revisão; foi inserida a versão 2 do prompt. Nenhum dado foi apagado.
+- Primeiro teste: V9 Max S vs Ufofast regenerado e publicado em /conteudos/v9-max-s-vs-v9-max-ufofast-qual-comprar-2-baterias (autorizado pelo responsável).
