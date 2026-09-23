@@ -165,6 +165,11 @@ export function BikeResultCard({
       )}
       <div className="border-t border-line p-4">
         <p className="text-sm text-ink">{bike.reason}</p>
+        {typeof bike.budgetRemaining === "number" && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {bike.budgetRemaining > 0 ? `${brl(bike.budgetRemaining)} abaixo do seu teto de preço.` : "No limite do seu teto de preço."}
+          </p>
+        )}
         {projection?.ok && (
           <div className="mt-3 rounded-md bg-surface p-3 text-sm ring-1 ring-line">
             <p className="font-bold text-ink">
@@ -204,5 +209,22 @@ export function BikeResultCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/** Explica o que realmente filtra a seleção e oferece o Quiz como refinamento opcional (sem bloco genérico). */
+export function RecommendationFooter({ budgetInformed, eligibleCount }: { budgetInformed: boolean; eligibleCount: number }) {
+  return (
+    <div className="mt-5 space-y-3 text-sm leading-relaxed text-muted-foreground">
+      <p>
+        {eligibleCount} bike{eligibleCount === 1 ? "" : "s"} com oferta atual {eligibleCount === 1 ? "atende" : "atendem"} aos filtros. As sugestões só mudam quando distância, garupa ou teto de preço mudam — o gasto informado não altera quais bikes cabem no trajeto.
+        {!budgetInformed && " Sem teto de preço, a seleção considera apenas distância, garupa e menor preço; escolha um teto acima para comparar dentro dele."}
+      </p>
+      <p>
+        <Link to="/escolherbike" className="inline-flex min-h-11 items-center font-bold text-action underline-offset-4 hover:underline">
+          Quer considerar ladeira, peso e tipo de uso? Refine no Quiz
+        </Link>
+      </p>
+    </div>
   );
 }
