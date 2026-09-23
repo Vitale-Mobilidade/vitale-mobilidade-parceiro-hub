@@ -148,3 +148,9 @@ Referência de **hierarquia/densidade** (padrão "price insights"), não de bran
 - Para histórico suficiente, o veredito corresponde estritamente a `lowest`/`good`/`typical`/`above` já calculados por `dailyMetrics`; o painel não recalcula nem cria valores.
 - Gráfico: `DailyPriceChart` ganhou a prop `compact` (180px mobile / 200px desktop) usada só pelo Radar; sem `compact` o componente mantém a altura original em `/bikes/$slug`. Lacunas, proveniência (ponto cheio = verificado, vazado = reconstruído) e tooltips inalterados.
 - `PriceRangeBar` permanece em uso apenas por `/bikes/$slug`.
+
+### Radar sem oferta atual (histórico arquivado)
+
+- Lista `/radar`: seção "Histórico arquivado (N)" no fim do catálogo, fora dos rankings, do destaque e dos indicadores ("Bikes monitoradas" conta só ofertas ativas). Cada item é um link para o detalhe, com `Link indisponível no momento` e, quando existe dado, `Último preço registrado em [data]: [valor]`. Sem farol, sem CTA do Mercado Livre e sem alerta de preço.
+- Detalhe `/radar/{bikeId}` sem oferta atual: selo neutro "Histórico arquivado" no lugar do selo de classificação, bloco `Link indisponível no momento` com o último preço registrado rotulado como histórico, e painel "Histórico registrado" (gráfico `compact`) com a contagem real de dias confirmados e reconstruídos e a data inicial. Nunca há preço atual, farol, CTA de compra ou alerta.
+- `PriceIntelPanel` passa a declarar a evidência da janela: "Dados usados nesta janela: X dia(s) confirmados e Y reconstruído(s), em Z dia(s) do período · a partir de [data]". Em `forming`, uma linha adicional explica o critério (14 dias confirmados, 80% de cobertura, mais de um preço distinto) e aponta o período "Tudo". A regra de `dailyMetrics` não mudou.
