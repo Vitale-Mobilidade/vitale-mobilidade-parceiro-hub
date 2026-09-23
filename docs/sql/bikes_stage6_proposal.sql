@@ -62,8 +62,9 @@ COMMIT;
 -- FROM public.bike_catalog_snapshot s,
 --      jsonb_array_elements(s.data->'bikes') b
 -- WHERE s.id = 'current'
--- ON CONFLICT (bike_id) DO NOTHING;
--- Specs: preencher em passo separado após mapear as chaves reais do JSON.
+-- ;  -- sem ON CONFLICT: conflito deve falhar e ser investigado.
+-- Demais campos (autonomia, velocidade, motor, bateria, capacity_people)
+-- ficam NULL; preenchidos em tarefa separada com fonte validada.
 
 -- =====================================================================
 -- PARIDADE (leitura)

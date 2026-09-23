@@ -93,17 +93,21 @@ Observação: `docs/SQUAD_GOVERNANCE.md` e `AGENTS.md` não existem neste reposi
 
 ## 11. Proposta de schema `bikes` (não aplicada)
 Arquivo: `docs/sql/bikes_stage6_proposal.sql` — fora de `supabase/migrations/`, para teste manual isolado pelo responsável. **Não testado pelo Lovable.**
-- `bike_id` texto PK imutável (trigger bloqueia alteração); `slug` editorial explícito `UNIQUE`; `name`; specs permitidas (autonomia, velocidade, motor, bateria, capacidade, `specs` JSONB com CHECK que proíbe chaves comerciais).
+- Aditiva e **fail-fast**, não idempotente: `CREATE TABLE`, `CREATE FUNCTION` e `CREATE TRIGGER` sem `IF NOT EXISTS`/`OR REPLACE`/`DROP` prévio; reexecução falha em vez de substituir ou ocultar drift.
+- `bike_id` texto PK imutável (trigger bloqueia alteração); `slug` editorial explícito `UNIQUE`; `name`; campos estruturados nullable: `autonomy_km`, `max_speed_kmh`, `motor_w`, `battery`, `capacity_people` (smallint, 1 ou 2, alinhado ao snapshot).
+- Sem campo JSONB livre de specs: um CHECK de chaves de topo não impediria preço/link aninhados. Demais fatos entram depois, com fonte validada.
 - **Sem** preço, link afiliado, elegibilidade/status ou PII.
 - RLS ligado, sem policies; `REVOKE` de anon/authenticated; só `service_role`. Leitura pública futura apenas via RPC revisada.
-- Backfill (comentado): somente os 30 IDs do snapshot `current`, slug = `bike_id` com `_`→`-` (igual a `/bikes` hoje). `jflsjdlksjdl` e `v9_max_duas_baterias` **excluídos** até decisão.
+- Backfill (comentado): somente `bike_id`/`slug`/`name` dos 30 IDs do snapshot `current`, slug = `bike_id` com `_`→`-` (igual a `/bikes` hoje), sem `ON CONFLICT`. `jflsjdlksjdl` e `v9_max_duas_baterias` **excluídos** até decisão.
 - Paridade: diferença de conjuntos snapshot × `bikes` = 0 nos dois sentidos; contagem 30; slugs iguais aos atuais; md5 do JSON das três RPCs igual antes/depois.
 - Rollback não destrutivo: nada lê a tabela; RPCs/writer continuam fonte; preservar tabela e dados; DROP só em tarefa separada com backup e autorização.
 - CHECK de `bike_id` espelha `BIKE_ID_RE` (`^[a-z0-9][a-z0-9_-]{0,63}$`, case-insensitive).
 
+**Ensaio da proposta anterior (responsável, PostgreSQL 17 isolado/restaurado, 23/09/2026):** tabela criada; backfill manual inseriu 30 IDs; 0 faltantes, 0 extras; 30 slugs únicos; RLS `true`; `SELECT` anon/authenticated `false`, service_role `true`. Esse ensaio usou a versão anterior (com `specs` JSONB, `capacity` texto e comandos tolerantes a reexecução); a versão fail-fast atual será reaplicada pelo responsável. **Não libera o Gate 0** nem autoriza aplicação no vivo.
+
 ## 12. Revisão compacta (8 perspectivas) — incremento Gate 0 + proposta
 - **Produto:** nenhuma mudança visível; entidade Bike ganha forma sem afetar Quiz/Radar.
-- **CTO:** proposta aditiva, idempotente, fora do fluxo de migrations; nenhuma dependência nova.
+- **CTO:** proposta aditiva e fail-fast (reexecução falha, sem mascarar drift), fora do fluxo de migrations; nenhuma dependência nova.
 - **IA:** `bike_id` estável como âncora; nenhum dado gerado; specs só da planilha.
 - **Segurança:** RLS + revoke; sem PII/links; evidência do ensaio sem PII; nada aplicado no vivo.
 - **UX:** nenhuma alteração; slugs do backfill iguais aos atuais.
