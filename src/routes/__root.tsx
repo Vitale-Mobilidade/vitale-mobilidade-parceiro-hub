@@ -115,7 +115,9 @@ function RootComponent() {
       <HelmetProvider context={{}}>
         <Outlet />
         {/* Assistente Vitale: instância única. /escolherbike monta a sua própria. */}
-        <RadarAssistant />
+        <Suspense fallback={null}>
+          <RadarAssistant />
+        </Suspense>
       </HelmetProvider>
     </QueryClientProvider>
   );
