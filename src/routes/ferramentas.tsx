@@ -51,6 +51,15 @@ const TOOLS = [
     body: "Informe o gasto que a bike evitaria e sua rotina para ver o prazo de retorno e o saldo em 12, 24 e 36 meses de até duas bikes reais com oferta atual.",
   },
   {
+    key: "uber-vs-bike",
+    icon: Calculator,
+    title: "Uber/99 vs bike",
+    to: "/calculadoras/uber-vs-bike" as const,
+    cta: "Comparar com meu gasto em apps",
+    question: "Uber/99 ou bike: qual sai mais barato?",
+    body: "Informe seu gasto mensal com corridas por app e sua rotina para ver a economia líquida mensal e anual e o custo acumulado de até duas bikes reais com oferta atual.",
+  },
+  {
     key: "quiz",
     icon: Sparkles,
     title: "Quiz de perfil",
