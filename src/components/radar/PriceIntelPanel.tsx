@@ -82,15 +82,18 @@ export function PriceIntelPanel({
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
         <div className="min-w-0">
           <h2 id={headingId} className="text-lg font-bold text-ink">
-            O preço atual está bom?
+            Preço atual e registros da Vitale
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Comparação com o histórico registrado pela Vitale ({WINDOW_LABEL[String(window)]}).
+            Preço de hoje comparado aos preços que registramos ({WINDOW_LABEL[String(window)]}).
           </p>
         </div>
-        <p className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${verdictTone}`}>
-          {forming ? "Histórico em formação" : CLASSIFICATION_LABEL[classification]}
-        </p>
+        {/* Selo só quando a leitura é conclusiva; nunca um selo grande para histórico curto. */}
+        {!forming && (
+          <p className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${verdictTone}`}>
+            {CLASSIFICATION_LABEL[classification]}
+          </p>
+        )}
       </div>
 
       <div className="px-4 py-4 sm:px-6">
