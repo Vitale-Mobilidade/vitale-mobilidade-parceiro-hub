@@ -18,7 +18,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
 
   return (
     <article
-      className={`group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+      className={`group flex flex-col overflow-hidden rounded-3xl border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl ${
         highlight ? "border-primary/30" : "border-border/60"
       }`}
     >
@@ -27,7 +27,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
         aria-label={`Ver análise de preço da ${entry.name}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        <div className={`flex items-center justify-center overflow-hidden bg-green-50/70 ${highlight ? "h-64" : "h-52"}`}>
+        <div className={`flex items-center justify-center overflow-hidden bg-surface ${highlight ? "h-64" : "h-52"}`}>
           {entry.image ? (
             <img
               src={entry.image}
@@ -64,7 +64,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
         </p>
 
         <div className="mt-auto space-y-2 pt-4">
-          <Button asChild className="min-h-12 w-full bg-gradient-green text-white hover:opacity-90">
+          <Button asChild className="min-h-12 w-full bg-action text-primary-foreground hover:opacity-90">
             <a
               href={entry.link}
               target="_blank"

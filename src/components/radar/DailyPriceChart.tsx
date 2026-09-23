@@ -45,7 +45,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   const row = payload[0].payload;
   if (!row.point) {
     return (
-      <div className="rounded-lg border border-border bg-white p-3 text-xs shadow-md">
+      <div className="rounded-lg border border-border bg-card p-3 text-xs shadow-md">
         <p className="font-semibold">{row.label}</p>
         <p className="mt-1 text-muted-foreground">Sem verificação neste dia.</p>
       </div>
@@ -53,7 +53,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   }
   const p = row.point;
   return (
-    <div className="rounded-lg border border-border bg-white p-3 text-xs shadow-md">
+    <div className="rounded-lg border border-border bg-card p-3 text-xs shadow-md">
       <p className="font-semibold">{row.label}</p>
       <p className="mt-1">Fechamento: <strong>{formatBRL(p.close)}</strong></p>
       {p.low !== p.high && (
@@ -77,7 +77,7 @@ export function DailyPriceChart({ series }: Props) {
     );
   }
   return (
-    <div className="h-72 w-full rounded-2xl border border-border/60 bg-white p-3 md:h-80">
+    <div className="h-72 w-full rounded-2xl border border-border/60 bg-card p-3 md:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -85,7 +85,7 @@ export function DailyPriceChart({ series }: Props) {
           <YAxis tick={{ fontSize: 11 }} width={78} domain={["auto", "auto"]} tickFormatter={(v: number) => formatBRL(v)} />
           <Tooltip content={<ChartTooltip />} />
           <Line
-            type="stepAfter"
+            type="monotone"
             dataKey="value"
             stroke="hsl(var(--primary))"
             strokeWidth={2.5}

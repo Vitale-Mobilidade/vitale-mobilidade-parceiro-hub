@@ -4,7 +4,7 @@ import { buildRadarEntries, sortEntries, type RadarBike } from "./radar-rankings
 import { BIKE_ID_RE } from "./bike-identity";
 import type { Classification } from "./price-tracker";
 
-export type HomeCard = { id: string; name: string; currentPrice: number };
+export type HomeCard = { id: string; name: string; currentPrice: number; image: string | null };
 export type HomeSearchItem = { id: string; name: string };
 export type HomeRadarItem = {
   id: string;
@@ -39,7 +39,13 @@ export const getHomeCards = createServerFn({ method: "GET" }).handler(
       );
       const cards = valid
         .slice(0, MAX_CARDS)
-        .map((e) => ({ id: e.id, name: e.name, currentPrice: e.currentPrice }));
+        .map((e) => ({
+          id: e.id,
+          name: e.name,
+          currentPrice: e.currentPrice,
+          // Imagem da bike já servida pelo catálogo (bike-image); só https.
+          image: typeof e.image === "string" && /^https:\/\/[^\s"<>]+$/.test(e.image) ? e.image : null,
+        }));
       const search = valid.map((e) => ({ id: e.id, name: e.name }));
       const radar = sortEntries(valid, "opportunity")
         .slice(0, MAX_RADAR)

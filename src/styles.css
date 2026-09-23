@@ -273,14 +273,28 @@
 
 /* Home B2C: tinta escura do hero e verde menta dos CTAs. */
 :root {
-  --ink: 165 45% 11%;
+  --ink: 175 46% 12%; /* #102b29 */
   --ink-foreground: 0 0% 100%;
-  --mint: 152 62% 66%;
-  --mint-foreground: 165 45% 11%;
+  --mint: 157 78% 56%; /* #39e6a3 */
+  --mint-foreground: 175 46% 12%;
 }
 @theme inline {
   --color-ink: hsl(var(--ink));
   --color-ink-foreground: hsl(var(--ink-foreground));
   --color-mint: hsl(var(--mint));
   --color-mint-foreground: hsl(var(--mint-foreground));
+}
+
+/* Vitale Design System (compartilhado Home/Radar/Detalhe). Hex de referência convertidos em HSL. */
+:root {
+  --vt-dark: 176 69% 10%;      /* #082b29 */
+  --vt-action: 158 83% 26%;    /* #0b7b55 — contraste AA sobre branco */
+  --vt-surface: 144 26% 96%;   /* #f3f8f5 */
+  --vt-line: 152 30% 89%;      /* #dcebe4 */
+}
+@theme inline {
+  --color-vt-dark: hsl(var(--vt-dark));
+  --color-action: hsl(var(--vt-action));
+  --color-surface: hsl(var(--vt-surface));
+  --color-line: hsl(var(--vt-line));
 }
