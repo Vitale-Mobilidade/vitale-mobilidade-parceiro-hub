@@ -58,7 +58,8 @@ Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + Typ
 
 ### Etapas 6–25
 
-- **Etapa 6 — Bike:** contrato e código avançados (paridade de `bikeId` editorial × writer com teste; evidência do schema vivo em `docs/BIKE_MODEL.md` §7–9). Tabela `bikes` **não criada**; depende do Gate 0. **Não concluída.**
+- **Etapa 6 — Bike:** contrato e código avançados (paridade de `bikeId` editorial × writer com teste; evidência do schema vivo em `docs/BIKE_MODEL.md` §7–9). Proposta SQL aditiva não aplicada em `docs/sql/bikes_stage6_proposal.sql` (§11). Tabela `bikes` **não criada** no vivo. **Não concluída.**
+- **Gate 0 — Restauração:** ensaio parcial do schema `public` executado fora do Lovable em cluster isolado (`docs/GATE0_RESTORE_REHEARSAL.md`). Backup anterior a escritas vivas; Storage, Edge Functions, secrets, jobs e ACLs não validados. **Não fechado.**
 
 Demais etapas não concluídas. Algumas estruturas e documentos preparatórios existem (contrato de bike, taxonomia, DS), mas nenhum módulo alvo está finalizado.
 
