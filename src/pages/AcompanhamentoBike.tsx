@@ -54,13 +54,38 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
     if (bike) trackRadar("radar_detail_viewed", { bike_id: bike.id });
   }, [bike]);
 
+  // Preço e link só existem juntos, vindos da mesma oferta atual válida.
+  const currentPrice =
+    typeof bike?.currentPrice === "number" && Number.isFinite(bike.currentPrice) && bike.currentPrice > 0
+      ? bike.currentPrice
+      : null;
+  const link = typeof bike?.link === "string" && isSafePurchaseLink(bike.link) ? bike.link : null;
+  const hasOffer = currentPrice !== null && link !== null;
+
   const metrics = useMemo(
-    () => (bike ? dailyMetrics({ daily: bike.daily ?? [], currentPrice: bike.currentPrice }, window) : null),
-    [bike, window],
+    () =>
+      bike && currentPrice !== null
+        ? dailyMetrics({ daily: bike.daily ?? [], currentPrice }, window)
+        : null,
+    [bike, currentPrice, window],
   );
 
+  // Série completa para o histórico arquivado (sem classificação, sem preço atual).
+  const archivedSeries = useMemo(
+    () => (bike && !hasOffer ? expandDaily(bike.daily ?? [], "all") : []),
+    [bike, hasOffer],
+  );
+  const archivedCounts = useMemo(() => {
+    const real = archivedSeries.filter((p) => p.verification !== "missing");
+    return {
+      verified: real.filter((p) => p.verification === "observed_change" || p.verification === "confirmed_unchanged").length,
+      reconstructed: real.filter((p) => p.verification === "reconstructed").length,
+      firstDay: real[0]?.date ?? null,
+    };
+  }, [archivedSeries]);
+
   const loading = false; // dados já chegam no SSR
-  const canBuy = !!bike && isSafePurchaseLink(bike.link);
+  const canBuy = hasOffer;
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
   // Descrições legadas (slogans) não são exibidas; só campos factuais.
   const specs = [
