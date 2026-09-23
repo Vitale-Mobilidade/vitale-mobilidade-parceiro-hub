@@ -45,8 +45,10 @@ export function PriceIntelPanel({
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
+  // Leitura DESCRITIVA. Com histórico curto/descontínuo não qualificamos barato/caro
+  // e não exibimos selo prescritivo — os registros existentes são a base validada pelo time.
   const verdict = forming
-    ? "Histórico em formação — ainda não dá para afirmar se está barato ou caro."
+    ? "Comparação baseada nos registros disponíveis até agora para esta bike."
     : classification === "lowest"
       ? "É o menor preço que já registramos para esta bike."
       : classification === "good"
@@ -55,9 +57,8 @@ export function PriceIntelPanel({
           ? "Está dentro da faixa de preço mais comum do período."
           : `Está ${formatBRL(Math.abs(diff ?? 0))} acima do preço típico do período.`;
 
-  const verdictTone = forming
-    ? "bg-surface text-ink border-line"
-    : classification === "above"
+  const verdictTone =
+    classification === "above"
       ? "bg-destructive/10 text-destructive border-destructive/20"
       : classification === "typical"
         ? "bg-amber-50 text-amber-900 border-amber-200"
