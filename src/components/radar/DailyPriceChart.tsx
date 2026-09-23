@@ -4,6 +4,8 @@ import { VERIFICATION_LABEL, type DailyPoint } from "@/lib/price-daily";
 
 interface Props {
   series: DailyPoint[];
+  /** Altura reduzida para o painel compacto do Radar (padrão: altura original). */
+  compact?: boolean;
 }
 
 interface Row {
