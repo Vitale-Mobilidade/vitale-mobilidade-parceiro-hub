@@ -15,6 +15,10 @@ import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "../styles.css?url";
 
+const RadarAssistant = lazy(() =>
+  import("@/components/radar/RadarAssistant").then((m) => ({ default: m.RadarAssistant })),
+);
+
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
   "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
