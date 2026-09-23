@@ -10,6 +10,36 @@
 - `SiteFooter` B2C único (sem copy de consultoria).
 - `Brand`, `SectionHeading`, `BikeMedia` (imagem real, lazy; ícone quando falta), `PriceStatus` (selo da classificação já calculada; não recalcula), `DisabledCta` (visível, `disabled`/`aria-disabled`, opacidade reduzida).
 
+## Home v2 — revisão visual da página inicial
+A Home foi redesenhada no rascunho para aproximar a composição da referência visual aprovada. **Ainda não foi publicada.**
+
+### Layout e superfície
+- **Hero full-bleed** com a foto original do ciclista, ocupando a largura total. Uso de `min-h-[560px]` mobile / `min-h-[640px]` desktop, conteúdo alinhado à esquerda e ancorado na base no mobile.
+- Gradiente sobreposto partindo de `ink` para transparente (`bg-gradient-to-r from-ink via-ink/75 to-transparent`), garantindo legibilidade sem escurecer a imagem toda. No mobile o gradiente muda para `to-t` para manter o contraste quando o texto fica sobre a parte inferior da foto.
+- Tipografia de impacto no H1: `text-[2.6rem]` → `sm:text-6xl` → `lg:text-7xl`, `font-black leading-[1.02] tracking-tight`, com destaque em `text-mint` ("certa para você").
+- **Barra de atalhos** (`Shortcuts`) com 5 produtos, grid 2 colunas no mobile e 5 no desktop, sobreposta negativamente (`-mt-16`) ao hero; ícone em cápsula `bg-mint/25 text-action`, bordas `ring-1 ring-line`, sombra `shadow-xl`.
+- **Bikes em destaque**: até 5 cards em grade `sm:grid-cols-2 lg:grid-cols-5`, cada um com `BikeMedia`, nome, preço atual (`text-action`, `font-black text-2xl`) e link real para `/acompanhamento/$bikeId`.
+- **Radar + Calculadora**: grid de duas colunas. Radar usa fundo `vt-dark` (`#082b29`) e card interno com mini-barras de preço atual vs. típico. Calculadora é card claro (`bg-card`) com ícones de transporte e CTA inativo.
+- **Comparar bikes**: card `bg-surface` com preview de duas bikes reais lado a lado e selo "VS"; CTA inativo.
+- **Conteúdos e testes**: três cards usando fotos reais do catálogo como thumbnails; sem artigos/vídeos inventados.
+- **Grupo de ofertas + Newsletter**: bloco duplo. Grupo usa `vt-dark` e link ativo para `/grupodeofertas`; newsletter usa input desabilitado e botão inativo.
+
+### Uso da foto original
+- A imagem original foi processada em três versões otimizadas:
+  - `public/vitale-hero-v2.webp` (1672×941)
+  - `public/vitale-hero-v2-1280.webp` (1280×720)
+  - `public/vitale-hero-v2-mobile.webp` (600×909)
+- Marcação `<picture>` com `source` mobile e 1280, e `<img>` default com `fetchPriority="high"`, `decoding="async"` e `alt` descritivo: "Ciclista em bike elétrica na orla da cidade ao pôr do sol".
+- `object-cover object-[70%_center]` mantém o ciclista visível e o texto do lado esquerdo, onde o gradiente escuro oferece contraste.
+- Não há sobreposição de texto sobre rosto/pessoa; a foto é usada como contexto de mobilidade, não como decoração genérica.
+
+### Regras de dados reais e CTAs inativos
+- Todos os cards de bikes vêm exclusivamente de `getHomeCards` (`src/lib/home-cards.functions.ts`): `id`, `name`, `currentPrice`, `classification` e `image` do Radar público read-only. Se o Radar falhar ou retornar vazio, a seção mostra apenas o título e um link para `/acompanhamento` — **nenhum card é inventado**.
+- O painel do Radar exibe o primeiro item real; quando inexistente, aparece apenas o texto introdutório e o botão ativo para o Radar.
+- Produtos sem backend (comparador, calculadora, conteúdos editoriais, newsletter) são **arquitetura de UI apenas**. Seus CTAs usam os componentes `InactiveButton` e `ProductLink` (`src/components/home/home-products.tsx`) com `disabled` / `aria-disabled="true"`, cursor `not-allowed` e opacidade reduzida (`opacity-50`).
+- A newsletter não usa `<form>`, não tem `name`/`type="submit"` e o campo de email está `disabled`; a copy "Nenhum email é coletado nesta página" deixa o estado explícito.
+- O único CTA ativo além do Quiz/Radar é o **Grupo de ofertas**, que leva para `/grupodeofertas` (redirecionamento ao WhatsApp).
+
 ## Superfícies
 - Home, Radar (/acompanhamento), detalhe (/acompanhamento/$bikeId) e resultado do Quiz usam header/footer do DS.
 - Detalhe: descrições legadas (slogans) não são exibidas; só perfilIndicado, specs e strengths.
