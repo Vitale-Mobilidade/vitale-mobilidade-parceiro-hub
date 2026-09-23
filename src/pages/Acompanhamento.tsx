@@ -98,7 +98,7 @@ const Acompanhamento = () => {
             <p className="mt-4 max-w-2xl text-base text-ink-foreground/90 md:text-lg">
               Registramos os preços das bikes elétricas acompanhadas e comparamos o valor atual com o histórico real de cada modelo.
             </p>
-            <div className="mt-6 max-w-xl text-foreground">
+            <div className="mt-6 max-w-xl text-foreground [&_label]:text-ink-foreground">
               <BikeSearchCombobox
                 entries={entries}
                 loading={false}
@@ -112,7 +112,7 @@ const Acompanhamento = () => {
                 {[
                   { k: "Bikes monitoradas", v: String(summary.tracked) },
                   { k: "No menor preço registrado", v: String(summary.atLowest) },
-                  { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1)}%` },
+                  { k: "Maior queda recente", v: summary.biggestDropPct === null ? "—" : `${Math.abs(summary.biggestDropPct).toFixed(1).replace(".", ",")}%` },
                 ].map((i) => (
                   <div key={i.k} className="rounded-2xl bg-card p-4 text-card-foreground">
                     <dd className="text-2xl font-extrabold text-ink">{i.v}</dd>
@@ -168,7 +168,7 @@ const Acompanhamento = () => {
                         <BikeMedia src={e.image} name={e.name} className="h-12 w-14 rounded-lg" />
                         <span className="min-w-0"><span className="block truncate font-semibold">{e.name}</span><span className="block font-bold text-action">{formatBRL(e.currentPrice)}</span></span>
                         {typeof e.dropPct === "number" && e.dropPct < 0 ? (
-                          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-action"><ArrowDown className="h-4 w-4" aria-hidden="true" />{Math.abs(e.dropPct).toFixed(1)}%</span>
+                          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-action"><ArrowDown className="h-4 w-4" aria-hidden="true" />{Math.abs(e.dropPct).toFixed(1).replace(".", ",")}%</span>
                         ) : <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
                       </Link>
                     </li>
