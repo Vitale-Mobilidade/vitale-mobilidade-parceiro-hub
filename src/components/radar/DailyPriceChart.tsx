@@ -79,7 +79,13 @@ export function DailyPriceChart({ series, compact = false }: Props) {
     );
   }
   return (
-    <div className="h-72 w-full rounded-2xl border border-border/60 bg-card p-3 md:h-80">
+    <div
+      className={
+        compact
+          ? "h-[180px] w-full rounded-xl border border-line bg-card p-2 md:h-[200px]"
+          : "h-72 w-full rounded-2xl border border-border/60 bg-card p-3 md:h-80"
+      }
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
