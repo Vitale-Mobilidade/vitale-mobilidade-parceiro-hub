@@ -19,12 +19,9 @@ import {
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
 import { VitaleBrand } from "@/components/VitaleBrand";
-import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
-import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getHomeCards } from "@/lib/home-cards.functions";
-import { PriceStatus } from "@/components/site/site-ui";
 import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData } from "@tanstack/react-router";
@@ -849,11 +846,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       console.error("[GTM] event_click_buy push failed", err);
     }
 
-    // Aguarda 300ms para garantir que o GTM processe o evento, depois redireciona
-    setTimeout(() => {
-      if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
-      else console.error("[quiz] Sem link de compra disponível para", bike.id);
-    }, 300);
+    // Abertura imediata do link de compra — tracking já foi enviado de forma não bloqueante.
+    if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
+    else console.error("[quiz] Sem link de compra disponível para", bike.id);
 
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
     const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
@@ -1048,7 +1043,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   return (
     <main className="min-h-screen bg-background">
-      <SiteHeader />
+      {/* Marca discreta, sem navegação */}
+      <div className="pt-4 pb-2 px-4 flex justify-center">
+        <VitaleBrand variant="logo" size="sm" />
+      </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
 
@@ -1105,11 +1103,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
-              {radarIds.has(recommendation.primary.id) && (
-                <Link to="/acompanhamento/$bikeId" params={{ bikeId: recommendation.primary.id }} className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-line text-[15px] font-semibold text-action hover:bg-surface">
-                  Ver histórico de preços no Radar
-                </Link>
-              )}
 
               {reasonPrimary && (
                 <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />
@@ -1160,11 +1153,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
                 </p>
-                {radarIds.has(recommendation.secondary.id) && (
-                  <Link to="/acompanhamento/$bikeId" params={{ bikeId: recommendation.secondary.id }} className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-line text-[15px] font-semibold text-action hover:bg-surface">
-                    Ver histórico de preços no Radar
-                  </Link>
-                )}
 
                 {reasonSecondary && (
                   <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />
@@ -1311,9 +1299,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           onMainAction={markMainActionClicked}
         />
       </div>
-      <div className="pb-20 lg:pb-0">
-        <SiteFooter />
-      </div>
+      {/* Espaço inferior para o botão flutuante do assistente não cobrir o conteúdo */}
+      <div className="h-20 lg:h-10" />
 
       {/* Sticky CTA mobile */}
       {showSticky && (
@@ -1371,6 +1358,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           },
         } satisfies SDRContext}
         buyClicked={mainActionClicked}
+        manualOnly
         onBuyLink={(bikeId) => {
           const bike = [recommendation.primary, recommendation.secondary].find((b: any) => b?.id === bikeId);
           if (bike) {
@@ -1386,13 +1374,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 }
 
 // ---------- Bike specs row ----------
-function RadarPriceLine({ item }: { item?: { currentPrice: number; classification: import("@/lib/price-tracker").Classification } }) {
+function RadarPriceLine({ item }: { item?: { currentPrice: number } }) {
   if (!item) return null;
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <span className="text-2xl font-extrabold text-action">{formatBRL(item.currentPrice)}</span>
-      <PriceStatus classification={item.classification} />
-      <span className="w-full text-sm text-muted-foreground">Preço atual registrado pelo Radar da Vitale.</span>
+      <span className="text-sm text-muted-foreground">Preço indicativo no Mercado Livre.</span>
     </div>
   );
 }

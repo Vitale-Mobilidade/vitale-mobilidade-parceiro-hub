@@ -40,6 +40,7 @@ Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + Typ
 - **Home v2.1 foi publicada em 23/09/2026.** A revisão inclui painel Radar multi-bike (até 3 bikes reais), calculadora e comparador mais visuais, e Assistente Vitale configurado com `manualOnly` (não abre sozinho).
 - **Verificação no domínio público (`vitalemobilidade.com`):** o H2 “O preço de hoje está bom?” foi encontrado na Home publicada; após 25 segundos sem interação, o chat do Assistente Vitale permaneceu fechado, permanecendo visível apenas o botão flutuante.
 - **Home v2 (revisão visual inicial) também está em produção**, pois v2.1 é evolução direta da mesma branch publicada.
+- **Resultado do Quiz (`/escolherbike`) em rascunho:** removidos header/footer e links visíveis de Radar na tela de resultado; o CTA "Comprar aqui" abre o link afiliado do Mercado Livre imediatamente; o Assistente Vitale na tela de resultado foi configurado com `manualOnly` (sem convite nem autoabertura).
 - **Banco/Sheets/Quiz/Radar/Edge Functions continuam no ecossistema atual.** Nenhuma nova migration, writer, Edge Function, job, integração de CRM ou alteração de planilha foi criada para estas publicações.
 - **A publicação foi decisão explícita do responsável com pendências aceitas.** Isso não equivale a gates técnicos completos nem fecha os itens pendentes de arquitetura, SEO/GEO, performance, taxonomia e produtos futuros.
 
