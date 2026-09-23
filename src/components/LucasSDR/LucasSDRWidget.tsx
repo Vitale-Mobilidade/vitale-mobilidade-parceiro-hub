@@ -4,6 +4,7 @@ import { MessagesSquare, X } from "lucide-react";
 import { LucasChatPanel } from "./LucasChatPanel";
 import type { SDRContext } from "./types";
 import { setChatOpen } from "@/lib/lucas-chat-bus";
+import { useRouterState } from "@tanstack/react-router";
 
 const INVITE_DELAY_MS = 5000;
 const AUTO_OPEN_DELAY_DESKTOP_MS = 15000;
@@ -291,15 +292,16 @@ export function LucasSDRWidget({
 
           <div style={fabStyle}>
             <button
+              data-compact-mobile={compactOnMobile ? "true" : undefined}
               type="button"
               onClick={() => openChat("button")}
               aria-label={`Falar com o ${assistantName}, assistente virtual`}
-              className="flex items-center gap-2 pl-3 pr-4 h-14 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 bg-primary text-primary-foreground font-semibold"
+              className={`flex items-center gap-2 pl-3 pr-4 h-14 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 bg-primary text-primary-foreground font-semibold${compactOnMobile ? " max-md:w-14 max-md:justify-center max-md:p-0" : ""}`}
             >
               <span className="h-9 w-9 rounded-full bg-white/25 flex items-center justify-center">
                 <MessagesSquare className="h-5 w-5" />
               </span>
-              <span className="text-[14px] leading-tight text-left">
+              <span className={`text-[14px] leading-tight text-left${compactOnMobile ? " max-md:hidden" : ""}`}>
                 Falar com o<br />{assistantName}
               </span>
             </button>
