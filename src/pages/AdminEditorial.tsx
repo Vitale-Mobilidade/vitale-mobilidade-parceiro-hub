@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { adminCall, type AdminArticleList, type AdminBike, type AdminOffer, type AdminOverview, type AdminRole,
+import { adminCall, adminStream, type AdminArticleList, type AdminBike, type AdminOffer, type AdminOverview, type AdminRole,
   type AdminVideoList, type ArticleRow } from "@/lib/admin-api";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
@@ -9,7 +9,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
-import { BLOCK_TYPES, CONTENT_TYPES, parseArticleBlocks, type ArticleBlock, type EditorialArticle, type EditorialVideo } from
+import { blocksToMarkdown, type EditorialArticle, type EditorialVideo } from
   "../../supabase/functions/_shared/editorial-contract";
 
 const BTN = "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
@@ -210,39 +210,26 @@ function Videos() {
 export function AdminArticlesPage() {
   return <AdminShell>{role => <OnlyEditorial role={role}><Articles /></OnlyEditorial>}</AdminShell>;
 }
+type SimpleStatus = "draft" | "published" | "archived";
+const simpleStatus = (s: string): SimpleStatus => s === "published" ? "published" : s === "archived" ? "archived" : "draft";
+const STATUS_LABEL: Record<SimpleStatus, string> = { draft: "Rascunho", published: "Publicado", archived: "Arquivado" };
 function Articles() {
   const [items, setItems] = useState<ArticleRow[]>([]);
-  const [videoNames, setVideoNames] = useState<Map<string, string>>(new Map());
-  const [bikeNames, setBikeNames] = useState<Map<string, string>>(new Map());
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("all");
-  useEffect(() => { void Promise.all([
-    adminCall<AdminArticleList>("articles"), adminCall<AdminVideoList>("videos"), adminCall<{ bikes: AdminBike[] }>("bikes"),
-  ]).then(([articles, videos, catalog]) => { setItems(articles.articles);
-    setVideoNames(new Map(videos.videos.map(video => [video.youtube_id, video.title])));
-    setBikeNames(new Map(catalog.bikes.map(bike => [bike.bike_id, bike.name])));
-  }).catch(e => setError(e.message)); }, []);
-  const visible = items.filter(a => status === "all" || a.status === status);
+  const [status, setStatus] = useState<"all" | SimpleStatus>("all");
+  useEffect(() => { void adminCall<AdminArticleList>("articles").then(r => setItems(r.articles)).catch(e => setError(e.message)); }, []);
+  const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
   return <>
-    <Heading title="Artigos" detail="Rascunhos, validação, revisão e publicação em um único fluxo.">
-      <a href="/admin/conteudos/novo" className={BTN}>Criar artigo</a>
-    </Heading>
+    <Heading title="Artigos"><a href="/admin/conteudos/novo" className={BTN}>Criar artigo</a></Heading>
     {error && <Notice danger>{error}</Notice>}
-    <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value)} className={`${INPUT} mb-4 max-w-xs`}>
-      <option value="all">Todos os estados</option>
-      {["draft", "generated", "validation_error", "ready", "published", "archived"].map(s => <option key={s} value={s}>{s}</option>)}
+    <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${INPUT} mb-4 max-w-xs`}>
+      <option value="all">Todos</option>
+      {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
     </select>
-    <div className={PANEL}><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm">
-      <thead><tr className="border-b border-line text-muted-foreground"><th className="pb-3">Artigo</th><th>Vídeo de origem</th><th>Bike</th><th>Estado</th><th>Atualizado</th><th>Qualidade</th></tr></thead>
-      <tbody>{visible.map(a => <tr key={a.id} className="border-b border-line/70 last:border-0">
-        <td className="py-3"><a href={`/admin/conteudos/${a.id}`} className="font-semibold text-emerald-800 underline">{a.title || "Sem título"}</a>
-          </td>
-        <td className="max-w-48 truncate">{videoNames.get(a.video_id) ?? "Vídeo cadastrado"}</td>
-        <td>{a.primary_bike_id ? bikeNames.get(a.primary_bike_id) ?? "Bike identificada" : "Conteúdo geral"}</td>
-        <td>{a.status === "validation_error" ? "Precisa de revisão" : a.status === "published" ? "Publicado" : a.status === "ready" ? "Pronto" : "Em preparação"}</td><td>{date(a.updated_at)}</td>
-        <td>{a.validation_errors?.length ? `${a.validation_errors.length} item(ns)` : a.status === "draft" ? "Não validado" : "Sem erros"}</td>
-      </tr>)}</tbody>
-    </table></div>{visible.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum artigo neste estado.</p>}</div>
+    <div className={PANEL}><ul className="divide-y divide-line">{visible.map(a => <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+      <a href={`/admin/conteudos/${a.id}`} className="font-semibold text-emerald-800 underline">{a.title || "Sem título"}</a>
+      <span className="text-sm text-muted-foreground">{STATUS_LABEL[simpleStatus(a.status)]} · {date(a.updated_at)}</span>
+    </li>)}</ul>{visible.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum artigo.</p>}</div>
   </>;
 }
 
@@ -250,311 +237,35 @@ export function AdminNewArticlePage() {
   return <AdminShell>{role => <OnlyEditorial role={role}><NewArticle /></OnlyEditorial>}</AdminShell>;
 }
 function NewArticle() {
-  const [sheet, setSheet] = useState<VideoItem[]>([]);
-  const [savedVideos, setSavedVideos] = useState<EditorialVideo[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [title, setTitle] = useState("");
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [draftId, setDraftId] = useState("");
-  useEffect(() => { void Promise.allSettled([getSheetVideoCatalog(), adminCall<AdminVideoList>("videos")])
-    .then(([items, saved]) => {
-      if (items.status === "fulfilled") setSheet(items.value);
-      if (saved.status === "fulfilled") setSavedVideos(saved.value.videos);
-    }); }, []);
   const videoId = parseYoutubeId(videoUrl);
-  const source = videoId ? sheet.find(item => item.videoId === videoId) : null;
-  const saved = videoId ? savedVideos.find(item => item.youtube_id === videoId) : null;
-  useEffect(() => {
-    if (!videoId) return;
-    setTitle(current => current || saved?.title || source?.title || "");
-    setTranscript(current => current || saved?.transcript || "");
-  }, [videoId, saved?.title, saved?.transcript, source?.title]);
   async function create(event: FormEvent) {
-    event.preventDefault(); setError(""); setDraftId("");
+    event.preventDefault(); setError("");
     if (!videoId) { setError("Cole uma URL válida do YouTube."); return; }
-    if (transcript.trim().length < 200) { setError("Cole a transcrição completa para gerar o artigo."); return; }
-    setBusy("Preparando vídeo e identificando bikes…");
+    setBusy("Entendendo conteúdo…");
     try {
-      await adminCall("video-save", { youtubeId: videoId, title, date: source?.date ?? null, transcript });
-      setBusy("Criando artigo…");
-      const result = await adminCall<{ article: EditorialArticle }>("article-create", { videoId, title });
-      setDraftId(result.article.id);
-      if (result.article.status !== "published") {
-        setBusy("Escrevendo, conectando Radar e preparando SEO…");
-        const generated = await adminCall<{ article: EditorialArticle; errors: string[] }>("compile-article",
-          { id: result.article.id, revision: result.article.revision });
-        if (generated.errors.length) {
-          setBusy("Corrigindo detalhes simples e validando…");
-          await adminCall("validate-article", { id: result.article.id, revision: generated.article.revision });
-        }
-      }
-      window.location.assign(`/admin/conteudos/${result.article.id}/preview`);
-    } catch (e) { setError(`A geração não terminou. O rascunho foi preservado. ${e instanceof Error ? e.message : "Tente novamente."}`); setBusy(""); }
+      const result = await adminStream<{ article: EditorialArticle }>("generate", { youtubeId: videoId, title, transcript }, setBusy);
+      window.location.assign(`/admin/conteudos/${result.article.id}`);
+    } catch (e) { setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente."); setBusy(""); }
   }
   return <>
-    <Heading title="Criar novo artigo" detail="Cole o vídeo e a transcrição. A Vitale cuida da estrutura, SEO e conexões." />
+    <Heading title="Criar artigo" />
     {error && <Notice danger>{error}</Notice>}
-    {draftId && error && <a href={`/admin/conteudos/${draftId}/preview`} className={`${OUTLINE} mb-5 inline-block`}>Abrir rascunho preservado</a>}
     <form onSubmit={create} className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9">
-      <label className="block text-base font-semibold">URL do YouTube<input type="url" autoComplete="url" className={`${INPUT} mt-2 py-3`} value={videoUrl}
-        onChange={e => {
-          const nextId = parseYoutubeId(e.target.value);
-          if (videoId && nextId && nextId !== videoId) { setTitle(""); setTranscript(""); }
-          setVideoUrl(e.target.value);
-        }} placeholder="https://www.youtube.com/watch?v=…" required /></label>
+      <label className="block text-base font-semibold">URL do YouTube<input type="url" className={`${INPUT} mt-2 py-3`} value={videoUrl}
+        onChange={e => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" required disabled={Boolean(busy)} /></label>
       {videoUrl && !videoId && <p className="-mt-4 text-sm text-amber-800">Confira a URL do vídeo.</p>}
-      {videoId && <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3">
-        <img src={saved?.thumbnail_url || source?.thumbnail || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`}
-          alt="Prévia do vídeo" className="h-16 w-28 rounded-lg object-cover" />
-        <p className="text-sm text-emerald-950">{saved || source ? "Vídeo encontrado na biblioteca Vitale. Dados existentes serão reutilizados." : "Novo vídeo: será cadastrado automaticamente."}</p>
-      </div>}
       <label className="block text-base font-semibold">Título do vídeo<input className={`${INPUT} mt-2 py-3`} value={title}
-        onChange={e => setTitle(e.target.value)} placeholder="Título publicado no YouTube" required minLength={3} /></label>
+        onChange={e => setTitle(e.target.value)} required minLength={3} disabled={Boolean(busy)} /></label>
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
-        onChange={e => setTranscript(e.target.value)} placeholder="Cole aqui a transcrição integral do vídeo" required /></label>
-      <p className="text-sm text-muted-foreground">O artigo será aberto em prévia privada. Nada será publicado sem sua revisão e confirmação.</p>
-      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)}>{busy || "Gerar artigo"}</button>
+        onChange={e => setTranscript(e.target.value)} required minLength={200} disabled={Boolean(busy)} /></label>
+      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar artigo"}</button>
+      {busy && <p className="text-center text-sm text-muted-foreground">Isso leva um ou dois minutos. Mantenha esta aba aberta.</p>}
     </form>
-  </>;
-}
-
-type EditorDraft = {
-  title: string; slug: string; summary: string; summarySourceExcerpt: string; blocks: ArticleBlock[]; faq: { question: string; answer: string; sourceExcerpt: string }[];
-  seoTitle: string; metaDescription: string; ogTitle: string; ogDescription: string; ogImageUrl: string;
-  primaryBikeId: string; relatedBikeIds: string; relatedArticleIds: string[]; indexable: boolean;
-};
-const fromArticle = (a: EditorialArticle): EditorDraft => ({
-  title: a.title, slug: a.slug ?? "", summary: a.summary, summarySourceExcerpt: a.summary_source_excerpt,
-  blocks: a.blocks ?? [], faq: a.faq ?? [],
-  seoTitle: a.seo_title, metaDescription: a.meta_description, ogTitle: a.og_title, ogDescription: a.og_description,
-  ogImageUrl: a.og_image_url ?? "", primaryBikeId: a.primary_bike_id ?? "",
-  relatedBikeIds: (a.related_bike_ids ?? []).join(", "), relatedArticleIds: a.related_article_ids ?? [], indexable: a.indexable,
-});
-
-export function AdminArticleEditorPage({ id }: { id: string }) {
-  return <AdminShell>{role => <OnlyEditorial role={role}><Editor id={id} role={role} /></OnlyEditorial>}</AdminShell>;
-}
-function Editor({ id, role }: { id: string; role: AdminRole }) {
-  const [article, setArticle] = useState<EditorialArticle | null>(null);
-  const [video, setVideo] = useState<EditorialVideo | null>(null);
-  const [draft, setDraft] = useState<EditorDraft | null>(null);
-  const [related, setRelated] = useState<ArticleRow[]>([]);
-  const [bikeNames, setBikeNames] = useState<Map<string, string>>(new Map());
-  const [mode, setMode] = useState<"visual" | "advanced">("visual");
-  const [qualityOpen, setQualityOpen] = useState(false);
-  const [revisions, setRevisions] = useState<{ id: number; revision: number; createdAt: string }[]>([]);
-  const [dirty, setDirty] = useState(false);
-  const [reviewChecked, setReviewChecked] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  async function load() {
-    const [detail, list, catalog] = await Promise.all([
-      adminCall<{ article: EditorialArticle; video: EditorialVideo }>("article-get", { id }),
-      adminCall<AdminArticleList>("articles"),
-      adminCall<{ bikes: AdminBike[] }>("bikes"),
-    ]);
-    setArticle(detail.article); setVideo(detail.video); setDraft(fromArticle(detail.article));
-    setBikeNames(new Map(catalog.bikes.map(bike => [bike.bike_id, bike.name])));
-    setRelated(list.articles.filter(a => a.id !== id && a.status === "published")); setDirty(false);
-  }
-  useEffect(() => { void load().catch(e => setError(e.message)); }, [id]);
-  function patch(next: Partial<EditorDraft>) { setDraft(v => v ? { ...v, ...next } : v); setDirty(true); setReviewChecked(false); }
-  function changeBlock(index: number, next: Partial<ArticleBlock>) {
-    if (!draft) return; const blocks = [...draft.blocks]; blocks[index] = { ...blocks[index], ...next }; patch({ blocks });
-  }
-  function moveBlock(index: number, direction: number) {
-    if (!draft || index + direction < 0 || index + direction >= draft.blocks.length) return;
-    const blocks = [...draft.blocks]; [blocks[index], blocks[index + direction]] = [blocks[index + direction], blocks[index]]; patch({ blocks });
-  }
-  async function action(name: string, payload: Record<string, unknown> = {}) {
-    if (!article) return; setBusy(true); setError(""); setMessage("");
-    try {
-      const result = await adminCall<{ article?: EditorialArticle; errors?: string[]; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
-      if (result.article) { setArticle(result.article); setDraft(fromArticle(result.article)); setDirty(false); }
-      if (result.errors?.length) { setQualityOpen(true); setMessage(`${result.errors.length} item(ns) precisam de revisão.`); }
-      else setMessage(name === "publish-article" ? "Artigo publicado." : "Operação concluída.");
-      if (result.ok) window.location.assign("/admin/conteudos");
-    } catch (e) { setError(e instanceof Error ? e.message : "Falha na operação."); }
-    finally { setBusy(false); }
-  }
-  async function save(event?: FormEvent) {
-    event?.preventDefault(); if (!article || !draft) return;
-    const blocks = draft.blocks.map(block =>
-      draft.primaryBikeId && ["radar", "specs", "cta"].includes(block.type) &&
-      (!block.bikeId || block.bikeId === article.primary_bike_id)
-        ? { ...block, bikeId: draft.primaryBikeId } : block);
-    await action("article-save", {
-      ...draft, blocks: parseArticleBlocks(blocks), primaryBikeId: draft.primaryBikeId || null,
-      relatedBikeIds: draft.relatedBikeIds.split(",").map(x => x.trim()).filter(Boolean),
-    });
-  }
-  if (error && !article) return <Notice danger>{error}</Notice>;
-  if (!article || !draft) return <p aria-busy="true">Carregando artigo…</p>;
-  const editable = article.status !== "published" && article.status !== "archived";
-  const quality = article.validation_errors?.length ? "Bloqueado" :
-    article.status === "ready" || article.status === "published" ? "Pronto" : "Atenção";
-  return <>
-    <Heading title={article.title || "Novo artigo"} detail="Revise a prévia e publique somente quando o conteúdo estiver correto.">
-      <a href={`/admin/conteudos/${id}/preview`} target="_blank" rel="noopener noreferrer" className={OUTLINE}>Abrir preview</a>
-    </Heading>
-    {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
-    <section className={`${PANEL} mb-5`} aria-label="Qualidade do artigo">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-lg font-semibold">Qualidade do artigo · {quality}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{article.validation_errors?.length
-            ? `${article.validation_errors.length} item(ns) precisam de revisão` :
-            article.reviewed_at ? "Validado e revisado por uma pessoa" : "Validação automática e revisão humana antes da publicação"}</p></div>
-        {article.validation_errors?.length > 0 && <button className={OUTLINE} onClick={() => setQualityOpen(v => !v)}>
-          {qualityOpen ? "Ocultar detalhes" : "Abrir detalhes"}</button>}
-      </div>
-      {qualityOpen && article.validation_errors?.length > 0 && <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-red-800">
-        {article.validation_errors.map((item, index) => <li key={index}>{item}</li>)}</ul>}
-      <div className="mt-4 flex flex-wrap gap-2 text-xs text-emerald-950">
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Vídeo: {video?.title ?? article.video_id}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Bike: {article.primary_bike_id ? bikeNames.get(article.primary_bike_id) ?? article.primary_bike_id : "confirmação necessária"}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5">SEO: {article.seo_title && article.meta_description ? "preparado" : "a revisar"}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Radar: {article.blocks.some(b => b.type === "radar") ? "conectado" : "não aplicável"}</span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5">Relacionados: {article.related_article_ids.length}</span>
-      </div>
-    </section>
-    <div className="mb-5 flex flex-wrap gap-2">
-      <button className={BTN} disabled={!editable || !dirty || busy} onClick={() => void save()}>Salvar rascunho</button>
-      <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("compile-article")}>Regenerar artigo</button>
-      <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("validate-article")}>Validar</button>
-      <button className={OUTLINE} disabled={!editable || dirty || busy || article.status !== "ready" || !reviewChecked}
-        onClick={() => void action("review-article")}>Marcar revisão humana</button>
-      <button className={BTN} disabled={!editable || dirty || busy || article.status !== "ready" || !article.reviewed_at}
-        onClick={() => { if (window.confirm("Publicar este artigo no site público?")) void action("publish-article"); }}>Publicar</button>
-      {article.status === "published" && <button className={OUTLINE} disabled={busy}
-        onClick={() => { if (window.confirm("Despublicar este artigo?")) void action("unpublish-article"); }}>Despublicar</button>}
-      {article.status !== "archived" && <button className={OUTLINE} disabled={busy}
-        onClick={() => { if (window.confirm("Arquivar este artigo?")) void action("archive-article"); }}>Arquivar</button>}
-      {role === "admin" && article.status === "archived" && <button className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-800"
-        onClick={() => { const confirm = window.prompt(`Para excluir definitivamente, digite o slug: ${article.slug}`);
-          if (confirm === article.slug) void action("delete-article", { confirm }); }}>Excluir definitivamente</button>}
-    </div>
-    <label className="mb-5 flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewChecked} onChange={e => setReviewChecked(e.target.checked)} />
-      Revisei transcrição, números, IDs, links, afirmações, SEO e preview. A IA não publica sozinha.</label>
-    <div className="mb-5 flex gap-2" role="tablist" aria-label="Modo de edição">
-      <button role="tab" aria-selected={mode === "visual"} onClick={() => setMode("visual")}
-        className={mode === "visual" ? BTN : OUTLINE}>Modo visual</button>
-      <button role="tab" aria-selected={mode === "advanced"} onClick={() => setMode("advanced")}
-        className={mode === "advanced" ? BTN : OUTLINE}>Avançado</button>
-    </div>
-    {mode === "visual" && <section className="mx-auto max-w-4xl rounded-3xl bg-white px-5 py-8 shadow-sm sm:px-10">
-      <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Prévia editável · Conteúdo Vitale</p>
-      <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm"><label className="font-semibold">Bike principal identificada
-        <select className={`${INPUT} mt-2 max-w-sm`} disabled={!editable} value={draft.primaryBikeId}
-          onChange={e => patch({ primaryBikeId: e.target.value })}>
-          <option value="">Conteúdo geral / ainda não identificada</option>
-          {[...bikeNames.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"))
-            .map(([bikeId, name]) => <option key={bikeId} value={bikeId}>{name}</option>)}
-        </select></label>
-        {!draft.primaryBikeId && <p className="mt-2 text-amber-900">Se o vídeo analisa um modelo específico, confirme-o aqui antes de publicar.</p>}
-      </div>
-      <label className="mt-5 block text-sm font-semibold">Título do artigo<input className="mt-2 w-full border-0 border-b border-line px-0 py-2 text-3xl font-bold leading-tight focus:ring-0 sm:text-4xl"
-        disabled={!editable} value={draft.title} onChange={e => patch({ title: e.target.value })} /></label>
-      {article.og_image_url && <img src={article.og_image_url} alt="" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
-      <div className="mt-7 flex items-center justify-between gap-3"><span className="text-sm font-semibold">Resumo</span>
-        <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-section", { section: "summary" })}>Regenerar resumo</button></div>
-      <label className="block"><span className="sr-only">Resumo</span><textarea className="mt-2 min-h-24 w-full rounded-xl border border-line p-3 text-lg leading-8"
-        disabled={!editable} value={draft.summary} onChange={e => patch({ summary: e.target.value })} /></label>
-      <div className="mt-7 space-y-5">{draft.blocks.map((block, index) => <section key={index} className="rounded-xl border border-line p-4">
-        <div className="flex flex-wrap items-center gap-2"><strong className="mr-auto text-sm text-emerald-800">{block.type === "text" ? "Seção" : block.type === "video" ? "Vídeo original" : block.type === "radar" ? "Radar dinâmico" : block.type === "cta" ? "Oferta atual" : block.type}</strong>
-          <button type="button" className={OUTLINE} disabled={!editable || index === 0} onClick={() => moveBlock(index, -1)} aria-label={`Mover bloco ${index + 1} para cima`}>↑</button>
-          <button type="button" className={OUTLINE} disabled={!editable || index === draft.blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label={`Mover bloco ${index + 1} para baixo`}>↓</button>
-          <button type="button" className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-block", { index })}>Regenerar</button>
-          <button type="button" className={OUTLINE} disabled={!editable} onClick={() => patch({ blocks: draft.blocks.filter((_, i) => i !== index) })}>Remover</button>
-        </div>
-        {["text", "hero", "summary", "pros_cons"].includes(block.type) ? <>
-          {block.type === "text" && <input aria-label={`Título da seção ${index + 1}`} className="mt-4 w-full border-0 border-b border-line px-0 py-2 text-2xl font-bold"
-            disabled={!editable} value={block.heading ?? ""} onChange={e => changeBlock(index, { heading: e.target.value })} />}
-          <textarea aria-label={`Texto do bloco ${index + 1}`} className="mt-3 min-h-36 w-full rounded-lg border border-line p-3 leading-8"
-            disabled={!editable} value={block.text ?? ""} onChange={e => changeBlock(index, { text: e.target.value })} />
-        </> : <p className="mt-3 text-sm text-muted-foreground">{block.heading || (block.type === "video" ? video?.title : block.type === "radar" ? "Preço e oferta virão dos dados atuais da bike." : "Este componente usa dados atuais do site.")}</p>}
-      </section>)}</div>
-      <button type="button" className={`${OUTLINE} mt-5`} disabled={!editable} onClick={() => patch({ blocks: [...draft.blocks, { type: "text", heading: "", text: "", sourceExcerpt: "" }] })}>Adicionar seção</button>
-      {draft.faq.length > 0 && <div className="mt-8"><div className="flex items-center justify-between gap-2"><h2 className="text-2xl font-bold">Perguntas frequentes</h2>
-        <button className={OUTLINE} disabled={!editable || dirty || busy} onClick={() => void action("regenerate-section", { section: "faq" })}>Regenerar FAQ</button></div>
-        {draft.faq.map((item, index) => <div key={index} className="mt-4 border-b border-line pb-4">
-          <input aria-label={`Pergunta ${index + 1}`} className="w-full text-lg font-semibold" disabled={!editable} value={item.question}
-            onChange={e => patch({ faq: draft.faq.map((faq, i) => i === index ? { ...faq, question: e.target.value } : faq) })} />
-          <textarea aria-label={`Resposta ${index + 1}`} className={`${INPUT} mt-2 min-h-24`} disabled={!editable} value={item.answer}
-            onChange={e => patch({ faq: draft.faq.map((faq, i) => i === index ? { ...faq, answer: e.target.value } : faq) })} />
-        </div>)}</div>}
-    </section>}
-    {mode === "advanced" && <>
-    <form onSubmit={save} className="space-y-6">
-      <section className={PANEL}><h2 className="mb-4 text-xl font-semibold">Identidade e relações</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-medium">Título<input className={`${INPUT} mt-1`} disabled={!editable} value={draft.title} onChange={e => patch({ title: e.target.value })} /></label>
-          <label className="text-sm font-medium">Slug<input className={`${INPUT} mt-1`} disabled={!editable} value={draft.slug} onChange={e => patch({ slug: e.target.value })} /></label>
-          <label className="text-sm font-medium">Bike principal (ID)<input className={`${INPUT} mt-1`} disabled={!editable} value={draft.primaryBikeId} onChange={e => patch({ primaryBikeId: e.target.value })} /></label>
-          <label className="text-sm font-medium">Outras bikes (IDs, vírgula)<input className={`${INPUT} mt-1`} disabled={!editable} value={draft.relatedBikeIds} onChange={e => patch({ relatedBikeIds: e.target.value })} /></label>
-        </div>
-        <label className="mt-4 block text-sm font-medium">Resumo<textarea className={`${INPUT} mt-1 min-h-24`} disabled={!editable} value={draft.summary} onChange={e => patch({ summary: e.target.value })} /></label>
-        <label className="mt-3 block text-sm font-medium">Trecho literal que sustenta o resumo<textarea className={`${INPUT} mt-1 min-h-20`} disabled={!editable} value={draft.summarySourceExcerpt} onChange={e => patch({ summarySourceExcerpt: e.target.value })} /></label>
-        <p className="mt-3 text-xs text-muted-foreground">Vídeo de origem: <a href={video?.youtube_url} target="_blank" rel="noopener noreferrer" className="underline">{video?.title ?? article.video_id}</a>. A transcrição é a referência factual.</p>
-        <fieldset className="mt-4"><legend className="text-sm font-medium">Artigos relacionados</legend>
-          <div className="mt-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto">{related.map(a => <label key={a.id} className="rounded-lg border border-line px-3 py-2 text-xs">
-            <input type="checkbox" disabled={!editable} checked={draft.relatedArticleIds.includes(a.id)} onChange={e => patch({
-              relatedArticleIds: e.target.checked ? [...draft.relatedArticleIds, a.id] : draft.relatedArticleIds.filter(x => x !== a.id),
-            })} /> {a.title}</label>)}</div>
-        </fieldset>
-      </section>
-      <section className={PANEL}><div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold">Blocos editoriais</h2>
-        <button type="button" className={OUTLINE} disabled={!editable} onClick={() => patch({ blocks: [...draft.blocks, { type: "text", heading: "", text: "", sourceExcerpt: "" }] })}>Adicionar bloco</button></div>
-        <p className="mb-4 text-sm text-muted-foreground">Texto factual exige um trecho literal da transcrição. Blocos comerciais usam IDs de bike, nunca URL digitada pela IA.</p>
-        <div className="space-y-4">{draft.blocks.map((b, i) => <div key={i} className="rounded-xl border border-line bg-surface p-4">
-          <div className="mb-3 flex flex-wrap items-center gap-2"><strong className="mr-auto text-sm">Bloco {i + 1}</strong>
-            <button type="button" disabled={!editable || i === 0} onClick={() => moveBlock(i, -1)} className={OUTLINE}>↑</button>
-            <button type="button" disabled={!editable || i === draft.blocks.length - 1} onClick={() => moveBlock(i, 1)} className={OUTLINE}>↓</button>
-            <button type="button" disabled={!editable} onClick={() => patch({ blocks: draft.blocks.filter((_, k) => k !== i) })} className={OUTLINE}>Remover</button>
-            <button type="button" disabled={!editable || dirty || busy} onClick={() => void action("regenerate-block", { index: i })} className={OUTLINE}>Regenerar bloco</button>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-xs font-medium">Tipo<select className={`${INPUT} mt-1`} disabled={!editable} value={b.type} onChange={e => changeBlock(i, { type: e.target.value as ArticleBlock["type"] })}>
-              {BLOCK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
-            <label className="text-xs font-medium">Título do bloco<input className={`${INPUT} mt-1`} disabled={!editable} value={b.heading ?? ""} onChange={e => changeBlock(i, { heading: e.target.value })} /></label>
-            <label className="text-xs font-medium md:col-span-2">Texto<textarea className={`${INPUT} mt-1 min-h-24`} disabled={!editable} value={b.text ?? ""} onChange={e => changeBlock(i, { text: e.target.value })} /></label>
-            <label className="text-xs font-medium md:col-span-2">Trecho de fonte (literal)<textarea className={`${INPUT} mt-1 min-h-20`} disabled={!editable} value={b.sourceExcerpt ?? ""} onChange={e => changeBlock(i, { sourceExcerpt: e.target.value })} /></label>
-            <label className="text-xs font-medium">Bike ID<input className={`${INPUT} mt-1`} disabled={!editable} value={b.bikeId ?? ""} onChange={e => changeBlock(i, { bikeId: e.target.value })} /></label>
-            <label className="text-xs font-medium">Vídeo ID<input className={`${INPUT} mt-1`} disabled={!editable} value={b.videoId ?? ""} onChange={e => changeBlock(i, { videoId: e.target.value })} /></label>
-          </div>
-        </div>)}</div>
-      </section>
-      <section className={PANEL}><h2 className="mb-4 text-xl font-semibold">FAQ</h2>
-        {draft.faq.map((f, i) => <div key={i} className="mb-4 rounded-lg border border-line p-3">
-          <label className="block text-sm">Pergunta<input className={`${INPUT} mt-1`} disabled={!editable} value={f.question} onChange={e => patch({ faq: draft.faq.map((x, j) => j === i ? { ...x, question: e.target.value } : x) })} /></label>
-          <label className="mt-2 block text-sm">Resposta<textarea className={`${INPUT} mt-1`} disabled={!editable} value={f.answer} onChange={e => patch({ faq: draft.faq.map((x, j) => j === i ? { ...x, answer: e.target.value } : x) })} /></label>
-          <label className="mt-2 block text-sm">Trecho literal da fonte<textarea className={`${INPUT} mt-1`} disabled={!editable} value={f.sourceExcerpt} onChange={e => patch({ faq: draft.faq.map((x, j) => j === i ? { ...x, sourceExcerpt: e.target.value } : x) })} /></label>
-          <button type="button" className="mt-2 text-sm text-red-700 underline" disabled={!editable} onClick={() => patch({ faq: draft.faq.filter((_, j) => i !== j) })}>Remover pergunta</button>
-        </div>)}
-        <button type="button" className={OUTLINE} disabled={!editable} onClick={() => patch({ faq: [...draft.faq, { question: "", answer: "", sourceExcerpt: "" }] })}>Adicionar pergunta</button>
-      </section>
-      <section className={PANEL}><h2 className="mb-4 text-xl font-semibold">SEO e compartilhamento</h2>
-        <button type="button" className={`${OUTLINE} mb-4`} disabled={!editable || dirty || busy}
-          onClick={() => void action("regenerate-section", { section: "metadata" })}>Regenerar metadata</button>
-        <div className="grid gap-4 md:grid-cols-2">
-          {([['seoTitle','SEO title'],['metaDescription','Meta description'],['ogTitle','OG title'],['ogDescription','OG description'],['ogImageUrl','Imagem OG (HTTPS)']] as const)
-            .map(([key, label]) => <label key={key} className="text-sm font-medium">{label}<input className={`${INPUT} mt-1`} disabled={!editable} value={draft[key]} onChange={e => patch({ [key]: e.target.value })} /></label>)}
-        </div>
-        <label className="mt-4 flex gap-2 text-sm"><input type="checkbox" disabled={!editable} checked={draft.indexable} onChange={e => patch({ indexable: e.target.checked })} /> Permitir indexação após publicação</label>
-        <div className="mt-4 rounded-lg bg-surface p-4 text-sm"><p className="font-semibold">Preview de busca/compartilhamento</p>
-          <p className="mt-2 text-blue-700">{draft.seoTitle || draft.title}</p><p className="text-xs text-emerald-800">vitalemobilidade.com/conteudos/{draft.slug}</p>
-          <p className="text-muted-foreground">{draft.metaDescription || "Descrição ainda não cadastrada."}</p></div>
-      </section>
-      <button className={BTN} disabled={!editable || !dirty || busy}>Salvar alterações</button>
-    </form>
-    <section className={`${PANEL} mt-6`}><div className="flex items-center justify-between gap-3">
-      <h2 className="text-lg font-semibold">Histórico de revisões</h2>
-      <button className={OUTLINE} onClick={() => void adminCall<{ revisions: typeof revisions }>("article-revisions", { id })
-        .then(result => setRevisions(result.revisions)).catch(e => setError(e.message))}>Carregar histórico</button></div>
-      <ul className="mt-3 space-y-1 text-sm">{revisions.map(item => <li key={item.id}>Revisão {item.revision} · {date(item.createdAt)}</li>)}</ul>
-    </section></>}
   </>;
 }
 
@@ -563,107 +274,130 @@ function previewArticle(a: EditorialArticle): PublishedArticle {
     id: a.id, slug: a.slug ?? "rascunho", title: a.title, summary: a.summary,
     blocks: a.blocks ?? [], faq: a.faq ?? [], seoTitle: a.seo_title,
     metaDescription: a.meta_description, ogTitle: a.og_title, ogDescription: a.og_description,
-    ogImageUrl: a.og_image_url, indexable: false, publishedAt: a.published_at,
+    ogImageUrl: a.og_image_url, indexable: a.indexable, publishedAt: a.published_at,
     videoId: a.video_id, primaryBikeId: a.primary_bike_id,
     relatedBikeIds: a.related_bike_ids ?? [], relatedArticleIds: a.related_article_ids ?? [],
   };
 }
 
-export function AdminArticlePreviewPage({ id }: { id: string }) {
-  return <AdminShell>{role => <OnlyEditorial role={role}><ArticlePreview id={id} /></OnlyEditorial>}</AdminShell>;
+type EditDraft = { title: string; summary: string; body: string; slug: string; seoTitle: string; metaDescription: string;
+  ogImageUrl: string; primaryBikeId: string; relatedBikeIds: string; indexable: boolean };
+const toDraft = (a: EditorialArticle): EditDraft => ({ title: a.title, summary: a.summary, body: blocksToMarkdown(a.blocks),
+  slug: a.slug ?? "", seoTitle: a.seo_title, metaDescription: a.meta_description, ogImageUrl: a.og_image_url ?? "",
+  primaryBikeId: a.primary_bike_id ?? "", relatedBikeIds: (a.related_bike_ids ?? []).join(", "), indexable: a.indexable });
+
+export function AdminArticleEditorPage({ id }: { id: string }) {
+  return <AdminShell>{role => <OnlyEditorial role={role}><ArticleAdmin id={id} role={role} /></OnlyEditorial>}</AdminShell>;
 }
-function ArticlePreview({ id }: { id: string }) {
+function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const [article, setArticle] = useState<EditorialArticle | null>(null);
-  const [video, setVideo] = useState<EditorialVideo | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
-  const [related, setRelated] = useState<{ id: string; slug: string; title: string }[]>([]);
+  const [index, setIndex] = useState<{ id: string; slug: string; title: string; primaryBikeId?: string | null }[]>([]);
   const [relatedVideos, setRelatedVideos] = useState<VideoCard[]>([]);
+  const [draft, setDraft] = useState<EditDraft | null>(null);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [qualityOpen, setQualityOpen] = useState(false);
-  const [reviewChecked, setReviewChecked] = useState(false);
   useEffect(() => { void Promise.all([
-    adminCall<{ article: EditorialArticle; video: EditorialVideo }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
-  ]).then(async ([detail, catalog, index]) => { setArticle(detail.article); setVideo(detail.video); setBikes(catalog.bikes);
-    setRelated((index ?? []).filter(a => detail.article.related_article_ids.includes(a.id)));
+    adminCall<{ article: EditorialArticle }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
+  ]).then(async ([detail, catalog, published]) => { setArticle(detail.article); setBikes(catalog.bikes); setIndex(published ?? []);
     if (detail.article.primary_bike_id) {
       const videos = await safeVideos({ bikeId: detail.article.primary_bike_id, limit: 12 });
-      setRelatedVideos(videos.filter(item => item.videoId !== detail.article.video_id));
-    } })
-    .catch(e => setError(e.message)); }, [id]);
-  async function runAction(name: string) {
-    if (!article) return; setBusy(true); setError(""); setMessage("");
+      setRelatedVideos(videos.filter(item => item.videoId !== detail.article.video_id).slice(0, 4));
+    } }).catch(e => setError(e.message)); }, [id]);
+  async function run(name: string, payload: Record<string, unknown>, label: string) {
+    if (!article) return null; setBusy(label); setError(""); setMessage("");
     try {
-      const result = await adminCall<{ article: EditorialArticle; errors?: string[] }>(name, { id, revision: article.revision });
-      setArticle(result.article); setMessage(result.errors?.length ? `${result.errors.length} item(ns) precisam de revisão.` : "Prévia atualizada.");
-      if (result.errors?.length) setQualityOpen(true);
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir a ação."); }
-    finally { setBusy(false); }
+      const result = await adminCall<{ article?: EditorialArticle; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
+      if (result.article) setArticle(result.article);
+      return result;
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir."); return null; }
+    finally { setBusy(""); }
   }
-  async function publish() {
-    if (!article || !reviewChecked || !window.confirm("Você revisou o vídeo, as afirmações e a prévia. Publicar este artigo no site?")) return;
-    setBusy(true); setError("");
-    try {
-      const reviewed = article.reviewed_at ? article : (await adminCall<{ article: EditorialArticle }>("review-article", { id, revision: article.revision })).article;
-      const result = await adminCall<{ article: EditorialArticle }>("publish-article", { id, revision: reviewed.revision });
-      setArticle(result.article); setMessage("Artigo publicado após revisão humana.");
-    } catch (e) { setError(e instanceof Error ? e.message : "Publicação bloqueada."); }
-    finally { setBusy(false); }
+  async function changeStatus(status: SimpleStatus) {
+    const result = await run("article-status", { status }, "Atualizando…");
+    if (result?.article) setMessage(status === "published" ? "Publicado. A página já está no ar." : `Status: ${STATUS_LABEL[status]}.`);
+  }
+  async function save() {
+    if (!draft) return;
+    const result = await run("article-save", { title: draft.title, summary: draft.summary, body: draft.body, advanced: {
+      slug: draft.slug, seoTitle: draft.seoTitle, metaDescription: draft.metaDescription, ogImageUrl: draft.ogImageUrl,
+      primaryBikeId: draft.primaryBikeId, relatedBikeIds: draft.relatedBikeIds.split(",").map(x => x.trim()).filter(Boolean), indexable: draft.indexable,
+    } }, "Salvando…");
+    if (result?.article) { setDraft(null); setMessage(simpleStatus(result.article.status) === "published" ? "Salvo. A página pública foi atualizada." : "Salvo."); }
+  }
+  async function remove() {
+    if (!article || !window.confirm("Excluir este artigo definitivamente?")) return;
+    let current = article;
+    if (current.status !== "archived") { const r = await run("archive-article", {}, "Arquivando…"); if (!r?.article) return; current = r.article; }
+    setBusy("Excluindo…");
+    try { await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug }); window.location.assign("/admin/conteudos"); }
+    catch (e) { setError(e instanceof Error ? e.message : "Não foi possível excluir."); setBusy(""); }
   }
   if (error && !article) return <Notice danger>{error}</Notice>;
-  if (!article) return <p aria-busy="true">Carregando preview…</p>;
-  const quality = article.validation_errors.length ? "Bloqueado" : article.status === "ready" || article.status === "published" ? "Pronto" : "Atenção";
-  const editable = article.status !== "published" && article.status !== "archived";
-  const bike = bikes.find(item => item.bikeId === article.primary_bike_id);
+  if (!article) return <p aria-busy="true">Carregando artigo…</p>;
+  const status = simpleStatus(article.status);
+  const bikeIds = [article.primary_bike_id, ...article.related_bike_ids].filter(Boolean);
+  const relatedArticles = index.filter(a => a.id !== article.id &&
+    (article.related_article_ids.includes(a.id) || (a.primaryBikeId && bikeIds.includes(a.primaryBikeId)))).slice(0, 4);
+  const publicUrl = article.slug ? `/conteudos/${article.slug}` : null;
+  const set = (next: Partial<EditDraft>) => setDraft(d => d ? { ...d, ...next } : d);
   return <>
-    <div className={`${PANEL} mb-5`}>
-      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-4">
-        <a href={`/admin/conteudos/${id}`} className={OUTLINE}>Editar</a>
-        <button className={OUTLINE} disabled={!editable || busy} onClick={() => void runAction("compile-article")}>Regenerar</button>
-        <button className={OUTLINE} disabled={!editable || busy} onClick={() => void runAction("validate-article")}>Validar</button>
-        <button className={BTN} disabled={!editable || busy || article.status !== "ready" || !reviewChecked}
-          onClick={() => void publish()}>Publicar</button>
-        <button className={OUTLINE} disabled={busy || article.status === "archived"}
-          onClick={() => { if (window.confirm("Arquivar este artigo?")) void runAction("archive-article"); }}>Arquivar</button>
+    <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur">
+      <div className="flex flex-wrap items-center gap-2">
+        <a href="/admin/conteudos" className="mr-auto text-sm text-emerald-800 underline">← Artigos</a>
+        <label className="flex items-center gap-2 text-sm font-semibold">Status
+          <select className={`${INPUT} w-auto`} value={status} disabled={Boolean(busy) || Boolean(draft)} onChange={e => void changeStatus(e.target.value as SimpleStatus)}>
+            {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+          </select></label>
+        {status === "published" && publicUrl
+          ? <a href={publicUrl} target="_blank" rel="noopener noreferrer" className={OUTLINE}>Abrir página</a>
+          : <button className={OUTLINE} disabled title="Disponível depois de publicar">Abrir página</button>}
+        {draft ? <>
+          <button className={OUTLINE} disabled={Boolean(busy)} onClick={() => setDraft(null)}>Cancelar</button>
+          <button className={BTN} disabled={Boolean(busy)} onClick={() => void save()}>{busy || "Salvar"}</button>
+        </> : <button className={BTN} disabled={Boolean(busy)} onClick={() => setDraft(toDraft(article))}>Editar</button>}
+        <details className="relative">
+          <summary className={`${OUTLINE} cursor-pointer list-none`} aria-label="Mais ações">Mais</summary>
+          <div className="absolute right-0 mt-2 w-56 rounded-xl border border-line bg-white p-2 shadow-lg">
+            <button className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50" disabled={Boolean(busy) || status === "published"}
+              title={status === "published" ? "Mude para Rascunho para regenerar" : undefined}
+              onClick={() => { if (window.confirm("Gerar o artigo novamente a partir da transcrição?")) void run("compile-article", {}, "Regenerando… (1–2 min)").then(r => r?.article && setMessage("Artigo regenerado.")); }}>Regenerar artigo</button>
+            <button className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50" disabled={Boolean(busy) || status === "archived"}
+              onClick={() => void changeStatus("archived")}>Arquivar</button>
+            {role === "admin" && <button className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50" disabled={Boolean(busy)} onClick={() => void remove()}>Excluir</button>}
+          </div>
+        </details>
       </div>
-      {error && <div className="mt-4"><Notice danger>{error}</Notice></div>}
-      {message && <div className="mt-4"><Notice>{message}</Notice></div>}
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="text-lg font-bold">Qualidade do artigo · {quality}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{article.validation_errors.length
-            ? `${article.validation_errors.length} item(ns) precisam de revisão` : "Confira a prévia completa antes de publicar."}</p></div>
-        {article.validation_errors.length > 0 && <button className={OUTLINE} onClick={() => setQualityOpen(value => !value)}>
-          {qualityOpen ? "Ocultar detalhes" : "Abrir detalhes"}</button>}
-      </div>
-      {qualityOpen && article.validation_errors.length > 0 && <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-red-800">
-        {article.validation_errors.map((item, index) => <li key={index}>{item}</li>)}</ul>}
-      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-        <div><dt className="text-muted-foreground">Bike detectada</dt><dd className="font-semibold">{bike?.name ?? (article.primary_bike_id ? article.primary_bike_id : "Confirmar se este conteúdo é geral")}</dd>
-          {!article.primary_bike_id && <dd><a href={`/admin/conteudos/${id}`} className="text-emerald-800 underline">Confirmar ou corrigir bike</a></dd>}</div>
-        <div><dt className="text-muted-foreground">Vídeo</dt><dd className="font-semibold">{video?.title ?? article.video_id}</dd></div>
-        <div><dt className="text-muted-foreground">Radar</dt><dd className="font-semibold">{article.blocks.some(block => block.type === "radar") ? "Conectado ao preço atual" : "Não aplicável"}</dd></div>
-        <div><dt className="text-muted-foreground">SEO</dt><dd className="font-semibold">{article.seo_title && article.meta_description ? "Preparado" : "A revisar"}</dd></div>
-        <div><dt className="text-muted-foreground">Imagem social</dt><dd className="font-semibold">{article.og_image_url ? "Definida" : "Ausente"}</dd></div>
-        <div><dt className="text-muted-foreground">Relacionados</dt><dd className="font-semibold">{related.length} artigo(s), {relatedVideos.length} vídeo(s)</dd></div>
-      </dl>
-      {article.og_image_url && <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground"><img src={article.og_image_url} alt="Imagem de compartilhamento" className="h-16 w-28 rounded-lg object-cover" />
-        <span>OG: {article.og_image_url}</span></div>}
-      <details className="mt-4 rounded-xl bg-surface p-4 text-sm">
-        <summary className="cursor-pointer font-semibold">Ver SEO e dados de compartilhamento</summary>
-        <dl className="mt-3 grid gap-3 break-words sm:grid-cols-2">
-          <div><dt className="text-muted-foreground">SEO title</dt><dd>{article.seo_title || "A revisar"}</dd></div>
-          <div><dt className="text-muted-foreground">Meta description</dt><dd>{article.meta_description || "A revisar"}</dd></div>
-          <div><dt className="text-muted-foreground">Canonical após publicação</dt><dd>{article.slug ? `https://vitalemobilidade.com/conteudos/${article.slug}` : "A revisar"}</dd></div>
-          <div><dt className="text-muted-foreground">Dados estruturados</dt><dd>Article, VideoObject e BreadcrumbList na página pública</dd></div>
-        </dl>
-      </details>
-      <label className="mt-5 flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewChecked} onChange={e => setReviewChecked(e.target.checked)} />
-        Revisei o texto, as evidências, as relações e a prévia. A publicação é minha decisão.</label>
+      <p className="mt-2 text-sm text-muted-foreground">{busy || (status === "draft" ? "Artigo criado pela Vitale. Você decide quando colocá-lo no ar." : status === "published" ? `No ar em vitalemobilidade.com${publicUrl}` : "Arquivado — fora do site.")}</p>
     </div>
-    <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
-      relatedArticles={related} relatedVideos={relatedVideos} preview /></div>
+    {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
+    {draft ? <section className="mx-auto max-w-4xl space-y-5 rounded-3xl bg-white p-6 shadow-sm sm:p-10">
+      <label className="block text-sm font-semibold">Título<input className="mt-2 w-full border-0 border-b border-line px-0 py-2 text-3xl font-bold" value={draft.title} onChange={e => set({ title: e.target.value })} /></label>
+      <label className="block text-sm font-semibold">Introdução<textarea className={`${INPUT} mt-2 min-h-24 text-lg leading-8`} value={draft.summary} onChange={e => set({ summary: e.target.value })} /></label>
+      <label className="block text-sm font-semibold">Corpo do artigo
+        <span className="mt-1 block text-xs font-normal text-muted-foreground">## Subtítulo · ### Subtópico · **negrito** · - item de lista · &gt; citação. Vídeo, Radar, oferta e Quiz entram sozinhos.</span>
+        <textarea className={`${INPUT} mt-2 min-h-[32rem] font-mono text-sm leading-7`} value={draft.body} onChange={e => set({ body: e.target.value })} /></label>
+      <details className="rounded-xl bg-surface p-4 text-sm">
+        <summary className="cursor-pointer font-semibold">Configurações avançadas</summary>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label>Endereço (slug)<input className={`${INPUT} mt-1`} value={draft.slug} onChange={e => set({ slug: e.target.value })} /></label>
+          <label>Imagem de compartilhamento (HTTPS)<input className={`${INPUT} mt-1`} value={draft.ogImageUrl} onChange={e => set({ ogImageUrl: e.target.value })} /></label>
+          <label>Título SEO<input className={`${INPUT} mt-1`} value={draft.seoTitle} onChange={e => set({ seoTitle: e.target.value })} /></label>
+          <label>Descrição SEO<input className={`${INPUT} mt-1`} value={draft.metaDescription} onChange={e => set({ metaDescription: e.target.value })} /></label>
+          <label>Bike principal (ID)<input className={`${INPUT} mt-1`} value={draft.primaryBikeId} onChange={e => set({ primaryBikeId: e.target.value })} /></label>
+          <label>Bikes relacionadas (IDs)<input className={`${INPUT} mt-1`} value={draft.relatedBikeIds} onChange={e => set({ relatedBikeIds: e.target.value })} /></label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={draft.indexable} onChange={e => set({ indexable: e.target.checked })} /> Permitir indexação</label>
+          <p className="text-muted-foreground">Canonical: https://vitalemobilidade.com/conteudos/{draft.slug} · Dados estruturados: Article, VideoObject, BreadcrumbList.</p>
+        </div>
+      </details>
+    </section> : <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
+      relatedArticles={relatedArticles} relatedVideos={relatedVideos} /></div>}
   </>;
+}
+
+export function AdminArticlePreviewPage({ id }: { id: string }) {
+  return <AdminArticleEditorPage id={id} />;
 }
 
 export function AdminAiPage() {
