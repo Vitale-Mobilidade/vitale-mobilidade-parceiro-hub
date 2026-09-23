@@ -15,7 +15,6 @@ interface Props {
 
 export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
   const base = useRadarBase();
-  const cls = entry.metrics.classification;
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
 
   return (
