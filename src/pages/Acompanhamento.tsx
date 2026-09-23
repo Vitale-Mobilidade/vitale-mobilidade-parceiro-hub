@@ -128,7 +128,7 @@ const Acompanhamento = () => {
                 </dl>
               )}
               {trackingSince && (
-                <p className="mt-3 text-sm text-muted-foreground">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
+                <p className="text-sm text-muted-foreground lg:col-span-2">Histórico registrado desde {formatDateBR(trackingSince)}.</p>
               )}
           </div>
         </div>
