@@ -135,8 +135,9 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               <BikeMedia src={bike.image} name={bike.name} eager className="h-[260px] rounded-3xl border border-line md:h-[340px]" />
 
               <div className="flex min-w-0 flex-col">
+                {/* Selo só quando a leitura é conclusiva: histórico curto não vira selo no topo. */}
                 {hasOffer && metrics ? (
-                  <PriceStatus classification={metrics.classification} />
+                  metrics.classification !== "forming" && <PriceStatus classification={metrics.classification} />
                 ) : (
                   <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
                     Histórico arquivado
