@@ -73,6 +73,10 @@ export type QuickCostInput = {
   daysPerWeek: number;
   dailyKm: number;
   replaceablePercent: number;
+  /** Opcional (carro/moto): o usuário continuará com o veículo? Só false permite custo fixo evitado. */
+  keepsVehicle?: boolean;
+  /** Opcional: custo fixo mensal que DE FATO desaparece (digitado). Exige keepsVehicle === false. */
+  fixedAvoidedMonthly?: number;
 };
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -194,6 +198,19 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
   const okDays = checkRange(errors, "Dias por semana", input.daysPerWeek, LIMITS.daysPerWeek);
   const okKm = checkRange(errors, "Distância por dia", input.dailyKm, LIMITS.dailyKm);
   const okPct = checkRange(errors, "Percentual substituível", input.replaceablePercent, LIMITS.replaceablePercent);
+  // Custo fixo evitado: só existe se o usuário informou explicitamente keepsVehicle === false
+  // E digitou o valor. Nunca estimamos fração de custo fixo.
+  let fixedRemoved = 0;
+  if (input.fixedAvoidedMonthly !== undefined) {
+    if (input.keepsVehicle !== false) {
+      errors.push("Custo fixo evitado só pode ser informado quando você não continuará com o veículo.");
+    } else if (checkRange(errors, "Custo fixo mensal evitado", input.fixedAvoidedMonthly, LIMITS.monthlyMoney)) {
+      fixedRemoved = input.fixedAvoidedMonthly;
+    }
+  }
+  if (input.keepsVehicle !== undefined && typeof input.keepsVehicle !== "boolean") {
+    errors.push("Informe se continuará com o veículo.");
+  }
   if (errors.length > 0) return { ok: false, errors };
 
   const share = okPct ? input.replaceablePercent / 100 : 0;
@@ -204,7 +221,8 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
   const bikeEnergyCost = replacedKm * QUICK_BIKE_COST.energyPerKm;
   const bikeMaintenanceCost = share > 0 ? QUICK_BIKE_COST.maintenanceMonthly : 0;
   const bikeTotalCost = bikeEnergyCost + bikeMaintenanceCost;
-  const monthlySavings = roundMoney(currentVariableReplaced - bikeTotalCost);
+  const currentTotalReplaced = currentVariableReplaced + fixedRemoved;
+  const monthlySavings = roundMoney(currentTotalReplaced - bikeTotalCost);
 
   return {
     ok: true,
@@ -213,14 +231,14 @@ export function computeQuickMobilityCost(input: QuickCostInput): CostResult {
       monthlyKm: roundMoney(monthlyKm),
       replacedKm: roundMoney(replacedKm),
       currentVariableReplaced: roundMoney(currentVariableReplaced),
-      currentFixedRemoved: 0,
-      currentTotalReplaced: roundMoney(currentVariableReplaced),
+      currentFixedRemoved: roundMoney(fixedRemoved),
+      currentTotalReplaced: roundMoney(currentTotalReplaced),
       bikeEnergyCost: roundMoney(bikeEnergyCost),
       bikeMaintenanceCost: roundMoney(bikeMaintenanceCost),
       bikeTotalCost: roundMoney(bikeTotalCost),
       monthlySavings,
       annualSavings: roundMoney(monthlySavings * 12),
-      fixedExcludedBecauseVehicleKept: input.modal === "carro" || input.modal === "moto",
+      fixedExcludedBecauseVehicleKept: (input.modal === "carro" || input.modal === "moto") && fixedRemoved === 0,
     },
   };
 }
