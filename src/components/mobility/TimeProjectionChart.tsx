@@ -46,7 +46,7 @@ export function TimeProjectionChart({ points }: { points: TimeProjectionPoint[] 
         {points.map((p) => (
           <div key={p.years} className="rounded-md bg-card p-2 ring-1 ring-line">
             <dt className="text-muted-foreground">{p.years} ano{p.years > 1 ? "s" : ""}</dt>
-            <dd className="font-bold text-ink">{p.savedHours >= 0 ? "" : "+"}{decimal(Math.abs(p.savedHours))} h {p.savedHours >= 0 ? "a menos" : "a mais"}</dd>
+            <dd className="font-bold text-ink">{decimal(Math.abs(p.savedHours))} h {p.savedHours >= 0 ? "a menos" : "a mais"}</dd>
           </div>
         ))}
       </dl>
