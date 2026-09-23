@@ -260,7 +260,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                         <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-destructive" />
                         {UNAVAILABLE_LEGEND}
                       </span>
-                      <UnavailableExplainer dateISO={bike.lastObservedAt} label="Entenda o ponto vermelho" />
+                      <UnavailableExplainer dateISO={lastConfirmed?.date ?? bike.lastObservedAt} label="Entenda o ponto vermelho" />
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
