@@ -80,8 +80,8 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   );
 }
 
-export function DailyPriceChart({ series, compact = false }: Props) {
-  const rows = toRows(series);
+export function DailyPriceChart({ series, compact = false, markLastUnavailable = false }: Props) {
+  const rows = toRows(series, markLastUnavailable);
   if (rows.length === 0) {
     return (
       <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
