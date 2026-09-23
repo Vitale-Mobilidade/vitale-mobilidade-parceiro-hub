@@ -143,7 +143,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
-            <SectionHeading id="destaque" title={featuredIsOpportunity ? "Oportunidade em destaque" : "Bike em destaque"} action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+            <SectionHeading id="destaque" title="Destaque do Radar" action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
             <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
