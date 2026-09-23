@@ -243,18 +243,6 @@ export function formatDateBR(iso: string | null | undefined): string {
   });
 }
 
-function _unused() {
-    return `${String(civil.d).padStart(2, "0")}/${String(civil.m).padStart(2, "0")}/${civil.y}`;
-  }
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: TIMEZONE_BR,
-  });
-}
 
 export function formatDateTimeBR(iso: string | null | undefined): string {
   if (!iso) return "—";
