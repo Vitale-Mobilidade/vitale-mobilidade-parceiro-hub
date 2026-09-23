@@ -61,3 +61,13 @@ Páginas bloqueadas ou ainda não criadas (painel, detalhes de bike, `/bikes`, `
 - `bikeId` canônico = mesmo resolvedor do sync (`resolveBikeId`/`normalizeName`); `slug` = `bikeId` com `_` → `-` (ex.: `v9_max_20ah` → `v9-max-20ah`). Colisões de ID/slug descartam a linha repetida, nunca sobrescrevem.
 - Link: só `meli.la` válido e idêntico ao da planilha; senão "Link indisponível no momento". Preço exibido como "Preço de referência cadastrado", nunca como preço de hoje.
 - Slug inexistente → 404 `noindex`. Ainda fora do sitemap; redirects `/acompanhamento/{bikeId}` ↔ `/bikes/{slug}` seguem pendentes.
+
+### 7.1 `/bikes` — página de descoberta (rascunho, 23/09/2026)
+
+- SSR via `getBikesDiscovery` (`src/lib/bikes-discovery.functions.ts`): catálogo editorial (30 linhas) + junção por `bikeId` com `get_price_tracker_catalog` (preço e classificação vindos de `buildRadarEntries`, sem recálculo) + contagem real de vídeos da aba "Videos Youtube".
+- Busca por nome no hero; atalhos: "Para 2 pessoas", "Autonomia de 100 km ou mais", "Com preço no Radar" (só aparecem se os dados existem).
+- Filtros combináveis: preço mín./máx. (preço do Radar quando monitorado, senão referência da planilha), autonomia mínima (km extraído de "Até N km"), capacidade (1/2 pessoas). Categoria omitida: todas as linhas têm o mesmo valor ("Bike elétrica").
+- Ordenação: nome, menor/maior preço, maior autonomia; dados ausentes sempre por último.
+- Card: foto 4:3, status do Radar só quando existe, preço com fonte explícita ("Preço registrado pelo Radar Vitale" ou "Preço de referência cadastrado (não monitorado)"), autonomia/capacidade, nº de vídeos, CTA "Conhecer a bike" → `/bikes/{slug}` e, só para bikes no Radar, "Analisar preço no Radar" → `/acompanhamento/{bikeId}`. Sem link direto ao Mercado Livre.
+- Blocos: Quiz (`/escolherbike`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
+- Pendências: `/radar` e `/comparar` não existem (sem links para eles; seleção de comparação não implementada); `/bikes` fora do sitemap; filtros não persistem na URL.
