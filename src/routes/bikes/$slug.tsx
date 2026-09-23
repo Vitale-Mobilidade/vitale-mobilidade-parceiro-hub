@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/bikes/$slug")({
   component: BikeDetail,
 });
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />

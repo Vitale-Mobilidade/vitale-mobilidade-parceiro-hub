@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { VideoCards } from "@/components/site/VideoCards";
 import type { VideoCard } from "@/lib/videos.functions";
@@ -90,7 +91,7 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
 }
 
 const CARD_CLS = "group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-action";
-function CardLink({ id, slug, children }: { id: string; slug?: string; children: React.ReactNode }) {
+function CardLink({ id, slug, children }: { id: string; slug?: string; children: ReactNode }) {
   return slug ? (
     <Link to="/bikes/$slug" params={{ slug }} className={CARD_CLS}>{children}</Link>
   ) : (
@@ -293,7 +294,7 @@ const HomeB2C = () => {
       <main>
         <Hero />
         <Shortcuts />
-        <BikesRow cards={cards} />
+        <BikesRow cards={cards} slugs={data?.bikeSlugs} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
             <RadarPanel items={radar} total={total} />
