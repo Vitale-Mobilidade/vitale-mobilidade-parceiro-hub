@@ -20,7 +20,7 @@ A Home foi redesenhada para aproximar a composição da referência visual aprov
 
 ### Layout e superfície
 
-- **Hero full-bleed** com a foto original do ciclista, ocupando a largura total. Uso de `min-h-[560px]` mobile / `min-h-[640px]` desktop, conteúdo alinhado à esquerda e ancorado na base no mobile.
+- **Hero full-bleed** com a foto original do ciclista, ocupando a largura total. Na Home v2 usava `min-h-[560px]` mobile / `min-h-[640px]` desktop como baseline histórica; o padrão atual das páginas estruturais é **640px a partir de 390px**, com crescimento natural da Home em 320px (~704px) por quebra de linha do H1/lead.
 - Gradiente sobreposto partindo de `ink` para transparente (`bg-gradient-to-r from-ink via-ink/75 to-transparent`), garantindo legibilidade sem escurecer a imagem toda. No mobile o gradiente muda para `to-t` para manter o contraste quando o texto fica sobre a parte inferior da foto.
 - Tipografia de impacto no H1: `text-[2.6rem]` → `sm:text-6xl` → `lg:text-7xl`, `font-black leading-[1.02] tracking-tight`, com destaque em `text-mint` ("certa para você").
 - **Barra de atalhos** (`Shortcuts`) com 5 produtos, grid 2 colunas no mobile e 5 no desktop, sobreposta negativamente (`-mt-16`) ao hero; ícone em cápsula `bg-mint/25 text-action`, bordas `ring-1 ring-line`, sombra `shadow-xl`.
