@@ -1,12 +1,12 @@
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import {
-  parseArticleBlocks, parseCompilerOutput, parseFaq, slugifyEditorialTitle,
+  autoRepairArticle, markdownToSections, slugifyEditorialTitle, VIDEO_META_RE,
   validateArticleForPublication, validBikeId, validEditorialSlug, validYoutubeId,
   type EditorialArticle, type EditorialVideo,
 } from "../_shared/editorial-contract.ts";
 import {
-  completeEditorialDraft, detectContentType, detectEditorialBikes, EDITORIAL_OG_FALLBACK,
+  completeEditorialDraft, detectContentType, detectEditorialBikes, EDITORIAL_OG_FALLBACK, layoutArticle,
   YOUTUBE_THUMBNAILS, youtubeThumbnailUrl, type BikeCandidate,
 } from "../_shared/editorial-automation.ts";
 import { SHEET_NAME_ALIASES } from "../_shared/bike-sheet.ts";
