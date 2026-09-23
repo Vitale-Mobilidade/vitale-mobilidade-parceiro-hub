@@ -9,8 +9,8 @@ describe("bikes projection", () => {
   it("projects only identity + validated specs, no commercial fields", () => {
     const rows = buildBikeProjectionRows([bike({}), bike({ id: "x", name: " X ", autonomyKm: NaN as unknown as number, capacity: 3 as unknown as 1 })]);
     expect(rows).toEqual([
-      { bike_id: "v8_ultra", name: "V8 Ultra", autonomy_km: 50, capacity_people: 2, image_url: null, description: null, short_description: null },
-      { bike_id: "x", name: "X", autonomy_km: null, capacity_people: null, image_url: null, description: null, short_description: null },
+      { bike_id: "v8_ultra", name: "V8 Ultra", autonomy_km: 50, capacity_people: 2, image_url: null, description: null, short_description: null, category: null, autonomy_label: null, capacity_label: null },
+      { bike_id: "x", name: "X", autonomy_km: null, capacity_people: null, image_url: null, description: null, short_description: null, category: null, autonomy_label: null, capacity_label: null },
     ]);
     for (const r of rows) for (const k of ["price", "link", "eligible", "slug"]) expect(r).not.toHaveProperty(k);
   });
