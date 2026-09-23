@@ -1045,7 +1045,10 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
 
   return (
     <main className="min-h-screen bg-background">
-      <SiteHeader />
+      {/* Marca discreta, sem navegação */}
+      <div className="pt-4 pb-2 px-4 flex justify-center">
+        <VitaleBrand variant="logo" size="sm" />
+      </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
 
