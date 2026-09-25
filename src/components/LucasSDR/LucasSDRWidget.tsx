@@ -58,6 +58,7 @@ export function LucasSDRWidget({
   const [open, setOpen] = useState(false);
   // Na Home e nas calculadoras, o launcher mobile ocupa apenas 56px.
   const compactOnMobile = useRouterState({ select: (s) => s.location.pathname === "/" || s.location.pathname.startsWith("/calculadoras/") });
+  const compactBreakpoint = useRouterState({ select: (s) => s.location.pathname === "/" ? "max-sm" : "max-md" });
   const [showInvite, setShowInvite] = useState(false);
   const [inviteDismissed, setInviteDismissed] = useState(() => readFlag(ctx.leadId, "invite_dismissed"));
   const [autoOpenBlocked, setAutoOpenBlocked] = useState(() =>
@@ -298,12 +299,12 @@ export function LucasSDRWidget({
               type="button"
               onClick={() => openChat("button")}
               aria-label={`Falar com o ${assistantName}, assistente virtual`}
-              className={`flex items-center gap-2 pl-3 pr-4 h-14 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 bg-primary text-primary-foreground font-semibold${compactOnMobile ? " max-md:w-14 max-md:justify-center max-md:p-0" : ""}`}
+              className={`flex items-center gap-2 pl-3 pr-4 h-14 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 bg-primary text-primary-foreground font-semibold${compactOnMobile ? ` ${compactBreakpoint}:w-14 ${compactBreakpoint}:justify-center ${compactBreakpoint}:p-0` : ""}`}
             >
               <span className="h-9 w-9 rounded-full bg-white/25 flex items-center justify-center">
                 <MessagesSquare className="h-5 w-5" />
               </span>
-              <span className={`text-[14px] leading-tight text-left${compactOnMobile ? " max-md:hidden" : ""}`}>
+              <span className={`text-[14px] leading-tight text-left${compactOnMobile ? ` ${compactBreakpoint}:hidden` : ""}`}>
                 Falar com o<br />{assistantName}
               </span>
             </button>

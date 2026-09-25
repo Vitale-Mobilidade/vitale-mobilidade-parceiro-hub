@@ -44,7 +44,7 @@ function NavLink({ item, className }: { item: NavItem; className: string }) {
 }
 
 /** Header único do site B2C. Sem busca superior (a busca vive dentro do Radar). */
-export function SiteHeader() {
+export function SiteHeader({ homeQuizCta = false }: { homeQuizCta?: boolean }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
       <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
@@ -52,8 +52,8 @@ export function SiteHeader() {
         <nav aria-label="Principal" className="hidden items-center gap-9 text-base font-semibold text-ink-foreground lg:flex">
           {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="relative py-2 transition-colors hover:text-mint after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:scale-x-0 after:bg-mint after:transition-transform hover:after:scale-x-100" />)}
         </nav>
-        <Link to="/escolherbike" className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
-          Faça o Quiz e descubra a bike ideal
+        <Link to={homeQuizCta ? "/escolherbike" : "/grupodeofertas"} className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
+          {homeQuizCta ? "Faça o Quiz e descubra a bike ideal" : "Grupo de Ofertas"}
         </Link>
         <details className="relative lg:hidden">
           <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">

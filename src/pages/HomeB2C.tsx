@@ -287,7 +287,7 @@ const HomeB2C = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SiteHeader />
+      <SiteHeader homeQuizCta />
       <main>
         <Hero />
         <Shortcuts />
