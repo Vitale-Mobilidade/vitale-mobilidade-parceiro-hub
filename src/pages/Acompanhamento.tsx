@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, BarChart3, BellRing, ExternalLink, Flame, LineChart, Target, TrendingDown, Youtube, BookOpen } from "lucide-react";
+import { ArrowDown, ArrowRight, Flame, LineChart, Target, TrendingDown, Youtube } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SiteHeader, SiteFooter, SectionHeading, BikeMedia, DisabledCta } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
-import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
 import { ArchivedHistorySection, parseArchived } from "@/components/radar/ArchivedHistorySection";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
 import { trackRadar } from "@/lib/radar-analytics";
-import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { normalizeText } from "@/lib/price-daily";
 import {
   buildHighlights,
   buildRadarEntries,
@@ -28,7 +26,6 @@ import {
   sortEntries,
   type ChipKey,
   type RadarBike,
-  type RadarEntry,
   type SortKey,
 } from "@/lib/radar-rankings";
 
@@ -39,7 +36,13 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const base = useRadarBase();
   // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
   const bikes = useMemo<RadarBike[]>(
-    () => (initial.ok ? (initial.bikes as unknown as RadarBike[]) : []),
+    () => (initial.ok ? (initial.bikes as unknown as RadarBike[]).map(b => {
+      const editorial = initial.catalog.find(c => c.bikeId === b.id);
+      const autonomy = editorial?.autonomy?.match(/(\d{1,4})\s*km/i);
+      const capacity = editorial?.capacity?.match(/^(\d)\s*pessoas?/i);
+      return { ...b, image: b.image || editorial?.image || null, shortDescription: b.shortDescription || editorial?.description || null,
+        autonomyKm: b.autonomyKm || (autonomy ? Number(autonomy[1]) : null), capacity: b.capacity || (capacity ? Number(capacity[1]) : null), category: editorial?.category || b.category || null };
+    }) : []),
     [initial],
   );
   const error = !initial.ok;
@@ -49,9 +52,9 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     [initial],
   );
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("opportunity");
+  const [sort, setSort] = useState<SortKey>("name");
   const [chips, setChips] = useState<ChipKey[]>([]);
-  const [alertBike, setAlertBike] = useState<RadarEntry | null>(null);
+  const [category, setCategory] = useState("");
   const catalogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,14 +62,15 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   }, []);
 
   const entries = useMemo(() => buildRadarEntries(bikes ?? [], "all"), [bikes]);
+  const categories = useMemo(() => [...new Set(entries.map(e => e.category).filter((c): c is string => Boolean(c)))].sort((a, b) => a.localeCompare(b, "pt-BR")), [entries]);
   const highlights = useMemo(() => buildHighlights(entries), [entries]);
   const summary = useMemo(() => buildSummary(entries), [entries]);
 
   const filtered = useMemo(() => {
     const bySearch = searchEntries(entries, query);
-    const byChips = bySearch.filter((e) => matchesChips(e, chips));
+    const byChips = bySearch.filter((e) => matchesChips(e, chips) && (!category || normalizeText(e.category ?? "") === normalizeText(category)));
     return sortEntries(byChips, sort);
-  }, [entries, query, chips, sort]);
+  }, [entries, query, chips, sort, category]);
 
   const trackingSince = useMemo(() => {
     const dates = entries.map((e) => e.firstObservedAt).filter(Boolean) as string[];
@@ -76,7 +80,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
-  const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
@@ -139,23 +142,34 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
           </div>
         </div>
 
+        {!error && entries.length > 0 && <div className="responsive-container pt-10" ref={catalogRef}>
+          <section aria-label="Catálogo acompanhado" className="scroll-mt-24">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
+              <div className="flex flex-wrap items-center gap-2">
+                {categories.length > 0 && <><label htmlFor="radar-category" className="text-sm text-muted-foreground">Uso / categoria</label><select id="radar-category" value={category} onChange={e => setCategory(e.target.value)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action"><option value="">Todas</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></>}
+                <label htmlFor="radar-sort" className="text-sm text-muted-foreground">Ordenar por</label>
+                <select id="radar-sort" value={sort} onChange={e => setSort(e.target.value as SortKey)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action">{SORTS.map(key => <option key={key} value={key}>{SORT_LABEL[key]}</option>)}</select>
+              </div>
+            </div>
+            <div className="mb-6 flex flex-wrap gap-2">{CHIPS.map(chip => <button key={chip} type="button" aria-pressed={chips.includes(chip)} onClick={() => toggleChip(chip)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chips.includes(chip) ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[chip]}</button>)}{(chips.length > 0 || category) && <button type="button" onClick={() => { setChips([]); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
+            {filtered.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div> : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChips([]); setCategory(""); }}>Ver todas as bikes</button></p>}
+          </section>
+        </div>}
+
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
-            <SectionHeading id="destaque" title="Destaque do Radar" action={<Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex items-center gap-1 hover:underline">Ver análise completa <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+            <SectionHeading id="destaque" title="Destaque do Radar" />
             <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
+                  {featured.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {featured.perfilIndicado}</p> : featured.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{featured.shortDescription}</p>}
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
                   <div className="mt-auto space-y-2 pt-4">
-                    <a href={featured.link} target="_blank" rel="noopener noreferrer nofollow sponsored" onClick={() => { trackRadar("radar_ml_click", { bike_id: featured.id, position: "highlight" }); trackAffiliateClick({ bike_id: featured.id, position: "radar_highlight" }); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">
-                      Ver oferta no Mercado Livre <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                    </a>
-                    <button type="button" onClick={() => { trackRadar("radar_alert_opened", { bike_id: featured.id, source: "card" }); setAlertBike(featured); }} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold text-ink hover:bg-surface">
-                      <BellRing className="h-4 w-4" aria-hidden="true" /> Registrar alerta de preço
-                    </button>
+                    <Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">Ver bike e histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
                   </div>
                 </div>
               </div>
@@ -191,108 +205,22 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
         )}
 
         <div className="responsive-container py-10">
-          {loading && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-96 w-full rounded-3xl" />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && (
+           {error && (
             <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
               Não foi possível carregar o histórico agora. Tente novamente em alguns minutos.
             </p>
           )}
 
-          {!loading && !error && entries.length === 0 && (
+           {!error && entries.length === 0 && (
             <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
               Ainda não há bikes com acompanhamento disponível.
             </p>
           )}
 
-          {!loading && !error && entries.length > 0 && (
+           {!error && entries.length > 0 && (
             <>
-              <div className="mb-10">
-                <OffersGroupCta source="radar_home" />
-              </div>
-
-              <section ref={catalogRef} aria-label="Catálogo acompanhado" className="scroll-mt-8">
-                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                  <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
-                  <div>
-                    <label htmlFor="radar-sort" className="mr-2 text-sm text-muted-foreground">
-                      Ordenar por
-                    </label>
-                    <select
-                      id="radar-sort"
-                      value={sort}
-                      onChange={(e) => setSort(e.target.value as SortKey)}
-                      className="h-11 rounded-xl border border-border bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    >
-                      {SORTS.map((key) => (
-                        <option key={key} value={key}>
-                          {SORT_LABEL[key]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mb-6 flex flex-wrap gap-2">
-                  {CHIPS.map((chip) => {
-                    const active = chips.includes(chip);
-                    return (
-                      <button
-                        key={chip}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => toggleChip(chip)}
-                        className={`min-h-10 rounded-full border px-4 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                          active
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-white text-muted-foreground hover:border-primary/40"
-                        }`}
-                      >
-                        {CHIP_LABEL[chip]}
-                      </button>
-                    );
-                  })}
-                  {chips.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setChips([])}
-                      className="min-h-10 rounded-full px-3 text-sm text-primary underline-offset-4 hover:underline"
-                    >
-                      Limpar filtros
-                    </button>
-                  )}
-                </div>
-
-                {filtered.length === 0 ? (
-                  <div className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
-                    Nenhuma bike encontrada com esses filtros.{" "}
-                    <button
-                      type="button"
-                      className="font-medium text-primary underline"
-                      onClick={() => {
-                        setQuery("");
-                        setChips([]);
-                      }}
-                    >
-                      Ver todas as bikes
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {filtered.map((entry) => (
-                      <RadarBikeCard key={entry.id} entry={entry} onAlert={setAlertBike} />
-                    ))}
-                  </div>
-                )}
-              </section>
-
               <ArchivedHistorySection bikes={archived} base={base} />
+              <div className="mt-10"><OffersGroupCta source="radar_home" /></div>
 
               {initial.videos?.length > 0 && (
                 <section aria-labelledby="radar-videos" className="mt-12">
@@ -317,16 +245,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
           )}
         </div>
       </main>
-
-      {alertBike && (
-        <PriceAlertDialog
-          open={!!alertBike}
-          onOpenChange={(open) => !open && setAlertBike(null)}
-          bikeId={alertBike.id}
-          bikeName={alertBike.name}
-          currentPrice={alertBike.currentPrice}
-        />
-      )}
 
       <SiteFooter />
     </div>

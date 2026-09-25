@@ -1,6 +1,7 @@
 import type React from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
 
@@ -96,11 +97,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
   if (["radar", "specs", "cta"].includes(block.type) && block.bikeId) {
     return <BikeDecision bikeId={block.bikeId} bikes={bikes} mode={block.type as "radar" | "specs" | "cta"} />;
   }
-  if (block.type === "quiz") return <section className="my-8 rounded-2xl bg-emerald-950 p-6 text-white">
-    <h2 className="text-2xl font-bold">Ainda em dúvida sobre qual bike combina com você?</h2>
-    <p className="mt-2 text-emerald-100">Responda algumas perguntas sobre rotina, trajeto e orçamento e veja modelos compatíveis.</p>
-    <a href="/escolherbike" className="mt-4 inline-block rounded-lg bg-emerald-300 px-4 py-2 font-semibold text-emerald-950">Fazer o Quiz</a>
-  </section>;
+  if (block.type === "quiz") return <div className="my-8"><QuizBanner /></div>;
   if (block.type === "comparator") {
     const compared = [...new Set([block.bikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
       .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike)).slice(0, 2);

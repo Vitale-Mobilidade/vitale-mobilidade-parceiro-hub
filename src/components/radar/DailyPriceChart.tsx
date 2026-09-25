@@ -2,6 +2,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import { VERIFICATION_LABEL, type DailyPoint } from "@/lib/price-daily";
 import { lastRealIndex, unavailableMessage } from "@/lib/radar-unavailable";
+import { chartEvidence } from "@/lib/radar-chart";
 
 interface Props {
   series: DailyPoint[];
@@ -18,20 +19,22 @@ interface Row {
   value: number | null;
   reconstructed: boolean;
   unavailable: boolean;
+  atypical: boolean;
   point: DailyPoint | null;
 }
 
-function toRows(series: DailyPoint[], markLastUnavailable: boolean): Row[] {
+function toRows(series: DailyPoint[], markLastUnavailable: boolean, atypicalDates: Set<string>): Row[] {
   const unavailableIdx = markLastUnavailable ? lastRealIndex(series) : -1;
   return series.map((p, i) => {
     const missing = p.verification === "missing";
-    const value = !missing && Number.isFinite(p.close) ? p.close : null;
+    const value = !missing && Number.isFinite(p.close) && p.close > 0 ? p.close : null;
     return {
       date: p.date,
       label: formatDateBR(p.date),
       value,
       reconstructed: p.verification === "reconstructed",
       unavailable: i === unavailableIdx,
+      atypical: atypicalDates.has(p.date),
       point: missing ? null : p,
     };
   });
@@ -46,6 +49,7 @@ function DayDot(props: { cx?: number; cy?: number; payload?: Row }) {
       <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth={1.5} />
     );
   }
+  if (payload.atypical) return <circle cx={cx} cy={cy} r={5} fill="hsl(var(--background))" stroke="hsl(var(--destructive))" strokeWidth={2} />;
   return payload.reconstructed ? (
     <circle cx={cx} cy={cy} r={2.5} fill="hsl(var(--background))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
   ) : (
@@ -76,6 +80,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
       )}
       {p.lastVerifiedAt && <p className="text-muted-foreground">Última verificação: {formatDateTimeBR(p.lastVerifiedAt)}</p>}
       <p className="text-muted-foreground">{VERIFICATION_LABEL[p.verification]}</p>
+      {row.atypical && <p className="font-semibold text-destructive">Valor atípico confirmado</p>}
       {row.unavailable && (
         <p className="mt-1 max-w-[16rem] font-medium text-destructive">{unavailableMessage(row.date)}</p>
       )}
@@ -84,8 +89,9 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
 }
 
 export function DailyPriceChart({ series, compact = false, markLastUnavailable = false }: Props) {
-  const rows = toRows(series, markLastUnavailable);
-  if (rows.length === 0) {
+  const { domain, atypicalDates } = chartEvidence(series);
+  const rows = toRows(series, markLastUnavailable, atypicalDates);
+  if (rows.length === 0 || !domain) {
     return (
       <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
         Ainda não registramos dias verificados nesse período.
@@ -104,18 +110,19 @@ export function DailyPriceChart({ series, compact = false, markLastUnavailable =
         <LineChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={28} />
-          <YAxis tick={{ fontSize: 11 }} width={78} domain={["auto", "auto"]} tickFormatter={(v: number) => formatBRL(v)} />
+          <YAxis tick={{ fontSize: 11 }} width={78} domain={domain} allowDataOverflow tickFormatter={(v: number) => formatBRL(v)} />
           <Tooltip content={<ChartTooltip />} />
+          <Line type="linear" dataKey={(row: Row) => row.atypical || row.reconstructed ? null : row.value} stroke="hsl(var(--primary))" strokeWidth={2.5} dot={<DayDot />} activeDot={false} connectNulls={false} isAnimationActive={false} />
           <Line
-            type="monotone"
-            dataKey="value"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2.5}
+            type="linear"
+            dataKey={(row: Row) => row.atypical ? row.value : null}
+            stroke="none"
             dot={<DayDot />}
-            activeDot={{ r: 4 }}
+            activeDot={false}
             connectNulls={false}
             isAnimationActive={false}
           />
+          <Line type="linear" dataKey={(row: Row) => row.reconstructed ? row.value : null} stroke="none" dot={<DayDot />} activeDot={false} connectNulls={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

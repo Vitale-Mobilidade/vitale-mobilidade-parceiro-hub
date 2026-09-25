@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Calculator, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, Calculator, Sparkles, Wallet, CarFront, BusFront, Bike, Clock3, Timer, Route as RouteIcon, TrendingUp } from "lucide-react";
+import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
+import heroAsset from "@/assets/ferramentas-hero.png.asset.json";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
 
 /*
- * Hub de ferramentas de decisão. Só lista fluxos que existem hoje (Quiz, Radar, catálogo).
+ * Hub de ferramentas de decisão. Só lista fluxos que existem hoje (calculadoras, Quiz, Radar).
  * Não mostra produtos "em construção": se ainda não existe, não aparece como promessa.
  * Não duplica lógica do Radar nem lê dados: é uma página de orientação.
  */
@@ -15,9 +17,9 @@ export const Route = createFileRoute("/ferramentas")({
       path: "/ferramentas",
       title: "Ferramentas para escolher sua bike elétrica | Vitale Mobilidade",
       description:
-        "Quiz de perfil, Radar de preços e catálogo de modelos: as ferramentas da Vitale que já funcionam para decidir qual bike elétrica comprar.",
+        "Calculadoras, Quiz de perfil e Radar de preços: ferramentas da Vitale para decidir qual bike elétrica comprar.",
       ogTitle: "Ferramentas de decisão da Vitale Mobilidade",
-      ogDescription: "Quiz de perfil, Radar de preços e catálogo de bikes elétricas com dados reais.",
+      ogDescription: "Quiz de perfil, Radar de preços e ferramentas de mobilidade com dados reais.",
     }),
   component: FerramentasPage,
 });
@@ -34,7 +36,7 @@ const TOOLS = [
   },
   {
     key: "custo-anual",
-    icon: Calculator,
+    icon: Wallet,
     title: "Custo anual de mobilidade",
     to: "/calculadoras/custo-anual-mobilidade" as const,
     cta: "Ver meu gasto anual",
@@ -43,7 +45,7 @@ const TOOLS = [
   },
   {
     key: "payback",
-    icon: Calculator,
+    icon: TrendingUp,
     title: "Calculadora de payback",
     to: "/calculadoras/payback" as const,
     cta: "Ver em quanto tempo se paga",
@@ -52,7 +54,7 @@ const TOOLS = [
   },
   {
     key: "uber-vs-bike",
-    icon: Calculator,
+    icon: RouteIcon,
     title: "Uber/99 vs bike",
     to: "/calculadoras/uber-vs-bike" as const,
     cta: "Comparar com meu gasto em apps",
@@ -61,7 +63,7 @@ const TOOLS = [
   },
   {
     key: "carro-vs-bike",
-    icon: Calculator,
+    icon: CarFront,
     title: "Carro vs bike",
     to: "/calculadoras/carro-vs-bike" as const,
     cta: "Comparar com meu carro",
@@ -70,7 +72,7 @@ const TOOLS = [
   },
   {
     key: "transporte-publico-vs-bike",
-    icon: Calculator,
+    icon: BusFront,
     title: "Transporte público vs bike",
     to: "/calculadoras/transporte-publico-vs-bike" as const,
     cta: "Comparar com minhas viagens",
@@ -79,7 +81,7 @@ const TOOLS = [
   },
   {
     key: "moto-vs-bike",
-    icon: Calculator,
+    icon: Bike,
     title: "Moto vs bike",
     to: "/calculadoras/moto-vs-bike" as const,
     cta: "Comparar com minha moto",
@@ -88,7 +90,7 @@ const TOOLS = [
   },
   {
     key: "tempo-no-transito",
-    icon: Calculator,
+    icon: Clock3,
     title: "Tempo no trânsito",
     to: "/calculadoras/tempo-no-transito" as const,
     cta: "Ver meu tempo no trajeto",
@@ -97,7 +99,7 @@ const TOOLS = [
   },
   {
     key: "tempo-recuperado",
-    icon: Calculator,
+    icon: Timer,
     title: "Tempo recuperado",
     to: "/calculadoras/tempo-recuperado" as const,
     cta: "Ver quanto tempo recupero",
@@ -122,115 +124,52 @@ const TOOLS = [
     question: "Este preço está bom hoje?",
     body: "Histórico de preços observado pela Vitale, com a data de cada leitura e a classificação do momento. Serve para decidir se vale comprar agora ou esperar.",
   },
-  {
-    key: "bikes",
-    icon: Bike,
-    title: "Catálogo de bikes",
-    to: "/bikes" as const,
-    cta: "Ver os modelos",
-    question: "Quais modelos devo considerar?",
-    body: "Todos os modelos que acompanhamos, com autonomia, capacidade, descrição, vídeos reais e o preço da oferta atual quando existe.",
-  },
+
 ];
 
+const GROUPS = [
+  { title: "Economizar dinheiro", keys: ["calculadora", "custo-anual", "payback"] },
+  { title: "Comparar transportes", keys: ["uber-vs-bike", "carro-vs-bike", "transporte-publico-vs-bike", "moto-vs-bike"] },
+  { title: "Ganhar tempo", keys: ["tempo-no-transito", "tempo-recuperado"] },
+  { title: "Escolher a bike", keys: ["radar", "quiz"] },
+] as const;
+
 function FerramentasPage() {
-  return (
-    <div className="min-h-screen bg-surface">
-      <SiteHeader />
-      <main>
-        <section className="bg-ink text-ink-foreground">
-          <div className="responsive-container py-14 sm:py-20">
-            <p className="text-xs font-bold tracking-[0.2em] text-mint">FERRAMENTAS</p>
-            <h1 className="entry-h1 mt-3 max-w-3xl">Ferramentas para decidir qual bike elétrica comprar</h1>
-            <p className="mt-4 max-w-2xl text-lg text-ink-foreground/80">
-              Reunimos aqui o que já está no ar e funciona com dados reais. Cada ferramenta responde a uma dúvida
-              diferente do caminho de compra.
-            </p>
-          </div>
-        </section>
-
-        <div className="responsive-container space-y-12 py-12 sm:py-16">
-          <section aria-labelledby="disponiveis">
-            <h2 id="disponiveis" className="section-h2 text-ink">Disponíveis agora</h2>
-            <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {TOOLS.map(({ key, icon: Icon, title, to, cta, question, body }) => (
-                <li key={key} className="flex h-full flex-col rounded-3xl bg-card p-6 ring-1 ring-line">
-                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action">
-                    <Icon className="h-6 w-6" aria-hidden="true" />
-                  </span>
-                  <h3 className="mt-4 text-lg font-bold text-ink">{title}</h3>
-                  <p className="mt-1 text-sm font-semibold text-action">{question}</p>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
-                  <Link
-                    to={to}
-                    className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 font-bold text-primary-foreground hover:opacity-90"
-                  >
-                    {cta} <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section aria-labelledby="caminho" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
-            <h2 id="caminho" className="section-h2 text-ink">Um caminho para decidir</h2>
-            <ol className="mt-6 space-y-5">
-              <li className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
-                >
-                  1
-                </span>
-                <div>
-                  <h3 className="font-bold text-ink">Conheça os modelos no catálogo</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Autonomia, capacidade, descrição, vídeos reais e o preço da oferta atual quando existe.{" "}
-                    <Link to="/bikes" className="font-semibold text-action underline underline-offset-2">
-                      Ver os modelos
-                    </Link>
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
-                >
-                  2
-                </span>
-                <div>
-                  <h3 className="font-bold text-ink">Confira o preço no Radar</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Histórico de preços observado com a data de cada leitura, para decidir se vale comprar agora.{" "}
-                    <Link to="/radar" className="font-semibold text-action underline underline-offset-2">
-                      Abrir o Radar
-                    </Link>
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-mint/25 text-sm font-bold text-action"
-                >
-                  3
-                </span>
-                <div>
-                  <h3 className="font-bold text-ink">Decida no Quiz</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Passo final: poucas perguntas sobre trajeto e uso apontam o modelo certo e levam direto ao anúncio.{" "}
-                    <Link to="/escolherbike" className="font-semibold text-action underline underline-offset-2">
-                      Fazer o quiz
-                    </Link>
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </section>
-        </div>
-      </main>
-      <SiteFooter />
+  return <div className="min-h-screen bg-surface"><SiteHeader /><main>
+    <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
+      <img src={heroAsset.url} alt="Mulher de capacete ao lado de uma bicicleta elétrica na orla ao pôr do sol" fetchPriority="high" decoding="async" width={1672} height={941} className="absolute inset-0 -z-10 h-full w-full object-cover object-[65%_center] max-md:object-[66%_center]" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-ink/20 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/75 max-md:to-ink/25" aria-hidden="true" />
+      <div className="responsive-container flex min-h-[480px] flex-col justify-end py-14 sm:min-h-[520px] sm:justify-center sm:py-20">
+        <p className="text-xs font-bold tracking-[0.2em] text-mint">FERRAMENTAS</p>
+        <h1 className="entry-h1 mt-3 max-w-3xl">Ferramentas para decidir qual bike elétrica comprar</h1>
+        <p className="mt-4 max-w-2xl text-lg text-ink-foreground/90">Reunimos aqui o que já está no ar e funciona com dados reais. Cada ferramenta responde a uma dúvida diferente do caminho de compra.</p>
+      </div>
+    </section>
+    <div className="responsive-container space-y-12 py-12 sm:py-16">
+      {GROUPS.map(group => <section key={group.title} aria-label={group.title}>
+        <h2 className="section-h2 text-ink">{group.title}</h2>
+        <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.filter(tool => (group.keys as readonly string[]).includes(tool.key)).map(({ key, icon: Icon, title, to, cta, question, body }) =>
+            <li key={key} className="flex h-full min-w-0 flex-col rounded-3xl bg-card p-6 ring-1 ring-line">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint/25 text-action"><Icon className="h-6 w-6" aria-hidden="true" /></span>
+              <h3 className="mt-4 text-lg font-bold text-ink">{title}</h3>
+              <p className="mt-1 text-sm font-semibold text-action">{question}</p>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              <Link to={to} className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 text-center font-bold text-primary-foreground hover:opacity-90 focus-visible:ring-2 focus-visible:ring-action">{cta} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
+            </li>)}
+        </ul>
+      </section>)}
+      <section aria-labelledby="caminho" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+        <h2 id="caminho" className="section-h2 text-ink">Um caminho para decidir</h2>
+        <ol className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Entenda seus custos", to: "/calculadoras/custo-anual-mobilidade" as const, Icon: Wallet },
+            { label: "Explore bikes e preços", to: "/radar" as const, Icon: BarChart3 },
+            { label: "Confirme seu perfil no Quiz", to: "/escolherbike" as const, Icon: Sparkles },
+          ].map(({ label, to, Icon }, i) => <li key={label}><Link to={to} className="flex h-full min-h-20 items-center gap-3 rounded-xl bg-surface p-4 font-semibold text-ink hover:text-action focus-visible:ring-2 focus-visible:ring-action"><span className="text-sm font-bold text-action">{i + 1}.</span><Icon className="h-5 w-5 shrink-0 text-action" aria-hidden="true" />{label}<ArrowRight className="ml-auto h-4 w-4 shrink-0" aria-hidden="true" /></Link></li>)}
+        </ol>
+      </section>
+      <QuizBanner /><OffersBanner />
     </div>
-  );
+  </main><SiteFooter /></div>;
 }

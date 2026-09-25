@@ -13,6 +13,11 @@ export interface RadarBike {
   link: string;
   image: string | null;
   shortDescription?: string | null;
+  perfilIndicado?: string | null;
+  autonomyKm?: number | null;
+  capacity?: number | null;
+  category?: string | null;
+  terrains?: string[] | null;
   strengths?: string[] | null;
   daily: DailyPoint[];
   firstObservedAt: string | null;
@@ -38,7 +43,7 @@ export interface RadarEntry extends RadarBike {
 export type SortKey = "opportunity" | "drop" | "price" | "name";
 
 export const SORT_LABEL: Record<SortKey, string> = {
-  opportunity: "Melhor oportunidade",
+  opportunity: "Abaixo do preço típico",
   drop: "Maior queda",
   price: "Menor preço",
   name: "A–Z",
