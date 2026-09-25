@@ -2,7 +2,7 @@ import { Link } from "@/lib/router-compat";
 import { LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/price-tracker";
-import { shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
+import { radarUseLine, shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
 import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 export function RadarBikeCard({ entry, highlight = false }: Props) {
   const base = useRadarBase();
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
+  const useLine = radarUseLine(entry);
 
   return (
     <article
@@ -49,7 +50,7 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             </Link>
           </h3>
         </div>
-        {entry.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado}</p> : entry.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{entry.shortDescription}</p>}
+        {useLine && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {useLine}</p>}
         <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
           {[
             entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: ${entry.autonomyKm} km` : null,

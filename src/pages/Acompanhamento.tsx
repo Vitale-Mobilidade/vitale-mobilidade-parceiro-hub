@@ -6,7 +6,7 @@ import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
-import { shortDiagnosis } from "@/lib/radar-rankings";
+import { radarUseLine, shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
@@ -40,7 +40,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
       const editorial = initial.catalog.find(c => c.bikeId === b.id);
       const autonomy = editorial?.autonomy?.match(/(\d{1,4})\s*km/i);
       const capacity = editorial?.capacity?.match(/^(\d)\s*pessoas?/i);
-      return { ...b, image: b.image || editorial?.image || null, shortDescription: b.shortDescription || editorial?.description || null,
+       return { ...b, image: b.image || editorial?.image || null,
         autonomyKm: b.autonomyKm || (autonomy ? Number(autonomy[1]) : null), capacity: b.capacity || (capacity ? Number(capacity[1]) : null), category: editorial?.category || b.category || null };
     }) : []),
     [initial],
@@ -165,7 +165,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
-                  {featured.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {featured.perfilIndicado}</p> : featured.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{featured.shortDescription}</p>}
+                   {radarUseLine(featured) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {radarUseLine(featured)}</p>}
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
                   <div className="mt-auto space-y-2 pt-4">

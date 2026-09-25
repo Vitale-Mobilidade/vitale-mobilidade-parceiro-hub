@@ -93,7 +93,7 @@ function Bikes() {
         <td className="text-xs text-muted-foreground">{[b.autonomy_km != null && `${b.autonomy_km} km`, b.motor_w != null && `${b.motor_w} W`, b.capacity_people != null && `${b.capacity_people} pessoa(s)`].filter(Boolean).join(" · ") || "—"}</td>
         <td>{offer ? money(offer.price) : "Sem oferta atual"}</td><td>{date(offer?.verified_at)}</td>
         <td>{offer?.url ? <a href={offer.url} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline">Link vigente</a> : "Indisponível"}</td>
-        <td><a href={`/bikes/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline">Ver bike</a></td>
+         <td><a href={`/radar/${encodeURIComponent(b.bike_id)}`} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline">Ver bike</a></td>
       </tr>; })}</tbody>
     </table></div>{data && bikes.length === 0 && <p className="py-4">Nenhuma bike encontrada.</p>}</div>
   </>;

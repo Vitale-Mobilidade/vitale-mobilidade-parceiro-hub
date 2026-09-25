@@ -8,7 +8,7 @@ import { BarChart3, BookOpen, Calculator, Bike, Users, type LucideIcon } from "l
  * rota e preencher `to` aqui.
  */
 export type HomeAnchor = "#conteudos" | "#ferramentas" | "#bikes";
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | "/bikes" | "/conteudos" | HomeAnchor | null };
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | "/conteudos" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
   { key: "quiz", title: "Faça o Quiz", sub: "Descubra a bike ideal", icon: Bike, to: "/escolherbike" },

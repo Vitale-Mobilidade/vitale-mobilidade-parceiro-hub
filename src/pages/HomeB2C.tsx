@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Lock, Mail } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
@@ -60,7 +59,7 @@ function Shortcuts() {
   );
 }
 
-function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<string, string> }) {
+function BikesRow({ cards }: { cards: HomeCard[] }) {
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
@@ -74,14 +73,14 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
-            <CardLink slug={slugs[e.id]}>
+            <Link to="/radar/$bikeId" params={{ bikeId: e.id }} className={CARD_CLS}>
               <BikeMedia src={e.image} name={e.name} className="aspect-[4/3] w-full" />
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="line-clamp-2 font-bold text-ink">{e.name}</h3>
                 <p className="mt-auto pt-3 text-2xl font-black text-action">{formatBRL(e.currentPrice)}</p>
-                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-ink group-hover:text-action">{slugs[e.id] ? "Ver detalhes" : "Ver catálogo"} <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-ink group-hover:text-action">Ver bike e histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
               </div>
-            </CardLink>
+            </Link>
           </li>
         ))}
       </ul>
@@ -90,14 +89,6 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
 }
 
 const CARD_CLS = "group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-action";
-// Sem slug editorial (falha temporária da planilha/divergência): leva ao catálogo, com rótulo "Ver catálogo".
-function CardLink({ slug, children }: { slug?: string; children: ReactNode }) {
-  return slug ? (
-    <Link to="/bikes/$slug" params={{ slug }} className={CARD_CLS}>{children}</Link>
-  ) : (
-    <Link to="/bikes" className={CARD_CLS}>{children}</Link>
-  );
-}
 
 function RadarPanel({ total }: { total: number }) {
   return (
@@ -239,7 +230,7 @@ const HomeB2C = () => {
       <main>
         <Hero />
         <Shortcuts />
-        <BikesRow cards={cards} slugs={data?.bikeSlugs} />
+        <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
             <RadarPanel total={total} />

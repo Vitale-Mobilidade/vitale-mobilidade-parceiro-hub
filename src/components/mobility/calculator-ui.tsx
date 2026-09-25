@@ -305,7 +305,7 @@ export function BikeResultCard({
         )}
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Button asChild variant="outline" className="min-h-11 border-line text-action">
-            <Link to="/bikes/$slug" params={{ slug: bike.slug }}>
+             <Link to="/radar/$bikeId" params={{ bikeId: bike.bikeId }}>
               <Bike aria-hidden="true" /> Conhecer a bike
             </Link>
           </Button>
@@ -371,12 +371,6 @@ export function RecommendationFooter({
         {hillsRequested &&
           " Para subidas, usamos apenas a marcação editorial disponível no catálogo; ela não substitui um teste de desempenho."}
       </p>
-      {bikes.length === 2 && (
-        <Link to="/bikes" search={{ compare: `${bikes[0].bikeId},${bikes[1].bikeId}` }}
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-line px-5 font-bold text-action hover:border-action">
-          Comparar essas bikes →
-        </Link>
-      )}
       <QuizBanner />
       <p className="text-sm text-muted-foreground">
         Quer avaliar se o preço de uma opção monitorada está bom? Use o histórico no Radar dentro do card da bike.

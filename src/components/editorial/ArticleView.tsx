@@ -29,7 +29,7 @@ function BikeDecision({ bikeId, bikes, mode }: { bikeId: string; bikes: CatalogB
   if (mode === "specs") return <section className="my-8 rounded-2xl bg-surface p-5 sm:p-7">
     <h2 className="text-2xl font-bold">{bike.name}: dados da bike</h2>
     <p className="mt-3 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ") || "Confira os dados cadastrados na página da bike."}</p>
-    <a href={`/bikes/${bike.slug}`} className="mt-4 inline-block font-semibold text-emerald-800 underline">Ver ficha completa</a>
+     <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="mt-4 inline-block font-semibold text-emerald-800 underline">Ver bike e histórico</a>
   </section>;
   return <section className="my-8 rounded-2xl border border-line bg-emerald-50 p-5 sm:p-7">
     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -39,7 +39,7 @@ function BikeDecision({ bikeId, bikes, mode }: { bikeId: string; bikes: CatalogB
         <h2 className="mt-1 text-xl font-bold">O preço da {bike.name} está bom?</h2>
         {bike.sheetPrice != null && bike.link && <p className="mt-2 text-2xl font-bold text-emerald-800">{BRL.format(bike.sheetPrice)}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
-          <a href={`/bikes/${bike.slug}`} className="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-900">Conhecer a bike</a>
+           <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-900">Conhecer a bike</a>
           <a href={`/radar/${bike.bikeId}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Ver histórico no Radar</a>
         </div>
         {!bike.link && <p className="mt-2 text-sm text-muted-foreground">Link indisponível no momento.</p>}
@@ -116,7 +116,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
         <tbody>{rows.map(([label, value]) => <tr key={label} className="border-t border-line"><th scope="row" className="p-3 font-medium text-muted-foreground">{label}</th>
           {compared.map(b => <td key={b.bikeId} className="p-3">{value(b)}</td>)}</tr>)}
           <tr className="border-t border-line"><th scope="row" className="p-3"><span className="sr-only">Links</span></th>{compared.map(b => <td key={b.bikeId} className="space-y-1 p-3">
-            <a href={`/bikes/${b.slug}`} className="block font-semibold text-emerald-800 underline">Conhecer bike</a>
+             <a href={`/radar/${encodeURIComponent(b.bikeId)}`} className="block font-semibold text-emerald-800 underline">Conhecer bike</a>
             <a href={`/radar/${b.bikeId}`} className="block text-emerald-800 underline">Ver no Radar</a>
             {b.link && b.sheetPrice != null && <a href={b.link} target="_blank" rel="sponsored noopener noreferrer"
               onClick={() => trackAffiliateClick({ bike_id: b.bikeId, position: "content_article" })}
@@ -124,7 +124,6 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
           </td>)}</tr></tbody>
       </table></div>
       <p className="mt-2 text-xs text-muted-foreground">Preço e disponibilidade vêm do anúncio atual e podem mudar.</p>
-      <a href={`/bikes?compare=${encodeURIComponent(compared.slice(0, 2).map(b => b.bikeId).join(","))}`} className="mt-3 inline-block rounded-lg bg-emerald-950 px-4 py-2 font-semibold text-white">Compare as especificações destes modelos</a>
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;

@@ -301,8 +301,8 @@ export function BikeScenarioCard({
         </p>
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <Link
-            to="/bikes/$slug"
-            params={{ slug: bike.slug }}
+             to="/radar/$bikeId"
+             params={{ bikeId: bike.bikeId }}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-bold text-ink hover:bg-surface"
           >
             <Bike className="h-4 w-4" /> Conhecer a bike

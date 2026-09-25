@@ -7,7 +7,6 @@ import { SITE_URL } from "@/lib/seo";
 /** Rotas estáticas públicas e funcionais. Aliases, noindex e rotas inexistentes ficam fora. */
 export const STATIC_SITEMAP_PATHS = [
   "/",
-  "/bikes",
   "/radar",
   "/escolherbike",
   "/ferramentas",

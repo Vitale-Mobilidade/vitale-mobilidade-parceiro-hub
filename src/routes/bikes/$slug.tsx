@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink, LineChart, Users, Gauge, Youtube, ArrowRight } from "lucide-react";
 import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
 import { CommercialPriceBadge } from "@/components/site/CommercialPriceBadge";
@@ -41,6 +41,13 @@ function pickAlternatives(all: CatalogBike[], bike: CatalogBike): CatalogBike[] 
 }
 
 export const Route = createFileRoute("/bikes/$slug")({
+  beforeLoad: async ({ params, location }) => {
+    const cat = await getBikeCatalog();
+    if (!cat.ok) throw new Error("catálogo indisponível");
+    const bike = cat.bikes.find((b) => b.slug === params.slug.toLowerCase());
+    if (!bike) throw notFound();
+    throw redirect({ href: `/radar/${encodeURIComponent(bike.bikeId)}${location.searchStr ?? ""}`, statusCode: 301 });
+  },
   loader: async ({ params }) => {
     const slug = params.slug.toLowerCase();
     const cat = await getBikeCatalog();
