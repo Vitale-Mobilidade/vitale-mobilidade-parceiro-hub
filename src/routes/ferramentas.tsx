@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Calculator, Sparkles, Wallet, CarFront, BusFront, Bike, Clock3, Timer, Route, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, Calculator, Sparkles, Wallet, CarFront, BusFront, Bike, Clock3, Timer, Route as RouteIcon, TrendingUp } from "lucide-react";
 import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
 import heroAsset from "@/assets/ferramentas-hero.png.asset.json";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
@@ -54,7 +54,7 @@ const TOOLS = [
   },
   {
     key: "uber-vs-bike",
-    icon: Route,
+    icon: RouteIcon,
     title: "Uber/99 vs bike",
     to: "/calculadoras/uber-vs-bike" as const,
     cta: "Comparar com meu gasto em apps",
