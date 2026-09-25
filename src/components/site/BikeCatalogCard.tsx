@@ -5,7 +5,7 @@ import { formatBRL } from "@/lib/price-tracker";
 import type { DiscoveryBike } from "@/lib/bikes-discovery.functions";
 
 /**
- * Card de descoberta: o card inteiro é um único link para /bikes/$slug.
+ * Card de descoberta: o card inteiro aponta para o detalhe no Radar.
  * Classificação do Radar é apenas selo informativo (sem outro destino);
  * o acesso ao Radar fica no detalhe da bike. Sem link direto ao Mercado Livre.
  */
@@ -13,8 +13,8 @@ export function BikeCatalogCard({ bike }: { bike: DiscoveryBike }) {
   const specs = [bike.autonomy, bike.capacity].filter(Boolean).join(" · ");
   return (
     <Link
-      to="/bikes/$slug"
-      params={{ slug: bike.slug }}
+      to="/radar/$bikeId"
+      params={{ bikeId: bike.bikeId }}
       className="group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:shadow-lg hover:ring-2 hover:ring-action focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-action"
     >
       <BikeMedia src={bike.image} name={bike.name} className="aspect-[4/3] w-full" />
