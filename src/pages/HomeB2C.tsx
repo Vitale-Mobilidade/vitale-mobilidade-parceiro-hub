@@ -6,6 +6,7 @@ import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
+import { OffersBanner } from "@/components/site/DecisionBanners";
 
 /*
  * A Home usa catálogo e artigos publicados das fontes existentes; newsletter permanece inativa.
@@ -205,16 +206,7 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
 function GroupAndNewsletter() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <section aria-labelledby="grupo-ofertas" className="flex flex-col gap-5 rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:flex-row sm:items-center sm:p-8">
-        <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-mint text-mint-foreground"><MessageCircle className="h-8 w-8" aria-hidden="true" /></span>
-        <div className="min-w-0 flex-1">
-          <h2 id="grupo-ofertas" className="text-xl font-bold sm:text-2xl">Grupo de ofertas no WhatsApp</h2>
-          <p className="mt-1 flex items-center gap-2 text-sm text-ink-foreground/80"><Megaphone className="h-4 w-4 shrink-0 text-mint" aria-hidden="true" /> Somente admins publicam ofertas de bikes elétricas.</p>
-        </div>
-        <Link to="/grupodeofertas" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-mint px-5 font-bold hover:bg-mint hover:text-mint-foreground">
-          Entrar no grupo <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-      </section>
+       <OffersBanner />
       <section aria-labelledby="newsletter" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Mail className="h-6 w-6" aria-hidden="true" /></span>

@@ -374,37 +374,7 @@ export function BikeComparison({ bikes }: { bikes: RecommendedBike[] }) {
 }
 
 export function QuizCtaBanner() {
-  return (
-    <section className="relative isolate overflow-hidden rounded-2xl bg-ink text-white">
-      <picture className="absolute inset-0 -z-10">
-        <source media="(max-width: 767px)" srcSet="/vitale-hero-mobile.webp" />
-        <img
-          src="/vitale-hero-1280.webp"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          width="1280"
-          height="720"
-          className="h-full w-full object-cover object-[70%_center]"
-        />
-      </picture>
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/30" />
-      <div className="max-w-xl p-6 sm:p-9">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-mint">A próxima decisão</p>
-        <h2 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">Qual dessas bikes combina mais com você?</h2>
-        <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
-          Esta calculadora considera seu tempo e a distância informada. O Quiz também considera seu perfil de uso,
-          trajeto e preferências para ajudar você a escolher.
-        </p>
-        <Link
-          to="/escolherbike"
-          className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-lg bg-mint px-6 font-bold text-mint-foreground hover:opacity-90"
-        >
-          Fazer o Quiz <ArrowRight className="h-5 w-5" />
-        </Link>
-      </div>
-    </section>
-  );
+  return <QuizBanner />;
 }
 
 export function RadarCta() {

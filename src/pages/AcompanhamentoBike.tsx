@@ -16,6 +16,7 @@ import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 
 interface RadarBikeDetail {
   id: string;
@@ -275,22 +276,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
 
 
-            <section aria-labelledby="combina" className="relative isolate mt-12 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
-              <picture>
-                <source media="(max-width: 767px)" srcSet="/vitale-hero-mobile.webp" width={480} height={728} />
-                <img src="/vitale-hero-1280.webp" width={1280} height={720} alt="" loading="lazy" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover" />
-              </picture>
-              <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/30 max-md:bg-ink/80" aria-hidden="true" />
-              <div className="max-w-xl p-6 sm:p-10">
-                <h2 id="combina" className="text-3xl font-extrabold leading-tight sm:text-4xl">Essa bike combina com você?</h2>
-                <p className="mt-3 text-ink-foreground/90">
-                  Responda o quiz da Vitale sobre seu uso, trajeto e orçamento e veja qual bike é recomendada para o seu perfil.
-                </p>
-                <Link to="/escolherbike" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90">
-                  Fazer o quiz <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </div>
-            </section>
+            <div className="mt-12"><QuizBanner /></div>
 
             {strengths.length > 0 && (
               <section className="mt-12" aria-labelledby="destaques">
