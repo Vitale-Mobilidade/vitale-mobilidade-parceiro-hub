@@ -1,6 +1,6 @@
 # Content Graph mínimo — Etapa 12
 
-Estado: **primeiro corte preparado localmente; não publicado; migration não aplicada**  
+Estado: **primeiro corte publicado; migration aplicada em 25/09/2026**
 Data: 25/09/2026
 
 ## Objetivo deste corte
@@ -40,7 +40,7 @@ Os arrays existentes representam relação editorial aprovada, mas não distingu
 
 ## Gate de publicação
 
-A migration local substitui somente a função de leitura `get_published_editorial_index()` e preserva `SECURITY DEFINER`, `search_path`, revogação de `PUBLIC` e grants atuais.
+A migration substituiu somente a função de leitura `get_published_editorial_index()` e preservou `SECURITY DEFINER`, `search_path`, revogação de `PUBLIC` e grants atuais. A definição anterior foi registrada em `supabase/rollback/20260925193000_editorial_index_related_bikes.sql`.
 
 Antes de aplicar ou publicar:
 
@@ -60,10 +60,10 @@ Rollback: restaurar a definição anterior da RPC, que omite `relatedBikeIds`, e
 | Produto e Estratégia | Pass | Entrega a relação conteúdo–Bike sem antecipar CMS, IA ou recomendação automática. |
 | CTO e Arquitetura | Pass | Reutiliza schema, writer e RPC existentes; não cria entidade paralela. |
 | IA e Agent Engineering | N/A justificado | Nenhuma geração, inferência ou publicação por IA neste corte. |
-| Segurança | Pass local | RPC continua limitada a `published` + `indexable`; aplicação em produção segue bloqueada até autorização. |
-| UX/UI | Pass local | Seção condicional, no máximo seis cards, SSR e CTA inequívoco para o artigo. Validação visual publicada ainda pendente. |
+| Segurança | Pass | RPC continua limitada a `published` + `indexable`; produção retornou 2 artigos no índice, igual ao total elegível. |
+| UX/UI | Pass | Seção condicional, no máximo seis cards, SSR e CTA inequívoco para o artigo. Seção com artigo real conferida na página pública da Bike. |
 | CX e Operação | Pass | Não cria nova rotina de curadoria; usa relações que o Admin já mantém. |
-| Growth e CRO | Pass local | Cria link interno contextual sem alterar canonical nem clique afiliado direto. Medição real depende de publicação. |
-| PMO e QA | Pass com pendência | Diff é pequeno e reversível; testes e `pnpm validate` não foram executados porque o responsável pediu testes apenas quando solicitar. |
+| Growth e CRO | Pass | Link interno contextual publicado sem alterar o clique afiliado direto; efeito orgânico ainda não mensurado. |
+| PMO e QA | Pass | `pnpm validate` passou após autorização: typecheck, 34 testes direcionados e build. Árvore remota idêntica à validada. |
 
-Decisão consolidada: **GO para manter o corte preparado localmente. NO-GO para aplicar a migration ou publicar sem autorização específica.**
+Decisão consolidada: **GO executado mediante autorização específica nesta task**. Migration aplicada e frontend publicado no mesmo projeto Lovable. O relacionamento editorial continua condicionado aos artigos efetivamente publicados.

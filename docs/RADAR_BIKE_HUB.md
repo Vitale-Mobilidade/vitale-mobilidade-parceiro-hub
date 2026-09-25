@@ -1,6 +1,6 @@
 # Página oficial da Bike no Radar
 
-Estado: decisão pré-implementação, 25/09/2026. Rota canônica: `/radar/$bikeId`.
+Estado: **publicado em 25/09/2026**, commit Lovable `2d1f1728fafb3e44cacaf8bbddf0028b03a10af0`. Rota canônica: `/radar/$bikeId`.
 
 ## Decisão consolidada
 
@@ -39,9 +39,9 @@ Conflito: uma tabela comparativa útil pede preço da outra Bike, mas o históri
 | Arquitetura | Pass | Loader reaproveita as RPCs de histórico, catálogo e índice editorial; catálogo tem cache existente. |
 | IA | N/A | Nenhum texto é gerado ou resumido por IA. |
 | Segurança | Pass local | `Product.offers` só recebe preço e URL `meli.la` da oferta atual válida; nenhuma tabela privada foi exposta. |
-| UX/UI | Pass local | Tabela semântica, seletor rotulado, conteúdo opcional e rolagem acessível no celular; inspeção visual publicada pendente. |
+| UX/UI | Pass | Tabela semântica, seletor rotulado, conteúdo opcional e rolagem acessível no celular; página pública inspecionada no navegador interno. |
 | CX/Operação | Pass | Campos continuam sendo mantidos no fluxo de dados atual. |
-| Growth/CRO | Pass local | Canonical único, breadcrumbs e `Product` SSR; artigos/vídeos possuem links contextuais. Resultado em busca ainda não mensurado. |
-| PMO/QA | Fail para release | O responsável pediu testes somente quando solicitar; verificação visual e `pnpm validate` não foram executados. |
+| Growth/CRO | Pass | Canonical único, breadcrumbs e `Product` SSR; artigos/vídeos possuem links contextuais. Resultado em busca ainda não mensurado. |
+| PMO/QA | Pass | Responsável autorizou o gate: `pnpm validate` passou (typecheck, 34 testes direcionados, build). Árvore publicada idêntica à validada localmente; URL pública inspecionada. |
 
-Resultado: código local preparado. Publicação permanece bloqueada pelo gate de verificação e pela autorização específica de deploy/migration.
+Resultado: migration de leitura aplicada com snapshot em `supabase/rollback/20260925193000_editorial_index_related_bikes.sql`; ACL, `SECURITY DEFINER` e `search_path` preservados. O índice retornou 2 artigos, o mesmo total de registros `published` e `indexable`. O frontend foi publicado no projeto Lovable existente e conferido em `https://vitalemobilidade.com/radar/v9_max_ufofast_duas_baterias`. Rollback: restaurar a função pelo snapshot e republicar o commit anterior `96f0935` se necessário.
