@@ -6,6 +6,22 @@ import { formatBRL } from "@/lib/price-tracker";
 
 const NOT_INFORMED = "Não informado";
 
+/** Só aceita linhas explicitamente rotuladas na ficha; não adivinha especificações na prosa. */
+function labeledFact(description: string | null, labels: RegExp): string | null {
+  if (!description) return null;
+  for (const line of description.split(/\r?\n/)) {
+    const explicitLine = line.trim().replace(/^(?:\d+[.)]\s*|[-*•]\s*)/, "");
+    const match = explicitLine.match(labels);
+    const value = match?.slice(1).find(Boolean)?.trim();
+    if (value && value.length <= 120) return value;
+  }
+  return null;
+}
+
+function fact(item: CatalogBike, labels: RegExp): string {
+  return labeledFact(item.description, labels) ?? NOT_INFORMED;
+}
+
 /** Compara atributos publicados sem declarar um vencedor ou usar preço histórico como oferta. */
 export function BikeHubComparison({ bike, alternatives }: { bike: CatalogBike; alternatives: CatalogBike[] }) {
   const sorted = [...alternatives].sort((a, b) => {
@@ -22,8 +38,15 @@ export function BikeHubComparison({ bike, alternatives }: { bike: CatalogBike; a
 
   const rows = [
     { label: "Preço da oferta atual", value: (item: CatalogBike) => item.link && item.sheetPrice !== null ? formatBRL(item.sheetPrice) : "Sem oferta atual" },
-    { label: "Autonomia declarada", value: (item: CatalogBike) => item.autonomy ?? NOT_INFORMED },
-    { label: "Capacidade", value: (item: CatalogBike) => item.capacity ?? NOT_INFORMED },
+    { label: "Motor", value: (item: CatalogBike) => fact(item, /^(?:potência do motor|motor)\s*(?::|de)\s*(.+)$/i) },
+    { label: "Bateria", value: (item: CatalogBike) => fact(item, /^(?:(?:capacidade da bateria|bateria(?:s)?)\s*:\s*(.+)|((?:\d+\s+)?baterias?\s+de\s+.+))$/i) },
+    { label: "Autonomia estimada", value: (item: CatalogBike) => fact(item, /^autonomia estimada(?: com condução moderada)?\s*(?::|de)\s*(.+)$/i) },
+    { label: "Autonomia de catálogo", value: (item: CatalogBike) => item.autonomy ?? NOT_INFORMED },
+    { label: "Lugares", value: (item: CatalogBike) => item.capacity ?? NOT_INFORMED },
+    { label: "Capacidade de carga informada", value: (item: CatalogBike) => fact(item, /^(?:capacidade (?:máxima|de carga)(?: informada)?|carga máxima|suporta até)\s*(?::|de)\s*(.+)$/i) },
+    { label: "Rodas e pneus", value: (item: CatalogBike) => fact(item, /^(?:(?:rodas e pneus|tamanho do pneu|pneus?)\s*:\s*(.+)|((?:pneus?)\s+(?:fat|aro|\d).+))$/i) },
+    { label: "Freios", value: (item: CatalogBike) => fact(item, /^(?:(?:sistema de freio|freios?)\s*:\s*(.+)|((?:freios?)\s+(?:hidráulicos?|a disco|mecânicos?).*))$/i) },
+    { label: "Acessórios de destaque", value: (item: CatalogBike) => fact(item, /^(?:acessórios? de destaque|acessórios?|iluminação)\s*:\s*(.+)$/i) },
     { label: "Categoria", value: (item: CatalogBike) => item.category ?? NOT_INFORMED },
   ];
 
@@ -53,7 +76,7 @@ export function BikeHubComparison({ bike, alternatives }: { bike: CatalogBike; a
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">Preços e disponibilidade podem mudar; confirme a oferta na página de cada bike.</p>
+      <p className="mt-2 text-xs text-muted-foreground">Dados da ficha publicada; “Não informado” indica ausência de dado explícito, não ausência do recurso. Autonomia estimada depende do uso e não substitui a de catálogo. Preços e disponibilidade podem mudar; confirme a oferta na página de cada bike.</p>
       <Link to="/radar/$bikeId" params={{ bikeId: other.bikeId }} className="mt-4 inline-flex min-h-11 items-center gap-2 font-semibold text-action hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
         Conhecer {other.name} <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>

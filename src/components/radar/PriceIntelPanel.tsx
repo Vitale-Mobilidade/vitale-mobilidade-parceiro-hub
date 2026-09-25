@@ -40,6 +40,9 @@ export function PriceIntelPanel({
   const scaleMax = Math.ceil((Math.max(currentPrice, maxPrice ?? 0) + 2000) / 500) * 500;
   const currentPosition = (currentPrice / scaleMax) * 100;
   const hasHistory = minPrice !== null && maxPrice !== null && distinctPrices > 0;
+  const showBands = !forming && p25 !== null && p75 !== null && p25 < p75;
+  const lowerBand = showBands ? (p25 / scaleMax) * 100 : 0;
+  const typicalBand = showBands ? ((p75 - p25) / scaleMax) * 100 : 0;
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
@@ -81,7 +84,7 @@ export function PriceIntelPanel({
             <div
               className="relative pt-[94px]"
               role="img"
-              aria-label={`Preço atual ${formatBRL(currentPrice)} em uma escala de R$ 0 a ${formatBRL(scaleMax)}.${hasHistory ? ` Menor registrado ${formatBRL(minPrice)}, maior registrado ${formatBRL(maxPrice)}.` : ""}`}
+              aria-label={`Preço atual ${formatBRL(currentPrice)} em uma escala de R$ 0 a ${formatBRL(scaleMax)}.${hasHistory ? ` Menor registrado ${formatBRL(minPrice)}, maior registrado ${formatBRL(maxPrice)}.` : ""}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
             >
               <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `${currentPosition}%` }} aria-hidden="true">
                 <span className="flex w-[108px] flex-col items-center rounded-xl border border-line bg-logo-surface px-2 pb-1.5 pt-1 shadow-md">
@@ -91,10 +94,21 @@ export function PriceIntelPanel({
                 </span>
                 <span className="h-0 w-0 border-x-[7px] border-t-[8px] border-x-transparent border-t-logo-surface" />
               </span>
-              <span className="block h-3 rounded-full bg-surface ring-1 ring-line" aria-hidden="true" />
+              {showBands ? (
+                <span className="flex h-3 overflow-hidden rounded-full ring-1 ring-line" aria-hidden="true">
+                  <span className="bg-emerald-500" style={{ width: `${lowerBand}%` }} />
+                  <span className="bg-amber-400" style={{ width: `${typicalBand}%` }} />
+                  <span className="flex-1 bg-rose-400" />
+                </span>
+              ) : <span className="block h-3 rounded-full bg-surface ring-1 ring-line" aria-hidden="true" />}
               <span className="absolute bottom-0 h-3 w-1.5 -translate-x-1/2 rounded-full bg-action ring-2 ring-card" style={{ left: `${currentPosition}%` }} aria-hidden="true" />
             </div>
             <div className="mt-1 flex justify-between text-xs font-medium text-muted-foreground"><span>R$ 0</span><span>{formatBRL(scaleMax)}</span></div>
+            {showBands && <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-ink" aria-label="Legenda das faixas de preço">
+              <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />Abaixo da faixa habitual</span>
+              <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" aria-hidden="true" />Faixa habitual</span>
+              <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />Acima da faixa habitual</span>
+            </div>}
             {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 Menor registrado
