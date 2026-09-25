@@ -35,14 +35,11 @@ export function PriceIntelPanel({
   const { p25, p75, typicalPrice, classification } = metrics;
   const forming = classification === "forming";
 
-  // Apenas a régua usa extremos confirmados desta janela; o gráfico mantém seu domínio próprio.
-  const confirmed = metrics.series.filter(p =>
-    (p.verification === "observed_change" || p.verification === "confirmed_unchanged") &&
-    Number.isFinite(p.low) && Number.isFinite(p.high) && p.low > 0 && p.high > 0,
-  );
-  const scaleMin = confirmed.length ? Math.min(...confirmed.map(p => p.low)) : null;
-  const scaleMax = confirmed.length ? Math.max(...confirmed.map(p => p.high)) : null;
-  const hasHistory = scaleMin !== null && scaleMax !== null;
+  // A régua usa os extremos registrados desta janela (minPrice/maxPrice), a mesma base
+  // dos rótulos "menor/maior registrado" — incluindo registros reconstruídos sinalizados.
+  const scaleMin = metrics.minPrice;
+  const scaleMax = metrics.maxPrice;
+  const hasHistory = scaleMin !== null && scaleMax !== null && scaleMax > scaleMin;
   const span = hasHistory ? scaleMax - scaleMin : 0;
   const position = (value: number) => span > 0 && scaleMin !== null
     ? Math.min(100, Math.max(0, ((value - scaleMin) / span) * 100)) : 50;
