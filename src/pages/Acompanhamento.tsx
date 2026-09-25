@@ -141,22 +141,22 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
             <SectionHeading id="destaque" title="Destaque do Radar" />
-            <div className="mt-5 grid items-start gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-              <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
+            <div className="mt-5 grid items-stretch gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+              <div className="grid h-full items-stretch gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl sm:h-full" eager />
                 <div className="flex min-w-0 flex-col">
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
                    {radarUseLine(featured) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {radarUseLine(featured)}</p>}
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 space-y-2 sm:mt-auto sm:pt-4">
                     <Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">Ver bike e histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
                   </div>
                 </div>
               </div>
               <div className="min-w-0">
                 <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><LineChart className="h-4 w-4 text-action" aria-hidden="true" /> Histórico diário registrado</p>
-                <DailyPriceChart series={featured.metrics.series} />
+                <DailyPriceChart series={featured.metrics.series} focusVariation />
               </div>
             </div>
           </section>

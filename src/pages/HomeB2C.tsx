@@ -1,6 +1,6 @@
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Lock, Mail } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Mail } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink } from "@/components/home/home-products";
@@ -222,29 +222,28 @@ function GroupAndNewsletter() {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="space-y-6">
        <OffersBanner source="home" />
-      <section aria-labelledby="newsletter" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
+      <section aria-labelledby="newsletter" className="max-w-3xl rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Mail className="h-6 w-6" aria-hidden="true" /></span>
           <div className="min-w-0">
             <h2 id="newsletter" className="text-xl font-bold text-ink sm:text-2xl">Newsletter Vitale</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Cadastre seu interesse em novidades sobre bikes elétricas, preços e ferramentas.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cadastre-se para receber novidades sobre bikes elétricas, preços e ferramentas.</p>
           </div>
         </div>
-        {status === "done" ? <p role="status" className="mt-5 rounded-xl bg-mint/20 p-4 text-sm text-ink">Interesse registrado. Os envios da newsletter ainda não estão ativos.</p> : (
+        {status === "done" ? <p role="status" className="mt-5 rounded-xl bg-mint/20 p-4 text-sm text-ink">Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da Vitale.</p> : (
           <form onSubmit={submitNewsletter} className="mt-5 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div><label htmlFor="nl-name" className="mb-1 block text-sm font-medium text-ink">Seu nome</label><input id="nl-name" name="name" autoComplete="name" required minLength={2} maxLength={80} value={name} onChange={event => setName(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm" /></div>
               <div><label htmlFor="nl-email" className="mb-1 block text-sm font-medium text-ink">Seu e-mail</label><input id="nl-email" name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm" /></div>
             </div>
-            <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-0.5" /> Autorizo a Vitale a guardar meu nome e e-mail para a newsletter. Sei que os envios ainda não estão ativos.</label>
+            <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-0.5" /> Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me contatar sobre a newsletter.</label>
             <input type="text" value={website} onChange={event => setWebsite(event.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-            <button type="submit" disabled={status === "sending"} className="min-h-12 rounded-xl bg-action px-6 font-bold text-primary-foreground disabled:opacity-60">{status === "sending" ? "Registrando…" : "Cadastrar interesse"}</button>
+            <button type="submit" disabled={status === "sending"} className="min-h-12 rounded-xl bg-action px-6 font-bold text-primary-foreground disabled:opacity-60">{status === "sending" ? "Registrando…" : "Cadastrar e-mail"}</button>
           </form>
         )}
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Nenhum e-mail é enviado automaticamente nesta etapa.</p>
       </section>
     </div>
   );

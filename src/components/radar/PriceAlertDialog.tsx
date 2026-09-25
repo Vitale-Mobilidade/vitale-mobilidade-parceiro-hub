@@ -25,7 +25,7 @@ interface Props {
 }
 
 const CONSENT_LABEL =
-  "Autorizo a Vitale Mobilidade a registrar meu nome, WhatsApp e e-mail com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
+  "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
 
 const DROP_OPTIONS = Array.from({ length: 10 }, (_, index) => (index + 1) * 100);
 
@@ -104,7 +104,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
         {status === "done" ? (
           <div className="space-y-3 text-sm">
             <p className="rounded-xl bg-green-50 p-4 text-foreground">
-              Interesse registrado. O envio automático de avisos ainda não está ativo, então não enviaremos mensagem por enquanto.
+              Alerta cadastrado. Sua preferência de preço e seus dados de contato foram salvos.
             </p>
             <Button className="w-full" onClick={() => onOpenChange(false)}>
               Fechar
@@ -172,7 +172,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
               Registrar alerta
             </Button>
             <p className="text-xs text-muted-foreground">
-              Registramos seu interesse. O envio automático de avisos ainda não está ativo.
+              Sua preferência de preço fica vinculada a esta bike.
             </p>
           </form>
         )}

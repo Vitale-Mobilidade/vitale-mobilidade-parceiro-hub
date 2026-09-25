@@ -2,7 +2,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome e e-mail para a newsletter. Entendo que os envios ainda não estão ativos.";
+const CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me contatar sobre a newsletter.";
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 async function fingerprint(req: Request): Promise<string> {
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       status: "interested",
       delivery_enabled: false,
       consent_text: CONSENT_TEXT,
-      consent_version: "v1",
+      consent_version: "v2",
       consent_at: now.toISOString(),
       source_url: sourceUrl,
       updated_at: now.toISOString(),

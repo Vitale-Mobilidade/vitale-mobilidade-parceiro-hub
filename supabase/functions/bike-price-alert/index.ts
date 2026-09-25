@@ -10,8 +10,8 @@ const RATE_LIMIT = 8;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 const CONSENT_TEXT =
-  "Autorizo a Vitale Mobilidade a registrar meu nome, WhatsApp e e-mail com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
-const CONSENT_VERSION = "v2";
+  "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
+const CONSENT_VERSION = "v3";
 
 const GENERIC_OK = { ok: true, message: "Alerta registrado." };
 
