@@ -29,3 +29,7 @@ ALTER TABLE public.newsletter_throttle ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "No direct newsletter throttle access"
   ON public.newsletter_throttle FOR ALL TO anon, authenticated
   USING (false) WITH CHECK (false);
+
+-- Supabase may grant table privileges to public API roles by default.
+-- RLS blocks row access, and this revoke also removes non-row privileges.
+REVOKE ALL PRIVILEGES ON TABLE public.newsletter_subscriptions, public.newsletter_throttle FROM anon, authenticated;
