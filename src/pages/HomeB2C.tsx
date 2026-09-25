@@ -4,9 +4,9 @@ import { VideoCards } from "@/components/site/VideoCards";
 import type { VideoCard } from "@/lib/videos.functions";
 import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
-import { SiteHeader, SiteFooter, BikeMedia, SectionHeading, PriceStatus } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
-import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
+import type { HomeCard } from "@/lib/home-cards.functions";
 
 /*
  * Sem backend ainda: comparador, calculadora (CTAs ativos levam só a rotas reais), conteúdos editoriais e newsletter.
@@ -24,7 +24,6 @@ function Hero() {
       </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-transparent max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/70 max-md:to-ink/20" aria-hidden="true" />
       <div className="responsive-container entry-hero-inner">
-        <p className="entry-eyebrow">BIKES ELÉTRICAS NO BRASIL</p>
         <h1 className="entry-h1">
           Encontre a bike elétrica <span className="text-mint">certa para você</span>
         </h1>
@@ -100,8 +99,7 @@ function CardLink({ slug, children }: { slug?: string; children: ReactNode }) {
   );
 }
 
-function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number }) {
-  const picks = items.slice(0, 3);
+function RadarPanel({ total }: { total: number }) {
   return (
     <section aria-labelledby="radar-home" className="relative flex flex-col overflow-hidden rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:p-8">
       {/* Decoração abstrata (não é dado) */}
@@ -116,22 +114,16 @@ function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number })
       <p className="relative mt-2 max-w-md text-ink-foreground/80">
         {total > 0 ? <><strong className="text-mint">{total} bikes</strong> monitoradas. Veja o preço atual e a classificação do Radar antes de comprar.</> : "Veja o preço atual e a classificação do Radar antes de comprar."}
       </p>
-      {picks.length > 0 && (
-        <ul className="relative mt-6 grid gap-3 sm:grid-cols-3">
-          {picks.map((it) => (
-            <li key={it.id}>
-              <Link to="/radar/$bikeId" params={{ bikeId: it.id }} className="flex h-full items-center gap-3 rounded-2xl bg-ink-foreground/5 p-3 ring-1 ring-ink-foreground/10 transition hover:ring-mint/70 sm:flex-col sm:items-stretch">
-                <BikeMedia src={it.image} name={it.name} className="h-16 w-16 shrink-0 rounded-xl bg-background sm:aspect-[4/3] sm:h-auto sm:w-full" />
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm font-bold leading-tight">{it.name}</p>
-                  <p className="mt-1 text-lg font-black text-mint tabular-nums">{formatBRL(it.currentPrice)}</p>
-                  <div className="mt-1"><PriceStatus classification={it.classification} /></div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="relative mt-6 rounded-xl border border-ink-foreground/15 bg-ink-foreground/5 p-4" role="img" aria-label="Ilustração conceitual de histórico, tendência e comparação de preços; não representa dados reais">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-semibold text-mint">
+          <span>Histórico</span><span>Tendência</span><span>Comparação</span>
+        </div>
+        <svg aria-hidden="true" viewBox="0 0 360 100" preserveAspectRatio="none" className="mt-3 h-24 w-full text-mint" fill="none">
+          <path d="M0 25H360M0 50H360M0 75H360" stroke="currentColor" strokeOpacity=".16" />
+          <path d="M4 78 C44 60 58 72 94 53 S150 42 183 60 S236 42 270 47 S322 19 356 27" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <path d="M4 58 C46 65 68 40 104 47 S160 68 204 50 S257 64 303 35 S335 44 356 32" stroke="currentColor" strokeOpacity=".45" strokeWidth="2" strokeDasharray="5 5" />
+        </svg>
+      </div>
       <Link to="/radar" className="relative mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90 sm:w-fit">
         Explorar Radar de preços <ArrowRight className="h-5 w-5" aria-hidden="true" />
       </Link>
@@ -156,8 +148,8 @@ function CalculatorPanel() {
       </div>
       <h2 id="ferramentas" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
       <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
-      <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
-        <ul className="flex flex-1 justify-around gap-2">
+      <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3 rounded-2xl bg-surface p-4" aria-label="Composição conceitual: carro, Uber ou ônibus, com custo e trajeto informados por você, comparados à bike elétrica" role="img">
+        <ul className="flex flex-1 basis-44 justify-around gap-2">
           {from.map(({ icon: Icon, label }) => (
             <li key={label} className="flex flex-col items-center gap-1.5 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-card text-muted-foreground ring-1 ring-line"><Icon className="h-6 w-6" aria-hidden="true" /></span>
@@ -165,6 +157,9 @@ function CalculatorPanel() {
             </li>
           ))}
         </ul>
+        <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold text-muted-foreground">
+          <span>Custo</span><span>+</span><span>Trajeto</span>
+        </div>
         <ArrowRight className="h-7 w-7 shrink-0 text-action" aria-hidden="true" />
         <div className="flex flex-col items-center gap-1.5 text-center">
           <span className="grid h-16 w-16 place-items-center rounded-full bg-action text-primary-foreground shadow-lg ring-4 ring-mint/40"><Bike className="h-8 w-8" aria-hidden="true" /></span>
@@ -288,7 +283,6 @@ const HomeB2C = () => {
   const data = useLoaderData({ from: "/" });
   const ok = data?.ok === true;
   const cards = ok ? data.cards : [];
-  const radar = ok ? data.radar : [];
   const total = ok ? data.search.length : 0;
 
   return (
@@ -300,7 +294,7 @@ const HomeB2C = () => {
         <BikesRow cards={cards} slugs={data?.bikeSlugs} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
-            <RadarPanel items={radar} total={total} />
+            <RadarPanel total={total} />
             <CalculatorPanel />
           </div>
           <CompareBlock cards={cards} />
