@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { adminCall, adminStream, type AdminArticleList, type AdminBike, type AdminOffer, type AdminOverview, type AdminRole,
+import { adminCall, adminStream, type AdminArticleList, type AdminBike, type AdminGrowth, type AdminOffer, type AdminOverview, type AdminRole,
   type AdminVideoList, type ArticleRow } from "@/lib/admin-api";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
-import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
+import type { VideoItem } from "@/lib/video-catalog";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle, type EditorialVideo } from
   "../../supabase/functions/_shared/editorial-contract";
@@ -37,18 +37,27 @@ export function AdminOverviewPage() {
 }
 function Overview({ role }: { role: AdminRole }) {
   const [data, setData] = useState<AdminOverview | null>(null);
+  const [videoCatalogCount, setVideoCatalogCount] = useState<number | null>(null);
   const [error, setError] = useState("");
-  useEffect(() => { void adminCall<AdminOverview>("overview").then(setData).catch(e => setError(e.message)); }, []);
+  useEffect(() => {
+    void Promise.allSettled([adminCall<AdminOverview>("overview"), getSheetVideoCatalog()]).then(([overview, catalog]) => {
+      if (overview.status === "fulfilled") setData(overview.value);
+      else setError(overview.reason instanceof Error ? overview.reason.message : "Não foi possível carregar a operação.");
+      if (catalog.status === "fulfilled") setVideoCatalogCount(catalog.value.length);
+    });
+  }, []);
   return <>
     <Heading title="Visão geral" detail="O que precisa da atenção da equipe hoje." />
     {error && <Notice danger>{error}</Notice>}
     {!data ? <p aria-busy="true">Carregando operação…</p> : <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[["Bikes no catálogo", data.bikes], ["Vídeos cadastrados", data.videos],
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {[["Vídeos na planilha", videoCatalogCount ?? "—"], ["Vídeos importados", data.videos],
+          ["Com transcrição", data.videosWithTranscript ?? "—"], ["Com artigo", data.videosWithArticle ?? "—"],
           ["Artigos publicados", data.articles.published ?? 0], ["Rascunhos", data.articles.draft ?? 0],
-          ["Erros de geração", data.generationErrors]].map(([label, value]) => <div key={label} className={PANEL}>
+          ["Bikes no catálogo", data.bikes], ["Erros de geração", data.generationErrors]].map(([label, value]) => <div key={label} className={PANEL}>
             <p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
       </div>
+      <p className="mt-3 text-xs text-muted-foreground">“Na planilha” é o acervo disponível. “Importados” são vídeos que já receberam dados editoriais no Admin.</p>
       <div className={`${PANEL} mt-5`}>
         <h2 className="text-lg font-semibold">Sincronização da planilha</h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
@@ -61,11 +70,78 @@ function Overview({ role }: { role: AdminRole }) {
         <a href="/painel-bikes" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">Abrir painel operacional de bikes</a>
       </div>
       {role !== "operation" && <div className="mt-5 flex flex-wrap gap-3">
-        <a href="/admin/videos" className={BTN}>Organizar vídeos</a>
-        <a href="/admin/conteudos/novo" className={OUTLINE}>Criar artigo</a>
+        <Link to="/admin/videos" className={BTN}>Organizar vídeos</Link>
+        <Link to="/admin/conteudos/novo" search={{ video: undefined }} className={OUTLINE}>Criar artigo</Link>
       </div>}
     </>}
   </>;
+}
+
+export function AdminGrowthPage() {
+  return <AdminShell>{role => role === "admin" ? <Growth /> : <Notice danger>Somente Admin pode ver dados de Growth.</Notice>}</AdminShell>;
+}
+
+function Growth() {
+  const [rangeDays, setRangeDays] = useState(30);
+  const [data, setData] = useState<AdminGrowth | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setData(null); setError("");
+    void adminCall<AdminGrowth>("growth", { rangeDays }).then(setData)
+      .catch(e => setError(e instanceof Error ? e.message : "Não foi possível carregar Growth."));
+  }, [rangeDays]);
+  const completion = data?.quiz.started ? Math.round((data.quiz.completed / data.quiz.started) * 100) : 0;
+  const clickThrough = data?.quiz.started ? Math.round((data.quiz.identifiedClickers / data.quiz.started) * 100) : 0;
+  return <>
+    <Heading title="Growth" detail="Aquisição, intenção e cliques de compra comprovados pelos dados da Vitale.">
+      <label className="text-sm font-semibold">Período<select className={`${INPUT} ml-2 w-auto`} value={rangeDays}
+        onChange={e => setRangeDays(Number(e.target.value))}>
+        <option value={7}>7 dias</option><option value={30}>30 dias</option><option value={90}>90 dias</option>
+      </select></label>
+    </Heading>
+    {error && <Notice danger>{error}</Notice>}
+    {!data ? <p aria-busy="true">Carregando indicadores…</p> : <>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[["Pessoas que iniciaram o Quiz", data.quiz.started], ["Quiz concluídos", data.quiz.completed],
+          ["Cliques de compra", data.quiz.purchaseClicks], ["Pessoas identificadas que clicaram", data.quiz.identifiedClickers]]
+          .map(([label, value]) => <div key={label} className={PANEL}><p className="text-sm text-muted-foreground">{label}</p>
+            <p className="mt-2 text-3xl font-bold">{value}</p></div>)}
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <section className={PANEL}><h2 className="text-lg font-semibold">Funil do Quiz</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-4"><div><dt className="text-sm text-muted-foreground">Conclusão</dt><dd className="text-2xl font-bold">{completion}%</dd></div>
+            <div><dt className="text-sm text-muted-foreground">Pessoas com clique</dt><dd className="text-2xl font-bold">{clickThrough}%</dd></div></dl>
+          <p className="mt-3 text-xs text-muted-foreground">Taxas calculadas sobre quem iniciou o Quiz no período.</p>
+        </section>
+        <section className={PANEL}><h2 className="text-lg font-semibold">Cobertura atual</h2>
+          <p className="mt-3 text-sm">O Supabase permite ligar cliques do Quiz a leads identificados. Os cliques gerais e pageviews continuam sendo enviados ao GTM, mas o Admin ainda não possui leitura do GA4/Lovable Analytics.</p>
+          <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><strong>Pendente:</strong> conectar a fonte externa de analytics para páginas mais acessadas, usuários e cliques do site inteiro. Os números abaixo não fingem essa cobertura.</p>
+        </section>
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <RankedList title="Bikes mais clicadas no Quiz" rows={data.topBikes.map(row => ({ label: row.name, value: row.clicks }))} empty="Nenhuma bike clicada no período." />
+        <RankedList title="Origens dos leads do Quiz" rows={data.origins.map(row => ({ label: row.name, value: row.leads }))} empty="Nenhuma origem registrada no período." />
+      </div>
+      <section className={`${PANEL} mt-5`}><h2 className="text-lg font-semibold">Pessoas que clicaram para comprar</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Somente leads que se identificaram no Quiz. Dados pessoais restritos ao perfil Admin.</p>
+        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b border-line text-muted-foreground">
+          <th className="pb-3">Pessoa</th><th>Contato</th><th>Bike</th><th>Posição</th><th>Quando</th></tr></thead>
+          <tbody>{data.recentClickers.map(person => <tr key={person.id} className="border-b border-line/70 last:border-0"><td className="py-3 font-medium">{person.name || "Não informado"}</td>
+            <td>{person.phone || "—"}</td><td>{person.bike || "—"}</td><td>{person.position || "—"}</td><td>{date(person.clickedAt)}</td></tr>)}</tbody>
+        </table></div>{data.recentClickers.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum clique identificado no período.</p>}
+      </section>
+    </>}
+  </>;
+}
+
+function RankedList({ title, rows, empty }: { title: string; rows: { label: string; value: number }[]; empty: string }) {
+  const max = Math.max(1, ...rows.map(row => row.value));
+  return <section className={PANEL}><h2 className="text-lg font-semibold">{title}</h2>
+    {rows.length ? <ol className="mt-4 space-y-3">{rows.map(row => <li key={row.label}>
+      <div className="flex justify-between gap-4 text-sm"><span className="truncate">{row.label}</span><strong>{row.value}</strong></div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-emerald-100"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${Math.max(4, (row.value / max) * 100)}%` }} /></div>
+    </li>)}</ol> : <p className="mt-4 text-sm text-muted-foreground">{empty}</p>}
+  </section>;
 }
 
 export function AdminBikesPage() {
@@ -200,8 +276,11 @@ function Videos() {
           {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
         </select></label>
         <label className="block text-sm font-medium">Transcrição completa<textarea className={`${INPUT} mt-1 min-h-48`} value={transcript} onChange={e => setTranscript(e.target.value)} placeholder="Cole a transcrição revisada do vídeo." /></label>
-        <button className={BTN} disabled={saving}>{saving ? "Salvando…" : "Salvar vídeo"}</button>
-        <a href={selected.url} target="_blank" rel="noopener noreferrer" className="ml-3 text-sm text-emerald-800 underline">Ver no YouTube</a>
+        <div className="flex flex-wrap gap-2">
+          <button className={BTN} disabled={saving}>{saving ? "Salvando…" : "Salvar vídeo"}</button>
+          <Link to="/admin/conteudos/novo" search={{ video: selected.videoId }} className={OUTLINE}>Criar artigo</Link>
+        </div>
+        <a href={selected.url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-800 underline">Ver no YouTube</a>
       </form> : <p className="text-sm text-muted-foreground">Selecione um vídeo para cadastrar transcrição e relações.</p>}</aside>
     </div>
   </>;
@@ -220,49 +299,84 @@ function Articles() {
   useEffect(() => { void adminCall<AdminArticleList>("articles").then(r => setItems(r.articles)).catch(e => setError(e.message)); }, []);
   const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
   return <>
-    <Heading title="Artigos"><a href="/admin/conteudos/novo" className={BTN}>Criar artigo</a></Heading>
+    <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
     {error && <Notice danger>{error}</Notice>}
     <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${INPUT} mb-4 max-w-xs`}>
       <option value="all">Todos</option>
       {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
     </select>
     <div className={PANEL}><ul className="divide-y divide-line">{visible.map(a => <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <a href={`/admin/conteudos/${a.id}`} className="font-semibold text-emerald-800 underline">{a.title || "Sem título"}</a>
+      <Link to="/admin/conteudos/$id" params={{ id: a.id }} className="font-semibold text-emerald-800 underline">{a.title || "Sem título"}</Link>
       <span className="text-sm text-muted-foreground">{STATUS_LABEL[simpleStatus(a.status)]} · {date(a.updated_at)}</span>
     </li>)}</ul>{visible.length === 0 && <p className="py-4 text-sm text-muted-foreground">Nenhum artigo.</p>}</div>
   </>;
 }
 
-export function AdminNewArticlePage() {
-  return <AdminShell>{role => <OnlyEditorial role={role}><NewArticle /></OnlyEditorial>}</AdminShell>;
+export function AdminNewArticlePage({ initialVideoId }: { initialVideoId?: string }) {
+  return <AdminShell>{role => <OnlyEditorial role={role}><NewArticle initialVideoId={initialVideoId} /></OnlyEditorial>}</AdminShell>;
 }
-function NewArticle() {
-  const [videoUrl, setVideoUrl] = useState("");
-  const [title, setTitle] = useState("");
+function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
+  const navigate = useNavigate();
+  const [catalog, setCatalog] = useState<VideoItem[]>([]);
+  const [savedVideos, setSavedVideos] = useState<EditorialVideo[]>([]);
+  const [videoId, setVideoId] = useState(initialVideoId ?? "");
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const videoId = parseYoutubeId(videoUrl);
+  const videos = useMemo(() => {
+    const merged = [...catalog];
+    for (const video of savedVideos) if (!merged.some(item => item.videoId === video.youtube_id)) merged.push({
+      videoId: video.youtube_id, title: video.title, date: video.published_on, url: video.youtube_url,
+      thumbnail: video.thumbnail_url ?? "", bikeIds: video.related_bike_ids, unmatched: [],
+    });
+    return merged;
+  }, [catalog, savedVideos]);
+  const selected = videos.find(video => video.videoId === videoId) ?? null;
+
+  useEffect(() => {
+    void Promise.allSettled([getSheetVideoCatalog(), adminCall<AdminVideoList>("videos")]).then(([sheet, stored]) => {
+      if (sheet.status === "fulfilled") setCatalog(sheet.value);
+      else setError("A planilha de vídeos está indisponível. Você ainda pode usar um vídeo já importado.");
+      if (stored.status === "fulfilled") setSavedVideos(stored.value.videos);
+      else setError(stored.reason instanceof Error ? stored.reason.message : "Não foi possível carregar os vídeos.");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!videoId) return;
+    const saved = savedVideos.find(video => video.youtube_id === videoId);
+    setTranscript(saved?.transcript ?? "");
+  }, [videoId, savedVideos]);
+
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
-    if (!videoId) { setError("Cole uma URL válida do YouTube."); return; }
+    if (!selected) { setError("Escolha um vídeo da biblioteca."); return; }
     setBusy("Entendendo conteúdo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>("generate", { youtubeId: videoId, title, transcript }, setBusy);
-      window.location.assign(`/admin/conteudos/${result.article.id}`);
+      const result = await adminStream<{ article: EditorialArticle }>("generate", {
+        youtubeId: selected.videoId, title: selected.title, transcript,
+      }, setBusy);
+      await navigate({ to: "/admin/conteudos/$id", params: { id: result.article.id } });
     } catch (e) { setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente."); setBusy(""); }
   }
   return <>
     <Heading title="Criar artigo" />
     {error && <Notice danger>{error}</Notice>}
     <form onSubmit={create} className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9">
-      <label className="block text-base font-semibold">URL do YouTube<input type="url" className={`${INPUT} mt-2 py-3`} value={videoUrl}
-        onChange={e => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" required disabled={Boolean(busy)} /></label>
-      {videoUrl && !videoId && <p className="-mt-4 text-sm text-amber-800">Confira a URL do vídeo.</p>}
-      <label className="block text-base font-semibold">Título do vídeo<input className={`${INPUT} mt-2 py-3`} value={title}
-        onChange={e => setTitle(e.target.value)} required minLength={3} disabled={Boolean(busy)} /></label>
+      <label className="block text-base font-semibold">Vídeo da biblioteca<select className={`${INPUT} mt-2 py-3`} value={videoId}
+        onChange={e => setVideoId(e.target.value)} required disabled={Boolean(busy)}>
+        <option value="">Selecione um dos {videos.length || "…"} vídeos</option>
+        {videos.map(video => <option key={video.videoId} value={video.videoId}>{video.title}</option>)}
+      </select></label>
+      {selected && <div className="flex gap-4 rounded-2xl bg-surface p-4">
+        {selected.thumbnail && <img src={selected.thumbnail} alt="" className="h-20 w-32 rounded-lg object-cover" />}
+        <div className="min-w-0"><p className="font-semibold">{selected.title}</p>
+          <a href={selected.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm text-emerald-800 underline">Abrir no YouTube</a>
+        </div>
+      </div>}
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
-        onChange={e => setTranscript(e.target.value)} required minLength={200} disabled={Boolean(busy)} /></label>
+        onChange={e => setTranscript(e.target.value)} required minLength={200} disabled={Boolean(busy)}
+        placeholder="Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." /></label>
       <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar artigo"}</button>
       {busy && <p className="text-center text-sm text-muted-foreground">Isso leva um ou dois minutos. Mantenha esta aba aberta.</p>}
     </form>
@@ -290,6 +404,7 @@ export function AdminArticleEditorPage({ id }: { id: string }) {
   return <AdminShell>{role => <OnlyEditorial role={role}><ArticleAdmin id={id} role={role} /></OnlyEditorial>}</AdminShell>;
 }
 function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
+  const navigate = useNavigate();
   const [article, setArticle] = useState<EditorialArticle | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
   const [index, setIndex] = useState<{ id: string; slug: string; title: string; primaryBikeId?: string | null }[]>([]);
@@ -331,7 +446,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     let current = article;
     if (current.status !== "archived") { const r = await run("archive-article", {}, "Arquivando…"); if (!r?.article) return; current = r.article; }
     setBusy("Excluindo…");
-    try { await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug }); window.location.assign("/admin/conteudos"); }
+    try { await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug }); await navigate({ to: "/admin/conteudos" }); }
     catch (e) { setError(e instanceof Error ? e.message : "Não foi possível excluir."); setBusy(""); }
   }
   if (error && !article) return <Notice danger>{error}</Notice>;
@@ -345,7 +460,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   return <>
     <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
-        <a href="/admin/conteudos" className="mr-auto text-sm text-emerald-800 underline">← Artigos</a>
+        <Link to="/admin/conteudos" className="mr-auto text-sm text-emerald-800 underline">← Artigos</Link>
         <label className="flex items-center gap-2 text-sm font-semibold">Status
           <select className={`${INPUT} w-auto`} value={status} disabled={Boolean(busy) || Boolean(draft)} onChange={e => void changeStatus(e.target.value as SimpleStatus)}>
             {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
@@ -443,7 +558,7 @@ function AiStatus({ role }: { role: AdminRole }) {
       <div className={`${PANEL} mt-5`}><h2 className="mb-3 text-lg font-semibold">Últimas execuções</h2>
         <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-sm"><thead><tr className="border-b border-line"><th>Quando</th><th>Artigo</th><th>Tipo</th><th>Estado</th><th>Prompt</th><th>Erro</th></tr></thead>
           <tbody>{data.runs.map(r => <tr key={r.id} className="border-b border-line/70"><td className="py-2">{date(r.started_at)}</td>
-            <td><a href={`/admin/conteudos/${r.article_id}`} className="text-emerald-800 underline">Abrir</a></td><td>{r.kind}</td><td>{r.status}</td>
+            <td><Link to="/admin/conteudos/$id" params={{ id: r.article_id }} className="text-emerald-800 underline">Abrir</Link></td><td>{r.kind}</td><td>{r.status}</td>
             <td>v{r.prompt_version}</td><td>{r.error_code ?? "—"}</td></tr>)}</tbody></table></div>
         {data.runs.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma geração executada ainda.</p>}
       </div>

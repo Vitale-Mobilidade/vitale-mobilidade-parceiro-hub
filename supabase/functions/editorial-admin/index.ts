@@ -42,6 +42,9 @@ const arr = (v: unknown, max = 20): string[] => Array.isArray(v) ? v.filter(vali
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const canContent = (a: Actor) => a.role === "admin" || a.role === "content";
 const errorMessage = (e: unknown) => e instanceof Error ? e.message.slice(0, 180) : "unknown";
+const PURCHASE_EVENTS = [
+  "buy_button_clicked", "secondary_option_clicked", "sdr_purchase_link_clicked",
+] as const;
 
 async function actorFor(db: SupabaseClient, req: Request): Promise<Actor | null> {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
@@ -380,16 +383,62 @@ Deno.serve(async (req) => {
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
     if (action === "overview") {
-      const [bikes, sync, videos, articles, failures] = await Promise.all([
+      const [bikes, sync, videos, videosWithTranscript, articles, failures] = await Promise.all([
         db.from("bikes").select("bike_id", { count: "exact", head: true }),
         db.from("bike_catalog_sync_state").select("last_success_at, last_attempt_at, status, error_message").eq("id", "current").maybeSingle(),
         db.from("editorial_videos").select("youtube_id", { count: "exact", head: true }),
-        db.from("editorial_articles").select("status"),
+        db.from("editorial_videos").select("youtube_id", { count: "exact", head: true }).not("transcript", "is", null),
+        db.from("editorial_articles").select("status, video_id"),
         db.from("editorial_compiler_runs").select("id", { count: "exact", head: true }).eq("status", "failed"),
       ]);
       return json(req, { bikes: bikes.count ?? 0, sync: sync.data, videos: videos.count ?? 0,
+        videosWithTranscript: videosWithTranscript.count ?? 0,
+        videosWithArticle: new Set((articles.data ?? []).map((article) => article.video_id).filter(Boolean)).size,
         articles: (articles.data ?? []).reduce((a: Body, x) => { a[x.status] = Number(a[x.status] ?? 0) + 1; return a; }, {}),
         generationErrors: failures.count ?? 0 });
+    }
+    if (action === "growth") {
+      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler dados de Growth." }, 403);
+      const requestedDays = Number(body.rangeDays);
+      const rangeDays = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
+      const since = new Date(Date.now() - rangeDays * 86_400_000).toISOString();
+      const [started, completed, clickEvents, clickers, clickerRows, originRows] = await Promise.all([
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("created_at", since),
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("completed_at", since),
+        db.from("quiz_events").select("event_name, field_label, payload", { count: "exact" })
+          .in("event_name", [...PURCHASE_EVENTS]).gte("created_at", since).limit(2000),
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("clicked_at", since),
+        db.from("quiz_leads").select("id, name, phone, clicked_bike_name, clicked_bike_position, clicked_at")
+          .gte("clicked_at", since).order("clicked_at", { ascending: false }).limit(2000),
+        db.from("quiz_leads").select("traffic_origin, utm_source, landing_path").gte("created_at", since).limit(2000),
+      ]);
+      const failed = [started, completed, clickEvents, clickers, clickerRows, originRows].find((result) => result.error);
+      if (failed?.error) throw new Error("growth_read_failed");
+      const bikeCounts = new Map<string, number>();
+      for (const row of clickEvents.data ?? []) {
+        const payload = row.payload && typeof row.payload === "object" ? row.payload as Body : {};
+        const name = str(payload.bike_model_clicked, 160) || str(payload.recommended_bike_1_label, 160) ||
+          str(row.field_label, 160) || str(payload.bike_for_link, 160) || "Bike não identificada";
+        bikeCounts.set(name, (bikeCounts.get(name) ?? 0) + 1);
+      }
+      const originCounts = new Map<string, number>();
+      for (const row of originRows.data ?? []) {
+        const name = str(row.traffic_origin, 120) || str(row.utm_source, 120) || str(row.landing_path, 180) || "Direto / não identificado";
+        originCounts.set(name, (originCounts.get(name) ?? 0) + 1);
+      }
+      const top = (counts: Map<string, number>, key: "clicks" | "leads") => [...counts.entries()]
+        .sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name, [key]: value }));
+      return json(req, {
+        rangeDays, generatedAt: new Date().toISOString(),
+        quiz: { started: started.count ?? 0, completed: completed.count ?? 0,
+          purchaseClicks: clickEvents.count ?? 0, identifiedClickers: clickers.count ?? 0 },
+        topBikes: top(bikeCounts, "clicks"), origins: top(originCounts, "leads"),
+        recentClickers: (clickerRows.data ?? []).slice(0, 50).map((row) => ({
+          id: row.id, name: row.name, phone: row.phone, bike: row.clicked_bike_name,
+          position: row.clicked_bike_position, clickedAt: row.clicked_at,
+        })),
+        coverage: { pageViews: "external_analytics_not_connected", sitewideAffiliateClicks: "gtm_only", identifiedClicks: "quiz_supabase" },
+      });
     }
     if (action === "bikes") {
       const [bikes, offers] = await Promise.all([
