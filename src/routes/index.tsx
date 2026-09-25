@@ -2,21 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
-import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 
 // Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
-    const [cards, catalog, articles] = await Promise.all([
+    const [cards, articles] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
-      getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
       getPublishedArticles().catch(() => null),
     ]);
-    // bikeId -> slug editorial, só para modelos existentes no catálogo.
-    const bikeSlugs: Record<string, string> = Object.fromEntries(catalog.bikes.map((b) => [b.bikeId, b.slug]));
-    return { ...cards, bikeSlugs, articles: articles ?? [] };
+    return { ...cards, articles: articles ?? [] };
   },
   head: () =>
     pageHead({

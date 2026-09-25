@@ -49,7 +49,12 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             </Link>
           </h3>
         </div>
-        {entry.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado}</p> : entry.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{entry.shortDescription}</p>}
+        {(() => {
+          const source = (entry.perfilIndicado || entry.shortDescription || "").trim();
+          const sentence = source.split(/[.!?\n]/, 1)[0].replace(/^(boa para|ideal para)\s*[:…-]?\s*/i, "").trim();
+          const concise = sentence.length > 130 ? `${sentence.slice(0, 130).replace(/\s+\S*$/, "").trim()}…` : sentence;
+          return concise ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {concise}</p> : null;
+        })()}
         <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
           {[
             entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: ${entry.autonomyKm} km` : null,
