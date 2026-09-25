@@ -15,11 +15,11 @@ describe("taxonomia pública do ecossistema", () => {
 
   it("conecta os cinco atalhos da Home apenas a produtos funcionais", () => {
     expect(HOME_PRODUCTS.map(({ key, to }) => [key, to])).toEqual([
-      ["quiz", "/escolherbike"],
-      ["radar", "/radar"],
-      ["ferramentas", "/ferramentas"],
-      ["conteudos", "/conteudos"],
       ["comparar", "/radar"],
+      ["radar", "/radar"],
+      ["calculadora", "/calculadoras/economia"],
+      ["conteudos", "/conteudos"],
+      ["grupo", "/grupodeofertas"],
     ]);
   });
 

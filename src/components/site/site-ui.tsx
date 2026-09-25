@@ -52,7 +52,7 @@ export function SiteHeader() {
           {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="relative py-2 transition-colors hover:text-mint after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:scale-x-0 after:bg-mint after:transition-transform hover:after:scale-x-100" />)}
         </nav>
         <Link to="/escolherbike" className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
-          Escolher minha bike
+          Faça o Quiz e descubra a bike ideal
         </Link>
         <details className="relative lg:hidden">
           <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">
@@ -60,7 +60,7 @@ export function SiteHeader() {
           </summary>
           <nav aria-label="Principal (celular)" className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
             {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted" />)}
-            <Link to="/escolherbike" className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Escolher minha bike</Link>
+            <Link to="/escolherbike" className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Faça o Quiz e descubra a bike ideal</Link>
           </nav>
         </details>
       </div>

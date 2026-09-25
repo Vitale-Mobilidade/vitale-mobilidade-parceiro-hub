@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { VideoCards } from "@/components/site/VideoCards";
 import type { VideoCard } from "@/lib/videos.functions";
-import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, CircleDollarSign, GitCompareArrows, History, Lock, Mail, Megaphone, MessageCircle, Route, TrendingDown } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
-import { SiteHeader, SiteFooter, BikeMedia, SectionHeading, PriceStatus } from "@/components/site/site-ui";
+import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
-import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
+import type { HomeCard } from "@/lib/home-cards.functions";
 import { radarCompareHref } from "@/lib/bike-compare";
 
 /*
@@ -25,7 +25,6 @@ function Hero() {
       </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-transparent max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/70 max-md:to-ink/20" aria-hidden="true" />
       <div className="responsive-container entry-hero-inner">
-        <p className="entry-eyebrow">BIKES ELÉTRICAS NO BRASIL</p>
         <h1 className="entry-h1">
           Encontre a bike elétrica <span className="text-mint">certa para você</span>
         </h1>
@@ -96,8 +95,7 @@ function CardLink({ bikeId, children }: { bikeId: string; children: ReactNode })
   return <Link to="/radar/$bikeId" params={{ bikeId }} className={CARD_CLS}>{children}</Link>;
 }
 
-function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number }) {
-  const picks = items.slice(0, 3);
+function RadarPanel({ total }: { total: number }) {
   return (
     <section aria-labelledby="radar-home" className="relative flex flex-col overflow-hidden rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:p-8">
       {/* Decoração abstrata (não é dado) */}
@@ -112,22 +110,23 @@ function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number })
       <p className="relative mt-2 max-w-md text-ink-foreground/80">
         {total > 0 ? <><strong className="text-mint">{total} bikes</strong> monitoradas. Veja o preço atual e a classificação do Radar antes de comprar.</> : "Veja o preço atual e a classificação do Radar antes de comprar."}
       </p>
-      {picks.length > 0 && (
-        <ul className="relative mt-6 grid gap-3 sm:grid-cols-3">
-          {picks.map((it) => (
-            <li key={it.id}>
-              <Link to="/radar/$bikeId" params={{ bikeId: it.id }} className="flex h-full items-center gap-3 rounded-2xl bg-ink-foreground/5 p-3 ring-1 ring-ink-foreground/10 transition hover:ring-mint/70 sm:flex-col sm:items-stretch">
-                <BikeMedia src={it.image} name={it.name} className="h-16 w-16 shrink-0 rounded-xl bg-background sm:aspect-[4/3] sm:h-auto sm:w-full" />
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm font-bold leading-tight">{it.name}</p>
-                  <p className="mt-1 text-lg font-black text-mint tabular-nums">{formatBRL(it.currentPrice)}</p>
-                  <div className="mt-1"><PriceStatus classification={it.classification} /></div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="relative mt-6 overflow-hidden rounded-2xl border border-ink-foreground/10 bg-ink-foreground/[0.04] p-4 sm:p-5" aria-hidden="true">
+        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.16em] text-ink-foreground/55">
+          <span>Leitura do preço</span>
+          <span className="rounded-full bg-mint/15 px-3 py-1 text-mint">Momento de compra</span>
+        </div>
+        <svg className="mt-4 h-32 w-full overflow-visible" viewBox="0 0 520 128" fill="none" preserveAspectRatio="none">
+          <path d="M0 22H520M0 64H520M0 106H520" className="stroke-ink-foreground/10" strokeDasharray="4 8" />
+          <path d="M0 29C48 22 72 49 116 43C166 36 188 73 238 66C287 59 314 85 360 76C410 66 438 103 520 91V128H0Z" className="fill-mint" opacity="0.1" />
+          <path d="M0 29C48 22 72 49 116 43C166 36 188 73 238 66C287 59 314 85 360 76C410 66 438 103 520 91" className="stroke-mint" strokeWidth="5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <circle cx="520" cy="91" r="8" className="fill-mint stroke-vt-dark" strokeWidth="4" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-ink-foreground/75">
+          <span className="rounded-xl bg-ink-foreground/5 px-2 py-2"><History className="mx-auto mb-1 h-4 w-4 text-mint" />Histórico</span>
+          <span className="rounded-xl bg-ink-foreground/5 px-2 py-2"><TrendingDown className="mx-auto mb-1 h-4 w-4 text-mint" />Tendência</span>
+          <span className="rounded-xl bg-ink-foreground/5 px-2 py-2"><BarChart3 className="mx-auto mb-1 h-4 w-4 text-mint" />Comparação</span>
+        </div>
+      </div>
       <Link to="/radar" className="relative mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90 sm:w-fit">
         Explorar Radar de preços <ArrowRight className="h-5 w-5" aria-hidden="true" />
       </Link>
@@ -152,19 +151,29 @@ function CalculatorPanel() {
       </div>
       <h2 id="ferramentas" className="section-h2 relative mt-4 text-ink">E se o seu trajeto fosse de bike?</h2>
       <p className="relative mt-2 max-w-md text-muted-foreground">Descubra quanto você pode economizar trocando carro, Uber, ônibus ou outros meios por uma bike elétrica.</p>
-      <div className="relative mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4" aria-label="Troca de carro, Uber ou ônibus por bike elétrica" role="img">
-        <ul className="flex flex-1 justify-around gap-2">
+      <div className="relative mt-6 overflow-hidden rounded-2xl bg-surface p-4 sm:p-5" aria-label="Comparação de custo e trajeto entre meios de transporte e bike elétrica" role="img">
+        <div aria-hidden="true" className="absolute -right-12 -top-12 h-36 w-36 rounded-full border-[24px] border-mint/20" />
+        <ul className="relative flex gap-2">
           {from.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex flex-col items-center gap-1.5 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-card text-muted-foreground ring-1 ring-line"><Icon className="h-6 w-6" aria-hidden="true" /></span>
-              <span className="text-xs font-semibold text-ink">{label}</span>
+            <li key={label} className="flex items-center gap-1.5 rounded-full bg-card px-3 py-2 text-xs font-semibold text-ink ring-1 ring-line">
+              <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> {label}
             </li>
           ))}
         </ul>
-        <ArrowRight className="h-7 w-7 shrink-0 text-action" aria-hidden="true" />
-        <div className="flex flex-col items-center gap-1.5 text-center">
-          <span className="grid h-16 w-16 place-items-center rounded-full bg-action text-primary-foreground shadow-lg ring-4 ring-mint/40"><Bike className="h-8 w-8" aria-hidden="true" /></span>
-          <span className="text-xs font-bold text-action">Bike elétrica</span>
+        <div className="relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="space-y-2">
+            <span className="flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-line"><CircleDollarSign className="h-4 w-4 text-action" /> Custo mensal</span>
+            <span className="flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-line"><Route className="h-4 w-4 text-action" /> Seu trajeto</span>
+          </div>
+          <div className="flex items-center" aria-hidden="true">
+            <span className="h-px w-4 bg-action/40 sm:w-8" />
+            <ArrowRight className="h-6 w-6 text-action" />
+          </div>
+          <div className="relative flex min-h-28 flex-col items-center justify-center rounded-2xl bg-action p-3 text-center text-primary-foreground shadow-lg">
+            <Bike className="h-8 w-8" aria-hidden="true" />
+            <span className="mt-2 text-xs font-black uppercase tracking-wide">Bike elétrica</span>
+            <span className="mt-1 text-[11px] text-primary-foreground/75">Veja a diferença</span>
+          </div>
         </div>
       </div>
       <div className="relative mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -284,7 +293,6 @@ const HomeB2C = () => {
   const data = useLoaderData({ from: "/" });
   const ok = data?.ok === true;
   const cards = ok ? data.cards : [];
-  const radar = ok ? data.radar : [];
   const total = ok ? data.search.length : 0;
 
   return (
@@ -296,7 +304,7 @@ const HomeB2C = () => {
         <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
-            <RadarPanel items={radar} total={total} />
+            <RadarPanel total={total} />
             <CalculatorPanel />
           </div>
           <CompareBlock cards={cards} />
