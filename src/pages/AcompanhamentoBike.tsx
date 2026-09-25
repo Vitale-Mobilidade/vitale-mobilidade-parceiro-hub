@@ -46,6 +46,13 @@ interface RadarBikeDetail {
   maxObserved: number | null;
 }
 
+function splitDescription(text: string, limit = 600): [string, string] {
+  if (text.length <= limit) return [text, ""];
+  const lastSpace = text.slice(0, limit + 1).search(/\s+\S*$/);
+  const cut = lastSpace > limit / 2 ? lastSpace : limit;
+  return [text.slice(0, cut).trimEnd(), text.slice(cut).trimStart()];
+}
+
 const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
   const base = useRadarBase();
   const { bikeId = "" } = useParams();
@@ -97,6 +104,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
   const canBuy = hasOffer;
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
   const description = initial.catalogBike?.description || bike?.description || bike?.shortDescription || null;
+  const [descriptionLead, descriptionRest] = description ? splitDescription(description) : ["", ""];
   // A ficha reúne somente atributos presentes nas fontes públicas desta bike.
   const specs = [
     bike?.autonomyKm ? { label: "Autonomia", value: `Até ${bike.autonomyKm} km` } : null,
@@ -267,14 +275,11 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
 
 
-            {(bike.perfilIndicado || description || bike.diferencial || specs.length > 0 || strengths.length > 0) && (
-              <section className="mt-10" aria-labelledby="sobre-bike">
-                <SectionHeading id="sobre-bike" title={`Conheça a ${bike.name}`} />
-                {bike.perfilIndicado && <p className="mt-5 max-w-3xl text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
-                {description && <div className="mt-4 max-w-3xl space-y-3 text-base leading-relaxed text-muted-foreground">{description.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>}
-                {bike.diferencial && <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
+            {(specs.length > 0 || strengths.length > 0) && (
+              <section className="mt-8" aria-labelledby="destaques">
+                <SectionHeading id="destaques" title="Ficha em destaque" />
                 {specs.length > 0 && (
-                  <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     {specs.map((sp) => (
                       <div key={sp.label} className="rounded-xl border border-line bg-surface px-4 py-3">
                         <dt className="text-sm text-muted-foreground">{sp.label}</dt>
@@ -283,20 +288,32 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     ))}
                   </dl>
                 )}
+                {strengths.length > 0 && <>
+                  <h3 className="mt-6 text-lg font-bold text-ink">Pontos da ficha</h3>
+                  <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {strengths.map((s) => (
+                      <li key={s} className="flex items-start gap-2 rounded-xl border border-line bg-card p-4">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-action" aria-hidden="true" />
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>}
               </section>
             )}
 
-            {strengths.length > 0 && (
-              <section className="mt-8" aria-labelledby="destaques">
-                <SectionHeading id="destaques" title="Pontos da ficha" />
-                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {strengths.map((s) => (
-                    <li key={s} className="flex items-start gap-2 rounded-xl border border-line bg-card p-4">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-action" aria-hidden="true" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
+            {(bike.perfilIndicado || description || bike.diferencial) && (
+              <section className="mt-10" aria-labelledby="sobre-bike">
+                <SectionHeading id="sobre-bike" title={`Conheça a ${bike.name}`} />
+                {bike.perfilIndicado && <p className="mt-5 max-w-3xl text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
+                {description && <div className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
+                  <div className="space-y-3">{descriptionLead.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                  {descriptionRest && <details className="mt-3">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Ver mais sobre a {bike.name}</summary>
+                    <div className="mt-2 space-y-3">{descriptionRest.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                  </details>}
+                </div>}
+                {bike.diferencial && <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
               </section>
             )}
 
