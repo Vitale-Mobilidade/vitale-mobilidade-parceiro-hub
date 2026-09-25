@@ -2,7 +2,6 @@ import { useId } from "react";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import {
-  rangePosition,
   DAILY_WINDOWS,
   WINDOW_LABEL,
   type DailyMetrics,
@@ -36,12 +35,11 @@ export function PriceIntelPanel({
   const { minPrice, maxPrice, p25, p75, typicalPrice, classification, distinctPrices } = metrics;
   const forming = classification === "forming";
 
-  // Faixa só existe com dois preços distintos e amplitude real.
-  const hasRange = minPrice !== null && maxPrice !== null && maxPrice > minPrice && distinctPrices >= 2;
-
-  const pos = hasRange ? rangePosition(currentPrice, minPrice, maxPrice) : null;
-  const bandStart = hasRange ? (rangePosition(p25 ?? minPrice, minPrice, maxPrice) ?? 0) : 0;
-  const bandEnd = hasRange ? (rangePosition(p75 ?? maxPrice, minPrice, maxPrice) ?? 1) : 1;
+  // Escala com origem em zero e R$ 2 mil de respiro acima do maior valor real.
+  // O domínio visual não cria nem altera observações do histórico.
+  const scaleMax = Math.ceil((Math.max(currentPrice, maxPrice ?? 0) + 2000) / 500) * 500;
+  const currentPosition = (currentPrice / scaleMax) * 100;
+  const hasHistory = minPrice !== null && maxPrice !== null && distinctPrices > 0;
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
@@ -57,22 +55,13 @@ export function PriceIntelPanel({
           ? "Está dentro da faixa de preço mais comum do período."
           : `Está ${formatBRL(Math.abs(diff ?? 0))} acima do preço típico do período.`;
 
-  const markerTone =
-    classification === "above"
-      ? "bg-destructive"
-      : classification === "typical"
-        ? "bg-amber-500"
-        : "bg-action";
-
-  const markerLabel = `Preço atual ${formatBRL(currentPrice)} na escala dos registros`;
-
   return (
     <section
       aria-labelledby={headingId}
-      className="mt-8 overflow-hidden rounded-2xl border border-line bg-card"
+      className="mt-5 overflow-hidden rounded-2xl border border-line bg-card"
     >
       {/* Diagnóstico */}
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <h2 id={headingId} className="text-lg font-bold text-ink">
             Preço atual e registros da Vitale
@@ -83,37 +72,30 @@ export function PriceIntelPanel({
         </div>
       </div>
 
-      <div className="px-4 py-4 sm:px-6">
+      <div className="lg:grid lg:grid-cols-2">
+      <div className="px-4 py-4 sm:px-6 lg:border-r lg:border-line">
         <p className="text-base font-medium text-ink">{verdict}</p>
 
-        {/* Escala verde/amarelo/vermelho: referência visual sobre os registros reais. */}
-        {hasRange ? (
-          <div className="mt-4">
+        {/* O pin mostra o preço de hoje; os extremos dos registros permanecem rotulados abaixo. */}
+        <div className="mt-4">
             <div
-              className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
+              className="relative pt-[94px]"
               role="img"
-              aria-label={
-                forming
-                  ? `Preço atual ${formatBRL(currentPrice)} na escala dos registros: menor ${formatBRL(minPrice)}, mediana ${formatBRL(typicalPrice)}, maior ${formatBRL(maxPrice)}. Referência visual, sem classificação.`
-                  : `${markerLabel}. Faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}, entre ${formatBRL(minPrice)} e ${formatBRL(maxPrice)}.`
-              }
+              aria-label={`Preço atual ${formatBRL(currentPrice)} em uma escala de R$ 0 a ${formatBRL(scaleMax)}.${hasHistory ? ` Menor registrado ${formatBRL(minPrice)}, maior registrado ${formatBRL(maxPrice)}.` : ""}`}
             >
-              <div className="absolute inset-y-0 left-0 bg-action/70" style={{ width: `${bandStart * 100}%` }} />
-              <div
-                className="absolute inset-y-0 bg-amber-400/80"
-                style={{ left: `${bandStart * 100}%`, width: `${Math.max(bandEnd - bandStart, 0.02) * 100}%` }}
-              />
-              <div className="absolute inset-y-0 right-0 bg-destructive/70" style={{ left: `${bandEnd * 100}%` }} />
-              {pos !== null && (
-                <span
-                  className={`absolute top-1/2 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card ${forming ? "bg-ink" : markerTone}`}
-                  style={{ left: `${pos * 100}%` }}
-                  aria-hidden="true"
-                />
-              )}
+              <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `${currentPosition}%` }} aria-hidden="true">
+                <span className="flex w-[108px] flex-col items-center rounded-xl border border-line bg-logo-surface px-2 pb-1.5 pt-1 shadow-md">
+                  <img src="/vitale-bike-price-pin.png" alt="" width={200} height={200} className="h-10 w-10 object-contain mix-blend-multiply" />
+                  <span className="text-xs font-extrabold leading-none text-ink">{formatBRL(currentPrice)}</span>
+                  <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Preço hoje</span>
+                </span>
+                <span className="h-0 w-0 border-x-[7px] border-t-[8px] border-x-transparent border-t-logo-surface" />
+              </span>
+              <span className="block h-3 rounded-full bg-surface ring-1 ring-line" aria-hidden="true" />
+              <span className="absolute bottom-0 h-3 w-1.5 -translate-x-1/2 rounded-full bg-action ring-2 ring-card" style={{ left: `${currentPosition}%` }} aria-hidden="true" />
             </div>
-
-            <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <div className="mt-1 flex justify-between text-xs font-medium text-muted-foreground"><span>R$ 0</span><span>{formatBRL(scaleMax)}</span></div>
+            {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 Menor registrado
                 <span className="block font-bold text-ink">{formatBRL(minPrice)}</span>
@@ -128,13 +110,8 @@ export function PriceIntelPanel({
                 Maior registrado
                 <span className="block font-bold text-ink">{formatBRL(maxPrice)}</span>
               </span>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-muted-foreground">
-            Até agora registramos um único preço nesse período, então não há faixa para comparar.
-          </p>
-        )}
+            </div> : <p className="mt-2 text-xs text-muted-foreground">Ainda não há registros suficientes nesse período para comparar preços.</p>}
+        </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
           Dados usados nesta janela: {metrics.verifiedDays} dia(s) confirmados e {metrics.reconstructedDays}{" "}
@@ -152,7 +129,7 @@ export function PriceIntelPanel({
       </div>
 
       {/* Histórico */}
-      <div className="border-t border-line px-4 py-4 sm:px-6">
+      <div className="border-t border-line px-4 py-4 sm:px-6 lg:border-t-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-bold text-ink">Histórico de preços</h3>
           <div className="inline-flex flex-wrap rounded-lg border border-line p-0.5" role="group" aria-label="Período do gráfico">
@@ -190,6 +167,7 @@ export function PriceIntelPanel({
             referência e não qualificamos o preço — os registros continuam sendo os que a Vitale acompanha.
           </p>
         </details>
+      </div>
       </div>
     </section>
   );

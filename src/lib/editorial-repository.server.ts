@@ -1,9 +1,10 @@
 // Server-only, read-only RPCs. Drafts, transcripts and service-role keys never reach public loaders.
 import type { PublishedArticle } from "@/components/editorial/ArticleView";
+import { BIKE_ID_RE } from "@/lib/bike-identity";
 
 export type PublishedArticleSummary = {
   id: string; slug: string; title: string; summary: string; ogImageUrl: string | null;
-  publishedAt: string | null; primaryBikeId: string | null;
+  publishedAt: string | null; primaryBikeId: string | null; relatedBikeIds: string[];
 };
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -37,5 +38,22 @@ export async function fetchPublishedArticle(slug: string): Promise<PublishedArti
 export async function fetchPublishedIndex(): Promise<PublishedArticleSummary[] | null> {
   const rows = await rpc("get_published_editorial_index", {});
   if (!Array.isArray(rows)) return null;
-  return rows.filter((r) => r && typeof r.slug === "string" && SLUG.test(r.slug) && typeof r.title === "string") as PublishedArticleSummary[];
+  return rows
+    .filter((r) => r && typeof r === "object" && typeof r.slug === "string" && SLUG.test(r.slug) && typeof r.title === "string")
+    .map((r) => {
+      const article = r as Omit<PublishedArticleSummary, "relatedBikeIds"> & { relatedBikeIds?: unknown };
+      return {
+        ...article,
+        relatedBikeIds: Array.isArray(article.relatedBikeIds)
+          ? article.relatedBikeIds.filter((bikeId): bikeId is string => typeof bikeId === "string")
+          : [],
+      };
+    });
+}
+
+export async function fetchPublishedArticlesForBike(bikeId: string): Promise<PublishedArticleSummary[] | null> {
+  if (!BIKE_ID_RE.test(bikeId)) return [];
+  const articles = await fetchPublishedIndex();
+  if (!articles) return null;
+  return articles.filter((article) => article.primaryBikeId === bikeId || article.relatedBikeIds.includes(bikeId));
 }

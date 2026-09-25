@@ -20,8 +20,8 @@ export function chartEvidence(series: DailyPoint[]) {
     const isolated = Boolean(before && after && Math.abs(before.close - center) <= threshold && Math.abs(after.close - center) <= threshold);
     if (isolated && Math.abs(p.close - center) > threshold) atypicalDates.add(p.date);
   }
-  const low = values[0];
   const high = values[values.length - 1];
-  const padding = Math.max((high - low) * 0.1, center * 0.05, 1);
-  return { domain: [Math.max(0, low - padding), high + padding] as [number, number], atypicalDates };
+  // O zero dá contexto ao valor; a folga superior mantém picos reais legíveis.
+  const ceiling = Math.ceil((high + 2000) / 500) * 500;
+  return { domain: [0, ceiling] as [number, number], atypicalDates };
 }

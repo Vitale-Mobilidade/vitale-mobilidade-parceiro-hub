@@ -60,6 +60,26 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 24. Hotpipe IA
 25. Loop de inteligência de conteúdo
 
+### Ajuste de hierarquia no detalhe do Radar — 25/09/2026, local
+
+O responsável confirmou a arte compartilhada de `QuizBanner` e `OffersBanner` e pediu que o detalhe `/radar/$bikeId` priorize preço e histórico na primeira dobra. O topo agora preserva foto, nome, preço atual, variação verificada, link direto da oferta e botão de alerta na mesma área. O painel do Radar vem imediatamente abaixo, com gráfico ao lado da escala no desktop; o preço de hoje é marcado por um pin com a logo Vitale. A escala visual começa em zero e deixa R$ 2 mil de folga acima do maior registro. O gráfico diário também usa esse contexto vertical, sem alterar nenhum dado ou suprimir pontos atípicos. Perfil indicado, descrição, diferencial, especificações e pontos da ficha vêm depois do Radar. Quiz e grupo mantêm as artes compartilhadas já aprovadas.
+
+Estado: alteração de código local, ainda sem publicação. A revisão estática não identificou mudança em preço, oferta, histórico, Quiz ou clique afiliado; teste/validação visual pendem de solicitação do responsável, que pediu não executar testes sem pedido.
+
+Revisão multidisciplinar após o corte local: Produto **Pass** (hierarquia segue a decisão do responsável); Arquitetura **Pass** (componentes e RPC existentes); IA **N/A** (sem geração); Segurança **Pass** (sem entrada, segredo ou permissão nova); UX/UI **Pass local** (pin rotulado, ordem mobile e desktop, banners compartilhados); CX **Pass** (sem operação nova); Growth **Pass** (oferta direta preservada); PMO/QA **Pass local, release pendente** (diff revisado, sem suíte por orientação do responsável). A publicação ainda exige a verificação visual proporcional do resultado e o gate de release vigente.
+
+### Etapa 12 — corte Article ↔ Bike preparado em 25/09/2026
+
+O inventário do repositório real confirmou que `editorial_articles` e `editorial_videos` já possuem as relações necessárias por `primary_bike_id`, `related_bike_ids`, `video_id` e `related_article_ids`. Não será criado outro schema ou writer.
+
+Foi preparado localmente, sem publicação e sem aplicação no Supabase, o menor delta faltante: expor `relatedBikeIds` no índice público de artigos, consumir a relação no loader SSR de `/radar/$bikeId` e mostrar até seis artigos reais no detalhe da Bike. Bike sem artigo não ganha seção vazia. Quiz, preços, ofertas, links afiliados, histórico, vídeos, RLS e escrita editorial permanecem intocados.
+
+Status da Etapa 12: **parcial**. Base relacional, CMS P0, leitura pública de artigos e relações no detalhe de conteúdo já existem; o corte reverso no Radar está preparado em `codex/content-graph-radar-articles`, mas depende de autorização específica para aplicar a RPC e publicar. Ver [CONTENT_GRAPH.md](./CONTENT_GRAPH.md).
+
+### Página oficial da Bike no Radar — corte local em 25/09/2026
+
+O detalhe canônico `/radar/$bikeId` agora integra a ficha e descrição da Bike, a comparação em tabela com outra Bike do catálogo público, vídeos e artigos ligados pelo `bike_id`. O topo mantém preço/oferta e histórico na primeira dobra; o preço de hoje é marcado na escala pela bicicleta verde fornecida pelo responsável, na posição proporcional ao valor. Metadata SSR e JSON-LD `Product` + `BreadcrumbList` descrevem apenas dados reais; `Offer` só existe quando a oferta atual tem preço e link válidos. O sitemap dinâmico já inclui as URLs do Radar e `/bikes/$slug` continua 301 para a URL canônica. Nenhum ganho de ranking foi afirmado. Código local; release pendente do gate descrito em [RADAR_BIKE_HUB.md](./RADAR_BIKE_HUB.md).
+
 ## 3. Estado atual — 23/09/2026
 
 > Esta seção reflete o status vigente. As seções 4 e 5 são **fotografias históricas** e não devem ser lidas como status atual.

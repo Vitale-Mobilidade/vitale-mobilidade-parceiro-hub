@@ -1,14 +1,15 @@
 // Definições compartilhadas das rotas do Radar (/acompanhamento legado e /radar alvo).
-// Mesmo loader, mesmos headers de falha (503 via src/server.ts), mesmo head — só muda a base/canonical.
+// Mesmo loader e headers de falha (503 via src/server.ts); canonical público sempre em /radar.
 import { Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { safeVideos } from "@/lib/videos.functions";
 import { getRadarBike, getRadarCatalog, RADAR_UNAVAILABLE_HEADERS } from "@/lib/radar.functions";
-import { formatBRL } from "@/lib/price-tracker";
+import { formatBRL, isSafePurchaseLink } from "@/lib/price-tracker";
 import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { SITE_ORIGIN, type RadarBase } from "@/lib/radar-base";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
+import { getPublishedArticlesForBike } from "@/lib/editorial.functions";
 
 export async function loadRadarCatalog() {
   const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog().catch(() => ({ ok: false, bikes: [] }))]);
@@ -17,13 +18,32 @@ export async function loadRadarCatalog() {
 export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
 
 export async function loadRadarBike(bikeId: string) {
-  const [r, videos] = await Promise.all([
+  const [r, videos, articleIndex, catalog] = await Promise.all([
     getRadarBike({ data: { bikeId } }),
-    safeVideos({ bikeId, limit: 4 }),
+    safeVideos({ bikeId, limit: 12 }),
+    getPublishedArticlesForBike({ data: bikeId }).catch(() => null),
+    getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
   ]);
   // Leitura bem-sucedida, mas bike não existe (ID inválido ou desconhecido): 404 nativo.
   if (r.ok && (r.bike === null || r.bike === undefined)) throw notFound();
-  return { ...r, videos };
+  const articles = (articleIndex ?? []).slice(0, 6);
+  const catalogBikes = catalog.ok ? catalog.bikes : [];
+  const detail = r.ok ? r.bike as { hasCurrentOffer?: unknown; currentPrice?: unknown; link?: unknown } | null : null;
+  const catalogBike = catalogBikes.find((bike) => bike.bikeId === bikeId) ?? null;
+  // A coluna da bike principal usa o mesmo par oferta/preço da hero, sem criar duas leituras divergentes.
+  const currentCatalogBike = catalogBike && r.ok
+    ? detail?.hasCurrentOffer === true && typeof detail.currentPrice === "number" && detail.currentPrice > 0 &&
+      typeof detail.link === "string" && /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(detail.link)
+      ? { ...catalogBike, sheetPrice: detail.currentPrice, link: detail.link }
+      : { ...catalogBike, sheetPrice: null, link: null }
+    : catalogBike;
+  return {
+    ...r,
+    videos,
+    articles,
+    catalogBike: currentCatalogBike,
+    comparisonBikes: catalogBikes.filter((bike) => bike.bikeId !== bikeId),
+  };
 }
 export type RadarBikeData = Awaited<ReturnType<typeof loadRadarBike>>;
 
@@ -60,22 +80,27 @@ export function radarCatalogHead(base: RadarBase) {
 const FALLBACK_TITLE = "Histórico de preços | Vitale Mobilidade";
 const FALLBACK_DESCRIPTION = "Histórico real de preços de bikes elétricas acompanhado pela Vitale Mobilidade.";
 
-type HeadBike = { name?: unknown; currentPrice?: unknown; image?: unknown };
+type HeadBike = { name?: unknown; currentPrice?: unknown; image?: unknown; description?: unknown; autonomyKm?: unknown; capacity?: unknown; hasCurrentOffer?: unknown; link?: unknown };
 
-function validBike(loaderData: unknown): { name: string; price: number | null; image: string | null } | null {
-  const d = loaderData as { ok?: boolean; bike?: HeadBike | null } | undefined;
+function validBike(loaderData: unknown): { name: string; price: number | null; image: string | null; description: string | null; autonomyKm: number | null; capacity: number | null; category: string | null; link: string | null } | null {
+  const d = loaderData as { ok?: boolean; bike?: HeadBike | null; catalogBike?: { description?: unknown; category?: unknown } | null } | undefined;
   const b = d?.ok ? d.bike : null;
   if (!b || typeof b.name !== "string" || !b.name.trim()) return null;
-  const price = typeof b.currentPrice === "number" && b.currentPrice > 0 ? b.currentPrice : null;
+  const price = b.hasCurrentOffer === true && typeof b.currentPrice === "number" && Number.isFinite(b.currentPrice) && b.currentPrice > 0 ? b.currentPrice : null;
   const image = typeof b.image === "string" && /^https:\/\/[^\s"<>]+$/.test(b.image) ? b.image : null;
-  return { name: b.name.trim(), price, image };
+  const rawDescription = d?.catalogBike?.description ?? b.description;
+  const description = typeof rawDescription === "string" ? rawDescription.replace(/\s+/g, " ").trim() || null : null;
+  const autonomyKm = typeof b.autonomyKm === "number" && b.autonomyKm > 0 ? b.autonomyKm : null;
+  const capacity = typeof b.capacity === "number" && b.capacity > 0 ? b.capacity : null;
+  const category = typeof d?.catalogBike?.category === "string" ? d.catalogBike.category : null;
+  const link = price !== null && typeof b.link === "string" && /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(b.link) && isSafePurchaseLink(b.link) ? b.link : null;
+  return { name: b.name.trim(), price, image, description, autonomyKm, capacity, category, link };
 }
 
-export function radarBikeHead(base: RadarBase, bikeId: string, loaderData: unknown) {
-  const BASE = `${SITE_ORIGIN}${base}`;
+export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unknown) {
   const bike = validBike(loaderData);
   const idOk = BIKE_ID_RE.test(bikeId);
-  const canonical = idOk ? `${BASE}/${encodeURIComponent(bikeId)}` : BASE;
+  const canonical = idOk ? `${SITE_ORIGIN}/radar/${encodeURIComponent(bikeId)}` : `${SITE_ORIGIN}/radar`;
 
   // loaderData ausente = notFound() lançado (leitura ok, bike inexistente).
   const notFoundCase = loaderData === undefined;
@@ -106,11 +131,34 @@ export function radarBikeHead(base: RadarBase, bikeId: string, loaderData: unkno
     };
   }
 
-  const title = `${bike.name} — histórico de preços | Vitale Mobilidade`;
-  const ogTitle = `${bike.name} — histórico de preços`;
-  const description = bike.price
-    ? `${bike.name}: preço de hoje ${formatBRL(bike.price)} e histórico real registrado pela Vitale Mobilidade.`
-    : FALLBACK_DESCRIPTION;
+  const title = `${bike.name}: preço, ficha técnica e comparativo | Vitale Mobilidade`;
+  const ogTitle = `${bike.name}: conheça a bike e seu histórico de preços`;
+  const facts = [bike.autonomyKm && `autonomia declarada de até ${bike.autonomyKm} km`, bike.capacity && `capacidade para ${bike.capacity} pessoa(s)`].filter(Boolean).join(" e ");
+  const description = `${bike.name}${bike.price !== null && bike.link ? `: oferta atual de ${formatBRL(bike.price)}` : ""}${facts ? `, ${facts}` : ""}. Veja histórico de preços, ficha técnica, comparação e conteúdos da Vitale.`;
+  const product = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${canonical}#bike`,
+    name: bike.name,
+    url: canonical,
+    ...(bike.image ? { image: [bike.image] } : {}),
+    ...(bike.description ? { description: bike.description } : {}),
+    additionalProperty: [
+      ...(bike.autonomyKm ? [{ "@type": "PropertyValue", name: "Autonomia declarada", value: `${bike.autonomyKm} km` }] : []),
+      ...(bike.capacity ? [{ "@type": "PropertyValue", name: "Capacidade", value: `${bike.capacity} pessoa(s)` }] : []),
+      ...(bike.category ? [{ "@type": "PropertyValue", name: "Categoria", value: bike.category }] : []),
+    ],
+    ...(bike.price !== null && bike.link ? { offers: { "@type": "Offer", price: bike.price, priceCurrency: "BRL", url: bike.link } } : {}),
+  };
+  const breadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Início", item: `${SITE_ORIGIN}/` },
+      { "@type": "ListItem", position: 2, name: "Radar de preços", item: `${SITE_ORIGIN}/radar` },
+      { "@type": "ListItem", position: 3, name: bike.name, item: canonical },
+    ],
+  };
 
   return {
     meta: [
@@ -131,6 +179,7 @@ export function radarBikeHead(base: RadarBase, bikeId: string, loaderData: unkno
         : []),
     ],
     links: [{ rel: "canonical", href: canonical }],
+    scripts: [{ type: "application/ld+json", children: JSON.stringify([product, breadcrumbs]).replace(/</g, "\\u003c") }],
   };
 }
 
