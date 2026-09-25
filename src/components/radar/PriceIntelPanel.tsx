@@ -32,7 +32,7 @@ export function PriceIntelPanel({
   lastObservedAt,
 }: Props) {
   const headingId = useId();
-  const { minPrice, maxPrice, p25, p75, typicalPrice, classification, distinctPrices } = metrics;
+  const { p25, p75, typicalPrice, classification } = metrics;
   const forming = classification === "forming";
 
   // Apenas a régua usa extremos confirmados desta janela; o gráfico mantém seu domínio próprio.
