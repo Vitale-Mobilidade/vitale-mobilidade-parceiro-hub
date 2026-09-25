@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { VideoCards } from "@/components/site/VideoCards";
 import type { VideoCard } from "@/lib/videos.functions";
-import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, Check, ChevronRight, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle, PlayCircle, Route, Sparkles, Wrench } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading, PriceStatus } from "@/components/site/site-ui";
-import { InactiveButton } from "@/components/home/home-products";
+import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
 import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
 import { radarCompareHref } from "@/lib/bike-compare";
 
@@ -24,68 +24,41 @@ function Hero() {
         <img src="/vitale-hero-v2.webp" width={1672} height={941} alt="Ciclista em bike elétrica na orla da cidade ao pôr do sol" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
       </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-transparent max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/70 max-md:to-ink/20" aria-hidden="true" />
-      <div className="responsive-container entry-hero-inner min-h-[690px] pb-28 pt-24 sm:pb-32">
-        <div className="max-w-3xl">
-          <p className="entry-eyebrow">DECISÃO COM DADOS, TESTES E EXPERIÊNCIA REAL</p>
-          <h1 className="entry-h1 max-w-3xl">
-            Escolha sua bike elétrica com <span className="text-mint">menos dúvida</span> e mais certeza.
-          </h1>
-          <p className="entry-lead max-w-2xl">
-            Descubra o modelo para o seu perfil, veja se o preço está bom e avance com informação que realmente ajuda a decidir.
-          </p>
-          <div className="mt-9 flex max-w-2xl flex-col gap-3 sm:flex-row">
-            <Link to="/escolherbike" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-mint px-7 text-lg font-black text-mint-foreground shadow-[0_14px_35px_rgba(57,230,163,0.22)] transition hover:-translate-y-0.5 hover:brightness-105">
-              <Sparkles className="h-5 w-5" aria-hidden="true" /> Descobrir minha bike <ArrowRight className="h-5 w-5" aria-hidden="true" />
-            </Link>
-            <Link to="/radar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-ink-foreground/35 bg-ink/45 px-7 text-lg font-bold backdrop-blur-md transition hover:border-mint hover:bg-ink-foreground/10">
-              <BarChart3 className="h-5 w-5" aria-hidden="true" /> Consultar o Radar
-            </Link>
-          </div>
-          <ul className="mt-8 flex max-w-2xl flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-ink-foreground/80" aria-label="Diferenciais da Vitale">
-            {["Recomendação pelo seu perfil", "Histórico real de preços", "Testes e comparativos"].map((label) => (
-              <li key={label} className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-mint text-mint-foreground"><Check className="h-3.5 w-3.5" aria-hidden="true" /></span>{label}</li>
-            ))}
-          </ul>
+      <div className="responsive-container entry-hero-inner">
+        <p className="entry-eyebrow">BIKES ELÉTRICAS NO BRASIL</p>
+        <h1 className="entry-h1">
+          Encontre a bike elétrica <span className="text-mint">certa para você</span>
+        </h1>
+        <p className="entry-lead max-w-xl">
+          Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher.
+        </p>
+        <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row">
+          <Link to="/escolherbike" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90">
+            <Bike className="h-5 w-5" aria-hidden="true" /> Escolher minha bike <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <Link to="/radar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-mint/70 bg-ink/40 px-7 text-lg font-bold backdrop-blur-sm hover:bg-ink-foreground/10">
+            <BarChart3 className="h-5 w-5" aria-hidden="true" /> Ver Radar de preços
+          </Link>
         </div>
       </div>
     </section>
   );
 }
 
-function DecisionDeck() {
-  const continuations = [
-    { to: "/ferramentas" as const, icon: Wrench, title: "Calcule antes de decidir", text: "Economia, custo, payback e tempo." },
-    { to: "/conteudos" as const, icon: PlayCircle, title: "Veja testes e conteúdos", text: "Experiência prática para comparar melhor." },
-    { to: "/radar" as const, icon: GitCompareArrows, title: "Compare dois modelos", text: "Diferenças lado a lado dentro do Radar." },
-  ];
+function Shortcuts() {
   return (
-    <section aria-labelledby="comece-aqui" className="responsive-container relative z-10 -mt-20">
-      <div className="overflow-hidden rounded-[2rem] border border-line bg-card shadow-[0_28px_80px_rgba(8,43,41,0.16)]">
-        <div className="grid lg:grid-cols-2">
-          <div className="bg-mint p-6 text-mint-foreground sm:p-8 lg:p-10">
-            <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em]"><span className="grid h-9 w-9 place-items-center rounded-full bg-vt-dark text-mint">01</span> Comece por aqui</div>
-            <h2 id="comece-aqui" className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">Ainda não sabe qual bike escolher?</h2>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-mint-foreground/80">Conte como pretende usar, qual é o seu trajeto e quanto quer investir. O Quiz organiza as opções para você.</p>
-            <Link to="/escolherbike" className="mt-7 inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-vt-dark px-6 font-black text-ink-foreground transition hover:-translate-y-0.5">Fazer o Quiz gratuito <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-          </div>
-          <div className="bg-vt-dark p-6 text-ink-foreground sm:p-8 lg:p-10">
-            <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-mint"><span className="grid h-9 w-9 place-items-center rounded-full border border-mint/40 bg-mint/10">02</span> Já tem um modelo em mente?</div>
-            <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">Descubra se o preço de hoje está bom.</h2>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-foreground/70">Consulte o histórico, compare modelos e encontre a oferta atual sem sair da experiência do Radar.</p>
-            <Link to="/radar" className="mt-7 inline-flex min-h-13 items-center justify-center gap-2 rounded-full border border-mint bg-mint/10 px-6 font-black text-mint transition hover:bg-mint hover:text-mint-foreground">Abrir o Radar de preços <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-          </div>
-        </div>
-        <div className="grid border-t border-line bg-card sm:grid-cols-3 sm:divide-x sm:divide-line">
-          {continuations.map(({ to, icon: Icon, title, text }) => (
-            <Link key={title} to={to} className="group flex items-center gap-4 border-b border-line p-5 transition hover:bg-surface sm:border-b-0 lg:p-6">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface text-action ring-1 ring-line group-hover:bg-mint/25"><Icon className="h-5 w-5" aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1"><strong className="block text-sm text-ink sm:text-base">{title}</strong><span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground sm:text-sm">{text}</span></span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-action transition group-hover:translate-x-1" aria-hidden="true" />
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
+    <nav aria-label="Produtos" className="responsive-container relative z-10 -mt-16 md:-mt-14">
+      <ul className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-line lg:grid-cols-5 lg:divide-x lg:divide-line">
+        {HOME_PRODUCTS.map(({ key, to, icon: Icon, title, sub }, i) => (
+          <li key={key} className={i === 4 ? "col-span-2 border-t border-line lg:col-span-1 lg:border-t-0" : i < 4 ? "border-line max-lg:border-b max-lg:odd:border-r" : ""}>
+            <ProductLink to={to} className="flex h-full items-center gap-3 p-4 transition-colors hover:bg-surface md:p-5">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Icon className="h-6 w-6" aria-hidden="true" /></span>
+              <span className="min-w-0"><span className="block text-sm font-bold leading-tight text-ink md:text-[15px]">{title}</span><span className="mt-0.5 block text-xs text-muted-foreground">{sub}</span></span>
+            </ProductLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -93,16 +66,13 @@ function BikesRow({ cards }: { cards: HomeCard[] }) {
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
-        <div className="rounded-3xl bg-surface p-6 ring-1 ring-line sm:p-8">
-          <SectionHeading id="bikes-monitoradas" title="Modelos no Radar" sub="Os dados estão sendo atualizados. Abra o Radar para pesquisar um modelo." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Abrir Radar <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
-        </div>
+        <SectionHeading id="bikes-monitoradas" title="Bikes monitoradas" sub="Veja todas as bikes acompanhadas no Radar de preços." action={<Link to="/radar" className="hover:underline">Abrir o Radar</Link>} />
       </section>
     );
   }
   return (
     <section id="bikes" aria-labelledby="bikes-monitoradas" className="responsive-container scroll-mt-24 pt-14">
-      <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-action"><Route className="h-4 w-4" aria-hidden="true" /> Modelos em movimento</div>
-      <SectionHeading id="bikes-monitoradas" title="Veja o que está acontecendo no Radar" sub="Preço atual de modelos acompanhados pela Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver todos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
@@ -322,7 +292,7 @@ const HomeB2C = () => {
       <SiteHeader />
       <main>
         <Hero />
-        <DecisionDeck />
+        <Shortcuts />
         <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
