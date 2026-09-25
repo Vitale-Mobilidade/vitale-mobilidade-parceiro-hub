@@ -9,7 +9,9 @@ const NOT_INFORMED = "Não informado";
 /** Só aceita linhas explicitamente rotuladas na ficha; não adivinha especificações na prosa. */
 function labeledFact(description: string | null, labels: RegExp): string | null {
   if (!description) return null;
-  for (const line of description.split(/\r?\n/)) {
+  const lines = description.split(/\r?\n/);
+  // Uma linha "Bateria: 48V 20Ah" é mais precisa que um título "BATERIA DE LÍTIO...".
+  for (const line of [...lines.filter((item) => item.includes(":")), ...lines.filter((item) => !item.includes(":"))]) {
     const explicitLine = line.trim().replace(/^(?:\d+[.)]\s*|[-*•]\s*)/, "");
     const match = explicitLine.match(labels);
     const value = match?.slice(1).find(Boolean)?.trim();
@@ -46,7 +48,7 @@ export function BikeHubComparison({ bike, alternatives }: { bike: CatalogBike; a
     { label: "Capacidade de carga informada", value: (item: CatalogBike) => fact(item, /^(?:capacidade (?:máxima|de carga)(?: informada)?|carga máxima|suporta até)\s*(?::|de)\s*(.+)$/i) },
     { label: "Rodas e pneus", value: (item: CatalogBike) => fact(item, /^(?:(?:rodas e pneus|tamanho do pneu|pneus?)\s*:\s*(.+)|((?:pneus?)\s+(?:fat|aro|\d).+))$/i) },
     { label: "Freios", value: (item: CatalogBike) => fact(item, /^(?:(?:sistema de freio|freios?)\s*:\s*(.+)|((?:freios?)\s+(?:hidráulicos?|a disco|mecânicos?).*))$/i) },
-    { label: "Acessórios de destaque", value: (item: CatalogBike) => fact(item, /^(?:acessórios? de destaque|acessórios?|iluminação)\s*:\s*(.+)$/i) },
+    { label: "Acessórios de destaque", value: (item: CatalogBike) => fact(item, /^(?:(?:acessórios? de destaque|acessórios?|iluminação)\s*:\s*(.+)|iluminação\s+(.+))$/i) },
     { label: "Categoria", value: (item: CatalogBike) => item.category ?? NOT_INFORMED },
   ];
 

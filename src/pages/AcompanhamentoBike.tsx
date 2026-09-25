@@ -48,8 +48,9 @@ interface RadarBikeDetail {
 
 function splitDescription(text: string, limit = 600): [string, string] {
   if (text.length <= limit) return [text, ""];
+  const paragraphEnd = text.lastIndexOf("\n", limit);
   const lastSpace = text.slice(0, limit + 1).search(/\s+\S*$/);
-  const cut = lastSpace > limit / 2 ? lastSpace : limit;
+  const cut = paragraphEnd > limit / 2 ? paragraphEnd : lastSpace > limit / 2 ? lastSpace : limit;
   return [text.slice(0, cut).trimEnd(), text.slice(cut).trimStart()];
 }
 
