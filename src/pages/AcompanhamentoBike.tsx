@@ -195,7 +195,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                       </button>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Link de afiliado. Preço e disponibilidade podem mudar no Mercado Livre. O envio automático de alertas ainda não está ativo.
+                      Link de afiliado. Preço e disponibilidade podem mudar no Mercado Livre.
                     </p>
                   </>
                 ) : (

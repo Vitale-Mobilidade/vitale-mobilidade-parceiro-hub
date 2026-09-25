@@ -2,7 +2,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import { type DailyPoint } from "@/lib/price-daily";
 import { lastRealIndex, unavailableMessage } from "@/lib/radar-unavailable";
-import { chartEvidence } from "@/lib/radar-chart";
+import { chartEvidence, chartVariationDomain } from "@/lib/radar-chart";
 
 interface Props {
   series: DailyPoint[];
@@ -10,6 +10,7 @@ interface Props {
   compact?: boolean;
   /** Marca em vermelho o ponto mais recente: oferta indisponível no Mercado Livre. */
   markLastUnavailable?: boolean;
+  focusVariation?: boolean;
 }
 
 interface Row {
@@ -65,8 +66,8 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   );
 }
 
-export function DailyPriceChart({ series, compact = false, markLastUnavailable = false }: Props) {
-  const { domain } = chartEvidence(series);
+export function DailyPriceChart({ series, compact = false, markLastUnavailable = false, focusVariation = false }: Props) {
+  const domain = focusVariation ? chartVariationDomain(series) : chartEvidence(series).domain;
   const rows = toRows(series, markLastUnavailable);
   if (rows.length === 0 || !domain) {
     return (
