@@ -40,7 +40,7 @@ function toRows(series: DailyPoint[], markLastUnavailable: boolean, atypicalDate
   });
 }
 
-/** Dias confirmados ganham ponto cheio; reconstruídos, um marcador vazado e discreto. */
+/** Dias confirmados ganham ponto verde; reconstruídos, um marcador cinza cheio. */
 function DayDot(props: { cx?: number; cy?: number; payload?: Row }) {
   const { cx, cy, payload } = props;
   if (cx === undefined || cy === undefined || !payload || payload.value === null) return null;
@@ -49,9 +49,9 @@ function DayDot(props: { cx?: number; cy?: number; payload?: Row }) {
       <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth={1.5} />
     );
   }
-  if (payload.atypical) return <circle cx={cx} cy={cy} r={5} fill="hsl(var(--background))" stroke="hsl(var(--destructive))" strokeWidth={2} />;
+  if (payload.atypical) return <circle cx={cx} cy={cy} r={5} fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth={1.5} />;
   return payload.reconstructed ? (
-    <circle cx={cx} cy={cy} r={2.5} fill="hsl(var(--background))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+    <circle cx={cx} cy={cy} r={3.5} fill="hsl(var(--muted-foreground))" stroke="hsl(var(--background))" strokeWidth={1} />
   ) : (
     <circle cx={cx} cy={cy} r={2.8} fill="hsl(var(--primary))" />
   );
@@ -112,6 +112,7 @@ export function DailyPriceChart({ series, compact = false, markLastUnavailable =
           <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={28} />
           <YAxis tick={{ fontSize: 11 }} width={78} domain={domain} allowDataOverflow tickFormatter={(v: number) => formatBRL(v)} />
           <Tooltip content={<ChartTooltip />} />
+          <Line type="linear" dataKey={(row: Row) => row.value} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.7} strokeWidth={1.5} strokeDasharray="4 4" dot={false} activeDot={false} connectNulls isAnimationActive={false} />
           <Line type="linear" dataKey={(row: Row) => row.atypical || row.reconstructed ? null : row.value} stroke="hsl(var(--primary))" strokeWidth={2.5} dot={<DayDot />} activeDot={false} connectNulls={false} isAnimationActive={false} />
           <Line
             type="linear"

@@ -25,6 +25,7 @@ import { getHomeCards } from "@/lib/home-cards.functions";
 import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData } from "@tanstack/react-router";
+import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 
 // ---------- Quiz config ----------
 type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
@@ -104,7 +105,6 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
 ];
 
 const AFFILIATE_LIST_URL = "https://meli.la/2y7TYaH";
-const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t";
 
 // ---------- Helpers ----------
 function detectDevice() {
@@ -1438,7 +1438,7 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 }
 
 // ---------- Paid consultation block ----------
-const OFFERS_GROUP_WA_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
+const OFFERS_GROUP_WA_URL = OFFERS_GROUP_URL;
 
 
 // ---------- Falar com a Vitale no WhatsApp (leva o resultado do quiz) ----------

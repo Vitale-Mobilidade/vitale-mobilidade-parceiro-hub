@@ -1,1 +1,2 @@
 Legacy `/bikes/$slug` URLs permanently redirect to `/radar/$bikeId`; public bike discovery and detail links target Radar because it is the canonical bike destination.
+All public offers-group links use `src/lib/offers-group.ts` as their single URL source so invitations and tracked destinations cannot diverge.

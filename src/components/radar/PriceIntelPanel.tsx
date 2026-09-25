@@ -32,17 +32,24 @@ export function PriceIntelPanel({
   lastObservedAt,
 }: Props) {
   const headingId = useId();
-  const { minPrice, maxPrice, p25, p75, typicalPrice, classification, distinctPrices } = metrics;
+  const { p25, p75, typicalPrice, classification } = metrics;
   const forming = classification === "forming";
 
-  // Escala com origem em zero e R$ 2 mil de respiro acima do maior valor real.
-  // O domínio visual não cria nem altera observações do histórico.
-  const scaleMax = Math.ceil((Math.max(currentPrice, maxPrice ?? 0) + 2000) / 500) * 500;
-  const currentPosition = (currentPrice / scaleMax) * 100;
-  const hasHistory = minPrice !== null && maxPrice !== null && distinctPrices > 0;
+  // Apenas a régua usa extremos confirmados desta janela; o gráfico mantém seu domínio próprio.
+  const confirmed = metrics.series.filter(p =>
+    (p.verification === "observed_change" || p.verification === "confirmed_unchanged") &&
+    Number.isFinite(p.low) && Number.isFinite(p.high) && p.low > 0 && p.high > 0,
+  );
+  const scaleMin = confirmed.length ? Math.min(...confirmed.map(p => p.low)) : null;
+  const scaleMax = confirmed.length ? Math.max(...confirmed.map(p => p.high)) : null;
+  const hasHistory = scaleMin !== null && scaleMax !== null;
+  const span = hasHistory ? scaleMax - scaleMin : 0;
+  const position = (value: number) => span > 0 && scaleMin !== null
+    ? Math.min(100, Math.max(0, ((value - scaleMin) / span) * 100)) : 50;
+  const currentPosition = position(currentPrice);
   const showBands = !forming && p25 !== null && p75 !== null && p25 < p75;
-  const lowerBand = showBands ? (p25 / scaleMax) * 100 : 0;
-  const typicalBand = showBands ? ((p75 - p25) / scaleMax) * 100 : 0;
+  const lowerBand = showBands ? position(p25) : 0;
+  const typicalBand = showBands ? Math.max(0, position(p75) - lowerBand) : 0;
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
@@ -84,9 +91,9 @@ export function PriceIntelPanel({
             <div
               className="relative pt-[94px]"
               role="img"
-              aria-label={`Preço atual ${formatBRL(currentPrice)} em uma escala de R$ 0 a ${formatBRL(scaleMax)}.${hasHistory ? ` Menor registrado ${formatBRL(minPrice)}, maior registrado ${formatBRL(maxPrice)}.` : ""}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
+              aria-label={`Preço atual ${formatBRL(currentPrice)}.${hasHistory ? ` Régua de ${formatBRL(scaleMin)} a ${formatBRL(scaleMax)} nos registros confirmados da janela.` : " Sem histórico confirmado para posicionar a régua."}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
             >
-              <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `${currentPosition}%` }} aria-hidden="true">
+              <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `clamp(54px, ${currentPosition}%, calc(100% - 54px))` }} aria-hidden="true">
                 <span className="flex w-[108px] flex-col items-center rounded-xl border border-line bg-logo-surface px-2 pb-1.5 pt-1 shadow-md">
                   <img src="/vitale-bike-price-pin.png" alt="" width={200} height={200} className="h-10 w-10 object-contain mix-blend-multiply" />
                   <span className="text-xs font-extrabold leading-none text-ink">{formatBRL(currentPrice)}</span>
@@ -103,16 +110,16 @@ export function PriceIntelPanel({
               ) : <span className="block h-3 rounded-full bg-surface ring-1 ring-line" aria-hidden="true" />}
               <span className="absolute bottom-0 h-3 w-1.5 -translate-x-1/2 rounded-full bg-action ring-2 ring-card" style={{ left: `${currentPosition}%` }} aria-hidden="true" />
             </div>
-            <div className="mt-1 flex justify-between text-xs font-medium text-muted-foreground"><span>R$ 0</span><span>{formatBRL(scaleMax)}</span></div>
+             <div className="mt-1 flex justify-between text-xs font-medium text-muted-foreground"><span>{hasHistory ? formatBRL(scaleMin) : "—"}</span><span>{hasHistory ? formatBRL(scaleMax) : "—"}</span></div>
             {showBands && <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-ink" aria-label="Legenda das faixas de preço">
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />Abaixo da faixa habitual</span>
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" aria-hidden="true" />Faixa habitual</span>
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />Acima da faixa habitual</span>
             </div>}
-            {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+             {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 Menor registrado
-                <span className="block font-bold text-ink">{formatBRL(minPrice)}</span>
+                 <span className="block font-bold text-ink">{formatBRL(scaleMin)}</span>
               </span>
               <span className="text-center">
                 {forming ? "Mediana dos registros" : "Faixa habitual"}
@@ -122,7 +129,7 @@ export function PriceIntelPanel({
               </span>
               <span className="text-right">
                 Maior registrado
-                <span className="block font-bold text-ink">{formatBRL(maxPrice)}</span>
+                 <span className="block font-bold text-ink">{formatBRL(scaleMax)}</span>
               </span>
             </div> : <p className="mt-2 text-xs text-muted-foreground">Ainda não há registros suficientes nesse período para comparar preços.</p>}
         </div>
@@ -172,8 +179,9 @@ export function PriceIntelPanel({
             Como lemos esses números
           </summary>
           <p className="mt-2">
-            Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias sem
-            verificação — nunca repetimos um preço que não confirmamos.
+             Ponto verde: dia verificado. Ponto cinza: registro reconstruído do histórico. Ponto vermelho: valor atípico confirmado.
+             A linha tracejada só conecta registros existentes e não indica verificação nos dias intermediários.
+             Espaços vazios são dias sem verificação — nunca repetimos um preço que não confirmamos.
           </p>
           <p className="mt-2">
             O preço típico é a mediana dos fechamentos diários do período e a faixa habitual vai do percentil 25 ao 75.
