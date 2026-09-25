@@ -88,7 +88,7 @@ export function PriceIntelPanel({
             <div
               className="relative pt-[94px]"
               role="img"
-              aria-label={`Preço atual ${formatBRL(currentPrice)}.${hasHistory ? ` Régua de ${formatBRL(scaleMin)} a ${formatBRL(scaleMax)} nos registros confirmados da janela.` : " Sem histórico confirmado para posicionar a régua."}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
+              aria-label={`Preço atual ${formatBRL(currentPrice)}.${hasHistory ? ` Régua de ${formatBRL(scaleMin)} a ${formatBRL(scaleMax)} nos registros da janela.` : " Sem histórico para posicionar a régua."}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
             >
               <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `clamp(54px, ${currentPosition}%, calc(100% - 54px))` }} aria-hidden="true">
                 <span className="flex w-[108px] flex-col items-center rounded-xl border border-line bg-logo-surface px-2 pb-1.5 pt-1 shadow-md">
