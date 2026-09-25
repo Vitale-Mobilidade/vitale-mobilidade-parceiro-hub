@@ -12,7 +12,7 @@ export const Route = createFileRoute("/conteudos/")({
   loader: async () => {
     const items = await getPublishedArticles();
     if (!items) throw new Error("conteudos_unavailable");
-    return items;
+    return [...items].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
   },
   head: () => pageHead({ path: "/conteudos", title: "Conteúdos e testes de bikes elétricas | Vitale Mobilidade",
     description: "Testes reais, guias e comparativos da Vitale para ajudar você a escolher sua bike elétrica." }),

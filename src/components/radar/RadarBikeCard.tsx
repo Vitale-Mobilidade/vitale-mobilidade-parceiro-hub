@@ -49,7 +49,7 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             </Link>
           </h3>
         </div>
-        {(entry.perfilIndicado || entry.shortDescription) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado || entry.shortDescription}</p>}
+        {entry.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado}</p> : entry.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{entry.shortDescription}</p>}
         <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
           {[
             entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: ${entry.autonomyKm} km` : null,

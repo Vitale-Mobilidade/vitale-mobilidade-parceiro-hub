@@ -165,7 +165,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
-                  {(featured.perfilIndicado || featured.shortDescription) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {featured.perfilIndicado || featured.shortDescription}</p>}
+                  {featured.perfilIndicado ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {featured.perfilIndicado}</p> : featured.shortDescription && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{featured.shortDescription}</p>}
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
                   <div className="mt-auto space-y-2 pt-4">
