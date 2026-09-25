@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
-import { safeVideos } from "@/lib/videos.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 
@@ -10,15 +9,14 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
-    const [cards, videos, catalog, articles] = await Promise.all([
+    const [cards, catalog, articles] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
-      safeVideos({ limit: 4 }),
       getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
       getPublishedArticles().catch(() => null),
     ]);
     // bikeId -> slug editorial, só para modelos existentes no catálogo.
     const bikeSlugs: Record<string, string> = Object.fromEntries(catalog.bikes.map((b) => [b.bikeId, b.slug]));
-    return { ...cards, videos, bikeSlugs, articles: articles ?? [] };
+    return { ...cards, bikeSlugs, articles: articles ?? [] };
   },
   head: () =>
     pageHead({
