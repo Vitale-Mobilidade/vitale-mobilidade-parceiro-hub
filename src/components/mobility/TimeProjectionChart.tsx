@@ -11,6 +11,7 @@ import type { VideoCard } from "@/lib/videos.functions";
 
 import type { TimeProjectionPoint } from "@/lib/mobility/time-engine";
 import { decimal } from "@/lib/mobility/format";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 
 const WIDTH = 640;
 const HEIGHT = 240;

@@ -38,14 +38,6 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             <span className="text-xs text-muted-foreground">Imagem indisponível</span>
           )}
         </div>
-        {(entry.perfilIndicado || entry.shortDescription) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado || entry.shortDescription}</p>}
-        <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
-          {[
-            entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: até ${entry.autonomyKm} km` : null,
-            entry.capacity && entry.capacity > 0 ? `Capacidade: ${entry.capacity} pessoa(s)` : null,
-            entry.category ? entry.category : null,
-          ].filter((value): value is string => Boolean(value)).slice(0, 3).map(value => <li key={value} className="rounded-md bg-surface px-2 py-1">{value}</li>)}
-        </ul>
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
@@ -57,6 +49,14 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             </Link>
           </h3>
         </div>
+        {(entry.perfilIndicado || entry.shortDescription) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado || entry.shortDescription}</p>}
+        <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
+          {[
+            entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: ${entry.autonomyKm} km` : null,
+            entry.capacity && entry.capacity > 0 ? `Capacidade: ${entry.capacity} pessoa(s)` : null,
+            entry.category ? entry.category : null,
+          ].filter((value): value is string => Boolean(value)).slice(0, 3).map(value => <li key={value} className="rounded-md bg-surface px-2 py-1">{value}</li>)}
+        </ul>
 
         <p className="mt-3 text-3xl font-bold tracking-tight text-primary">{formatBRL(entry.currentPrice)}</p>
         {savings !== null && (

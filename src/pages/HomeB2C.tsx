@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Lock, Mail } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
