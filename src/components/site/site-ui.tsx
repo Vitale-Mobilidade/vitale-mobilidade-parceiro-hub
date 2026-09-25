@@ -9,7 +9,7 @@ import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
  * Navegação só aponta para rotas reais. Comparação é um estado de /bikes (não há rota /comparar).
  */
 
-export function Brand({ tone = "dark", large = false }: { tone?: "dark" | "light"; large?: boolean }) {
+export function Brand({ large = false }: { large?: boolean }) {
   return (
     <Link to="/" className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-background bg-background p-1 ${large ? "h-20 w-60" : "h-14 w-44 sm:w-48"}`} aria-label="Vitale Mobilidade — início">
       <img src={officialLogo.url} alt="Vitale Mobilidade" width={464} height={152} decoding="async" className="h-full w-full object-contain" />
@@ -36,7 +36,7 @@ function NavLink({ item, className }: { item: NavItem; className: string }) {
 }
 
 /** Header único do site B2C. Sem busca superior (a busca vive dentro do Radar). */
-export function SiteHeader({ homeQuizCta: _homeQuizCta = false }: { homeQuizCta?: boolean }) {
+export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
       <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
