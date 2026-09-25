@@ -68,6 +68,13 @@ export default {
         if (target) {
           return new Response(null, { status: 301, headers: { location: target, "cache-control": "public, max-age=3600" } });
         }
+        const slug = /^\/bikes\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(url.pathname)?.[1];
+        if (slug) {
+          const { fetchBikeCatalogFromDb } = await import("./lib/bikes-repository.server");
+          const bike = (await fetchBikeCatalogFromDb()).find((entry) => entry.slug === slug);
+          if (!bike) return new Response(null, { status: 404 });
+          return new Response(null, { status: 301, headers: { location: `/radar/${encodeURIComponent(bike.bikeId)}${url.search}`, "cache-control": "public, max-age=3600" } });
+        }
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

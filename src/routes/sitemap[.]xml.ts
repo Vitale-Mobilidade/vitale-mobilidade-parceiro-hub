@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { buildSitemapXml, bikeSlugPaths, radarIdPaths, articleSlugPaths, STATIC_SITEMAP_PATHS } from "@/lib/sitemap";
+import { buildSitemapXml, radarIdPaths, articleSlugPaths, STATIC_SITEMAP_PATHS } from "@/lib/sitemap";
 
 async function build(): Promise<string | null> {
   const [{ fetchBikeCatalogFromDb }, { fetchTrackerSplit }, { fetchPublishedIndex }] = await Promise.all([
@@ -13,7 +13,6 @@ async function build(): Promise<string | null> {
   if (!catalog || catalog.length === 0 || !radar.ok) return null;
   return buildSitemapXml([
     ...STATIC_SITEMAP_PATHS,
-    ...bikeSlugPaths(catalog),
     ...radarIdPaths([...radar.data.active, ...radar.data.archived]),
     ...articleSlugPaths(articles ?? []),
   ]);
