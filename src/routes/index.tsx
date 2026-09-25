@@ -4,7 +4,7 @@ import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
 import { safeVideos } from "@/lib/videos.functions";
 
-// Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
+// Home B2C canônica; a antiga landing de consultoria foi aposentada em 25/09/2026.
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
