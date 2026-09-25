@@ -291,12 +291,14 @@
   --vt-action: 158 83% 26%;    /* #0b7b55 — contraste AA sobre branco */
   --vt-surface: 144 26% 96%;   /* #f3f8f5 */
   --vt-line: 152 30% 89%;      /* #dcebe4 */
+  --logo-surface: #FBF9F8;
 }
 @theme inline {
   --color-vt-dark: hsl(var(--vt-dark));
   --color-action: hsl(var(--vt-action));
   --color-surface: hsl(var(--vt-surface));
   --color-line: hsl(var(--vt-line));
+  --color-logo-surface: var(--logo-surface);
 }
 
 /* Design System — heróis das páginas de entrada (Home, /bikes, /acompanhamento).

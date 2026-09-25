@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
-import { VideoCards } from "@/components/site/VideoCards";
-import type { VideoCard } from "@/lib/videos.functions";
-import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, Bus, Calculator, Car, CarTaxiFront, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
@@ -10,9 +8,9 @@ import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 
 /*
- * A Home usa catálogo, vídeos e artigos publicados das fontes existentes; newsletter permanece inativa.
+ * A Home usa catálogo e artigos publicados das fontes existentes; newsletter permanece inativa.
  * CTAs inativos (disabled/aria-disabled, sem href/submit); nenhum email coletado;
- * nenhum vídeo/artigo/valor inventado. Dados de bikes vêm só de getHomeCards.
+ * nenhum artigo/valor inventado. Dados de bikes vêm só de getHomeCards.
  */
 
 function Hero() {
@@ -65,13 +63,13 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
-        <SectionHeading id="bikes-monitoradas" title="Bikes monitoradas" sub="Veja todas as bikes acompanhadas no Radar de preços." action={<Link to="/radar" className="hover:underline">Abrir o Radar</Link>} />
+        <SectionHeading id="bikes-monitoradas" title="Bikes monitoradas" sub="Veja todas as bikes acompanhadas no Radar de preços." action={<Link to="/radar" className="hover:underline">Abrir o Radar de preços</Link>} />
       </section>
     );
   }
   return (
     <section id="bikes" aria-labelledby="bikes-monitoradas" className="responsive-container scroll-mt-24 pt-14">
-      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver Radar <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver Radar de preços <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
@@ -177,54 +175,16 @@ function CalculatorPanel() {
   );
 }
 
-function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[] }) {
-  if (videos.length) {
-    return (
-      <section id="conteudos" aria-labelledby="conteudos-h" className="scroll-mt-24">
-        <SectionHeading id="conteudos-h" title="Vídeos e testes" sub="Vídeos recentes do canal da Vitale no YouTube." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} />
-        <VideoCards videos={videos} className="mt-6" />
-      </section>
-    );
-  }
-  const areas = [
-    { tag: "Testes", title: "Testes de bikes elétricas", text: "Como as bikes se comportam no uso real." },
-    { tag: "Comparativos", title: "Modelos lado a lado", text: "Diferenças que importam na hora de escolher." },
-    { tag: "Guias", title: "Guias de compra", text: "O que avaliar antes de comprar sua bike." },
-  ];
-  return (
-    <section id="conteudos" aria-labelledby="conteudos-h" className="scroll-mt-24">
-      <SectionHeading id="conteudos-h" title="Conteúdos e testes" sub="Áreas editoriais da Vitale para ajudar na escolha." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} />
-      <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-        {areas.map((a, i) => {
-          const c = cards[(i + 2) % Math.max(cards.length, 1)];
-          return (
-            <li key={a.tag} className="overflow-hidden rounded-2xl bg-card ring-1 ring-line">
-              <div className="relative">
-                <BikeMedia src={c?.image ?? null} name={c?.name ?? a.title} className="aspect-[16/9] w-full" />
-                <span className="absolute left-3 top-3 rounded-full bg-mint px-3 py-1 text-xs font-bold text-mint-foreground">{a.tag}</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-ink">{a.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{a.text}</p>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
 function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
   if (articles.length === 0) return null;
   const recent = [...articles].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 3);
   return (
-    <section aria-labelledby="artigos-home" className="scroll-mt-24">
+    <section id="conteudos" aria-labelledby="artigos-home" className="scroll-mt-24">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 id="artigos-home" className="border-l-4 border-action pl-3 text-2xl font-bold text-ink">Artigos para escolher melhor</h2>
         <Link to="/conteudos" className="inline-flex items-center gap-1 text-sm font-semibold text-action hover:underline">Ver todos os artigos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
       </div>
-      <ul className={`mt-6 grid gap-4 ${recent.length === 1 ? "max-w-2xl" : recent.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {recent.map((article) => (
           <li key={article.slug}>
             <Link to="/conteudos/$slug" params={{ slug: article.slug }} className="group flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-line transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
@@ -293,7 +253,6 @@ const HomeB2C = () => {
             <RadarPanel total={total} />
             <CalculatorPanel />
           </div>
-          <ContentBlock cards={cards} videos={data?.videos ?? []} />
           <ArticlesBlock articles={data?.articles ?? []} />
           <GroupAndNewsletter />
         </div>

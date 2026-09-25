@@ -11,7 +11,7 @@ import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
 
 export function Brand({ large = false }: { large?: boolean }) {
   return (
-    <Link to="/" className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-background bg-background p-1 ${large ? "h-20 w-60" : "h-14 w-44 sm:w-48"}`} aria-label="Vitale Mobilidade — início">
+    <Link to="/" className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-logo-surface bg-logo-surface p-1 ${large ? "h-20 w-60" : "h-14 w-44 sm:w-48"}`} aria-label="Vitale Mobilidade — início">
       <img src={officialLogo.url} alt="Vitale Mobilidade" width={464} height={152} decoding="async" className="h-full w-full object-contain" />
     </Link>
   );
@@ -19,7 +19,7 @@ export function Brand({ large = false }: { large?: boolean }) {
 
 type NavItem = { label: string; href?: string; to?: "/radar" | "/ferramentas" | "/conteudos" };
 export const SITE_NAV: NavItem[] = [
-  { label: "Radar", to: "/radar" },
+  { label: "Radar de preços", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
 ];
@@ -66,12 +66,11 @@ export function SiteFooter() {
   const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/calculadoras/economia" | "/conteudos" }[] }[] = [
     { title: "Escolher", items: [
       { label: "Quiz", to: "/escolherbike" },
-      { label: "Radar", to: "/radar" },
+      { label: "Radar de preços", to: "/radar" },
       { label: "Calculadora de economia", to: "/calculadoras/economia" },
     ] },
     { title: "Conteúdos", items: [
       { label: "Artigos", to: "/conteudos" },
-      { label: "Vídeos e testes", href: "/#conteudos" },
     ] },
     { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
   ];
