@@ -54,9 +54,10 @@ export function radarUseLine(entry: RadarBike): string | null {
   return null;
 }
 
-export type SortKey = "opportunity" | "drop" | "price" | "name";
+export type SortKey = "relevance" | "opportunity" | "drop" | "price" | "name";
 
 export const SORT_LABEL: Record<SortKey, string> = {
+  relevance: "Mais relevantes",
   opportunity: "Abaixo do preço típico",
   drop: "Maior queda",
   price: "Menor preço",
@@ -105,7 +106,21 @@ export function buildRadarEntries(
 
 export function sortEntries(entries: RadarEntry[], key: SortKey): RadarEntry[] {
   const out = [...entries];
+  const alphabetical = (a: RadarEntry, b: RadarEntry) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+  // Relevância editorial/preço: nenhum sinal de cliques, acessos ou popularidade.
+  const relevance = (e: RadarEntry) => {
+    const { classification, verifiedDays, expectedDays, coverage } = e.metrics;
+    const priceSignal = classification === "lowest" ? 2 : classification === "good" ? 1 : 0;
+    const reliable = classification !== "forming" ? 1 : 0;
+    const discount = reliable && Number.isFinite(e.savingsPct) ? Math.max(0, Math.min(e.savingsPct ?? 0, 100)) : 0;
+    const days = Math.min(verifiedDays, 30);
+    const editorial = Number(Boolean(e.image)) + Number(Boolean(radarUseLine(e)));
+    return priceSignal * 1000 + reliable * 300 + discount * 2 +
+      (expectedDays > 0 ? coverage : 0) * 100 + days + editorial * 5;
+  };
   switch (key) {
+    case "relevance":
+      return out.sort((a, b) => relevance(b) - relevance(a) || alphabetical(a, b));
     case "opportunity":
       return out.sort((a, b) => (b.savingsPct ?? -Infinity) - (a.savingsPct ?? -Infinity));
     case "drop":
@@ -113,7 +128,7 @@ export function sortEntries(entries: RadarEntry[], key: SortKey): RadarEntry[] {
     case "price":
       return out.sort((a, b) => a.currentPrice - b.currentPrice);
     default:
-      return out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+      return out.sort(alphabetical);
   }
 }
 

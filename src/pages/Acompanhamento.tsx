@@ -19,7 +19,6 @@ import {
   buildRadarEntries,
   buildSummary,
   CHIP_LABEL,
-  isOpportunity,
   matchesChips,
   searchEntries,
   SORT_LABEL,
