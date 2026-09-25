@@ -28,19 +28,19 @@ Critérios de aceite: ranking antes do catálogo; no máximo um filtro rápido a
 3. Publicar a aplicação web e conferir Home, `/radar`, `/radar/v9_max` e formulários.
 4. Se houver regressão, reverter aplicação e funções para a revisão anterior. As tabelas/colunas aditivas podem ficar inertes; qualquer remoção de dados exige decisão separada.
 
-Nenhuma dessas ações externas faz parte da edição local e nenhuma está autorizada por esta documentação.
+Essas ações foram autorizadas pelo usuário no fio da tarefa e executadas na sequência abaixo. A documentação, por si, não autoriza novas ações externas.
 
-## Governança — revisão pós-implementação local (25/09/2026)
+## Governança — revisão pós-publicação (25/09/2026)
 
 | Perspectiva | Status | Evidência ou pendência |
 | --- | --- | --- |
 | Produto e Estratégia | Pass | Destaque/rankings precedem catálogo; sem novo CTA afiliado no Radar |
-| CTO e Arquitetura | Pass local | Contrato e migrations aditivas revisados; typecheck e build passaram. A aplicação de produção continua pendente. |
+| CTO e Arquitetura | Pass | Contrato e migrations aditivas revisados; typecheck, build e as duas migrations em produção verificados. |
 | IA e Agent Engineering | Pass | “Boa para” ignora descrições de anúncio e aceita só campos editoriais |
-| Segurança | Fail para release | Consentimento, RLS e antispam revisados no código; falta aplicar e verificar migrations, funções e acesso aos dados em produção. |
-| UX/UI | Pass local | Navegador interno confirmou ordem das seções, exclusividade dos filtros, régua/pin, linha do gráfico, modal centralizado e campos da newsletter em largura móvel. Revisão desktop no ambiente publicado ainda pendente. |
+| Segurança | Pass | Consentimento, RLS e antispam revisados; tabelas novas com RLS ativo, políticas restritivas e permissões de `anon`/`authenticated` revogadas em produção. As duas funções responderam HTTP 400 para corpos inválidos sem gravar dados; não há envio automático. |
+| UX/UI | Pass | Navegador interno confirmou no domínio publicado destaque/rankings antes do catálogo, filtro exclusivo, régua/pin, gráfico contínuo, modal centralizado, mais vídeos e newsletter. |
 | CX e Operação | Pass | Ambos os fluxos explicitam que não há envio automático |
 | Growth e CRO | Pass | Vídeos associados sem teto de 12; título, URL e CTA afiliado existentes preservados |
-| PMO e QA | Pass local; Fail para release | `pnpm validate` passou: typecheck, 36 testes direcionados e build. Teste adicional do gráfico passou (2 casos); smoke local de Radar, detalhe, alerta e Home realizado. Deploy e smoke de produção pendentes. |
+| PMO e QA | Pass | `pnpm validate` passou: typecheck, 36 testes direcionados e build. Teste adicional do gráfico passou (2 casos); smoke no domínio publicado de Radar, detalhe, alerta e Home realizado. |
 
-Release **bloqueado** enquanto qualquer `Fail` persistir. O código está somente no worktree local `codex/radar-ux-sep25`; nenhuma migration, função ou página foi publicada. A publicação web foi solicitada, mas as duas migrations e as funções que recebem dados pessoais exigem autorização específica antes da sequência coordenada descrita acima.
+Release executado após autorização explícita: o Lovable aplicou o patch sobre `5caf9b5`, aplicou as duas migrations, publicou `bike-price-alert` e `newsletter-interest`, e a publicação web foi acionada (deployment `9b48bba9-3184-4c0f-adb2-90564ddbe9db`). O domínio `vitalemobilidade.com` exibiu a nova versão. Como proteção adicional, revogamos as permissões padrão de `anon` e `authenticated` nas tabelas novas; a migration de origem foi atualizada para reproduzir essa medida. Não houve envio nem inscrição real de teste. O `git push` direto retornou 403, então a integração ocorreu pelo Lovable; commit resultante `82539db2a66578b107fd8f424724e736b571b9ed`.
