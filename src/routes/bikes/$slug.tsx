@@ -15,6 +15,7 @@ import { lastConfirmedDay } from "@/lib/radar-unavailable";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
+import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
 
 type RadarDetail = {
   id: string;
@@ -309,14 +310,7 @@ function BikeDetail() {
       )}
 
       {/* Quiz */}
-      <section aria-labelledby="quiz" className="mt-14 flex flex-col items-start justify-between gap-4 rounded-3xl bg-ink p-6 text-ink-foreground md:flex-row md:items-center md:p-10">
-        <div>
-          <Sparkles className="h-6 w-6 text-mint" aria-hidden="true" />
-          <h2 id="quiz" className="mt-2 text-2xl font-black md:text-3xl">É a bike certa para o seu perfil?</h2>
-          <p className="mt-2 max-w-xl text-ink-foreground/80">Responda sete perguntas rápidas e veja qual modelo combina com o seu uso.</p>
-        </div>
-        <Link to="/escolherbike" className="inline-flex h-12 shrink-0 items-center rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90">Fazer o Quiz</Link>
-      </section>
+      <div className="mt-14"><QuizBanner /></div>
 
       {/* Vídeos */}
       {videos.length > 0 && (
@@ -362,13 +356,7 @@ function BikeDetail() {
       )}
 
       {/* Grupo */}
-      <section className="mt-14 flex flex-col items-start justify-between gap-4 rounded-2xl bg-mint/20 p-6 ring-1 ring-mint md:flex-row md:items-center">
-        <div>
-          <h2 className="flex items-center gap-2 text-xl font-black text-ink"><Megaphone className="h-5 w-5 text-action" aria-hidden="true" /> Grupo de Ofertas Vitale</h2>
-          <p className="mt-1 text-muted-foreground">Oportunidades de bikes elétricas no WhatsApp. Somente admins publicam.</p>
-        </div>
-        <Link to="/grupodeofertas" className="inline-flex h-11 items-center rounded-xl bg-ink px-5 text-sm font-bold text-ink-foreground hover:opacity-90">Entrar no grupo</Link>
-      </section>
+      <div className="mt-14"><OffersBanner /></div>
 
       {/* CTA final */}
       {offer && (

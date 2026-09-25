@@ -10,6 +10,7 @@ import { brl, decimal, type BudgetMode } from "@/lib/mobility/format";
 import type { ProjectionResult } from "@/lib/mobility/projection-engine";
 import type { RecommendedBike } from "@/lib/mobility/recommendation-engine";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 
 export function NumberField({
   name,
@@ -376,20 +377,7 @@ export function RecommendationFooter({
           Comparar essas bikes →
         </Link>
       )}
-      <div className="grid gap-3 rounded-2xl bg-mint/20 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
-        <div>
-          <p className="text-lg font-black text-ink">Quer confirmar qual bike faz sentido para você?</p>
-          <p className="mt-1 text-sm text-ink/75">
-            O Quiz considera também seu perfil, terreno e forma de uso antes da decisão de compra.
-          </p>
-        </div>
-        <Link
-          to="/escolherbike"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-action px-5 font-bold text-white hover:bg-action/90"
-        >
-          Escolher minha bike →
-        </Link>
-      </div>
+      <QuizBanner />
       <p className="text-sm text-muted-foreground">
         Quer avaliar se o preço de uma opção monitorada está bom? Use o histórico no Radar dentro do card da bike.
       </p>

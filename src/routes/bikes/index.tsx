@@ -9,6 +9,7 @@ import { VideoCards } from "@/components/site/VideoCards";
 import { getBikesDiscovery, type DiscoveryBike } from "@/lib/bikes-discovery.functions";
 import { normalizeText } from "@/lib/price-daily";
 import { pageHead } from "@/lib/seo";
+import { OffersBanner } from "@/components/site/DecisionBanners";
 
 export const Route = createFileRoute("/bikes/")({
   // Comparação = estado funcional da página (bikeIds). Canonical permanece /bikes.
@@ -282,13 +283,7 @@ function BikesIndex() {
               </section>
             )}
 
-            <section className="mt-14 flex flex-col items-start justify-between gap-4 rounded-2xl bg-mint/20 p-6 ring-1 ring-mint md:flex-row md:items-center md:p-8">
-              <div>
-                <h2 className="text-xl font-black text-ink">Grupo de Ofertas Vitale</h2>
-                <p className="mt-1 text-muted-foreground">Receba oportunidades no WhatsApp. Somente admins publicam.</p>
-              </div>
-              <Link to="/grupodeofertas" className="inline-flex h-11 items-center rounded-xl bg-ink px-5 text-sm font-bold text-ink-foreground hover:opacity-90">Entrar no grupo</Link>
-            </section>
+            <div className="mt-14"><OffersBanner /></div>
           </>
         )}
       </main>
