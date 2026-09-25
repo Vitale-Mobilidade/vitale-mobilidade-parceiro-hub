@@ -7,7 +7,7 @@ import { BarChart3, BookOpen, Calculator, Bike, Users, type LucideIcon } from "l
  * o CTA é renderizado inativo (aria-disabled, sem href). Para ligar, basta criar a
  * rota e preencher `to` aqui.
  */
-export type HomeAnchor = "#comparar" | "#conteudos" | "#ferramentas" | "#bikes";
+export type HomeAnchor = "#conteudos" | "#ferramentas" | "#bikes";
 export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | "/bikes" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
@@ -19,9 +19,9 @@ export const HOME_PRODUCTS: HomeProduct[] = [
 ];
 
 export const NAV_ITEMS: { label: string; to: HomeProduct["to"] }[] = [
+  { label: "Radar", to: "/radar" },
   { label: "Conteúdos", to: "#conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
-  { label: "Radar", to: "/radar" },
 ];
 
 /** Link real quando há destino; âncoras funcionais para seções da Home; caso contrário elemento inativo sem href nem ação. */

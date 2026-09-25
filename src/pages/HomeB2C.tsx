@@ -220,8 +220,11 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
   const recent = [...articles].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 3);
   return (
     <section aria-labelledby="artigos-home" className="scroll-mt-24">
-      <SectionHeading id="artigos-home" title="Artigos para escolher melhor" action={<Link to="/conteudos" className="inline-flex items-center gap-1 hover:underline">Ver todos os artigos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 id="artigos-home" className="border-l-4 border-action pl-3 text-2xl font-bold text-ink">Artigos para escolher melhor</h2>
+        <Link to="/conteudos" className="inline-flex items-center gap-1 text-sm font-semibold text-action hover:underline">Ver todos os artigos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+      </div>
+      <ul className={`mt-6 grid gap-4 ${recent.length === 1 ? "max-w-2xl" : recent.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {recent.map((article) => (
           <li key={article.slug}>
             <Link to="/conteudos/$slug" params={{ slug: article.slug }} className="group flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-line transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
