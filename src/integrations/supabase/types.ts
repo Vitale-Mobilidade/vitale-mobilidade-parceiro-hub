@@ -372,6 +372,7 @@ export type Database = {
           consent_version: string
           created_at: string
           delivery_enabled: boolean
+          email: string | null
           id: string
           person_name: string
           phone_e164: string
@@ -397,6 +398,7 @@ export type Database = {
           consent_version?: string
           created_at?: string
           delivery_enabled?: boolean
+          email?: string | null
           id?: string
           person_name: string
           phone_e164: string
@@ -422,6 +424,7 @@ export type Database = {
           consent_version?: string
           created_at?: string
           delivery_enabled?: boolean
+          email?: string | null
           id?: string
           person_name?: string
           phone_e164?: string
