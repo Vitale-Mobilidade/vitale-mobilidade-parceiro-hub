@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { fetchPublishedArticle, fetchPublishedIndex } from "./editorial-repository.server";
+import { fetchPublishedArticle, fetchPublishedArticlesForBike, fetchPublishedIndex } from "./editorial-repository.server";
 
 export const getPublishedArticle = createServerFn({ method: "GET" })
   .inputValidator((v: unknown) => typeof v === "string" ? v : "")
@@ -7,3 +7,7 @@ export const getPublishedArticle = createServerFn({ method: "GET" })
 
 export const getPublishedArticles = createServerFn({ method: "GET" })
   .handler(async () => fetchPublishedIndex());
+
+export const getPublishedArticlesForBike = createServerFn({ method: "GET" })
+  .inputValidator((v: unknown) => typeof v === "string" ? v : "")
+  .handler(async ({ data }) => fetchPublishedArticlesForBike(data));

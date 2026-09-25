@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "@/lib/router-compat";
-import { ArrowRight, BellRing, Check, ExternalLink } from "lucide-react";
+import { ArrowRight, BellRing, BookOpen, Check, ExternalLink } from "lucide-react";
 import type { RadarBikeData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
@@ -10,6 +10,7 @@ import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
+import { BikeHubComparison } from "@/components/radar/BikeHubComparison";
 import { UnavailableExplainer } from "@/components/radar/UnavailableExplainer";
 import { UNAVAILABLE_LEGEND, lastConfirmedDay } from "@/lib/radar-unavailable";
 import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
@@ -95,12 +96,14 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
   const loading = false; // dados já chegam no SSR
   const canBuy = hasOffer;
   const strengths = (bike?.strengths ?? []).filter((s) => typeof s === "string").slice(0, 4);
-  // Descrições legadas (slogans) não são exibidas; só campos factuais.
+  const description = initial.catalogBike?.description || bike?.description || bike?.shortDescription || null;
+  // A ficha reúne somente atributos presentes nas fontes públicas desta bike.
   const specs = [
     bike?.autonomyKm ? { label: "Autonomia", value: `Até ${bike.autonomyKm} km` } : null,
     bike?.capacity ? { label: "Capacidade", value: `${bike.capacity} pessoa(s)` } : null,
     bike?.weightSupportKg ? { label: "Suporta até", value: `${bike.weightSupportKg} kg` } : null,
     bike?.terrains?.length ? { label: "Terrenos", value: bike.terrains.filter((t) => typeof t === "string").slice(0, 3).map((t) => t.replace(/_/g, " ")).join(", ") } : null,
+    initial.catalogBike?.category ? { label: "Categoria", value: initial.catalogBike.category } : null,
   ].filter((x): x is { label: string; value: string } => !!x && !!x.value);
 
   return (
@@ -138,8 +141,8 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
         {!loading && bike && (
           <>
-            <header className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <BikeMedia src={bike.image} name={bike.name} eager className="h-[260px] rounded-3xl border border-line md:h-[340px]" />
+            <header className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center">
+              <BikeMedia src={bike.image} name={bike.name} eager className="h-[240px] rounded-3xl border border-line sm:h-[280px]" />
 
               <div className="flex min-w-0 flex-col">
                 {/* Sem selo de avaliação de preço: só status factual de oferta/histórico. */}
@@ -148,19 +151,18 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                     Sem oferta no momento
                   </span>
                 )}
-                <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">{bike.name}</h1>
-                {bike.perfilIndicado && <p className="mt-2 text-base text-muted-foreground">Boa para: {bike.perfilIndicado}</p>}
+                <h1 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">{bike.name}</h1>
 
                 {hasOffer && metrics ? (
                   <>
-                    <p className="mt-5 text-4xl font-extrabold tracking-tight text-action md:text-5xl">{formatBRL(currentPrice)}</p>
+                    <p className="mt-3 text-4xl font-extrabold tracking-tight text-action md:text-5xl">{formatBRL(currentPrice)}</p>
                     {metrics.deltaAbs !== null && metrics.deltaAbs !== 0 && (
                       <p className={`mt-2 inline-flex w-fit rounded-lg px-3 py-1 text-sm font-semibold ${metrics.deltaAbs < 0 ? "bg-mint/25 text-ink" : "bg-destructive/10 text-destructive"}`}>
                         {metrics.deltaAbs < 0 ? "▼" : "▲"} {formatBRL(Math.abs(metrics.deltaAbs))} ({Math.abs(metrics.deltaPct ?? 0).toFixed(1).replace(".", ",")}%) desde o preço anterior
                       </p>
                     )}
 
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       {canBuy && link && (
                         <a
                           href={link}
@@ -217,16 +219,6 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                 )}
 
 
-                {specs.length > 0 && (
-                  <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {specs.map((sp) => (
-                      <div key={sp.label} className="rounded-xl border border-line bg-surface px-4 py-3">
-                        <dt className="text-sm text-muted-foreground">{sp.label}</dt>
-                        <dd className="font-bold text-ink">{sp.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
               </div>
             </header>
 
@@ -275,10 +267,27 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
 
 
 
-            <div className="mt-12"><QuizBanner /></div>
+            {(bike.perfilIndicado || description || bike.diferencial || specs.length > 0 || strengths.length > 0) && (
+              <section className="mt-10" aria-labelledby="sobre-bike">
+                <SectionHeading id="sobre-bike" title={`Conheça a ${bike.name}`} />
+                {bike.perfilIndicado && <p className="mt-5 max-w-3xl text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
+                {description && <div className="mt-4 max-w-3xl space-y-3 text-base leading-relaxed text-muted-foreground">{description.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>}
+                {bike.diferencial && <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
+                {specs.length > 0 && (
+                  <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {specs.map((sp) => (
+                      <div key={sp.label} className="rounded-xl border border-line bg-surface px-4 py-3">
+                        <dt className="text-sm text-muted-foreground">{sp.label}</dt>
+                        <dd className="font-bold text-ink">{sp.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </section>
+            )}
 
             {strengths.length > 0 && (
-              <section className="mt-12" aria-labelledby="destaques">
+              <section className="mt-8" aria-labelledby="destaques">
                 <SectionHeading id="destaques" title="Pontos da ficha" />
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                   {strengths.map((s) => (
@@ -291,10 +300,59 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
               </section>
             )}
 
+            {initial.catalogBike && initial.comparisonBikes.length > 0 && (
+              <BikeHubComparison key={bike.id} bike={initial.catalogBike} alternatives={initial.comparisonBikes} />
+            )}
+
+            <div className="mt-12"><QuizBanner /></div>
+
             {initial.videos?.length > 0 && (
               <section className="mt-12" aria-labelledby="bike-videos">
                 <SectionHeading id="bike-videos" title="Vídeos deste modelo" />
-                <VideoCards videos={initial.videos} className="mt-4" />
+                <VideoCards videos={initial.videos.slice(0, 4)} className="mt-4" />
+                {initial.videos.length > 4 && (
+                  <details className="mt-4">
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-line px-4 text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+                      Ver mais vídeos deste modelo ({initial.videos.length - 4})
+                    </summary>
+                    <VideoCards videos={initial.videos.slice(4)} className="mt-4" />
+                  </details>
+                )}
+              </section>
+            )}
+
+            {initial.articles?.length > 0 && (
+              <section className="mt-12" aria-labelledby="bike-articles">
+                <SectionHeading
+                  id="bike-articles"
+                  title="Artigos sobre este modelo"
+                  action={<Link to="/conteudos" className="inline-flex items-center gap-1 hover:underline">Ver todos os artigos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}
+                />
+                <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {initial.articles.map((article) => (
+                    <li key={article.id}>
+                      <Link
+                        to={`/conteudos/${encodeURIComponent(article.slug)}`}
+                        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+                      >
+                        {article.ogImageUrl ? (
+                          <img src={article.ogImageUrl} alt="" width={640} height={360} loading="lazy" decoding="async" className="aspect-video w-full object-cover" />
+                        ) : (
+                          <div className="grid aspect-video place-items-center bg-surface">
+                            <BookOpen className="h-10 w-10 text-action" aria-hidden="true" />
+                          </div>
+                        )}
+                        <div className="flex flex-1 flex-col p-5">
+                          <h3 className="text-lg font-bold text-ink group-hover:text-action">{article.title}</h3>
+                          {article.summary && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{article.summary}</p>}
+                          <span className="mt-auto inline-flex items-center gap-1 pt-5 text-sm font-semibold text-action">
+                            Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
