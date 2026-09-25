@@ -1,0 +1,1 @@
+Legacy `/bikes/$slug` URLs permanently redirect to `/radar/$bikeId`; public bike discovery and detail links target Radar because it is the canonical bike destination.
