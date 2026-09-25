@@ -11,8 +11,12 @@ export function chartEvidence(series: DailyPoint[]) {
   const deviations = values.map(v => Math.abs(v - center)).sort((a, b) => a - b);
   const mad = median(deviations);
   const atypicalDates = new Set<string>();
-  if (values.length >= 5) for (const p of series) {
-    if (confirmed(p) && Math.abs(p.close - center) > Math.max(center * 0.2, mad * 3)) atypicalDates.add(p.date);
+  const observations = series.filter(confirmed);
+  if (values.length >= 5) for (const [i, p] of observations.entries()) {
+    const threshold = Math.max(center * 0.2, mad * 3);
+    const isolated = [observations[i - 1], observations[i + 1]].filter(Boolean)
+      .every(neighbor => Math.abs(neighbor.close - center) <= threshold);
+    if (isolated && Math.abs(p.close - center) > threshold) atypicalDates.add(p.date);
   }
   const low = values[0];
   const high = values[values.length - 1];

@@ -4,13 +4,11 @@ import { Link } from "@tanstack/react-router";
 import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { VideoCards } from "@/components/site/VideoCards";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
 import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
-import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
 import { ArchivedHistorySection, parseArchived } from "@/components/radar/ArchivedHistorySection";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
@@ -28,7 +26,6 @@ import {
   sortEntries,
   type ChipKey,
   type RadarBike,
-  type RadarEntry,
   type SortKey,
 } from "@/lib/radar-rankings";
 
@@ -58,7 +55,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const [sort, setSort] = useState<SortKey>("opportunity");
   const [chips, setChips] = useState<ChipKey[]>([]);
   const [category, setCategory] = useState("");
-  const [alertBike, setAlertBike] = useState<RadarEntry | null>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,7 +80,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
   const featured =
     opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
-  const loading = false; // dados já chegam no SSR
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
@@ -210,27 +205,19 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
         )}
 
         <div className="responsive-container py-10">
-          {loading && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-96 w-full rounded-3xl" />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && (
+           {error && (
             <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
               Não foi possível carregar o histórico agora. Tente novamente em alguns minutos.
             </p>
           )}
 
-          {!loading && !error && entries.length === 0 && (
+           {!error && entries.length === 0 && (
             <p className="rounded-xl border border-border bg-muted/40 p-6 text-sm text-muted-foreground">
               Ainda não há bikes com acompanhamento disponível.
             </p>
           )}
 
-          {!loading && !error && entries.length > 0 && (
+           {!error && entries.length > 0 && (
             <>
               <ArchivedHistorySection bikes={archived} base={base} />
               <div className="mt-10"><OffersGroupCta source="radar_home" /></div>
@@ -258,16 +245,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
           )}
         </div>
       </main>
-
-      {alertBike && (
-        <PriceAlertDialog
-          open={!!alertBike}
-          onOpenChange={(open) => !open && setAlertBike(null)}
-          bikeId={alertBike.id}
-          bikeName={alertBike.name}
-          currentPrice={alertBike.currentPrice}
-        />
-      )}
 
       <SiteFooter />
     </div>

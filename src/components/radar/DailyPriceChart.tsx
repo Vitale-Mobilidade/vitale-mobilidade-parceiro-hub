@@ -110,9 +110,9 @@ export function DailyPriceChart({ series, compact = false, markLastUnavailable =
         <LineChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={28} />
-          <YAxis tick={{ fontSize: 11 }} width={78} domain={domain} tickFormatter={(v: number) => formatBRL(v)} />
+          <YAxis tick={{ fontSize: 11 }} width={78} domain={domain} allowDataOverflow tickFormatter={(v: number) => formatBRL(v)} />
           <Tooltip content={<ChartTooltip />} />
-          <Line type="linear" dataKey={(row: Row) => row.atypical || row.reconstructed ? null : row.value} stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} activeDot={false} connectNulls={false} isAnimationActive={false} />
+          <Line type="linear" dataKey={(row: Row) => row.atypical || row.reconstructed ? null : row.value} stroke="hsl(var(--primary))" strokeWidth={2.5} dot={<DayDot />} activeDot={false} connectNulls={false} isAnimationActive={false} />
           <Line
             type="linear"
             dataKey={(row: Row) => row.atypical ? row.value : null}
