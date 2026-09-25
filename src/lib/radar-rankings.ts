@@ -14,6 +14,7 @@ export interface RadarBike {
   image: string | null;
   shortDescription?: string | null;
   perfilIndicado?: string | null;
+  bestFor?: string[] | null;
   autonomyKm?: number | null;
   capacity?: number | null;
   category?: string | null;
@@ -38,6 +39,19 @@ export interface RadarEntry extends RadarBike {
   dropPct: number | null;
   /** Distância percentual até o menor preço registrado. */
   distanceToMinPct: number | null;
+}
+
+/** Indicação curta de uso já registrada, sem aproveitar chamadas promocionais do anúncio. */
+export function radarUseLine(entry: RadarBike): string | null {
+  const candidates = [entry.perfilIndicado, ...(entry.bestFor ?? []).slice(0, 1), entry.shortDescription];
+  for (const value of candidates) {
+    if (typeof value !== "string") continue;
+    const first = value.trim().split(/[.!?\n]/, 1)[0].replace(/^(boa para|ideal para)\s*[:…-]?\s*/i, "").trim();
+    if (!first || /(lançamento|promoção|compre|frete|mercado livre|modelo do produto|maior autonomia do mercado|não precisa|\b\d{3,4}\s*w\b)/i.test(first)) continue;
+    if ((first.match(/[A-ZÀ-Ý]/g)?.length ?? 0) > first.length * 0.45) continue;
+    return first.length > 115 ? `${first.slice(0, 115).replace(/\s+\S*$/, "").trim()}…` : first;
+  }
+  return null;
 }
 
 export type SortKey = "opportunity" | "drop" | "price" | "name";
