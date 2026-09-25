@@ -206,7 +206,7 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
 function GroupAndNewsletter() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-       <OffersBanner />
+       <OffersBanner source="home" />
       <section aria-labelledby="newsletter" className="rounded-3xl bg-card p-6 ring-1 ring-line sm:p-8">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Mail className="h-6 w-6" aria-hidden="true" /></span>

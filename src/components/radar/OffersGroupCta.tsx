@@ -23,5 +23,5 @@ export function OffersGroupCta({ source, variant = "banner" }: Props) {
     );
   }
 
-  return <OffersBanner />;
+  return <OffersBanner source={source} />;
 }
