@@ -110,14 +110,10 @@ export function BikeComparison({ pair, onClose }: { pair: [DiscoveryBike, Discov
       <div className="mt-5 grid grid-cols-2 gap-3">
         {pair.map((b) => (
           <div key={b.bikeId} className="flex flex-col gap-2">
-            <Link to="/bikes/$slug" params={{ slug: b.slug }} onClick={() => trackCompare("comparison_bike_clicked", { bike_id: b.bikeId, target: "detail" })}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-3 text-center text-sm font-bold text-ink-foreground hover:opacity-90">Conhecer a bike</Link>
-            {b.radar && (
-              <Link to="/radar/$bikeId" params={{ bikeId: b.bikeId }} onClick={() => trackCompare("comparison_bike_clicked", { bike_id: b.bikeId, target: "radar" })}
-                className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl px-3 text-center text-sm font-bold text-action ring-1 ring-line hover:ring-action">
-                <LineChart className="h-4 w-4 shrink-0" aria-hidden="true" /> Ver preço e histórico
-              </Link>
-            )}
+            <Link to="/radar/$bikeId" params={{ bikeId: b.bikeId }} onClick={() => trackCompare("comparison_bike_clicked", { bike_id: b.bikeId, target: "radar" })}
+              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl bg-ink px-3 text-center text-sm font-bold text-ink-foreground hover:opacity-90">
+              <LineChart className="h-4 w-4 shrink-0" aria-hidden="true" /> Ver bike e preços
+            </Link>
             {b.link && b.sheetPrice !== null && (
               <a href={b.link} target="_blank" rel="noopener noreferrer sponsored"
                 onClick={() => { trackAffiliateClick({ bike_id: b.bikeId, position: "bikes_comparison" }); trackCompare("comparison_bike_clicked", { bike_id: b.bikeId, target: "mercado_livre" }); }}

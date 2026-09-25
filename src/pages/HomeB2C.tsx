@@ -7,10 +7,11 @@ import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading, PriceStatus } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
 import type { HomeCard, HomeRadarItem } from "@/lib/home-cards.functions";
+import { radarCompareHref } from "@/lib/bike-compare";
 
 /*
- * Sem backend ainda: comparador, calculadora (CTAs ativos levam só a rotas reais), conteúdos editoriais e newsletter.
- * CTAs inativos (disabled/aria-disabled, sem href/submit); nenhum email coletado;
+ * Home conecta apenas produtos com rotas reais; a newsletter continua sem backend.
+ * O CTA de newsletter fica inativo (disabled/aria-disabled, sem href/submit); nenhum email é coletado;
  * nenhum vídeo/artigo/valor inventado. Dados de bikes vêm só de getHomeCards.
  */
 
@@ -47,9 +48,9 @@ function Hero() {
 function Shortcuts() {
   return (
     <nav aria-label="Produtos" className="responsive-container relative z-10 -mt-16 md:-mt-14">
-      <ul className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-line md:grid-cols-5 md:divide-x md:divide-line">
+      <ul className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-line lg:grid-cols-5 lg:divide-x lg:divide-line">
         {HOME_PRODUCTS.map(({ key, to, icon: Icon, title, sub }, i) => (
-          <li key={key} className={i === 4 ? "col-span-2 border-t border-line md:col-span-1 md:border-t-0" : i < 4 ? "border-line max-md:border-b max-md:odd:border-r" : ""}>
+          <li key={key} className={i === 4 ? "col-span-2 border-t border-line lg:col-span-1 lg:border-t-0" : i < 4 ? "border-line max-lg:border-b max-lg:odd:border-r" : ""}>
             <ProductLink to={to} className="flex h-full items-center gap-3 p-4 transition-colors hover:bg-surface md:p-5">
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-mint/25 text-action"><Icon className="h-6 w-6" aria-hidden="true" /></span>
               <span className="min-w-0"><span className="block text-sm font-bold leading-tight text-ink md:text-[15px]">{title}</span><span className="mt-0.5 block text-xs text-muted-foreground">{sub}</span></span>
@@ -61,7 +62,7 @@ function Shortcuts() {
   );
 }
 
-function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<string, string> }) {
+function BikesRow({ cards }: { cards: HomeCard[] }) {
   if (cards.length === 0) {
     return (
       <section id="bikes" className="responsive-container scroll-mt-24 pt-14">
@@ -71,16 +72,16 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
   }
   return (
     <section id="bikes" aria-labelledby="bikes-monitoradas" className="responsive-container scroll-mt-24 pt-14">
-      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/bikes" className="inline-flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
-            <CardLink slug={slugs[e.id]}>
+            <CardLink bikeId={e.id}>
               <BikeMedia src={e.image} name={e.name} className="aspect-[4/3] w-full" />
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="line-clamp-2 font-bold text-ink">{e.name}</h3>
                 <p className="mt-auto pt-3 text-2xl font-black text-action">{formatBRL(e.currentPrice)}</p>
-                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-ink group-hover:text-action">{slugs[e.id] ? "Ver detalhes" : "Ver catálogo"} <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-ink group-hover:text-action">Ver bike e preços <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
               </div>
             </CardLink>
           </li>
@@ -91,13 +92,8 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
 }
 
 const CARD_CLS = "group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-action";
-// Sem slug editorial (falha temporária da planilha/divergência): leva ao catálogo, com rótulo "Ver catálogo".
-function CardLink({ slug, children }: { slug?: string; children: ReactNode }) {
-  return slug ? (
-    <Link to="/bikes/$slug" params={{ slug }} className={CARD_CLS}>{children}</Link>
-  ) : (
-    <Link to="/bikes" className={CARD_CLS}>{children}</Link>
-  );
+function CardLink({ bikeId, children }: { bikeId: string; children: ReactNode }) {
+  return <Link to="/radar/$bikeId" params={{ bikeId }} className={CARD_CLS}>{children}</Link>;
 }
 
 function RadarPanel({ items, total }: { items: HomeRadarItem[]; total: number }) {
@@ -172,8 +168,8 @@ function CalculatorPanel() {
         </div>
       </div>
       <div className="relative mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <Link to="/calculadoras/economia" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
-          Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <Link to="/ferramentas" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
+          Explorar ferramentas <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         <Link to="/escolherbike" className="text-sm font-semibold text-action underline underline-offset-2">Escolher minha bike</Link>
       </div>
@@ -193,9 +189,9 @@ function CompareBlock({ cards }: { cards: HomeCard[] }) {
           </div>
           <h2 id="comparar" className="section-h2 mt-4">Em dúvida entre dois modelos?</h2>
           <p className="mt-2 max-w-md text-ink-foreground/80">Escolha dois modelos e veja as diferenças lado a lado.</p>
-          <Link to="/bikes" search={pair.length === 2 ? { compare: `${pair[0].id},${pair[1].id}` } : {}} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
+          <a href={radarCompareHref(pair.map((bike) => bike.id))} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
             Comparar bikes <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          </a>
         </div>
         {pair.length === 2 && (
           <div className="relative grid grid-cols-2 gap-2 p-3 sm:p-4 md:pl-0">
@@ -217,7 +213,7 @@ function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[
   if (videos.length) {
     return (
       <section id="conteudos" aria-labelledby="conteudos-h" className="scroll-mt-24">
-        <SectionHeading id="conteudos-h" title="Vídeos e testes" sub="Vídeos recentes do canal da Vitale no YouTube." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} />
+        <SectionHeading id="conteudos-h" title="Vídeos e testes" sub="Vídeos recentes do canal da Vitale no YouTube." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} action={<Link to="/conteudos" className="inline-flex items-center gap-1 hover:underline">Ver conteúdos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
         <VideoCards videos={videos} className="mt-6" />
       </section>
     );
@@ -229,7 +225,7 @@ function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[
   ];
   return (
     <section id="conteudos" aria-labelledby="conteudos-h" className="scroll-mt-24">
-      <SectionHeading id="conteudos-h" title="Conteúdos e testes" sub="Áreas editoriais da Vitale para ajudar na escolha." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} />
+      <SectionHeading id="conteudos-h" title="Conteúdos e testes" sub="Áreas editoriais da Vitale para ajudar na escolha." icon={<BookOpen className="h-6 w-6 text-action" aria-hidden="true" />} action={<Link to="/conteudos" className="inline-flex items-center gap-1 hover:underline">Ver conteúdos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       <ul className="mt-6 grid gap-4 sm:grid-cols-3">
         {areas.map((a, i) => {
           const c = cards[(i + 2) % Math.max(cards.length, 1)];
@@ -297,7 +293,7 @@ const HomeB2C = () => {
       <main>
         <Hero />
         <Shortcuts />
-        <BikesRow cards={cards} slugs={data?.bikeSlugs} />
+        <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
           <div className="grid gap-5 lg:grid-cols-2">
             <RadarPanel items={radar} total={total} />

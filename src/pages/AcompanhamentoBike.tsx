@@ -16,6 +16,7 @@ import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { radarCompareHref } from "@/lib/bike-compare";
 
 interface RadarBikeDetail {
   id: string;
@@ -149,7 +150,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                 )}
                 <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">{bike.name}</h1>
                 {bike.perfilIndicado && <p className="mt-2 text-base text-muted-foreground">Boa para: {bike.perfilIndicado}</p>}
-                <a href={`/bikes?compare=${encodeURIComponent(bike.id)}`} className="mt-2 w-fit text-sm font-bold text-action hover:underline">Comparar com outra bike →</a>
+                <a href={radarCompareHref([bike.id])} className="mt-2 w-fit text-sm font-bold text-action hover:underline">Comparar com outra bike →</a>
 
                 {hasOffer && metrics ? (
                   <>

@@ -127,7 +127,7 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
           </td>)}</tr></tbody>
       </table></div>
       <p className="mt-2 text-xs text-muted-foreground">Preço e disponibilidade vêm do anúncio atual e podem mudar.</p>
-      <a href={`/bikes?compare=${encodeURIComponent(compared.slice(0, 2).map(b => b.bikeId).join(","))}`} className="mt-3 inline-block rounded-lg bg-emerald-950 px-4 py-2 font-semibold text-white">Compare as especificações destes modelos</a>
+      <a href={`/radar?compare=${encodeURIComponent(compared.slice(0, 2).map(b => b.bikeId).join(","))}`} className="mt-3 inline-block rounded-lg bg-emerald-950 px-4 py-2 font-semibold text-white">Compare as especificações destes modelos</a>
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;

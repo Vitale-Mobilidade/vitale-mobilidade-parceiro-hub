@@ -1,9 +1,9 @@
 import { BIKE_ID_RE } from "./bike-identity";
 
 /**
- * Comparação de bikes é um ESTADO de /bikes (não uma rota): `?compare=bikeIdA,bikeIdB`.
+ * Comparação de bikes é um ESTADO de /radar (não uma rota): `?compare=bikeIdA,bikeIdB`.
  * Usa o bikeId canônico (chave estável). Máximo de 2 modelos nesta versão.
- * A URL canônica continua /bikes; combinações nunca entram no sitemap.
+ * A URL canônica continua /radar; combinações nunca entram no sitemap.
  */
 export const COMPARE_MAX = 2;
 
@@ -16,6 +16,11 @@ export function parseCompare(raw: unknown): string[] {
 export function compareParam(ids: (string | null | undefined)[]): string | undefined {
   const v = parseCompare(ids.filter(Boolean).join(","));
   return v.length ? v.join(",") : undefined;
+}
+
+export function radarCompareHref(ids: (string | null | undefined)[]): string {
+  const compare = compareParam(ids);
+  return compare ? `/radar?compare=${encodeURIComponent(compare)}` : "/radar";
 }
 
 export type CompareEvent = "bike_compare_added" | "bike_compare_removed" | "bike_comparison_opened" | "comparison_bike_clicked";

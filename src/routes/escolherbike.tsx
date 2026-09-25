@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import EscolherBike from "@/pages/EscolherBike";
 import { getQuizCatalog } from "@/lib/quiz-catalog.functions";
 import { pageHead } from "@/lib/seo";
+import { SiteFooter, SiteHeader } from "@/components/site/site-ui";
 
 export const Route = createFileRoute("/escolherbike")({
   // Bootstrap de leitura: só no SSR. Na navegação no cliente, o hook busca como antes.
-  loader: () => (typeof window === "undefined" ? getQuizCatalog() : { ok: false as const }),
+  loader: () =>
+    typeof window === "undefined" ? getQuizCatalog() : { ok: false as const },
   head: () =>
     pageHead({
       path: "/escolherbike",
@@ -16,5 +18,15 @@ export const Route = createFileRoute("/escolherbike")({
       ogDescription:
         "Quiz rápido para encontrar a bike elétrica certa para você, com curadoria da Vitale Mobilidade.",
     }),
-  component: EscolherBike,
+  component: QuizPage,
 });
+
+function QuizPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <EscolherBike />
+      <SiteFooter />
+    </div>
+  );
+}

@@ -1,40 +1,42 @@
 # Taxonomia e contrato de rotas — Vitale Mobilidade
 
+> **Decisão vigente — 25/09/2026 (pré-publicação):** a Bike continua sendo a entidade central, mas o produto público se organiza pelos hubs `Radar`, `Conteúdos` e `Ferramentas`, com o Quiz como CTA global. A comparação passa a ser uma função de `/radar?compare=bikeIdA,bikeIdB`; não existe rota `/comparar`. `/bikes` e `/bikes/{slug}` permanecem acessíveis como legado de transição, sem destaque no header, até a consolidação segura da Etapa 9. O Quiz volta a usar header e footer globais por decisão explícita do responsável. Etapas 2 e 3 foram adiadas; esta decisão não as declara concluídas.
+
 > **Status (23/09/2026):** rotas canônicas vigentes abaixo. `/radar` e `/ferramentas` são rotas reais; `/acompanhamento` e `/calc` são aliases 301. Reconciliação de slugs `/bikes/{slug}` ↔ IDs legados segue pendente.
 
 ## 1. Rotas públicas vigentes
 
-| Rota                | Propósito                             | Observação                                                                        |
-| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
-| `/`                 | Home B2C (orientação)                 | Âncoras internas `#bikes`, `#comparar`, `#ferramentas`, `#conteudos`.             |
-| `/escolherbike`     | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo.    |
-| `/radar`            | Radar de preços (listagem)            | **Canônica.** Publicada e verificada.                                             |
-| `/radar/{bikeId}`   | Radar de preços (detalhe)             | Usa o `bike_id` legado literal, incluindo `_`, sem conversão de formato.          |
-| `/bikes`            | Catálogo/descoberta de bikes          | Lê `get_bikes_public_catalog` (Supabase).                                         |
-| `/bikes/{slug}`     | Página de decisão de uma bike         | `slug` = `bike_id` com `_` → `-`.                                                 |
-| `/ferramentas`      | Hub de ferramentas de decisão         | **Canônica.** Lista só Quiz, Radar e catálogo; comparador/calculadora sem CTA.    |
-| `/grupodeofertas`   | Grupo de ofertas (WhatsApp)           | Retenção.                                                                         |
-| `/painel-bikes`     | Painel operacional                    | `Disallow` no robots.txt.                                                         |
+| Rota              | Propósito                             | Observação                                                                     |
+| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| `/`               | Home B2C (orientação)                 | Âncoras internas `#bikes`, `#comparar`, `#ferramentas`, `#conteudos`.          |
+| `/escolherbike`   | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo. |
+| `/radar`          | Radar de preços (listagem)            | **Canônica.** Publicada e verificada.                                          |
+| `/radar/{bikeId}` | Radar de preços (detalhe)             | Usa o `bike_id` legado literal, incluindo `_`, sem conversão de formato.       |
+| `/bikes`          | Catálogo/descoberta de bikes          | Lê `get_bikes_public_catalog` (Supabase).                                      |
+| `/bikes/{slug}`   | Página de decisão de uma bike         | `slug` = `bike_id` com `_` → `-`.                                              |
+| `/ferramentas`    | Hub de ferramentas de decisão         | **Canônica.** Lista só Quiz, Radar e catálogo; comparador/calculadora sem CTA. |
+| `/grupodeofertas` | Grupo de ofertas (WhatsApp)           | Retenção.                                                                      |
+| `/painel-bikes`   | Painel operacional                    | `Disallow` no robots.txt.                                                      |
 
 ### 1.1 Aliases 301 (compatibilidade)
 
-| Alias                      | Destino               | Regra                                                                     |
-| -------------------------- | --------------------- | ------------------------------------------------------------------------- |
-| `/acompanhamento`          | `/radar`              | 301 server-side, query/UTM preservados.                                   |
-| `/acompanhamento/{bikeId}` | `/radar/{bikeId}`     | 301, `bikeId` literal (sem decodificar/normalizar) + query.               |
-| `/calc`, `/calc/`          | `/ferramentas`        | 301, query/UTM preservados. Não captura `/calculadoras/*`.                |
-| `/#calc` (fragmento)       | bloco da calculadora  | Âncora alias mantida na Home; o ID canônico do bloco é `#ferramentas`.    |
+| Alias                      | Destino              | Regra                                                                  |
+| -------------------------- | -------------------- | ---------------------------------------------------------------------- |
+| `/acompanhamento`          | `/radar`             | 301 server-side, query/UTM preservados.                                |
+| `/acompanhamento/{bikeId}` | `/radar/{bikeId}`    | 301, `bikeId` literal (sem decodificar/normalizar) + query.            |
+| `/calc`, `/calc/`          | `/ferramentas`       | 301, query/UTM preservados. Não captura `/calculadoras/*`.             |
+| `/#calc` (fragmento)       | bloco da calculadora | Âncora alias mantida na Home; o ID canônico do bloco é `#ferramentas`. |
 
 Implementação única em `src/lib/legacy-redirects.ts`, avaliada em `src/server.ts` antes do SSR. Rollback = remover o bloco de redirect e reverter os links de navegação; nada no banco muda.
 
 ## 2. Rotas futuras reservadas (sem páginas criadas)
 
-| Rota                | Propósito                    | Restrição                                                                                                                    |
-| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `/conteudos`        | Hub de conteúdo              | Reservado. Sem links internos até existir.                                                                                   |
-| `/conteudos/{slug}` | Artigo ou vídeo              | Reservado.                                                                                                                   |
-| `/comparar`         | Comparador de bikes          | Reservado (Etapa 19). Sem links internos até existir.                                                                        |
-| `/calculadoras/*`   | Calculadoras futuras         | Reservado; o redirect de `/calc` não interfere neste prefixo.                                                                |
+| Rota                | Propósito            | Restrição                                                     |
+| ------------------- | -------------------- | ------------------------------------------------------------- |
+| `/conteudos`        | Hub de conteúdo      | Reservado. Sem links internos até existir.                    |
+| `/conteudos/{slug}` | Artigo ou vídeo      | Reservado.                                                    |
+| `/comparar`         | Comparador de bikes  | Reservado (Etapa 19). Sem links internos até existir.         |
+| `/calculadoras/*`   | Calculadoras futuras | Reservado; o redirect de `/calc` não interfere neste prefixo. |
 
 ## 3. Entidade central: Bike
 
