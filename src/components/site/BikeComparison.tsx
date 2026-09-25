@@ -151,7 +151,7 @@ export function BikeComparison({ pair, onClose }: { pair: [DiscoveryBike, Discov
           <p className="text-lg font-black text-ink">Ainda em dúvida entre as duas?</p>
           <p className="mt-1 text-sm text-ink/75">Faça o Quiz da Vitale e veja quais modelos combinam com seu perfil.</p>
         </div>
-        <Link to="/escolherbike" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-ink-foreground hover:opacity-90">Fazer o Quiz</Link>
+        <Link to="/escolherbike" reloadDocument className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-ink-foreground hover:opacity-90">Fazer o Quiz</Link>
       </div>
     </section>
   );

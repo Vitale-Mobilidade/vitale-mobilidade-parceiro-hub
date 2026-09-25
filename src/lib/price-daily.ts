@@ -58,10 +58,12 @@ export interface DailyMetrics {
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type DailyWindow = 7 | 30 | 90 | "all";
-export const DAILY_WINDOWS: DailyWindow[] = [7, 30, 90, "all"];
+export type DailyWindow = 7 | 14 | 30 | 90 | "all";
+/** Janelas oferecidas ao visitante; 90 dias e Tudo seguem válidos para cálculos internos. */
+export const DAILY_WINDOWS: DailyWindow[] = [7, 14, 30];
 export const WINDOW_LABEL: Record<string, string> = {
   "7": "7 dias",
+  "14": "14 dias",
   "30": "30 dias",
   "90": "90 dias",
   all: "Tudo",

@@ -34,7 +34,7 @@ export function ProductLink({ to, className, children }: { to: string | null; cl
     );
   }
   if (to.startsWith("#")) return <a href={to} className={className}>{children}</a>;
-  return <Link to={to} className={className}>{children}</Link>;
+  return <Link to={to} reloadDocument={to === "/escolherbike"} className={className}>{children}</Link>;
 }
 
 export function InactiveButton({ className, children }: { className: string; children: ReactNode }) {

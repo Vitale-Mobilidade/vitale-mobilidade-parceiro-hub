@@ -155,7 +155,7 @@ function FerramentasPage() {
               <h3 className="mt-4 text-lg font-bold text-ink">{title}</h3>
               <p className="mt-1 text-sm font-semibold text-action">{question}</p>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
-              <Link to={to} className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 text-center font-bold text-primary-foreground hover:opacity-90 focus-visible:ring-2 focus-visible:ring-action">{cta} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
+              <Link to={to} reloadDocument={to === "/escolherbike"} className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 text-center font-bold text-primary-foreground hover:opacity-90 focus-visible:ring-2 focus-visible:ring-action">{cta} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
             </li>)}
         </ul>
       </section>)}
@@ -166,7 +166,7 @@ function FerramentasPage() {
             { label: "Entenda seus custos", to: "/calculadoras/custo-anual-mobilidade" as const, Icon: Wallet },
             { label: "Explore bikes e preços", to: "/radar" as const, Icon: BarChart3 },
             { label: "Confirme seu perfil no Quiz", to: "/escolherbike" as const, Icon: Sparkles },
-          ].map(({ label, to, Icon }, i) => <li key={label}><Link to={to} className="flex h-full min-h-20 items-center gap-3 rounded-xl bg-surface p-4 font-semibold text-ink hover:text-action focus-visible:ring-2 focus-visible:ring-action"><span className="text-sm font-bold text-action">{i + 1}.</span><Icon className="h-5 w-5 shrink-0 text-action" aria-hidden="true" />{label}<ArrowRight className="ml-auto h-4 w-4 shrink-0" aria-hidden="true" /></Link></li>)}
+          ].map(({ label, to, Icon }, i) => <li key={label}><Link to={to} reloadDocument={to === "/escolherbike"} className="flex h-full min-h-20 items-center gap-3 rounded-xl bg-surface p-4 font-semibold text-ink hover:text-action focus-visible:ring-2 focus-visible:ring-action"><span className="text-sm font-bold text-action">{i + 1}.</span><Icon className="h-5 w-5 shrink-0 text-action" aria-hidden="true" />{label}<ArrowRight className="ml-auto h-4 w-4 shrink-0" aria-hidden="true" /></Link></li>)}
         </ol>
       </section>
       <QuizBanner /><OffersBanner />

@@ -90,7 +90,7 @@ export function DailyPriceChart({ series, compact = false, markLastUnavailable =
           <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={28} />
           <YAxis tick={{ fontSize: 11 }} width={78} domain={domain} allowDataOverflow tickFormatter={(v: number) => formatBRL(v)} />
           <Tooltip content={<ChartTooltip />} />
-          <Line type="stepAfter" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+          <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

@@ -18,7 +18,6 @@ import {
   queuePendingEvent,
   retryPendingLeadSync,
 } from "@/lib/quiz-storage";
-import { VitaleBrand } from "@/components/VitaleBrand";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getHomeCards } from "@/lib/home-cards.functions";
@@ -300,12 +299,9 @@ export default function EscolherBike() {
   // ---------- Intro ----------
   if (phase === "intro") {
     return (
-      <main className="min-h-screen bg-background flex items-start sm:items-center justify-center">
+      <main className="min-h-[calc(100svh-4.5rem)] bg-background flex items-start sm:items-center justify-center">
         <div className="container mx-auto px-6 pt-4 pb-10 sm:py-12 lg:py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="mb-6 flex justify-center">
-              <VitaleBrand variant="cover" size="md" />
-            </div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
               <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
             </div>
@@ -370,11 +366,8 @@ export default function EscolherBike() {
 
 
     return (
-      <main className="min-h-screen flex items-center justify-center px-6 py-12 bg-background">
+      <main className="min-h-[calc(100svh-4.5rem)] flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full">
-          <div className="text-center mb-6">
-            <VitaleBrand size="sm" />
-          </div>
           <div className="mb-6">
             <Progress value={95} className="h-2" />
             <p className="text-base text-muted-foreground mt-2 text-center">Último passo</p>
@@ -445,11 +438,8 @@ export default function EscolherBike() {
     };
 
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-[calc(100svh-4.5rem)] bg-background">
         <div className="max-w-3xl mx-auto px-4 py-8 lg:py-12">
-          <div className="flex justify-center mb-6">
-            <VitaleBrand size="sm" />
-          </div>
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
@@ -502,7 +492,7 @@ export default function EscolherBike() {
   // ---------- Processing ----------
   if (phase === "processing") {
     return (
-      <main className="min-h-screen flex items-center justify-center px-6 bg-background">
+      <main className="min-h-[calc(100svh-4.5rem)] flex items-center justify-center px-6 bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
           <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</p>
@@ -1042,12 +1032,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   };
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Marca discreta, sem navegação */}
-      <div className="pt-4 pb-2 px-4 flex justify-center">
-        <VitaleBrand variant="logo" size="sm" />
-      </div>
-
+    <main className="min-h-[calc(100svh-4.5rem)] bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
 
         {/* Título + Subtítulo */}

@@ -240,8 +240,6 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                   setWindow(w);
                   trackRadar("radar_period_changed", { bike_id: bike.id, period: String(w) });
                 }}
-                firstObservedAt={bike.firstObservedAt}
-                lastObservedAt={bike.lastObservedAt}
               />
             ) : (
               archivedSeries.length > 0 && (

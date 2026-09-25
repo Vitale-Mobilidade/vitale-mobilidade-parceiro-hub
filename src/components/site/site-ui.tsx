@@ -44,7 +44,7 @@ export function SiteHeader() {
         <nav aria-label="Principal" className="hidden items-center gap-9 text-base font-semibold text-ink-foreground lg:flex">
           {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="relative py-2 transition-colors hover:text-mint after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:scale-x-0 after:bg-mint after:transition-transform hover:after:scale-x-100" />)}
         </nav>
-        <Link to="/escolherbike" className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
+        <Link to="/escolherbike" reloadDocument className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
           Faça o Quiz e descubra a bike ideal
         </Link>
         <details className="relative lg:hidden">
@@ -53,7 +53,7 @@ export function SiteHeader() {
           </summary>
           <nav aria-label="Principal (celular)" className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
             {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted" />)}
-            <Link to="/escolherbike" className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Faça o Quiz e descubra a bike ideal</Link>
+            <Link to="/escolherbike" reloadDocument className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Faça o Quiz e descubra a bike ideal</Link>
           </nav>
         </details>
       </div>
@@ -80,7 +80,7 @@ export function SiteFooter() {
         <div>
           <Brand large />
           <p className="mt-4 max-w-xs leading-relaxed">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
-          <Link to="/escolherbike" className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Escolher minha bike</Link>
+          <Link to="/escolherbike" reloadDocument className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Escolher minha bike</Link>
         </div>
         {cols.map((c) => (
           <nav key={c.title} aria-label={c.title}>
@@ -88,7 +88,7 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2">
               {c.items.map((i) => (
                 <li key={i.label}>
-                  {i.to ? <Link to={i.to} className="hover:text-mint">{i.label}</Link> : <a href={i.href} className="hover:text-mint">{i.label}</a>}
+                  {i.to ? <Link to={i.to} reloadDocument={i.to === "/escolherbike"} className="hover:text-mint">{i.label}</Link> : <a href={i.href} className="hover:text-mint">{i.label}</a>}
                 </li>
               ))}
             </ul>
