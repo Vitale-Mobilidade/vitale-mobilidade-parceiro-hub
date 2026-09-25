@@ -13,6 +13,11 @@ export interface RadarBike {
   link: string;
   image: string | null;
   shortDescription?: string | null;
+  perfilIndicado?: string | null;
+  autonomyKm?: number | null;
+  capacity?: number | null;
+  category?: string | null;
+  terrains?: string[] | null;
   strengths?: string[] | null;
   daily: DailyPoint[];
   firstObservedAt: string | null;

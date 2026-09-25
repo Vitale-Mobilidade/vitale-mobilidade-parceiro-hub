@@ -1,19 +1,16 @@
 import { Link } from "@/lib/router-compat";
-import { BellRing, ExternalLink, LineChart } from "lucide-react";
+import { LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/price-tracker";
 import { shortDiagnosis, type RadarEntry } from "@/lib/radar-rankings";
-import { trackRadar } from "@/lib/radar-analytics";
-import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
   entry: RadarEntry;
-  onAlert: (entry: RadarEntry) => void;
   highlight?: boolean;
 }
 
-export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
+export function RadarBikeCard({ entry, highlight = false }: Props) {
   const base = useRadarBase();
   const savings = entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
 
@@ -25,7 +22,7 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
     >
       <Link
         to={`${base}/${entry.id}`}
-        aria-label={`Ver análise de preço da ${entry.name}`}
+        aria-label={`Ver bike e histórico da ${entry.name}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <div className={`flex items-center justify-center overflow-hidden bg-surface ${highlight ? "h-64" : "h-52"}`}>
@@ -41,6 +38,14 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
             <span className="text-xs text-muted-foreground">Imagem indisponível</span>
           )}
         </div>
+        {(entry.perfilIndicado || entry.shortDescription) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para… {entry.perfilIndicado || entry.shortDescription}</p>}
+        <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
+          {[
+            entry.autonomyKm && entry.autonomyKm > 0 ? `Autonomia: até ${entry.autonomyKm} km` : null,
+            entry.capacity && entry.capacity > 0 ? `Capacidade: ${entry.capacity} pessoa(s)` : null,
+            entry.category ? entry.category : null,
+          ].filter((value): value is string => Boolean(value)).slice(0, 3).map(value => <li key={value} className="rounded-md bg-surface px-2 py-1">{value}</li>)}
+        </ul>
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
@@ -65,38 +70,14 @@ export function RadarBikeCard({ entry, onAlert, highlight = false }: Props) {
         </p>
 
         <div className="mt-auto space-y-2 pt-4">
-          <Button asChild className="min-h-12 w-full bg-action text-primary-foreground hover:opacity-90">
-            <a
-              href={entry.link}
-              target="_blank"
-              rel="noopener noreferrer nofollow sponsored"
-              onClick={() => { trackRadar("radar_ml_click", { bike_id: entry.id, position: highlight ? "highlight" : "catalog" }); trackAffiliateClick({ bike_id: entry.id, position: highlight ? "radar_highlight" : "radar_catalog" }); }}
-            >
-              Ver oferta no Mercado Livre <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
-            </a>
-          </Button>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" className="min-h-11 flex-1">
+          <div>
+            <Button asChild className="min-h-12 w-full bg-action text-primary-foreground hover:opacity-90">
               <Link to={`${base}/${entry.id}`}>
-                <LineChart className="mr-2 h-4 w-4" aria-hidden="true" /> Ver análise
+                <LineChart className="mr-2 h-4 w-4" aria-hidden="true" /> Ver bike e histórico
               </Link>
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11 px-3"
-              aria-label={`Ser avisado quando a ${entry.name} baixar`}
-              onClick={() => {
-                trackRadar("radar_alert_opened", { bike_id: entry.id, source: "card" });
-                onAlert(entry);
-              }}
-            >
-              <BellRing className="h-4 w-4" aria-hidden="true" />
-            </Button>
           </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            Link de afiliado. Preço e disponibilidade podem mudar no Mercado Livre.
-          </p>
+          <p className="text-xs text-muted-foreground">Status: oferta atual registrada no Radar. Preço e disponibilidade podem mudar.</p>
         </div>
       </div>
     </article>

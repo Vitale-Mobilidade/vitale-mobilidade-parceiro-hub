@@ -8,10 +8,11 @@ import { getRadarBike, getRadarCatalog, RADAR_UNAVAILABLE_HEADERS } from "@/lib/
 import { formatBRL } from "@/lib/price-tracker";
 import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { SITE_ORIGIN, type RadarBase } from "@/lib/radar-base";
+import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 
 export async function loadRadarCatalog() {
-  const [r, videos] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 })]);
-  return { ...r, videos };
+  const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog()]);
+  return { ...r, videos, catalog: catalog.ok ? catalog.bikes : [] };
 }
 export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
 
