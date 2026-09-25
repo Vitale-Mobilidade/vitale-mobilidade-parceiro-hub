@@ -19,6 +19,7 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
+import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminVideosRouteImport } from './routes/admin/videos'
@@ -90,6 +91,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminBikesRoute = AdminBikesRouteImport.update({
   id: '/admin/bikes',
   path: '/admin/bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGrowthRoute = AdminGrowthRouteImport.update({
+  id: '/admin/growth',
+  path: '/admin/growth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIaRoute = AdminIaRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/videos'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/videos'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/videos'
@@ -424,6 +436,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
+  AdminGrowthRoute: typeof AdminGrowthRoute
   AdminIaRoute: typeof AdminIaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminVideosRoute: typeof AdminVideosRoute
@@ -519,6 +532,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/bikes'
       fullPath: '/admin/bikes'
       preLoaderRoute: typeof AdminBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/growth': {
+      id: '/admin/growth'
+      path: '/admin/growth'
+      fullPath: '/admin/growth'
+      preLoaderRoute: typeof AdminGrowthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/ia': {
@@ -698,6 +718,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
+  AdminGrowthRoute: AdminGrowthRoute,
   AdminIaRoute: AdminIaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminVideosRoute: AdminVideosRoute,

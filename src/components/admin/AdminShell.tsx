@@ -5,8 +5,32 @@ import { adminCall, type AdminRole, type AdminSession } from "@/lib/admin-api";
 
 type Props = { children: (role: AdminRole) => ReactNode };
 
+type AccessCache = { session: AdminSession; checkedAt: number };
+const ACCESS_CACHE_TTL_MS = 10 * 60 * 1000;
+let accessCache: AccessCache | null = null;
+let accessRequest: Promise<AdminSession> | null = null;
+
+function cachedSession(): AdminSession | null {
+  if (!accessCache || Date.now() - accessCache.checkedAt > ACCESS_CACHE_TTL_MS) return null;
+  return accessCache.session;
+}
+
+async function verifyAdminAccess(force = false): Promise<AdminSession> {
+  const cached = !force ? cachedSession() : null;
+  if (cached) return cached;
+  if (!accessRequest) {
+    accessRequest = adminCall<AdminSession>("session")
+      .then((session) => {
+        accessCache = { session, checkedAt: Date.now() };
+        return session;
+      })
+      .finally(() => { accessRequest = null; });
+  }
+  return accessRequest;
+}
+
 const NAV = [
-  { title: "Operação", links: [["Visão geral", "/admin"], ["Bikes", "/admin/bikes"]] },
+  { title: "Operação", links: [["Visão geral", "/admin"], ["Growth", "/admin/growth"], ["Bikes", "/admin/bikes"]] },
   { title: "Conteúdo", links: [["Vídeos", "/admin/videos"], ["Artigos", "/admin/conteudos"]] },
   { title: "Sistema", links: [["IA", "/admin/ia"], ["Logs", "/admin/logs"]] },
 ] as const;
@@ -94,30 +118,34 @@ function AdminPasswordSetup({ onSuccess }: { onSuccess: () => Promise<void> }) {
       <button disabled={busy} className="mt-6 w-full rounded-lg bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60">
         {busy ? "Salvando…" : "Salvar senha e entrar"}
       </button>
-      <a href="/admin" className="mt-4 block text-center text-sm font-medium text-emerald-800 underline">Voltar ao acesso</a>
+      <Link to="/admin" className="mt-4 block text-center text-sm font-medium text-emerald-800 underline">Voltar ao acesso</Link>
     </form>
   </main>;
 }
 
 export function AdminShell({ children }: Props) {
   const path = useRouterState({ select: s => s.location.pathname });
-  const [state, setState] = useState<"checking" | "out" | "password" | "in">("checking");
-  const [session, setSession] = useState<AdminSession | null>(null);
+  const initialSession = cachedSession();
+  const [state, setState] = useState<"checking" | "out" | "password" | "in">(initialSession ? "in" : "checking");
+  const [session, setSession] = useState<AdminSession | null>(initialSession);
   const [error, setError] = useState("");
-  const check = useCallback(async () => {
+  const check = useCallback(async (force = false) => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) { setSession(null); setState("out"); return; }
+    if (!data.session) { accessCache = null; setSession(null); setState("out"); return; }
     if (new URLSearchParams(window.location.search).get("setup") === "1") {
       setSession(null); setState("password"); return;
     }
-    const role = await adminCall<AdminSession>("session");
+    const role = await verifyAdminAccess(force);
     setSession(role); setState("in"); setError("");
   }, []);
   useEffect(() => {
-    void check().catch(() => { setSession(null); setState("out"); setError("Não foi possível verificar o acesso."); });
+    if (!cachedSession()) {
+      void check().catch(() => { accessCache = null; setSession(null); setState("out"); setError("Não foi possível verificar o acesso."); });
+    }
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") { setSession(null); setState("out"); }
+      if (event === "SIGNED_OUT") { accessCache = null; setSession(null); setState("out"); }
       if (event === "PASSWORD_RECOVERY") { setSession(null); setState("password"); }
+      if (event === "USER_UPDATED") void check(true);
     });
     return () => listener.subscription.unsubscribe();
   }, [check]);
@@ -138,13 +166,16 @@ export function AdminShell({ children }: Props) {
     <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:grid-cols-[190px_minmax(0,1fr)] md:px-6">
       <nav aria-label="Navegação administrativa" className="flex gap-4 overflow-x-auto pb-2 md:block md:space-y-6">
         {NAV.map(group => {
-          const links = group.links.filter(([, href]) => role !== "operation" || ["/admin", "/admin/bikes"].includes(href));
+          const links = group.links.filter(([, href]) => {
+            if (href === "/admin/growth" && role !== "admin") return false;
+            return role !== "operation" || ["/admin", "/admin/bikes"].includes(href);
+          });
           if (!links.length) return null;
           return <div key={group.title} className="min-w-max">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{group.title}</p>
-            <div className="flex gap-1 md:flex-col">{links.map(([label, href]) => <a key={href} href={href}
+            <div className="flex gap-1 md:flex-col">{links.map(([label, href]) => <Link key={href} to={href}
               aria-current={path === href ? "page" : undefined}
-              className={`rounded-lg px-3 py-2 text-sm font-medium ${path === href ? "bg-emerald-100 text-emerald-950" : "hover:bg-white"}`}>{label}</a>)}</div>
+              className={`rounded-lg px-3 py-2 text-sm font-medium ${path === href ? "bg-emerald-100 text-emerald-950" : "hover:bg-white"}`}>{label}</Link>)}</div>
           </div>;
         })}
       </nav>

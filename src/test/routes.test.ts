@@ -25,6 +25,7 @@ describe("fundação TanStack Start — rotas", () => {
     ["/painel-bikes", "/painel-bikes"],
     ["/radar", "/radar/"],
     ["/admin", "/admin/"],
+    ["/admin/growth", "/admin/growth"],
     ["/admin/videos", "/admin/videos"],
     ["/admin/conteudos", "/admin/conteudos/"],
     ["/conteudos", "/conteudos/"],
@@ -55,7 +56,7 @@ describe("fundação TanStack Start — rotas", () => {
 
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
-    for (const id of ["/", "/escolherbike", "/radar/", "/radar/$bikeId", "/painel-bikes", "/admin/", "/admin/videos", "/conteudos/"]) {
+    for (const id of ["/", "/escolherbike", "/radar/", "/radar/$bikeId", "/painel-bikes", "/admin/", "/admin/growth", "/admin/videos", "/conteudos/"]) {
       const route = (router.routesById as unknown as Record<string, { options: { component?: unknown } }>)[id];
       expect(route, id).toBeDefined();
       expect(route.options.component, id).toBeDefined();

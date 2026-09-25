@@ -6,9 +6,36 @@ export type AdminSession = { role: AdminRole; email: string | null };
 export type AdminOverview = {
   bikes: number;
   videos: number;
+  videosWithTranscript?: number;
+  videosWithArticle?: number;
   articles: Record<string, number>;
   generationErrors: number;
   sync: { last_success_at?: string | null; last_attempt_at?: string | null; status?: string | null; error_message?: string | null } | null;
+};
+export type AdminGrowth = {
+  rangeDays: number;
+  generatedAt: string;
+  quiz: {
+    started: number;
+    completed: number;
+    purchaseClicks: number;
+    identifiedClickers: number;
+  };
+  topBikes: { name: string; clicks: number }[];
+  origins: { name: string; leads: number }[];
+  recentClickers: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    bike: string | null;
+    position: string | null;
+    clickedAt: string;
+  }[];
+  coverage: {
+    pageViews: "external_analytics_not_connected";
+    sitewideAffiliateClicks: "gtm_only";
+    identifiedClicks: "quiz_supabase";
+  };
 };
 export type AdminBike = {
   bike_id: string; slug: string; name: string; autonomy_km: number | null;
