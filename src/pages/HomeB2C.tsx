@@ -2,14 +2,15 @@ import type { ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import { VideoCards } from "@/components/site/VideoCards";
 import type { VideoCard } from "@/lib/videos.functions";
-import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, GitCompareArrows, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, BookOpen, Bus, Calculator, Car, CarTaxiFront, Lock, Mail, Megaphone, MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/site/site-ui";
 import { HOME_PRODUCTS, ProductLink, InactiveButton } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
+import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 
 /*
- * Sem backend ainda: comparador, calculadora (CTAs ativos levam só a rotas reais), conteúdos editoriais e newsletter.
+ * A Home usa catálogo, vídeos e artigos publicados das fontes existentes; newsletter permanece inativa.
  * CTAs inativos (disabled/aria-disabled, sem href/submit); nenhum email coletado;
  * nenhum vídeo/artigo/valor inventado. Dados de bikes vêm só de getHomeCards.
  */
@@ -70,7 +71,7 @@ function BikesRow({ cards, slugs = {} }: { cards: HomeCard[]; slugs?: Record<str
   }
   return (
     <section id="bikes" aria-labelledby="bikes-monitoradas" className="responsive-container scroll-mt-24 pt-14">
-      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/bikes" className="inline-flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+      <SectionHeading id="bikes-monitoradas" title="Bikes em destaque" sub="Preço atual registrado pelo Radar da Vitale." action={<Link to="/radar" className="inline-flex items-center gap-1 hover:underline">Ver Radar <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((e) => (
           <li key={e.id}>
@@ -176,38 +177,6 @@ function CalculatorPanel() {
   );
 }
 
-function CompareBlock({ cards }: { cards: HomeCard[] }) {
-  const pair = cards.slice(0, 2);
-  return (
-    <section aria-labelledby="comparar" className="scroll-mt-24 overflow-hidden rounded-3xl bg-ink text-ink-foreground">
-      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-center">
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-mint text-mint-foreground"><GitCompareArrows className="h-6 w-6" aria-hidden="true" /></span>
-            <p className="text-xs font-bold tracking-[0.2em] text-mint">COMPARAR BIKES</p>
-          </div>
-          <h2 id="comparar" className="section-h2 mt-4">Em dúvida entre dois modelos?</h2>
-          <p className="mt-2 max-w-md text-ink-foreground/80">Escolha dois modelos e veja as diferenças lado a lado.</p>
-          <Link to="/bikes" search={pair.length === 2 ? { compare: `${pair[0].id},${pair[1].id}` } : {}} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 sm:w-fit">
-            Comparar bikes <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
-        {pair.length === 2 && (
-          <div className="relative grid grid-cols-2 gap-2 p-3 sm:p-4 md:pl-0">
-            {pair.map((c) => (
-              <Link key={c.id} to="/radar/$bikeId" params={{ bikeId: c.id }} className="overflow-hidden rounded-2xl bg-card text-ink ring-1 ring-ink-foreground/10 transition hover:ring-mint">
-                <BikeMedia src={c.image} name={c.name} className="aspect-[4/3] w-full" />
-                <p className="truncate px-3 py-3 text-center text-sm font-bold">{c.name}</p>
-              </Link>
-            ))}
-            <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[42%] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-mint text-lg font-black text-mint-foreground ring-4 ring-ink sm:h-16 sm:w-16">VS</span>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[] }) {
   if (videos.length) {
     return (
@@ -241,6 +210,30 @@ function ContentBlock({ cards, videos }: { cards: HomeCard[]; videos: VideoCard[
             </li>
           );
         })}
+      </ul>
+    </section>
+  );
+}
+
+function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
+  if (articles.length === 0) return null;
+  const recent = [...articles].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 3);
+  return (
+    <section aria-labelledby="artigos-home" className="scroll-mt-24">
+      <SectionHeading id="artigos-home" title="Artigos para escolher melhor" action={<Link to="/conteudos" className="inline-flex items-center gap-1 hover:underline">Ver todos os artigos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>} />
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {recent.map((article) => (
+          <li key={article.slug}>
+            <Link to="/conteudos/$slug" params={{ slug: article.slug }} className="group flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-line transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+              {article.ogImageUrl && <img src={article.ogImageUrl} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
+              <div className="flex flex-1 flex-col p-5">
+                <h3 className="text-lg font-bold text-ink group-hover:text-action">{article.title}</h3>
+                {article.summary && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{article.summary}</p>}
+                {article.publishedAt && !Number.isNaN(Date.parse(article.publishedAt)) && <time dateTime={article.publishedAt} className="mt-auto pt-4 text-xs text-muted-foreground">{new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(article.publishedAt))}</time>}
+              </div>
+            </Link>
+          </li>
+        ))}
       </ul>
     </section>
   );
@@ -297,8 +290,8 @@ const HomeB2C = () => {
             <RadarPanel total={total} />
             <CalculatorPanel />
           </div>
-          <CompareBlock cards={cards} />
           <ContentBlock cards={cards} videos={data?.videos ?? []} />
+          <ArticlesBlock articles={data?.articles ?? []} />
           <GroupAndNewsletter />
         </div>
       </main>
