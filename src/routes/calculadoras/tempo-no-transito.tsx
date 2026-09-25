@@ -300,8 +300,8 @@ function TempoNoTransito() {
                     A margem de autonomia não é afrouxada automaticamente.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-4">
-                    <Link to="/bikes" className="font-bold text-action underline">
-                      Ver todas as bikes
+                     <Link to="/radar" className="font-bold text-action underline">
+                       Explorar bikes e preços
                     </Link>
                     <Link to="/escolherbike" className="font-bold text-action underline">
                       Fazer o Quiz
