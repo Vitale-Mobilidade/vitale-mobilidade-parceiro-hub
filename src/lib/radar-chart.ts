@@ -14,8 +14,10 @@ export function chartEvidence(series: DailyPoint[]) {
   const observations = series.filter(confirmed);
   if (values.length >= 5) for (const [i, p] of observations.entries()) {
     const threshold = Math.max(center * 0.2, mad * 3);
-    const isolated = [observations[i - 1], observations[i + 1]].filter(Boolean)
-      .every(neighbor => Math.abs(neighbor.close - center) <= threshold);
+    const before = observations[i - 1];
+    const after = observations[i + 1];
+    // Só classificar um pico isolado quando há confirmação em ambos os lados.
+    const isolated = Boolean(before && after && Math.abs(before.close - center) <= threshold && Math.abs(after.close - center) <= threshold);
     if (isolated && Math.abs(p.close - center) > threshold) atypicalDates.add(p.date);
   }
   const low = values[0];
