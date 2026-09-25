@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink, LineChart, Sparkles, Users, Gauge, Youtube, Megaphone, ArrowRight } from "lucide-react";
+import { ArrowLeft, ExternalLink, LineChart, Users, Gauge, Youtube, ArrowRight } from "lucide-react";
 import { SiteHeader, SiteFooter, BikeMedia } from "@/components/site/site-ui";
 import { CommercialPriceBadge } from "@/components/site/CommercialPriceBadge";
 import { VideoCards } from "@/components/site/VideoCards";

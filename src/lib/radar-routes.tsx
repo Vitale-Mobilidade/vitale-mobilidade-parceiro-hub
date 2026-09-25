@@ -11,7 +11,7 @@ import { SITE_ORIGIN, type RadarBase } from "@/lib/radar-base";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 
 export async function loadRadarCatalog() {
-  const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog()]);
+  const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog().catch(() => ({ ok: false, bikes: [] }))]);
   return { ...r, videos, catalog: catalog.ok ? catalog.bikes : [] };
 }
 export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;

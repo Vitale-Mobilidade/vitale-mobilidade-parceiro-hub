@@ -6,7 +6,7 @@ import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
 
 /*
- * Hub de ferramentas de decisão. Só lista fluxos que existem hoje (Quiz, Radar, catálogo).
+ * Hub de ferramentas de decisão. Só lista fluxos que existem hoje (calculadoras, Quiz, Radar).
  * Não mostra produtos "em construção": se ainda não existe, não aparece como promessa.
  * Não duplica lógica do Radar nem lê dados: é uma página de orientação.
  */
@@ -17,9 +17,9 @@ export const Route = createFileRoute("/ferramentas")({
       path: "/ferramentas",
       title: "Ferramentas para escolher sua bike elétrica | Vitale Mobilidade",
       description:
-        "Quiz de perfil, Radar de preços e catálogo de modelos: as ferramentas da Vitale que já funcionam para decidir qual bike elétrica comprar.",
+        "Calculadoras, Quiz de perfil e Radar de preços: ferramentas da Vitale para decidir qual bike elétrica comprar.",
       ogTitle: "Ferramentas de decisão da Vitale Mobilidade",
-      ogDescription: "Quiz de perfil, Radar de preços e catálogo de bikes elétricas com dados reais.",
+      ogDescription: "Quiz de perfil, Radar de preços e ferramentas de mobilidade com dados reais.",
     }),
   component: FerramentasPage,
 });

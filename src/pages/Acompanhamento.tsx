@@ -52,7 +52,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     [initial],
   );
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("opportunity");
+  const [sort, setSort] = useState<SortKey>("name");
   const [chips, setChips] = useState<ChipKey[]>([]);
   const [category, setCategory] = useState("");
   const catalogRef = useRef<HTMLDivElement>(null);
