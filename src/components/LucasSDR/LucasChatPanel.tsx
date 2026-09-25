@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Send, X, ShoppingCart, Users, ListChecks, User } from "lucide-react";
 import { BIKES, getPurchaseLink } from "@/data/bikes";
 import { sanitizeAssistantText } from "@/lib/lucas-sanitize";
+import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 import { useLucasChat } from "./useLucasChat";
 import type { SDRContext, SDRMessage } from "./types";
 
-const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g";
 const BIKE_LIST_URL = "https://meli.la/2y7TYaH";
 const SPECIALIST_PHONE = "5511998693904";
 

@@ -1,5 +1,6 @@
 import logo96 from '@/assets/logo-96.webp';
 import logo192 from '@/assets/logo-192.webp';
+import { OFFERS_GROUP_URL } from '@/lib/offers-group';
 
 const Footer = () => {
   return (
@@ -49,7 +50,7 @@ const Footer = () => {
               <li><a href="#contato" className="hover:text-white transition-colors">Contato</a></li>
               <li>
                 <a
-                  href="https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t"
+                  href={OFFERS_GROUP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors"

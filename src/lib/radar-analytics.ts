@@ -45,4 +45,4 @@ export function trackRadar(event: RadarEvent, payload: Record<string, unknown> =
   }
 }
 
-export const OFFERS_GROUP_URL = "https://chat.whatsapp.com/EKsWhyOxeEg5XVdbTCYK7g?mode=gi_t";
+export { OFFERS_GROUP_URL } from "./offers-group";

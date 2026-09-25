@@ -30,7 +30,7 @@ import {
 } from "@/lib/radar-rankings";
 
 const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k"];
-const SORTS: SortKey[] = ["opportunity", "drop", "price", "name"];
+const SORTS: SortKey[] = ["relevance", "opportunity", "drop", "price", "name"];
 
 const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const base = useRadarBase();
@@ -52,7 +52,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     [initial],
   );
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("name");
+   const [sort, setSort] = useState<SortKey>("relevance");
   const [chips, setChips] = useState<ChipKey[]>([]);
   const [category, setCategory] = useState("");
   const catalogRef = useRef<HTMLDivElement>(null);
@@ -77,9 +77,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     return dates.length ? dates.sort()[0] : null;
   }, [entries]);
 
-  const opportunities = useMemo(() => entries.filter(isOpportunity), [entries]);
-  const featured =
-    opportunities[0] ?? highlights.atMin[0] ?? highlights.biggestDrops[0] ?? highlights.lowestPrices[0] ?? null;
+   const featured = useMemo(() => sortEntries(entries, "relevance")[0] ?? null, [entries]);
 
   const toggleChip = (chip: ChipKey) =>
     setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));

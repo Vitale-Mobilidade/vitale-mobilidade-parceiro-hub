@@ -1,15 +1,14 @@
 import { useEffect } from "react";
-
-const GROUP_URL = "https://chat.whatsapp.com/DnYGmcdvGiN4GtWLaEreft?mode=gi_t";
+import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 
 const GrupoDeOfertas = () => {
   useEffect(() => {
-    window.location.replace(GROUP_URL);
+    window.location.replace(OFFERS_GROUP_URL);
   }, []);
 
   return (
     <main>
-      <a href={GROUP_URL}>Acessar o grupo de ofertas da Vitale</a>
+      <a href={OFFERS_GROUP_URL}>Acessar o grupo de ofertas da Vitale</a>
     </main>
   );
 };
