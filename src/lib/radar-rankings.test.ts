@@ -6,6 +6,7 @@ import {
   buildSummary,
   isOpportunity,
   matchesChips,
+  radarUseLine,
   searchEntries,
   shortDiagnosis,
   sortEntries,
@@ -143,6 +144,16 @@ describe("rankings do radar", () => {
     expect(s.tracked).toBe(3);
     expect(s.atLowest).toBeGreaterThan(0);
     expect(s.biggestDropPct).toBeLessThan(0);
+  });
+});
+
+describe("texto editorial do destaque", () => {
+  it("não transforma descrição de anúncio em indicação de uso", () => {
+    expect(radarUseLine(bike({ shortDescription: "Características do produto Cor: Preto Marca: Oggi É dobrável" }))).toBeNull();
+  });
+
+  it("usa a indicação editorial objetiva quando disponível", () => {
+    expect(radarUseLine(bike({ perfilIndicado: "Boa para: trajetos urbanos e deslocamentos diários" }))).toBe("trajetos urbanos e deslocamentos diários");
   });
 });
 

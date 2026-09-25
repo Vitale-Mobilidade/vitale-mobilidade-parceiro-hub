@@ -25,12 +25,16 @@ interface Props {
 }
 
 const CONSENT_LABEL =
-  "Autorizo a Vitale Mobilidade a registrar meu WhatsApp com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
+  "Autorizo a Vitale Mobilidade a registrar meu nome, WhatsApp e e-mail com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
+
+const DROP_OPTIONS = Array.from({ length: 10 }, (_, index) => (index + 1) * 100);
 
 export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, currentPrice }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [condition, setCondition] = useState<"any_drop" | "target">("any_drop");
+  const [email, setEmail] = useState("");
+  const [condition, setCondition] = useState<"any_drop" | "target">("target");
+  const [drop, setDrop] = useState(100);
   const [target, setTarget] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
@@ -42,6 +46,11 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
     setError(null);
     if (!consent) {
       setError("É preciso autorizar o contato para registrar o alerta.");
+      return;
+    }
+    const targetPrice = condition === "target" ? target.trim() ? Number(target.replace(/\D+/g, "")) : currentPrice - drop : null;
+    if (condition === "target" && (!(targetPrice! > 0) || targetPrice! >= currentPrice)) {
+      setError("Escolha uma meta abaixo do preço atual.");
       return;
     }
     setStatus("sending");
@@ -56,9 +65,10 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
           bikeId,
           name,
           phone,
+          email,
           consent,
           condition,
-          targetPrice: condition === "target" ? Number(target.replace(/\D+/g, "")) : null,
+          targetPrice,
           website,
           attribution,
         },
@@ -117,36 +127,24 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
                 required
               />
             </div>
+            <div>
+              <Label htmlFor="alert-email">Seu e-mail</Label>
+              <Input id="alert-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} />
+            </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Condição do alerta</legend>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="alert-condition"
-                  checked={condition === "any_drop"}
-                  onChange={() => setCondition("any_drop")}
-                />
-                Em qualquer queda de preço
-              </label>
-              <label className="flex flex-wrap items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="alert-condition"
-                  checked={condition === "target"}
-                  onChange={() => setCondition("target")}
-                />
-                Quando chegar a
-                <Input
-                  aria-label="Preço desejado"
-                  inputMode="numeric"
-                  className="h-9 w-32"
-                  placeholder="R$"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  onFocus={() => setCondition("target")}
-                />
-              </label>
+              <legend className="text-sm font-medium">Avise-me quando cair</legend>
+              <div className="flex flex-wrap gap-2">
+                {DROP_OPTIONS.filter((amount) => currentPrice - amount > 0).map((amount) => (
+                  <button key={amount} type="button" aria-pressed={condition === "target" && !target && drop === amount} onClick={() => { setCondition("target"); setTarget(""); setDrop(amount); }} className={`min-h-10 rounded-full border px-3 text-sm ${condition === "target" && !target && drop === amount ? "border-action bg-action text-primary-foreground" : "border-line"}`}>R$ {amount.toLocaleString("pt-BR")}</button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Label htmlFor="alert-target">Ou escolha um preço máximo</Label>
+                <Input id="alert-target" inputMode="numeric" className="h-10 w-32" placeholder="R$" value={target} onChange={(e) => { setTarget(e.target.value); setCondition("target"); }} />
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="radio" name="alert-condition" checked={condition === "any_drop"} onChange={() => setCondition("any_drop")} /> Qualquer queda</label>
+              {condition === "target" && <p className="text-xs text-muted-foreground">Meta: {formatBRL(target.trim() ? Number(target.replace(/\D+/g, "")) : currentPrice - drop)}</p>}
             </fieldset>
 
             <div className="flex items-start gap-2">

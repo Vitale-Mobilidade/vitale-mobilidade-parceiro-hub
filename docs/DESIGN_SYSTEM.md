@@ -28,7 +28,7 @@ A Home foi redesenhada para aproximar a composição da referência visual aprov
 - **Radar + Calculadora**: grid de duas colunas. Radar usa fundo `vt-dark` (`#082b29`) e card interno com mini-barras de preço atual vs. típico. Calculadora é card claro (`bg-card`) com ícones de transporte e CTA inativo.
 - **Comparar bikes**: card `bg-surface` com preview de duas bikes reais lado a lado e selo "VS"; CTA inativo.
 - **Conteúdos e testes**: três cards usando fotos reais do catálogo como thumbnails; sem artigos/vídeos inventados.
-- **Grupo de ofertas + Newsletter**: bloco duplo. Grupo usa `vt-dark` e link ativo para `/grupodeofertas`; newsletter usa input desabilitado e botão inativo.
+- **Grupo de ofertas + Newsletter**: bloco duplo. Grupo usa `vt-dark` e link ativo para `/grupodeofertas`. O estado publicado em 23/09 mantinha a newsletter desativada; o corte local de 25/09 prepara formulário de nome/e-mail com consentimento e sem envio (ver `RADAR_UX_REVIEW_2026-09-25.md`).
 
 ### Uso da foto original
 

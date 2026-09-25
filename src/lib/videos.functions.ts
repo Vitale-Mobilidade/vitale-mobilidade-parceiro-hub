@@ -9,7 +9,7 @@ export const getVideos = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => {
     const d = (data ?? {}) as { bikeId?: unknown; limit?: unknown };
     const bikeId = typeof d.bikeId === "string" && BIKE_ID_RE.test(d.bikeId) ? d.bikeId.toLowerCase() : null;
-    const limit = typeof d.limit === "number" ? Math.min(Math.max(1, Math.floor(d.limit)), 60) : 4;
+    const limit = typeof d.limit === "number" ? Math.min(Math.max(1, Math.floor(d.limit)), 200) : 4;
     return { bikeId, limit };
   })
   .handler(async ({ data }): Promise<VideoCard[]> => {
