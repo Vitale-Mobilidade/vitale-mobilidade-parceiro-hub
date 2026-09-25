@@ -266,7 +266,7 @@ function BikesIndex() {
                 <Sparkles className="h-6 w-6 text-mint" aria-hidden="true" />
                 <h2 className="section-h2 mt-3">Não sabe por onde começar?</h2>
                 <p className="mt-2 text-ink-foreground/80">Responda sete perguntas rápidas e veja o modelo indicado para o seu perfil.</p>
-                <Link to="/escolherbike" className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Fazer o Quiz</Link>
+                <Link to="/escolherbike" reloadDocument className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Fazer o Quiz</Link>
               </div>
               <div className="rounded-2xl bg-surface p-6 ring-1 ring-line md:p-8">
                 <LineChart className="h-6 w-6 text-action" aria-hidden="true" />

@@ -13,7 +13,7 @@ export function QuizBanner({ fullBleed = false }: { fullBleed?: boolean }) {
     <div className="max-w-xl p-6 sm:p-10">
       <h2 className="text-3xl font-extrabold leading-tight sm:text-4xl">Essa bike combina com você?</h2>
       <p className="mt-3 text-ink-foreground/90">Responda o quiz da Vitale sobre seu uso, trajeto e orçamento e veja qual bike é recomendada para o seu perfil.</p>
-      <Link to="/escolherbike" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint">Fazer o quiz <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+      <Link to="/escolherbike" reloadDocument className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-mint px-6 font-bold text-mint-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint">Fazer o quiz <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
     </div>
   </section>;
 }

@@ -32,8 +32,8 @@ function Hero() {
           Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher.
         </p>
         <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row">
-          <Link to="/escolherbike" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90">
-            <Bike className="h-5 w-5" aria-hidden="true" /> Escolher minha bike <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          <Link to="/escolherbike" reloadDocument className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90">
+            <Bike className="h-5 w-5 shrink-0" aria-hidden="true" /> <span className="sm:hidden">Faça o quiz e descubra a bike ideal</span><span className="hidden sm:inline">Escolher minha bike</span> <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
           </Link>
           <Link to="/radar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-mint/70 bg-ink/40 px-7 text-lg font-bold backdrop-blur-sm hover:bg-ink-foreground/10">
             <BarChart3 className="h-5 w-5" aria-hidden="true" /> Ver Radar de preços
@@ -163,7 +163,7 @@ function CalculatorPanel() {
         <Link to="/calculadoras/economia" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
           Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
-        <Link to="/escolherbike" className="text-sm font-semibold text-action underline underline-offset-2">Escolher minha bike</Link>
+        <Link to="/escolherbike" reloadDocument className="text-sm font-semibold text-action underline underline-offset-2">Escolher minha bike</Link>
       </div>
     </section>
   );

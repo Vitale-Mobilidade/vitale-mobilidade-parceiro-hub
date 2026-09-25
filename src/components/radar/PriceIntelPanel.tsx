@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
-import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
+import { formatBRL } from "@/lib/price-tracker";
 import {
   DAILY_WINDOWS,
   WINDOW_LABEL,
@@ -13,8 +13,6 @@ interface Props {
   metrics: DailyMetrics;
   window: DailyWindow;
   onWindowChange: (w: DailyWindow) => void;
-  firstObservedAt: string | null;
-  lastObservedAt: string | null;
 }
 
 /**
@@ -28,8 +26,6 @@ export function PriceIntelPanel({
   metrics,
   window,
   onWindowChange,
-  firstObservedAt,
-  lastObservedAt,
 }: Props) {
   const headingId = useId();
   const { p25, p75, typicalPrice, classification } = metrics;
@@ -51,20 +47,6 @@ export function PriceIntelPanel({
   const lowerBand = hasQuantileBands ? position(p25) : 100 / 3;
   const typicalBand = hasQuantileBands ? Math.max(0, position(p75) - lowerBand) : 100 / 3;
 
-  const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
-
-  // Leitura FACTUAL e neutra: nenhum selo de avaliação ("bom preço", "oportunidade"),
-  // apenas comparação numérica com os registros validados manualmente pelo time.
-  const verdict = forming
-    ? "Comparação baseada nos registros disponíveis até agora para esta bike."
-    : classification === "lowest"
-      ? "É o menor valor registrado por nós para esta bike no período acompanhado."
-      : classification === "good"
-        ? `Está ${formatBRL(Math.abs(diff ?? 0))} abaixo do preço típico do período.`
-        : classification === "typical"
-          ? "Está dentro da faixa de preço mais comum do período."
-          : `Está ${formatBRL(Math.abs(diff ?? 0))} acima do preço típico do período.`;
-
   return (
     <section
       aria-labelledby={headingId}
@@ -84,8 +66,6 @@ export function PriceIntelPanel({
 
       <div className="lg:grid lg:grid-cols-2">
       <div className="px-4 py-4 sm:px-6 lg:border-r lg:border-line">
-        <p className="text-base font-medium text-ink">{verdict}</p>
-
         {/* O pin mostra o preço de hoje; os extremos dos registros permanecem rotulados abaixo. */}
         <div className="mt-4">
             <div
@@ -116,14 +96,13 @@ export function PriceIntelPanel({
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" aria-hidden="true" />Faixa habitual</span>
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />Acima da faixa habitual</span>
             </div>}
-            {showBands && !hasQuantileBands && <p className="mt-2 text-xs text-muted-foreground">Cores mostram apenas a posição na escala observada; ainda não há dados suficientes para avaliar se o preço está bom ou caro.</p>}
              {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 Menor registrado
                  <span className="block font-bold text-ink">{formatBRL(scaleMin)}</span>
               </span>
               <span className="text-center">
-                {forming ? "Mediana dos registros" : "Faixa habitual"}
+                {forming ? "Valor central" : "Faixa habitual"}
                 <span className="block font-bold text-ink">
                   {forming ? formatBRL(typicalPrice) : `${formatBRL(p25)} – ${formatBRL(p75)}`}
                 </span>
@@ -135,17 +114,6 @@ export function PriceIntelPanel({
             </div> : <p className="mt-2 text-xs text-muted-foreground">Ainda não há registros suficientes nesse período para comparar preços.</p>}
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">
-          Registros disponíveis nesta janela: {metrics.verifiedDays + metrics.reconstructedDays} dia(s), em {metrics.expectedDays} dia(s) do período
-          {metrics.firstDay && ` · a partir de ${formatDateBR(metrics.firstDay)}`}
-          {firstObservedAt && ` · acompanhando desde ${formatDateBR(firstObservedAt)}`}
-          {` · última verificação em ${formatDateTimeBR(metrics.lastVerifiedAt ?? lastObservedAt)}`}
-        </p>
-        {forming && (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Como a sequência de dias ainda é curta ou tem intervalos, não qualificamos se o preço está barato ou caro.
-          </p>
-        )}
       </div>
 
       {/* Histórico */}
@@ -173,20 +141,6 @@ export function PriceIntelPanel({
           <DailyPriceChart series={metrics.series} compact />
         </div>
 
-        <details className="mt-3 text-xs text-muted-foreground">
-          <summary className="cursor-pointer font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
-            Como lemos esses números
-          </summary>
-          <p className="mt-2">
-             A linha em degraus muda apenas na data de um novo preço disponível; entre registros pode haver dias sem verificação.
-             O trecho horizontal é uma ligação visual, não uma nova leitura nem a confirmação do preço nesses dias.
-          </p>
-          <p className="mt-2">
-            O preço típico é a mediana dos fechamentos diários do período e a faixa habitual vai do percentil 25 ao 75.
-            Quando a sequência de dias do período ainda é curta ou tem intervalos, mostramos os valores registrados como
-            referência e não qualificamos o preço — os registros continuam sendo os que a Vitale acompanha.
-          </p>
-        </details>
       </div>
       </div>
     </section>

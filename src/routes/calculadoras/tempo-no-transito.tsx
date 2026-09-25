@@ -303,7 +303,7 @@ function TempoNoTransito() {
                      <Link to="/radar" className="font-bold text-action underline">
                        Explorar bikes e preços
                     </Link>
-                    <Link to="/escolherbike" className="font-bold text-action underline">
+                    <Link to="/escolherbike" reloadDocument className="font-bold text-action underline">
                       Fazer o Quiz
                     </Link>
                   </div>
