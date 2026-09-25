@@ -1140,6 +1140,66 @@ export type Database = {
           },
         ]
       }
+      newsletter_subscriptions: {
+        Row: {
+          consent_at: string
+          consent_text: string
+          consent_version: string
+          created_at: string
+          delivery_enabled: boolean
+          email: string
+          id: string
+          person_name: string
+          source_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          consent_at?: string
+          consent_text: string
+          consent_version: string
+          created_at?: string
+          delivery_enabled?: boolean
+          email: string
+          id?: string
+          person_name: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          consent_at?: string
+          consent_text?: string
+          consent_version?: string
+          created_at?: string
+          delivery_enabled?: boolean
+          email?: string
+          id?: string
+          person_name?: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      newsletter_throttle: {
+        Row: {
+          attempts: number
+          fingerprint: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          fingerprint: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          fingerprint?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       quiz_events: {
         Row: {
           created_at: string
