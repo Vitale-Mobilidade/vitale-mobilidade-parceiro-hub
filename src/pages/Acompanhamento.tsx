@@ -52,7 +52,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   );
   const [query, setQuery] = useState("");
    const [sort, setSort] = useState<SortKey>("relevance");
-  const [chips, setChips] = useState<ChipKey[]>([]);
+  const [chip, setChip] = useState<ChipKey | null>(null);
   const [category, setCategory] = useState("");
   const catalogRef = useRef<HTMLDivElement>(null);
 
@@ -67,9 +67,9 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
 
   const filtered = useMemo(() => {
     const bySearch = searchEntries(entries, query);
-    const byChips = bySearch.filter((e) => matchesChips(e, chips) && (!category || normalizeText(e.category ?? "") === normalizeText(category)));
+    const byChips = bySearch.filter((e) => matchesChips(e, chip ? [chip] : []) && (!category || normalizeText(e.category ?? "") === normalizeText(category)));
     return sortEntries(byChips, sort);
-  }, [entries, query, chips, sort, category]);
+  }, [entries, query, chip, sort, category]);
 
   const trackingSince = useMemo(() => {
     const dates = entries.map((e) => e.firstObservedAt).filter(Boolean) as string[];
@@ -78,8 +78,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
 
    const featured = useMemo(() => sortEntries(entries, "relevance")[0] ?? null, [entries]);
 
-  const toggleChip = (chip: ChipKey) =>
-    setChips((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
+  const toggleChip = (next: ChipKey) => { setCategory(""); setChip((prev) => prev === next ? null : next); };
 
   const blocks = [
     { title: "Menores preços atuais", icon: Flame, list: highlights.lowestPrices },
@@ -139,33 +138,18 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
           </div>
         </div>
 
-        {!error && entries.length > 0 && <div className="responsive-container pt-10" ref={catalogRef}>
-          <section aria-label="Catálogo acompanhado" className="scroll-mt-24">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-              <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
-              <div className="flex flex-wrap items-center gap-2">
-                {categories.length > 0 && <><label htmlFor="radar-category" className="text-sm text-muted-foreground">Uso / categoria</label><select id="radar-category" value={category} onChange={e => setCategory(e.target.value)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action"><option value="">Todas</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></>}
-                <label htmlFor="radar-sort" className="text-sm text-muted-foreground">Ordenar por</label>
-                <select id="radar-sort" value={sort} onChange={e => setSort(e.target.value as SortKey)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action">{SORTS.map(key => <option key={key} value={key}>{SORT_LABEL[key]}</option>)}</select>
-              </div>
-            </div>
-            <div className="mb-6 flex flex-wrap gap-2">{CHIPS.map(chip => <button key={chip} type="button" aria-pressed={chips.includes(chip)} onClick={() => toggleChip(chip)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chips.includes(chip) ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[chip]}</button>)}{(chips.length > 0 || category) && <button type="button" onClick={() => { setChips([]); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
-            {filtered.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div> : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChips([]); setCategory(""); }}>Ver todas as bikes</button></p>}
-          </section>
-        </div>}
-
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
             <SectionHeading id="destaque" title="Destaque do Radar" />
-            <div className="mt-5 grid gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-              <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="mt-5 grid items-start gap-6 rounded-3xl border border-line bg-card p-5 md:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+              <div className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <BikeMedia src={featured.image} name={featured.name} className="h-56 rounded-2xl" eager />
                 <div className="flex min-w-0 flex-col">
                   <h3 className="mt-2 text-xl font-bold text-ink">{featured.name}</h3>
                    {radarUseLine(featured) && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {radarUseLine(featured)}</p>}
                   <p className="mt-2 text-3xl font-extrabold text-action">{formatBRL(featured.currentPrice)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{shortDiagnosis(featured)}</p>
-                  <div className="mt-auto space-y-2 pt-4">
+                  <div className="mt-4 space-y-2">
                     <Link to={`${base}/$bikeId` as const} params={{ bikeId: featured.id }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90">Ver bike e histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
                   </div>
                 </div>
@@ -200,6 +184,21 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
             ))}
           </section>
         )}
+
+        {!error && entries.length > 0 && <div className="responsive-container pt-10" ref={catalogRef}>
+          <section aria-label="Catálogo acompanhado" className="scroll-mt-24">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
+              <div className="flex flex-wrap items-center gap-2">
+                {categories.length > 0 && <><label htmlFor="radar-category" className="text-sm text-muted-foreground">Uso / categoria</label><select id="radar-category" value={category} onChange={e => { setCategory(e.target.value); setChip(null); }} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action"><option value="">Todas</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></>}
+                <label htmlFor="radar-sort" className="text-sm text-muted-foreground">Ordenar por</label>
+                <select id="radar-sort" value={sort} onChange={e => setSort(e.target.value as SortKey)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action">{SORTS.map(key => <option key={key} value={key}>{SORT_LABEL[key]}</option>)}</select>
+              </div>
+            </div>
+            <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filtro rápido — escolha uma opção">{CHIPS.map(option => <button key={option} type="button" aria-pressed={chip === option} onClick={() => toggleChip(option)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chip === option ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[option]}</button>)}{(chip || category) && <button type="button" onClick={() => { setChip(null); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
+            {filtered.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div> : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChip(null); setCategory(""); }}>Ver todas as bikes</button></p>}
+          </section>
+        </div>}
 
         <div className="responsive-container py-10">
            {error && (

@@ -20,7 +20,7 @@ export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
 export async function loadRadarBike(bikeId: string) {
   const [r, videos, articleIndex, catalog] = await Promise.all([
     getRadarBike({ data: { bikeId } }),
-    safeVideos({ bikeId, limit: 12 }),
+    safeVideos({ bikeId, limit: 200 }),
     getPublishedArticlesForBike({ data: bikeId }).catch(() => null),
     getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
   ]);

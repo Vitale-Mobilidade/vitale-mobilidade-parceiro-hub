@@ -44,9 +44,12 @@ export function PriceIntelPanel({
   const position = (value: number) => span > 0 && scaleMin !== null
     ? Math.min(100, Math.max(0, ((value - scaleMin) / span) * 100)) : 50;
   const currentPosition = position(currentPrice);
-  const showBands = !forming && p25 !== null && p75 !== null && p25 < p75;
-  const lowerBand = showBands ? position(p25) : 0;
-  const typicalBand = showBands ? Math.max(0, position(p75) - lowerBand) : 0;
+  const hasQuantileBands = !forming && p25 !== null && p75 !== null && p25 < p75;
+  const showBands = hasHistory;
+  // Com amostra ainda em formação, as cores indicam apenas posição na escala
+  // observada (terços), sem classificar o preço como bom ou caro.
+  const lowerBand = hasQuantileBands ? position(p25) : 100 / 3;
+  const typicalBand = hasQuantileBands ? Math.max(0, position(p75) - lowerBand) : 100 / 3;
 
   const diff = typicalPrice === null ? null : typicalPrice - currentPrice;
 
@@ -88,7 +91,7 @@ export function PriceIntelPanel({
             <div
               className="relative pt-[94px]"
               role="img"
-              aria-label={`Preço atual ${formatBRL(currentPrice)}.${hasHistory ? ` Régua de ${formatBRL(scaleMin)} a ${formatBRL(scaleMax)} nos registros da janela.` : " Sem histórico para posicionar a régua."}${showBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
+              aria-label={`Preço atual ${formatBRL(currentPrice)}.${hasHistory ? ` Régua de ${formatBRL(scaleMin)} a ${formatBRL(scaleMax)} nos registros da janela.` : " Sem histórico para posicionar a régua."}${hasQuantileBands ? ` Faixa inferior até ${formatBRL(p25)}; faixa habitual de ${formatBRL(p25)} a ${formatBRL(p75)}; faixa superior acima de ${formatBRL(p75)}.` : ""}`}
             >
               <span className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: `clamp(54px, ${currentPosition}%, calc(100% - 54px))` }} aria-hidden="true">
                 <span className="flex w-[108px] flex-col items-center rounded-xl border border-line bg-logo-surface px-2 pb-1.5 pt-1 shadow-md">
@@ -96,8 +99,8 @@ export function PriceIntelPanel({
                   <span className="text-xs font-extrabold leading-none text-ink">{formatBRL(currentPrice)}</span>
                   <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Preço hoje</span>
                 </span>
-                <span className="h-0 w-0 border-x-[7px] border-t-[8px] border-x-transparent border-t-logo-surface" />
               </span>
+              <span className="absolute top-[78px] h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[8px] border-x-transparent border-t-logo-surface" style={{ left: `clamp(7px, ${currentPosition}%, calc(100% - 7px))` }} aria-hidden="true" />
               {showBands ? (
                 <span className="flex h-3 overflow-hidden rounded-full ring-1 ring-line" aria-hidden="true">
                   <span className="bg-emerald-500" style={{ width: `${lowerBand}%` }} />
@@ -108,11 +111,12 @@ export function PriceIntelPanel({
               <span className="absolute bottom-0 h-3 w-1.5 -translate-x-1/2 rounded-full bg-action ring-2 ring-card" style={{ left: `${currentPosition}%` }} aria-hidden="true" />
             </div>
              <div className="mt-1 flex justify-between text-xs font-medium text-muted-foreground"><span>{hasHistory ? formatBRL(scaleMin) : "—"}</span><span>{hasHistory ? formatBRL(scaleMax) : "—"}</span></div>
-            {showBands && <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-ink" aria-label="Legenda das faixas de preço">
+            {hasQuantileBands && <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-ink" aria-label="Legenda das faixas de preço">
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />Abaixo da faixa habitual</span>
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" aria-hidden="true" />Faixa habitual</span>
               <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />Acima da faixa habitual</span>
             </div>}
+            {showBands && !hasQuantileBands && <p className="mt-2 text-xs text-muted-foreground">Cores mostram apenas a posição na escala observada; ainda não há dados suficientes para avaliar se o preço está bom ou caro.</p>}
              {hasHistory ? <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 Menor registrado
@@ -132,16 +136,14 @@ export function PriceIntelPanel({
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Dados usados nesta janela: {metrics.verifiedDays} dia(s) confirmados e {metrics.reconstructedDays}{" "}
-          reconstruído(s), em {metrics.expectedDays} dia(s) do período
+          Registros disponíveis nesta janela: {metrics.verifiedDays + metrics.reconstructedDays} dia(s), em {metrics.expectedDays} dia(s) do período
           {metrics.firstDay && ` · a partir de ${formatDateBR(metrics.firstDay)}`}
           {firstObservedAt && ` · acompanhando desde ${formatDateBR(firstObservedAt)}`}
           {` · última verificação em ${formatDateTimeBR(metrics.lastVerifiedAt ?? lastObservedAt)}`}
         </p>
         {forming && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Como a sequência de dias ainda é curta ou tem intervalos, mostramos os valores registrados sem qualificar se
-            o preço está barato ou caro. No período “Tudo” você vê toda a série registrada.
+            Como a sequência de dias ainda é curta ou tem intervalos, não qualificamos se o preço está barato ou caro.
           </p>
         )}
       </div>
@@ -176,9 +178,8 @@ export function PriceIntelPanel({
             Como lemos esses números
           </summary>
           <p className="mt-2">
-             Ponto verde: dia verificado. Ponto cinza: registro reconstruído do histórico. Ponto vermelho: valor atípico confirmado.
-             A linha tracejada só conecta registros existentes e não indica verificação nos dias intermediários.
-             Espaços vazios são dias sem verificação — nunca repetimos um preço que não confirmamos.
+             A linha em degraus muda apenas na data de um novo preço disponível; entre registros pode haver dias sem verificação.
+             O trecho horizontal é uma ligação visual, não uma nova leitura nem a confirmação do preço nesses dias.
           </p>
           <p className="mt-2">
             O preço típico é a mediana dos fechamentos diários do período e a faixa habitual vai do percentil 25 ao 75.

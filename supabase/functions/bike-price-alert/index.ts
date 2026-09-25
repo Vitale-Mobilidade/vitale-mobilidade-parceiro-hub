@@ -10,8 +10,8 @@ const RATE_LIMIT = 8;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 const CONSENT_TEXT =
-  "Autorizo a Vitale Mobilidade a usar meu WhatsApp para me avisar sobre queda de preço desta bike.";
-const CONSENT_VERSION = "v1";
+  "Autorizo a Vitale Mobilidade a registrar meu nome, WhatsApp e e-mail com meu interesse em queda de preço desta bike. Entendo que o envio automático de avisos ainda não está ativo.";
+const CONSENT_VERSION = "v2";
 
 const GENERIC_OK = { ok: true, message: "Alerta registrado." };
 
@@ -27,6 +27,12 @@ function cleanName(raw: unknown): string | null {
   const v = raw.trim().replace(/\s+/g, " ");
   if (v.length < 2 || v.length > 80) return null;
   return v;
+}
+
+function cleanEmail(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().toLowerCase();
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null;
 }
 
 /** Aceita telefone brasileiro com DDD e devolve E.164. */
@@ -98,6 +104,7 @@ Deno.serve(async (req) => {
 
     const name = cleanName(body.name);
     const phone = toE164BR(body.phone);
+    const email = cleanEmail(body.email);
     const consent = body.consent === true;
     const bikeId = typeof body.bikeId === "string" ? body.bikeId.trim() : "";
     const condition = body.condition === "target" ? "target" : "any_drop";
@@ -105,6 +112,7 @@ Deno.serve(async (req) => {
 
     if (!name) return json({ ok: false, error: "Informe seu nome." }, 400);
     if (!phone) return json({ ok: false, error: "Informe um WhatsApp válido com DDD." }, 400);
+    if (!email) return json({ ok: false, error: "Informe um e-mail válido." }, 400);
     if (!consent) return json({ ok: false, error: "É preciso autorizar o contato." }, 400);
     if (!bikeId) return json({ ok: false, error: "Bike inválida." }, 400);
 
@@ -138,6 +146,7 @@ Deno.serve(async (req) => {
       bike_name: bikeName,
       person_name: name,
       phone_e164: phone,
+      email,
       condition,
       target_price: condition === "target" ? targetPrice : null,
       reference_price: referencePrice,

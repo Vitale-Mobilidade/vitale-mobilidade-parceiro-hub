@@ -43,11 +43,13 @@ export interface RadarEntry extends RadarBike {
 
 /** Indicação curta de uso já registrada, sem aproveitar chamadas promocionais do anúncio. */
 export function radarUseLine(entry: RadarBike): string | null {
-  const candidates = [entry.perfilIndicado, ...(entry.bestFor ?? []).slice(0, 1), entry.shortDescription];
+  // Descrições importadas da oferta frequentemente trazem texto de anúncio,
+  // não uma indicação editorial de uso (ex.: “Características do produto”).
+  const candidates = [entry.perfilIndicado, ...(entry.bestFor ?? []).slice(0, 1)];
   for (const value of candidates) {
     if (typeof value !== "string") continue;
     const first = value.trim().split(/[.!?\n]/, 1)[0].replace(/^(boa para|ideal para)\s*[:…-]?\s*/i, "").trim();
-    if (!first || /(lançamento|promoção|compre|frete|mercado livre|modelo do produto|maior autonomia do mercado|não precisa|opção perfeita|escolha ideal|potência e performance|potência, conforto e estilo|garantia|seguro grátis|\b\d{3,4}\s*w\b)/i.test(first)) continue;
+    if (!first || /(lançamento|promoção|compre|frete|mercado livre|modelo do produto|características do produto|\bcor\s*:|\bmarca\s*:|maior autonomia do mercado|não precisa|opção perfeita|escolha ideal|potência e performance|potência, conforto e estilo|garantia|seguro grátis|\b\d{3,4}\s*w\b)/i.test(first)) continue;
     if ((first.match(/[A-ZÀ-Ý]/g)?.length ?? 0) > first.length * 0.45) continue;
     return first.length > 115 ? `${first.slice(0, 115).replace(/\s+\S*$/, "").trim()}…` : first;
   }

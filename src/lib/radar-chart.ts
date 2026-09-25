@@ -1,27 +1,11 @@
 import type { DailyPoint } from "./price-daily";
 
-const confirmed = (p: DailyPoint) => (p.verification === "observed_change" || p.verification === "confirmed_unchanged") && Number.isFinite(p.close) && p.close > 0;
-
-/** Atípicos são pontos confirmados isolados da distribuição; reconstruções nunca contam. */
+/** Escala factual do gráfico: todos os preços disponíveis cabem no eixo vertical. */
 export function chartEvidence(series: DailyPoint[]) {
-  const values = series.filter(confirmed).map(p => p.close).sort((a, b) => a - b);
-  if (!values.length) return { domain: null, atypicalDates: new Set<string>() };
-  const median = (xs: number[]) => xs[Math.floor(xs.length / 2)];
-  const center = median(values);
-  const deviations = values.map(v => Math.abs(v - center)).sort((a, b) => a - b);
-  const mad = median(deviations);
-  const atypicalDates = new Set<string>();
-  const observations = series.filter(confirmed);
-  if (values.length >= 5) for (const [i, p] of observations.entries()) {
-    const threshold = Math.max(center * 0.2, mad * 3);
-    const before = observations[i - 1];
-    const after = observations[i + 1];
-    // Só classificar um pico isolado quando há confirmação em ambos os lados.
-    const isolated = Boolean(before && after && Math.abs(before.close - center) <= threshold && Math.abs(after.close - center) <= threshold);
-    if (isolated && Math.abs(p.close - center) > threshold) atypicalDates.add(p.date);
-  }
-  const high = values[values.length - 1];
+  const allAvailable = series.filter(p => p.verification !== "missing" && Number.isFinite(p.close) && p.close > 0).map(p => p.close);
+  if (!allAvailable.length) return { domain: null };
+  const high = Math.max(...allAvailable);
   // O zero dá contexto ao valor; a folga superior mantém picos reais legíveis.
   const ceiling = Math.ceil((high + 2000) / 500) * 500;
-  return { domain: [0, ceiling] as [number, number], atypicalDates };
+  return { domain: [0, ceiling] as [number, number] };
 }

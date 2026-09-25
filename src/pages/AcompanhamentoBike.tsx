@@ -12,7 +12,7 @@ import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { PriceIntelPanel } from "@/components/radar/PriceIntelPanel";
 import { BikeHubComparison } from "@/components/radar/BikeHubComparison";
 import { UnavailableExplainer } from "@/components/radar/UnavailableExplainer";
-import { UNAVAILABLE_LEGEND, lastConfirmedDay } from "@/lib/radar-unavailable";
+import { lastConfirmedDay } from "@/lib/radar-unavailable";
 import { formatBRL, formatDateBR, isSafePurchaseLink } from "@/lib/price-tracker";
 import { dailyMetrics, expandDaily, type DailyPoint, type DailyWindow } from "@/lib/price-daily";
 import { trackRadar } from "@/lib/radar-analytics";
@@ -257,16 +257,9 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                   </div>
                   <div className="px-4 py-4 sm:px-6">
                     <DailyPriceChart series={archivedSeries} compact markLastUnavailable />
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-destructive" />
-                        {UNAVAILABLE_LEGEND}
-                      </span>
-                      <UnavailableExplainer dateISO={lastConfirmed?.date ?? bike.lastObservedAt} label="Entenda o ponto vermelho" />
-                    </div>
+                    <div className="mt-2"><UnavailableExplainer dateISO={lastConfirmed?.date ?? bike.lastObservedAt} label="Entenda a indisponibilidade" /></div>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Ponto cheio: dia verificado. Ponto vazado: dia reconstruído do histórico. Espaços vazios são dias
-                      sem verificação — nunca repetimos um preço que não confirmamos.
+                      A linha liga preços disponíveis, sem criar valores para dias sem verificação.
                     </p>
                   </div>
                 </section>
@@ -306,15 +299,15 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
             {(bike.perfilIndicado || description || bike.diferencial) && (
               <section className="mt-10" aria-labelledby="sobre-bike">
                 <SectionHeading id="sobre-bike" title={`Conheça a ${bike.name}`} />
-                {bike.perfilIndicado && <p className="mt-5 max-w-3xl text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
-                {description && <div className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
+                {bike.perfilIndicado && <p className="mt-5 max-w-none text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
+                {description && <div className="mt-4 max-w-none text-base leading-relaxed text-muted-foreground">
                   <div className="space-y-3">{descriptionLead.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
                   {descriptionRest && <details className="mt-3">
                     <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Ver mais sobre a {bike.name}</summary>
                     <div className="mt-2 space-y-3">{descriptionRest.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
                   </details>}
                 </div>}
-                {bike.diferencial && <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
+                {bike.diferencial && <p className="mt-4 max-w-none text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
               </section>
             )}
 
