@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bike, Menu } from "lucide-react";
-import logo96 from "@/assets/logo-96.webp";
-import logo192 from "@/assets/logo-192.webp";
+import officialLogo from "@/assets/vitale-mobilidade-logo-slim.png.asset.json";
 import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
 
 /*
@@ -10,26 +9,19 @@ import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
  * Navegação só aponta para rotas reais. Comparação é um estado de /bikes (não há rota /comparar).
  */
 
-export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
-  const name = tone === "dark" ? "text-ink-foreground" : "text-ink";
-  const sub = tone === "dark" ? "text-mint" : "text-action";
+export function Brand({ large = false }: { large?: boolean }) {
   return (
-    <Link to="/" className="flex min-w-0 items-center gap-2" aria-label="Vitale Mobilidade — início">
-      <img src={logo96} srcSet={`${logo96} 1x, ${logo192} 2x`} alt="" width={48} height={48} decoding="async" className="h-12 w-12 shrink-0 rounded bg-background" />
-      <span className="leading-none">
-        <span className={`block text-xl font-black tracking-tight ${name}`}>VITALE</span>
-        <span className={`block text-[11px] font-bold tracking-[0.28em] ${sub}`}>MOBILIDADE</span>
-      </span>
+    <Link to="/" className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-background bg-background p-1 ${large ? "h-20 w-60" : "h-14 w-44 sm:w-48"}`} aria-label="Vitale Mobilidade — início">
+      <img src={officialLogo.url} alt="Vitale Mobilidade" width={464} height={152} decoding="async" className="h-full w-full object-contain" />
     </Link>
   );
 }
 
-type NavItem = { label: string; href?: string; to?: "/radar" | "/bikes" | "/ferramentas" | "/conteudos" };
+type NavItem = { label: string; href?: string; to?: "/radar" | "/ferramentas" | "/conteudos" };
 export const SITE_NAV: NavItem[] = [
-  { label: "Bikes", to: "/bikes" },
+  { label: "Radar", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
-  { label: "Radar", to: "/radar" },
 ];
 
 function NavLink({ item, className }: { item: NavItem; className: string }) {
@@ -44,7 +36,7 @@ function NavLink({ item, className }: { item: NavItem; className: string }) {
 }
 
 /** Header único do site B2C. Sem busca superior (a busca vive dentro do Radar). */
-export function SiteHeader({ homeQuizCta = false }: { homeQuizCta?: boolean }) {
+export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
       <div className="responsive-container grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
@@ -52,8 +44,8 @@ export function SiteHeader({ homeQuizCta = false }: { homeQuizCta?: boolean }) {
         <nav aria-label="Principal" className="hidden items-center gap-9 text-base font-semibold text-ink-foreground lg:flex">
           {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="relative py-2 transition-colors hover:text-mint after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:scale-x-0 after:bg-mint after:transition-transform hover:after:scale-x-100" />)}
         </nav>
-        <Link to={homeQuizCta ? "/escolherbike" : "/grupodeofertas"} className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
-          {homeQuizCta ? "Faça o Quiz e descubra a bike ideal" : "Grupo de Ofertas"}
+        <Link to="/escolherbike" className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex">
+          Faça o Quiz e descubra a bike ideal
         </Link>
         <details className="relative lg:hidden">
           <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">
@@ -61,7 +53,7 @@ export function SiteHeader({ homeQuizCta = false }: { homeQuizCta?: boolean }) {
           </summary>
           <nav aria-label="Principal (celular)" className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl">
             {SITE_NAV.map((n) => <NavLink key={n.label} item={n} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted" />)}
-            <Link to="/grupodeofertas" className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Grupo de Ofertas</Link>
+            <Link to="/escolherbike" className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground">Faça o Quiz e descubra a bike ideal</Link>
           </nav>
         </details>
       </div>
@@ -71,24 +63,23 @@ export function SiteHeader({ homeQuizCta = false }: { homeQuizCta?: boolean }) {
 
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter() {
-  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/bikes" | "/ferramentas" | "/calculadoras/economia" | "/conteudos" }[] }[] = [
-    { title: "Explorar", items: [
-      { label: "Bikes", to: "/bikes" },
-      { label: "Escolher minha bike", to: "/escolherbike" },
-      { label: "Radar de preços", to: "/radar" },
-    ] },
-    { title: "Ferramentas", items: [
-      { label: "Todas as ferramentas", to: "/ferramentas" },
+  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/calculadoras/economia" | "/conteudos" }[] }[] = [
+    { title: "Escolher", items: [
+      { label: "Quiz", to: "/escolherbike" },
+      { label: "Radar", to: "/radar" },
       { label: "Calculadora de economia", to: "/calculadoras/economia" },
-      { label: "Conteúdos e testes", to: "/conteudos" },
     ] },
-    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }, { label: "Quiz de perfil", to: "/escolherbike" }] },
+    { title: "Conteúdos", items: [
+      { label: "Artigos", to: "/conteudos" },
+      { label: "Vídeos e testes", href: "/#conteudos" },
+    ] },
+    { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
   ];
   return (
     <footer className="bg-vt-dark text-ink-foreground/80">
       <div className="responsive-container grid gap-10 py-14 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
-          <Brand />
+          <Brand large />
           <p className="mt-4 max-w-xs leading-relaxed">Ferramentas e informação para escolher sua bike elétrica no Brasil.</p>
           <Link to="/escolherbike" className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90">Escolher minha bike</Link>
         </div>

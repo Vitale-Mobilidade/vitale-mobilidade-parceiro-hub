@@ -1,7 +1,7 @@
-# Roadmap da tarefa atual
+# Ajuste estrito da Home e navegação
 
-- [x] Refazer `/calculadoras/economia` como simulador reativo de uma tela.
-- [x] Preservar o motor detalhado e adicionar cálculo rápido, projeções e seleção de duas bikes.
-- [x] Atualizar documentação com o contrato final em PREVIEW.
-- [x] Rodar testes dirigidos, typecheck, build e verificar desktop/mobile.
-- [x] Não publicar nem iniciar outras calculadoras.
+- [x] Unificar navegação e rodapé sem links de Bikes ou comparação; usar logo oficial e favicon.
+- [x] Trocar primeiro atalho pelo Quiz e remover bloco de comparação somente da Home.
+- [x] Exibir até três artigos publicados reais, mantendo vídeos e demais blocos intactos.
+- [x] Inspecionar proporcionalmente mobile/desktop e abertura de artigo na prévia, sem suíte de testes.
+- [x] Não publicar.
