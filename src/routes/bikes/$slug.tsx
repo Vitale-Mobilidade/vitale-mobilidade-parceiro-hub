@@ -15,6 +15,7 @@ import { lastConfirmedDay } from "@/lib/radar-unavailable";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
+import { radarCompareHref } from "@/lib/bike-compare";
 
 type RadarDetail = {
   id: string;
@@ -207,9 +208,9 @@ function BikeDetail() {
                   <LineChart className="h-4 w-4" aria-hidden="true" /> Análise de preço completa
                 </Link>
               )}
-              <Link to="/bikes" search={{ compare: bike.bikeId }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
+              <a href={radarCompareHref([bike.bikeId])} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-ink-foreground/30 px-5 text-sm font-bold hover:border-mint hover:text-mint">
                 Comparar com outra bike
-              </Link>
+              </a>
             </div>
             {/* Sem oferta o valor acima JÁ é o último registro: não repetimos a observação. */}
             {radar && offer && (

@@ -16,6 +16,8 @@ import { ArchivedHistorySection, parseArchived } from "@/components/radar/Archiv
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
 import { trackRadar } from "@/lib/radar-analytics";
 import { trackAffiliateClick } from "@/lib/affiliate-analytics";
+import { RadarComparison } from "@/components/radar/RadarComparison";
+import type { DiscoveryBike } from "@/lib/bikes-discovery.functions";
 import {
   buildHighlights,
   buildRadarEntries,
@@ -35,7 +37,14 @@ import {
 const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k"];
 const SORTS: SortKey[] = ["opportunity", "drop", "price", "name"];
 
-const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
+type Props = {
+  initial: RadarCatalogData;
+  comparisonBikes?: DiscoveryBike[];
+  selectedCompareIds?: string[];
+  onCompareChange?: (ids: string[]) => void;
+};
+
+const Acompanhamento = ({ initial, comparisonBikes = [], selectedCompareIds = [], onCompareChange }: Props) => {
   const base = useRadarBase();
   // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
   const bikes = useMemo<RadarBike[]>(
@@ -138,6 +147,10 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               )}
           </div>
         </div>
+
+        {onCompareChange && (
+          <RadarComparison bikes={comparisonBikes} selectedIds={selectedCompareIds} onSelectionChange={onCompareChange} />
+        )}
 
         {!error && featured && (
           <section aria-labelledby="destaque" className="responsive-container pt-10">
