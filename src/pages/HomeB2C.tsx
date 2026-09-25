@@ -233,7 +233,7 @@ function GroupAndNewsletter() {
           </div>
         </div>
         {status === "done" ? <p role="status" className="mt-5 rounded-xl bg-mint/20 p-4 text-sm text-ink">Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da Vitale.</p> : (
-          <form onSubmit={submitNewsletter} className="mt-5 space-y-3">
+          <form onSubmit={submitNewsletter} className="mt-5 max-w-3xl space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div><label htmlFor="nl-name" className="mb-1 block text-sm font-medium text-ink">Seu nome</label><input id="nl-name" name="name" autoComplete="name" required minLength={2} maxLength={80} value={name} onChange={event => setName(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm" /></div>
               <div><label htmlFor="nl-email" className="mb-1 block text-sm font-medium text-ink">Seu e-mail</label><input id="nl-email" name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm" /></div>
