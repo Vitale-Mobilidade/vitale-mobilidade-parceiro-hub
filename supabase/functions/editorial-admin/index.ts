@@ -304,7 +304,10 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   let current = await briefFor(db, article.id);
   const stages: Body = { ...((current?.stages as Body) ?? {}) };
   const sourceKey = sourceFingerprint(transcript);
-  const reuse = !force && (stages.source as Body | undefined)?.key === sourceKey;
+  const bikesKey = bikeContextKey(article.primary_bike_id, article.related_bike_ids);
+  // Saved evidence/intent were produced with a bike context; if bike IDs changed, redo them.
+  const reuse = !force && (stages.source as Body | undefined)?.key === sourceKey
+    && (stages.source as Body | undefined)?.bikes === bikesKey;
   // Each finished stage is persisted, so a timeout resumes from the last checkpoint instead of paying again.
   const checkpoint = async (name: string, value: Body) => {
     stages[name] = { ...value, at: new Date().toISOString() };
