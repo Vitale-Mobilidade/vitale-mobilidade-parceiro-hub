@@ -1244,6 +1244,69 @@ export type Database = {
           },
         ]
       }
+      quiz_funnel_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          device_type: string | null
+          first_seen_at: string
+          highest_answered_step: number
+          landing_path: string | null
+          last_activity_at: string
+          lead_form_reached_at: string | null
+          page_viewed_at: string | null
+          referrer_domain: string | null
+          session_id: string
+          started_at: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          device_type?: string | null
+          first_seen_at?: string
+          highest_answered_step?: number
+          landing_path?: string | null
+          last_activity_at?: string
+          lead_form_reached_at?: string | null
+          page_viewed_at?: string | null
+          referrer_domain?: string | null
+          session_id: string
+          started_at?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          device_type?: string | null
+          first_seen_at?: string
+          highest_answered_step?: number
+          landing_path?: string | null
+          last_activity_at?: string
+          lead_form_reached_at?: string | null
+          page_viewed_at?: string | null
+          referrer_domain?: string | null
+          session_id?: string
+          started_at?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       quiz_leads: {
         Row: {
           abandoned_at: string | null
@@ -1675,6 +1738,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
       get_bike_price_history: {
         Args: { p_bike_id: string; p_days?: number }
         Returns: Json
@@ -1692,6 +1756,22 @@ export type Database = {
         Returns: Json
       }
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
+      track_quiz_funnel_session: {
+        Args: {
+          p_device?: string
+          p_event: string
+          p_path?: string
+          p_referrer?: string
+          p_session_id: string
+          p_step?: number
+          p_utm_campaign?: string
+          p_utm_content?: string
+          p_utm_medium?: string
+          p_utm_source?: string
+          p_utm_term?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
