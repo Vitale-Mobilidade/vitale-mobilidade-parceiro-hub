@@ -9,7 +9,7 @@ import {
   ARCHETYPES, EDITORIAL_TOOL_SLUGS, parseEditorialBrief, parseSourceClaims, screenDiversity,
   type EditorialBrief,
 } from "../_shared/editorial-foundation.ts";
-import { briefMatchesSource, buildDiversityCorpus, cautionReviewIssues, DIVERSITY_CORPUS_LIMIT, draftMatchesOutline, outlineGate, sourceFingerprint } from "../_shared/editorial-foundation.ts";
+import { bikeContextKey, briefMatchesBikes, briefMatchesSource, buildDiversityCorpus, cautionReviewIssues, DIVERSITY_CORPUS_LIMIT, draftMatchesOutline, outlineGate, sourceFingerprint } from "../_shared/editorial-foundation.ts";
 
 /** Differentiation corpus: published + written drafts + ready outlines, current article excluded, one entry per article. */
 async function readDiversityCorpus(db: SupabaseClient, currentId: string) {
@@ -384,7 +384,8 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   const status = gate.status;
   const next = { article_id: article.id, video_id: video.youtube_id, version: (current?.version ?? 0) + 1,
     status, archetype: brief.archetype, primary_intent: brief.primaryIntent, payload: brief,
-    stages: { ...stages, outline: { at: new Date().toISOString(), sections: brief.sections.length, modules: brief.modules.length } },
+    stages: { ...stages, outline: { at: new Date().toISOString(), sections: brief.sections.length, modules: brief.modules.length,
+      bikes: bikeContextKey(article.primary_bike_id, article.related_bike_ids) } },
     quality_report: { differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, corpusCounts: corpus.counts, issues, cautions: gate.cautions },
     article_revision: null, updated_at: new Date().toISOString() };
   const { data, error } = await db.from("editorial_briefs").upsert(next, { onConflict: "article_id" }).select("*").single();
@@ -400,6 +401,7 @@ async function generateInto(db: SupabaseClient, actor: Actor, article: Editorial
   const storedBrief = article.foundation_required ? await briefFor(db, article.id) : null;
   if (article.foundation_required && storedBrief?.status !== "ready") throw new Error("ready_brief_required");
   if (article.foundation_required && !briefMatchesSource(storedBrief?.stages, video.transcript ?? "")) throw new Error("brief_source_stale");
+  if (article.foundation_required && !briefMatchesBikes(storedBrief?.stages, article.primary_bike_id, article.related_bike_ids)) throw new Error("brief_bikes_stale");
   const brief = storedBrief?.payload as EditorialBrief | undefined;
   const prompt = await activePrompt(db);
   const { data: run, error: runError } = await db.from("editorial_compiler_runs").insert({
@@ -513,6 +515,7 @@ async function qualityAndPublish(db: SupabaseClient, actor: Actor, article: Edit
   if (!brief || brief.status !== "ready") throw new Error("editorial_brief_not_ready");
   const transcript = video.transcript ?? "";
   if (!briefMatchesSource(brief.stages, transcript)) throw new Error("brief_source_stale");
+  if (!briefMatchesBikes(brief.stages, article.primary_bike_id, article.related_bike_ids)) throw new Error("brief_bikes_stale");
   const textBlocks = article.blocks.filter((block) => block.type === "text");
   const normalizeSource = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR").replace(/\s+/g, " ").trim();
@@ -665,6 +668,7 @@ export function stageError(code: string): string {
     revision_conflict: "O artigo foi alterado em outra aba. Recarregue a página.",
     draft_not_found: "Rascunho não encontrado (artigos publicados não são reprocessados).",
     brief_source_stale: "A transcrição mudou depois do outline. Gere um novo outline antes de continuar.",
+    brief_bikes_stale: "As bikes associadas mudaram depois do outline (ou o outline é anterior a esse controle). Gere um novo outline antes de continuar.",
     ready_brief_required: "Gere um outline aprovado pelo QA antes de escrever.",
     editorial_brief_not_ready: "O outline não está aprovado; gere outro outline.",
     transcript_required: "Cadastre a transcrição completa do vídeo.",
