@@ -33,3 +33,11 @@
 | PMO/QA | Pass | Teste novo: 4/4; `pnpm validate`: typecheck, 47/47 testes do gate e build aprovados; `git diff --check` limpo. |
 
 **Estado:** implementado e validado localmente; não publicado. Risco residual: o Admin exige sessão real, então a inspeção visual e o smoke autenticado ficam para a prévia/release. A publicação no Lovable requer autorização explícita deste corte. Rollback de frontend: voltar à versão anterior do formulário; nenhum dado produtivo precisa ser revertido.
+
+## Hotfix da verificação em produção
+
+Após a primeira publicação autorizada, o smoke autenticado de `/admin/conteudos/novo` encontrou `No QueryClient set` e a tela de erro genérica. A causa é anterior ao seletor: as rotas do Admin usam `useQuery`, mas o provedor de React Query existia apenas na rota do Quiz. O teste de rotas e o build não renderizavam a página com os hooks, portanto não detectavam a falha. A correção coloca o `QueryClientProvider` na raiz, usando o cliente já criado em `src/router.tsx`; a rota do Quiz permanece funcional com seu provedor aninhado até uma limpeza separada. Não há alteração de API, dados, permissões, geração por IA ou SSR público.
+
+**Revisão pré-hotfix (oito perspectivas):** Produto, UX e CX: restaura acesso ao formulário sem mudar a jornada; CTO: compartilha o mesmo cliente por instância do router; IA: nenhum prompt ou contrato muda; Segurança: não altera autenticação nem acesso a dados; Growth: nenhuma página ou link público é alterado; PMO/QA: validação completa e smoke autenticado obrigatório antes do aceite. Todos recomendam a correção emergencial, com risco residual de outras rotas já dependerem do mesmo provedor.
+
+**Decisão:** publicar apenas o provedor global e verificar o formulário novo em uma aba limpa, incluindo busca e exibição da URL. Se o smoke falhar, não declarar o release concluído. Rollback: reverter o hotfix de raiz e o seletor publicado juntos para a última versão funcional do Admin; sem migração de banco.

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -114,10 +115,11 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes") || path.startsWith("/admin");
   return (
-    <>
+    <QueryClientProvider client={router.options.context.queryClient}>
       <a href="#conteudo-principal" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:font-semibold focus:text-ink focus:shadow-lg">
         Pular para o conteúdo
       </a>
@@ -126,7 +128,7 @@ function RootComponent() {
       </div>
       {/* O cliente pesado do assistente só é baixado após intenção explícita. */}
       {!excluded && <DeferredRadarAssistant />}
-    </>
+    </QueryClientProvider>
   );
 }
 
