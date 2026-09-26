@@ -58,12 +58,28 @@ const eventNames = new Set([
 ]);
 
 const BodySchema = z.object({
-  action: z.enum(["create_lead", "save_answer", "complete_quiz", "buy_click", "save_event"]),
+  action: z.enum(["create_lead", "save_answer", "complete_quiz", "buy_click", "save_event", "track_funnel"]),
   lead_id: z.string().uuid().optional().nullable(),
   lead: z.record(z.any()).optional(),
   event: z.record(z.any()).optional(),
   webhook_payload: z.record(z.any()).optional(),
   recommendation_event_payload: z.record(z.any()).optional(),
+  funnel: z.record(z.any()).optional(),
+});
+
+// Funil anônimo: somente session_id/estágio/atribuição. Campos extras (PII) são descartados.
+const FunnelSchema = z.object({
+  session_id: z.string().uuid(),
+  event: z.enum(["page_view", "quiz_started", "question_answered", "lead_form_reached", "quiz_completed"]),
+  step: z.number().int().min(1).max(7).nullable().optional(),
+  path: z.string().max(300).nullable().optional(),
+  referrer: z.string().max(120).nullable().optional(),
+  device: z.string().max(20).nullable().optional(),
+  utm_source: z.string().max(120).nullable().optional(),
+  utm_medium: z.string().max(120).nullable().optional(),
+  utm_campaign: z.string().max(160).nullable().optional(),
+  utm_content: z.string().max(160).nullable().optional(),
+  utm_term: z.string().max(160).nullable().optional(),
 });
 
 function pickLeadFields(input: Record<string, unknown> = {}) {
@@ -353,6 +369,28 @@ Deno.serve(async (req) => {
     }
 
     const { action, lead_id, lead = {}, event = {}, webhook_payload, recommendation_event_payload } = parsed.data;
+    if (action === "track_funnel") {
+      const f = FunnelSchema.safeParse(parsed.data.funnel ?? {});
+      if (!f.success || (f.data.event === "question_answered" && !f.data.step)) {
+        return new Response(JSON.stringify({ success: false, error: "invalid_funnel" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const d = f.data;
+      await dbFetch("rpc/track_quiz_funnel_session", {
+        method: "POST",
+        body: JSON.stringify({
+          p_session_id: d.session_id, p_event: d.event, p_step: d.event === "question_answered" ? d.step : null,
+          p_path: d.path ?? null, p_referrer: d.referrer ?? null, p_device: d.device ?? null,
+          p_utm_source: d.utm_source ?? null, p_utm_medium: d.utm_medium ?? null, p_utm_campaign: d.utm_campaign ?? null,
+          p_utm_content: d.utm_content ?? null, p_utm_term: d.utm_term ?? null,
+        }),
+      });
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let dbError: string | null = null;
     let webhook: Record<string, unknown> | null = null;
 
