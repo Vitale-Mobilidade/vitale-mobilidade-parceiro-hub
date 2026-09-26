@@ -144,3 +144,17 @@ export function sourceFingerprint(transcript: string): string {
   for (let i = 0; i < transcript.length; i++) { h ^= transcript.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `${transcript.length}:${(h >>> 0).toString(16)}`;
 }
+
+/** Fail closed: a brief is usable only when its source checkpoint matches the current transcript. */
+export function briefMatchesSource(stages: unknown, transcript: string): boolean {
+  if (!stages || typeof stages !== "object" || Array.isArray(stages)) return false;
+  const source = (stages as Record<string, unknown>).source as Record<string, unknown> | undefined;
+  return !!transcript.trim() && typeof source?.key === "string" && source.key === sourceFingerprint(transcript);
+}
+
+/** Fail closed: text sections must keep the exact count, order and headings of the current outline. */
+export function draftMatchesOutline(blocks: { type?: string; heading?: string | null }[], outline: { heading: string }[] | undefined): boolean {
+  if (!Array.isArray(outline) || outline.length === 0) return false;
+  const headings = blocks.filter((block) => block?.type === "text").map((block) => (block.heading ?? "").trim());
+  return headings.length === outline.length && outline.every((section, i) => section.heading.trim() === headings[i]);
+}

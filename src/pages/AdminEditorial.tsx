@@ -392,10 +392,9 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
     if (!selected) { setError(existingManualVideo ? "Este vídeo já está na biblioteca. Selecione-o na busca." : videoSource === "url" ? "Informe um link válido do YouTube e o título do vídeo." : "Escolha um vídeo da biblioteca."); return; }
-    const outlineOnly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "outline";
-    setBusy(outlineOnly ? "Analisando para o outline…" : "Entendendo conteúdo…");
+    setBusy("Analisando para o outline…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>(outlineOnly ? "outline-only" : "generate", {
+      const result = await adminStream<{ article: EditorialArticle }>("outline-only", {
         youtubeId: selected.videoId, title: selected.title, transcript,
       }, setBusy);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
@@ -465,12 +464,9 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
         onChange={e => { setTranscript(e.target.value); if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value); }} required minLength={200} disabled={Boolean(busy)}
         placeholder={videoSource === "library" ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." : "Cole aqui a transcrição revisada deste vídeo."} /></label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button type="submit" value="outline" className={`${BTN} py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar somente outline"}</button>
-        <button type="submit" value="draft" className={`${OUTLINE} py-3.5 text-base`} disabled={Boolean(busy)}>{busy ? "Aguarde…" : "Gerar outline e escrever rascunho"}</button>
-      </div>
+      <button type="submit" className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar somente outline"}</button>
       <p className="text-center text-sm text-muted-foreground">O outline não escreve o artigo nem publica: mostra fonte, intenção, tese, módulos e alertas de repetição.</p>
-      <p className="text-center text-sm text-muted-foreground">O rascunho fica privado. O QA de publicação roda depois, em etapa separada, dentro do artigo.</p>
+      <p className="text-center text-sm text-muted-foreground">Depois, dentro do artigo, escreva o rascunho (privado) e rode o QA em etapas separadas.</p>
       {busy && <p className="text-center text-sm text-muted-foreground">A análise pode levar alguns minutos. Mantenha esta aba aberta.</p>}
     </form>
   </>;
@@ -563,11 +559,15 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   async function stage(name: "brief-regenerate" | "draft-write" | "qa-run", label: string, payload: Record<string, unknown> = {}) {
     if (!article) return; setBusy(label); setError(""); setMessage("");
     try {
-      const result = await adminStream<{ article?: EditorialArticle; brief?: typeof brief }>(name, { id, revision: article.revision, ...payload }, setBusy);
+      const result = await adminStream<{ article?: EditorialArticle; brief?: typeof brief; publicationGated?: boolean }>(name, { id, revision: article.revision, ...payload }, setBusy);
       if (result.article) setArticle(result.article);
       if (result.brief) setBrief(result.brief);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
-      setMessage(name === "qa-run" ? (result.article?.status === "published" ? "QA aprovado e publicado." : "QA concluído. Veja o resultado abaixo.") : "Etapa concluída.");
+      setMessage(name === "qa-run"
+        ? (result.article?.status === "published" ? "QA aprovado e publicado."
+          : result.publicationGated ? "QA aprovado, publicação aguardando liberação técnica."
+          : "QA reprovado. Veja os alertas abaixo.")
+        : "Etapa concluída.");
     } catch (e) { setError(e instanceof Error ? e.message : "A etapa falhou."); }
     finally { setBusy(""); }
   }
@@ -782,7 +782,7 @@ function AiStatus({ role }: { role: AdminRole }) {
     finally { setBusy(false); }
   }
   return <>
-    <Heading title="Article Compiler" detail="Geração de rascunhos ancorados em vídeo e dados reais. Publicação sempre humana." />
+    <Heading title="Article Compiler" detail="Outlines e rascunhos ancorados em vídeo e dados reais. Publicação automática somente após QA aprovado e liberação técnica do servidor, sem revisão humana por artigo." />
     {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
     {!data ? <p aria-busy="true">Carregando estado da IA…</p> : <>
       <div className={PANEL}><h2 className="text-lg font-semibold">Versão ativa do prompt</h2>
