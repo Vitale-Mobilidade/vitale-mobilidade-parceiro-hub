@@ -160,7 +160,7 @@ function CalculatorPanel() {
         </div>
       </div>
       <div className="relative mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <Link to="/calculadoras/economia" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
+        <Link to="/ferramentas" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 font-bold text-primary-foreground hover:opacity-90">
           Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         <Link to="/escolherbike" reloadDocument className="text-sm font-semibold text-action underline underline-offset-2">Escolher minha bike</Link>

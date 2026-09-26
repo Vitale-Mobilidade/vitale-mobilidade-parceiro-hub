@@ -63,11 +63,11 @@ export function SiteHeader() {
 
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter() {
-  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/calculadoras/economia" | "/conteudos" }[] }[] = [
+  const cols: { title: string; items: { label: string; href?: string; to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos" }[] }[] = [
     { title: "Escolher", items: [
       { label: "Quiz", to: "/escolherbike" },
       { label: "Radar de preços", to: "/radar" },
-      { label: "Calculadora de economia", to: "/calculadoras/economia" },
+      { label: "Ferramentas", to: "/ferramentas" },
     ] },
     { title: "Conteúdos", items: [
       { label: "Artigos", to: "/conteudos" },

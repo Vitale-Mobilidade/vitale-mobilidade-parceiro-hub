@@ -8,12 +8,12 @@ import { BarChart3, BookOpen, Calculator, Bike, Users, type LucideIcon } from "l
  * rota e preencher `to` aqui.
  */
 export type HomeAnchor = "#conteudos" | "#ferramentas" | "#bikes";
-export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/calculadoras/economia" | "/conteudos" | HomeAnchor | null };
+export type HomeProduct = { key: string; title: string; sub: string; icon: LucideIcon; to: "/radar" | "/escolherbike" | "/grupodeofertas" | "/ferramentas" | "/conteudos" | HomeAnchor | null };
 
 export const HOME_PRODUCTS: HomeProduct[] = [
   { key: "quiz", title: "Faça o Quiz", sub: "Descubra a bike ideal", icon: Bike, to: "/escolherbike" },
   { key: "radar", title: "Radar de preços", sub: "Acompanhe o histórico", icon: BarChart3, to: "/radar" },
-  { key: "calculadora", title: "Calculadora de economia", sub: "Veja quanto pode economizar", icon: Calculator, to: "/calculadoras/economia" },
+  { key: "calculadora", title: "Ferramentas", sub: "Custo, renda e tempo com bike", icon: Calculator, to: "/ferramentas" },
   { key: "conteudos", title: "Conteúdos e testes", sub: "Análises para escolher", icon: BookOpen, to: "/conteudos" },
   { key: "grupo", title: "Grupo de ofertas", sub: "Ofertas selecionadas", icon: Users, to: "/grupodeofertas" },
 ];

@@ -2,7 +2,7 @@
  * Definição declarativa dos formulários das sete ferramentas e adaptadores finos para os motores puros.
  * Nenhuma fórmula aqui: só leitura de campos, chamada ao motor e textos de saída determinísticos.
  */
-import { LIMITS, TOOL_LIMITS, TOOL_PREMISES, WEEKS_PER_MONTH } from "./config";
+import { LIMITS, TOOL_LIMITS, TOOL_PREMISES } from "./config";
 import { brl, decimal } from "./format";
 import {
   computeApps,
@@ -505,4 +505,3 @@ export function readValues(def: ToolDefinition, raw: Record<string, string>, cho
   return { values, missing, invalid };
 }
 
-export { WEEKS_PER_MONTH };

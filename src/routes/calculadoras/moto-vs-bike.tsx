@@ -13,6 +13,7 @@ export const Route = createFileRoute("/calculadoras/moto-vs-bike")({
     getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: "/calculadoras/moto-vs-bike",
       title: TITLE,
       description: DESCRIPTION,

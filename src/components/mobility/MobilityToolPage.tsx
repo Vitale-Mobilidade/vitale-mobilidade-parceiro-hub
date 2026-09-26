@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Bike, ExternalLink, Sparkles, Wrench } from "lucide-react";
+import { ArrowRight, BarChart3, Bike, ExternalLink, Wrench } from "lucide-react";
 import { BudgetSelector, HillsToggle, Metric, NumberField, PassengerToggle, RecommendationFooter, ResultHero } from "@/components/mobility/calculator-ui";
 import { SiteFooter, SiteHeader, BikeMedia } from "@/components/site/site-ui";
 import { QuizBanner } from "@/components/site/DecisionBanners";
@@ -158,7 +158,7 @@ export function MobilityToolPage({ slug, data }: { slug: ToolSlug; data: ToolLoa
             {data.ok && recommendation && !recommendation.ok && <p className="mt-3 text-sm text-destructive">{recommendation.errors.join(" ")}</p>}
             {data.ok && recommendation?.ok && bikes.length === 0 && (
               <p className="mt-3 rounded-2xl bg-card p-5 text-muted-foreground ring-1 ring-line">
-                Nenhuma bike com oferta atual cobre {brl(0).replace(/.*/, "")}{result.data.dailyKm} km por dia com 20% de margem e os filtros escolhidos. Não afrouxamos os filtros: ajuste orçamento, garupa ou subidas, ou veja o Radar.
+                Nenhuma bike com oferta atual cobre {result.data.dailyKm} km por dia com 20% de margem e os filtros escolhidos. Não afrouxamos os filtros: ajuste orçamento, garupa ou subidas, ou veja o Radar.
               </p>
             )}
             {bikes.length > 0 && (
@@ -266,4 +266,3 @@ function ToolBikeCard({ bike, impact, position }: { bike: RecommendedBike; impac
   );
 }
 
-export { Sparkles };

@@ -17,6 +17,7 @@ const DESCRIPTION =
 export const Route = createFileRoute("/calculadoras/custo-anual-mobilidade")({
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: PATH,
       title: TITLE,
       description: DESCRIPTION,

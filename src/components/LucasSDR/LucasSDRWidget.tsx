@@ -57,7 +57,7 @@ export function LucasSDRWidget({
 }: Props) {
   const [open, setOpen] = useState(false);
   // Na Home e nas calculadoras, o launcher mobile ocupa apenas 56px.
-  const compactOnMobile = useRouterState({ select: (s) => s.location.pathname === "/" || s.location.pathname.startsWith("/calculadoras/") });
+  const compactOnMobile = useRouterState({ select: (s) => s.location.pathname === "/" || s.location.pathname.startsWith("/calculadoras/") || s.location.pathname.startsWith("/ferramentas/") });
   const compactHome = useRouterState({ select: (s) => s.location.pathname === "/" });
   const [showInvite, setShowInvite] = useState(false);
   const [inviteDismissed, setInviteDismissed] = useState(() => readFlag(ctx.leadId, "invite_dismissed"));

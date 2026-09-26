@@ -3,23 +3,16 @@
 import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { SLUG_RE } from "@/lib/editorial-bikes";
 import { SITE_URL } from "@/lib/seo";
+import { TOOL_PATHS } from "@/lib/mobility/tools-registry";
 
-/** Rotas estáticas públicas e funcionais. Aliases, noindex e rotas inexistentes ficam fora. */
+/** Rotas estáticas públicas e funcionais. Aliases, noindex (inclui o legado /calculadoras/*) e rotas inexistentes ficam fora. */
 export const STATIC_SITEMAP_PATHS = [
   "/",
   "/radar",
   "/escolherbike",
   "/ferramentas",
   "/conteudos",
-  "/calculadoras/economia",
-  "/calculadoras/payback",
-  "/calculadoras/custo-anual-mobilidade",
-  "/calculadoras/uber-vs-bike",
-  "/calculadoras/carro-vs-bike",
-  "/calculadoras/moto-vs-bike",
-  "/calculadoras/transporte-publico-vs-bike",
-  "/calculadoras/tempo-no-transito",
-  "/calculadoras/tempo-recuperado",
+  ...TOOL_PATHS,
 ] as const;
 
 const xmlEscape = (s: string) =>
