@@ -8,6 +8,7 @@ import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { formatDateBR } from "@/lib/price-tracker";
 import { pageHead } from "@/lib/seo";
 import { articleMatchesSearch } from "@/lib/editorial-discovery";
+import { youtubeThumbnailVariant } from "@/lib/video-catalog";
 
 export const Route = createFileRoute("/conteudos/")({
   loader: async () => {
@@ -40,7 +41,10 @@ function ContentIndex() {
   return <div className="min-h-screen bg-background"><SiteHeader />
     <main>
       <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
-        <img src="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
+        <picture>
+          <source media="(max-width: 767px)" srcSet="/vitale-hero-radar-2026-mobile.webp" width={600} height={909} />
+          <img src="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
+        </picture>
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-ink/75" aria-hidden="true" />
         <div className="responsive-container py-16 sm:py-24"><p className="text-sm font-bold uppercase tracking-widest text-mint">Conteúdo Vitale</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-extrabold sm:text-5xl">Conteúdos para escolher melhor</h1>
@@ -54,7 +58,7 @@ function ContentIndex() {
           </div>
           {topics.length > 0 && <div className="mt-5 flex flex-wrap gap-2" aria-label="Filtrar artigos por assunto">{["Todos", ...topics.map(t => t.label)].map(label => <button key={label} type="button" aria-pressed={topic === (label === "Todos" ? "" : label)} onClick={() => setTopic(label === "Todos" ? "" : label)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${topic === (label === "Todos" ? "" : label) ? "border-action bg-action text-white" : "border-line bg-card"}`}>{label}</button>)}</div>}
           {shown.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{shown.map(item => <Link key={item.slug} to="/conteudos/$slug" params={{ slug: item.slug }} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card focus-visible:ring-2 focus-visible:ring-action hover:shadow-md">
-            {item.ogImageUrl ? <img src={item.ogImageUrl} alt="" width={640} height={360} loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <div className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-10 w-10 text-action" aria-hidden="true" /></div>}
+            {item.ogImageUrl ? <img src={youtubeThumbnailVariant(item.ogImageUrl) ?? undefined} alt="" width={320} height={180} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <div className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-10 w-10 text-action" aria-hidden="true" /></div>}
             <div className="flex flex-1 flex-col p-5">{item.publishedAt && <time dateTime={item.publishedAt} className="text-xs text-muted-foreground">{formatDateBR(item.publishedAt)}</time>}<h3 className="mt-2 text-xl font-bold text-ink group-hover:text-action">{item.title}</h3><p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{item.summary}</p><span className="mt-auto inline-flex items-center gap-1 pt-5 text-sm font-semibold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></div>
           </Link>)}</div> : <p className="mt-8 rounded-xl bg-surface p-6 text-muted-foreground">{items.length ? "Nenhum artigo encontrado com esta busca e filtro." : "Ainda não há conteúdos editoriais publicados."}</p>}
         </section>

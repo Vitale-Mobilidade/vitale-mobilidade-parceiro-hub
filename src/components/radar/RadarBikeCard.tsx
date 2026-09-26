@@ -21,37 +21,27 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
         highlight ? "border-primary/30" : "border-border/60"
       }`}
     >
-      <Link
-        to={`${base}/${entry.id}`}
-        aria-label={`Ver bike e histórico da ${entry.name}`}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        <div className={`flex items-center justify-center overflow-hidden bg-surface ${highlight ? "h-64" : "h-52"}`}>
-          {entry.image ? (
-            <img
-              src={entry.image}
-              alt={`Bike elétrica ${entry.name}`}
-              width={640}
-              height={480}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.04]"
-            />
-          ) : (
-            <span className="text-xs text-muted-foreground">Imagem indisponível</span>
-          )}
-        </div>
-      </Link>
+      <div className={`flex items-center justify-center overflow-hidden bg-surface ${highlight ? "h-64" : "h-52"}`}>
+        {entry.image ? (
+          <img
+            src={entry.image}
+            alt={`Bike elétrica ${entry.name}`}
+            width={640}
+            height={480}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">Imagem indisponível</span>
+        )}
+      </div>
 
       <div className="flex flex-1 flex-col p-5">
         {/* Sem selo de classificação na listagem do Radar: só leitura factual. */}
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 text-base font-semibold leading-tight">
-            <Link to={`${base}/${entry.id}`} className="hover:text-primary focus-visible:outline-none">
-              {entry.name}
-            </Link>
-          </h3>
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight">{entry.name}</h3>
         </div>
         {useLine && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">Boa para: {useLine}</p>}
         <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">

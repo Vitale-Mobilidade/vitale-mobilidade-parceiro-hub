@@ -1,12 +1,13 @@
-import type React from "react";
+import { useState, type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { QuizBanner } from "@/components/site/DecisionBanners";
-import { ArrowRight, BookOpen, Calculator, LineChart } from "lucide-react";
+import { ArrowRight, BookOpen, Calculator, LineChart, Play } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { composeArticleFlow } from "@/lib/article-flow";
 import { comparedBikesInTitle } from "@/lib/editorial-discovery";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
+import { youtubeThumbnailUrl, youtubeThumbnailVariant } from "@/lib/video-catalog";
 
 export type PublishedArticle = {
   id: string; slug: string; title: string; summary: string; blocks: ArticleBlock[]; faq: ArticleFaq[];
@@ -95,6 +96,17 @@ function FaqList({ faq }: { faq: ArticleFaq[] }) {
     </div>)}</div></section>;
 }
 
+function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
+  const [active, setActive] = useState(false);
+  if (active) return <iframe src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`} title={title}
+    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="h-full w-full" />;
+  const thumbnail = youtubeThumbnailUrl(videoId);
+  return <button type="button" onClick={() => setActive(true)} className="group relative h-full w-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-mint" aria-label={`Reproduzir: ${title}`}>
+    {thumbnail && <img src={thumbnail} alt="" width={320} height={180} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
+    <span className="absolute inset-0 grid place-items-center bg-ink/35 transition group-hover:bg-ink/25" aria-hidden="true"><span className="grid h-16 w-16 place-items-center rounded-full bg-mint text-mint-foreground shadow-xl"><Play className="ml-1 h-7 w-7 fill-current" /></span></span>
+  </button>;
+}
+
 function Block({ block, article, bikes, prices, histories }: { block: ArticleBlock; article: PublishedArticle; bikes: CatalogBike[]; prices: Record<string, number>; histories: Record<string, HistoryPoint[]> }) {
   if (block.type === "hero") return block.text ? <p className="mb-6 text-lg font-medium">{block.text}</p> : null;
   if (block.type === "summary") return block.text ? <aside className="my-7 rounded-xl bg-surface p-5 text-lg">{block.text}</aside> : null;
@@ -105,8 +117,7 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
   if (block.type === "video") return <section className="my-8">
     <h2 className="mb-3 text-2xl font-bold">{block.heading || "Teste em vídeo"}</h2>
     <div className="aspect-video overflow-hidden rounded-xl bg-emerald-950">
-      <iframe src={`https://www.youtube-nocookie.com/embed/${article.videoId}`} title={block.heading || "Vídeo da Vitale"}
-        loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="h-full w-full" />
+      <VideoFacade videoId={article.videoId} title={block.heading || "Vídeo da Vitale"} />
     </div>
   </section>;
   if (block.type === "specs" && block.bikeId) {
@@ -118,7 +129,7 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
       .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike));
     const compared = comparedBikesInTitle(article.title, connected);
     if (compared.length < 2) return null;
-    const rows: [string, (b: CatalogBike) => React.ReactNode][] = [
+    const rows: [string, (b: CatalogBike) => ReactNode][] = [
       ["Preço atual no Radar", b => prices[b.bikeId] ? formatBRL(prices[b.bikeId]) : "Confira no Radar"],
       ["Autonomia", b => b.autonomy ?? "—"],
       ["Capacidade", b => b.capacity ?? "—"],
@@ -175,7 +186,7 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     <FaqList faq={article.faq} />
     {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-line bg-card hover:border-action focus-visible:ring-2 focus-visible:ring-action">
-        {a.ogImageUrl ? <img src={a.ogImageUrl} alt="" width={640} height={360} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
+        {a.ogImageUrl ? <img src={youtubeThumbnailVariant(a.ogImageUrl) ?? undefined} alt="" width={320} height={180} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
         <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground">{a.summary}</span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>
       </a></li>)}</ul></section>}
     {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>

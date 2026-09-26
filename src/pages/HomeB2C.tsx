@@ -6,6 +6,7 @@ import { HOME_PRODUCTS, ProductLink } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 import { OffersBanner } from "@/components/site/DecisionBanners";
+import { youtubeThumbnailVariant } from "@/lib/video-catalog";
 
 /*
  * A Home usa catálogo e artigos publicados das fontes existentes. A newsletter
@@ -180,7 +181,7 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
         {recent.map((article) => (
           <li key={article.slug}>
             <Link to="/conteudos/$slug" params={{ slug: article.slug }} className="group flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-line transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
-              {article.ogImageUrl && <img src={article.ogImageUrl} alt="" width={640} height={360} sizes="(max-width: 640px) 100vw, 33vw" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
+              {article.ogImageUrl && <img src={youtubeThumbnailVariant(article.ogImageUrl) ?? undefined} alt="" width={320} height={180} sizes="(max-width: 640px) 100vw, 33vw" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="text-lg font-bold text-ink group-hover:text-action">{article.title}</h3>
                 {article.summary && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{article.summary}</p>}
