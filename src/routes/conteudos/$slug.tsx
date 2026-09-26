@@ -5,6 +5,7 @@ import { getPublishedArticle } from "@/lib/editorial.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { safeVideos } from "@/lib/videos.functions";
+import { getRadarCatalog } from "@/lib/radar.functions";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import { orderEditorialHighlights, relatedPublishedArticles } from "@/lib/editorial-discovery";
 
@@ -12,11 +13,30 @@ export const Route = createFileRoute("/conteudos/$slug")({
   loader: async ({ params }) => {
     const article = await getPublishedArticle({ data: params.slug });
     if (!article) throw notFound();
-    const [catalog, index, videos] = await Promise.all([getBikeCatalog(), getPublishedArticles(),
+    const [catalog, index, radar, videos] = await Promise.all([getBikeCatalog(), getPublishedArticles(),
+      article.primaryBikeId || article.relatedBikeIds.length ? getRadarCatalog() : Promise.resolve({ ok: false as const }),
       article.primaryBikeId ? safeVideos({ bikeId: article.primaryBikeId, limit: 12 }) : Promise.resolve([])]);
     const contextualArticles = relatedPublishedArticles(article, index ?? []);
+    const connectedIds = new Set([article.primaryBikeId, ...article.relatedBikeIds].filter(Boolean));
+    const offers = (radar.ok ? radar.bikes : []).flatMap(item => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+      const bike = item as Record<string, unknown>;
+      const id = typeof bike.id === "string" ? bike.id : typeof bike.bikeId === "string" ? bike.bikeId : null;
+      return id && connectedIds.has(id) && bike.hasCurrentOffer === true && typeof bike.currentPrice === "number" && Number.isFinite(bike.currentPrice) && bike.currentPrice > 0
+        ? [{ id, price: bike.currentPrice, daily: Array.isArray(bike.daily) ? bike.daily : [] }] : [];
+    });
+    const prices = Object.fromEntries(offers.map(offer => [offer.id, offer.price]));
+    const histories = Object.fromEntries(offers.map(offer => [offer.id, offer.daily.flatMap(point => {
+      if (!point || typeof point !== "object" || Array.isArray(point)) return [];
+      const row = point as Record<string, unknown>;
+      return typeof row.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+        typeof row.close === "number" && Number.isFinite(row.close) && row.close > 0
+        ? [{ date: row.date, close: row.close }] : [];
+    }).slice(-30)]));
     return { article, bikes: catalog.ok ? catalog.bikes : [],
       relatedArticles: orderEditorialHighlights(contextualArticles.length ? contextualArticles : (index ?? []).filter(a => a.id !== article.id)).slice(0, 4),
+      sidebarArticles: orderEditorialHighlights((index ?? []).filter(a => a.id !== article.id)).slice(0, 8),
+      prices, histories,
       articlesShareContext: contextualArticles.length > 0,
       relatedVideos: videos.filter(video => video.videoId !== article.videoId) };
   },
@@ -56,7 +76,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
 });
 
 function ContentDetail() {
-  const { article, bikes, relatedArticles, articlesShareContext, relatedVideos } = Route.useLoaderData();
+  const { article, bikes, relatedArticles, sidebarArticles, articlesShareContext, relatedVideos, prices, histories } = Route.useLoaderData();
   return <div className="min-h-screen bg-background"><SiteHeader />
-    <ArticleView article={article} bikes={bikes} relatedArticles={relatedArticles} articlesShareContext={articlesShareContext} relatedVideos={relatedVideos} /><SiteFooter /></div>;
+    <ArticleView article={article} bikes={bikes} prices={prices} histories={histories} relatedArticles={relatedArticles} sidebarArticles={sidebarArticles} articlesShareContext={articlesShareContext} relatedVideos={relatedVideos} /><SiteFooter /></div>;
 }

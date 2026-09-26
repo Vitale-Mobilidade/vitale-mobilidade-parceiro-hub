@@ -1,19 +1,20 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, ArrowRight, BookOpen, LineChart, Wrench, Sparkles } from "lucide-react";
+import { Search, ArrowRight, BookOpen, LineChart, Wrench } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
 import { getPublishedArticles } from "@/lib/editorial.functions";
-import { normalizeText } from "@/lib/price-daily";
+import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { formatDateBR } from "@/lib/price-tracker";
 import { pageHead } from "@/lib/seo";
-import { orderEditorialHighlights } from "@/lib/editorial-discovery";
+import { articleMatchesSearch } from "@/lib/editorial-discovery";
 
 export const Route = createFileRoute("/conteudos/")({
   loader: async () => {
-    const items = await getPublishedArticles();
+    const [items, catalog] = await Promise.all([getPublishedArticles(), getBikeCatalog()]);
     if (!items) throw new Error("conteudos_unavailable");
-    return [...items].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
+    return { items: [...items].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")),
+      bikeNames: Object.fromEntries((catalog.ok ? catalog.bikes : []).map(bike => [bike.bikeId, bike.name])) };
   },
   head: () => pageHead({ path: "/conteudos", title: "Conteúdos e testes de bikes elétricas | Vitale Mobilidade",
     description: "Testes reais, guias e comparativos da Vitale para ajudar você a escolher sua bike elétrica." }),
@@ -28,15 +29,13 @@ const TOPICS = [
 ] as const;
 
 function ContentIndex() {
-  const items = Route.useLoaderData();
+  const { items, bikeNames } = Route.useLoaderData();
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("");
   const topics = useMemo(() => TOPICS.filter(t => items.some(item => t.pattern.test(`${item.title} ${item.summary}`))), [items]);
   const shown = useMemo(() => items.filter(item => {
-    const text = normalizeText(`${item.title} ${item.summary}`);
-    return text.includes(normalizeText(query)) && (!topic || TOPICS.find(t => t.label === topic)?.pattern.test(`${item.title} ${item.summary}`));
-  }), [items, query, topic]);
-  const featured = useMemo(() => orderEditorialHighlights(items)[0], [items]);
+    return articleMatchesSearch(item, query, bikeNames) && (!topic || TOPICS.find(t => t.label === topic)?.pattern.test(`${item.title} ${item.summary}`));
+  }), [items, bikeNames, query, topic]);
   return <div className="min-h-screen bg-background"><SiteHeader />
     <main>
       <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
@@ -48,19 +47,9 @@ function ContentIndex() {
         </div>
       </section>
       <div className="responsive-container space-y-12 py-12">
-        {featured && <section aria-labelledby="destaque-editorial" className="grid overflow-hidden rounded-3xl border border-line bg-card shadow-sm lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,.65fr)]">
-          <Link to="/conteudos/$slug" params={{ slug: featured.slug }} className="group grid min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] focus-visible:ring-2 focus-visible:ring-action">
-            {featured.ogImageUrl ? <img src={featured.ogImageUrl} alt="" width={640} height={360} className="aspect-video h-full w-full object-cover" /> : <div className="grid min-h-56 place-items-center bg-surface"><BookOpen className="h-12 w-12 text-action" aria-hidden="true" /></div>}
-            <div className="flex flex-col justify-center p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-widest text-action">Em destaque</p><h2 id="destaque-editorial" className="mt-3 text-2xl font-extrabold leading-tight text-ink group-hover:text-action sm:text-3xl">{featured.title}</h2><p className="mt-3 line-clamp-4 text-muted-foreground">{featured.summary}</p><span className="mt-5 inline-flex items-center gap-2 font-bold text-action">Ler análise <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></div>
-          </Link>
-          <aside className="border-t border-line bg-surface p-6 lg:border-l lg:border-t-0 sm:p-8" aria-label="Explore a Vitale"><h2 className="text-xl font-bold text-ink">Sua próxima decisão</h2><p className="mt-2 text-sm text-muted-foreground">Leia, compare modelos e confira o histórico antes de escolher.</p><div className="mt-5 space-y-3">
-            <a href="/escolherbike" className="flex min-h-12 items-center gap-3 rounded-xl bg-action px-4 font-bold text-white focus-visible:ring-2 focus-visible:ring-ink"><Sparkles className="h-5 w-5" aria-hidden="true" /> Faça o quiz <ArrowRight className="ml-auto h-4 w-4" aria-hidden="true" /></a>
-            <Link to="/radar" className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-card px-4 font-bold text-ink hover:border-action focus-visible:ring-2 focus-visible:ring-action"><LineChart className="h-5 w-5 text-action" aria-hidden="true" /> Explorar bikes no Radar <ArrowRight className="ml-auto h-4 w-4" aria-hidden="true" /></Link>
-          </div></aside>
-        </section>}
         <section aria-labelledby="artigos"><h2 id="artigos" className="section-h2 text-ink">Artigos publicados</h2>
-          <div className="mt-6 max-w-lg"><label htmlFor="buscar-artigos" className="mb-2 block text-sm font-semibold">Buscar por título ou resumo</label>
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-card px-4 focus-within:ring-2 focus-within:ring-action"><Search className="h-5 w-5 text-muted-foreground" aria-hidden="true" /><input id="buscar-artigos" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar artigos" className="h-12 min-w-0 flex-1 bg-transparent outline-none" /></div>
+          <div className="mt-6 max-w-lg"><label htmlFor="buscar-artigos" className="mb-2 block text-sm font-semibold">Buscar por título, resumo ou bike</label>
+            <div className="flex items-center gap-2 rounded-xl border border-line bg-card px-4 focus-within:ring-2 focus-within:ring-action"><Search className="h-5 w-5 text-muted-foreground" aria-hidden="true" /><input id="buscar-artigos" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Busque um artigo ou modelo de bike" className="h-12 min-w-0 flex-1 bg-transparent outline-none" /></div>
           </div>
           {topics.length > 0 && <div className="mt-5 flex flex-wrap gap-2" aria-label="Filtrar artigos por assunto">{["Todos", ...topics.map(t => t.label)].map(label => <button key={label} type="button" aria-pressed={topic === (label === "Todos" ? "" : label)} onClick={() => setTopic(label === "Todos" ? "" : label)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${topic === (label === "Todos" ? "" : label) ? "border-action bg-action text-white" : "border-line bg-card"}`}>{label}</button>)}</div>}
           {shown.length ? <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{shown.map(item => <Link key={item.slug} to="/conteudos/$slug" params={{ slug: item.slug }} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card focus-visible:ring-2 focus-visible:ring-action hover:shadow-md">
