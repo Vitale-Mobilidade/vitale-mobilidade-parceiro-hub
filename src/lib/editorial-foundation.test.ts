@@ -47,7 +47,14 @@ describe("editorial source and outline gate", () => {
     const result = screenDiversity({ id: "new", title: "Teste", summary: "Uma nova abertura", headings: ["Garupa", "Qual escolher"] },
       [{ id: "published", title: "Comparativo antigo", summary: "Outra abertura", headings: ["Garupa", "Qual escolher"] }]);
     expect(result.closestArticleId).toBe("published");
-    expect(result.score).toBeLessThan(45);
+    expect(result.score).toBeLessThanOrEqual(45);
     expect(result.alerts[0]).toContain("Comparativo antigo");
+  });
+
+  it("flags a repeated conclusion even when headings differ", () => {
+    const conclusion = "A compra faz sentido somente para quem percorre este trajeto e aceita essa limitação específica.";
+    const result = screenDiversity({ id: "new", title: "Teste de subida", summary: "Nova abertura", headings: ["Ladeira", "Limites"], conclusion },
+      [{ id: "published", title: "Teste antigo", summary: "Outra abertura", headings: ["Percurso", "Resultado"], conclusion }]);
+    expect(result.alerts).toContain("Teste antigo: conclusão idêntica.");
   });
 });

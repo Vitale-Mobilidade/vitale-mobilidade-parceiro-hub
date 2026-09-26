@@ -1,6 +1,6 @@
 # Fundação editorial orientada por fonte, SEO e diversidade
 
-Estado: implementação local em `codex/editorial-foundation-20260926`; **não aplicada ao Supabase nem publicada**. O responsável autorizou implementação e publicação nesta thread e dispensou revisão humana dos artigos novos. O gate técnico de recuperação e a validação do fluxo real ainda são necessários antes do release.
+Estado: implementação local em `codex/editorial-foundation-20260926`; **não aplicada ao Supabase nem publicada**. O responsável autorizou implementação e publicação nesta thread e dispensou revisão humana de cada artigo novo. A prova com cinco outlines de intenções diferentes continua sendo um critério de arquitetura antes da produção em massa, conforme a especificação original.
 
 ## Classificação e decisão prévia
 
@@ -18,6 +18,23 @@ Mudança **estrutural**: IA, SEO, Supabase, Radar, Quiz, Admin e publicação de
 | PMO/QA | Piloto mensurável antes de escala | Auto-publicação com teste insuficiente | Testes locais e ensaio operacional | Bloquear release até evidência |
 
 **Conflito e decisão:** o P0 exigia revisão humana; o pedido atual a dispensa. A compensação é bloquear automaticamente quando evidência, diferenciação, SEO ou qualidade falharem. Um score não garante ranking nem elimina risco residual de erro editorial. A instrução anterior de apresentar cinco outlines antes de produção em escala segue útil como avaliação de arquitetura, mas só há três transcrições importadas no Admin; não inventar mais duas.
+
+## Releitura da especificação para escala e parecer SEO/IA
+
+O alvo de aproximadamente 100 vídeos é **inventário a avaliar**, não quota de 100 URLs. O Google recomenda conteúdo original, útil e com experiência própria e alerta contra páginas em escala criadas principalmente para manipular resultados; páginas rastreáveis e tecnicamente corretas ainda não têm indexação garantida. Para busca no ChatGPT, conferir acesso real do `OAI-SearchBot` e páginas HTML públicas. Nenhuma técnica isolada de GEO garante citação.
+
+**Parecer SEO/IA: aprovação condicionada da arquitetura; reprovação da produção em massa agora.** O pipeline tem fonte, intenção, outline, módulos opcionais, SSR e QA, mas a prova de cinco intenções não existe, e as duas páginas publicadas já mostram repetição narrativa. Por isso, a nova ação `outline-only` permite analisar vídeo e salvar brief sem criar corpo ou publicar. A triagem de diversidade passou a comparar também sequência de seções, conclusão e frases repetidas, além de abertura, headings e vocabulário. Ela sinaliza risco para o revisor de IA; não é detector de conteúdo gerado nem medição de ranking.
+
+### Operação proposta para 100 ou mais vídeos
+
+1. Manter transcrição revisada e ID de vídeo como fonte; falhar quando a fonte não puder ser lida por inteiro. Não inferir teste a partir de título ou ficha técnica.
+2. Agrupar a fila por intenção, Bike e contribuição exclusiva. Um vídeo sem tese própria pode complementar página existente ou não gerar URL.
+3. Criar cinco outlines de intenções diferentes antes da redação em escala. No Supabase há três transcrições importadas, duas já ligadas a comparativos publicados; faltam fontes de pelo menos duas outras intenções. Os 103 vídeos do catálogo Sheets são referências de seleção, não transcrições.
+4. Após a prova, gerar em lotes pequenos, um artigo por execução, com estado e erro persistidos. O Admin mostra distribuição por arquétipo e bloqueios antes de ampliar o lote. Não acionar 100 chamadas simultâneas na Edge Function.
+5. Publicar automaticamente apenas artigos com fonte, diferenciação e QA aprovados. A publicação humana de cada artigo foi dispensada; o monitoramento do corpus e a capacidade de despublicar continuam necessários.
+6. Medir por URL indexação, impressões/cliques e consultas no Search Console, desempenho orgânico e referências de IA quando observáveis, além de cliques internos para Radar/Bike/Quiz. Revisar a decisão de escala se o conteúdo ficar repetitivo ou não for indexado.
+
+**Camadas:** TanStack Start serve HTML, metadata, canonical, JSON-LD e links; Supabase guarda vídeo, transcrição, brief, versão, artigo e QA privado; a Edge Function autentica, orquestra seis etapas de IA e bloqueia publicação; Lovable hospeda o projeto existente. Radar e ofertas continuam no writer atual do Sheets. A skill SEO/IA instrui a perspectiva Growth/CRO, sem adicionar um segundo escritor comercial.
 
 ## Contratos implementados localmente
 
@@ -52,11 +69,11 @@ A implementação não promete posição em Google ou citação no ChatGPT. Apó
 | --- | --- | --- |
 | Produto | Pass | Nove arquétipos e módulos opcionais substituem o molde nos artigos novos; os dois publicados não são reescritos. |
 | CTO | Fail para release | Typecheck, testes e build passaram; migration ensaiada em PostgreSQL 17 isolado. Falta backup recente restaurável do banco vivo e ensaio de recuperação correspondente. |
-| IA | Pass local | Trechos literais, outline versionado, revisão SEO e QA independentes, publicação com falha fechada; ainda falta uma geração controlada real. |
+| IA | Pass local | Trechos literais, outline versionado, revisão SEO e QA independentes, publicação com falha fechada; ainda falta uma geração controlada real e a prova com cinco outlines. |
 | Segurança | Pass local | RLS ligada; anon/authenticated sem SELECT e service_role com SELECT no ensaio SQL. Falta conferir os papéis no projeto vivo após a migration. |
 | UX/UI | Fail para release | Estados de progresso, bloqueio e relatório no Admin compilam; falta smoke autenticado e mobile do fluxo novo. |
 | CX/Operação | Pass local | Reprocessamento por vídeo e motivo de bloqueio; Sheets, ofertas e artigos legados não foram modificados. |
-| Growth/CRO e SEO/IA | Fail para release | SSR, canonical, H1 e HTTP 200 conferidos nos dois artigos existentes; robots permite rastreamento e teste HTTP com user agent OAI-SearchBot retornou 200. Falta verificar HTML/metadata de artigo novo publicado e links no vivo. |
-| PMO/QA | Fail para release | `pnpm validate`: 47 testes, typecheck e build aprovados. Ensaio isolado da regra SQL aprovou bloqueio sem brief/QA, publicação com QA e preservação dos dois legados. Backup e geração controlada real pendentes. |
+| Growth/CRO e SEO/IA | Fail para produção em massa | SSR, canonical, H1 e HTTP 200 conferidos nos dois artigos existentes; robots permite rastreamento e teste HTTP com user agent OAI-SearchBot retornou 200. Faltam cinco outlines de intenções distintas, HTML/metadata de artigo novo e medição por URL no vivo. |
+| PMO/QA | Fail para release | `pnpm validate`: 47 testes, typecheck e build aprovados na primeira revisão; testes direcionados após a revisão de escala passaram. Ensaio isolado da regra SQL aprovou bloqueio sem brief/QA, publicação com QA e preservação dos dois legados. Backup e geração controlada real pendentes. |
 
-**Parecer consolidado: NO-GO para migration e publicação neste momento.** Risco material não mitigado: backup restaurável do estado vivo e ensaio de recuperação ausentes. O ensaio com fixture não substitui restauração de backup. A geração real, o smoke do Admin e a verificação da página nova exigem o schema implantado; serão executados em sequência controlada após fechar a recuperação. O responsável já autorizou a publicação direta e dispensou revisão humana dos artigos; não é necessária nova aprovação para essas duas decisões. O custo externo esperado depois de liberar o gate é baixo a moderado (chamadas de IA de um artigo piloto e deploy do projeto existente). Rollback: reimplantar a versão web/Edge Function anterior, interromper a nova ação de geração e manter a tabela aditiva privada para diagnóstico; restaurar banco somente se a migration causar falha que não possa ser revertida logicamente.
+**Parecer consolidado: NO-GO para migration, publicação da fundação e produção em massa neste momento.** Riscos materiais não mitigados: backup restaurável do estado vivo e ensaio de recuperação ausentes; prova de cinco outlines diversos incompleta. O ensaio com fixture não substitui restauração de backup. A geração real, o smoke do Admin e a verificação da página nova exigem o schema implantado; serão executados em sequência controlada após fechar a recuperação. O responsável já autorizou a publicação direta e dispensou revisão humana dos artigos; não é necessária nova aprovação para essas duas decisões. O custo externo esperado depois de liberar o gate é baixo a moderado (chamadas de IA dos outlines e de um artigo piloto, mais deploy do projeto existente). Rollback: reimplantar a versão web/Edge Function anterior, interromper a nova ação de geração e manter a tabela aditiva privada para diagnóstico; restaurar banco somente se a migration causar falha que não possa ser revertida logicamente.

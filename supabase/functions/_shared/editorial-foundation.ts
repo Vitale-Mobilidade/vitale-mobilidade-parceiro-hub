@@ -86,8 +86,22 @@ export function parseEditorialBrief(raw: unknown, claims: SourceClaim[], knownBi
   return brief.primaryIntent && brief.thesis && brief.readerQuestion && brief.uniqueInsight ? brief : null;
 }
 
-export type CorpusItem = { id: string; title: string; summary: string; headings: string[]; body?: string; archetype?: string };
+export type CorpusItem = { id: string; title: string; summary: string; headings: string[]; body?: string; conclusion?: string; archetype?: string };
 export type DiversityResult = { score: number; alerts: string[]; closestArticleId: string | null };
+
+function phrases(value: string): Set<string> {
+  const words = norm(value).split(" ").filter(Boolean);
+  const result = new Set<string>();
+  for (let i = 0; i <= words.length - 5; i++) result.add(words.slice(i, i + 5).join(" "));
+  return result;
+}
+
+function sectionOrderOverlap(left: string[], right: string[]): number {
+  if (left.length < 2 || right.length < 2) return 0;
+  const pairs = left.slice(1).map((heading, i) => `${left[i]}|${heading}`);
+  const prior = new Set(right.slice(1).map((heading, i) => `${right[i]}|${heading}`));
+  return pairs.filter((pair) => prior.has(pair)).length / Math.max(1, Math.min(left.length - 1, right.length - 1));
+}
 
 /** Explainable screening, calibrated by editors; never used as an AI-content detector. */
 export function screenDiversity(candidate: CorpusItem, corpus: CorpusItem[]): DiversityResult {
@@ -95,19 +109,30 @@ export function screenDiversity(candidate: CorpusItem, corpus: CorpusItem[]): Di
   let closest = 0;
   const alerts: string[] = [];
   const headings = candidate.headings.map(norm).filter(Boolean);
+  const candidatePhrases = phrases(`${candidate.summary} ${candidate.body ?? ""} ${candidate.conclusion ?? ""}`);
   const candidateTokens = new Set(norm(`${candidate.title} ${candidate.summary} ${candidate.body ?? ""}`).split(" ").filter((word) => word.length > 4));
   for (const article of corpus.filter((item) => item.id !== candidate.id)) {
     const prior = article.headings.map(norm).filter(Boolean);
     const shared = headings.filter((heading) => prior.includes(heading));
     const headingOverlap = shared.length / Math.max(1, Math.min(headings.length, prior.length));
+    const orderOverlap = sectionOrderOverlap(headings, prior);
     const sameOpening = norm(candidate.summary).slice(0, 100) === norm(article.summary).slice(0, 100) && norm(candidate.summary).length >= 100;
+    const sameConclusion = norm(candidate.conclusion ?? "").length >= 80 &&
+      norm(candidate.conclusion ?? "").slice(0, 100) === norm(article.conclusion ?? "").slice(0, 100);
+    const priorPhrases = phrases(`${article.summary} ${article.body ?? ""} ${article.conclusion ?? ""}`);
+    const repeatedPhrases = [...candidatePhrases].filter((phrase) => priorPhrases.has(phrase)).length;
+    const phraseOverlap = repeatedPhrases / Math.max(1, Math.min(candidatePhrases.size, priorPhrases.size));
     const priorTokens = new Set(norm(`${article.title} ${article.summary} ${article.body ?? ""}`).split(" ").filter((word) => word.length > 4));
     const sharedTokens = [...candidateTokens].filter((word) => priorTokens.has(word)).length;
     const lexicalOverlap = sharedTokens / Math.max(1, Math.min(candidateTokens.size, priorTokens.size));
-    const score = Math.min(100, Math.round(headingOverlap * 65 + lexicalOverlap * 20 + (sameOpening ? 25 : 0)));
+    const score = Math.min(100, Math.round(headingOverlap * 35 + orderOverlap * 20 + lexicalOverlap * 15 + phraseOverlap * 20 +
+      (sameOpening ? 25 : 0) + (sameConclusion ? 25 : 0)));
     if (score > closest) { closest = score; closestArticleId = article.id; }
     if (shared.length >= 2) alerts.push(`${article.title}: ${shared.length} subtítulos iguais (${shared.slice(0, 3).join(", ")}).`);
+    if (orderOverlap >= 0.5 && headings.length >= 3) alerts.push(`${article.title}: sequência de seções muito semelhante.`);
     if (sameOpening) alerts.push(`${article.title}: abertura idêntica.`);
+    if (sameConclusion) alerts.push(`${article.title}: conclusão idêntica.`);
+    if (repeatedPhrases >= 8 && phraseOverlap > 0.18) alerts.push(`${article.title}: frases repetidas em excesso.`);
     if (lexicalOverlap > 0.82 && candidateTokens.size >= 25) alerts.push(`${article.title}: vocabulário e argumento muito próximos; verificar canibalização.`);
   }
   return { score: 100 - closest, alerts: alerts.slice(0, 10), closestArticleId };

@@ -391,9 +391,10 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
     if (!selected) { setError(existingManualVideo ? "Este vídeo já está na biblioteca. Selecione-o na busca." : videoSource === "url" ? "Informe um link válido do YouTube e o título do vídeo." : "Escolha um vídeo da biblioteca."); return; }
-    setBusy("Entendendo conteúdo…");
+    const outlineOnly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "outline";
+    setBusy(outlineOnly ? "Analisando para o outline…" : "Entendendo conteúdo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>("generate", {
+      const result = await adminStream<{ article: EditorialArticle }>(outlineOnly ? "outline-only" : "generate", {
         youtubeId: selected.videoId, title: selected.title, transcript,
       }, setBusy);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
@@ -463,7 +464,11 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
         onChange={e => { setTranscript(e.target.value); if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value); }} required minLength={200} disabled={Boolean(busy)}
         placeholder={videoSource === "library" ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." : "Cole aqui a transcrição revisada deste vídeo."} /></label>
-      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Analisar, escrever e publicar"}</button>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button type="submit" value="outline" className={`${OUTLINE} py-3.5 text-base`} disabled={Boolean(busy)}>{busy || "Gerar somente outline"}</button>
+        <button type="submit" value="publish" className={`${BTN} py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Analisar, escrever e publicar"}</button>
+      </div>
+      <p className="text-center text-sm text-muted-foreground">Use o outline para provar diferentes intenções editoriais sem escrever ou publicar o artigo.</p>
       <p className="text-center text-sm text-muted-foreground">Publicação automática somente se fonte, originalidade e qualidade passarem no QA. Falhas ficam em rascunho com alertas.</p>
       {busy && <p className="text-center text-sm text-muted-foreground">A análise pode levar alguns minutos. Mantenha esta aba aberta.</p>}
     </form>

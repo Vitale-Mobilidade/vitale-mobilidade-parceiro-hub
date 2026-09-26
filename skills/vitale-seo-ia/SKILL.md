@@ -10,6 +10,7 @@ Use esta perspectiva dentro de Growth e CRO da governança Vitale. Examine o pro
 ## Decisões que deve orientar
 
 - Defina a pergunta e a contribuição original de cada página. Um vídeo só justifica artigo próprio quando há observação, comparação, raciocínio ou dado útil que não duplica outro artigo. A escala de 100 páginas não é meta de indexação.
+- Antes de produção em massa, avalie outlines de pelo menos cinco vídeos com intenções diferentes e compare o corpus publicado. Se não houver cinco transcrições completas, registre a lacuna; títulos e thumbnails não substituem fonte.
 - Preserve a distinção entre observação em teste, declaração de fabricante, dado atual do Radar, opinião e inferência. Exija evidência rastreável no pipeline privado. Não transforme uma inferência em experiência prática.
 - Faça o leitor encontrar resposta clara e contextual em HTML SSR. Headings, tabelas, FAQ, vídeo e componentes dependem do assunto; não aplique número de palavras, tamanho de trecho ou estrutura fixa para supostamente agradar sistemas de IA.
 - Confira `200`/`404`/`noindex` efetivos, canonical estável, título e descrição específicos, sitemap só de publicados, links internos HTML rastreáveis, imagens e vídeo relevantes, JSON-LD fiel ao que está visível, mobile e desempenho. Preserve os slugs dos dois artigos existentes.
