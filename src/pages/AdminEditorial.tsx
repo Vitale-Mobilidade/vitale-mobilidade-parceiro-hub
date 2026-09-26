@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { adminCall, adminStream, type AdminBike, type AdminGrowth, type AdminOffer, type AdminOverview, type AdminRole,
+import { adminCall, adminStream, funnelPct, type AdminBike, type AdminGrowth, type AdminOffer, type AdminOverview, type AdminRole,
   type AdminEditorialWorkspace } from "@/lib/admin-api";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
@@ -89,10 +89,9 @@ function Growth() {
     staleTime: GROWTH_STALE_MS, placeholderData: keepPreviousData, refetchOnWindowFocus: false, retry: false });
   const data = growth.data ?? null;
   const error = growth.error ? queryError(growth.error, "Não foi possível carregar Growth.") : "";
-  const completion = data?.quiz.started ? Math.round((data.quiz.completed / data.quiz.started) * 100) : 0;
-  const clickThrough = data?.quiz.started ? Math.round((data.quiz.identifiedClickers / data.quiz.started) * 100) : 0;
+  const f = data?.funnel ?? null;
   return <>
-    <Heading title="Growth" detail="Aquisição, intenção e cliques de compra comprovados pelos dados da Vitale.">
+    <Heading title="Growth" detail="Funil real do Quiz, leads e cliques de compra comprovados pelos dados da Vitale.">
       <label className="text-sm font-semibold">Período<select className={`${INPUT} ml-2 w-auto`} value={rangeDays}
         onChange={e => setRangeDays(Number(e.target.value))}>
         <option value={7}>7 dias</option><option value={30}>30 dias</option><option value={90}>90 dias</option>
@@ -100,24 +99,35 @@ function Growth() {
     </Heading>
     {error && <Notice danger>{error}</Notice>}
     {growth.isFetching && data && <p role="status" className="mb-3 text-xs text-muted-foreground">Atualizando indicadores…</p>}
-    {!data ? <p aria-busy="true">Carregando indicadores…</p> : <>
+    {!data || !f ? <p aria-busy="true">Carregando indicadores…</p> : <>
+      <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+        <strong>Cobertura:</strong> o funil anônimo do Quiz é medido {f.coverageSince ? <>desde {date(f.coverageSince)}</> : "a partir da implantação (ainda sem sessões registradas)"}. Visitas anteriores não têm dados e não são estimadas. O Admin não lê GA4: não há pageviews do site inteiro aqui.
+      </p>
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Funil anônimo (sessões por primeira visita no período)</h2>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[["Pessoas que iniciaram o Quiz", data.quiz.started], ["Quiz concluídos", data.quiz.completed],
-          ["Cliques de compra", data.quiz.purchaseClicks], ["Pessoas identificadas que clicaram", data.quiz.identifiedClickers]]
+        {([["Visitantes da página do Quiz", f.pageVisitors, null], ["Iniciaram", f.started, funnelPct(f.started, f.pageVisitors)],
+          ["Formulário alcançado", f.leadFormReached, funnelPct(f.leadFormReached, f.started)], ["Concluíram", f.completed, funnelPct(f.completed, f.started)]] as const)
+          .map(([label, value, rate]) => <div key={label} className={PANEL}><p className="text-sm text-muted-foreground">{label}</p>
+            <p className="mt-2 text-3xl font-bold">{value}</p>{rate && <p className="mt-1 text-xs text-muted-foreground">{rate} da etapa anterior</p>}</div>)}
+      </div>
+      <h2 className="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Leads e compra (cadastros identificados no período)</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[["Leads únicos (por telefone)", f.uniqueLeads], ["Cliques de compra", f.purchaseClicks], ["Pessoas identificadas que clicaram", f.identifiedClickers]]
           .map(([label, value]) => <div key={label} className={PANEL}><p className="text-sm text-muted-foreground">{label}</p>
             <p className="mt-2 text-3xl font-bold">{value}</p></div>)}
       </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <section className={PANEL}><h2 className="text-lg font-semibold">Funil do Quiz</h2>
-          <dl className="mt-4 grid grid-cols-2 gap-4"><div><dt className="text-sm text-muted-foreground">Conclusão</dt><dd className="text-2xl font-bold">{completion}%</dd></div>
-            <div><dt className="text-sm text-muted-foreground">Pessoas com clique</dt><dd className="text-2xl font-bold">{clickThrough}%</dd></div></dl>
-          <p className="mt-3 text-xs text-muted-foreground">Taxas calculadas sobre quem iniciou o Quiz no período.</p>
-        </section>
-        <section className={PANEL}><h2 className="text-lg font-semibold">Cobertura atual</h2>
-          <p className="mt-3 text-sm">O Supabase permite ligar cliques do Quiz a leads identificados. Os cliques gerais e pageviews continuam sendo enviados ao GTM, mas o Admin ainda não possui leitura do GA4/Lovable Analytics.</p>
-          <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><strong>Pendente:</strong> conectar a fonte externa de analytics para páginas mais acessadas, usuários e cliques do site inteiro. Os números abaixo não fingem essa cobertura.</p>
-        </section>
-      </div>
+      <section className={`${PANEL} mt-5`}><h2 className="text-lg font-semibold">Funil por pergunta</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Abandono conta somente sessões sem atividade há mais de {f.abandonAfterMinutes} min. Sessões ativas ficam fora do abandono.</p>
+        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[560px] text-left text-sm"><thead><tr className="border-b border-line text-muted-foreground">
+          <th className="pb-3">Etapa</th><th>Alcance</th><th>Avançaram</th><th>Avanço</th><th>Abandono</th></tr></thead>
+          <tbody>
+            <tr className="border-b border-line/70"><td className="py-2 font-medium">Página (antes de iniciar)</td><td>{f.pageVisitors}</td><td>{f.started}</td><td>{funnelPct(f.started, f.pageVisitors)}</td><td>{f.introAbandoned}</td></tr>
+            {f.steps.map(s => <tr key={s.step} className="border-b border-line/70"><td className="py-2 font-medium">Pergunta {s.step}</td><td>{s.reached}</td>
+              <td>{s.advanced}</td><td>{funnelPct(s.advanced, s.reached)}</td><td>{s.abandoned}</td></tr>)}
+            <tr><td className="py-2 font-medium">Formulário de contato</td><td>{f.leadFormReached}</td><td>{f.completed}</td><td>{funnelPct(f.completed, f.leadFormReached)}</td><td>{f.leadFormAbandoned}</td></tr>
+          </tbody></table></div>
+        <p className="mt-3 text-xs text-muted-foreground">“Concluíram” exige recomendação final exibida. Leads identificados não são usados como conclusão do funil.</p>
+      </section>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <RankedList title="Bikes mais clicadas no Quiz" rows={data.topBikes.map(row => ({ label: row.name, value: row.clicks }))} empty="Nenhuma bike clicada no período." />
         <RankedList title="Origens dos leads do Quiz" rows={data.origins.map(row => ({ label: row.name, value: row.leads }))} empty="Nenhuma origem registrada no período." />
