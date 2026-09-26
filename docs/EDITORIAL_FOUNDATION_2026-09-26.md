@@ -1,6 +1,6 @@
 # Fundação editorial orientada por fonte, SEO e diversidade
 
-Estado: implementação local em `codex/editorial-foundation-20260926`; **não aplicada ao Supabase nem publicada**. O responsável autorizou implementação e publicação nesta thread e dispensou revisão humana de cada artigo novo. A prova com cinco outlines de intenções diferentes continua sendo um critério de arquitetura antes da produção em massa, conforme a especificação original.
+**Estado vivo (26/09/2026, 23:40 UTC):** migration `20260926230000_editorial_foundation.sql` aplicada no banco vivo; `editorial-admin` implantada com a correção do corpus de diferenciação; `EDITORIAL_AUTO_PUBLISH` ausente (gate técnico fechado). Cinco outlines piloto gerados pelo painel, todos `ready`, artigos em `draft`, nenhum artigo completo escrito ou publicado. **Frontend do Admin não publicado**: a publicação pela API Lovable devolveu `UNKNOWN` e a ferramenta interna respondeu bloqueio por configurações do projeto — o painel público ainda roda a versão anterior. **Decisão: NO-GO para produção em massa** (ver "Resultado dos cinco pilotos"). As seções abaixo com "NO-GO para migration" são histórico e já não descrevem o estado atual.
 
 ## Classificação e decisão prévia
 
