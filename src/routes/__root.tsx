@@ -113,7 +113,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes") || path.startsWith("/admin");
+  const excluded = path.startsWith("/escolherbike");
   return (
     <QueryClientProvider client={router.options.context.queryClient}>
       <a href="#conteudo-principal" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:font-semibold focus:text-ink focus:shadow-lg">
