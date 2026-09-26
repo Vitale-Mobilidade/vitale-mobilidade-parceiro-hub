@@ -80,7 +80,7 @@ export function PriceIntelPanel({
                   <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Preço hoje</span>
                 </span>
               </span>
-              <span className="absolute top-[78px] h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[8px] border-x-transparent border-t-logo-surface" style={{ left: `clamp(7px, ${currentPosition}%, calc(100% - 7px))` }} aria-hidden="true" />
+               <span className="absolute top-[72px] h-3.5 w-3.5 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-action/50 bg-logo-surface shadow-sm" style={{ left: `clamp(8px, ${currentPosition}%, calc(100% - 8px))` }} aria-hidden="true" />
               {showBands ? (
                 <span className="flex h-3 overflow-hidden rounded-full ring-1 ring-line" aria-hidden="true">
                   <span className="bg-emerald-500" style={{ width: `${lowerBand}%` }} />

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bike, Menu } from "lucide-react";
 import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
 /*
  * Vitale Design System — peças compartilhadas por Home, Radar e detalhe.
@@ -74,6 +75,10 @@ export function SiteFooter() {
     { title: "Comunidade", items: [{ label: "Grupo de ofertas", to: "/grupodeofertas" }] },
   ];
   return (
+    <>
+    <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
+      <div className="responsive-container"><NewsletterSignup /></div>
+    </aside>
     <footer className="bg-vt-dark text-ink-foreground/80">
       <div className="responsive-container grid gap-10 py-14 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
@@ -98,6 +103,7 @@ export function SiteFooter() {
         <p className="responsive-container py-5 text-xs">© 2026 Vitale Mobilidade. Usamos links de afiliado do Mercado Livre em algumas páginas.</p>
       </div>
     </footer>
+    </>
   );
 }
 
