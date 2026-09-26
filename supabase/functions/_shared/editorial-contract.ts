@@ -133,6 +133,11 @@ export function validateArticleForPublication(
 
 const GENERIC_HEADING = /^(se[cç][aã]o|section|bloco|texto)?\s*\d*$/i;
 export const VIDEO_META_RE = /\b(n[eo]ste? v[íi]deo|n[oa] v[íi]deo|o v[íi]deo (mostra|aborda|apresenta|explica|detalha)|durante o v[íi]deo|a grava[cç][aã]o|o conte[úu]do apresenta|apresentad[oa]s? no v[íi]deo)\b/i;
+/** Editorial prose must never point back to the transcript or a third-person Vitale review. */
+export const SOURCE_DISTANCE_RE = /\b(?:na|pela|segundo a|conforme a) avalia[cç][aã]o (?:da vitale|pr[áa]tica|do v[íi]deo)|\b(?:a|o) (?:transcri[cç][aã]o|material avaliad[oa]|material analisad[oa]|material fornecid[oa]|avalia[cç][aã]o da vitale)\b|\ba avalia[cç][aã]o (?:indica|aponta|ressalta|mostra|descreve)|\b(?:dados|informa[cç][õo]es) fornecid[oa]s? (?:na transcri[cç][aã]o|pelo v[íi]deo)|\b(?:configura[cç][õo]es|modelos) avaliad[oa]s?\b/i;
+export function hasEditorialDistance(value: string): boolean {
+  return /\b(?:v[íi]deo|transcri[cç][aã]o)\b/i.test(value) || SOURCE_DISTANCE_RE.test(value);
+}
 
 /** Removes sentences with prices (commercial data comes only from entities) and any link. */
 export function sanitizeEditorialText(value: string): string {
