@@ -180,3 +180,34 @@ describe("diversity corpus includes drafts and ready outlines (regression: 5 pil
     expect(Date.now() - t).toBeLessThan(2000);
   });
 });
+
+describe("bike context of outlines", () => {
+  it("marks an outline stale when bike IDs change or the control is missing", async () => {
+    const { bikeContextKey, briefMatchesBikes } = await import("../../supabase/functions/_shared/editorial-foundation");
+    expect(bikeContextKey("v8_pro", ["v40_pro", "v8_pro"])).toBe("v40_pro,v8_pro");
+    const stages = { outline: { bikes: bikeContextKey("v8_pro", ["v40_pro"]) } };
+    expect(briefMatchesBikes(stages, "v8_pro", ["v40_pro"])).toBe(true);
+    expect(briefMatchesBikes(stages, "v29_pro", ["v8_pro_s"])).toBe(false);
+    // Pilot outlines were generated with no bikes and without this key: fail-closed.
+    expect(briefMatchesBikes({ outline: { sections: 4, modules: 0 } }, "coswheel_gt20", [])).toBe(false);
+    expect(briefMatchesBikes({ outline: { bikes: "" } }, "coswheel_gt20", [])).toBe(false);
+  });
+
+  it("keeps contextual modules only for the associated bikes, never forcing them", () => {
+    const text = "A GT20 subiu a ladeira sem perder tração. O painel marcou 60 km/h.";
+    const claims = parseSourceClaims([{ id: "c1", kind: "practical_experience", statement: "Subiu a ladeira.", excerpt: "subiu a ladeira sem perder tração", caveat: "" }], text);
+    const base = { archetype: "real_world_test", primaryIntent: "Primeiras impressões", secondaryIntents: [], thesis: "t", readerQuestion: "q",
+      uniqueInsight: "u", opening: "o", conclusion: "c", claims,
+      sections: [{ heading: "Subida", purpose: "p", claimIds: ["c1"] }, { heading: "Painel", purpose: "p", claimIds: [] }],
+      modules: [
+        { type: "radar", afterSection: 0, reason: "Preço da GT20 após a subida", bikeIds: ["coswheel_gt20"], toolSlug: "" },
+        { type: "radar", afterSection: 1, reason: "Outra bike", bikeIds: ["v8_pro"], toolSlug: "" },
+      ], faqQuestions: [], warnings: [] };
+    const associated = new Set(["coswheel_gt20"]);
+    const modules = parseEditorialBrief(base, claims, associated)?.modules ?? [];
+    expect(modules).toHaveLength(1);
+    expect(modules[0].bikeIds).toEqual(["coswheel_gt20"]);
+    expect(parseEditorialBrief({ ...base, modules: [] }, claims, associated)?.modules).toEqual([]);
+    expect(parseEditorialBrief(base, claims, new Set())?.modules).toEqual([]);
+  });
+});
