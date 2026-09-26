@@ -533,7 +533,10 @@ function BriefPanel({ brief, index }: { brief: BriefRow; index: { id: string; sl
         <blockquote className="mt-1 border-l-2 border-line pl-2 text-muted-foreground">“{c.excerpt}”</blockquote></li>)}</ul></details>}
     <p className="mt-3 text-sm text-muted-foreground">Diferenciação {brief.quality_report?.differentiationScore ?? "—"}/100
       {closest ? ` · mais próximo: ${closest.title}` : ""} · SEO/IA {brief.quality_report?.seoScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100</p>
-    {issues.length > 0 && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Alertas</strong><ul className="mt-2 list-disc pl-5">{issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
+    {issues.length > 0 && <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-950"><strong>Bloqueios</strong><ul className="mt-2 list-disc pl-5">{issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
+    {(p.warnings ?? []).length > 0 && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Cautelas editoriais</strong>
+      <span className="text-amber-900"> — não bloqueiam; o rascunho deve respeitá-las e a revisão final confere.</span>
+      <ul className="mt-2 list-disc pl-5">{(p.warnings ?? []).map((w, i) => <li key={i}>{w}</li>)}</ul></div>}
   </section>;
 }
 

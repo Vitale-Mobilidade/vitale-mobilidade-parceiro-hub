@@ -18,7 +18,11 @@ export type EditorialBrief = {
   thesis: string; readerQuestion: string; uniqueInsight: string;
   opening: string; conclusion: string; claims: SourceClaim[];
   sections: OutlineSection[]; modules: PlannedModule[];
-  faqQuestions: string[]; warnings: string[];
+  faqQuestions: string[];
+  /** Informative editorial cautions the text must respect (e.g. "60 km/h é leitura do painel"). Never block alone. */
+  warnings: string[];
+  /** Material, unmitigated risks. Absent (legacy/malformed) counts as unclassified and blocks: fail closed. */
+  blockingRisks?: string[];
 };
 
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -82,6 +86,7 @@ export function parseEditorialBrief(raw: unknown, claims: SourceClaim[], knownBi
     conclusion: clean(row.conclusion, 500), claims, sections, modules,
     faqQuestions: Array.isArray(row.faqQuestions) ? row.faqQuestions.map((v) => clean(v, 240)).filter(Boolean).slice(0, 6) : [],
     warnings: Array.isArray(row.warnings) ? row.warnings.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) : [],
+    ...(Array.isArray(row.blockingRisks) ? { blockingRisks: row.blockingRisks.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) } : {}),
   };
   return brief.primaryIntent && brief.thesis && brief.readerQuestion && brief.uniqueInsight ? brief : null;
 }
@@ -157,4 +162,28 @@ export function draftMatchesOutline(blocks: { type?: string; heading?: string | 
   if (!Array.isArray(outline) || outline.length === 0) return false;
   const headings = blocks.filter((block) => block?.type === "text").map((block) => (block.heading ?? "").trim());
   return headings.length === outline.length && outline.every((section, i) => section.heading.trim() === headings[i]);
+}
+
+export const MIN_DIFFERENTIATION = 45;
+export type OutlineGate = { status: "ready" | "qa_failed"; blockers: string[]; cautions: string[] };
+
+/**
+ * Separates informative cautions from material blockers. Cautions stay visible and are enforced in draft/QA;
+ * blockers (declared unmitigated risks, unclassified risks, material similarity) keep the brief closed.
+ * Unsupported claims, insufficient source and uncertain intent fail earlier in generateBrief.
+ */
+export function outlineGate(brief: Pick<EditorialBrief, "warnings" | "blockingRisks">, diversity: Pick<DiversityResult, "score" | "alerts">): OutlineGate {
+  const blockers: string[] = [];
+  if (!Array.isArray(brief.blockingRisks)) blockers.push("Outline sem classificação de riscos materiais; gere o outline de novo.");
+  else blockers.push(...brief.blockingRisks.map((risk) => `Risco material: ${risk}`));
+  blockers.push(...diversity.alerts);
+  if (diversity.score < MIN_DIFFERENTIATION) blockers.push("Diferenciação estrutural insuficiente frente ao corpus publicado.");
+  return { status: blockers.length ? "qa_failed" : "ready", blockers, cautions: [...(brief.warnings ?? [])] };
+}
+
+/** Final QA: every applicable caution must be verifiably respected; a missing/malformed check fails closed. */
+export function cautionReviewIssues(cautions: string[], violations: unknown): string[] {
+  if (!Array.isArray(violations)) return cautions.length ? ["Cautelas editoriais não verificadas pela revisão final."] : [];
+  return violations.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .slice(0, 12).map((v) => `Cautela desrespeitada: ${v.trim().slice(0, 300)}`);
 }

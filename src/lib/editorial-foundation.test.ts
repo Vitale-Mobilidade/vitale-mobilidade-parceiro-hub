@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEditorialBrief, parseSourceClaims, screenDiversity } from "../../supabase/functions/_shared/editorial-foundation";
+import { cautionReviewIssues, outlineGate, parseEditorialBrief, parseSourceClaims, screenDiversity } from "../../supabase/functions/_shared/editorial-foundation";
 import { layoutArticle } from "../../supabase/functions/_shared/editorial-automation";
 
 const transcript = "A V9 Max subiu a ladeira sem perder tração. O fabricante informa autonomia de 50 km. No nosso percurso de 19 km, a bateria terminou com carga.";
@@ -89,5 +89,50 @@ describe("stale brief and outline guards", () => {
     expect(draftMatchesOutline([blocks[1], { type: "text", heading: "Bateria" }], outline)).toBe(false);
     expect(draftMatchesOutline(blocks, [])).toBe(false);
     expect(draftMatchesOutline(blocks, undefined)).toBe(false);
+  });
+});
+
+describe("outline gate: cautions vs material blockers (regression GT20 aDLpuoXPofU)", () => {
+  // The eight honest cautions produced for the real GT20 pilot outline (differentiation 98).
+  const gt20Cautions = [
+    "Não apresentar como teste próprio da Vitale.",
+    "60 km/h é leitura do painel, não medição.",
+    "Autonomia é declarada pelo fabricante.",
+    "Primeiras impressões: sem uso prolongado.",
+    "Não afirmar durabilidade.",
+    "Preço citado é datado.",
+    "Não generalizar o trajeto do vídeo.",
+    "Diferenciar opinião de especificação.",
+  ];
+
+  it("lets an honest brief with only informative cautions advance, keeping cautions visible", () => {
+    const gate = outlineGate({ warnings: gt20Cautions, blockingRisks: [] }, { score: 98, alerts: [] });
+    expect(gate.status).toBe("ready");
+    expect(gate.blockers).toEqual([]);
+    expect(gate.cautions).toEqual(gt20Cautions);
+  });
+
+  it("stays fail-closed for declared material risks, similarity and legacy briefs without risk classification", () => {
+    expect(outlineGate({ warnings: gt20Cautions, blockingRisks: ["Tese depende de medição ausente da fonte."] }, { score: 98, alerts: [] }).status).toBe("qa_failed");
+    expect(outlineGate({ warnings: [], blockingRisks: [] }, { score: 30, alerts: [] }).status).toBe("qa_failed");
+    expect(outlineGate({ warnings: [], blockingRisks: [] }, { score: 90, alerts: ["Peer: abertura idêntica."] }).status).toBe("qa_failed");
+    expect(outlineGate({ warnings: gt20Cautions }, { score: 98, alerts: [] }).status).toBe("qa_failed");
+  });
+
+  it("parses blockingRisks only when the model classified them", () => {
+    const claims = parseSourceClaims([{ id: "c1", kind: "practical_experience", statement: "Subiu a ladeira sem perder tração.", excerpt: "subiu a ladeira sem perder tração", caveat: "" }], transcript);
+    const base = { archetype: "product_review", primaryIntent: "Primeiras impressões", secondaryIntents: [], thesis: "Boa primeira impressão.",
+      readerQuestion: "Vale a pena?", uniqueInsight: "Leitura prática", opening: "Abertura", conclusion: "Depende do uso",
+      sections: [{ heading: "Subida", purpose: "Observação", claimIds: ["c1"] }, { heading: "Limites", purpose: "Contexto", claimIds: ["c1"] }],
+      modules: [], faqQuestions: [], warnings: gt20Cautions };
+    expect(parseEditorialBrief({ ...base, blockingRisks: [] }, claims, new Set())?.blockingRisks).toEqual([]);
+    expect(parseEditorialBrief(base, claims, new Set())?.blockingRisks).toBeUndefined();
+  });
+
+  it("final QA blocks violated cautions and fails closed when cautions were not checked", () => {
+    expect(cautionReviewIssues(gt20Cautions, [])).toEqual([]);
+    expect(cautionReviewIssues(gt20Cautions, ["Texto afirma 'no nosso teste'."])).toEqual(["Cautela desrespeitada: Texto afirma 'no nosso teste'."]);
+    expect(cautionReviewIssues(gt20Cautions, undefined)).toHaveLength(1);
+    expect(cautionReviewIssues([], undefined)).toEqual([]);
   });
 });
