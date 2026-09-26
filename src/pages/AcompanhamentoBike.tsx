@@ -300,14 +300,16 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                 {bike.perfilIndicado && <p className="mt-5 max-w-none text-base leading-relaxed text-ink"><strong>Boa para:</strong> {bike.perfilIndicado}</p>}
                 {description && <div className="mt-4 max-w-none text-base leading-relaxed text-muted-foreground">
                   <div className="space-y-3">{descriptionLead.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-                   {descriptionRest && <details className="group mt-3">
-                     <div aria-hidden="true" className="relative max-h-24 overflow-hidden group-open:hidden">
+                   {descriptionRest && <div className="mt-3 flex flex-col">
+                     <details className="group peer order-2">
+                       <summary className="mt-2 inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Ver mais sobre a {bike.name}</span><span className="hidden group-open:inline">Mostrar menos</span><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" /></summary>
+                       <div className="mt-2 space-y-3">{descriptionRest.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                     </details>
+                     <div aria-hidden="true" className="relative order-1 max-h-24 overflow-hidden peer-open:hidden">
                        <div className="space-y-3">{descriptionRest.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
                        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-background/10 via-background/80 to-background" />
                      </div>
-                     <summary className="mt-2 inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Ver mais sobre a {bike.name}</span><span className="hidden group-open:inline">Mostrar menos</span><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" /></summary>
-                    <div className="mt-2 space-y-3">{descriptionRest.split(/\n+/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-                  </details>}
+                   </div>}
                 </div>}
                 {bike.diferencial && <p className="mt-4 max-w-none text-base leading-relaxed text-muted-foreground"><strong className="text-ink">Diferencial:</strong> {bike.diferencial}</p>}
               </section>
