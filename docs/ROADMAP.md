@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Fundação editorial de 26/09/2026:** implementação local para artigos orientados por fonte, arquétipo, SEO/descoberta por IA e publicação automática com QA, sem revisão humana. Os dois artigos publicados são preservados. Migration e release ainda dependem dos gates em [EDITORIAL_FOUNDATION_2026-09-26.md](./EDITORIAL_FOUNDATION_2026-09-26.md); este código local não é capacidade publicada.
+
 > **Atualização em 25/09/2026:** o corte de UX do Radar foi publicado no Lovable e conferido em `vitalemobilidade.com`: destaque e rankings antes do catálogo, filtros rápidos exclusivos, histórico contínuo, régua de preços com pin, alerta com nome/WhatsApp/e-mail e newsletter com nome/e-mail. As duas Edge Functions capturam interesse sem disparar mensagens. Veja [RADAR_UX_REVIEW_2026-09-25.md](./RADAR_UX_REVIEW_2026-09-25.md) para evidências, limites e rollback.
 
 > **Trabalho editorial V2 (branch, não publicado):** a revisão do Admin para “URL + título + transcrição → Gerar artigo → prévia privada” foi implementada em código, com detecção de bike, thumbnail/OG, blocos conectados e validação. Typecheck, build e testes direcionados passaram. Não houve merge, deploy ou escrita comercial. **Etapas 13–15 não são declaradas concluídas por esta mudança:** falta exercer a geração com transcrição real, inspeção autenticada e revisão humana do primeiro artigo. Ver [ADMIN_ARTICLE_FLOW_V2.md](./ADMIN_ARTICLE_FLOW_V2.md).

@@ -14,6 +14,7 @@ import { ArticleView, type PublishedArticle } from "@/components/editorial/Artic
 import { composeCover } from "@/lib/cover-compose";
 import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle } from
   "../../supabase/functions/_shared/editorial-contract";
+import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 
 const BTN = "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
 const OUTLINE = "rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50";
@@ -308,9 +309,17 @@ function Articles() {
   const items = workspace.data?.articles ?? [];
   const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
   const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
+  const distribution = Object.entries((workspace.data?.briefs ?? []).reduce<Record<string, number>>((counts, brief) => {
+    const key = brief.archetype ?? (brief.status === "in_progress" ? "em andamento" : "intenção incerta");
+    counts[key] = (counts[key] ?? 0) + 1; return counts;
+  }, {})).sort((a, b) => b[1] - a[1]);
   return <>
     <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
     {error && <Notice danger>{error}</Notice>}
+    <section className={`${PANEL} mb-5`} aria-label="Distribuição editorial"><h2 className="font-semibold">Distribuição por arquétipo</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Outlines criados: {workspace.data?.briefs.length ?? 0}. Os artigos antigos permanecem na base de similaridade.</p>
+      <ul className="mt-3 flex flex-wrap gap-2">{distribution.map(([name, count]) => <li key={name} className="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-950">{name}: {count}</li>)}</ul>
+    </section>
     <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${INPUT} mb-4 max-w-xs`}>
       <option value="all">Todos</option>
       {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
@@ -383,9 +392,10 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
     if (!selected) { setError(existingManualVideo ? "Este vídeo já está na biblioteca. Selecione-o na busca." : videoSource === "url" ? "Informe um link válido do YouTube e o título do vídeo." : "Escolha um vídeo da biblioteca."); return; }
-    setBusy("Entendendo conteúdo…");
+    const outlineOnly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "outline";
+    setBusy(outlineOnly ? "Analisando para o outline…" : "Entendendo conteúdo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>("generate", {
+      const result = await adminStream<{ article: EditorialArticle }>(outlineOnly ? "outline-only" : "generate", {
         youtubeId: selected.videoId, title: selected.title, transcript,
       }, setBusy);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
@@ -455,8 +465,13 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
         onChange={e => { setTranscript(e.target.value); if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value); }} required minLength={200} disabled={Boolean(busy)}
         placeholder={videoSource === "library" ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." : "Cole aqui a transcrição revisada deste vídeo."} /></label>
-      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar artigo"}</button>
-      {busy && <p className="text-center text-sm text-muted-foreground">Isso leva um ou dois minutos. Mantenha esta aba aberta.</p>}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button type="submit" value="outline" className={`${BTN} py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar somente outline"}</button>
+        <button type="submit" value="draft" className={`${OUTLINE} py-3.5 text-base`} disabled={Boolean(busy)}>{busy ? "Aguarde…" : "Gerar outline e escrever rascunho"}</button>
+      </div>
+      <p className="text-center text-sm text-muted-foreground">O outline não escreve o artigo nem publica: mostra fonte, intenção, tese, módulos e alertas de repetição.</p>
+      <p className="text-center text-sm text-muted-foreground">O rascunho fica privado. O QA de publicação roda depois, em etapa separada, dentro do artigo.</p>
+      {busy && <p className="text-center text-sm text-muted-foreground">A análise pode levar alguns minutos. Mantenha esta aba aberta.</p>}
     </form>
   </>;
 }
@@ -481,10 +496,56 @@ const toDraft = (a: EditorialArticle): EditDraft => ({ title: a.title, summary: 
 export function AdminArticleEditorPage({ id }: { id: string }) {
   return <AdminShell>{role => <OnlyEditorial role={role}><ArticleAdmin id={id} role={role} /></OnlyEditorial>}</AdminShell>;
 }
+type BriefRow = { version: number; status: string; archetype?: string | null; primary_intent?: string | null;
+  payload: Partial<EditorialBrief>; stages?: Record<string, { at?: string } | undefined>;
+  quality_report: { differentiationScore?: number; qualityScore?: number; seoScore?: number; issues?: string[];
+    closestArticleId?: string | null; intentUncertain?: boolean; articleQaPass?: boolean } };
+
+const ARCHETYPE_LABEL: Record<string, string> = {
+  direct_comparison: "Comparação direta", product_review: "Review de produto", real_world_test: "Teste real",
+  buying_guide: "Guia de compra", audience_need: "Necessidade de público", education: "Educação",
+  market_price: "Mercado e preço", curated_list: "Lista curada", use_comparison: "Comparação por uso",
+};
+const STAGE_LABEL: [string, string][] = [["source", "Fonte"], ["intent", "Intenção"], ["outline", "Outline"]];
+
+/** Read-only view of the private brief: evidence, intent, thesis, modules, links and repetition alerts. */
+function BriefPanel({ brief, index }: { brief: BriefRow; index: { id: string; slug: string; title: string }[] }) {
+  const p = brief.payload ?? {};
+  const claims = p.claims ?? []; const sections = p.sections ?? []; const modules = p.modules ?? [];
+  const links = modules.filter(m => m.type === "article_link" && m.articleId);
+  const closest = index.find(item => item.id === brief.quality_report?.closestArticleId);
+  const issues = brief.quality_report?.issues ?? [];
+  return <section className={`${PANEL} mb-6`} aria-label="Plano e qualidade editorial">
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-bold">Plano editorial</h2>
+      <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold">
+        {brief.quality_report?.intentUncertain ? "Intenção incerta" : ARCHETYPE_LABEL[p.archetype ?? brief.archetype ?? ""] ?? "Em andamento"} · {brief.status} · v{brief.version}</span></div>
+    <ol className="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Etapas salvas">{STAGE_LABEL.map(([key, label]) =>
+      <li key={key} className={`rounded-full px-2 py-1 ${brief.stages?.[key]?.at ? "bg-emerald-100 text-emerald-900" : "bg-muted text-muted-foreground"}`}>
+        {label}{brief.stages?.[key]?.at ? " ✓" : ""}</li>)}</ol>
+    {(p.primaryIntent || brief.primary_intent) && <p className="mt-3"><strong>Intenção:</strong> {p.primaryIntent ?? brief.primary_intent}</p>}
+    {p.thesis && <p className="mt-1"><strong>Tese:</strong> {p.thesis}</p>}
+    {p.uniqueInsight && <p className="mt-1"><strong>Diferencial:</strong> {p.uniqueInsight}</p>}
+    {sections.length > 0 && <ol className="mt-4 list-decimal space-y-1 pl-5">{sections.map((section, i) => <li key={`${i}-${section.heading}`}>
+      <strong>{section.heading}</strong><span className="text-muted-foreground"> — {section.purpose}</span></li>)}</ol>}
+    {modules.length > 0 && <div className="mt-4"><h3 className="font-semibold">Módulos contextuais</h3><ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
+      {modules.map((m, i) => <li key={i}><strong>{m.type}</strong> após seção {m.afterSection + 1} — {m.reason}</li>)}</ul></div>}
+    {links.length > 0 && <div className="mt-4"><h3 className="font-semibold">Links sugeridos</h3><ul className="mt-1 list-disc pl-5 text-sm">
+      {links.map((m, i) => { const target = index.find(item => item.id === m.articleId);
+        return <li key={i}>{target ? target.title : "Artigo publicado"} — {m.reason}</li>; })}</ul></div>}
+    {claims.length > 0 && <details className="mt-4"><summary className="cursor-pointer font-semibold">Evidências da fonte ({claims.length})</summary>
+      <ul className="mt-2 space-y-2 text-sm">{claims.map(c => <li key={c.id}><strong>{c.id}</strong> [{c.kind}] {c.statement}
+        <blockquote className="mt-1 border-l-2 border-line pl-2 text-muted-foreground">“{c.excerpt}”</blockquote></li>)}</ul></details>}
+    <p className="mt-3 text-sm text-muted-foreground">Diferenciação {brief.quality_report?.differentiationScore ?? "—"}/100
+      {closest ? ` · mais próximo: ${closest.title}` : ""} · SEO/IA {brief.quality_report?.seoScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100</p>
+    {issues.length > 0 && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Alertas</strong><ul className="mt-2 list-disc pl-5">{issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
+  </section>;
+}
+
 function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [article, setArticle] = useState<EditorialArticle | null>(null);
+  const [brief, setBrief] = useState<BriefRow | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
   const [index, setIndex] = useState<{ id: string; slug: string; title: string; primaryBikeId?: string | null }[]>([]);
   const [relatedVideos, setRelatedVideos] = useState<VideoCard[]>([]);
@@ -493,20 +554,32 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   useEffect(() => { void Promise.all([
-    adminCall<{ article: EditorialArticle }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
-  ]).then(async ([detail, catalog, published]) => { setArticle(detail.article); setBikes(catalog.bikes); setIndex(published ?? []);
+    adminCall<{ article: EditorialArticle; brief: typeof brief }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
+  ]).then(async ([detail, catalog, published]) => { setArticle(detail.article); setBrief(detail.brief); setBikes(catalog.bikes); setIndex(published ?? []);
     if (detail.article.primary_bike_id) {
       const videos = await safeVideos({ bikeId: detail.article.primary_bike_id, limit: 12 });
       setRelatedVideos(videos.filter(item => item.videoId !== detail.article.video_id).slice(0, 4));
     } }).catch(e => setError(e.message)); }, [id]);
+  async function stage(name: "brief-regenerate" | "draft-write" | "qa-run", label: string, payload: Record<string, unknown> = {}) {
+    if (!article) return; setBusy(label); setError(""); setMessage("");
+    try {
+      const result = await adminStream<{ article?: EditorialArticle; brief?: typeof brief }>(name, { id, revision: article.revision, ...payload }, setBusy);
+      if (result.article) setArticle(result.article);
+      if (result.brief) setBrief(result.brief);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+      setMessage(name === "qa-run" ? (result.article?.status === "published" ? "QA aprovado e publicado." : "QA concluído. Veja o resultado abaixo.") : "Etapa concluída.");
+    } catch (e) { setError(e instanceof Error ? e.message : "A etapa falhou."); }
+    finally { setBusy(""); }
+  }
   async function run(name: string, payload: Record<string, unknown>, label: string) {
     if (!article) return null; setBusy(label); setError(""); setMessage("");
     try {
-      const result = await adminCall<{ article?: EditorialArticle; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
+      const result = await adminCall<{ article?: EditorialArticle; brief?: typeof brief; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
       if (result.article) {
         setArticle(result.article);
         await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
       }
+      if (result.brief) setBrief(result.brief);
       return result;
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir."); return null; }
     finally { setBusy(""); }
@@ -570,9 +643,22 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
           </div>
         </details>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{busy || (status === "draft" ? "Artigo criado pela Vitale. Você decide quando colocá-lo no ar." : status === "published" ? `No ar em vitalemobilidade.com${publicUrl}` : "Arquivado — fora do site.")}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{busy || (status === "draft" ? "Rascunho privado. A publicação automática depende do QA." : status === "published" ? `No ar em vitalemobilidade.com${publicUrl}` : "Arquivado — fora do site.")}</p>
     </div>
     {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
+    {article.foundation_required && status !== "published" && <section className={`${PANEL} mb-6`} aria-label="Etapas editoriais">
+      <h2 className="text-xl font-bold">Etapas</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Cada etapa roda separada e fica salva. Uma falha não apaga a etapa anterior.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button className={OUTLINE} disabled={Boolean(busy)} onClick={() => void stage("brief-regenerate", "Gerando outline…", { force: true })}>Gerar outline de novo</button>
+        <button className={OUTLINE} disabled={Boolean(busy) || brief?.status !== "ready"} title={brief?.status !== "ready" ? "Precisa de outline aprovado" : undefined}
+          onClick={() => void stage("draft-write", "Escrevendo rascunho…")}>Escrever rascunho</button>
+        <button className={OUTLINE} disabled={Boolean(busy) || brief?.status !== "ready" || article.blocks.length === 0}
+          onClick={() => void stage("qa-run", "Revisando SEO, fatos e diversidade…")}>Rodar QA de publicação</button>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">Publicação automática só acontece quando o QA aprova e a liberação técnica estiver ativa; até lá o artigo aprovado fica privado.</p>
+    </section>}
+    {brief && <BriefPanel brief={brief} index={index} />}
     {draft ? <section className="mx-auto max-w-4xl space-y-5 rounded-3xl bg-white p-6 shadow-sm sm:p-10">
       <label className="block text-sm font-semibold">Título<input className="mt-2 w-full border-0 border-b border-line px-0 py-2 text-3xl font-bold" value={draft.title} onChange={e => set({ title: e.target.value })} /></label>
       <label className="block text-sm font-semibold">Introdução<textarea className={`${INPUT} mt-2 min-h-24 text-lg leading-8`} value={draft.summary} onChange={e => set({ summary: e.target.value })} /></label>

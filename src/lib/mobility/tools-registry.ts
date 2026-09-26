@@ -3,16 +3,9 @@
  * Hub, sitemap, metadata e "ferramentas relacionadas" leem daqui: nenhuma lista paralela.
  */
 import { canonicalUrl, pageHead, serializeJsonLd, SITE_NAME } from "@/lib/seo";
+import { EDITORIAL_TOOL_SLUGS } from "../../../supabase/functions/_shared/editorial-foundation";
 
-export const TOOL_SLUGS = [
-  "carro-vs-bike",
-  "moto-vs-bike",
-  "aplicativos-vs-bike",
-  "transporte-publico-vs-bike",
-  "veiculo-alugado-vs-bike-propria",
-  "meta-entregas",
-  "economia-de-tempo",
-] as const;
+export const TOOL_SLUGS = EDITORIAL_TOOL_SLUGS;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
 export type ToolGroup = "economia" | "renda" | "tempo";
