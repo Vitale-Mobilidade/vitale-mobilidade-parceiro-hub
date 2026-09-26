@@ -222,7 +222,6 @@ async function sendCompletedWebhookFallback(payload: Record<string, any>) {
 
 import { validateBrazilianWhatsApp, formatBrazilianPhoneMask } from "@/lib/validate-whatsapp";
 import { captureQuizAttribution, attributionPayload } from "@/lib/quiz-attribution";
-import { trackQuizFunnel, type FunnelEvent } from "@/lib/quiz-funnel";
 
 function validatePhoneBR(p: string) {
   return validateBrazilianWhatsApp(p).isValid;
@@ -293,28 +292,7 @@ export default function EscolherBike() {
       ...attr,
       device_type, browser, operating_system,
     };
-    funnel("page_view");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Funil anônimo: só session_id + estágio + atribuição; nunca nome/telefone/respostas/leadId.
-  const funnel = (event: FunnelEvent, step: number | null = null) => {
-    const t = baseLeadDataRef.current || {};
-    trackQuizFunnel(event, step, {
-      path: typeof window !== "undefined" ? window.location.pathname : null,
-      referrer: t.referrer ?? null, device: t.device_type ?? null,
-      utm_source: t.utm_source ?? null, utm_medium: t.utm_medium ?? null, utm_campaign: t.utm_campaign ?? null,
-      utm_content: t.utm_content ?? null, utm_term: t.utm_term ?? null,
-    });
-  };
-  const funnelCompletedRef = useRef(false);
-  useEffect(() => {
-    if (phase === "result" && recommendation && !funnelCompletedRef.current) {
-      funnelCompletedRef.current = true;
-      funnel("quiz_completed");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, recommendation]);
 
 
   // ---------- Intro ----------
@@ -339,7 +317,6 @@ export default function EscolherBike() {
               size="lg"
               onClick={() => {
                 startedAtRef.current = new Date().toISOString();
-                funnel("quiz_started");
                 setPhase("quiz");
               }}
               data-event="quiz_start_click"
@@ -450,10 +427,8 @@ export default function EscolherBike() {
       setLabels(newLabels);
 
       const isLast = stepIdx === STEPS.length - 1;
-      funnel("question_answered", stepIdx + 1);
 
       if (isLast) {
-        funnel("lead_form_reached");
         // Vai para a captura de nome/telefone (lead ainda não existe no banco)
         setPhase("lead");
       } else {

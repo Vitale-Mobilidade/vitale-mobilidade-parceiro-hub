@@ -417,13 +417,15 @@ Deno.serve(async (req) => {
       const requestedDays = Number(body.rangeDays);
       const rangeDays = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
       const since = new Date(Date.now() - rangeDays * 86_400_000).toISOString();
-      const [funnel, clickerRows, originRows] = await Promise.all([
-        db.rpc("admin_quiz_funnel_metrics", { p_since: since }),
+      const [started, completed, clickers, clickerRows, originRows] = await Promise.all([
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("created_at", since),
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("completed_at", since),
+        db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("clicked_at", since),
         db.from("quiz_leads").select("id, name, phone, clicked_bike_name, clicked_bike_position, clicked_at, buy_click_count")
           .gte("clicked_at", since).order("clicked_at", { ascending: false }).limit(2000),
         db.from("quiz_leads").select("traffic_origin, utm_source, landing_path").gte("created_at", since).limit(2000),
       ]);
-      const failed = [funnel, clickerRows, originRows].find((result) => result.error);
+      const failed = [started, completed, clickers, clickerRows, originRows].find((result) => result.error);
       if (failed?.error) throw new Error(`growth_read_failed:${failed.error.code ?? "unknown"}`);
       const bikeCounts = new Map<string, number>();
       let purchaseClicks = 0;
@@ -442,14 +444,14 @@ Deno.serve(async (req) => {
         .sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name, [key]: value }));
       return json(req, {
         rangeDays, generatedAt: new Date().toISOString(),
-        funnel: funnel.data,
+        quiz: { started: started.count ?? 0, completed: completed.count ?? 0,
+          purchaseClicks, identifiedClickers: clickers.count ?? 0 },
         topBikes: top(bikeCounts, "clicks"), origins: top(originCounts, "leads"),
         recentClickers: (clickerRows.data ?? []).slice(0, 50).map((row) => ({
           id: row.id, name: row.name, phone: row.phone, bike: row.clicked_bike_name,
           position: row.clicked_bike_position, clickedAt: row.clicked_at,
         })),
-        coverage: { quizFunnelSince: (funnel.data as Body | null)?.coverageSince ?? null, sitewidePageViews: "ga4_not_connected",
-          sitewideAffiliateClicks: "gtm_only", identifiedClicks: "quiz_supabase" },
+        coverage: { pageViews: "external_analytics_not_connected", sitewideAffiliateClicks: "gtm_only", identifiedClicks: "quiz_supabase" },
       });
     }
     if (action === "bikes") {
