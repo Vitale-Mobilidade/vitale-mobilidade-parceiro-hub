@@ -229,3 +229,16 @@ export function buildDiversityCorpus(articles: CorpusArticleRow[], briefs: Corpu
   counts.total = items.length;
   return { items, counts };
 }
+
+/** Stable, order-independent key for the bike context an outline was built with. */
+export function bikeContextKey(primary: string | null | undefined, related: readonly string[] | null | undefined): string {
+  const ids = [primary, ...(related ?? [])].map((id) => (id ?? "").trim()).filter(Boolean);
+  return [...new Set(ids)].sort().join(",");
+}
+
+/** Outline is stale when bike IDs changed, or when it predates this control (fail-closed). */
+export function briefMatchesBikes(stages: unknown, primary: string | null | undefined, related: readonly string[] | null | undefined): boolean {
+  const outline = (stages as { outline?: { bikes?: unknown } } | null | undefined)?.outline;
+  if (!outline || typeof outline.bikes !== "string") return false;
+  return outline.bikes === bikeContextKey(primary, related);
+}
