@@ -71,6 +71,7 @@ export async function adminCall<T>(action: string, payload: Record<string, unkno
 
 export type AdminVideoList = { videos: EditorialVideo[] };
 export type AdminArticleList = { articles: ArticleRow[] };
+export type AdminEditorialWorkspace = AdminVideoList & AdminArticleList;
 
 /** Streams NDJSON progress events from a long-running admin action (article generation). */
 export async function adminStream<T>(action: string, payload: Record<string, unknown>, onProgress: (step: string) => void): Promise<T> {

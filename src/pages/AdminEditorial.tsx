@@ -1,23 +1,27 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { adminCall, adminStream, type AdminArticleList, type AdminBike, type AdminGrowth, type AdminOffer, type AdminOverview, type AdminRole,
-  type AdminVideoList, type ArticleRow } from "@/lib/admin-api";
+import { adminCall, adminStream, type AdminBike, type AdminGrowth, type AdminOffer, type AdminOverview, type AdminRole,
+  type AdminEditorialWorkspace } from "@/lib/admin-api";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import type { VideoItem } from "@/lib/video-catalog";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
-import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle, type EditorialVideo } from
+import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle } from
   "../../supabase/functions/_shared/editorial-contract";
 
 const BTN = "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
 const OUTLINE = "rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50";
 const INPUT = "w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm";
 const PANEL = "rounded-2xl border border-line bg-white p-5 shadow-sm";
+const ADMIN_STALE_MS = 5 * 60 * 1000;
+const GROWTH_STALE_MS = 60 * 1000;
 const date = (v?: string | null) => v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
 const money = (v?: number | null) => v == null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+const queryError = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
 
 function Heading({ title, detail, children }: { title: string; detail?: string; children?: React.ReactNode }) {
   return <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -36,16 +40,13 @@ export function AdminOverviewPage() {
   return <AdminShell>{role => <Overview role={role} />}</AdminShell>;
 }
 function Overview({ role }: { role: AdminRole }) {
-  const [data, setData] = useState<AdminOverview | null>(null);
-  const [videoCatalogCount, setVideoCatalogCount] = useState<number | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    void Promise.allSettled([adminCall<AdminOverview>("overview"), getSheetVideoCatalog()]).then(([overview, catalog]) => {
-      if (overview.status === "fulfilled") setData(overview.value);
-      else setError(overview.reason instanceof Error ? overview.reason.message : "Não foi possível carregar a operação.");
-      if (catalog.status === "fulfilled") setVideoCatalogCount(catalog.value.length);
-    });
-  }, []);
+  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: () => adminCall<AdminOverview>("overview"),
+    staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const videoCatalog = useQuery({ queryKey: ["admin", "video-catalog"], queryFn: getSheetVideoCatalog,
+    staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const data = overview.data ?? null;
+  const error = overview.error ? queryError(overview.error, "Não foi possível carregar a operação.") : "";
+  const videoCatalogCount = videoCatalog.data?.length ?? null;
   return <>
     <Heading title="Visão geral" detail="O que precisa da atenção da equipe hoje." />
     {error && <Notice danger>{error}</Notice>}
@@ -83,13 +84,10 @@ export function AdminGrowthPage() {
 
 function Growth() {
   const [rangeDays, setRangeDays] = useState(30);
-  const [data, setData] = useState<AdminGrowth | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    setData(null); setError("");
-    void adminCall<AdminGrowth>("growth", { rangeDays }).then(setData)
-      .catch(e => setError(e instanceof Error ? e.message : "Não foi possível carregar Growth."));
-  }, [rangeDays]);
+  const growth = useQuery({ queryKey: ["admin", "growth", rangeDays], queryFn: () => adminCall<AdminGrowth>("growth", { rangeDays }),
+    staleTime: GROWTH_STALE_MS, placeholderData: keepPreviousData, refetchOnWindowFocus: false, retry: false });
+  const data = growth.data ?? null;
+  const error = growth.error ? queryError(growth.error, "Não foi possível carregar Growth.") : "";
   const completion = data?.quiz.started ? Math.round((data.quiz.completed / data.quiz.started) * 100) : 0;
   const clickThrough = data?.quiz.started ? Math.round((data.quiz.identifiedClickers / data.quiz.started) * 100) : 0;
   return <>
@@ -100,6 +98,7 @@ function Growth() {
       </select></label>
     </Heading>
     {error && <Notice danger>{error}</Notice>}
+    {growth.isFetching && data && <p role="status" className="mb-3 text-xs text-muted-foreground">Atualizando indicadores…</p>}
     {!data ? <p aria-busy="true">Carregando indicadores…</p> : <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[["Pessoas que iniciaram o Quiz", data.quiz.started], ["Quiz concluídos", data.quiz.completed],
@@ -148,10 +147,11 @@ export function AdminBikesPage() {
   return <AdminShell>{() => <Bikes />}</AdminShell>;
 }
 function Bikes() {
-  const [data, setData] = useState<{ bikes: AdminBike[]; offers: AdminOffer[] } | null>(null);
-  const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  useEffect(() => { void adminCall<{ bikes: AdminBike[]; offers: AdminOffer[] }>("bikes").then(setData).catch(e => setError(e.message)); }, []);
+  const result = useQuery({ queryKey: ["admin", "bikes"], queryFn: () => adminCall<{ bikes: AdminBike[]; offers: AdminOffer[] }>("bikes"),
+    staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const data = result.data ?? null;
+  const error = result.error ? queryError(result.error, "Não foi possível carregar as bikes.") : "";
   const offers = useMemo(() => new Map(data?.offers.filter(o => o.is_current).map(o => [o.bike_id, o])), [data]);
   const bikes = useMemo(() => data?.bikes.filter(b => `${b.name} ${b.bike_id}`.toLowerCase().includes(query.toLowerCase())) ?? [], [data, query]);
   return <>
@@ -179,9 +179,14 @@ export function AdminVideosPage() {
   return <AdminShell>{role => <OnlyEditorial role={role}><Videos /></OnlyEditorial>}</AdminShell>;
 }
 function Videos() {
-  const [sheet, setSheet] = useState<VideoItem[]>([]);
-  const [stored, setStored] = useState<EditorialVideo[]>([]);
-  const [articles, setArticles] = useState<ArticleRow[]>([]);
+  const queryClient = useQueryClient();
+  const sheetQuery = useQuery({ queryKey: ["admin", "video-catalog"], queryFn: getSheetVideoCatalog,
+    staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const workspaceQuery = useQuery({ queryKey: ["admin", "editorial-workspace"],
+    queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"), staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const sheet = sheetQuery.data ?? [];
+  const stored = workspaceQuery.data?.videos ?? [];
+  const articles = workspaceQuery.data?.articles ?? [];
   const [selected, setSelected] = useState<VideoItem | null>(null);
   const [title, setTitle] = useState("");
   const [transcript, setTranscript] = useState("");
@@ -193,18 +198,9 @@ function Videos() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  async function load() {
-    const [sheetResult, videosResult, articlesResult] = await Promise.allSettled([
-      getSheetVideoCatalog(), adminCall<AdminVideoList>("videos"), adminCall<AdminArticleList>("articles"),
-    ]);
-    if (sheetResult.status === "fulfilled") setSheet(sheetResult.value);
-    else setError("A planilha de vídeos está indisponível; os vídeos já cadastrados no Admin continuam acessíveis.");
-    if (videosResult.status === "fulfilled") setStored(videosResult.value.videos);
-    else throw videosResult.reason;
-    if (articlesResult.status === "fulfilled") setArticles(articlesResult.value.articles);
-    else throw articlesResult.reason;
-  }
-  useEffect(() => { void load().catch(e => setError(e.message)); }, []);
+  const readError = workspaceQuery.error
+    ? queryError(workspaceQuery.error, "Não foi possível carregar o workspace editorial.")
+    : sheetQuery.error ? "A planilha de vídeos está indisponível; os vídeos já cadastrados no Admin continuam acessíveis." : "";
   const storedMap = useMemo(() => new Map(stored.map(v => [v.youtube_id, v])), [stored]);
   const articleMap = useMemo(() => new Map(articles.map(a => [a.video_id, a])), [articles]);
   const items = useMemo(() => {
@@ -237,13 +233,14 @@ function Videos() {
         primaryBikeId: primaryBikeId || null,
         relatedBikeIds: relatedBikeIds.split(",").map(x => x.trim()).filter(Boolean), contentType });
       setMessage("Vídeo salvo. O catálogo comercial e a planilha não foram alterados.");
-      await load();
+      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao salvar."); }
     finally { setSaving(false); }
   }
   return <>
     <Heading title="Biblioteca de vídeos" detail="A aba Videos Youtube é a fonte de descoberta; transcrições e relações editoriais ficam no Admin." />
-    {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
+    {(error || readError) && <Notice danger>{error || readError}</Notice>}{message && <Notice>{message}</Notice>}
+    {(sheetQuery.isPending || workspaceQuery.isPending) && items.length === 0 && <p aria-busy="true" className="mb-4">Carregando biblioteca…</p>}
     <div className="mb-4 flex flex-wrap gap-2">
       <input aria-label="Buscar vídeo" className={`${INPUT} max-w-sm`} placeholder="Buscar vídeo" value={query} onChange={e => setQuery(e.target.value)} />
       <select aria-label="Filtrar vídeos" className={INPUT + " max-w-xs"} value={filter} onChange={e => setFilter(e.target.value)}>
@@ -293,10 +290,11 @@ type SimpleStatus = "draft" | "published" | "archived";
 const simpleStatus = (s: string): SimpleStatus => s === "published" ? "published" : s === "archived" ? "archived" : "draft";
 const STATUS_LABEL: Record<SimpleStatus, string> = { draft: "Rascunho", published: "Publicado", archived: "Arquivado" };
 function Articles() {
-  const [items, setItems] = useState<ArticleRow[]>([]);
-  const [error, setError] = useState("");
   const [status, setStatus] = useState<"all" | SimpleStatus>("all");
-  useEffect(() => { void adminCall<AdminArticleList>("articles").then(r => setItems(r.articles)).catch(e => setError(e.message)); }, []);
+  const workspace = useQuery({ queryKey: ["admin", "editorial-workspace"],
+    queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"), staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const items = workspace.data?.articles ?? [];
+  const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
   const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
   return <>
     <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
@@ -317,8 +315,13 @@ export function AdminNewArticlePage({ initialVideoId }: { initialVideoId?: strin
 }
 function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const navigate = useNavigate();
-  const [catalog, setCatalog] = useState<VideoItem[]>([]);
-  const [savedVideos, setSavedVideos] = useState<EditorialVideo[]>([]);
+  const queryClient = useQueryClient();
+  const catalogQuery = useQuery({ queryKey: ["admin", "video-catalog"], queryFn: getSheetVideoCatalog,
+    staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const workspaceQuery = useQuery({ queryKey: ["admin", "editorial-workspace"],
+    queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"), staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
+  const catalog = catalogQuery.data ?? [];
+  const savedVideos = workspaceQuery.data?.videos ?? [];
   const [videoId, setVideoId] = useState(initialVideoId ?? "");
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState("");
@@ -334,15 +337,6 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const selected = videos.find(video => video.videoId === videoId) ?? null;
 
   useEffect(() => {
-    void Promise.allSettled([getSheetVideoCatalog(), adminCall<AdminVideoList>("videos")]).then(([sheet, stored]) => {
-      if (sheet.status === "fulfilled") setCatalog(sheet.value);
-      else setError("A planilha de vídeos está indisponível. Você ainda pode usar um vídeo já importado.");
-      if (stored.status === "fulfilled") setSavedVideos(stored.value.videos);
-      else setError(stored.reason instanceof Error ? stored.reason.message : "Não foi possível carregar os vídeos.");
-    });
-  }, []);
-
-  useEffect(() => {
     if (!videoId) return;
     const saved = savedVideos.find(video => video.youtube_id === videoId);
     setTranscript(saved?.transcript ?? "");
@@ -356,12 +350,15 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       const result = await adminStream<{ article: EditorialArticle }>("generate", {
         youtubeId: selected.videoId, title: selected.title, transcript,
       }, setBusy);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
       await navigate({ to: "/admin/conteudos/$id", params: { id: result.article.id } });
     } catch (e) { setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente."); setBusy(""); }
   }
   return <>
     <Heading title="Criar artigo" />
-    {error && <Notice danger>{error}</Notice>}
+    {(error || catalogQuery.error || workspaceQuery.error) && <Notice danger>{error || (workspaceQuery.error
+      ? queryError(workspaceQuery.error, "Não foi possível carregar os vídeos.")
+      : "A planilha de vídeos está indisponível. Você ainda pode usar um vídeo já importado.")}</Notice>}
     <form onSubmit={create} className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9">
       <label className="block text-base font-semibold">Vídeo da biblioteca<select className={`${INPUT} mt-2 py-3`} value={videoId}
         onChange={e => setVideoId(e.target.value)} required disabled={Boolean(busy)}>
@@ -405,6 +402,7 @@ export function AdminArticleEditorPage({ id }: { id: string }) {
 }
 function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [article, setArticle] = useState<EditorialArticle | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
   const [index, setIndex] = useState<{ id: string; slug: string; title: string; primaryBikeId?: string | null }[]>([]);
@@ -424,7 +422,10 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     if (!article) return null; setBusy(label); setError(""); setMessage("");
     try {
       const result = await adminCall<{ article?: EditorialArticle; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
-      if (result.article) setArticle(result.article);
+      if (result.article) {
+        setArticle(result.article);
+        await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+      }
       return result;
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir."); return null; }
     finally { setBusy(""); }
@@ -446,7 +447,11 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     let current = article;
     if (current.status !== "archived") { const r = await run("archive-article", {}, "Arquivando…"); if (!r?.article) return; current = r.article; }
     setBusy("Excluindo…");
-    try { await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug }); await navigate({ to: "/admin/conteudos" }); }
+    try {
+      await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+      await navigate({ to: "/admin/conteudos" });
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Não foi possível excluir."); setBusy(""); }
   }
   if (error && !article) return <Notice danger>{error}</Notice>;

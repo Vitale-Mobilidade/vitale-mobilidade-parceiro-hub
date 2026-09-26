@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { adminCall, type AdminRole, type AdminSession } from "@/lib/admin-api";
 
@@ -9,6 +10,7 @@ type AccessCache = { session: AdminSession; checkedAt: number };
 const ACCESS_CACHE_TTL_MS = 10 * 60 * 1000;
 let accessCache: AccessCache | null = null;
 let accessRequest: Promise<AdminSession> | null = null;
+let activeUserId: string | null = null;
 
 function cachedSession(): AdminSession | null {
   if (!accessCache || Date.now() - accessCache.checkedAt > ACCESS_CACHE_TTL_MS) return null;
@@ -124,6 +126,7 @@ function AdminPasswordSetup({ onSuccess }: { onSuccess: () => Promise<void> }) {
 }
 
 export function AdminShell({ children }: Props) {
+  const queryClient = useQueryClient();
   const path = useRouterState({ select: s => s.location.pathname });
   const initialSession = cachedSession();
   const [state, setState] = useState<"checking" | "out" | "password" | "in">(initialSession ? "in" : "checking");
@@ -131,24 +134,34 @@ export function AdminShell({ children }: Props) {
   const [error, setError] = useState("");
   const check = useCallback(async (force = false) => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) { accessCache = null; setSession(null); setState("out"); return; }
+    if (!data.session) { accessCache = null; activeUserId = null; setSession(null); setState("out"); return; }
+    if (activeUserId && activeUserId !== data.session.user.id) queryClient.removeQueries({ queryKey: ["admin"] });
+    activeUserId = data.session.user.id;
     if (new URLSearchParams(window.location.search).get("setup") === "1") {
       setSession(null); setState("password"); return;
     }
     const role = await verifyAdminAccess(force);
     setSession(role); setState("in"); setError("");
-  }, []);
+  }, [queryClient]);
   useEffect(() => {
     if (!cachedSession()) {
       void check().catch(() => { accessCache = null; setSession(null); setState("out"); setError("Não foi possível verificar o acesso."); });
     }
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") { accessCache = null; setSession(null); setState("out"); }
-      if (event === "PASSWORD_RECOVERY") { setSession(null); setState("password"); }
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "SIGNED_IN" && activeUserId && nextSession?.user.id !== activeUserId) {
+        queryClient.removeQueries({ queryKey: ["admin"] });
+      }
+      if (nextSession?.user.id) activeUserId = nextSession.user.id;
+      if (event === "SIGNED_OUT") {
+        accessCache = null; activeUserId = null; queryClient.removeQueries({ queryKey: ["admin"] }); setSession(null); setState("out");
+      }
+      if (event === "PASSWORD_RECOVERY") {
+        queryClient.removeQueries({ queryKey: ["admin"] }); setSession(null); setState("password");
+      }
       if (event === "USER_UPDATED") void check(true);
     });
     return () => listener.subscription.unsubscribe();
-  }, [check]);
+  }, [check, queryClient]);
   if (state === "checking") return <main className="min-h-screen bg-surface p-8" aria-busy="true">Verificando acesso…</main>;
   if (state === "password") return <AdminPasswordSetup onSuccess={check} />;
   if (state === "out" || !session) return <><AdminLogin onSuccess={check} />{error && <p role="alert" className="sr-only">{error}</p>}</>;
@@ -156,10 +169,10 @@ export function AdminShell({ children }: Props) {
   return <div className="min-h-screen bg-surface text-foreground">
     <header className="border-b border-emerald-950 bg-emerald-950 text-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
-        <Link to="/admin" className="text-lg font-bold tracking-tight">VITALE <span className="text-emerald-300">ADMIN</span></Link>
+        <Link to="/admin" preload="intent" className="text-lg font-bold tracking-tight">VITALE <span className="text-emerald-300">ADMIN</span></Link>
         <div className="flex items-center gap-4 text-sm">
           <span className="hidden text-emerald-100 sm:inline">{session.email} · {role}</span>
-          <button onClick={() => void supabase.auth.signOut()} className="rounded-lg border border-emerald-600 px-3 py-1.5 hover:bg-emerald-900">Sair</button>
+          <button onClick={() => { queryClient.removeQueries({ queryKey: ["admin"] }); void supabase.auth.signOut(); }} className="rounded-lg border border-emerald-600 px-3 py-1.5 hover:bg-emerald-900">Sair</button>
         </div>
       </div>
     </header>
@@ -173,7 +186,7 @@ export function AdminShell({ children }: Props) {
           if (!links.length) return null;
           return <div key={group.title} className="min-w-max">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{group.title}</p>
-            <div className="flex gap-1 md:flex-col">{links.map(([label, href]) => <Link key={href} to={href}
+            <div className="flex gap-1 md:flex-col">{links.map(([label, href]) => <Link key={href} to={href} preload="intent"
               aria-current={path === href ? "page" : undefined}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${path === href ? "bg-emerald-100 text-emerald-950" : "hover:bg-white"}`}>{label}</Link>)}</div>
           </div>;
