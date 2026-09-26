@@ -68,3 +68,26 @@ describe("stage checkpoints", () => {
     expect(sourceFingerprint(a.replace("salve", "salvo"))).not.toBe(sourceFingerprint(a));
   });
 });
+
+import { briefMatchesSource, draftMatchesOutline, sourceFingerprint } from "../../supabase/functions/_shared/editorial-foundation";
+
+describe("stale brief and outline guards", () => {
+  it("refuses a brief whose source checkpoint does not match the current transcript", () => {
+    const stages = { source: { key: sourceFingerprint(transcript) } };
+    expect(briefMatchesSource(stages, transcript)).toBe(true);
+    expect(briefMatchesSource(stages, `${transcript} Trecho novo salvo depois.`)).toBe(false);
+    expect(briefMatchesSource({}, transcript)).toBe(false);
+    expect(briefMatchesSource(null, transcript)).toBe(false);
+    expect(briefMatchesSource(stages, "")).toBe(false);
+  });
+  it("refuses a draft whose sections, order or headings differ from the current outline", () => {
+    const outline = [{ heading: "Ladeira" }, { heading: "Autonomia" }];
+    const blocks = [{ type: "video" }, { type: "text", heading: "Ladeira" }, { type: "radar" }, { type: "text", heading: "Autonomia" }];
+    expect(draftMatchesOutline(blocks, outline)).toBe(true);
+    expect(draftMatchesOutline([blocks[3], blocks[1]], outline)).toBe(false);
+    expect(draftMatchesOutline([blocks[1]], outline)).toBe(false);
+    expect(draftMatchesOutline([blocks[1], { type: "text", heading: "Bateria" }], outline)).toBe(false);
+    expect(draftMatchesOutline(blocks, [])).toBe(false);
+    expect(draftMatchesOutline(blocks, undefined)).toBe(false);
+  });
+});
