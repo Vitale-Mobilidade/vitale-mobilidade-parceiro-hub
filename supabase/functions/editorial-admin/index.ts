@@ -9,7 +9,7 @@ import {
   ARCHETYPES, EDITORIAL_TOOL_SLUGS, parseEditorialBrief, parseSourceClaims, screenDiversity,
   type EditorialBrief,
 } from "../_shared/editorial-foundation.ts";
-import { sourceFingerprint } from "../_shared/editorial-foundation.ts";
+import { briefMatchesSource, draftMatchesOutline, sourceFingerprint } from "../_shared/editorial-foundation.ts";
 import {
   completeEditorialDraft, detectContentType, detectEditorialBikes, EDITORIAL_OG_FALLBACK, layoutArticle,
   YOUTUBE_THUMBNAILS, youtubeThumbnailUrl, type BikeCandidate,
@@ -387,6 +387,7 @@ type Progress = (step: string) => void;
 async function generateInto(db: SupabaseClient, actor: Actor, article: EditorialArticle, video: EditorialVideo, progress: Progress) {
   const storedBrief = article.foundation_required ? await briefFor(db, article.id) : null;
   if (article.foundation_required && storedBrief?.status !== "ready") throw new Error("ready_brief_required");
+  if (article.foundation_required && !briefMatchesSource(storedBrief?.stages, video.transcript ?? "")) throw new Error("brief_source_stale");
   const brief = storedBrief?.payload as EditorialBrief | undefined;
   const prompt = await activePrompt(db);
   const { data: run, error: runError } = await db.from("editorial_compiler_runs").insert({
@@ -499,6 +500,7 @@ async function qualityAndPublish(db: SupabaseClient, actor: Actor, article: Edit
   const brief = await briefFor(db, article.id);
   if (!brief || brief.status !== "ready") throw new Error("editorial_brief_not_ready");
   const transcript = video.transcript ?? "";
+  if (!briefMatchesSource(brief.stages, transcript)) throw new Error("brief_source_stale");
   const textBlocks = article.blocks.filter((block) => block.type === "text");
   const normalizeSource = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR").replace(/\s+/g, " ").trim();
@@ -509,6 +511,8 @@ async function qualityAndPublish(db: SupabaseClient, actor: Actor, article: Edit
     deterministic.push("Título ou descrição SEO fora do contrato editorial.");
   }
   if (!article.og_image_url?.startsWith("https://")) deterministic.push("Imagem social HTTPS ausente.");
+  if (!draftMatchesOutline(article.blocks, (brief.payload as EditorialBrief | undefined)?.sections))
+    deterministic.push("Rascunho não corresponde ao outline atual (seções, ordem ou subtítulos). Escreva o rascunho novamente.");
   if (textBlocks.some((block) => !block.sourceExcerpt || !normalizedTranscript.includes(normalizeSource(block.sourceExcerpt))))
     deterministic.push("Seção sem trecho literal verificável na transcrição.");
   if (article.faq.some((item) => !item.sourceExcerpt || !normalizedTranscript.includes(normalizeSource(item.sourceExcerpt))))
