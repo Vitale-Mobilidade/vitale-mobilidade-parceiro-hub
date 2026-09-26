@@ -58,3 +58,13 @@ describe("editorial source and outline gate", () => {
     expect(result.alerts).toContain("Teste antigo: conclusão idêntica.");
   });
 });
+
+import { sourceFingerprint } from "../../supabase/functions/_shared/editorial-foundation";
+describe("stage checkpoints", () => {
+  it("reuses a checkpoint only for the identical transcript", () => {
+    const a = "salve galera ".repeat(40);
+    expect(sourceFingerprint(a)).toBe(sourceFingerprint(a));
+    expect(sourceFingerprint(a)).not.toBe(sourceFingerprint(`${a}x`));
+    expect(sourceFingerprint(a.replace("salve", "salvo"))).not.toBe(sourceFingerprint(a));
+  });
+});

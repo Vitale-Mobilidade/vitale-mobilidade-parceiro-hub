@@ -310,7 +310,8 @@ function Articles() {
   const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
   const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
   const distribution = Object.entries((workspace.data?.briefs ?? []).reduce<Record<string, number>>((counts, brief) => {
-    counts[brief.archetype] = (counts[brief.archetype] ?? 0) + 1; return counts;
+    const key = brief.archetype ?? (brief.status === "in_progress" ? "em andamento" : "intenção incerta");
+    counts[key] = (counts[key] ?? 0) + 1; return counts;
   }, {})).sort((a, b) => b[1] - a[1]);
   return <>
     <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
