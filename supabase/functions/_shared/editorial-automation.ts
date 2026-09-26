@@ -80,20 +80,22 @@ export function layoutArticle(input: {
   const radarIds = (isComparison ? compared.slice(0, 2) : input.bikeId ? [input.bikeId] : [])
     .filter((id) => input.offerBikeIds.has(id));
   const comparatorAt = isComparison ? Math.min(1, n - 1) : -1;
-  const radarAt = radarIds.length ? Math.max(Math.ceil(n / 2), comparatorAt + 1) : -1;
+  const radarAt = radarIds.length ? Math.min(n - 1, Math.max(Math.floor(n * 0.45), comparatorAt + 1)) : -1;
   const videoAt = Math.min(n - 1, radarAt === 2 ? 3 : 2);
+  const quizAt = input.bikeId || ["comparison", "guide", "test"].includes(input.contentType ?? "")
+    ? Math.min(n - 1, Math.max(radarAt + 1, Math.floor(n * 0.7))) : -1;
   const out: ArticleBlock[] = [];
   sections.forEach((section, i) => {
     out.push(section);
     if (i === comparatorAt) out.push({ type: "comparator", bikeId: input.bikeId!, heading: "Comparação lado a lado" });
     if (i === radarAt) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
     if (i === videoAt) out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
+    if (i === quizAt) out.push({ type: "quiz" });
   });
   if (!out.some((b) => b.type === "video")) out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
   if (radarAt >= n) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
-  if (input.bikeId && input.offerBikeIds.has(input.bikeId)) out.push({ type: "cta", bikeId: input.bikeId });
   if (input.hasFaq) out.push({ type: "faq" });
-  if (input.bikeId || ["comparison", "guide", "test"].includes(input.contentType ?? "")) out.push({ type: "quiz" });
+  if (quizAt < 0 && (input.bikeId || ["comparison", "guide", "test"].includes(input.contentType ?? ""))) out.push({ type: "quiz" });
   return out;
 }
 
