@@ -637,7 +637,10 @@ function stageStream(req: Request, db: SupabaseClient, actor: Actor, body: Body,
           send({ type: "done", article: await generateInto(db, actor, article, video, progress), brief: await briefFor(db, article.id) });
         } else {
           const result = await qualityAndPublish(db, actor, article, video, progress);
-          send({ type: "done", article: result, brief: await briefFor(db, article.id) });
+          const nextBrief = await briefFor(db, article.id);
+          const publicationGated = result.status !== "published" && nextBrief?.status === "ready" &&
+            nextBrief?.quality_report?.articleQaPass === true && nextBrief?.article_revision === result.revision;
+          send({ type: "done", article: result, brief: nextBrief, publicationGated });
         }
       } catch (e) {
         console.error("[editorial-admin] stage", stage, errorMessage(e));
@@ -653,6 +656,7 @@ export function stageError(code: string): string {
   const map: Record<string, string> = {
     revision_conflict: "O artigo foi alterado em outra aba. Recarregue a página.",
     draft_not_found: "Rascunho não encontrado (artigos publicados não são reprocessados).",
+    brief_source_stale: "A transcrição mudou depois do outline. Gere um novo outline antes de continuar.",
     ready_brief_required: "Gere um outline aprovado pelo QA antes de escrever.",
     editorial_brief_not_ready: "O outline não está aprovado; gere outro outline.",
     transcript_required: "Cadastre a transcrição completa do vídeo.",
@@ -698,15 +702,10 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         }
         send({ type: "progress", step: "Analisando a fonte e criando outline…" });
         const brief = await generateBrief(db, actor, article, saved.video, (step) => send({ type: "progress", step }));
-        if (outlineOnly) {
-          send({ type: "done", article, brief, blocked: brief.status !== "ready" }); controller.close(); return;
-        }
-        if (brief.status !== "ready") {
-          send({ type: "done", article, blocked: true, issues: brief.quality_report?.issues ?? [] }); controller.close(); return;
-        }
-        // Draft only. QA/publication is a separate request ("qa-run") so no call chains every AI stage.
-        const draft = await generateInto(db, actor, article, saved.video, (step) => send({ type: "progress", step }));
-        send({ type: "done", article: draft, blocked: false, next: "qa-run" }); controller.close();
+        // Creation always stops at the outline (outlineOnly kept for API compatibility);
+        // the draft is written by the separate "draft-write" stage in the editor.
+        void outlineOnly;
+        send({ type: "done", article, brief, blocked: brief.status !== "ready", next: brief.status === "ready" ? "draft-write" : undefined }); controller.close();
       } catch (e) {
         console.error("[editorial-admin] generate", errorMessage(e));
         fail();
@@ -1092,7 +1091,9 @@ Deno.serve(async (req) => {
         const video = await videoById(db, article.video_id);
         if (!video) return json(req, { error: "Vídeo não encontrado." }, 404);
         const checked = await qualityAndPublish(db, actor, article, video);
-        return checked.status === "published" ? json(req, { article: checked }) :
+        if (checked.status === "published") return json(req, { article: checked });
+        if (checked.status !== "validation_error") return json(req, { error: "QA aprovado, publicação aguardando liberação técnica.", article: checked, publicationGated: true }, 409);
+        return
           json(req, { error: "Publicação bloqueada pelo QA. Consulte os alertas do artigo.", article: checked }, 422);
       }
       let patch: Body = { status: target, updated_by: actor.id };
