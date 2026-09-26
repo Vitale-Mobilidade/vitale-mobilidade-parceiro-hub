@@ -136,3 +136,11 @@ Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin
 - Teste de regressão com as 8 cautelas do GT20 em `src/lib/editorial-foundation.test.ts` (13 testes passam); `pnpm validate` passou.
 - Oito perspectivas: Produto Pass (fluxo honesto avança); CTO Pass (helper puro, sem schema/migration); IA Pass (fail-closed para risco material, intenção incerta, fonte insuficiente e verificação ausente); Segurança Pass (sem mudança de auth/RLS; gate de auto-publish intocado); UX Pass (bloqueios x cautelas distintos); CX N/A (nada público mudou); Growth N/A (sem publicação); PMO Pass com pendência: validar com outline real regenerado do GT20.
 - `EDITORIAL_AUTO_PUBLISH` continua ausente. Nenhum artigo gerado ou publicado.
+
+## Adendo 26/09/2026 23:40 UTC — bike IDs do piloto e módulos
+
+- **Limitação do piloto:** os cinco vídeos foram semeados a partir do DOCX **sem bike IDs**; por isso os cinco briefs saíram com `modules=[]`. Isso **não** é prova de integração Radar/Quiz — é ausência de contexto. A integração contextual permanece **não comprovada** até regenerar outlines com bikes associadas.
+- **Correção de dados (feita pelo operador, não por este commit):** bikes associadas somente nos cinco drafts e nos cinco `editorial_videos`: GT20=`coswheel_gt20`; V20 Mini=`v20_mini`; FT03=`ft03`; V8 Pro/V40 Pro=`v8_pro`+`v40_pro`; triplo=`v29_pro`+`v8_pro_s`/`v35`. Drafts em revision 2; os dois publicados não foram tocados.
+- **Código:** o outline grava `stages.outline.bikes` (chave ordenada de bike IDs). Escrever rascunho e QA recusam com `brief_bikes_stale` se as bikes mudaram ou se o outline é anterior a esse controle (fail-closed — os cinco outlines atuais precisam ser regenerados). Evidências/intenção salvas só são reaproveitadas se transcrição **e** bikes forem iguais. Módulos só podem referenciar bikes associadas ao artigo (não o catálogo inteiro); sem contexto, `modules=[]` continua válido e não é forçado.
+- **Testes:** chave/obsolescência por bikes e módulo contextual com fonte/bike corretos (bike não associada descartada, lista vazia aceita).
+- **Próximo passo do operador:** regenerar ao menos um outline (~3 chamadas IA) e conferir se módulos aparecem com justificativa contextual. NO-GO para produção em massa segue vigente.
