@@ -319,6 +319,8 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   };
   const catalog = await bikeCandidates(db);
   const bikeIds = new Set(catalog.map((bike) => bike.bike_id));
+  // Modules may only reference bikes actually associated with this article (never forced from the catalog).
+  const articleBikeIds = new Set([...bikeIds].filter((id) => [article.primary_bike_id, ...article.related_bike_ids].includes(id)));
   const source = JSON.stringify({ title: video.title, transcript,
     bikes: catalog.filter((bike) => [article.primary_bike_id, ...article.related_bike_ids].includes(bike.bike_id))
       .map((bike) => ({ id: bike.bike_id, name: bike.name })) });
@@ -334,7 +336,7 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
       `Analise a fonte integral. Extraia até 30 afirmações úteis, distintas, com id c1, c2... e trecho LITERAL da transcrição para cada uma. Separe observação, fabricante, experiência, opinião e inferência. Não escreva artigo.\n<untrusted_source_json>${source}</untrusted_source_json>`,
       "vitale_source_analysis", SOURCE_SCHEMA, () => progress("Extraindo evidências…")) as Body;
     claims = parseSourceClaims(extracted.claims, transcript);
-    if (claims.length >= 3) await checkpoint("source", { key: sourceKey, claims, claimCount: claims.length });
+    if (claims.length >= 3) await checkpoint("source", { key: sourceKey, bikes: bikesKey, claims, claimCount: claims.length });
   }
   if (claims.length < 3) throw new Error("insufficient_grounded_claims");
   let classification: Body;
@@ -375,7 +377,7 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
       publishedArticles: (published ?? []).map((item) => ({ id: item.id, title: item.title, summary: item.summary })) })}</untrusted_source_json>`,
     "vitale_editorial_outline", BRIEF_SCHEMA, () => progress("Planejando estrutura editorial…")) as Body;
   const brief = parseEditorialBrief({ ...raw, archetype, primaryIntent: classification.primaryIntent,
-    secondaryIntents: classification.secondaryIntents }, claims, bikeIds, new Set((published ?? []).map((item) => item.id as string)));
+    secondaryIntents: classification.secondaryIntents }, claims, articleBikeIds, new Set((published ?? []).map((item) => item.id as string)));
   if (!brief) throw new Error("invalid_grounded_outline");
   const corpus = await readDiversityCorpus(db, article.id);
   const diversity = screenDiversity({ id: article.id, title: article.title, summary: brief.opening,
