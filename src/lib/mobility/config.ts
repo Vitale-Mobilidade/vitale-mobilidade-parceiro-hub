@@ -62,3 +62,32 @@ export const BUDGET_PRESETS = [5000, 7000, 10000, 15000] as const;
 
 /** Alternativa só entra com vantagem verificável: ≥ 25% mais autonomia declarada ou mais lugares. */
 export const RELEVANT_AUTONOMY_GAIN = 0.25;
+
+/**
+ * Premissas das sete Ferramentas de Mobilidade oficiais (/ferramentas/*).
+ * Todas aparecem na página e as editáveis vêm pré-preenchidas apenas como ponto de partida.
+ */
+export const TOOL_PREMISES = {
+  energyPerKm: QUICK_BIKE_COST.energyPerKm,
+  maintenanceMonthly: QUICK_BIKE_COST.maintenanceMonthly,
+  /** Custo de oportunidade do capital no veículo: % ao ano (editável; 0 desliga). */
+  opportunityRateAnnualPct: 8,
+  /** Velocidade média de bike usada só quando o tempo de bike não é informado. */
+  bikeSpeedKmh: 18,
+  /** Horizonte máximo de busca do payback (meses). Além disso = "não se paga no horizonte". */
+  maxPaybackMonths: 600,
+} as const;
+
+export const TOOL_LIMITS = {
+  kmPerMonth: { min: 0, max: 12000 },
+  vehicleValue: { min: 0, max: 2000000 },
+  installments: { min: 0, max: 120 },
+  annualMoney: { min: 0, max: 200000 },
+  dailyMoney: { min: 0, max: 5000 },
+  daysPerMonth: { min: 1, max: 31 },
+  deliveryValue: { min: 0.5, max: 500 },
+  dailyTarget: { min: 1, max: 10000 },
+  minutesPerTrip: { min: 0, max: 600 },
+  distancePerTrip: { min: 0.1, max: 200 },
+  ratePct: { min: 0, max: 50 },
+} as const;
