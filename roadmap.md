@@ -8,7 +8,7 @@
 - [x] Não publicar.
 
 # Fundação editorial (preview, sem publicar)
-- [ ] Aplicar PR #2 adaptado ao HEAD; outline-only como ação padrão.
-- [ ] Etapas persistidas/reprocessáveis; publicação automática atrás de gate técnico.
-- [ ] Classificar as 5 transcrições de teste sem forçar arquétipos; sem artigos completos.
-- [ ] Testes/validate; migration NÃO aplicada no banco vivo; sem publicar.
+- [x] Aplicar PR #2 adaptado ao HEAD; outline-only como ação padrão.
+- [x] Etapas persistidas/reprocessáveis; publicação automática atrás de gate técnico.
+- [x] Classificar as 5 transcrições de teste sem forçar arquétipos; sem artigos completos.
+- [x] Testes/validate; migration NÃO aplicada no banco vivo; sem publicar.
