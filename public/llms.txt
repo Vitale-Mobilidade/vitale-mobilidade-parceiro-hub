@@ -8,3 +8,11 @@ A Vitale Mobilidade, liderada por Lucas Vitale, oferece diagnóstico de mercado,
 
 - [Home](/): Visão geral da consultoria, serviços, casos de sucesso e FAQ.
 - [Escolher Bike](/escolherbike): Ferramenta interativa que recomenda a bike elétrica ideal a partir de um quiz com perfil de uso, trajeto e orçamento.
+- [Ferramentas de mobilidade](/ferramentas): Sete simulações gratuitas de custo, renda e tempo com bike elétrica, com bikes reais e ofertas atuais.
+  - [Carro vs bike](/ferramentas/carro-vs-bike)
+  - [Moto vs bike](/ferramentas/moto-vs-bike)
+  - [Aplicativos vs bike](/ferramentas/aplicativos-vs-bike)
+  - [Transporte público vs bike](/ferramentas/transporte-publico-vs-bike)
+  - [Veículo alugado vs bike própria](/ferramentas/veiculo-alugado-vs-bike-propria)
+  - [Meta de entregas](/ferramentas/meta-entregas)
+  - [Economia de tempo](/ferramentas/economia-de-tempo)
