@@ -12,15 +12,27 @@ export type AdminOverview = {
   generationErrors: number;
   sync: { last_success_at?: string | null; last_attempt_at?: string | null; status?: string | null; error_message?: string | null } | null;
 };
+export type QuizFunnelStep = { step: number; reached: number; advanced: number; abandoned: number };
+export type QuizFunnelMetrics = {
+  since: string;
+  coverageSince: string | null;
+  abandonAfterMinutes: number;
+  pageVisitors: number;
+  started: number;
+  leadFormReached: number;
+  completed: number;
+  introAbandoned: number;
+  leadFormAbandoned: number;
+  steps: QuizFunnelStep[];
+  rates: { startRate: number | null; formRate: number | null; completionRate: number | null; formToCompletion: number | null };
+  uniqueLeads: number;
+  purchaseClicks: number;
+  identifiedClickers: number;
+};
 export type AdminGrowth = {
   rangeDays: number;
   generatedAt: string;
-  quiz: {
-    started: number;
-    completed: number;
-    purchaseClicks: number;
-    identifiedClickers: number;
-  };
+  funnel: QuizFunnelMetrics;
   topBikes: { name: string; clicks: number }[];
   origins: { name: string; leads: number }[];
   recentClickers: {
@@ -32,11 +44,18 @@ export type AdminGrowth = {
     clickedAt: string;
   }[];
   coverage: {
-    pageViews: "external_analytics_not_connected";
+    quizFunnelSince: string | null;
+    sitewidePageViews: "ga4_not_connected";
     sitewideAffiliateClicks: "gtm_only";
     identifiedClicks: "quiz_supabase";
   };
 };
+
+/** Percentual seguro: null quando não há base (nunca inventa 100%). */
+export function funnelPct(part: number, base: number): string {
+  if (!base || base <= 0) return "—";
+  return `${Math.round((part / base) * 1000) / 10}%`;
+}
 export type AdminBike = {
   bike_id: string; slug: string; name: string; autonomy_km: number | null;
   image_url: string | null; motor_w: number | null; battery: string | null; capacity_people: number | null;
