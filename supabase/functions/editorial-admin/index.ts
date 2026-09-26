@@ -1093,8 +1093,7 @@ Deno.serve(async (req) => {
         const checked = await qualityAndPublish(db, actor, article, video);
         if (checked.status === "published") return json(req, { article: checked });
         if (checked.status !== "validation_error") return json(req, { error: "QA aprovado, publicação aguardando liberação técnica.", article: checked, publicationGated: true }, 409);
-        return
-          json(req, { error: "Publicação bloqueada pelo QA. Consulte os alertas do artigo.", article: checked }, 422);
+        return json(req, { error: "Publicação bloqueada pelo QA. Consulte os alertas do artigo.", article: checked }, 422);
       }
       let patch: Body = { status: target, updated_by: actor.id };
       if (target === "published") {
