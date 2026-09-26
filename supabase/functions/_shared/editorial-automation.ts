@@ -1,4 +1,5 @@
 import { slugifyEditorialTitle, validEditorialSlug, type ArticleBlock, type ArticleFaq, type ContentType } from "./editorial-contract.ts";
+import type { PlannedModule } from "./editorial-foundation.ts";
 
 export type BikeCandidate = { bike_id: string; name: string; image_url?: string | null; aliases?: string[] };
 export type BikeDetection = { primaryBikeId: string | null; relatedBikeIds: string[]; ambiguous: boolean };
@@ -72,8 +73,28 @@ export function videoHeading(contentType?: ContentType): string {
 export function layoutArticle(input: {
   sections: ArticleBlock[]; videoId: string; bikeId: string | null; relatedBikeIds?: string[];
   contentType?: ContentType; offerBikeIds: ReadonlySet<string>; hasFaq: boolean;
+  plannedModules?: PlannedModule[];
 }): ArticleBlock[] {
   const sections = input.sections.filter((b) => b.type === "text" && b.text?.trim());
+  if (input.plannedModules) {
+    const out: ArticleBlock[] = [];
+    sections.forEach((section, i) => {
+      out.push({ ...section, planned: true });
+      for (const module of input.plannedModules!.filter((item) => item.afterSection === i)) {
+        if (module.type === "faq" && !input.hasFaq) continue;
+        if (module.type === "radar") {
+          for (const bikeId of module.bikeIds.filter((id) => input.offerBikeIds.has(id))) out.push({ type: "radar", bikeId, planned: true });
+        } else if (module.type === "comparison" && module.bikeIds.length >= 2) {
+          out.push({ type: "comparator", bikeId: module.bikeIds[0], bikeIds: module.bikeIds.slice(0, 2), planned: true });
+        } else if (module.type === "video") out.push({ type: "video", videoId: input.videoId, planned: true });
+        else if (module.type === "quiz") out.push({ type: "quiz", planned: true });
+        else if (module.type === "tool" && module.toolSlug) out.push({ type: "tool", toolSlug: module.toolSlug, planned: true });
+        else if (module.type === "article_link" && module.articleId) out.push({ type: "related", articleId: module.articleId, planned: true });
+        else if (module.type === "faq") out.push({ type: "faq", planned: true });
+      }
+    });
+    return out;
+  }
   const n = sections.length;
   const compared = input.bikeId ? [input.bikeId, ...(input.relatedBikeIds ?? [])].slice(0, 3) : [];
   const isComparison = input.contentType === "comparison" && compared.length >= 2;
@@ -105,6 +126,7 @@ export function completeEditorialDraft(input: {
   ogTitle: string; ogDescription: string; blocks: ArticleBlock[]; faq: ArticleFaq[];
   videoId: string; bikeId: string | null; relatedBikeIds?: string[]; contentType?: ContentType;
   offerBikeIds: ReadonlySet<string>; ogImageUrl: string | null; relatedArticleIds: string[];
+  plannedModules?: PlannedModule[];
 }) {
   const title = input.title.trim();
   const description = (input.metaDescription.trim() || input.summary.trim()).slice(0, 170);
@@ -118,7 +140,8 @@ export function completeEditorialDraft(input: {
     og_description: input.ogDescription.trim() || description,
     og_image_url: input.ogImageUrl || EDITORIAL_OG_FALLBACK,
     blocks: layoutArticle({ sections: input.blocks, videoId: input.videoId, bikeId: input.bikeId,
-      relatedBikeIds: input.relatedBikeIds, contentType: input.contentType, offerBikeIds: input.offerBikeIds, hasFaq: faq.length > 0 }),
+      relatedBikeIds: input.relatedBikeIds, contentType: input.contentType, offerBikeIds: input.offerBikeIds, hasFaq: faq.length > 0,
+      plannedModules: input.plannedModules }),
     faq,
     related_article_ids: input.relatedArticleIds,
   };
