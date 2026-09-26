@@ -456,13 +456,13 @@ continuam não implementadas e sem links públicos.
 
 `/comparar` deixa de ser rota alvo. Menções anteriores a `/comparar` neste documento são históricas. Comparação agora é estado funcional de `/bikes?compare=bikeIdA,bikeIdB` (bikeId canônico, até 2 modelos): reload/back/compartilhamento preservam a seleção; canonical continua `/bikes`; nenhuma combinação entra no sitemap. Pontos de entrada: botão "Comparar" nos cards de `/bikes`, "Comparar com outra bike" em `/bikes/$slug` e `/radar/$bikeId`, "Comparar essas bikes" nas calculadoras com 2 recomendações, "Compare as especificações destes modelos" no bloco comparativo dos artigos e card "Comparar bikes" da Home. Header/footer sem link independente "Comparar". Eventos: `bike_compare_added`, `bike_compare_removed`, `bike_comparison_opened`, `comparison_bike_clicked`, `affiliate_click` (position `bikes_comparison`). Pendente: motor/bateria/peso não aparecem porque ainda não constam da leitura pública do catálogo; artigos "que comparam os dois" dependem de vídeos associados às duas bikes.
 
-## Ferramentas de Mobilidade — sete oficiais (26/09/2026, preview validado; aprovado para publicação)
+## Ferramentas de Mobilidade — sete oficiais (26/09/2026, PUBLICADO)
 
 - [x] Hub `/ferramentas` com sete ferramentas (Economia, Renda, Tempo) e fluxo Ferramenta → Bikes → Radar → Quiz.
 - [x] Sete rotas SSR com metadata, canonical, OG e JSON-LD próprios; sitemap e llms.txt atualizados.
 - [x] `/calculadoras/*` mantidas como legado noindex, fora do hub, sitemap e navegação.
-- [x] Preview externo validado em 26/09/2026 — **aprovado para publicação** (publicação ainda não executada).
-- [ ] Publicação e smoke pós-publicação.
+- [x] Publicado em 26/09/2026 no domínio canônico https://vitalemobilidade.com.
+- [x] Smoke pós-publicação: `/ferramentas` exibiu exatamente 7 ferramentas; `/ferramentas/meta-entregas` calculou 23 entregas/dia no cenário alvo (R$250/dia, R$10/entrega, R$20 extras, 22 dias/mês, 60 km/dia, R$20/dia de custos) com 1 bike real compatível; URL sem query string; canonical correto; `/calculadoras/carro-vs-bike` com robots `noindex, follow`.
 - [ ] Mapa SEO para eventuais redirects do legado.
 
 Riscos residuais (não bloqueantes): erro preexistente de console `gtag is not defined` do GTM; posições `ferramenta_*` a cadastrar/validar no GTM. Rollback: commit-base `9ca39e5cdd92d45813db1b5299fd42365452a4ff`.

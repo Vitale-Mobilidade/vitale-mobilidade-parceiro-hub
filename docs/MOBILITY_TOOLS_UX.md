@@ -1,6 +1,6 @@
-# Ferramentas de Mobilidade — sete ferramentas oficiais (PREVIEW)
+# Ferramentas de Mobilidade — sete ferramentas oficiais (PUBLICADO)
 
-Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` foram implementadas **em preview** e o **preview externo foi validado em 26/09/2026, com status APROVADO PARA PUBLICAÇÃO**. A publicação ainda acontecerá depois deste commit. As nove `/calculadoras/*` permanecem acessíveis apenas como legado de compatibilidade, com `robots: noindex, follow`, fora do hub, do sitemap e da navegação. Nenhum redirect permanente até existir mapa SEO aprovado.
+Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` estão **PUBLICADAS em 26/09/2026 no domínio canônico https://vitalemobilidade.com**, após preview externo validado no mesmo dia. As nove `/calculadoras/*` permanecem acessíveis apenas como legado de compatibilidade, com `robots: noindex, follow`, fora do hub, do sitemap e da navegação. Nenhum redirect permanente até existir mapa SEO aprovado.
 
 | # | Rota | Grupo | Entradas | Saídas | Bikes |
 |---|------|-------|----------|--------|-------|
@@ -21,10 +21,15 @@ Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` foram im
 - Parcela entra só nos meses restantes; entrada já paga nunca é somada. Economia ≤ 0 aparece como está, sem payback.
 - Estado apenas no cliente: nenhum valor em URL, storage, servidor ou analytics. Analytics de clique afiliado recebe só `bike_id` e `position` (`ferramenta_*`).
 
+## Smoke pós-publicação (26/09/2026, https://vitalemobilidade.com)
+
+- `/ferramentas` exibiu exatamente as sete ferramentas oficiais.
+- `/ferramentas/meta-entregas` calculou 23 entregas/dia no cenário alvo: R$250/dia, R$10/entrega, R$20 extras, 22 dias/mês, 60 km/dia e R$20/dia de custos; exibiu 1 bike real compatível.
+- URL sem query string; canonical correto.
+- `/calculadoras/carro-vs-bike` com robots `noindex, follow`.
+
 ## Pendências
 
-- Publicação e smoke pós-publicação.
-- Artigos editoriais por ferramenta: só vídeos reais das bikes sugeridas aparecem hoje; sem relação publicada, a seção é omitida.
 - Mapa SEO para decidir redirects do legado `/calculadoras/*`.
 
 ## Gate multidisciplinar — pré e pós-implementação (26/09/2026)
