@@ -528,6 +528,7 @@ function BriefPanel({ brief, index }: { brief: BriefRow; index: { id: string; sl
       <strong>{section.heading}</strong><span className="text-muted-foreground"> — {section.purpose}</span></li>)}</ol>}
     {modules.length > 0 && <div className="mt-4"><h3 className="font-semibold">Módulos contextuais</h3><ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
       {modules.map((m, i) => <li key={i}><strong>{m.type}</strong> após seção {m.afterSection + 1} — {m.reason}</li>)}</ul></div>}
+    {p.radarOmission && <p className="mt-3 text-sm"><strong>Radar omitido:</strong> {p.radarOmission}</p>}
     {links.length > 0 && <div className="mt-4"><h3 className="font-semibold">Links sugeridos</h3><ul className="mt-1 list-disc pl-5 text-sm">
       {links.map((m, i) => { const target = index.find(item => item.id === m.articleId);
         return <li key={i}>{target ? target.title : "Artigo publicado"} — {m.reason}</li>; })}</ul></div>}
@@ -689,8 +690,13 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     </section> : <>
       <CoverPanel article={article} disabled={Boolean(busy)} onApplied={async next => { setArticle(next);
         await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] }); }} />
-      <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
-        relatedArticles={relatedArticles} relatedVideos={relatedVideos} /></div>
+      {article.foundation_required && article.blocks.length === 0
+        ? <section className={`${PANEL} text-sm`} aria-label="Prévia do artigo">
+          <h2 className="text-xl font-bold">Outline sem artigo escrito</h2>
+          <p className="mt-2 text-muted-foreground">O plano editorial acima mostra o que será escrito. A prévia pública aparece depois de escrever o rascunho.</p>
+        </section>
+        : <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
+          relatedArticles={relatedArticles} relatedVideos={relatedVideos} /></div>}
     </>}
   </>;
 }

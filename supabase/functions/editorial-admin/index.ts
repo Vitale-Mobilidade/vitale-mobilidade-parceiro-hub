@@ -230,7 +230,7 @@ const CLASSIFICATION_SCHEMA: Body = {
 };
 const BRIEF_SCHEMA: Body = {
   type: "object", additionalProperties: false,
-  required: ["thesis", "readerQuestion", "uniqueInsight", "opening", "conclusion", "sections", "modules", "faqQuestions", "warnings", "blockingRisks"],
+  required: ["thesis", "readerQuestion", "uniqueInsight", "opening", "conclusion", "sections", "modules", "faqQuestions", "warnings", "blockingRisks", "radarOmission"],
   properties: {
     thesis: { type: "string" }, readerQuestion: { type: "string" }, uniqueInsight: { type: "string" },
     opening: { type: "string" }, conclusion: { type: "string" },
@@ -248,6 +248,7 @@ const BRIEF_SCHEMA: Body = {
     faqQuestions: { type: "array", items: { type: "string" } },
     warnings: { type: "array", items: { type: "string" } },
     blockingRisks: { type: "array", items: { type: "string" } },
+    radarOmission: { type: "string" },
   },
 };
 const OUTLINE_RISK_RULES = "warnings = cautelas editoriais que o texto deverá respeitar e que o próprio outline já mitiga (ex.: não apresentar como teste próprio, velocidade lida no painel, especificação declarada pelo fabricante); são exibidas e verificadas no artigo, mas não bloqueiam. blockingRisks = somente riscos materiais NÃO mitigáveis pelo texto: tese que depende de afirmação sem evidência literal, fonte insuficiente para a intenção, conflito factual na fonte, intenção ambígua ou risco comercial/legal sem mitigação; [] quando não houver. Nunca rebaixe para warnings um risco que impede um artigo honesto.";
@@ -371,7 +372,7 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   const offers = await currentOfferIds(db, [article.primary_bike_id, ...article.related_bike_ids].filter(Boolean) as string[]);
   progress("Planejando estrutura editorial…");
   const raw = await aiStructured(system,
-    `Crie APENAS um outline específico para este assunto. Cada seção deve avançar uma pergunta real e citar IDs de evidência. Abertura e conclusão dependem do argumento; FAQ é opcional. Módulos comerciais e links internos só com razão contextual. video, radar, quiz, tool, comparison, faq e article_link são opcionais; afterSection é índice zero-based da seção anterior. toolSlug vazio quando não for tool; articleId vazio quando não for article_link. Escolha articleId somente entre publishedArticles. Não use sequência padrão. Não escreva o artigo completo. ${OUTLINE_RISK_RULES}\n<untrusted_source_json>${JSON.stringify({ title: video.title, archetype, intent: classification.primaryIntent, claims,
+    `Crie APENAS um outline específico para este assunto. Cada seção deve avançar uma pergunta real e citar IDs de evidência. Abertura e conclusão dependem do argumento; FAQ é opcional. Módulos comerciais e links internos só com razão contextual. video, radar, quiz, tool, comparison, faq e article_link são opcionais; afterSection é índice zero-based da seção anterior. toolSlug vazio quando não for tool; articleId vazio quando não for article_link. Escolha articleId somente entre publishedArticles. Se preço, oferta, valor ou custo atual influencia a decisão e radarAvailableBikeIds contém uma bike associada, planeje um módulo radar após a seção que analisa esse fator, com o ID dessa bike. Se houver motivo editorial específico para não usar Radar nesse caso, explique em radarOmission com pelo menos 40 caracteres; caso contrário radarOmission deve ser string vazia. Não use Radar só por existir uma oferta: o módulo precisa ajudar a decisão tratada na seção. Não use sequência padrão. Não escreva o artigo completo. ${OUTLINE_RISK_RULES}\n<untrusted_source_json>${JSON.stringify({ title: video.title, archetype, intent: classification.primaryIntent, claims,
       bikes: [...bikeIds].filter((id) => [article.primary_bike_id, ...article.related_bike_ids].includes(id)),
       radarAvailableBikeIds: [...offers], toolSlugs: EDITORIAL_TOOL_SLUGS,
       publishedArticles: (published ?? []).map((item) => ({ id: item.id, title: item.title, summary: item.summary })) })}</untrusted_source_json>`,

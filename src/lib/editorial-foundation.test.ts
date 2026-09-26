@@ -182,6 +182,20 @@ describe("diversity corpus includes drafts and ready outlines (regression: 5 pil
 });
 
 describe("bike context of outlines", () => {
+  it("requires a contextual Radar plan or a specific omission when current price decides", () => {
+    const brief = { thesis: "Qual bike entrega melhor valor hoje?", readerQuestion: "Qual custa menos?",
+      conclusion: "Compare o preço atual antes de escolher.",
+      sections: [{ heading: "Preço e escolha", purpose: "Verificar oferta atual", claimIds: ["c1"] }],
+      modules: [], warnings: [], blockingRisks: [] };
+    const diversity = { score: 96, alerts: [] };
+    const offers = new Set(["v29_pro"]);
+    expect(outlineGate(brief, diversity, offers).status).toBe("qa_failed");
+    expect(outlineGate({ ...brief, modules: [{ type: "radar" as const, afterSection: 0,
+      reason: "Comparar oferta no momento da escolha", bikeIds: ["v29_pro"] }] }, diversity, offers).status).toBe("ready");
+    expect(outlineGate({ ...brief, radarOmission: "O preço citado é histórico e não determina a escolha atual." }, diversity, offers).status).toBe("ready");
+    expect(outlineGate(brief, diversity, new Set()).status).toBe("ready");
+  });
+
   it("marks an outline stale when bike IDs change or the control is missing", async () => {
     const { bikeContextKey, briefMatchesBikes } = await import("../../supabase/functions/_shared/editorial-foundation");
     expect(bikeContextKey("v8_pro", ["v40_pro", "v8_pro"])).toBe("v40_pro,v8_pro");
