@@ -1,7 +1,7 @@
 import type React from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
-import { trackAffiliateClick } from "@/lib/affiliate-analytics";
 import { QuizBanner } from "@/components/site/DecisionBanners";
+import { ArrowRight, BookOpen, LineChart, Sparkles } from "lucide-react";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
 
@@ -12,43 +12,28 @@ export type PublishedArticle = {
   videoId: string; primaryBikeId: string | null; relatedBikeIds: string[]; relatedArticleIds: string[];
 };
 
-const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-
-function BikeDecision({ bikeId, bikes, mode }: { bikeId: string; bikes: CatalogBike[]; mode: "radar" | "specs" | "cta" }) {
+function BikeDecision({ bikeId, bikes, mode }: { bikeId: string; bikes: CatalogBike[]; mode: "radar" | "specs" }) {
   const bike = bikes.find(b => b.bikeId === bikeId);
   if (!bike) return null;
-  if (mode === "cta") return <section className="my-10 rounded-2xl bg-emerald-950 p-6 text-white sm:p-8">
-    <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Próximo passo</p>
-    <h2 className="mt-2 text-2xl font-bold">Confira a oferta atual da {bike.name}</h2>
-    <p className="mt-2 max-w-2xl text-emerald-100">Preço e disponibilidade são definidos pelo anúncio no Mercado Livre. Confira os detalhes antes de decidir.</p>
-    {bike.link && bike.sheetPrice != null ? <a href={bike.link} target="_blank" rel="sponsored noopener noreferrer"
-      onClick={() => trackAffiliateClick({ bike_id: bike.bikeId, position: "content_article" })}
-      className="mt-5 inline-block rounded-lg bg-emerald-300 px-5 py-3 font-semibold text-emerald-950">Ver oferta no Mercado Livre</a>
-      : <p className="mt-5 font-semibold">Link indisponível no momento.</p>}
-  </section>;
   if (mode === "specs") return <section className="my-8 rounded-2xl bg-surface p-5 sm:p-7">
     <h2 className="text-2xl font-bold">{bike.name}: dados da bike</h2>
     <p className="mt-3 text-muted-foreground">{[bike.autonomy, bike.capacity].filter(Boolean).join(" · ") || "Confira os dados cadastrados na página da bike."}</p>
-     <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="mt-4 inline-block font-semibold text-emerald-800 underline">Ver bike e histórico</a>
+    <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="mt-4 inline-block font-semibold text-emerald-800 underline">Ver ficha completa da bike</a>
   </section>;
   return <section className="my-8 rounded-2xl border border-line bg-emerald-50 p-5 sm:p-7">
     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
       {bike.image && <img src={bike.image} alt={`Bike elétrica ${bike.name}`} loading="lazy" className="h-36 w-full rounded-xl bg-white object-contain sm:w-48" />}
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Radar Vitale</p>
-        <h2 className="mt-1 text-xl font-bold">O preço da {bike.name} está bom?</h2>
-        {bike.sheetPrice != null && bike.link && <p className="mt-2 text-2xl font-bold text-emerald-800">{BRL.format(bike.sheetPrice)}</p>}
-        <div className="mt-4 flex flex-wrap gap-2">
-           <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-900">Conhecer a bike</a>
-          <a href={`/radar/${bike.bikeId}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Ver histórico no Radar</a>
-        </div>
-        {!bike.link && <p className="mt-2 text-sm text-muted-foreground">Link indisponível no momento.</p>}
+        <h2 className="mt-1 text-xl font-bold">Confira o preço da {bike.name} no Radar</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Veja a variação registrada, os dados da bike e a oferta disponível antes de sair para comprar.</p>
+        <a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Ver preço e histórico <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
       </div>
     </div>
   </section>;
 }
 
-type RelatedArticle = { id: string; slug: string; title: string };
+type RelatedArticle = { id: string; slug: string; title: string; summary?: string; ogImageUrl?: string | null; publishedAt?: string | null };
 function InlineText({ value }: { value: string }) {
   return <>{value.split(/(\*\*[^*]+\*\*)/g).map((part, index) => part.startsWith("**") && part.endsWith("**")
     ? <strong key={index}>{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
@@ -94,8 +79,8 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
         loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="h-full w-full" />
     </div>
   </section>;
-  if (["radar", "specs", "cta"].includes(block.type) && block.bikeId) {
-    return <BikeDecision bikeId={block.bikeId} bikes={bikes} mode={block.type as "radar" | "specs" | "cta"} />;
+  if (block.type === "specs" && block.bikeId) {
+    return <BikeDecision bikeId={block.bikeId} bikes={bikes} mode="specs" />;
   }
   if (block.type === "quiz") return <div className="my-8"><QuizBanner /></div>;
   if (block.type === "comparator") {
@@ -103,9 +88,9 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
       .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike)).slice(0, 2);
     if (compared.length < 2) return null;
     const rows: [string, (b: CatalogBike) => React.ReactNode][] = [
-      ["Preço atual", b => b.sheetPrice != null && b.link ? <strong className="text-emerald-800">{BRL.format(b.sheetPrice)}</strong> : "Sem oferta no momento"],
       ["Autonomia", b => b.autonomy ?? "—"],
       ["Capacidade", b => b.capacity ?? "—"],
+      ["Categoria", b => b.category ?? "—"],
     ];
     return <section className="my-10">
       <h2 className="mb-4 text-2xl font-bold">{block.heading || "Comparação lado a lado"}</h2>
@@ -115,15 +100,11 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
           <span className="font-bold">{b.name}</span></th>)}</tr></thead>
         <tbody>{rows.map(([label, value]) => <tr key={label} className="border-t border-line"><th scope="row" className="p-3 font-medium text-muted-foreground">{label}</th>
           {compared.map(b => <td key={b.bikeId} className="p-3">{value(b)}</td>)}</tr>)}
-          <tr className="border-t border-line"><th scope="row" className="p-3"><span className="sr-only">Links</span></th>{compared.map(b => <td key={b.bikeId} className="space-y-1 p-3">
-             <a href={`/radar/${encodeURIComponent(b.bikeId)}`} className="block font-semibold text-emerald-800 underline">Conhecer bike</a>
-            <a href={`/radar/${b.bikeId}`} className="block text-emerald-800 underline">Ver no Radar</a>
-            {b.link && b.sheetPrice != null && <a href={b.link} target="_blank" rel="sponsored noopener noreferrer"
-              onClick={() => trackAffiliateClick({ bike_id: b.bikeId, position: "content_article" })}
-              className="block text-emerald-800 underline">Ver oferta no Mercado Livre</a>}
+          <tr className="border-t border-line"><th scope="row" className="p-3"><span className="sr-only">Próximo passo</span></th>{compared.map(b => <td key={b.bikeId} className="p-3">
+            <a href={`/radar/${encodeURIComponent(b.bikeId)}`} className="inline-flex min-h-11 items-center gap-2 font-semibold text-emerald-800 underline">Conhecer {b.name} no Radar <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
           </td>)}</tr></tbody>
       </table></div>
-      <p className="mt-2 text-xs text-muted-foreground">Preço e disponibilidade vêm do anúncio atual e podem mudar.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Preços e ofertas atualizados estão nas páginas de cada bike.</p>
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;
@@ -131,8 +112,15 @@ function Block({ block, article, bikes, relatedArticles }: { block: ArticleBlock
   return null;
 }
 
-export function ArticleView({ article, bikes, relatedArticles = [], relatedVideos = [], preview = false }: { article: PublishedArticle; bikes: CatalogBike[]; relatedArticles?: RelatedArticle[]; relatedVideos?: VideoCard[]; preview?: boolean }) {
-  return <article className="mx-auto max-w-4xl px-4 py-10 text-foreground sm:px-6">
+export function ArticleView({ article, bikes, relatedArticles = [], articlesShareContext = true, relatedVideos = [], preview = false }: { article: PublishedArticle; bikes: CatalogBike[]; relatedArticles?: RelatedArticle[]; articlesShareContext?: boolean; relatedVideos?: VideoCard[]; preview?: boolean }) {
+  const connectedBikes = [...new Set([article.primaryBikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
+    .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike));
+  const analysisBlocks = article.blocks.filter(block => !["radar", "cta", "quiz", "related"].includes(block.type));
+  const radarBlocks = article.blocks.filter(block => ["radar", "cta"].includes(block.type) && block.bikeId);
+  const radarBikeIds = [...new Set((radarBlocks.length ? radarBlocks.map(block => block.bikeId) : [article.primaryBikeId])
+    .filter((id): id is string => Boolean(id)))];
+  return <div className="responsive-container grid gap-10 py-10 text-foreground lg:grid-cols-[minmax(0,1fr)_280px] xl:gap-14">
+  <article className="min-w-0 max-w-3xl">
     {preview && <p className="mb-5 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">Preview privado — não publicado</p>}
     <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Conteúdo Vitale</p>
     <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
@@ -140,10 +128,20 @@ export function ArticleView({ article, bikes, relatedArticles = [], relatedVideo
       Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}</time>}
     {article.ogImageUrl && <img src={article.ogImageUrl} alt="" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
     <p className="mt-7 text-xl leading-8 text-muted-foreground">{article.summary}</p>
-    {article.blocks.map((block, index) => <Block key={`${index}-${block.type}`} block={block} article={article} bikes={bikes} relatedArticles={relatedArticles} />)}
+    {analysisBlocks.map((block, index) => <Block key={`${index}-${block.type}`} block={block} article={article} bikes={bikes} relatedArticles={relatedArticles} />)}
     {!article.blocks.some(b => b.type === "faq") && <FaqList faq={article.faq} />}
-    {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Continue sua pesquisa</h2>
-      <ul className="mt-4 space-y-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="font-semibold text-emerald-800 underline">{a.title}</a></li>)}</ul></section>}
+    {radarBikeIds.length > 0 && <section aria-labelledby="radar-no-artigo" className="my-12 border-t border-line pt-8">
+      <p className="text-xs font-bold uppercase tracking-widest text-action">Da análise à decisão</p>
+      <h2 id="radar-no-artigo" className="mt-2 text-2xl font-bold">Preços e histórico das bikes citadas</h2>
+      <p className="mt-2 text-muted-foreground">Os modelos abaixo têm ficha e acompanhamento de preço próprios. Confira o Radar antes de abrir a oferta.</p>
+      {radarBikeIds.map(id => <BikeDecision key={id} bikeId={id} bikes={bikes} mode="radar" />)}
+    </section>}
+    <div className="my-10"><QuizBanner /></div>
+    {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-line bg-card hover:border-action focus-visible:ring-2 focus-visible:ring-action">
+        {a.ogImageUrl ? <img src={a.ogImageUrl} alt="" loading="lazy" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
+        <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground">{a.summary}</span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>
+      </a></li>)}</ul></section>}
     {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{relatedVideos.map(video => <a key={video.videoId} href={video.url}
         target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-xl border border-line hover:border-emerald-500">
@@ -151,8 +149,14 @@ export function ArticleView({ article, bikes, relatedArticles = [], relatedVideo
         <span className="block p-4 font-semibold">{video.title}</span>
       </a>)}</div></section>}
     <section className="my-10 border-t border-line pt-6 text-sm text-muted-foreground">
-      <p>Conteúdo baseado nos testes práticos da Vitale. Preços e disponibilidade podem mudar; consulte o anúncio antes de comprar.</p>
+      <p>Conteúdo baseado nos testes práticos da Vitale. Preços e disponibilidade podem mudar; consulte o Radar da bike antes de comprar.</p>
       <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-emerald-800 underline">Assistir no YouTube</a>
     </section>
-  </article>;
+  </article>
+  <aside className="space-y-5 lg:pt-3" aria-label="Explore conteúdos relacionados">
+    <div className="rounded-2xl border border-line bg-surface p-5"><Sparkles className="h-6 w-6 text-action" aria-hidden="true" /><h2 className="mt-3 text-xl font-bold">Qual bike combina com você?</h2><p className="mt-2 text-sm text-muted-foreground">Responda ao Quiz da Vitale e descubra modelos para o seu uso.</p><a href="/escolherbike" className="mt-4 inline-flex min-h-11 items-center gap-2 font-bold text-action underline">Fazer o quiz <ArrowRight className="h-4 w-4" aria-hidden="true" /></a></div>
+    {connectedBikes.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="flex items-center gap-2 text-lg font-bold"><LineChart className="h-5 w-5 text-action" aria-hidden="true" /> Bikes deste artigo</h2><ul className="mt-4 space-y-3">{connectedBikes.slice(0, 4).map(bike => <li key={bike.bikeId}><a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="flex min-h-12 items-center gap-3 rounded-lg hover:text-action focus-visible:ring-2 focus-visible:ring-action">{bike.image && <img src={bike.image} alt="" loading="lazy" className="h-12 w-16 rounded bg-surface object-contain" />}<span className="min-w-0 flex-1 font-semibold">{bike.name}</span><ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></a></li>)}</ul></div>}
+    {relatedArticles.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="text-lg font-bold">{articlesShareContext ? "Leia também" : "Mais conteúdos"}</h2><ul className="mt-3 divide-y divide-line">{relatedArticles.slice(0, 3).map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="flex min-h-12 items-center gap-2 py-3 font-semibold leading-snug hover:text-action focus-visible:ring-2 focus-visible:ring-action"><BookOpen className="h-4 w-4 shrink-0 text-action" aria-hidden="true" />{a.title}</a></li>)}</ul></div>}
+  </aside>
+  </div>;
 }
