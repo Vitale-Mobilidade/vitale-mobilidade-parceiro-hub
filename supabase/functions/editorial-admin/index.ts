@@ -9,6 +9,7 @@ import {
   ARCHETYPES, EDITORIAL_TOOL_SLUGS, parseEditorialBrief, parseSourceClaims, screenDiversity,
   type EditorialBrief,
 } from "../_shared/editorial-foundation.ts";
+import { sourceFingerprint } from "../_shared/editorial-foundation.ts";
 import {
   completeEditorialDraft, detectContentType, detectEditorialBikes, EDITORIAL_OG_FALLBACK, layoutArticle,
   YOUTUBE_THUMBNAILS, youtubeThumbnailUrl, type BikeCandidate,
@@ -371,6 +372,7 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   const status = diversity.score < 45 || diversity.alerts.length || brief.warnings.length ? "qa_failed" : "ready";
   const next = { article_id: article.id, video_id: video.youtube_id, version: (current?.version ?? 0) + 1,
     status, archetype: brief.archetype, primary_intent: brief.primaryIntent, payload: brief,
+    stages: { ...stages, outline: { at: new Date().toISOString(), sections: brief.sections.length, modules: brief.modules.length } },
     quality_report: { differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, issues },
     article_revision: null, updated_at: new Date().toISOString() };
   const { data, error } = await db.from("editorial_briefs").upsert(next, { onConflict: "article_id" }).select("*").single();

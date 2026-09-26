@@ -137,3 +137,10 @@ export function screenDiversity(candidate: CorpusItem, corpus: CorpusItem[]): Di
   }
   return { score: 100 - closest, alerts: alerts.slice(0, 10), closestArticleId };
 }
+
+/** Cheap, deterministic source fingerprint: stage checkpoints are reused only for the same transcript. */
+export function sourceFingerprint(transcript: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < transcript.length; i++) { h ^= transcript.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return `${transcript.length}:${(h >>> 0).toString(16)}`;
+}
