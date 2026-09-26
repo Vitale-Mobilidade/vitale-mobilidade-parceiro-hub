@@ -28,7 +28,9 @@ Capa aplicada em **rascunho** não é servida publicamente (por desenho) e apare
 | PMO | Sem publicação do frontend; rollback simples. | Funções implantadas; frontend em preview; pendências abaixo. |
 
 ## Rollout
-1. Bucket privado + migration (feito). 2. Implantar `bike-image` e confirmar bikes 200 (feito: `v8_pro_s` GET/HEAD 200 image/png). 3. Implantar `editorial-admin` (feito; chamada sem sessão → 403). 4. Teste real com sessão editorial em rascunho → inspeção visual → aplicar. 5. Só depois aplicar em artigo publicado. 6. Publicar frontend junto com a liberação do Quiz (necessário para OG dimensions e VideoObject no ar).
+> Nota: na data deste documento não há nenhum artigo em `draft` na base (consulta confirmou zero rascunhos). O gate abaixo foi ajustado para usar um artigo antigo publicado.
+
+1. Bucket privado + migration (feito). 2. Implantar `bike-image` e confirmar bikes 200 (feito: `v8_pro_s` GET/HEAD 200 image/png). 3. Implantar `editorial-admin` (feito; chamada sem sessão → 403). 4. Teste real com sessão editorial: gerar uma candidata em um artigo antigo **publicado**, inspecionar atual × candidata lado a lado e **descartar sem aplicar** — confirmando assim zero alteração pública. 5. Só aplicar a um artigo publicado depois de aprovação visual explícita da candidata. 6. Publicar frontend junto com a liberação do Quiz (necessário para OG dimensions e VideoObject no ar).
 
 ## Rollback
 - Capa: editar "Imagem de compartilhamento" nas configurações avançadas para a URL anterior (registrada em `cover_applied.detail.previous` e no snapshot `article_revision`).
@@ -63,4 +65,4 @@ Nenhuma geração real foi feita (sem sessão editorial).
 | Growth | N/A | OG dimensions/type só entram no ar com a publicação do frontend. |
 | PMO | **Fail** | Gate de release: falta teste real do modelo e da UI autenticada; frontend não publicado. |
 
-**Release bloqueada** até: 1 geração real em rascunho com sessão editorial, inspeção visual, aplicação e verificação do hero/OG.
+**Release bloqueada** até: geração real de candidata em artigo antigo publicado com sessão editorial, inspeção visual lado a lado, descarte sem aplicar (zero alteração pública confirmada) e, só então, aplicação em publicado após aprovação visual explícita + verificação do hero/OG. Não há rascunhos disponíveis neste momento.
