@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { ArticleView } from "@/components/editorial/ArticleView";
+import { isEditorialCoverUrl } from "../../../supabase/functions/_shared/editorial-cover";
 import { getPublishedArticle } from "@/lib/editorial.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
@@ -45,20 +46,22 @@ export const Route = createFileRoute("/conteudos/$slug")({
     const a = loaderData.article;
     const variant = a.ogImageUrl?.match(/\/(maxresdefault|sddefault|hqdefault|mqdefault)\.jpg(?:\?|$)/)?.[1];
     const dimensions: Record<string, [number, number]> = { maxresdefault: [1280, 720], sddefault: [640, 480], hqdefault: [480, 360], mqdefault: [320, 180] };
-    const imageDimensions = variant ? dimensions[variant] : undefined;
+    const cover = isEditorialCoverUrl(a.ogImageUrl);
+    const imageDimensions: [number, number] | undefined = cover ? [1280, 720] : variant ? dimensions[variant] : undefined;
     const head = pageHead({ path: `/conteudos/${a.slug}`, title: a.seoTitle || a.title,
       description: a.metaDescription || a.summary, ogTitle: a.ogTitle || a.title,
       ogDescription: a.ogDescription || a.summary, ogType: "article",
       robots: a.indexable ? "index, follow" : "noindex, follow",
       image: a.ogImageUrl ? { url: a.ogImageUrl, width: imageDimensions?.[0], height: imageDimensions?.[1],
-        type: /\.jpe?g(?:\?|$)/i.test(a.ogImageUrl) ? "image/jpeg" : undefined, alt: a.ogTitle || a.title } : undefined });
+        type: cover || /\.jpe?g(?:\?|$)/i.test(a.ogImageUrl) ? "image/jpeg" : undefined, alt: a.ogTitle || a.title } : undefined });
     const schema = { "@context": "https://schema.org", "@type": "Article", headline: a.title,
       description: a.metaDescription || a.summary, datePublished: a.publishedAt,
       image: a.ogImageUrl || undefined, inLanguage: "pt-BR", mainEntityOfPage: canonicalUrl(`/conteudos/${a.slug}`),
       publisher: { "@id": "https://vitalemobilidade.com/#organization" },
       isBasedOn: `https://www.youtube.com/watch?v=${a.videoId}` };
     const videoSchema = { "@context": "https://schema.org", "@type": "VideoObject", name: a.title,
-      description: a.metaDescription || a.summary, thumbnailUrl: a.ogImageUrl || undefined,
+      // VideoObject keeps the YouTube thumbnail even when an editorial cover is approved.
+      description: a.metaDescription || a.summary, thumbnailUrl: `https://i.ytimg.com/vi/${a.videoId}/hqdefault.jpg`,
       embedUrl: `https://www.youtube-nocookie.com/embed/${a.videoId}`,
       contentUrl: `https://www.youtube.com/watch?v=${a.videoId}` };
     const breadcrumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
