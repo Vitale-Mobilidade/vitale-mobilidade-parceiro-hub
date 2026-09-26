@@ -126,3 +126,13 @@ Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin
 - Chamada sem autenticação a `editorial-admin` negada com HTTP 403 ("Acesso não autorizado.").
 - Não publicado: frontend, importação de transcrições e geração de artigos. Nenhuma outra função, Sheets, Radar, Quiz ou ofertas alterados.
 - Próximos passos pendentes: publicar o frontend do Admin, importar as cinco transcrições, rodar cinco outlines, piloto de rascunho + QA com gate fechado, e só então avaliar `EDITORIAL_AUTO_PUBLISH=true`.
+
+### Correção do gate de outline: cautelas x bloqueios (26/09/2026)
+- Evidência do piloto real: GT20 `aDLpuoXPofU` gerou outline com evidências e diferenciação 98, mas ficou `qa_failed` e "Escrever rascunho" desabilitado apenas por 8 cautelas apropriadas em `warnings` (ex.: "não apresentar como teste próprio", "60 km/h é painel"). Regra antiga bloqueava qualquer transcrição honesta.
+- Correção em `editorial-admin` + `_shared/editorial-foundation.ts`: o outline passa a ter `warnings` (cautelas informativas, mitigadas pelo texto) e `blockingRisks` (riscos materiais sem mitigação). Helper puro `outlineGate` bloqueia somente: risco material declarado, outline sem classificação de riscos (legado/malformado — fail-closed), alertas de similaridade e diferenciação < 45. Continuam bloqueando antes: evidência não literal/insuficiente (`insufficient_grounded_claims`, outline sem claims) e intenção `uncertain`.
+- Cautelas não foram zeradas nem ocultadas: ficam no payload, em `quality_report.cautions` e no painel ("Cautelas editoriais", separadas de "Bloqueios").
+- Rascunho recebe instrução explícita de respeitar todas as cautelas. QA final recebe `editorialCautions` e retorna `cautionViolations`; `cautionReviewIssues` reprova cautela desrespeitada e falha fechado se a verificação vier ausente/malformada.
+- Brief do GT20 salvo antes da correção não tem `blockingRisks` e continua bloqueado; para reavaliá-lo é preciso "Gerar outline de novo" (≈3 chamadas de IA).
+- Teste de regressão com as 8 cautelas do GT20 em `src/lib/editorial-foundation.test.ts` (13 testes passam); `pnpm validate` passou.
+- Oito perspectivas: Produto Pass (fluxo honesto avança); CTO Pass (helper puro, sem schema/migration); IA Pass (fail-closed para risco material, intenção incerta, fonte insuficiente e verificação ausente); Segurança Pass (sem mudança de auth/RLS; gate de auto-publish intocado); UX Pass (bloqueios x cautelas distintos); CX N/A (nada público mudou); Growth N/A (sem publicação); PMO Pass com pendência: validar com outline real regenerado do GT20.
+- `EDITORIAL_AUTO_PUBLISH` continua ausente. Nenhum artigo gerado ou publicado.
