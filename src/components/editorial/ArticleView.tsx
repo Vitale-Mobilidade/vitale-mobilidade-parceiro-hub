@@ -172,7 +172,7 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     {article.publishedAt && <time dateTime={article.publishedAt} className="mt-3 block text-sm text-muted-foreground">
       Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}</time>}
     {article.ogImageUrl && <img src={article.ogImageUrl} alt="" width={1280} height={720} fetchPriority="high" decoding="async" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
-    <p className="mt-7 text-xl leading-8 text-muted-foreground">{article.summary}</p>
+    <p className="mt-7 text-xl leading-8 text-muted-foreground"><InlineText value={article.summary} /></p>
     {flow.map((item, index) => item.kind === "block"
       ? <Block key={index} block={item.block} article={article} bikes={bikes} prices={prices} histories={histories} />
       : item.kind === "radar" ? <section key={index} aria-labelledby="radar-no-artigo" className="my-12 border-y border-line py-8">
@@ -187,7 +187,7 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-line bg-card hover:border-action focus-visible:ring-2 focus-visible:ring-action">
         {a.ogImageUrl ? <img src={youtubeThumbnailVariant(a.ogImageUrl) ?? undefined} alt="" width={320} height={180} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
-        <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground">{a.summary}</span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>
+        <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground"><InlineText value={a.summary} /></span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>
       </a></li>)}</ul></section>}
     {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{relatedVideos.map(video => <a key={video.videoId} href={video.url}
