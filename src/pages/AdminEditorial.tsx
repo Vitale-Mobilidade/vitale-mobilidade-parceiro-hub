@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -8,7 +8,8 @@ import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
-import type { VideoItem } from "@/lib/video-catalog";
+import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
+import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle } from
   "../../supabase/functions/_shared/editorial-contract";
@@ -316,13 +317,20 @@ export function AdminNewArticlePage({ initialVideoId }: { initialVideoId?: strin
 function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const videoUrlInput = useRef<HTMLInputElement>(null);
+  const transcriptDrafts = useRef(new Map<string, string>());
   const catalogQuery = useQuery({ queryKey: ["admin", "video-catalog"], queryFn: getSheetVideoCatalog,
     staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
   const workspaceQuery = useQuery({ queryKey: ["admin", "editorial-workspace"],
     queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"), staleTime: ADMIN_STALE_MS, refetchOnWindowFocus: false, retry: false });
-  const catalog = catalogQuery.data ?? [];
-  const savedVideos = workspaceQuery.data?.videos ?? [];
+  const catalog = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
+  const savedVideos = useMemo(() => workspaceQuery.data?.videos ?? [], [workspaceQuery.data?.videos]);
+  const [videoSource, setVideoSource] = useState<"library" | "url">("library");
   const [videoId, setVideoId] = useState(initialVideoId ?? "");
+  const [videoSearch, setVideoSearch] = useState("");
+  const [manualUrl, setManualUrl] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -334,17 +342,36 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
     });
     return merged;
   }, [catalog, savedVideos]);
-  const selected = videos.find(video => video.videoId === videoId) ?? null;
+  const filteredVideos = useMemo(() => filterAdminVideos(videos, videoSearch), [videos, videoSearch]);
+  const existingManualVideo = videoSource === "url"
+    ? videos.find(video => video.videoId === parseYoutubeId(manualUrl)) ?? null
+    : null;
+  const selected = videoSource === "library"
+    ? videos.find(video => video.videoId === videoId) ?? null
+    : existingManualVideo ? null : manualAdminVideo(manualUrl, manualTitle);
+  const selectedVideoId = selected?.videoId ?? "";
 
   useEffect(() => {
-    if (!videoId) return;
-    const saved = savedVideos.find(video => video.youtube_id === videoId);
-    setTranscript(saved?.transcript ?? "");
-  }, [videoId, savedVideos]);
+    if (!selectedVideoId) { setTranscript(""); return; }
+    const saved = savedVideos.find(video => video.youtube_id === selectedVideoId);
+    setTranscript(transcriptDrafts.current.get(selectedVideoId) ?? saved?.transcript ?? "");
+  }, [selectedVideoId, savedVideos]);
+
+  async function copyVideoUrl() {
+    if (!selected) return;
+    try {
+      await navigator.clipboard.writeText(selected.url);
+      setCopyStatus("Link copiado.");
+    } catch {
+      videoUrlInput.current?.focus();
+      videoUrlInput.current?.select();
+      setCopyStatus("Selecione e copie o link no campo.");
+    }
+  }
 
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
-    if (!selected) { setError("Escolha um vídeo da biblioteca."); return; }
+    if (!selected) { setError(existingManualVideo ? "Este vídeo já está na biblioteca. Selecione-o na busca." : videoSource === "url" ? "Informe um link válido do YouTube e o título do vídeo." : "Escolha um vídeo da biblioteca."); return; }
     setBusy("Entendendo conteúdo…");
     try {
       const result = await adminStream<{ article: EditorialArticle }>("generate", {
@@ -356,24 +383,67 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   }
   return <>
     <Heading title="Criar artigo" />
-    {(error || catalogQuery.error || workspaceQuery.error) && <Notice danger>{error || (workspaceQuery.error
+    {(error || (videoSource === "library" && catalogQuery.error) || workspaceQuery.error) && <Notice danger>{error || (workspaceQuery.error
       ? queryError(workspaceQuery.error, "Não foi possível carregar os vídeos.")
       : "A planilha de vídeos está indisponível. Você ainda pode usar um vídeo já importado.")}</Notice>}
     <form onSubmit={create} className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9">
-      <label className="block text-base font-semibold">Vídeo da biblioteca<select className={`${INPUT} mt-2 py-3`} value={videoId}
-        onChange={e => setVideoId(e.target.value)} required disabled={Boolean(busy)}>
-        <option value="">Selecione um dos {videos.length || "…"} vídeos</option>
-        {videos.map(video => <option key={video.videoId} value={video.videoId}>{video.title}</option>)}
-      </select></label>
-      {selected && <div className="flex gap-4 rounded-2xl bg-surface p-4">
-        {selected.thumbnail && <img src={selected.thumbnail} alt="" className="h-20 w-32 rounded-lg object-cover" />}
-        <div className="min-w-0"><p className="font-semibold">{selected.title}</p>
-          <a href={selected.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm text-emerald-800 underline">Abrir no YouTube</a>
+      <fieldset disabled={Boolean(busy)} className="space-y-4">
+        <legend className="text-base font-semibold">Qual vídeo será usado?</legend>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" aria-pressed={videoSource === "library"} className={videoSource === "library" ? BTN : OUTLINE}
+            onClick={() => { setVideoSource("library"); setCopyStatus(""); setError(""); }}>Buscar na biblioteca</button>
+          <button type="button" aria-pressed={videoSource === "url"} className={videoSource === "url" ? BTN : OUTLINE}
+            onClick={() => { setVideoSource("url"); setCopyStatus(""); setError(""); }}>Usar outro vídeo</button>
         </div>
+        {videoSource === "library" ? <div>
+          <label htmlFor="article-video-search" className="block text-sm font-semibold">Buscar por título ou ID</label>
+          <input id="article-video-search" type="search" autoComplete="off" className={`${INPUT} mt-2 py-3`}
+            value={videoSearch} onChange={e => setVideoSearch(e.target.value)} placeholder="Ex.: V9 Max, autonomia, teste…" />
+          <p role="status" className="mt-2 text-xs text-muted-foreground">
+            {catalogQuery.isPending || workspaceQuery.isPending ? "Carregando vídeos…" : `${filteredVideos.length} de ${videos.length} vídeos encontrados`}
+          </p>
+          <div aria-label="Resultados da busca de vídeos" className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border border-line p-2">
+            {filteredVideos.map(video => <button key={video.videoId} type="button" aria-pressed={videoId === video.videoId}
+              className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${videoId === video.videoId ? "bg-emerald-50 font-semibold text-emerald-900" : ""}`}
+              onClick={() => { setVideoId(video.videoId); setCopyStatus(""); setError(""); }}>
+              {video.title}<span className="mt-1 block text-xs font-normal text-muted-foreground">{video.videoId}</span>
+            </button>)}
+            {!catalogQuery.isPending && !workspaceQuery.isPending && filteredVideos.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nenhum vídeo encontrado. Tente outro termo ou use “Usar outro vídeo”.</p>}
+          </div>
+        </div> : <div className="space-y-4">
+          <label className="block text-sm font-semibold">Link do vídeo no YouTube
+            <input type="url" className={`${INPUT} mt-2 py-3`} value={manualUrl} onChange={e => { setManualUrl(e.target.value); setCopyStatus(""); }}
+              placeholder="https://www.youtube.com/watch?v=…" required />
+          </label>
+          {manualUrl && !manualAdminVideo(manualUrl, "Título provisório") && <p role="alert" className="text-sm text-red-700">Use um link válido do YouTube ou youtu.be.</p>}
+          {existingManualVideo && <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
+            <p>Este vídeo já está na biblioteca: <strong>{existingManualVideo.title}</strong>.</p>
+            <button type="button" className="mt-2 font-semibold underline" onClick={() => { setVideoId(existingManualVideo.videoId); setVideoSearch(existingManualVideo.title); setVideoSource("library"); }}>Selecionar este vídeo na biblioteca</button>
+          </div>}
+          <label className="block text-sm font-semibold">Título do vídeo
+            <input className={`${INPUT} mt-2 py-3`} value={manualTitle} onChange={e => setManualTitle(e.target.value)}
+              placeholder="Título que identifica este vídeo" required minLength={3} maxLength={300} />
+          </label>
+          <p className="text-xs text-muted-foreground">O vídeo será incluído no acervo editorial do Admin ao gerar o artigo. A planilha não será alterada.</p>
+        </div>}
+      </fieldset>
+      {selected && <div className="space-y-3 rounded-2xl bg-surface p-4">
+        <div className="flex gap-4">
+          {selected.thumbnail && <img src={selected.thumbnail} alt="" className="h-20 w-32 rounded-lg object-cover" />}
+          <div className="min-w-0"><p className="font-semibold">{selected.title}</p>
+            <a href={selected.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm text-emerald-800 underline">Abrir no YouTube</a>
+          </div>
+        </div>
+        <label htmlFor="selected-video-url" className="block text-sm font-semibold">Link do vídeo para copiar</label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input id="selected-video-url" ref={videoUrlInput} readOnly value={selected.url} className={`${INPUT} min-w-0 flex-1`} onFocus={e => e.target.select()} />
+          <button type="button" className={OUTLINE} onClick={() => void copyVideoUrl()}>Copiar link</button>
+        </div>
+        {copyStatus && <p role="status" className="text-sm text-emerald-800">{copyStatus}</p>}
       </div>}
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
-        onChange={e => setTranscript(e.target.value)} required minLength={200} disabled={Boolean(busy)}
-        placeholder="Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." /></label>
+        onChange={e => { setTranscript(e.target.value); if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value); }} required minLength={200} disabled={Boolean(busy)}
+        placeholder={videoSource === "library" ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." : "Cole aqui a transcrição revisada deste vídeo."} /></label>
       <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar artigo"}</button>
       {busy && <p className="text-center text-sm text-muted-foreground">Isso leva um ou dois minutos. Mantenha esta aba aberta.</p>}
     </form>
