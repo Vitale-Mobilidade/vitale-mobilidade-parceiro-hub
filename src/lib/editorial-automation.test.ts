@@ -31,7 +31,7 @@ describe("editorial automation", () => {
     expect(detectContentType("Guia de compra")).toBe("guide");
   });
 
-  it("lays out a comparison with table, both Radars, video, offer, FAQ and Quiz", () => {
+  it("interleaves comparison, both Radars, complementary video and Quiz before FAQ", () => {
     const blocks = layoutArticle({ sections: ["A", "B", "C", "D", "E"].map(text), videoId: "pLt9AmDyJ9Q",
       bikeId: "v9_max_s", relatedBikeIds: ["v9_max_ufofast_duas_baterias"], contentType: "comparison",
       offerBikeIds: new Set(["v9_max_s", "v9_max_ufofast_duas_baterias"]), hasFaq: true });
@@ -39,7 +39,11 @@ describe("editorial automation", () => {
     expect(types.filter(t => t === "radar")).toHaveLength(2);
     expect(types).toContain("comparator");
     expect(blocks.find(b => b.type === "video")?.heading).toBe("Assista ao comparativo completo");
-    expect(types.slice(-3)).toEqual(["cta", "faq", "quiz"]);
+    expect(types).not.toContain("cta");
+    expect(types.indexOf("comparator")).toBeLessThan(types.indexOf("radar"));
+    expect(types.indexOf("radar")).toBeLessThan(types.lastIndexOf("text"));
+    expect(types.indexOf("quiz")).toBeLessThan(types.indexOf("faq"));
+    expect(types.at(-1)).toBe("faq");
     expect(JSON.stringify(blocks)).not.toMatch(/meli\.la|R\$/);
   });
 
