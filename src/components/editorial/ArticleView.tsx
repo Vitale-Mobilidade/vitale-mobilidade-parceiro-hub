@@ -139,7 +139,7 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
       <h2 className="mb-4 text-2xl font-bold">{block.heading || "Comparação lado a lado"}</h2>
       <div className="overflow-x-auto rounded-2xl border border-line"><table className="w-full min-w-[520px] text-left text-sm">
         <thead className="bg-surface"><tr><th className="p-3" scope="col"><span className="sr-only">Item</span></th>{compared.map(b => <th key={b.bikeId} scope="col" className="p-3 align-bottom">
-          {b.image && <img src={b.image} alt={`Bike elétrica ${b.name}`} width={320} height={240} sizes="(max-width: 640px) 50vw, 240px" loading="lazy" decoding="async" className="mb-2 h-24 w-full object-contain" />}
+          {b.image && <img src={b.image} alt={`Bike elétrica ${b.name}`} width={320} height={240} sizes="(max-width: 640px) 50vw, 240px" loading="lazy" decoding="async" className="mb-2 h-24 w-32 object-contain object-left" />}
           <span className="font-bold">{b.name}</span></th>)}</tr></thead>
         <tbody>{rows.map(([label, value]) => <tr key={label} className="border-t border-line"><th scope="row" className="p-3 font-medium text-muted-foreground">{label}</th>
           {compared.map(b => <td key={b.bikeId} className="p-3">{value(b)}</td>)}</tr>)}
@@ -196,11 +196,11 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
         <span className="block p-4 font-semibold">{video.title}</span>
       </a>)}</div></section>}
     <section className="my-10 border-t border-line pt-6 text-sm text-muted-foreground">
-      <p>Conteúdo baseado nos testes práticos da Vitale. Preços e disponibilidade podem mudar; consulte o Radar da bike antes de comprar.</p>
+      <p>Análise editorial da Vitale. Preços e disponibilidade podem mudar; consulte o Radar da bike antes de comprar.</p>
       <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-emerald-800 underline">Assistir no YouTube</a>
     </section>
   </article>
-  <aside className="space-y-5 lg:pt-3" aria-label="Explore conteúdos relacionados">
+  <aside className="space-y-5 lg:sticky lg:top-28 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1" aria-label="Explore conteúdos relacionados">
     {sidebarArticles.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="text-lg font-bold">Artigos em destaque</h2><ul className="mt-3 divide-y divide-line">{sidebarArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="flex min-h-12 items-center gap-2 py-3 font-semibold leading-snug hover:text-action focus-visible:ring-2 focus-visible:ring-action"><BookOpen className="h-4 w-4 shrink-0 text-action" aria-hidden="true" />{a.title}</a></li>)}</ul></div>}
     {connectedBikes.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="flex items-center gap-2 text-lg font-bold"><LineChart className="h-5 w-5 text-action" aria-hidden="true" /> Bikes deste artigo</h2><ul className="mt-4 space-y-3">{connectedBikes.slice(0, 4).map(bike => <li key={bike.bikeId}><a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="flex min-h-12 items-center gap-3 rounded-lg hover:text-action focus-visible:ring-2 focus-visible:ring-action">{bike.image && <img src={bike.image} alt="" width={128} height={96} loading="lazy" decoding="async" className="h-12 w-16 rounded bg-surface object-contain" />}<span className="min-w-0 flex-1 font-semibold">{bike.name}</span><ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></a></li>)}</ul></div>}
   </aside>
