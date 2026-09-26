@@ -372,7 +372,7 @@ export default function EscolherBike() {
             <Progress value={95} className="h-2" />
             <p className="text-base text-muted-foreground mt-2 text-center">Último passo</p>
           </div>
-          <h2 className="text-2xl font-bold mb-3 text-foreground text-center">Sua recomendação está pronta</h2>
+          <h1 className="text-2xl font-bold mb-3 text-foreground text-center">Sua recomendação está pronta</h1>
           <p className="text-base text-muted-foreground mb-6 text-center">
             Preencha seus dados para liberar o resultado da bike ideal para o seu perfil.
           </p>
@@ -443,7 +443,7 @@ export default function EscolherBike() {
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
-              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro")} className="inline-flex items-center gap-1 hover:text-foreground">
+              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro")} className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
               <span>Pergunta {stepIdx + 1} de {STEPS.length}</span>
@@ -454,7 +454,7 @@ export default function EscolherBike() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-5">
               <span className="text-base font-bold text-primary">Vitale Mobilidade</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-3 text-foreground">{step.title}</h2>
+            <h1 className="text-2xl lg:text-3xl font-bold mb-3 text-foreground">{step.title}</h1>
             {step.key === "weight_range" && (
               <p className="text-[15px] sm:text-base text-muted-foreground mb-6 leading-relaxed">
                 {answers.rider_capacity_need === "garupa_as_vezes" || answers.rider_capacity_need === "garupa_frequente"
@@ -495,7 +495,7 @@ export default function EscolherBike() {
       <main className="min-h-[calc(100svh-4.5rem)] flex items-center justify-center px-6 bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
-          <p className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</p>
+          <h1 className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</h1>
           <p className="text-base text-muted-foreground">Estamos cruzando uso, trajeto, distância e orçamento para recomendar a melhor opção.</p>
         </div>
       </main>

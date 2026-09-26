@@ -74,5 +74,5 @@ export const Route = createFileRoute("/conteudos/$slug")({
 function ContentDetail() {
   const { article, bikes, relatedArticles, sidebarArticles, articlesShareContext, relatedVideos, prices, histories } = Route.useLoaderData();
   return <div className="min-h-screen bg-background"><SiteHeader />
-    <ArticleView article={article} bikes={bikes} prices={prices} histories={histories} relatedArticles={relatedArticles} sidebarArticles={sidebarArticles} articlesShareContext={articlesShareContext} relatedVideos={relatedVideos} /><SiteFooter /></div>;
+    <main><ArticleView article={article} bikes={bikes} prices={prices} histories={histories} relatedArticles={relatedArticles} sidebarArticles={sidebarArticles} articlesShareContext={articlesShareContext} relatedVideos={relatedVideos} /></main><SiteFooter /></div>;
 }

@@ -145,7 +145,7 @@ function DeferredRadarAssistant() {
     <button
       type="button"
       onClick={() => setEnabled(true)}
-      className="fixed bottom-5 right-5 z-50 inline-flex min-h-14 items-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+      className="z-50 mx-4 mb-5 inline-flex min-h-14 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 sm:fixed sm:bottom-5 sm:right-5 sm:mx-0 sm:mb-0 sm:w-auto"
       aria-label="Abrir Assistente Vitale"
     >
       <MessagesSquare className="h-5 w-5" aria-hidden="true" />

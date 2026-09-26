@@ -99,3 +99,36 @@ Riscos residuais observados em produção: TTFB variável do documento, imagens 
 ## Próximo gate
 
 Monitorar Search Console/CrUX por 28 dias. Em lote estrutural separado, decidir o mapa SEO de `/bikes`, o pipeline de variantes para imagens remotas, a estratégia de consentimento/carregamento de GTM/Meta/SalesIQ e a metadata SSR de 404. O rollback do frontend é a versão anterior ao deployment `7e7c40a9-a425-4b43-88f1-212c82454dd9`.
+
+## Rodada pós-PageSpeed da Home — 26/09/2026
+
+As capturas oficiais fornecidas pelo responsável cobrem apenas a Home. O dado de campo aparece agregado por origem e representa a janela histórica de 28 dias; portanto ainda inclui versões anteriores ao deployment acima. A execução atual de laboratório marcou 87 no mobile e 95 no desktop, com SEO 100, acessibilidade 100 e CLS 0. No campo, o principal encadeamento é TTFB alto (2,7 s mobile; 2,4 s desktop), seguido de FCP/LCP altos. No laboratório mobile, o risco atual é TBT de 470 ms.
+
+Uma amostra Lighthouse móvel adicional em produção cobriu Home, Radar, detalhe do Radar, índice/detalhe editorial, índice/detalhe de Ferramentas e Quiz. SEO permaneceu 100 e CLS 0 em todas. A variância de TTFB/LCP foi alta; imagens remotas de Bike, terceiros globais e o player do YouTube foram os maiores custos reproduzíveis. A Home transferiu 2,66 MB; o Radar lista, 4,60 MB; uma única imagem `v8_ultra` transferiu aproximadamente 1,18 MB. O artigo carregava aproximadamente 849 KB de scripts do player antes de interação.
+
+### Correções locais desta rodada
+
+- cliente Supabase da newsletter retirado do preload da Home e carregado apenas no envio; chunk adiado: 55,84 KB gzip;
+- catálogo do Radar limitado a 12 cards iniciais, com carregamento progressivo por interação;
+- cada card do Radar passou de três links redundantes para um CTA principal com foco visível;
+- assistente deixa de flutuar sobre conteúdo no mobile e permanece fixo apenas a partir de `sm`;
+- Quiz preserva um H1 em todas as fases e amplia o alvo/foco do botão Voltar;
+- índice de Conteúdos usa hero mobile e miniaturas YouTube `mqdefault` nos cards;
+- artigo usa fachada de vídeo e só cria o iframe `youtube-nocookie` após clique;
+- detalhe editorial ganhou landmark `main` explícito;
+- helper de miniatura valida host, protocolo, ID e variante antes de reescrever a URL.
+
+### Segunda revisão multidisciplinar
+
+| Perspectiva | Status | Evidência / condição |
+| --- | --- | --- |
+| Produto e estratégia | Pass | Radar, Quiz, conteúdo, oferta e posicionamento B2C preservados; não há nova feature nem mudança de rota. |
+| CTO e arquitetura | Pass condicionado | SSR e contratos de dados preservados; cache HTML, TTFB e variantes remotas continuam em lote de infraestrutura separado. |
+| IA e agentes | N/A justificado | Lucas, prompts, grounding, modelos e automações não foram alterados; o assistente continua sob clique explícito. |
+| Segurança | Pass | Nenhum secret, schema, RLS, write, PII ou URL assinada alterado; reescrita de thumbnail é restrita a `https://i.ytimg.com`. |
+| UX/UI | Pass | Focos redundantes removidos, H1/tap target corrigidos e overlay mobile eliminado; CLS e dimensões preservados. |
+| CX e operação | Pass | Sheets, sync, painel, CRM, alertas, catálogo e links diretos permanecem inalterados. |
+| Growth e CRO | Pass condicionado | Conteúdo/CTA/metadata preservados; terceiros não foram removidos sem plano de consentimento e atribuição. |
+| PMO e QA | Pass condicionado | 411 testes e `pnpm validate` passaram; publicar só após autorização específica desta rodada e smoke do artefato. |
+
+Validação local: `pnpm test` com 50 arquivos/411 testes, `pnpm validate` com typecheck, 47 testes direcionados e build de produção, e `git diff --check`, todos aprovados. Esta rodada ainda não foi publicada. O rollback proposto é restaurar o deployment `7e7c40a9-a425-4b43-88f1-212c82454dd9`; não há alteração de banco ou de dados.

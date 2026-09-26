@@ -32,6 +32,25 @@ export type VideoItem = {
 
 const YT_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
+export type YoutubeThumbnailVariant = "mqdefault" | "hqdefault" | "sddefault" | "maxresdefault";
+
+export function youtubeThumbnailUrl(videoId: string, variant: YoutubeThumbnailVariant = "mqdefault"): string | null {
+  return YT_ID_RE.test(videoId) ? `https://i.ytimg.com/vi/${videoId}/${variant}.jpg` : null;
+}
+
+/** Reduz somente thumbnails oficiais do YouTube; outras imagens editoriais ficam intactas. */
+export function youtubeThumbnailVariant(raw: string | null, variant: YoutubeThumbnailVariant = "mqdefault"): string | null {
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || url.hostname !== "i.ytimg.com") return raw;
+    const match = url.pathname.match(/^\/vi\/([A-Za-z0-9_-]{11})\/(?:mqdefault|hqdefault|sddefault|maxresdefault)\.jpg$/);
+    return match ? `https://i.ytimg.com/vi/${match[1]}/${variant}.jpg` : raw;
+  } catch {
+    return raw;
+  }
+}
+
 /** Extrai o ID de 11 caracteres de URLs youtube.com/youtu.be; null se inválida. */
 export function parseYoutubeId(raw: string): string | null {
   let u: URL;
@@ -127,7 +146,7 @@ export function buildVideoCatalog(csv: string): VideoItem[] {
       date: iDate >= 0 ? parseBrDate(cells[iDate] ?? "") : null,
       // URL canônica: sem tracking nem marcador de tempo.
       url: `https://www.youtube.com/watch?v=${videoId}`,
-      thumbnail: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+      thumbnail: youtubeThumbnailUrl(videoId)!,
       bikeIds,
       unmatched,
     });

@@ -30,6 +30,7 @@ import {
 
 const CHIPS: ChipKey[] = ["lowest", "recent_drop", "under_5k", "5k_8k", "over_8k"];
 const SORTS: SortKey[] = ["relevance", "opportunity", "drop", "price", "name"];
+const INITIAL_CATALOG_SIZE = 12;
 
 const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const base = useRadarBase();
@@ -54,6 +55,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
    const [sort, setSort] = useState<SortKey>("relevance");
   const [chip, setChip] = useState<ChipKey | null>(null);
   const [category, setCategory] = useState("");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_CATALOG_SIZE);
   const catalogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,6 +72,12 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     const byChips = bySearch.filter((e) => matchesChips(e, chip ? [chip] : []) && (!category || normalizeText(e.category ?? "") === normalizeText(category)));
     return sortEntries(byChips, sort);
   }, [entries, query, chip, sort, category]);
+
+  const visibleEntries = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_CATALOG_SIZE);
+  }, [query, chip, sort, category]);
 
   const trackingSince = useMemo(() => {
     const dates = entries.map((e) => e.firstObservedAt).filter(Boolean) as string[];
@@ -196,7 +204,18 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               </div>
             </div>
             <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filtro rápido — escolha uma opção">{CHIPS.map(option => <button key={option} type="button" aria-pressed={chip === option} onClick={() => toggleChip(option)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chip === option ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[option]}</button>)}{(chip || category) && <button type="button" onClick={() => { setChip(null); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
-            {filtered.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div> : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChip(null); setCategory(""); }}>Ver todas as bikes</button></p>}
+            {filtered.length ? (
+              <>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleEntries.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div>
+                {visibleEntries.length < filtered.length && (
+                  <div className="mt-7 flex justify-center">
+                    <button type="button" onClick={() => setVisibleCount(count => count + INITIAL_CATALOG_SIZE)} className="min-h-12 rounded-xl border border-action px-6 font-bold text-action hover:bg-mint/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2">
+                      Carregar mais bikes ({filtered.length - visibleEntries.length})
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChip(null); setCategory(""); }}>Ver todas as bikes</button></p>}
           </section>
         </div>}
 
