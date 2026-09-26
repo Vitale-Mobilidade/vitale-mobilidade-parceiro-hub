@@ -7,8 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
-import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
-import type { SDRContext } from "@/components/LucasSDR/types";
+import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { isChatOpen, isChatCoolingDown } from "@/lib/lucas-chat-bus";
 import { detectSourceBikeInterest } from "@/lib/source-bike-interest";
 import { getPurchaseLink, isMetaTraffic } from "@/data/bikes";
@@ -1327,31 +1326,13 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-      {/* Assistente virtual Lucas — flutuante, canto inferior direito */}
-      <LucasSDRWidget
-        ctx={{
-          leadId,
-          name,
-          phone,
-          answers,
-          labels,
-          recommendation: {
-            primary: recommendation.primary,
-            secondary: recommendation.secondary,
-            reasonPrimary,
-            reasonSecondary: reasonSecondary ?? undefined,
-          },
-        } satisfies SDRContext}
-        buyClicked={mainActionClicked}
-        manualOnly
-        onBuyLink={(bikeId) => {
-          const bike = [recommendation.primary, recommendation.secondary].find((b: any) => b?.id === bikeId);
-          if (bike) {
-            const position = bike.id === recommendation.primary.id ? "principal" : "segunda_opcao";
-            handleBuy(bike, position);
-          }
-        }}
-        onEvent={(name, payload) => trackEvent(name, payload ?? {})}
+      {/* Assistente HotPipe — somente no resultado; rascunho com os nomes reais da recomendação. */}
+      <HotPipeWidget
+        draftQuestion={
+          recommendation.secondary
+            ? `O Quiz da Vitale me recomendou ${recommendation.primary.name} e ${recommendation.secondary.name}. Quais são as diferenças entre essas bikes e qual combina mais com o meu uso?`
+            : `O Quiz da Vitale me recomendou ${recommendation.primary.name}. Pode me ajudar a entender se essa bike combina com o meu uso?`
+        }
       />
 
     </main>

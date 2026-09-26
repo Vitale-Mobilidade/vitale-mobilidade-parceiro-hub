@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,14 +11,10 @@ import {
   useRouterState,
   Link,
 } from "@tanstack/react-router";
-import { MessagesSquare } from "lucide-react";
 import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
-
-const RadarAssistant = lazy(() =>
-  import("@/components/radar/RadarAssistant").then((m) => ({ default: m.RadarAssistant })),
-);
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
@@ -126,31 +122,9 @@ function RootComponent() {
       <div id="conteudo-principal" tabIndex={-1}>
         <Outlet />
       </div>
-      {/* O cliente pesado do assistente só é baixado após intenção explícita. */}
-      {!excluded && <DeferredRadarAssistant />}
+      {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
+      {!excluded && <HotPipeWidget />}
     </QueryClientProvider>
-  );
-}
-
-function DeferredRadarAssistant() {
-  const [enabled, setEnabled] = useState(false);
-  if (enabled) {
-    return (
-      <Suspense fallback={null}>
-        <RadarAssistant initialOpen />
-      </Suspense>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => setEnabled(true)}
-      className="z-50 mx-4 mb-5 inline-flex min-h-14 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 sm:fixed sm:bottom-5 sm:right-5 sm:mx-0 sm:mb-0 sm:w-auto"
-      aria-label="Abrir Assistente Vitale"
-    >
-      <MessagesSquare className="h-5 w-5" aria-hidden="true" />
-      <span className="max-sm:sr-only">Assistente Vitale</span>
-    </button>
   );
 }
 
