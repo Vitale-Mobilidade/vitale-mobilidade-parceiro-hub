@@ -39,3 +39,28 @@ Capa aplicada em **rascunho** não é servida publicamente (por desenho) e apare
 - `pnpm validate`: typecheck, testes e build OK. Testes direcionados: `editorial-cover.test.ts` (4) e `cover-compose.test.ts` (3) OK.
 - Pós-deploy: bikes 200; `type=editorial-cover` inválido 400, inexistente 404, `type` desconhecido 400; `cover-generate` sem sessão 403.
 - **Pendente:** geração real não foi executada — o ambiente de teste estava sem sessão editorial autenticada, e nenhuma capa foi aplicada. Fazer a primeira geração e inspeção pelo editor.
+
+## Revisão corretiva — contrato do endpoint de imagem (HEAD `d28c5a7`)
+Risco levantado: `coverGenerate` envia `{model, modalities, messages}` a `/v1/images/generations` e lê `data[0].b64_json`.
+Evidência de que o contrato atual é válido (por isso o código **não** foi alterado nem reimplantado):
+- Guia oficial do gateway (request formats): Gemini 3.1 Flash Image usa o formato `gemini-chat` = `model`, `messages`, `modalities: ["image","text"]`; o endpoint de imagens traduz corpos `messages` para modelos Vertex e **normaliza o resultado para `b64_json`**.
+- Guia oficial de edição: para Gemini chat, enviar instrução e partes `image_url` com data URL numa mensagem de usuário em `/v1/images/generations` — exatamente o corpo atual.
+- Guia oficial de fluxos legados: `/v1/chat/completions` com `choices[0].message.images` é padrão legado; código novo deve usar `/v1/images/generations`. Migrar para chat seria regressão de contrato.
+- Exemplo oficial do servidor usa `Authorization: Bearer <LOVABLE_API_KEY>` nesse endpoint (o header `Lovable-API-Key` é o padrão dos SDKs de chat).
+- Catálogo autenticado `GET /v1/models` (26/09/2026): `google/gemini-3.1-flash-image` existe, entrada texto/imagem/vídeo, saída texto/imagem.
+- Parse atual já restringe base64 estrito, tamanho (≤ 8 MB) e mime por assinatura (JPEG/PNG/WebP).
+Nenhuma geração real foi feita (sem sessão editorial).
+
+## Revisão pós-implementação — status de release
+| Perspectiva | Status | Justificativa |
+|---|---|---|
+| Produto | Pass | Fluxo manual; gerar/descartar sem escrita; aplicar separado. |
+| CTO | Pass | Contrato do endpoint conferido com a documentação oficial e o catálogo; ramo `bike-image` isolado e bikes 200. |
+| IA | **Fail** | Modelo nunca chamado de ponta a ponta; qualidade, recusa e ausência de texto na arte não verificadas. |
+| Segurança | Pass | Allowlist de thumbnail, UUIDs, URL exata, bucket privado, chave só no servidor; 403 sem sessão confirmado. |
+| UX | **Fail** | Painel no editor autenticado não testado com sessão editorial real. |
+| CX | N/A | Nenhuma capa aplicada; leitor não é afetado até aplicação revisada. |
+| Growth | N/A | OG dimensions/type só entram no ar com a publicação do frontend. |
+| PMO | **Fail** | Gate de release: falta teste real do modelo e da UI autenticada; frontend não publicado. |
+
+**Release bloqueada** até: 1 geração real em rascunho com sessão editorial, inspeção visual, aplicação e verificação do hero/OG.
