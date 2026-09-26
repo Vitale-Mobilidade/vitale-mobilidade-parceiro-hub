@@ -449,6 +449,17 @@ Deno.serve(async (req) => {
       if (error) throw new Error("videos_read_failed");
       return json(req, { videos: data ?? [] });
     }
+    if (action === "editorial-workspace") {
+      if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
+      const [videos, articles] = await Promise.all([
+        db.from("editorial_videos").select("*").order("updated_at", { ascending: false }).limit(500),
+        db.from("editorial_articles")
+          .select("id, title, slug, status, content_type, video_id, primary_bike_id, updated_at, published_at, validation_errors")
+          .order("updated_at", { ascending: false }).limit(300),
+      ]);
+      if (videos.error || articles.error) throw new Error("editorial_workspace_read_failed");
+      return json(req, { videos: videos.data ?? [], articles: articles.data ?? [] });
+    }
     if (action === "video-save") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
       const id = body.youtubeId;
