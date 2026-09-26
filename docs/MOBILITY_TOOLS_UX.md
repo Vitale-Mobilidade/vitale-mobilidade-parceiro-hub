@@ -1,6 +1,6 @@
 # Ferramentas de Mobilidade — sete ferramentas oficiais (PREVIEW)
 
-Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` estão implementadas **em preview**, ainda não publicadas. As nove `/calculadoras/*` permanecem acessíveis apenas como legado de compatibilidade, com `robots: noindex, follow`, fora do hub, do sitemap e da navegação. Nenhum redirect permanente até existir mapa SEO aprovado.
+Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` foram implementadas **em preview** e o **preview externo foi validado em 26/09/2026, com status APROVADO PARA PUBLICAÇÃO**. A publicação ainda acontecerá depois deste commit. As nove `/calculadoras/*` permanecem acessíveis apenas como legado de compatibilidade, com `robots: noindex, follow`, fora do hub, do sitemap e da navegação. Nenhum redirect permanente até existir mapa SEO aprovado.
 
 | # | Rota | Grupo | Entradas | Saídas | Bikes |
 |---|------|-------|----------|--------|-------|
@@ -23,9 +23,28 @@ Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` estão i
 
 ## Pendências
 
-- Validação externa e publicação.
+- Publicação e smoke pós-publicação.
 - Artigos editoriais por ferramenta: só vídeos reais das bikes sugeridas aparecem hoje; sem relação publicada, a seção é omitida.
 - Mapa SEO para decidir redirects do legado `/calculadoras/*`.
+
+## Gate multidisciplinar — pré e pós-implementação (26/09/2026)
+
+- **Produto/Estratégia: Pass** — sete ferramentas substituem o hub e conduzem Ferramenta → Bikes → Radar → Quiz.
+- **CTO/Arquitetura: Pass** — SSR preservado, motores puros, registro único, sem nova integração ou migração.
+- **IA/Agentes: N/A** (justificado) — cálculo determinístico, sem IA ou prompts na jornada.
+- **Segurança/Privacidade: Pass** — inputs ficam no cliente; sem URL/storage/analytics; links afiliados diretos; sem secrets.
+- **UX/UI: Pass** — mobile 390x844 e desktop 1440x900, sem overflow; estados vazio/erro/positivo/desfavorável e navegação acessível.
+- **CX/Operação: Pass** — indisponibilidade de ofertas degrada sem bloquear cálculo; premissas visíveis; sem mudança em Sheets/Supabase.
+- **Growth/CRO: Pass** — metadata/canonical/OG/JSON-LD/sitemap; legado noindex,follow até mapa SEO; CTAs conectados.
+- **PMO/QA: Pass** — `pnpm validate` passou; 21 testes unitários novos; smoke do hub e de carro, meta de entregas e economia de tempo; diff restrito a Ferramentas.
+
+Registros complementares:
+
+- **Risco material:** nenhum risco material em aberto bloqueia release.
+- **Risco residual (não bloqueante):** erro preexistente de console `gtag is not defined` do GTM; necessidade de cadastrar/validar as novas posições `ferramenta_*` no GTM.
+- **Conteúdo:** artigos por ferramenta só aparecem quando existir relação publicada; vídeos reais das bikes sugeridas são exibidos quando disponíveis, sem placeholders.
+- **Rollback:** republicar a versão anterior / commit-base `9ca39e5cdd92d45813db1b5299fd42365452a4ff`.
+- **Versão candidata:** `e7aca7584477b6e8a31bfedd18cd9b5a26a850cc`. Se este commit de documentação gerar um novo SHA, o SHA de código acima deve ser registrado como base funcional; não adivinhar o novo SHA.
 
 ---
 
