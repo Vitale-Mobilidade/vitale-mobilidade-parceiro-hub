@@ -3,7 +3,7 @@
 ## Classificação e decisão
 
 - Mudança estrutural: afeta SEO/GEO, Radar, conteúdo editorial, imagens, analytics e experiência pública.
-- Escopo autorizado: otimização local do site público, sem deploy, migração, alteração de produção ou gasto externo.
+- Escopo autorizado inicialmente: otimização local do site público. A publicação conjunta do lote SEO/performance, do portal editorial já validado e do patch de performance do Admin foi autorizada explicitamente em 26/09/2026.
 - Decisão consolidada pré-implementação: **GO local com ressalvas**.
 - Fora deste lote: remover ou redirecionar `/bikes`, trocar IDs públicos por slugs, alterar GTM/GA4, criar serviço de transformação de imagens ou publicar em produção. Essas decisões exigem evidência de Search Console/analytics, mapa de migração e autorização explícita.
 
@@ -63,12 +63,12 @@ Principais causas confirmadas: imagens locais entre aproximadamente 595 KB e 1,7
 | Segurança | Pass | Sem secrets ou writes de produção; JSON-LD dinâmico escapado. |
 | IA e agentes | Pass | `llms.txt` factual; Lucas permanece disponível sob acionamento explícito. |
 | CX e operação | Pass | Links diretos e fluxos públicos preservados; vídeos continuam acessíveis em quantidade controlada. |
-| PMO e QA | Pass | `pnpm validate`, 404 testes e build de produção aprovados; smoke SSR e Lighthouse local concluídos. |
+| PMO e QA | Pass | `pnpm validate`, 409 testes e build de produção aprovados; smoke SSR e Lighthouse de produção concluídos. |
 
 ## Validação final
 
 - `pnpm validate`: **Pass** — typecheck, 47 testes do gate e build de produção.
-- `pnpm test`: **Pass** — 48 arquivos e 404 testes.
+- `pnpm test`: **Pass** — 49 arquivos e 409 testes, incluindo o novo fluxo editorial intercalado.
 - `git diff --check`: **Pass**.
 - Smoke SSR do build local: HTTP 200, title, canonical e Open Graph presentes.
 - Lighthouse do build local, usado como indicação técnica e não como promessa de produção:
@@ -80,6 +80,22 @@ Principais causas confirmadas: imagens locais entre aproximadamente 595 KB e 1,7
 
 O erro de console do GTM foi eliminado no smoke. Cookies de terceiros, cache de origens externas e a confirmação em infraestrutura real continuam como riscos residuais de produção.
 
+## Release e validação em produção — 26/09/2026
+
+- Commit publicado: `e6e3d8c30a08d09e312d66a831b80b182f48d1a3`.
+- Deployment Lovable: `7e7c40a9-a425-4b43-88f1-212c82454dd9`.
+- Domínio canônico verificado: `https://vitalemobilidade.com`.
+- Smoke HTTP/SSR: Home, Radar, Ferramentas, Conteúdos, Quiz, `llms.txt`, sitemap e imagens Open Graph retornaram 200; rota inexistente retornou 404.
+- Artigo real verificado com comparação, preços, histórico, vídeo, Radar, Quiz e ferramenta intercalados no HTML SSR.
+- O endpoint oficial do PageSpeed Insights continuou indisponível por cota diária. O Lighthouse foi executado diretamente contra produção:
+
+| Perfil | Performance | Acessibilidade | Boas práticas | SEO | FCP | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Mobile | 90 | 100 | 77 | 100 | 2,1 s | 2,6 s | 150 ms | 0 |
+| Desktop | 87 | 100 | 77 | 100 | 0,5 s | 2,4 s | 0 ms | 0 |
+
+Riscos residuais observados em produção: TTFB variável do documento, imagens remotas do catálogo sem variantes dimensionadas, JavaScript/cookies de GTM, Meta e SalesIQ, e metadata global `index, follow` presente no HTML de 404 embora a resposta HTTP seja 404. Eles não anulam o release, mas impedem declarar o desempenho como concluído em campo antes de CrUX e exigem decisões estruturais separadas sobre CDN de imagens, consentimento/terceiros e metadata de not-found.
+
 ## Próximo gate
 
-Depois de integrar alterações paralelas, repetir o baseline em preview comparável, revisar Search Console/CrUX por 28 dias e só então decidir publicação, migração de `/bikes`, pipeline de imagens remotas e estratégia de GTM. Nenhuma ação externa foi executada neste lote.
+Monitorar Search Console/CrUX por 28 dias. Em lote estrutural separado, decidir o mapa SEO de `/bikes`, o pipeline de variantes para imagens remotas, a estratégia de consentimento/carregamento de GTM/Meta/SalesIQ e a metadata SSR de 404. O rollback do frontend é a versão anterior ao deployment `7e7c40a9-a425-4b43-88f1-212c82454dd9`.
