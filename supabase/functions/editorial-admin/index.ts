@@ -9,7 +9,17 @@ import {
   ARCHETYPES, EDITORIAL_TOOL_SLUGS, parseEditorialBrief, parseSourceClaims, screenDiversity,
   type EditorialBrief,
 } from "../_shared/editorial-foundation.ts";
-import { briefMatchesSource, cautionReviewIssues, draftMatchesOutline, outlineGate, sourceFingerprint } from "../_shared/editorial-foundation.ts";
+import { briefMatchesSource, buildDiversityCorpus, cautionReviewIssues, DIVERSITY_CORPUS_LIMIT, draftMatchesOutline, outlineGate, sourceFingerprint } from "../_shared/editorial-foundation.ts";
+
+/** Differentiation corpus: published + written drafts + ready outlines, current article excluded, one entry per article. */
+async function readDiversityCorpus(db: SupabaseClient, currentId: string) {
+  const [articles, briefs] = await Promise.all([
+    db.from("editorial_articles").select("id, title, summary, status, blocks").neq("status", "archived").limit(DIVERSITY_CORPUS_LIMIT),
+    db.from("editorial_briefs").select("article_id, status, payload").eq("status", "ready").limit(DIVERSITY_CORPUS_LIMIT),
+  ]);
+  if (articles.error || briefs.error) throw new Error("corpus_read_failed");
+  return buildDiversityCorpus((articles.data ?? []) as never, (briefs.data ?? []) as never, currentId);
+}
 import {
   completeEditorialDraft, detectContentType, detectEditorialBikes, EDITORIAL_OG_FALLBACK, layoutArticle,
   YOUTUBE_THUMBNAILS, youtubeThumbnailUrl, type BikeCandidate,
@@ -364,13 +374,10 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   const brief = parseEditorialBrief({ ...raw, archetype, primaryIntent: classification.primaryIntent,
     secondaryIntents: classification.secondaryIntents }, claims, bikeIds, new Set((published ?? []).map((item) => item.id as string)));
   if (!brief) throw new Error("invalid_grounded_outline");
+  const corpus = await readDiversityCorpus(db, article.id);
   const diversity = screenDiversity({ id: article.id, title: article.title, summary: brief.opening,
-    headings: brief.sections.map((section) => section.heading), conclusion: brief.conclusion }, (published ?? []).map((item) => ({
-    id: item.id, title: item.title, summary: item.summary,
-    headings: (Array.isArray(item.blocks) ? item.blocks : []).map((block: Body) => str(block.heading, 160)).filter(Boolean),
-    body: (Array.isArray(item.blocks) ? item.blocks : []).map((block: Body) => str(block.text, 1200)).join(" ").slice(0, 4000),
-    conclusion: (Array.isArray(item.blocks) ? item.blocks : []).filter((block: Body) => block.type === "text").at(-1)?.text ?? "",
-  })));
+    headings: brief.sections.map((section) => section.heading), conclusion: brief.conclusion,
+    body: [brief.thesis, brief.uniqueInsight, ...brief.sections.map((section) => section.purpose)].join(" ") }, corpus.items);
   // Cautions are informative and carried into draft/QA; only material blockers keep the brief closed.
   const gate = outlineGate(brief, diversity);
   const issues = gate.blockers;
@@ -378,7 +385,7 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
   const next = { article_id: article.id, video_id: video.youtube_id, version: (current?.version ?? 0) + 1,
     status, archetype: brief.archetype, primary_intent: brief.primaryIntent, payload: brief,
     stages: { ...stages, outline: { at: new Date().toISOString(), sections: brief.sections.length, modules: brief.modules.length } },
-    quality_report: { differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, issues, cautions: gate.cautions },
+    quality_report: { differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, corpusCounts: corpus.counts, issues, cautions: gate.cautions },
     article_revision: null, updated_at: new Date().toISOString() };
   const { data, error } = await db.from("editorial_briefs").upsert(next, { onConflict: "article_id" }).select("*").single();
   if (error || !data) throw new Error("brief_write_failed");
@@ -533,14 +540,8 @@ async function qualityAndPublish(db: SupabaseClient, actor: Actor, article: Edit
     if (error || !data) throw new Error("quality_failure_write_failed");
     return data as EditorialArticle;
   }
-  const { data: corpus, error: corpusError } = await db.from("editorial_articles")
-    .select("id, title, summary, blocks").eq("status", "published").limit(200);
-  if (corpusError) throw new Error("corpus_read_failed");
-  const peers = (corpus ?? []).map((item) => ({ id: item.id as string, title: item.title as string,
-    summary: item.summary as string,
-    headings: (Array.isArray(item.blocks) ? item.blocks : []).map((block: Body) => str(block.heading, 160)).filter(Boolean),
-    body: (Array.isArray(item.blocks) ? item.blocks : []).map((block: Body) => str(block.text, 1200)).join(" ").slice(0, 4000),
-    conclusion: (Array.isArray(item.blocks) ? item.blocks : []).filter((block: Body) => block.type === "text").at(-1)?.text ?? "" }));
+  const corpus = await readDiversityCorpus(db, article.id);
+  const peers = corpus.items;
   const diversity = screenDiversity({ id: article.id, title: article.title, summary: article.summary,
     headings: textBlocks.map((block) => block.heading ?? ""), body: textBlocks.map((block) => block.text ?? "").join(" "),
     conclusion: textBlocks.at(-1)?.text ?? "" }, peers);
@@ -573,7 +574,7 @@ async function qualityAndPublish(db: SupabaseClient, actor: Actor, article: Edit
   if (!pass && issues.length === 0) issues.push("Revisão editorial automática abaixo do mínimo para publicação.");
   const report = { ...(brief.quality_report ?? {}), articleQaPass: pass, seoScore: Math.max(0, Math.min(100, Number(seo.score) || 0)),
     qualityScore: Math.max(0, Math.min(100, Number(assessment.qualityScore) || 0)),
-    differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, issues };
+    differentiationScore: diversity.score, closestArticleId: diversity.closestArticleId, corpusCounts: corpus.counts, issues };
   const { error: briefError } = await db.from("editorial_briefs").update({
     status: pass ? "ready" : "qa_failed", quality_report: report,
     article_revision: pass ? article.revision : null, updated_at: new Date().toISOString(),
