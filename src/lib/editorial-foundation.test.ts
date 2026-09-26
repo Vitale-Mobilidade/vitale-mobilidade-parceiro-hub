@@ -136,3 +136,47 @@ describe("outline gate: cautions vs material blockers (regression GT20 aDLpuoXPo
     expect(cautionReviewIssues([], undefined)).toEqual([]);
   });
 });
+
+import { buildDiversityCorpus } from "../../supabase/functions/_shared/editorial-foundation";
+
+describe("diversity corpus includes drafts and ready outlines (regression: 5 pilots scored only vs 2 published)", () => {
+  const outline = (heading: string) => ({ archetype: "real_world_test", opening: "Abertura do teste real no trajeto urbano com subida forte e bateria.",
+    thesis: "A bike aguenta o trajeto.", uniqueInsight: "Trajeto real", conclusion: "Serve para quem roda esse trajeto diariamente com ladeiras.",
+    sections: [{ heading: "Trajeto", purpose: "Relatar" }, { heading: "Subida", purpose: "Relatar" }, { heading, purpose: "Decidir" }] });
+
+  it("blocks a second new brief that repeats a ready outline not yet published", () => {
+    const articles = [{ id: "a", title: "GT20", status: "draft", blocks: [] }, { id: "b", title: "FT03", status: "draft", blocks: [] }];
+    const briefs = [{ article_id: "a", status: "ready", payload: outline("Vale a pena?") }, { article_id: "b", status: "ready", payload: outline("Vale a pena?") }];
+    const corpus = buildDiversityCorpus(articles, briefs, "b");
+    expect(corpus.items.map((i) => i.id)).toEqual(["a"]);
+    expect(corpus.counts).toEqual({ published: 0, written: 0, outlines: 1, total: 1 });
+    const p = outline("Vale a pena?");
+    const result = screenDiversity({ id: "b", title: "FT03", summary: p.opening, headings: p.sections.map((s) => s.heading), conclusion: p.conclusion }, corpus.items);
+    expect(result.closestArticleId).toBe("a");
+    expect(outlineGate({ warnings: [], blockingRisks: [] }, result).status).toBe("qa_failed");
+  });
+
+  it("dedupes peers (written text wins), excludes current and archived, ignores non-ready briefs", () => {
+    const articles = [
+      { id: "p", title: "Pub", status: "published", blocks: [{ type: "text", heading: "H", text: "Texto publicado" }] },
+      { id: "w", title: "Draft", status: "draft", blocks: [{ type: "text", heading: "Escrito", text: "Texto escrito" }] },
+      { id: "x", title: "Arq", status: "archived", blocks: [{ type: "text", heading: "H", text: "t" }] },
+      { id: "e", title: "Vazio", status: "draft", blocks: [] },
+    ];
+    const briefs = [{ article_id: "w", status: "ready", payload: outline("X") }, { article_id: "x", status: "ready", payload: outline("X") },
+      { article_id: "e", status: "qa_failed", payload: outline("X") }, { article_id: "cur", status: "ready", payload: outline("X") }];
+    const corpus = buildDiversityCorpus(articles, briefs, "cur");
+    expect(corpus.items.map((i) => i.id).sort()).toEqual(["p", "w"]);
+    expect(corpus.items.find((i) => i.id === "w")?.headings).toEqual(["Escrito"]);
+  });
+
+  it("holds 100 outlines within the corpus limit and screens them quickly", () => {
+    const articles = Array.from({ length: 100 }, (_, i) => ({ id: `id${i}`, title: `Artigo ${i}`, status: "draft", blocks: [] }));
+    const briefs = articles.map((a, i) => ({ article_id: a.id, status: "ready", payload: { ...outline(`Seção única ${i}`), opening: `Abertura ${i} distinta` } }));
+    const corpus = buildDiversityCorpus(articles, briefs, "novo");
+    expect(corpus.counts.total).toBe(100);
+    const t = Date.now();
+    screenDiversity({ id: "novo", title: "Novo", summary: "Outra coisa", headings: ["A", "B"] }, corpus.items);
+    expect(Date.now() - t).toBeLessThan(2000);
+  });
+});

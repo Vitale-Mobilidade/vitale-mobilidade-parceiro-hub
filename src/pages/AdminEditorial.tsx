@@ -317,8 +317,10 @@ function Articles() {
     <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
     {error && <Notice danger>{error}</Notice>}
     <section className={`${PANEL} mb-5`} aria-label="Distribuição editorial"><h2 className="font-semibold">Distribuição por arquétipo</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Outlines criados: {workspace.data?.briefs.length ?? 0}. Os artigos antigos permanecem na base de similaridade.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Outlines criados: {workspace.data?.briefs.length ?? 0}. A diferenciação compara cada outline com publicados, rascunhos escritos e outlines prontos.</p>
       <ul className="mt-3 flex flex-wrap gap-2">{distribution.map(([name, count]) => <li key={name} className="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-950">{name}: {count}</li>)}</ul>
+      {(() => { const distinct = distribution.filter(([name]) => name !== "em andamento" && name !== "intenção incerta").length;
+        return distinct < 5 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Produção em massa: NO-GO.</strong> Só {distinct} {distinct === 1 ? "intenção distinta" : "intenções distintas"} com amostra real; faltam fontes genuínas de outras intenções antes de escalar.</p>; })()}
     </section>
     <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${INPUT} mb-4 max-w-xs`}>
       <option value="all">Todos</option>
@@ -495,7 +497,8 @@ export function AdminArticleEditorPage({ id }: { id: string }) {
 type BriefRow = { version: number; status: string; archetype?: string | null; primary_intent?: string | null;
   payload: Partial<EditorialBrief>; stages?: Record<string, { at?: string } | undefined>;
   quality_report: { differentiationScore?: number; qualityScore?: number; seoScore?: number; issues?: string[];
-    closestArticleId?: string | null; intentUncertain?: boolean; articleQaPass?: boolean } };
+    closestArticleId?: string | null; intentUncertain?: boolean; articleQaPass?: boolean;
+    corpusCounts?: { published: number; written: number; outlines: number; total: number } } };
 
 const ARCHETYPE_LABEL: Record<string, string> = {
   direct_comparison: "Comparação direta", product_review: "Review de produto", real_world_test: "Teste real",
@@ -531,8 +534,10 @@ function BriefPanel({ brief, index }: { brief: BriefRow; index: { id: string; sl
     {claims.length > 0 && <details className="mt-4"><summary className="cursor-pointer font-semibold">Evidências da fonte ({claims.length})</summary>
       <ul className="mt-2 space-y-2 text-sm">{claims.map(c => <li key={c.id}><strong>{c.id}</strong> [{c.kind}] {c.statement}
         <blockquote className="mt-1 border-l-2 border-line pl-2 text-muted-foreground">“{c.excerpt}”</blockquote></li>)}</ul></details>}
-    <p className="mt-3 text-sm text-muted-foreground">Diferenciação {brief.quality_report?.differentiationScore ?? "—"}/100
-      {closest ? ` · mais próximo: ${closest.title}` : ""} · SEO/IA {brief.quality_report?.seoScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100</p>
+    <p className="mt-3 text-sm text-muted-foreground">{(() => { const c = brief.quality_report?.corpusCounts; return c
+      ? `Diferença frente ao par mais próximo: ${brief.quality_report?.differentiationScore ?? "—"}/100 · comparado com ${c.total} itens (${c.published} publicados, ${c.written} rascunhos escritos, ${c.outlines} outlines prontos)`
+      : `Diferença frente ao par mais próximo (base antiga: só publicados): ${brief.quality_report?.differentiationScore ?? "—"}/100 — gere o outline de novo para comparar com rascunhos e outlines`; })()}
+      {closest ? ` · mais próximo: ${closest.title}` : brief.quality_report?.closestArticleId ? " · mais próximo: outro rascunho/outline" : ""} · SEO/IA {brief.quality_report?.seoScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100</p>
     {issues.length > 0 && <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-950"><strong>Bloqueios</strong><ul className="mt-2 list-disc pl-5">{issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
     {(p.warnings ?? []).length > 0 && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Cautelas editoriais</strong>
       <span className="text-amber-900"> — não bloqueiam; o rascunho deve respeitá-las e a revisão final confere.</span>
