@@ -107,7 +107,7 @@ function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
   </button>;
 }
 
-function Block({ block, article, bikes, prices, histories }: { block: ArticleBlock; article: PublishedArticle; bikes: CatalogBike[]; prices: Record<string, number>; histories: Record<string, HistoryPoint[]> }) {
+function Block({ block, article, bikes, prices, histories, relatedArticles }: { block: ArticleBlock; article: PublishedArticle; bikes: CatalogBike[]; prices: Record<string, number>; histories: Record<string, HistoryPoint[]>; relatedArticles: RelatedArticle[] }) {
   if (block.type === "hero") return block.text ? <p className="mb-6 text-lg font-medium">{block.text}</p> : null;
   if (block.type === "summary") return block.text ? <aside className="my-7 rounded-xl bg-surface p-5 text-lg">{block.text}</aside> : null;
   if (block.type === "text" || block.type === "pros_cons") return <section className="my-8">
@@ -123,11 +123,19 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
   if (block.type === "specs" && block.bikeId) {
     return <BikeDecision bikeId={block.bikeId} bikes={bikes} prices={prices} histories={histories} mode="specs" />;
   }
+  if (block.type === "radar" && block.bikeId) return <section className="my-10"><BikeDecision bikeId={block.bikeId} bikes={bikes} prices={prices} histories={histories} mode="radar" /></section>;
+  if (block.type === "tool" && block.toolSlug) return <section className="my-10 rounded-2xl border border-line bg-surface p-6">
+    <h2 className="text-xl font-bold">Simule seu cenário</h2>
+    <p className="mt-2 text-muted-foreground">Use a ferramenta da Vitale para comparar o resultado com as bikes relacionadas.</p>
+    <a href={`/ferramentas/${encodeURIComponent(block.toolSlug)}`} className="mt-3 inline-flex min-h-11 items-center gap-2 font-bold text-action underline">Abrir ferramenta <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+  </section>;
   if (block.type === "quiz") return <div className="my-8"><QuizBanner /></div>;
   if (block.type === "comparator") {
     const connected = [...new Set([article.primaryBikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
       .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike));
-    const compared = comparedBikesInTitle(article.title, connected);
+    const compared = block.planned && (block.bikeIds?.length ?? 0) >= 2
+      ? block.bikeIds!.map(id => connected.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike))
+      : comparedBikesInTitle(article.title, connected);
     if (compared.length < 2) return null;
     const rows: [string, (b: CatalogBike) => ReactNode][] = [
       ["Preço atual no Radar", b => prices[b.bikeId] ? formatBRL(prices[b.bikeId]) : "Confira no Radar"],
@@ -151,11 +159,18 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
     </section>;
   }
   if (block.type === "faq") return <FaqList faq={article.faq} />;
-  if (block.type === "related") return null;
+  if (block.type === "related" && block.articleId) {
+    const related = relatedArticles.find(item => item.id === block.articleId);
+    return related ? <aside className="my-8 rounded-xl border-l-4 border-emerald-700 bg-surface p-5">
+      <p className="text-sm font-semibold text-muted-foreground">Continue neste assunto</p>
+      <a href={`/conteudos/${encodeURIComponent(related.slug)}`} className="mt-2 inline-flex min-h-11 items-center gap-2 font-bold text-action underline">{related.title} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+    </aside> : null;
+  }
   return null;
 }
 
 export function ArticleView({ article, bikes, prices = {}, histories = {}, relatedArticles = [], sidebarArticles = [], articlesShareContext = true, relatedVideos = [], preview = false }: { article: PublishedArticle; bikes: CatalogBike[]; prices?: Record<string, number>; histories?: Record<string, HistoryPoint[]>; relatedArticles?: RelatedArticle[]; sidebarArticles?: RelatedArticle[]; articlesShareContext?: boolean; relatedVideos?: VideoCard[]; preview?: boolean }) {
+  const planned = article.blocks.some(block => block.planned);
   const connectedBikes = [...new Set([article.primaryBikeId, ...article.relatedBikeIds].filter((id): id is string => Boolean(id)))]
     .map(id => bikes.find(bike => bike.bikeId === id)).filter((bike): bike is CatalogBike => Boolean(bike));
   const titleComparison = article.blocks.some(block => block.type === "comparator") ? comparedBikesInTitle(article.title, connectedBikes) : [];
@@ -173,8 +188,8 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
       Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}</time>}
     {article.ogImageUrl && <img src={article.ogImageUrl} alt="" width={1280} height={720} fetchPriority="high" decoding="async" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
     <p className="mt-7 text-xl leading-8 text-muted-foreground"><InlineText value={article.summary} /></p>
-    {flow.map((item, index) => item.kind === "block"
-      ? <Block key={index} block={item.block} article={article} bikes={bikes} prices={prices} histories={histories} />
+    {planned ? article.blocks.map((block, index) => <Block key={index} block={block} article={article} bikes={bikes} prices={prices} histories={histories} relatedArticles={relatedArticles} />) : flow.map((item, index) => item.kind === "block"
+      ? <Block key={index} block={item.block} article={article} bikes={bikes} prices={prices} histories={histories} relatedArticles={relatedArticles} />
       : item.kind === "radar" ? <section key={index} aria-labelledby="radar-no-artigo" className="my-12 border-y border-line py-8">
       <p className="text-xs font-bold uppercase tracking-widest text-action">Da análise à decisão</p>
       <h2 id="radar-no-artigo" className="mt-2 text-2xl font-bold">Preços e histórico das bikes citadas</h2>
@@ -183,8 +198,8 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     </section>
       : item.kind === "quiz" ? <div key={index} className="my-10"><QuizBanner /></div>
       : <section key={index} className="my-10 flex flex-wrap items-center gap-5 rounded-2xl border border-line bg-surface p-6"><Calculator className="h-9 w-9 text-action" aria-hidden="true" /><div className="min-w-0 flex-1"><h2 className="text-xl font-bold">Quanto você pode economizar no trajeto?</h2><p className="mt-1 text-sm text-muted-foreground">Compare os custos do seu transporte com uma bike elétrica.</p></div><a href="/ferramentas" className="inline-flex min-h-11 items-center gap-2 font-bold text-action underline">Explorar calculadoras <ArrowRight className="h-4 w-4" aria-hidden="true" /></a></section>)}
-    <FaqList faq={article.faq} />
-    {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
+    {!planned && <FaqList faq={article.faq} />}
+    {!planned && relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-line bg-card hover:border-action focus-visible:ring-2 focus-visible:ring-action">
         {a.ogImageUrl ? <img src={youtubeThumbnailVariant(a.ogImageUrl) ?? undefined} alt="" width={320} height={180} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
         <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground"><InlineText value={a.summary} /></span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>

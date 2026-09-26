@@ -3,7 +3,7 @@ export const ARTICLE_STATUSES = ["draft", "generated", "validation_error", "read
 export type ArticleStatus = (typeof ARTICLE_STATUSES)[number];
 export const CONTENT_TYPES = ["test", "comparison", "guide", "tips", "economy", "other"] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
-export const BLOCK_TYPES = ["hero", "summary", "text", "video", "radar", "specs", "pros_cons", "faq", "related", "quiz", "comparator", "cta"] as const;
+export const BLOCK_TYPES = ["hero", "summary", "text", "video", "radar", "specs", "pros_cons", "faq", "related", "quiz", "comparator", "cta", "tool"] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
 export type ArticleBlock = {
@@ -12,7 +12,11 @@ export type ArticleBlock = {
   text?: string;
   sourceExcerpt?: string;
   bikeId?: string;
+  bikeIds?: string[];
   videoId?: string;
+  toolSlug?: string;
+  articleId?: string;
+  planned?: boolean;
 };
 export type ArticleFaq = { question: string; answer: string; sourceExcerpt: string };
 
@@ -25,6 +29,7 @@ export type EditorialArticle = {
   title: string;
   slug: string | null;
   content_type: ContentType;
+  foundation_required?: boolean;
   summary: string;
   summary_source_excerpt: string;
   blocks: ArticleBlock[];
@@ -94,7 +99,11 @@ export function parseArticleBlocks(raw: unknown): ArticleBlock[] {
     if (text(b.text, 5000)) block.text = text(b.text, 5000);
     if (text(b.sourceExcerpt, 1200)) block.sourceExcerpt = text(b.sourceExcerpt, 1200);
     if (validBikeId(b.bikeId)) block.bikeId = b.bikeId;
+    if (Array.isArray(b.bikeIds)) block.bikeIds = b.bikeIds.filter(validBikeId).slice(0, 3);
     if (validYoutubeId(b.videoId)) block.videoId = b.videoId;
+    if (/^[a-z0-9-]{1,80}$/.test(text(b.toolSlug, 80))) block.toolSlug = text(b.toolSlug, 80);
+    if (/^[0-9a-f-]{36}$/i.test(text(b.articleId, 36))) block.articleId = text(b.articleId, 36);
+    if (b.planned === true) block.planned = true;
     return [block];
   });
 }
@@ -172,7 +181,8 @@ export function autoRepairArticle<T extends Pick<EditorialArticle, "title" | "sl
       if ((!heading || GENERIC_HEADING.test(heading)) && previous?.type === "text" && blocks.length) {
         previous.text = `${previous.text}\n\n${text}`; continue;
       }
-      blocks.push({ type: "text", ...(heading && !GENERIC_HEADING.test(heading) ? { heading } : {}), text });
+      blocks.push({ type: "text", ...(heading && !GENERIC_HEADING.test(heading) ? { heading } : {}), text,
+        ...(block.sourceExcerpt ? { sourceExcerpt: block.sourceExcerpt } : {}), ...(block.planned ? { planned: true } : {}) });
       continue;
     }
     blocks.push(block);

@@ -14,6 +14,7 @@ import { ArticleView, type PublishedArticle } from "@/components/editorial/Artic
 import { composeCover } from "@/lib/cover-compose";
 import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle } from
   "../../supabase/functions/_shared/editorial-contract";
+import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 
 const BTN = "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
 const OUTLINE = "rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50";
@@ -308,9 +309,16 @@ function Articles() {
   const items = workspace.data?.articles ?? [];
   const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
   const visible = items.filter(a => status === "all" || simpleStatus(a.status) === status);
+  const distribution = Object.entries((workspace.data?.briefs ?? []).reduce<Record<string, number>>((counts, brief) => {
+    counts[brief.archetype] = (counts[brief.archetype] ?? 0) + 1; return counts;
+  }, {})).sort((a, b) => b[1] - a[1]);
   return <>
     <Heading title="Artigos"><Link to="/admin/conteudos/novo" search={{ video: undefined }} className={BTN}>Criar artigo</Link></Heading>
     {error && <Notice danger>{error}</Notice>}
+    <section className={`${PANEL} mb-5`} aria-label="Distribuição editorial"><h2 className="font-semibold">Distribuição por arquétipo</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Outlines criados: {workspace.data?.briefs.length ?? 0}. Os artigos antigos permanecem na base de similaridade.</p>
+      <ul className="mt-3 flex flex-wrap gap-2">{distribution.map(([name, count]) => <li key={name} className="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-950">{name}: {count}</li>)}</ul>
+    </section>
     <select aria-label="Filtrar por status" value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${INPUT} mb-4 max-w-xs`}>
       <option value="all">Todos</option>
       {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
@@ -383,9 +391,10 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   async function create(event: FormEvent) {
     event.preventDefault(); setError("");
     if (!selected) { setError(existingManualVideo ? "Este vídeo já está na biblioteca. Selecione-o na busca." : videoSource === "url" ? "Informe um link válido do YouTube e o título do vídeo." : "Escolha um vídeo da biblioteca."); return; }
-    setBusy("Entendendo conteúdo…");
+    const outlineOnly = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "outline";
+    setBusy(outlineOnly ? "Analisando para o outline…" : "Entendendo conteúdo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>("generate", {
+      const result = await adminStream<{ article: EditorialArticle }>(outlineOnly ? "outline-only" : "generate", {
         youtubeId: selected.videoId, title: selected.title, transcript,
       }, setBusy);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
@@ -455,8 +464,13 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       <label className="block text-base font-semibold">Transcrição completa<textarea className={`${INPUT} mt-2 min-h-72 leading-7`} value={transcript}
         onChange={e => { setTranscript(e.target.value); if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value); }} required minLength={200} disabled={Boolean(busy)}
         placeholder={videoSource === "library" ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca." : "Cole aqui a transcrição revisada deste vídeo."} /></label>
-      <button className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Gerar artigo"}</button>
-      {busy && <p className="text-center text-sm text-muted-foreground">Isso leva um ou dois minutos. Mantenha esta aba aberta.</p>}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button type="submit" value="outline" className={`${OUTLINE} py-3.5 text-base`} disabled={Boolean(busy)}>{busy || "Gerar somente outline"}</button>
+        <button type="submit" value="publish" className={`${BTN} py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">{busy || "Analisar, escrever e publicar"}</button>
+      </div>
+      <p className="text-center text-sm text-muted-foreground">Use o outline para provar diferentes intenções editoriais sem escrever ou publicar o artigo.</p>
+      <p className="text-center text-sm text-muted-foreground">Publicação automática somente se fonte, originalidade e qualidade passarem no QA. Falhas ficam em rascunho com alertas.</p>
+      {busy && <p className="text-center text-sm text-muted-foreground">A análise pode levar alguns minutos. Mantenha esta aba aberta.</p>}
     </form>
   </>;
 }
@@ -485,6 +499,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [article, setArticle] = useState<EditorialArticle | null>(null);
+  const [brief, setBrief] = useState<{ version: number; status: string; payload: EditorialBrief; quality_report: {
+    differentiationScore?: number; qualityScore?: number; issues?: string[] } } | null>(null);
   const [bikes, setBikes] = useState<Awaited<ReturnType<typeof getBikesDiscovery>>["bikes"]>([]);
   const [index, setIndex] = useState<{ id: string; slug: string; title: string; primaryBikeId?: string | null }[]>([]);
   const [relatedVideos, setRelatedVideos] = useState<VideoCard[]>([]);
@@ -493,8 +509,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   useEffect(() => { void Promise.all([
-    adminCall<{ article: EditorialArticle }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
-  ]).then(async ([detail, catalog, published]) => { setArticle(detail.article); setBikes(catalog.bikes); setIndex(published ?? []);
+    adminCall<{ article: EditorialArticle; brief: typeof brief }>("article-get", { id }), getBikesDiscovery(), getPublishedArticles(),
+  ]).then(async ([detail, catalog, published]) => { setArticle(detail.article); setBrief(detail.brief); setBikes(catalog.bikes); setIndex(published ?? []);
     if (detail.article.primary_bike_id) {
       const videos = await safeVideos({ bikeId: detail.article.primary_bike_id, limit: 12 });
       setRelatedVideos(videos.filter(item => item.videoId !== detail.article.video_id).slice(0, 4));
@@ -502,11 +518,12 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   async function run(name: string, payload: Record<string, unknown>, label: string) {
     if (!article) return null; setBusy(label); setError(""); setMessage("");
     try {
-      const result = await adminCall<{ article?: EditorialArticle; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
+      const result = await adminCall<{ article?: EditorialArticle; brief?: typeof brief; ok?: boolean }>(name, { id, revision: article.revision, ...payload });
       if (result.article) {
         setArticle(result.article);
         await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
       }
+      if (result.brief) setBrief(result.brief);
       return result;
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir."); return null; }
     finally { setBusy(""); }
@@ -570,9 +587,20 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
           </div>
         </details>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{busy || (status === "draft" ? "Artigo criado pela Vitale. Você decide quando colocá-lo no ar." : status === "published" ? `No ar em vitalemobilidade.com${publicUrl}` : "Arquivado — fora do site.")}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{busy || (status === "draft" ? "Rascunho privado. A publicação automática depende do QA." : status === "published" ? `No ar em vitalemobilidade.com${publicUrl}` : "Arquivado — fora do site.")}</p>
     </div>
     {error && <Notice danger>{error}</Notice>}{message && <Notice>{message}</Notice>}
+    {brief && <section className={`${PANEL} mb-6`} aria-label="Plano e qualidade editorial">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-bold">Plano editorial</h2>
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold">{brief.payload.archetype} · {brief.status}</span></div>
+      <p className="mt-2"><strong>Intenção:</strong> {brief.payload.primaryIntent}</p>
+      <p className="mt-1"><strong>Tese:</strong> {brief.payload.thesis}</p>
+      <p className="mt-1"><strong>Diferencial:</strong> {brief.payload.uniqueInsight}</p>
+      <ol className="mt-4 list-decimal space-y-1 pl-5">{brief.payload.sections.map((section, i) => <li key={`${i}-${section.heading}`}>
+        <strong>{section.heading}</strong><span className="text-muted-foreground"> — {section.purpose}</span></li>)}</ol>
+      <p className="mt-3 text-sm text-muted-foreground">{brief.payload.claims.length} afirmações com trecho de fonte · {brief.payload.modules.length} módulos selecionados · diferenciação {brief.quality_report?.differentiationScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100</p>
+      {(brief.quality_report?.issues?.length ?? 0) > 0 && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950"><strong>Alertas do QA</strong><ul className="mt-2 list-disc pl-5">{brief.quality_report.issues?.map((issue, i) => <li key={i}>{issue}</li>)}</ul></div>}
+    </section>}
     {draft ? <section className="mx-auto max-w-4xl space-y-5 rounded-3xl bg-white p-6 shadow-sm sm:p-10">
       <label className="block text-sm font-semibold">Título<input className="mt-2 w-full border-0 border-b border-line px-0 py-2 text-3xl font-bold" value={draft.title} onChange={e => set({ title: e.target.value })} /></label>
       <label className="block text-sm font-semibold">Introdução<textarea className={`${INPUT} mt-2 min-h-24 text-lg leading-8`} value={draft.summary} onChange={e => set({ summary: e.target.value })} /></label>
