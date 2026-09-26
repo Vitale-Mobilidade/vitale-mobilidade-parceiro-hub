@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,14 +11,10 @@ import {
   useRouterState,
   Link,
 } from "@tanstack/react-router";
-import { MessagesSquare } from "lucide-react";
 import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
-
-const RadarAssistant = lazy(() =>
-  import("@/components/radar/RadarAssistant").then((m) => ({ default: m.RadarAssistant })),
-);
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
