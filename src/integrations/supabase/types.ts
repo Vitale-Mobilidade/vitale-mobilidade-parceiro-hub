@@ -807,6 +807,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           faq: Json
+          foundation_required: boolean
           id: string
           indexable: boolean
           meta_description: string
@@ -840,6 +841,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           faq?: Json
+          foundation_required?: boolean
           id?: string
           indexable?: boolean
           meta_description?: string
@@ -873,6 +875,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           faq?: Json
+          foundation_required?: boolean
           id?: string
           indexable?: boolean
           meta_description?: string
@@ -946,6 +949,66 @@ export type Database = {
           id?: never
         }
         Relationships: []
+      }
+      editorial_briefs: {
+        Row: {
+          archetype: string | null
+          article_id: string
+          article_revision: number | null
+          created_at: string
+          payload: Json
+          primary_intent: string | null
+          quality_report: Json
+          stages: Json
+          status: string
+          updated_at: string
+          version: number
+          video_id: string
+        }
+        Insert: {
+          archetype?: string | null
+          article_id: string
+          article_revision?: number | null
+          created_at?: string
+          payload?: Json
+          primary_intent?: string | null
+          quality_report?: Json
+          stages?: Json
+          status?: string
+          updated_at?: string
+          version?: number
+          video_id: string
+        }
+        Update: {
+          archetype?: string | null
+          article_id?: string
+          article_revision?: number | null
+          created_at?: string
+          payload?: Json
+          primary_intent?: string | null
+          quality_report?: Json
+          stages?: Json
+          status?: string
+          updated_at?: string
+          version?: number
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_briefs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: true
+            referencedRelation: "editorial_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_briefs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
       }
       editorial_compiler_runs: {
         Row: {

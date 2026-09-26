@@ -116,3 +116,13 @@ Conclusão: as fontes **sustentam cinco intenções distintas**, com um risco re
 7. Só então definir `EDITORIAL_AUTO_PUBLISH=true`.
 
 Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin` anterior; frontend anterior. A tabela aditiva fica para diagnóstico. Restaurar o trigger anterior (`editorial_article_before_update` sem o ramo `foundation_required`) somente se ele bloquear algo indevido. Restaurar backup somente em falha irreversível.
+
+### Registro de implantação da fundação (26/09/2026)
+- Migration `20260926230000_editorial_foundation.sql` aplicada no banco vivo pelo conector Lovable, após snapshot local restaurado em PostgreSQL isolado.
+- Verificação pós-migration: 3 artigos, 2 published; digest de id/slug/status/blocks/revision idêntico ao anterior (`b2941f37d646c0ef64421947da833642`) — os dois publicados intactos; todos `foundation_required=false`.
+- `editorial_briefs`: RLS ativa; SELECT para anon/authenticated negado; service_role permitido.
+- Deploy somente de `editorial-admin` a partir do HEAD `8b3fc0a57b278035ada240011ef9c9ea0a6bc05d`, sem erros de compilação ou deploy.
+- `EDITORIAL_AUTO_PUBLISH` ausente do ambiente (gate técnico desligado): QA aprovado registra `article_qa_passed_publication_gated` e o artigo permanece privado.
+- Chamada sem autenticação a `editorial-admin` negada com HTTP 403 ("Acesso não autorizado.").
+- Não publicado: frontend, importação de transcrições e geração de artigos. Nenhuma outra função, Sheets, Radar, Quiz ou ofertas alterados.
+- Próximos passos pendentes: publicar o frontend do Admin, importar as cinco transcrições, rodar cinco outlines, piloto de rascunho + QA com gate fechado, e só então avaliar `EDITORIAL_AUTO_PUBLISH=true`.
