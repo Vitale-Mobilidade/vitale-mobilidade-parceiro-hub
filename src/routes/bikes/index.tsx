@@ -27,6 +27,13 @@ export const Route = createFileRoute("/bikes/")({
         "Todos os modelos de bikes elétricas acompanhados pela Vitale: autonomia, capacidade, preços com fonte explícita e vídeos reais de cada modelo.",
       ogTitle: "Encontre a bike elétrica certa para o seu perfil",
       ogDescription: "Modelos, especificações, preços com fonte explícita e testes em vídeo.",
+      image: {
+        url: "https://vitalemobilidade.com/og/vitale-radar-1200x630.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
+        alt: "Radar de bikes elétricas da Vitale Mobilidade",
+      },
     }),
   component: BikesIndex,
 });

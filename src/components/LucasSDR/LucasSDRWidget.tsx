@@ -25,6 +25,8 @@ interface Props {
   inviteText?: string;
   /** Quando true: sem convite automático e sem autoabertura; abre só por clique. */
   manualOnly?: boolean;
+  /** Abre imediatamente quando o bundle foi solicitado por uma ação explícita do usuário. */
+  initialOpen?: boolean;
 }
 
 
@@ -54,8 +56,9 @@ export function LucasSDRWidget({
   inviteTitle = "Ainda em dúvida?",
   inviteText = "Fale com o Lucas e entenda qual bike faz mais sentido para você.",
   manualOnly = false,
+  initialOpen = false,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   // Na Home e nas calculadoras, o launcher mobile ocupa apenas 56px.
   const compactOnMobile = useRouterState({ select: (s) => s.location.pathname === "/" || s.location.pathname.startsWith("/calculadoras/") || s.location.pathname.startsWith("/ferramentas/") });
   const compactHome = useRouterState({ select: (s) => s.location.pathname === "/" });

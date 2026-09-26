@@ -1,7 +1,6 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -11,7 +10,7 @@ import {
   useRouterState,
   Link,
 } from "@tanstack/react-router";
-import { HelmetProvider } from "react-helmet-async";
+import { MessagesSquare } from "lucide-react";
 import NotFound from "@/pages/NotFound";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "../styles.css?url";
@@ -24,7 +23,7 @@ const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétr
 const DESCRIPTION =
   "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
 
-const GTM_SNIPPET = `if (!location.pathname.startsWith('/admin')) (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+const GTM_SNIPPET = `if (!location.pathname.startsWith('/admin')) (function(w,d,s,l,i){w[l]=w[l]||[];w.gtag=w.gtag||function(){w[l].push(arguments)};w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
@@ -63,11 +62,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
       { property: "og:site_name", content: "Vitale Mobilidade" },
-      { property: "og:image", content: "https://vitalemobilidade.com/logo-192.webp" },
+      { property: "og:image", content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:alt", content: "Vitale Mobilidade — escolha sua bicicleta elétrica" },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://vitalemobilidade.com/logo-192.webp" },
+      { name: "twitter:image", content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg" },
+      { name: "twitter:image:alt", content: "Vitale Mobilidade — escolha sua bicicleta elétrica" },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
     ],
@@ -110,21 +114,41 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes") || path.startsWith("/admin");
   return (
-    <QueryClientProvider client={queryClient}>
-      <HelmetProvider context={{}}>
+    <>
+      <a href="#conteudo-principal" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:font-semibold focus:text-ink focus:shadow-lg">
+        Pular para o conteúdo
+      </a>
+      <div id="conteudo-principal" tabIndex={-1}>
         <Outlet />
-        {/* Assistente Vitale: instância única. /escolherbike monta a sua própria. */}
-        {!excluded && (
-          <Suspense fallback={null}>
-            <RadarAssistant />
-          </Suspense>
-        )}
-      </HelmetProvider>
-    </QueryClientProvider>
+      </div>
+      {/* O cliente pesado do assistente só é baixado após intenção explícita. */}
+      {!excluded && <DeferredRadarAssistant />}
+    </>
+  );
+}
+
+function DeferredRadarAssistant() {
+  const [enabled, setEnabled] = useState(false);
+  if (enabled) {
+    return (
+      <Suspense fallback={null}>
+        <RadarAssistant initialOpen />
+      </Suspense>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setEnabled(true)}
+      className="fixed bottom-5 right-5 z-50 inline-flex min-h-14 items-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+      aria-label="Abrir Assistente Vitale"
+    >
+      <MessagesSquare className="h-5 w-5" aria-hidden="true" />
+      <span className="max-sm:sr-only">Assistente Vitale</span>
+    </button>
   );
 }
 

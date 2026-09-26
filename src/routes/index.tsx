@@ -23,6 +23,13 @@ export const Route = createFileRoute("/")({
       ogTitle: "Encontre a bike elétrica certa para você",
       ogDescription:
         "Quiz de perfil, Radar com histórico de preços e bikes elétricas monitoradas no Brasil.",
+      image: {
+        url: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
+        alt: "Ciclista em bicicleta elétrica — Vitale Mobilidade",
+      },
     }),
   component: HomeB2C,
 });

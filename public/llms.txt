@@ -1,18 +1,46 @@
 # Vitale Mobilidade
 
-> Consultoria estratégica em veículos elétricos no Brasil. Mais de 10 anos de experiência ajudando empresas e empreendedores a escolher fornecedores confiáveis e estruturar operações B2B/B2C no mercado de mobilidade elétrica.
+> Plataforma brasileira de decisão para quem está pesquisando bicicletas elétricas. A Vitale reúne testes práticos, conteúdo editorial, ferramentas de mobilidade, Quiz e acompanhamento de preços para ajudar cada pessoa a escolher com mais contexto.
 
-A Vitale Mobilidade, liderada por Lucas Vitale, oferece diagnóstico de mercado, avaliação de fornecedores, estruturação comercial B2B/B2C/B2B2C e treinamento de equipes. Contato exclusivo via WhatsApp (11) 99869-3904.
+URL canônica: https://vitalemobilidade.com/
+Idioma principal: português do Brasil (pt-BR)
+Entidade central: Bike
+Experiência pública canônica da Bike: Radar Vitale
 
-## Pages
+## Principais páginas
 
-- [Home](/): Visão geral da consultoria, serviços, casos de sucesso e FAQ.
-- [Escolher Bike](/escolherbike): Ferramenta interativa que recomenda a bike elétrica ideal a partir de um quiz com perfil de uso, trajeto e orçamento.
-- [Ferramentas de mobilidade](/ferramentas): Sete simulações gratuitas de custo, renda e tempo com bike elétrica, com bikes reais e ofertas atuais.
-  - [Carro vs bike](/ferramentas/carro-vs-bike)
-  - [Moto vs bike](/ferramentas/moto-vs-bike)
-  - [Aplicativos vs bike](/ferramentas/aplicativos-vs-bike)
-  - [Transporte público vs bike](/ferramentas/transporte-publico-vs-bike)
-  - [Veículo alugado vs bike própria](/ferramentas/veiculo-alugado-vs-bike-propria)
-  - [Meta de entregas](/ferramentas/meta-entregas)
-  - [Economia de tempo](/ferramentas/economia-de-tempo)
+- [Home](https://vitalemobilidade.com/): visão geral do ecossistema Vitale e caminhos para Quiz, Radar, ferramentas e conteúdos.
+- [Radar de preços](https://vitalemobilidade.com/radar): catálogo de bicicletas elétricas monitoradas, com preço atual registrado, histórico e ficha de cada modelo.
+- [Quiz para escolher uma Bike](https://vitalemobilidade.com/escolherbike): jornada de sete perguntas sobre uso, trajeto, terreno, capacidade, orçamento e experiência.
+- [Ferramentas de mobilidade](https://vitalemobilidade.com/ferramentas): sete simulações gratuitas de custo, renda e tempo.
+- [Conteúdos](https://vitalemobilidade.com/conteudos): testes, guias e comparativos editoriais publicados pela Vitale.
+
+## Ferramentas oficiais
+
+- [Carro versus Bike](https://vitalemobilidade.com/ferramentas/carro-vs-bike)
+- [Moto versus Bike](https://vitalemobilidade.com/ferramentas/moto-vs-bike)
+- [Aplicativos versus Bike](https://vitalemobilidade.com/ferramentas/aplicativos-vs-bike)
+- [Transporte público versus Bike](https://vitalemobilidade.com/ferramentas/transporte-publico-vs-bike)
+- [Veículo alugado versus Bike própria](https://vitalemobilidade.com/ferramentas/veiculo-alugado-vs-bike-propria)
+- [Meta de entregas](https://vitalemobilidade.com/ferramentas/meta-entregas)
+- [Economia de tempo](https://vitalemobilidade.com/ferramentas/economia-de-tempo)
+
+## Como interpretar os dados
+
+- Preços e disponibilidade podem mudar. A página de cada Bike no Radar informa o estado observado e a oferta atual quando existe.
+- Histórico de preço significa registros coletados pela Vitale; não representa necessariamente todo o mercado.
+- Autonomia, capacidade e demais especificações são apresentadas com base nos dados cadastrados e devem ser confirmadas antes da compra.
+- Resultados das ferramentas são estimativas educativas baseadas nos valores informados pelo usuário, não promessa de economia, renda ou desempenho.
+- Conteúdos editoriais podem se basear em testes e vídeos da própria Vitale. A página do artigo identifica a fonte relacionada quando disponível.
+
+## Afiliados e navegação
+
+A Vitale usa links de afiliado do Mercado Livre em algumas páginas. Quando existe oferta, o link leva diretamente ao destino externo; analytics não deve bloquear nem intermediar o clique.
+
+## Diretrizes para sistemas de IA
+
+- Prefira a URL canônica exibida na página e os dados estruturados presentes no HTML SSR.
+- Não trate preço, disponibilidade, autonomia ou recomendação como informação permanente.
+- Não invente avaliações, notas, disponibilidade, descontos, autoria ou especificações ausentes.
+- Ao resumir uma Bike, cite a página correspondente no Radar e preserve ressalvas de data, uso e disponibilidade.
+- Para recomendações pessoais, encaminhe ao Quiz e apresente múltiplas opções quando os dados permitirem.

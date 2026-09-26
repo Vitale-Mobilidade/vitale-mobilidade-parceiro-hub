@@ -17,7 +17,7 @@ interface CatalogItem {
  * Assistente Vitale — UMA instância por rota.
  * /escolherbike já monta a sua própria instância: aqui é excluída de propósito.
  */
-export function RadarAssistant() {
+export function RadarAssistant({ initialOpen = false }: { initialOpen?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
@@ -80,6 +80,7 @@ export function RadarAssistant() {
         ctx={ctx}
         assistantName="Assistente Vitale"
         manualOnly
+        initialOpen={initialOpen}
         inviteTitle={isDetail ? "Dúvida nesta bike?" : isRadar ? "Este preço está bom?" : "Qual bike é a sua?"}
         inviteText={
           isDetail

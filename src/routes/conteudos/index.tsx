@@ -17,7 +17,8 @@ export const Route = createFileRoute("/conteudos/")({
       bikeNames: Object.fromEntries((catalog.ok ? catalog.bikes : []).map(bike => [bike.bikeId, bike.name])) };
   },
   head: () => pageHead({ path: "/conteudos", title: "Conteúdos e testes de bikes elétricas | Vitale Mobilidade",
-    description: "Testes reais, guias e comparativos da Vitale para ajudar você a escolher sua bike elétrica." }),
+    description: "Testes reais, guias e comparativos da Vitale para ajudar você a escolher sua bike elétrica.",
+    image: { url: "https://vitalemobilidade.com/og/vitale-conteudos-1200x630.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Conteúdos e testes de bicicletas elétricas da Vitale" } }),
   component: ContentIndex,
 });
 
@@ -39,7 +40,7 @@ function ContentIndex() {
   return <div className="min-h-screen bg-background"><SiteHeader />
     <main>
       <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
-        <img src="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
+        <img src="/vitale-hero-radar-2026-1280.webp" width={1280} height={720} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40 max-md:bg-ink/75" aria-hidden="true" />
         <div className="responsive-container py-16 sm:py-24"><p className="text-sm font-bold uppercase tracking-widest text-mint">Conteúdo Vitale</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-extrabold sm:text-5xl">Conteúdos para escolher melhor</h1>

@@ -50,7 +50,7 @@ function BikeDecision({ bikeId, bikes, prices, histories, mode }: { bikeId: stri
   </section>;
   return <section className="rounded-2xl border border-line bg-emerald-50 p-5 sm:p-6">
     <div className="flex flex-col gap-4">
-      {bike.image && <img src={bike.image} alt={`Bike elétrica ${bike.name}`} loading="lazy" className="h-32 w-full rounded-xl bg-white object-contain" />}
+      {bike.image && <img src={bike.image} alt={`Bike elétrica ${bike.name}`} width={640} height={480} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="h-32 w-full rounded-xl bg-white object-contain" />}
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Radar Vitale</p>
         <h2 className="mt-1 text-xl font-bold">{bike.name} no Radar</h2>
@@ -128,7 +128,7 @@ function Block({ block, article, bikes, prices, histories }: { block: ArticleBlo
       <h2 className="mb-4 text-2xl font-bold">{block.heading || "Comparação lado a lado"}</h2>
       <div className="overflow-x-auto rounded-2xl border border-line"><table className="w-full min-w-[520px] text-left text-sm">
         <thead className="bg-surface"><tr><th className="p-3" scope="col"><span className="sr-only">Item</span></th>{compared.map(b => <th key={b.bikeId} scope="col" className="p-3 align-bottom">
-          {b.image && <img src={b.image} alt={`Bike elétrica ${b.name}`} loading="lazy" className="mb-2 h-24 w-full object-contain" />}
+          {b.image && <img src={b.image} alt={`Bike elétrica ${b.name}`} width={320} height={240} sizes="(max-width: 640px) 50vw, 240px" loading="lazy" decoding="async" className="mb-2 h-24 w-full object-contain" />}
           <span className="font-bold">{b.name}</span></th>)}</tr></thead>
         <tbody>{rows.map(([label, value]) => <tr key={label} className="border-t border-line"><th scope="row" className="p-3 font-medium text-muted-foreground">{label}</th>
           {compared.map(b => <td key={b.bikeId} className="p-3">{value(b)}</td>)}</tr>)}
@@ -160,7 +160,7 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
     {article.publishedAt && <time dateTime={article.publishedAt} className="mt-3 block text-sm text-muted-foreground">
       Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}</time>}
-    {article.ogImageUrl && <img src={article.ogImageUrl} alt="" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
+    {article.ogImageUrl && <img src={article.ogImageUrl} alt="" width={1280} height={720} fetchPriority="high" decoding="async" className="mt-6 aspect-video w-full rounded-2xl object-cover" />}
     <p className="mt-7 text-xl leading-8 text-muted-foreground">{article.summary}</p>
     {flow.map((item, index) => item.kind === "block"
       ? <Block key={index} block={item.block} article={article} bikes={bikes} prices={prices} histories={histories} />
@@ -175,13 +175,13 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
     <FaqList faq={article.faq} />
     {relatedArticles.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">{articlesShareContext ? "Continue sua pesquisa" : "Explore outros conteúdos"}</h2>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2">{relatedArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-line bg-card hover:border-action focus-visible:ring-2 focus-visible:ring-action">
-        {a.ogImageUrl ? <img src={a.ogImageUrl} alt="" loading="lazy" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
+        {a.ogImageUrl ? <img src={a.ogImageUrl} alt="" width={640} height={360} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /> : <span className="grid aspect-video place-items-center bg-surface"><BookOpen className="h-8 w-8 text-action" aria-hidden="true" /></span>}
         <span className="block p-4"><strong className="block leading-snug text-ink group-hover:text-action">{a.title}</strong>{a.summary && <span className="mt-2 line-clamp-2 block text-sm text-muted-foreground">{a.summary}</span>}<span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-action">Ler artigo <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></span>
       </a></li>)}</ul></section>}
     {relatedVideos.length > 0 && <section className="my-10"><h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{relatedVideos.map(video => <a key={video.videoId} href={video.url}
         target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-xl border border-line hover:border-emerald-500">
-        <img src={video.thumbnail} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+        <img src={video.thumbnail} alt="" width={640} height={360} sizes="(max-width: 640px) 100vw, 320px" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />
         <span className="block p-4 font-semibold">{video.title}</span>
       </a>)}</div></section>}
     <section className="my-10 border-t border-line pt-6 text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ export function ArticleView({ article, bikes, prices = {}, histories = {}, relat
   </article>
   <aside className="space-y-5 lg:pt-3" aria-label="Explore conteúdos relacionados">
     {sidebarArticles.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="text-lg font-bold">Artigos em destaque</h2><ul className="mt-3 divide-y divide-line">{sidebarArticles.map(a => <li key={a.id}><a href={`/conteudos/${a.slug}`} className="flex min-h-12 items-center gap-2 py-3 font-semibold leading-snug hover:text-action focus-visible:ring-2 focus-visible:ring-action"><BookOpen className="h-4 w-4 shrink-0 text-action" aria-hidden="true" />{a.title}</a></li>)}</ul></div>}
-    {connectedBikes.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="flex items-center gap-2 text-lg font-bold"><LineChart className="h-5 w-5 text-action" aria-hidden="true" /> Bikes deste artigo</h2><ul className="mt-4 space-y-3">{connectedBikes.slice(0, 4).map(bike => <li key={bike.bikeId}><a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="flex min-h-12 items-center gap-3 rounded-lg hover:text-action focus-visible:ring-2 focus-visible:ring-action">{bike.image && <img src={bike.image} alt="" loading="lazy" className="h-12 w-16 rounded bg-surface object-contain" />}<span className="min-w-0 flex-1 font-semibold">{bike.name}</span><ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></a></li>)}</ul></div>}
+    {connectedBikes.length > 0 && <div className="rounded-2xl border border-line bg-card p-5"><h2 className="flex items-center gap-2 text-lg font-bold"><LineChart className="h-5 w-5 text-action" aria-hidden="true" /> Bikes deste artigo</h2><ul className="mt-4 space-y-3">{connectedBikes.slice(0, 4).map(bike => <li key={bike.bikeId}><a href={`/radar/${encodeURIComponent(bike.bikeId)}`} className="flex min-h-12 items-center gap-3 rounded-lg hover:text-action focus-visible:ring-2 focus-visible:ring-action">{bike.image && <img src={bike.image} alt="" width={128} height={96} loading="lazy" decoding="async" className="h-12 w-16 rounded bg-surface object-contain" />}<span className="min-w-0 flex-1 font-semibold">{bike.name}</span><ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></a></li>)}</ul></div>}
   </aside>
   </div>;
 }

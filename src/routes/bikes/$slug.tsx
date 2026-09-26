@@ -12,7 +12,7 @@ import { safeVideos } from "@/lib/videos.functions";
 import { dailyMetrics, type DailyPoint } from "@/lib/price-daily";
 import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/price-tracker";
 import { lastConfirmedDay } from "@/lib/radar-unavailable";
-import { canonicalUrl, pageHead } from "@/lib/seo";
+import { canonicalUrl, pageHead, serializeJsonLd } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
 import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
@@ -89,8 +89,10 @@ export const Route = createFileRoute("/bikes/$slug")({
       title: `${b.name}: bike elétrica | Vitale Mobilidade`,
       description: `${b.name}${facts ? `: ${facts}` : ""}. Especificações, análise de preço e vídeos reais do modelo.`,
       ogType: "product",
+      image: b.image ? { url: b.image, alt: `Bike elétrica ${b.name}` } : {
+        url: canonicalUrl("/og/vitale-radar-1200x630.jpg"), width: 1200, height: 630, type: "image/jpeg", alt: b.name,
+      },
     });
-    if (b.image) head.meta.push({ property: "og:image", content: b.image }, { name: "twitter:image", content: b.image });
     const breadcrumbs = {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -100,7 +102,7 @@ export const Route = createFileRoute("/bikes/$slug")({
         { "@type": "ListItem", position: 3, name: b.name, item: canonicalUrl(path) },
       ],
     };
-    return { ...head, scripts: [{ type: "application/ld+json", children: JSON.stringify(breadcrumbs) }] };
+    return { ...head, scripts: [{ type: "application/ld+json", children: serializeJsonLd(breadcrumbs) }] };
   },
   notFoundComponent: BikeNotFound,
   errorComponent: BikeUnavailable,

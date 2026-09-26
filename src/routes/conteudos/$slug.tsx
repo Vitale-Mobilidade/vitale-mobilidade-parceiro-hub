@@ -6,7 +6,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { safeVideos } from "@/lib/videos.functions";
 import { getRadarCatalog } from "@/lib/radar.functions";
-import { canonicalUrl, pageHead } from "@/lib/seo";
+import { canonicalUrl, pageHead, serializeJsonLd } from "@/lib/seo";
 import { orderEditorialHighlights, relatedPublishedArticles } from "@/lib/editorial-discovery";
 
 export const Route = createFileRoute("/conteudos/$slug")({
@@ -43,19 +43,15 @@ export const Route = createFileRoute("/conteudos/$slug")({
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Conteúdo indisponível | Vitale" }, { name: "robots", content: "noindex" }] };
     const a = loaderData.article;
+    const variant = a.ogImageUrl?.match(/\/(maxresdefault|sddefault|hqdefault|mqdefault)\.jpg(?:\?|$)/)?.[1];
+    const dimensions: Record<string, [number, number]> = { maxresdefault: [1280, 720], sddefault: [640, 480], hqdefault: [480, 360], mqdefault: [320, 180] };
+    const imageDimensions = variant ? dimensions[variant] : undefined;
     const head = pageHead({ path: `/conteudos/${a.slug}`, title: a.seoTitle || a.title,
       description: a.metaDescription || a.summary, ogTitle: a.ogTitle || a.title,
       ogDescription: a.ogDescription || a.summary, ogType: "article",
-      robots: a.indexable ? "index, follow" : "noindex, follow" });
-    if (a.ogImageUrl) {
-      head.meta.push({ property: "og:image", content: a.ogImageUrl }, { name: "twitter:image", content: a.ogImageUrl });
-      const variant = a.ogImageUrl.match(/\/(maxresdefault|sddefault|hqdefault|mqdefault)\.jpg(?:\?|$)/)?.[1];
-      const dimensions: Record<string, [string, string]> = { maxresdefault: ["1280", "720"], sddefault: ["640", "480"], hqdefault: ["480", "360"], mqdefault: ["320", "180"] };
-      if (variant && dimensions[variant]) head.meta.push(
-        { property: "og:image:width", content: dimensions[variant][0] },
-        { property: "og:image:height", content: dimensions[variant][1] },
-      );
-    }
+      robots: a.indexable ? "index, follow" : "noindex, follow",
+      image: a.ogImageUrl ? { url: a.ogImageUrl, width: imageDimensions?.[0], height: imageDimensions?.[1],
+        type: /\.jpe?g(?:\?|$)/i.test(a.ogImageUrl) ? "image/jpeg" : undefined, alt: a.ogTitle || a.title } : undefined });
     const schema = { "@context": "https://schema.org", "@type": "Article", headline: a.title,
       description: a.metaDescription || a.summary, datePublished: a.publishedAt,
       image: a.ogImageUrl || undefined, inLanguage: "pt-BR", mainEntityOfPage: canonicalUrl(`/conteudos/${a.slug}`),
@@ -70,7 +66,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
       { "@type": "ListItem", position: 2, name: "Conteúdos", item: canonicalUrl("/conteudos") },
       { "@type": "ListItem", position: 3, name: a.title, item: canonicalUrl(`/conteudos/${a.slug}`) },
     ] };
-    return { ...head, scripts: [{ type: "application/ld+json", children: JSON.stringify([schema, videoSchema, breadcrumbs]) }] };
+    return { ...head, scripts: [{ type: "application/ld+json", children: serializeJsonLd([schema, videoSchema, breadcrumbs]) }] };
   },
   component: ContentDetail,
 });

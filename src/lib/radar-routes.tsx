@@ -10,6 +10,7 @@ import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { SITE_ORIGIN, type RadarBase } from "@/lib/radar-base";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getPublishedArticlesForBike } from "@/lib/editorial.functions";
+import { pageHead } from "@/lib/seo";
 
 export async function loadRadarCatalog() {
   const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog().catch(() => ({ ok: false, bikes: [] }))]);
@@ -20,7 +21,7 @@ export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
 export async function loadRadarBike(bikeId: string) {
   const [r, videos, articleIndex, catalog] = await Promise.all([
     getRadarBike({ data: { bikeId } }),
-    safeVideos({ bikeId, limit: 200 }),
+    safeVideos({ bikeId, limit: 8 }),
     getPublishedArticlesForBike({ data: bikeId }).catch(() => null),
     getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
   ]);
@@ -60,21 +61,20 @@ const OG_DESCRIPTION =
   "Compare o preço atual com o histórico e acompanhe as melhores oportunidades de bikes elétricas.";
 
 export function radarCatalogHead(base: RadarBase) {
-  const url = `${SITE_ORIGIN}${base}`;
-  return {
-    meta: [
-      { title: TITLE },
-      { name: "description", content: DESCRIPTION },
-      { property: "og:title", content: OG_TITLE },
-      { property: "og:description", content: OG_DESCRIPTION },
-      { property: "og:url", content: url },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: OG_TITLE },
-      { name: "twitter:description", content: OG_DESCRIPTION },
-    ],
-    links: [{ rel: "canonical", href: url }],
-  };
+  return pageHead({
+    path: base,
+    title: TITLE,
+    description: DESCRIPTION,
+    ogTitle: OG_TITLE,
+    ogDescription: OG_DESCRIPTION,
+    image: {
+      url: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg`,
+      width: 1200,
+      height: 630,
+      type: "image/jpeg",
+      alt: "Radar de preços de bicicletas elétricas da Vitale",
+    },
+  });
 }
 
 const FALLBACK_TITLE = "Histórico de preços | Vitale Mobilidade";
@@ -174,9 +174,19 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
       ...(bike.image
         ? [
             { property: "og:image", content: bike.image },
+            { property: "og:image:alt", content: `Bike elétrica ${bike.name}` },
             { name: "twitter:image", content: bike.image },
+            { name: "twitter:image:alt", content: `Bike elétrica ${bike.name}` },
           ]
-        : []),
+        : [
+            { property: "og:image", content: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg` },
+            { property: "og:image:width", content: "1200" },
+            { property: "og:image:height", content: "630" },
+            { property: "og:image:type", content: "image/jpeg" },
+            { property: "og:image:alt", content: ogTitle },
+            { name: "twitter:image", content: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg` },
+            { name: "twitter:image:alt", content: ogTitle },
+          ]),
     ],
     links: [{ rel: "canonical", href: canonical }],
     scripts: [{ type: "application/ld+json", children: JSON.stringify([product, breadcrumbs]).replace(/</g, "\\u003c") }],

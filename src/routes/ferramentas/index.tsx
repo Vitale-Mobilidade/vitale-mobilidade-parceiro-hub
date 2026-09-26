@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, Bike, BusFront, CarFront, Clock3, KeyRound, PackageCheck, Route as RouteIcon, Sparkles, Wrench, type LucideIcon } from "lucide-react";
 import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
-import heroAsset from "@/assets/ferramentas-hero.png.asset.json";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import { GROUP_LABELS, MOBILITY_TOOLS, type ToolGroup, type ToolSlug } from "@/lib/mobility/tools-registry";
@@ -19,6 +18,13 @@ export const Route = createFileRoute("/ferramentas/")({
         "Sete simulações gratuitas: carro, moto, aplicativos, transporte público, veículo alugado, meta de entregas e economia de tempo, com bikes reais e ofertas atuais.",
       ogTitle: "Ferramentas de mobilidade da Vitale",
       ogDescription: "Compare custo, renda e tempo com bike elétrica usando seus números e bikes reais com oferta atual.",
+      image: {
+        url: "https://vitalemobilidade.com/og/vitale-ferramentas-1200x630.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
+        alt: "Ferramentas de mobilidade da Vitale",
+      },
     });
     return {
       ...base,
@@ -60,7 +66,10 @@ const FLOW = [
 function FerramentasPage() {
   return <div className="min-h-screen bg-surface"><SiteHeader /><main>
     <section className="relative isolate overflow-hidden bg-ink text-ink-foreground">
-      <img src={heroAsset.url} alt="Mulher de capacete ao lado de uma bicicleta elétrica na orla ao pôr do sol" fetchPriority="high" decoding="async" width={1672} height={941} className="absolute inset-0 -z-10 h-full w-full object-cover object-[65%_center] max-md:object-[66%_center]" />
+      <picture>
+        <source media="(max-width: 767px)" srcSet="/ferramentas-hero-mobile.avif" width={600} height={909} type="image/avif" />
+        <img src="/ferramentas-hero-1280.avif" alt="Mulher de capacete ao lado de uma bicicleta elétrica na orla ao pôr do sol" fetchPriority="high" decoding="async" width={1280} height={720} className="absolute inset-0 -z-10 h-full w-full object-cover object-[65%_center] max-md:object-[66%_center]" />
+      </picture>
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/75 to-ink/20 max-md:bg-gradient-to-t max-md:from-ink max-md:via-ink/75 max-md:to-ink/25" aria-hidden="true" />
       <div className="responsive-container flex min-h-[480px] flex-col justify-end py-14 sm:min-h-[520px] sm:justify-center sm:py-20">
         <p className="text-xs font-bold tracking-[0.2em] text-mint">FERRAMENTAS</p>
