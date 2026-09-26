@@ -46,6 +46,7 @@ export const Route = createFileRoute("/calculadoras/transporte-publico-vs-bike")
   loader: () => getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: "/calculadoras/transporte-publico-vs-bike",
       title: TITLE,
       description: DESCRIPTION,

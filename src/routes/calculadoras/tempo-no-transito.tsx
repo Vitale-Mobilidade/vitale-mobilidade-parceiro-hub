@@ -30,6 +30,7 @@ export const Route = createFileRoute("/calculadoras/tempo-no-transito")({
   loader: () => getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: PATH,
       title: TITLE,
       description: DESCRIPTION,

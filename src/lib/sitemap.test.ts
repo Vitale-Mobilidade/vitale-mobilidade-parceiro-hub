@@ -7,7 +7,16 @@ describe("sitemap builder", () => {
       expect(STATIC_SITEMAP_PATHS as readonly string[]).not.toContain(p);
     }
     expect(STATIC_SITEMAP_PATHS).toContain("/conteudos");
-    expect(STATIC_SITEMAP_PATHS.filter((p) => p.startsWith("/calculadoras/"))).toHaveLength(9);
+    expect(STATIC_SITEMAP_PATHS.filter((p) => p.startsWith("/calculadoras/"))).toHaveLength(0);
+    expect(STATIC_SITEMAP_PATHS.filter((p) => p.startsWith("/ferramentas/"))).toEqual([
+      "/ferramentas/carro-vs-bike",
+      "/ferramentas/moto-vs-bike",
+      "/ferramentas/aplicativos-vs-bike",
+      "/ferramentas/transporte-publico-vs-bike",
+      "/ferramentas/veiculo-alugado-vs-bike-propria",
+      "/ferramentas/meta-entregas",
+      "/ferramentas/economia-de-tempo",
+    ]);
   });
 
   it("filtra slugs e ids inválidos e deduplica", () => {

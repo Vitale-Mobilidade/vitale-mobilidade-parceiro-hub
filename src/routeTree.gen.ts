@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
-import { Route as FerramentasRouteImport } from './routes/ferramentas'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -36,6 +35,14 @@ import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './route
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
 import { Route as ConteudosIndexRouteImport } from './routes/conteudos/index'
 import { Route as ConteudosSlugRouteImport } from './routes/conteudos/$slug'
+import { Route as FerramentasIndexRouteImport } from './routes/ferramentas/index'
+import { Route as FerramentasAplicativosVsBikeRouteImport } from './routes/ferramentas/aplicativos-vs-bike'
+import { Route as FerramentasCarroVsBikeRouteImport } from './routes/ferramentas/carro-vs-bike'
+import { Route as FerramentasEconomiaDeTempoRouteImport } from './routes/ferramentas/economia-de-tempo'
+import { Route as FerramentasMetaEntregasRouteImport } from './routes/ferramentas/meta-entregas'
+import { Route as FerramentasMotoVsBikeRouteImport } from './routes/ferramentas/moto-vs-bike'
+import { Route as FerramentasTransportePublicoVsBikeRouteImport } from './routes/ferramentas/transporte-publico-vs-bike'
+import { Route as FerramentasVeiculoAlugadoVsBikePropriaRouteImport } from './routes/ferramentas/veiculo-alugado-vs-bike-propria'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
@@ -51,11 +58,6 @@ const IndexRoute = IndexRouteImport.update({
 const EscolherbikeRoute = EscolherbikeRouteImport.update({
   id: '/escolherbike',
   path: '/escolherbike',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FerramentasRoute = FerramentasRouteImport.update({
-  id: '/ferramentas',
-  path: '/ferramentas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
@@ -182,6 +184,50 @@ const ConteudosSlugRoute = ConteudosSlugRouteImport.update({
   path: '/conteudos/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FerramentasIndexRoute = FerramentasIndexRouteImport.update({
+  id: '/ferramentas/',
+  path: '/ferramentas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasAplicativosVsBikeRoute =
+  FerramentasAplicativosVsBikeRouteImport.update({
+    id: '/ferramentas/aplicativos-vs-bike',
+    path: '/ferramentas/aplicativos-vs-bike',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const FerramentasCarroVsBikeRoute = FerramentasCarroVsBikeRouteImport.update({
+  id: '/ferramentas/carro-vs-bike',
+  path: '/ferramentas/carro-vs-bike',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasEconomiaDeTempoRoute =
+  FerramentasEconomiaDeTempoRouteImport.update({
+    id: '/ferramentas/economia-de-tempo',
+    path: '/ferramentas/economia-de-tempo',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const FerramentasMetaEntregasRoute = FerramentasMetaEntregasRouteImport.update({
+  id: '/ferramentas/meta-entregas',
+  path: '/ferramentas/meta-entregas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasMotoVsBikeRoute = FerramentasMotoVsBikeRouteImport.update({
+  id: '/ferramentas/moto-vs-bike',
+  path: '/ferramentas/moto-vs-bike',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasTransportePublicoVsBikeRoute =
+  FerramentasTransportePublicoVsBikeRouteImport.update({
+    id: '/ferramentas/transporte-publico-vs-bike',
+    path: '/ferramentas/transporte-publico-vs-bike',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const FerramentasVeiculoAlugadoVsBikePropriaRoute =
+  FerramentasVeiculoAlugadoVsBikePropriaRouteImport.update({
+    id: '/ferramentas/veiculo-alugado-vs-bike-propria',
+    path: '/ferramentas/veiculo-alugado-vs-bike-propria',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -216,7 +262,6 @@ const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
-  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -237,11 +282,19 @@ export interface FileRoutesByFullPath {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
+  '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
+  '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
+  '/ferramentas/economia-de-tempo': typeof FerramentasEconomiaDeTempoRoute
+  '/ferramentas/meta-entregas': typeof FerramentasMetaEntregasRoute
+  '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
+  '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
+  '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/bikes/': typeof BikesIndexRoute
   '/conteudos/': typeof ConteudosIndexRoute
+  '/ferramentas/': typeof FerramentasIndexRoute
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
@@ -251,7 +304,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
-  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -272,11 +324,19 @@ export interface FileRoutesByTo {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
+  '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
+  '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
+  '/ferramentas/economia-de-tempo': typeof FerramentasEconomiaDeTempoRoute
+  '/ferramentas/meta-entregas': typeof FerramentasMetaEntregasRoute
+  '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
+  '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
+  '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/admin': typeof AdminIndexRoute
   '/bikes': typeof BikesIndexRoute
   '/conteudos': typeof ConteudosIndexRoute
+  '/ferramentas': typeof FerramentasIndexRoute
   '/radar': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
@@ -287,7 +347,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
-  '/ferramentas': typeof FerramentasRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -308,11 +367,19 @@ export interface FileRoutesById {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
+  '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
+  '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
+  '/ferramentas/economia-de-tempo': typeof FerramentasEconomiaDeTempoRoute
+  '/ferramentas/meta-entregas': typeof FerramentasMetaEntregasRoute
+  '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
+  '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
+  '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/bikes/': typeof BikesIndexRoute
   '/conteudos/': typeof ConteudosIndexRoute
+  '/ferramentas/': typeof FerramentasIndexRoute
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
@@ -324,7 +391,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/escolherbike'
-    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/sitemap.xml'
@@ -345,11 +411,19 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conteudos/$slug'
+    | '/ferramentas/aplicativos-vs-bike'
+    | '/ferramentas/carro-vs-bike'
+    | '/ferramentas/economia-de-tempo'
+    | '/ferramentas/meta-entregas'
+    | '/ferramentas/moto-vs-bike'
+    | '/ferramentas/transporte-publico-vs-bike'
+    | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/admin/'
     | '/bikes/'
     | '/conteudos/'
+    | '/ferramentas/'
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
@@ -359,7 +433,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/escolherbike'
-    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/sitemap.xml'
@@ -380,11 +453,19 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conteudos/$slug'
+    | '/ferramentas/aplicativos-vs-bike'
+    | '/ferramentas/carro-vs-bike'
+    | '/ferramentas/economia-de-tempo'
+    | '/ferramentas/meta-entregas'
+    | '/ferramentas/moto-vs-bike'
+    | '/ferramentas/transporte-publico-vs-bike'
+    | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
     | '/acompanhamento'
     | '/admin'
     | '/bikes'
     | '/conteudos'
+    | '/ferramentas'
     | '/radar'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
@@ -394,7 +475,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/escolherbike'
-    | '/ferramentas'
     | '/grupodeofertas'
     | '/painel-bikes'
     | '/sitemap.xml'
@@ -415,11 +495,19 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conteudos/$slug'
+    | '/ferramentas/aplicativos-vs-bike'
+    | '/ferramentas/carro-vs-bike'
+    | '/ferramentas/economia-de-tempo'
+    | '/ferramentas/meta-entregas'
+    | '/ferramentas/moto-vs-bike'
+    | '/ferramentas/transporte-publico-vs-bike'
+    | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/admin/'
     | '/bikes/'
     | '/conteudos/'
+    | '/ferramentas/'
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
@@ -430,7 +518,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
-  FerramentasRoute: typeof FerramentasRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   PainelBikesRoute: typeof PainelBikesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -451,11 +538,19 @@ export interface RootRouteChildren {
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
   ConteudosSlugRoute: typeof ConteudosSlugRoute
+  FerramentasAplicativosVsBikeRoute: typeof FerramentasAplicativosVsBikeRoute
+  FerramentasCarroVsBikeRoute: typeof FerramentasCarroVsBikeRoute
+  FerramentasEconomiaDeTempoRoute: typeof FerramentasEconomiaDeTempoRoute
+  FerramentasMetaEntregasRoute: typeof FerramentasMetaEntregasRoute
+  FerramentasMotoVsBikeRoute: typeof FerramentasMotoVsBikeRoute
+  FerramentasTransportePublicoVsBikeRoute: typeof FerramentasTransportePublicoVsBikeRoute
+  FerramentasVeiculoAlugadoVsBikePropriaRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
   BikesIndexRoute: typeof BikesIndexRoute
   ConteudosIndexRoute: typeof ConteudosIndexRoute
+  FerramentasIndexRoute: typeof FerramentasIndexRoute
   RadarIndexRoute: typeof RadarIndexRoute
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
@@ -476,13 +571,6 @@ declare module '@tanstack/react-router' {
       path: '/escolherbike'
       fullPath: '/escolherbike'
       preLoaderRoute: typeof EscolherbikeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ferramentas': {
-      id: '/ferramentas'
-      path: '/ferramentas'
-      fullPath: '/ferramentas'
-      preLoaderRoute: typeof FerramentasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/grupodeofertas': {
@@ -653,6 +741,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConteudosSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ferramentas/': {
+      id: '/ferramentas/'
+      path: '/ferramentas'
+      fullPath: '/ferramentas/'
+      preLoaderRoute: typeof FerramentasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/aplicativos-vs-bike': {
+      id: '/ferramentas/aplicativos-vs-bike'
+      path: '/ferramentas/aplicativos-vs-bike'
+      fullPath: '/ferramentas/aplicativos-vs-bike'
+      preLoaderRoute: typeof FerramentasAplicativosVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/carro-vs-bike': {
+      id: '/ferramentas/carro-vs-bike'
+      path: '/ferramentas/carro-vs-bike'
+      fullPath: '/ferramentas/carro-vs-bike'
+      preLoaderRoute: typeof FerramentasCarroVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/economia-de-tempo': {
+      id: '/ferramentas/economia-de-tempo'
+      path: '/ferramentas/economia-de-tempo'
+      fullPath: '/ferramentas/economia-de-tempo'
+      preLoaderRoute: typeof FerramentasEconomiaDeTempoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/meta-entregas': {
+      id: '/ferramentas/meta-entregas'
+      path: '/ferramentas/meta-entregas'
+      fullPath: '/ferramentas/meta-entregas'
+      preLoaderRoute: typeof FerramentasMetaEntregasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/moto-vs-bike': {
+      id: '/ferramentas/moto-vs-bike'
+      path: '/ferramentas/moto-vs-bike'
+      fullPath: '/ferramentas/moto-vs-bike'
+      preLoaderRoute: typeof FerramentasMotoVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/transporte-publico-vs-bike': {
+      id: '/ferramentas/transporte-publico-vs-bike'
+      path: '/ferramentas/transporte-publico-vs-bike'
+      fullPath: '/ferramentas/transporte-publico-vs-bike'
+      preLoaderRoute: typeof FerramentasTransportePublicoVsBikeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas/veiculo-alugado-vs-bike-propria': {
+      id: '/ferramentas/veiculo-alugado-vs-bike-propria'
+      path: '/ferramentas/veiculo-alugado-vs-bike-propria'
+      fullPath: '/ferramentas/veiculo-alugado-vs-bike-propria'
+      preLoaderRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -712,7 +856,6 @@ const AdminConteudosIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EscolherbikeRoute: EscolherbikeRoute,
-  FerramentasRoute: FerramentasRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
   PainelBikesRoute: PainelBikesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -734,11 +877,21 @@ const rootRouteChildren: RootRouteChildren = {
     CalculadorasTransportePublicoVsBikeRoute,
   CalculadorasUberVsBikeRoute: CalculadorasUberVsBikeRoute,
   ConteudosSlugRoute: ConteudosSlugRoute,
+  FerramentasAplicativosVsBikeRoute: FerramentasAplicativosVsBikeRoute,
+  FerramentasCarroVsBikeRoute: FerramentasCarroVsBikeRoute,
+  FerramentasEconomiaDeTempoRoute: FerramentasEconomiaDeTempoRoute,
+  FerramentasMetaEntregasRoute: FerramentasMetaEntregasRoute,
+  FerramentasMotoVsBikeRoute: FerramentasMotoVsBikeRoute,
+  FerramentasTransportePublicoVsBikeRoute:
+    FerramentasTransportePublicoVsBikeRoute,
+  FerramentasVeiculoAlugadoVsBikePropriaRoute:
+    FerramentasVeiculoAlugadoVsBikePropriaRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   AdminIndexRoute: AdminIndexRoute,
   BikesIndexRoute: BikesIndexRoute,
   ConteudosIndexRoute: ConteudosIndexRoute,
+  FerramentasIndexRoute: FerramentasIndexRoute,
   RadarIndexRoute: RadarIndexRoute,
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,

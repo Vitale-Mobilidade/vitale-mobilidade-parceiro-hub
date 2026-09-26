@@ -41,6 +41,7 @@ export const Route = createFileRoute("/calculadoras/uber-vs-bike")({
   loader: () => getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: "/calculadoras/uber-vs-bike",
       title: TITLE,
       description: DESCRIPTION,

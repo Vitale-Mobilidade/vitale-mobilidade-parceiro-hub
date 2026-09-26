@@ -1,3 +1,36 @@
+# Ferramentas de Mobilidade — sete ferramentas oficiais (PREVIEW)
+
+Status em 26/09/2026: as sete ferramentas oficiais sob `/ferramentas/*` estão implementadas **em preview**, ainda não publicadas. As nove `/calculadoras/*` permanecem acessíveis apenas como legado de compatibilidade, com `robots: noindex, follow`, fora do hub, do sitemap e da navegação. Nenhum redirect permanente até existir mapa SEO aprovado.
+
+| # | Rota | Grupo | Entradas | Saídas | Bikes |
+|---|------|-------|----------|--------|-------|
+| 1 | `/ferramentas/carro-vs-bike` | Economia | quitado/financiado, valor atual, entrada já paga (informativa), parcela, parcelas restantes, km/mês, consumo, combustível, manutenção, IPVA anual, seguro anual, outros, dias/sem, custo de oportunidade (% a.a., premissa 8) | custo mensal atual, operação da bike, economia mensal, próximos 12 meses, 3 anos, payback por bike | até 2 |
+| 2 | `/ferramentas/moto-vs-bike` | Economia | igual ao carro | igual ao carro | até 2 |
+| 3 | `/ferramentas/aplicativos-vs-bike` | Economia | Uber, 99, outros, km/mês, dias/sem | gasto atual, operação, economia mensal/anual, payback | até 2 |
+| 4 | `/ferramentas/transporte-publico-vs-bike` | Economia | total mensal OU ônibus/metrô/trem por dia, dias/sem, km/dia | gasto mensal/anual, payback, economia depois do payback | até 2 |
+| 5 | `/ferramentas/veiculo-alugado-vs-bike-propria` | Renda | moto/bicicleta alugada, aluguel diário/semanal/mensal, dias/mês, km/dia, combustível/dia, outros/dia | custo para trabalhar, custo com bike própria, economia mensal/anual, payback | até 2 |
+| 6 | `/ferramentas/meta-entregas` | Renda | meta/dia, dias/mês, valor médio, extras/dia, km/dia, custos/dia | entregas/dia = teto((meta − extras) ÷ valor médio), entregas/mês, receita, custos, líquido, dias equivalentes e payback por bike | até 2 |
+| 7 | `/ferramentas/economia-de-tempo` | Tempo | ida, volta, dias/sem, distância por trecho, tempo de bike opcional (vazio → distância ÷ 18 km/h) | horas semana/mês/ano, dias completos | até 2 (sem ganho financeiro) |
+
+## Arquitetura
+
+- Motores puros: `src/lib/mobility/tools-engine.ts` (custos, projeção com cronograma de parcelas, entregas, tempo). Premissas em `TOOL_PREMISES` (`config.ts`), visíveis e ajustáveis na página.
+- Formulários declarativos e textos determinísticos: `tools-definitions.ts`. Registro único (hub, sitemap, metadata, relacionadas): `tools-registry.ts`.
+- UI comum: `src/components/mobility/MobilityToolPage.tsx` (cenário → rotina → comparação → resultado → próxima ação, mesma tela, sem wizard e sem `<form>` GET).
+- Recomendação: `recommendScenarioPair` sobre `getMobilityBikeCandidates` (elegíveis no Quiz ∩ oferta atual, preço > 0, `meli.la`, autonomia ≥ distância diária × 1,2, garupa/subidas/orçamento opcionais).
+- Parcela entra só nos meses restantes; entrada já paga nunca é somada. Economia ≤ 0 aparece como está, sem payback.
+- Estado apenas no cliente: nenhum valor em URL, storage, servidor ou analytics. Analytics de clique afiliado recebe só `bike_id` e `position` (`ferramenta_*`).
+
+## Pendências
+
+- Validação externa e publicação.
+- Artigos editoriais por ferramenta: só vídeos reais das bikes sugeridas aparecem hoje; sem relação publicada, a seção é omitida.
+- Mapa SEO para decidir redirects do legado `/calculadoras/*`.
+
+---
+
+## Histórico: contrato das 9 calculadoras (legado)
+
 # Ferramentas de Mobilidade — contrato global de UX (9 calculadoras)
 
 Status em 23/09/2026. As nove rotas estão publicadas. O piloto visual foi `/calculadoras/tempo-no-transito`; a revisão seguinte estendeu conclusão dominante, comparação de bikes, conexões contextuais e gráfico de tempo às outras oito rotas, sem alterar os motores de cálculo.

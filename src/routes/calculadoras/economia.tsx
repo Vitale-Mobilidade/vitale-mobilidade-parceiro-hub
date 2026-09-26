@@ -40,6 +40,7 @@ export const Route = createFileRoute("/calculadoras/economia")({
   loader: () => getMobilityBikeCandidates().catch(() => ({ ok: false, candidates: [] as MobilityBikeCandidate[] })),
   head: () => {
     const base = pageHead({
+      robots: "noindex, follow",
       path: "/calculadoras/economia",
       title: TITLE,
       description: DESCRIPTION,

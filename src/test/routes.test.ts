@@ -29,6 +29,15 @@ describe("fundação TanStack Start — rotas", () => {
     ["/admin/videos", "/admin/videos"],
     ["/admin/conteudos", "/admin/conteudos/"],
     ["/conteudos", "/conteudos/"],
+    ["/ferramentas", "/ferramentas/"],
+    ["/ferramentas/carro-vs-bike", "/ferramentas/carro-vs-bike"],
+    ["/ferramentas/moto-vs-bike", "/ferramentas/moto-vs-bike"],
+    ["/ferramentas/aplicativos-vs-bike", "/ferramentas/aplicativos-vs-bike"],
+    ["/ferramentas/transporte-publico-vs-bike", "/ferramentas/transporte-publico-vs-bike"],
+    ["/ferramentas/veiculo-alugado-vs-bike-propria", "/ferramentas/veiculo-alugado-vs-bike-propria"],
+    ["/ferramentas/meta-entregas", "/ferramentas/meta-entregas"],
+    ["/ferramentas/economia-de-tempo", "/ferramentas/economia-de-tempo"],
+    ["/calculadoras/economia", "/calculadoras/economia"],
   ])("%s resolve para a rota %s", (path, id) => {
     expect(leafId(path)).toBe(id);
   });
@@ -56,10 +65,22 @@ describe("fundação TanStack Start — rotas", () => {
 
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
-    for (const id of ["/", "/escolherbike", "/radar/", "/radar/$bikeId", "/painel-bikes", "/admin/", "/admin/growth", "/admin/videos", "/conteudos/"]) {
+    for (const id of ["/", "/escolherbike", "/radar/", "/radar/$bikeId", "/painel-bikes", "/admin/", "/admin/growth", "/admin/videos", "/conteudos/", "/ferramentas/", "/ferramentas/meta-entregas", "/ferramentas/economia-de-tempo"]) {
       const route = (router.routesById as unknown as Record<string, { options: { component?: unknown } }>)[id];
       expect(route, id).toBeDefined();
       expect(route.options.component, id).toBeDefined();
     }
+  });
+
+  it("hub oficial lista exatamente as sete ferramentas e o legado é noindex", async () => {
+    const { MOBILITY_TOOLS, toolHead } = await import("@/lib/mobility/tools-registry");
+    expect(MOBILITY_TOOLS).toHaveLength(7);
+    for (const t of MOBILITY_TOOLS) {
+      const head = toolHead(t.slug);
+      expect(head.links[0].href).toBe(`https://vitalemobilidade.com${t.path}`);
+      expect(head.meta.some((m) => m.name === "robots")).toBe(false);
+    }
+    const legacy = makeRouter().routesById["/calculadoras/economia" as never] as unknown as { options: { head: () => { meta: Array<Record<string, string>> } } };
+    expect(legacy.options.head().meta).toContainEqual({ name: "robots", content: "noindex, follow" });
   });
 });

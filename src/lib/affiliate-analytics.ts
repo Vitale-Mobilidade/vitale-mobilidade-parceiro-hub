@@ -31,6 +31,13 @@ export const AFFILIATE_POSITIONS = [
   "calculadora_moto_vs_bike",
   "calculadora_tempo_no_transito",
   "calculadora_tempo_recuperado",
+  "ferramenta_carro_vs_bike",
+  "ferramenta_moto_vs_bike",
+  "ferramenta_aplicativos_vs_bike",
+  "ferramenta_transporte_publico_vs_bike",
+  "ferramenta_veiculo_alugado_vs_bike_propria",
+  "ferramenta_meta_entregas",
+  "ferramenta_economia_de_tempo",
   "content_article",
   "bikes_comparison",
 ] as const;
@@ -45,8 +52,8 @@ export type AffiliateClickInput = {
 
 const POSITIONS = new Set<string>(AFFILIATE_POSITIONS);
 
-/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}, /calculadoras/economia, /calculadoras/payback, /calculadoras/uber-vs-bike, /calculadoras/carro-vs-bike, /calculadoras/transporte-publico-vs-bike, /calculadoras/moto-vs-bike, /calculadoras/tempo-no-transito, /calculadoras/tempo-recuperado. */
-const ALLOWED_ROUTE_RE = /^\/bikes(\/[a-z0-9-]+)?$|^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$/;
+/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}, /calculadoras/economia, /calculadoras/payback, /calculadoras/uber-vs-bike, /calculadoras/carro-vs-bike, /calculadoras/transporte-publico-vs-bike, /calculadoras/moto-vs-bike, /calculadoras/tempo-no-transito, /calculadoras/tempo-recuperado (legado) e as sete /ferramentas/*. */
+const ALLOWED_ROUTE_RE = /^\/bikes(\/[a-z0-9-]+)?$|^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$|^\/ferramentas\/(carro-vs-bike|moto-vs-bike|aplicativos-vs-bike|transporte-publico-vs-bike|veiculo-alugado-vs-bike-propria|meta-entregas|economia-de-tempo)$/;
 
 function currentRoute(): string | undefined {
   if (typeof window === "undefined") return undefined;
