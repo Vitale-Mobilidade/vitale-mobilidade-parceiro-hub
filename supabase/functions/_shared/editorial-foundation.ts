@@ -163,3 +163,27 @@ export function draftMatchesOutline(blocks: { type?: string; heading?: string | 
   const headings = blocks.filter((block) => block?.type === "text").map((block) => (block.heading ?? "").trim());
   return headings.length === outline.length && outline.every((section, i) => section.heading.trim() === headings[i]);
 }
+
+export const MIN_DIFFERENTIATION = 45;
+export type OutlineGate = { status: "ready" | "qa_failed"; blockers: string[]; cautions: string[] };
+
+/**
+ * Separates informative cautions from material blockers. Cautions stay visible and are enforced in draft/QA;
+ * blockers (declared unmitigated risks, unclassified risks, material similarity) keep the brief closed.
+ * Unsupported claims, insufficient source and uncertain intent fail earlier in generateBrief.
+ */
+export function outlineGate(brief: Pick<EditorialBrief, "warnings" | "blockingRisks">, diversity: Pick<DiversityResult, "score" | "alerts">): OutlineGate {
+  const blockers: string[] = [];
+  if (!Array.isArray(brief.blockingRisks)) blockers.push("Outline sem classificação de riscos materiais; gere o outline de novo.");
+  else blockers.push(...brief.blockingRisks.map((risk) => `Risco material: ${risk}`));
+  blockers.push(...diversity.alerts);
+  if (diversity.score < MIN_DIFFERENTIATION) blockers.push("Diferenciação estrutural insuficiente frente ao corpus publicado.");
+  return { status: blockers.length ? "qa_failed" : "ready", blockers, cautions: [...(brief.warnings ?? [])] };
+}
+
+/** Final QA: every applicable caution must be verifiably respected; a missing/malformed check fails closed. */
+export function cautionReviewIssues(cautions: string[], violations: unknown): string[] {
+  if (!Array.isArray(violations)) return cautions.length ? ["Cautelas editoriais não verificadas pela revisão final."] : [];
+  return violations.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .slice(0, 12).map((v) => `Cautela desrespeitada: ${v.trim().slice(0, 300)}`);
+}
