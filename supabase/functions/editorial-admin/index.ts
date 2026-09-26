@@ -42,10 +42,6 @@ const arr = (v: unknown, max = 20): string[] => Array.isArray(v) ? v.filter(vali
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const canContent = (a: Actor) => a.role === "admin" || a.role === "content";
 const errorMessage = (e: unknown) => e instanceof Error ? e.message.slice(0, 180) : "unknown";
-const PURCHASE_EVENTS = [
-  "buy_button_clicked", "secondary_option_clicked", "sdr_purchase_link_clicked",
-] as const;
-
 async function actorFor(db: SupabaseClient, req: Request): Promise<Actor | null> {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
   if (!token || token.length > 4000) return null;
@@ -402,24 +398,23 @@ Deno.serve(async (req) => {
       const requestedDays = Number(body.rangeDays);
       const rangeDays = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
       const since = new Date(Date.now() - rangeDays * 86_400_000).toISOString();
-      const [started, completed, clickEvents, clickers, clickerRows, originRows] = await Promise.all([
+      const [started, completed, clickers, clickerRows, originRows] = await Promise.all([
         db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("created_at", since),
         db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("completed_at", since),
-        db.from("quiz_events").select("event_name, field_label, payload", { count: "exact" })
-          .in("event_name", [...PURCHASE_EVENTS]).gte("created_at", since).limit(2000),
         db.from("quiz_leads").select("id", { count: "exact", head: true }).gte("clicked_at", since),
-        db.from("quiz_leads").select("id, name, phone, clicked_bike_name, clicked_bike_position, clicked_at")
+        db.from("quiz_leads").select("id, name, phone, clicked_bike_name, clicked_bike_position, clicked_at, buy_click_count")
           .gte("clicked_at", since).order("clicked_at", { ascending: false }).limit(2000),
         db.from("quiz_leads").select("traffic_origin, utm_source, landing_path").gte("created_at", since).limit(2000),
       ]);
-      const failed = [started, completed, clickEvents, clickers, clickerRows, originRows].find((result) => result.error);
-      if (failed?.error) throw new Error("growth_read_failed");
+      const failed = [started, completed, clickers, clickerRows, originRows].find((result) => result.error);
+      if (failed?.error) throw new Error(`growth_read_failed:${failed.error.code ?? "unknown"}`);
       const bikeCounts = new Map<string, number>();
-      for (const row of clickEvents.data ?? []) {
-        const payload = row.payload && typeof row.payload === "object" ? row.payload as Body : {};
-        const name = str(payload.bike_model_clicked, 160) || str(payload.recommended_bike_1_label, 160) ||
-          str(row.field_label, 160) || str(payload.bike_for_link, 160) || "Bike não identificada";
-        bikeCounts.set(name, (bikeCounts.get(name) ?? 0) + 1);
+      let purchaseClicks = 0;
+      for (const row of clickerRows.data ?? []) {
+        const clicks = Math.max(1, Number(row.buy_click_count) || 0);
+        const name = str(row.clicked_bike_name, 160) || "Bike não identificada";
+        purchaseClicks += clicks;
+        bikeCounts.set(name, (bikeCounts.get(name) ?? 0) + clicks);
       }
       const originCounts = new Map<string, number>();
       for (const row of originRows.data ?? []) {
@@ -431,7 +426,7 @@ Deno.serve(async (req) => {
       return json(req, {
         rangeDays, generatedAt: new Date().toISOString(),
         quiz: { started: started.count ?? 0, completed: completed.count ?? 0,
-          purchaseClicks: clickEvents.count ?? 0, identifiedClickers: clickers.count ?? 0 },
+          purchaseClicks, identifiedClickers: clickers.count ?? 0 },
         topBikes: top(bikeCounts, "clicks"), origins: top(originCounts, "leads"),
         recentClickers: (clickerRows.data ?? []).slice(0, 50).map((row) => ({
           id: row.id, name: row.name, phone: row.phone, bike: row.clicked_bike_name,
