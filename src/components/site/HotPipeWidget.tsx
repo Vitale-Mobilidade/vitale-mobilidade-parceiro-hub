@@ -42,6 +42,7 @@ function loadHotPipeScript(): Promise<void> {
 
 /** Esconde o botão próprio do fornecedor para haver um único launcher. */
 function hideVendorButton() {
+  if (typeof document === "undefined") return;
   if (document.getElementById("hotpipe-hide-vendor-btn")) return;
   const style = document.createElement("style");
   style.id = "hotpipe-hide-vendor-btn";
@@ -76,16 +77,27 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const openRef = useRef(false);
-  openRef.current = open;
+  const mountedRef = useRef(true);
+  const prefillTimerRef = useRef<number | null>(null);
 
-  // Fecha o widget se o componente for desmontado (ex.: Quiz voltou de fase).
+  // Oculta o botão do fornecedor já na montagem, antes de qualquer carga,
+  // para evitar botão duplicado transitório.
   useEffect(() => {
+    hideVendorButton();
+  }, []);
+
+  // Desmontagem: cancela prefill pendente e fecha o widget mesmo que o
+  // estado local ainda não tenha refletido um open() concluído.
+  useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (openRef.current) {
-        try { window.hotpipeWidget?.close?.(); } catch {}
-        setChatOpen(false);
+      mountedRef.current = false;
+      if (prefillTimerRef.current !== null) {
+        window.clearTimeout(prefillTimerRef.current);
+        prefillTimerRef.current = null;
       }
+      try { window.hotpipeWidget?.close?.(); } catch {}
+      setChatOpen(false);
     };
   }, []);
 
@@ -108,18 +120,28 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
     setLoading(true);
     try {
       await loadHotPipeScript();
-      hideVendorButton();
+      // Se desmontou durante a carga, não abre nem toca em estado.
+      if (!mountedRef.current) return;
       window.hotpipeWidget?.open?.();
+      if (!mountedRef.current) {
+        try { window.hotpipeWidget?.close?.(); } catch {}
+        return;
+      }
       setOpen(true);
       setChatOpen(true);
       if (draftQuestion) {
-        // Aguarda o widget montar o formulário no DOM.
-        window.setTimeout(() => prefillDraft(draftQuestion), 300);
+        // Aguarda o widget montar o formulário no DOM; cancelado na desmontagem.
+        prefillTimerRef.current = window.setTimeout(() => {
+          prefillTimerRef.current = null;
+          if (!mountedRef.current) return;
+          prefillDraft(draftQuestion);
+        }, 300);
       }
     } catch {
+      if (!mountedRef.current) return;
       setError("Não foi possível carregar o assistente agora. Tente novamente.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [draftQuestion]);
 
