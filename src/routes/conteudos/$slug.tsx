@@ -6,6 +6,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { safeVideos } from "@/lib/videos.functions";
 import { canonicalUrl, pageHead } from "@/lib/seo";
+import { orderEditorialHighlights, relatedPublishedArticles } from "@/lib/editorial-discovery";
 
 export const Route = createFileRoute("/conteudos/$slug")({
   loader: async ({ params }) => {
@@ -13,9 +14,10 @@ export const Route = createFileRoute("/conteudos/$slug")({
     if (!article) throw notFound();
     const [catalog, index, videos] = await Promise.all([getBikeCatalog(), getPublishedArticles(),
       article.primaryBikeId ? safeVideos({ bikeId: article.primaryBikeId, limit: 12 }) : Promise.resolve([])]);
+    const contextualArticles = relatedPublishedArticles(article, index ?? []);
     return { article, bikes: catalog.ok ? catalog.bikes : [],
-      relatedArticles: (index ?? []).filter(a => a.id !== article.id && (article.relatedArticleIds.includes(a.id) ||
-        (a.primaryBikeId && [article.primaryBikeId, ...article.relatedBikeIds].includes(a.primaryBikeId)))).slice(0, 4),
+      relatedArticles: orderEditorialHighlights(contextualArticles.length ? contextualArticles : (index ?? []).filter(a => a.id !== article.id)).slice(0, 4),
+      articlesShareContext: contextualArticles.length > 0,
       relatedVideos: videos.filter(video => video.videoId !== article.videoId) };
   },
   head: ({ loaderData }) => {
@@ -54,7 +56,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
 });
 
 function ContentDetail() {
-  const { article, bikes, relatedArticles, relatedVideos } = Route.useLoaderData();
+  const { article, bikes, relatedArticles, articlesShareContext, relatedVideos } = Route.useLoaderData();
   return <div className="min-h-screen bg-background"><SiteHeader />
-    <ArticleView article={article} bikes={bikes} relatedArticles={relatedArticles} relatedVideos={relatedVideos} /><SiteFooter /></div>;
+    <ArticleView article={article} bikes={bikes} relatedArticles={relatedArticles} articlesShareContext={articlesShareContext} relatedVideos={relatedVideos} /><SiteFooter /></div>;
 }
