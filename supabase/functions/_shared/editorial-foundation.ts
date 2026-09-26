@@ -18,7 +18,11 @@ export type EditorialBrief = {
   thesis: string; readerQuestion: string; uniqueInsight: string;
   opening: string; conclusion: string; claims: SourceClaim[];
   sections: OutlineSection[]; modules: PlannedModule[];
-  faqQuestions: string[]; warnings: string[];
+  faqQuestions: string[];
+  /** Informative editorial cautions the text must respect (e.g. "60 km/h é leitura do painel"). Never block alone. */
+  warnings: string[];
+  /** Material, unmitigated risks. Absent (legacy/malformed) counts as unclassified and blocks: fail closed. */
+  blockingRisks?: string[];
 };
 
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -82,6 +86,7 @@ export function parseEditorialBrief(raw: unknown, claims: SourceClaim[], knownBi
     conclusion: clean(row.conclusion, 500), claims, sections, modules,
     faqQuestions: Array.isArray(row.faqQuestions) ? row.faqQuestions.map((v) => clean(v, 240)).filter(Boolean).slice(0, 6) : [],
     warnings: Array.isArray(row.warnings) ? row.warnings.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) : [],
+    ...(Array.isArray(row.blockingRisks) ? { blockingRisks: row.blockingRisks.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) } : {}),
   };
   return brief.primaryIntent && brief.thesis && brief.readerQuestion && brief.uniqueInsight ? brief : null;
 }
