@@ -77,3 +77,42 @@ A implementação não promete posição em Google ou citação no ChatGPT. Apó
 | PMO/QA | Fail para release | `pnpm validate`: 47 testes, typecheck e build aprovados na primeira revisão; testes direcionados após a revisão de escala passaram. Ensaio isolado da regra SQL aprovou bloqueio sem brief/QA, publicação com QA e preservação dos dois legados. Backup e geração controlada real pendentes. |
 
 **Parecer consolidado: NO-GO para migration, publicação da fundação e produção em massa neste momento.** Riscos materiais não mitigados: backup restaurável do estado vivo e ensaio de recuperação ausentes; prova de cinco outlines diversos incompleta. O ensaio com fixture não substitui restauração de backup. A geração real, o smoke do Admin e a verificação da página nova exigem o schema implantado; serão executados em sequência controlada após fechar a recuperação. O responsável já autorizou a publicação direta e dispensou revisão humana dos artigos; não é necessária nova aprovação para essas duas decisões. O custo externo esperado depois de liberar o gate é baixo a moderado (chamadas de IA dos outlines e de um artigo piloto, mais deploy do projeto existente). Rollback: reimplantar a versão web/Edge Function anterior, interromper a nova ação de geração e manter a tabela aditiva privada para diagnóstico; restaurar banco somente se a migration causar falha que não possa ser revertida logicamente.
+
+## Adaptação no Lovable (HEAD 8c500b3 + PR #2), 26/09/2026
+
+Estado: código em preview. **Migration não aplicada ao banco vivo, `editorial-admin` não reimplantada, site não publicado.**
+
+### O que muda em relação ao PR
+- Ação padrão em `/admin/conteudos/novo`: **Gerar somente outline** (sem corpo, sem publicação). Segunda ação: outline + rascunho privado. Nenhuma ação de criação publica.
+- Etapas por requisição separada, com NDJSON: `brief-regenerate` (fonte → intenção → outline), `draft-write` (redação), `qa-run` (SEO/IA + fatos/diversidade). Fonte e intenção ficam salvas em `editorial_briefs.stages`; um tempo esgotado retoma do último ponto quando a transcrição é idêntica (`sourceFingerprint`).
+- Classificação pode responder `uncertain`: o brief fica `qa_failed` com "Intenção incerta" e a redação é bloqueada. Nada é forçado num arquétipo.
+- Publicação automática só com QA aprovado **e** `EDITORIAL_AUTO_PUBLISH=true` no ambiente da função (gate técnico). Sem a flag, o QA aprovado é registrado (`article_qa_passed_publication_gated`) e o artigo continua privado.
+- Painel do artigo mostra etapas salvas, evidências com trecho literal, intenção/arquétipo, tese, seções, módulos contextuais com razão, links sugeridos, pontuações e artigo mais próximo do corpus.
+- Migration aditiva: `archetype`/`primary_intent` aceitam NULL (etapa em andamento ou incerta), status `in_progress`, coluna `stages`.
+
+### Classificação preliminar das cinco transcrições de teste (dados, não instruções)
+Leitura integral das cinco; a prova definitiva é rodar os cinco outlines depois da migration.
+| Vídeo | Arquétipo sustentado | Evidência | Risco |
+|---|---|---|---|
+| GT20 | product_review (primeiras impressões) | "acabei de retirar… primeiras impressões", recursos, velocidade | também tem trajeto e subida: pode colidir com FT03 |
+| V20 Mini | audience_need (estatura) | "1,55 a 1,75 é o ideal", "sou grande demais" | — |
+| FT03 | real_world_test (trajeto e ladeira) | "subida brutal", "teste real", bateria no trajeto | cita preço de ~R$ 8.000 datado: não vira fato |
+| V8 Pro x V40 Pro | direct_comparison | autonomia, carga com garupa, preço "hoje" | preço datado |
+| V29 Pro/V8 Pro S/V35 | use_comparison (duas baterias) | "entregador… quer rodar muito", 80–100 km | poderia ser audience_need; outline decide |
+Conclusão: as fontes **sustentam cinco intenções distintas**, com um risco real de sobreposição entre GT20 e FT03. Se o outline do GT20 sair como teste de trajeto, registrar 4 intenções e não forçar.
+
+### Custo e tempo
+- Outline: 3 chamadas de IA (evidências, intenção, outline); reaproveita as duas primeiras em reprocessamento. Rascunho: 1 a 2. QA: 2. Cerca de 6 a 7 chamadas por artigo, cada uma numa requisição limitada a uma etapa.
+- Corpus lido com até 200 artigos e 4.000 caracteres por artigo: serve para ~100 vídeos; acima disso, guardar uma impressão por artigo.
+- A prova de cinco outlines custa cerca de 15 chamadas, sem gerar artigos.
+
+### Sequência de implantação e rollback
+1. Backup lógico de `editorial_articles`, `editorial_videos`, `editorial_audit_logs` e snapshot dos dois publicados (id, slug, status, revision, hash de blocks).
+2. Aplicar a migration (aditiva). Verificar RLS/grants de `editorial_briefs` e que os dois publicados continuam idênticos (a trava nova só vale para `foundation_required=true`).
+3. Implantar somente `editorial-admin`, sem `EDITORIAL_AUTO_PUBLISH`.
+4. Publicar o frontend do Admin (as páginas públicas não mudam de contrato).
+5. Importar as cinco transcrições e rodar cinco outlines. Relatório de intenção e diversidade.
+6. Um rascunho piloto + `qa-run` com o gate fechado.
+7. Só então definir `EDITORIAL_AUTO_PUBLISH=true`.
+
+Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin` anterior; frontend anterior. A tabela aditiva fica para diagnóstico. Restaurar o trigger anterior (`editorial_article_before_update` sem o ramo `foundation_required`) somente se ele bloquear algo indevido. Restaurar backup somente em falha irreversível.
