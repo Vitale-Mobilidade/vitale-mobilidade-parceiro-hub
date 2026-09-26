@@ -10,6 +10,10 @@ import {
   YOUTUBE_THUMBNAILS, youtubeThumbnailUrl, type BikeCandidate,
 } from "../_shared/editorial-automation.ts";
 import { SHEET_NAME_ALIASES } from "../_shared/bike-sheet.ts";
+import {
+  COVER_BUCKET, COVER_HEIGHT, COVER_MAX_BYTES, COVER_PROMPT, COVER_WIDTH, coverObjectPath, coverPublicUrl,
+  decodeBase64Jpeg, inspectJpeg, isAllowedCoverThumbnail,
+} from "../_shared/editorial-cover.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -384,11 +388,118 @@ async function rebuildLayout(db: SupabaseClient, article: EditorialArticle, sect
   return autoRepairArticle({ ...article, ...overrides, blocks }, EDITORIAL_OG_FALLBACK);
 }
 
+// ---- Manual AI cover pilot: generate never writes the article; apply is separate and revision-locked.
+const IMAGE_URL = "https://ai.gateway.lovable.dev/v1/images/generations";
+const COVER_MODEL = "google/gemini-3.1-flash-image";
+const COVER_TIMEOUT_MS = 90_000;
+const THUMB_MAX_BYTES = 2_000_000;
+const AI_IMAGE_MAX_BYTES = 8_000_000;
+
+async function coverReference(db: SupabaseClient, article: EditorialArticle): Promise<string | null> {
+  const video = await videoById(db, article.video_id);
+  if (video && isAllowedCoverThumbnail(video.thumbnail_url, article.video_id)) return video.thumbnail_url;
+  const resolved = await resolveThumbnail(article.video_id);
+  return resolved.url && isAllowedCoverThumbnail(resolved.url, article.video_id) ? resolved.url : null;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try { return await fetch(url, { ...init, signal: controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+async function coverGenerate(req: Request, db: SupabaseClient, actor: Actor, article: EditorialArticle): Promise<Response> {
+  if (!AI_KEY) return json(req, { error: "IA de imagem não configurada no servidor." }, 503);
+  const thumb = await coverReference(db, article);
+  if (!thumb) return json(req, { error: "Este artigo não tem miniatura válida do YouTube para servir de referência." }, 422);
+  let thumbBytes: Uint8Array;
+  try {
+    const r = await fetchWithTimeout(thumb, {}, 8000);
+    if (!r.ok || !r.headers.get("content-type")?.startsWith("image/jpeg")) throw new Error("thumb_http");
+    thumbBytes = new Uint8Array(await r.arrayBuffer());
+    if (thumbBytes.length < 2000 || thumbBytes.length > THUMB_MAX_BYTES) throw new Error("thumb_size");
+  } catch { return json(req, { error: "Não foi possível baixar a miniatura do YouTube. Tente novamente." }, 502); }
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(IMAGE_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: COVER_MODEL, modalities: ["image", "text"], messages: [{ role: "user", content: [
+        { type: "text", text: COVER_PROMPT },
+        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${toBase64(thumbBytes)}` } },
+      ] }] }),
+    }, COVER_TIMEOUT_MS);
+  } catch (e) {
+    const timeout = e instanceof DOMException && e.name === "AbortError";
+    await log(db, actor, "cover_generate_failed", "article", article.id, { reason: timeout ? "timeout" : "network" });
+    return json(req, { error: timeout ? "A geração demorou demais e foi interrompida. Tente novamente." : "Falha de rede ao gerar a capa." }, 504);
+  }
+  if (!response.ok) {
+    await log(db, actor, "cover_generate_failed", "article", article.id, { status: response.status });
+    const msg = response.status === 429 ? "Muitas gerações seguidas. Aguarde um minuto e tente de novo."
+      : response.status === 402 ? "Créditos de IA esgotados no workspace."
+      : response.status === 403 ? "O provedor de IA recusou esta geração."
+      : "O serviço de imagem falhou. Tente novamente.";
+    return json(req, { error: msg }, response.status === 429 || response.status === 402 || response.status === 403 ? response.status : 502);
+  }
+  const text = await response.text();
+  if (text.length > AI_IMAGE_MAX_BYTES * 1.4) return json(req, { error: "Imagem gerada grande demais." }, 502);
+  let b64 = "";
+  try { b64 = (JSON.parse(text) as { data?: { b64_json?: string }[] }).data?.[0]?.b64_json ?? ""; } catch { /* handled below */ }
+  if (!b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) {
+    await log(db, actor, "cover_generate_failed", "article", article.id, { reason: "empty_or_refused" });
+    return json(req, { error: "A IA não devolveu imagem. Tente gerar outra." }, 502);
+  }
+  const mime = b64.startsWith("/9j/") ? "image/jpeg" : b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("UklGR") ? "image/webp" : "";
+  if (!mime) return json(req, { error: "Formato de imagem inesperado." }, 502);
+  await log(db, actor, "cover_generated", "article", article.id, { model: COVER_MODEL, reference: thumb, revision: article.revision });
+  // Title comes from the database; the browser draws it exactly, never the model.
+  return json(req, { background: `data:${mime};base64,${b64}`, title: article.title, revision: article.revision, model: COVER_MODEL });
+}
+
+async function coverApply(req: Request, db: SupabaseClient, actor: Actor, article: EditorialArticle, body: Body): Promise<Response> {
+  const bytes = decodeBase64Jpeg(body.image, COVER_MAX_BYTES);
+  if (!bytes) return json(req, { error: "Capa inválida: envie um JPG de até 4 MB." }, 400);
+  const dims = inspectJpeg(bytes);
+  if (!dims || dims.width !== COVER_WIDTH || dims.height !== COVER_HEIGHT) {
+    return json(req, { error: "A capa precisa ser JPG 1280×720." }, 400);
+  }
+  const fileId = crypto.randomUUID();
+  const path = coverObjectPath(article.id, fileId);
+  const { error: uploadError } = await db.storage.from(COVER_BUCKET)
+    .upload(path, bytes, { contentType: "image/jpeg", upsert: false, cacheControl: "86400" });
+  if (uploadError) {
+    console.error("[editorial-admin] cover upload failed", uploadError.message);
+    return json(req, { error: "Não foi possível salvar a capa. A capa anterior foi mantida." }, 502);
+  }
+  const url = coverPublicUrl(SUPABASE_URL, article.id, fileId);
+  const { data, error } = await db.from("editorial_articles").update({ og_image_url: url, updated_by: actor.id })
+    .eq("id", article.id).eq("revision", article.revision).select("*").maybeSingle();
+  if (error || !data) {
+    await db.storage.from(COVER_BUCKET).remove([path]);
+    return json(req, { error: "O artigo mudou antes da aplicação. A capa anterior foi mantida; recarregue a página." }, 409);
+  }
+  await log(db, actor, "article_revision", "article", article.id, revisionSnapshot(article));
+  await log(db, actor, "cover_applied", "article", article.id, {
+    previous: article.og_image_url, next: url, bytes: bytes.length, status: article.status, revision: article.revision,
+  });
+  return json(req, { article: data });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req) });
   if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
   if (!SUPABASE_URL || !SERVICE_KEY) return json(req, { error: "not_configured" }, 503);
-  if (Number(req.headers.get("content-length") ?? 0) > 1_500_000) return json(req, { error: "request_too_large" }, 413);
+  // 6 MB: a 4 MB JPG cover travels base64-encoded (~5.4 MB); other actions still trim their own fields.
+  if (Number(req.headers.get("content-length") ?? 0) > 6_000_000) return json(req, { error: "request_too_large" }, 413);
   let body: Body;
   try { body = await req.json(); } catch { return json(req, { error: "invalid_json" }, 400); }
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -574,6 +685,15 @@ Deno.serve(async (req) => {
     if (action === "generate") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
       return generateStream(req, db, actor, body);
+    }
+    if (action === "cover-generate" || action === "cover-apply") {
+      if (!canContent(actor) || !uuid(body.id) || !Number.isInteger(body.revision)) {
+        return json(req, { error: "Sem permissão, ID ou revisão inválidos." }, 403);
+      }
+      const article = await articleById(db, body.id);
+      if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
+      if (article.revision !== body.revision) return json(req, { error: "O artigo foi alterado em outra aba. Recarregue a página." }, 409);
+      return action === "cover-generate" ? coverGenerate(req, db, actor, article) : coverApply(req, db, actor, article, body);
     }
     if (action === "article-save") {
       // Simple edit: title, intro and continuous body. Works for drafts and published articles alike.
