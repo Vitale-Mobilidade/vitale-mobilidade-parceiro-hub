@@ -5,12 +5,15 @@ CREATE TABLE public.editorial_briefs (
   article_id uuid PRIMARY KEY REFERENCES public.editorial_articles(id) ON DELETE CASCADE,
   video_id text NOT NULL REFERENCES public.editorial_videos(youtube_id),
   version integer NOT NULL DEFAULT 1 CHECK (version > 0),
-  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'qa_failed', 'ready')),
-  archetype text NOT NULL CHECK (archetype IN (
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('in_progress', 'draft', 'qa_failed', 'ready')),
+  -- NULL while stages run or when the source does not support one intent ("uncertain"); never forced.
+  archetype text CHECK (archetype IN (
     'direct_comparison', 'product_review', 'real_world_test', 'buying_guide',
     'audience_need', 'education', 'market_price', 'curated_list', 'use_comparison')),
-  primary_intent text NOT NULL,
-  payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  primary_intent text,
+  -- Per-stage checkpoints (source, intent, outline) so a timed-out run resumes without paying again.
+  stages jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(stages) = 'object'),
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(payload) = 'object'),
   quality_report jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(quality_report) = 'object'),
   article_revision integer,
   created_at timestamptz NOT NULL DEFAULT now(),
