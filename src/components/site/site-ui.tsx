@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bike, Menu } from "lucide-react";
-import officialLogo from "@/assets/vitale-mobilidade-logo-slim.png.asset.json";
 import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
 
 /*
@@ -12,7 +11,7 @@ import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
 export function Brand({ large = false }: { large?: boolean }) {
   return (
     <Link to="/" className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-logo-surface bg-logo-surface p-1 ${large ? "h-20 w-60" : "h-14 w-44 sm:w-48"}`} aria-label="Vitale Mobilidade — início">
-      <img src={officialLogo.url} alt="Vitale Mobilidade" width={464} height={152} decoding="async" className="h-full w-full object-contain" />
+      <img src="/vitale-logo-464.avif" alt="Vitale Mobilidade" width={464} height={152} decoding="async" className="h-full w-full object-contain" />
     </Link>
   );
 }
@@ -119,7 +118,7 @@ export function BikeMedia({ src, name, className = "h-48", eager = false }: { sr
   return (
     <div className={`flex items-center justify-center overflow-hidden bg-surface ${className}`}>
       {src ? (
-        <img src={src} alt={`Bike elétrica ${name}`} loading={eager ? "eager" : "lazy"} decoding="async" className="h-full w-full object-contain p-3" />
+        <img src={src} alt={`Bike elétrica ${name}`} width={640} height={480} sizes="(max-width: 640px) 100vw, 320px" loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : "low"} decoding="async" className="h-full w-full object-contain p-3" />
       ) : (
         <Bike className="h-12 w-12 text-action/40" aria-label="Imagem indisponível" />
       )}

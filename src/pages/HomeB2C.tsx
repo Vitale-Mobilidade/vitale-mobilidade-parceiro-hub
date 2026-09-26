@@ -150,7 +150,7 @@ function CalculatorPanel() {
             </li>
           ))}
         </ul>
-        <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold text-muted-foreground">
+        <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold text-ink">
           <span>Custo</span><span>+</span><span>Trajeto</span>
         </div>
         <ArrowRight className="h-7 w-7 shrink-0 text-action" aria-hidden="true" />
@@ -182,7 +182,7 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
         {recent.map((article) => (
           <li key={article.slug}>
             <Link to="/conteudos/$slug" params={{ slug: article.slug }} className="group flex h-full flex-col overflow-hidden rounded-lg bg-card ring-1 ring-line transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
-              {article.ogImageUrl && <img src={article.ogImageUrl} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
+              {article.ogImageUrl && <img src={article.ogImageUrl} alt="" width={640} height={360} sizes="(max-width: 640px) 100vw, 33vw" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="text-lg font-bold text-ink group-hover:text-action">{article.title}</h3>
                 {article.summary && <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{article.summary}</p>}

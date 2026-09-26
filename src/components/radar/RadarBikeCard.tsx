@@ -31,6 +31,9 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
             <img
               src={entry.image}
               alt={`Bike elétrica ${entry.name}`}
+              width={640}
+              height={480}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               loading="lazy"
               decoding="async"
               className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.04]"

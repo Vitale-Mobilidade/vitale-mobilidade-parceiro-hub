@@ -139,7 +139,7 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, lo
               >
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-green-50">
                   {entry.image ? (
-                    <img src={entry.image} alt="" aria-hidden="true" loading="lazy" className="h-full w-full object-contain" />
+                    <img src={entry.image} alt="" aria-hidden="true" width={96} height={96} loading="lazy" decoding="async" className="h-full w-full object-contain" />
                   ) : null}
                 </span>
                 <span className="min-w-0 flex-1">

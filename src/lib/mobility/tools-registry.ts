@@ -2,7 +2,7 @@
  * Registro único das sete Ferramentas de Mobilidade oficiais (/ferramentas/*).
  * Hub, sitemap, metadata e "ferramentas relacionadas" leem daqui: nenhuma lista paralela.
  */
-import { canonicalUrl, pageHead, SITE_NAME } from "@/lib/seo";
+import { canonicalUrl, pageHead, serializeJsonLd, SITE_NAME } from "@/lib/seo";
 
 export const TOOL_SLUGS = [
   "carro-vs-bike",
@@ -168,13 +168,20 @@ export function toolHead(slug: ToolSlug) {
     description: tool.seoDescription,
     ogTitle: tool.h1,
     ogDescription: tool.seoDescription,
+    image: {
+      url: canonicalUrl("/og/vitale-ferramentas-1200x630.jpg"),
+      width: 1200,
+      height: 630,
+      type: "image/jpeg",
+      alt: `${tool.title} — ferramenta gratuita da Vitale Mobilidade`,
+    },
   });
   return {
     ...base,
     scripts: [
       {
         type: "application/ld+json",
-        children: JSON.stringify({
+        children: serializeJsonLd({
           "@context": "https://schema.org",
           "@type": "WebApplication",
           name: tool.title,
@@ -190,7 +197,7 @@ export function toolHead(slug: ToolSlug) {
       },
       {
         type: "application/ld+json",
-        children: JSON.stringify({
+        children: serializeJsonLd({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
