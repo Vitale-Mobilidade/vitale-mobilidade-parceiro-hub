@@ -11,6 +11,7 @@ import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
+import { composeCover } from "@/lib/cover-compose";
 import { blocksToMarkdown, CONTENT_TYPES, type EditorialArticle } from
   "../../supabase/functions/_shared/editorial-contract";
 
@@ -591,9 +592,80 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
           <p className="text-muted-foreground">Canonical: https://vitalemobilidade.com/conteudos/{draft.slug} · Dados estruturados: Article, VideoObject, BreadcrumbList.</p>
         </div>
       </details>
-    </section> : <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
-      relatedArticles={relatedArticles} relatedVideos={relatedVideos} /></div>}
+    </section> : <>
+      <CoverPanel article={article} disabled={Boolean(busy)} onApplied={async next => { setArticle(next);
+        await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] }); }} />
+      <div className="rounded-3xl bg-white shadow-sm"><ArticleView article={previewArticle(article)} bikes={bikes}
+        relatedArticles={relatedArticles} relatedVideos={relatedVideos} /></div>
+    </>}
   </>;
+}
+
+/** Manual AI cover pilot: generate/discard never write; apply is a separate, confirmed, revision-locked action. */
+function CoverPanel({ article, disabled, onApplied }: { article: EditorialArticle; disabled: boolean; onApplied: (a: EditorialArticle) => Promise<void> }) {
+  const [candidate, setCandidate] = useState<{ dataUrl: string; bytes: number; revision: number } | null>(null);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [reviewed, setReviewed] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [currentBroken, setCurrentBroken] = useState(false);
+  useEffect(() => { setCurrentBroken(false); }, [article.og_image_url]);
+  const published = article.status === "published";
+  async function generate() {
+    setBusy("Gerando capa… (até 1 min)"); setError(""); setReviewed(false);
+    try {
+      const r = await adminCall<{ background: string; title: string; revision: number }>("cover-generate", { id: article.id, revision: article.revision });
+      const composed = await composeCover(r.background, r.title);
+      setCandidate({ ...composed, revision: r.revision });
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível gerar a capa."); }
+    finally { setBusy(""); }
+  }
+  async function apply() {
+    if (!candidate || !reviewed) return;
+    if (published && !window.confirm("Este artigo está publicado. A nova capa aparece imediatamente na página, nos cards e no compartilhamento. Aplicar?")) return;
+    setBusy("Aplicando…"); setError("");
+    try {
+      const r = await adminCall<{ article: EditorialArticle }>("cover-apply", { id: article.id, revision: candidate.revision, image: candidate.dataUrl });
+      setCandidate(null); setReviewed(false);
+      await onApplied(r.article);
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível aplicar. A capa anterior foi mantida."); }
+    finally { setBusy(""); }
+  }
+  const stale = candidate && candidate.revision !== article.revision;
+  return <section aria-labelledby="cover-title" className={`${PANEL} mb-6`}>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div><h2 id="cover-title" className="text-lg font-semibold">Capa do artigo</h2>
+        <p className="text-sm text-muted-foreground">Usada no topo do artigo, nos cards e no compartilhamento. O player do vídeo mantém a miniatura do YouTube.</p></div>
+      {!open && !candidate && <button className={OUTLINE} disabled={disabled || Boolean(busy)} onClick={() => setOpen(true)}>Gerar capa com IA</button>}
+    </div>
+    {(open || candidate) && <>
+      {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <figure><figcaption className="mb-2 text-sm font-semibold">Capa atual</figcaption>
+          {article.og_image_url && !currentBroken
+            ? <img src={article.og_image_url} alt="Capa atual" width={1280} height={720} onError={() => setCurrentBroken(true)} className="aspect-video w-full rounded-xl border border-line object-cover" />
+            : <div className="grid aspect-video place-items-center rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted-foreground">
+              {article.og_image_url ? "Capa aprovada fica visível publicamente quando o artigo está publicado." : "Sem capa."}</div>}
+        </figure>
+        <figure><figcaption className="mb-2 text-sm font-semibold">Candidata (não salva)</figcaption>
+          {candidate
+            ? <img src={candidate.dataUrl} alt="Capa candidata gerada por IA" width={1280} height={720} className="aspect-video w-full rounded-xl border border-line object-cover" />
+            : <div aria-busy={Boolean(busy)} className="grid aspect-video place-items-center rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted-foreground">
+              {busy || "Gere uma candidata: fundo novo por IA a partir da miniatura do vídeo, com o título exato e a marca Vitale."}</div>}
+        </figure>
+      </div>
+      {candidate && <label className="mt-4 flex items-start gap-2 text-sm">
+        <input type="checkbox" className="mt-1" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />
+        <span>Revisei a imagem: sem texto inventado pela IA, título correto e legível, nada ofensivo ou enganoso. JPG 1280×720, {(candidate.bytes / 1024).toFixed(0)} KB.</span></label>}
+      {stale && <p role="alert" className="mt-3 text-sm text-red-800">O artigo mudou desde a geração. Gere outra candidata.</p>}
+      <div className="mt-4 flex flex-wrap gap-2" aria-live="polite">
+        <button className={OUTLINE} disabled={disabled || Boolean(busy)} onClick={() => void generate()}>{busy.startsWith("Gerando") ? busy : candidate ? "Gerar outra" : "Gerar candidata"}</button>
+        <button className={OUTLINE} disabled={Boolean(busy)} onClick={() => { setCandidate(null); setReviewed(false); setError(""); if (!candidate) setOpen(false); }}>{candidate ? "Descartar" : "Fechar"}</button>
+        <button className={BTN} disabled={disabled || Boolean(busy) || !candidate || !reviewed || Boolean(stale)} onClick={() => void apply()}>{busy === "Aplicando…" ? busy : "Aplicar capa"}</button>
+      </div>
+      {published && <p className="mt-2 text-xs text-muted-foreground">Artigo publicado: aplicar altera a página pública imediatamente.</p>}
+    </>}
+  </section>;
 }
 
 export function AdminArticlePreviewPage({ id }: { id: string }) {
