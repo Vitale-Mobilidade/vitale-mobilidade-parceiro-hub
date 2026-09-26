@@ -384,7 +384,8 @@ async function generateBrief(db: SupabaseClient, actor: Actor, article: Editoria
     headings: brief.sections.map((section) => section.heading), conclusion: brief.conclusion,
     body: [brief.thesis, brief.uniqueInsight, ...brief.sections.map((section) => section.purpose)].join(" ") }, corpus.items);
   // Cautions are informative and carried into draft/QA; only material blockers keep the brief closed.
-  const gate = outlineGate(brief, diversity);
+  // Radar is required only when price decides and an associated bike has a current offer (no formula).
+  const gate = outlineGate(brief, diversity, new Set([...offers].filter((id) => articleBikeIds.has(id))));
   const issues = gate.blockers;
   const status = gate.status;
   const next = { article_id: article.id, video_id: video.youtube_id, version: (current?.version ?? 0) + 1,

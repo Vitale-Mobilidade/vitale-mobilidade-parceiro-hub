@@ -23,6 +23,8 @@ export type EditorialBrief = {
   warnings: string[];
   /** Material, unmitigated risks. Absent (legacy/malformed) counts as unclassified and blocks: fail closed. */
   blockingRisks?: string[];
+  /** Explicit, verifiable reason for not planning Radar when current price is part of the decision. */
+  radarOmission?: string;
 };
 
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -86,6 +88,7 @@ export function parseEditorialBrief(raw: unknown, claims: SourceClaim[], knownBi
     conclusion: clean(row.conclusion, 500), claims, sections, modules,
     faqQuestions: Array.isArray(row.faqQuestions) ? row.faqQuestions.map((v) => clean(v, 240)).filter(Boolean).slice(0, 6) : [],
     warnings: Array.isArray(row.warnings) ? row.warnings.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) : [],
+    ...(clean(row.radarOmission, 500) ? { radarOmission: clean(row.radarOmission, 500) } : {}),
     ...(Array.isArray(row.blockingRisks) ? { blockingRisks: row.blockingRisks.map((v) => clean(v, 500)).filter(Boolean).slice(0, 12) } : {}),
   };
   return brief.primaryIntent && brief.thesis && brief.readerQuestion && brief.uniqueInsight ? brief : null;
@@ -172,8 +175,33 @@ export type OutlineGate = { status: "ready" | "qa_failed"; blockers: string[]; c
  * blockers (declared unmitigated risks, unclassified risks, material similarity) keep the brief closed.
  * Unsupported claims, insufficient source and uncertain intent fail earlier in generateBrief.
  */
-export function outlineGate(brief: Pick<EditorialBrief, "warnings" | "blockingRisks">, diversity: Pick<DiversityResult, "score" | "alerts">): OutlineGate {
+const PRICE_DECISION = /\b(preco|precos|oferta|ofertas|valor|valores|custo|custa|custam|parcela|parcelas|desconto|promocao)\b/;
+export const MIN_RADAR_OMISSION = 40;
+
+/**
+ * Radar is contextual, not formulaic: required only when current price is part of the decision in the outline
+ * AND an associated bike has a current Radar offer. When required, a radar module covering such a bike or an
+ * explicit, specific omission reason must exist; otherwise the outline fails closed.
+ */
+export function radarPlanIssue(brief: Pick<EditorialBrief, "thesis" | "readerQuestion" | "conclusion" | "sections" | "modules" | "radarOmission">,
+  radarBikeIds: ReadonlySet<string>): string | null {
+  if (!radarBikeIds.size) return null;
+  const text = norm([brief.thesis, brief.readerQuestion, brief.conclusion,
+    ...brief.sections.flatMap((section) => [section.heading, section.purpose])].join(" "));
+  if (!PRICE_DECISION.test(text)) return null;
+  if (brief.modules.some((module) => module.type === "radar" && module.bikeIds.some((id) => radarBikeIds.has(id)))) return null;
+  if ((brief.radarOmission ?? "").trim().length >= MIN_RADAR_OMISSION) return null;
+  return `Preço atual faz parte da decisão e há oferta no Radar para ${[...radarBikeIds].join(", ")}, mas o outline não planeja o módulo Radar nem justifica a ausência.`;
+}
+
+export function outlineGate(brief: Pick<EditorialBrief, "warnings" | "blockingRisks"> & Partial<Pick<EditorialBrief, "thesis" | "readerQuestion" | "conclusion" | "sections" | "modules" | "radarOmission">>,
+  diversity: Pick<DiversityResult, "score" | "alerts">, radarBikeIds: ReadonlySet<string> = new Set()): OutlineGate {
   const blockers: string[] = [];
+  if (brief.sections && brief.modules) {
+    const radar = radarPlanIssue({ thesis: brief.thesis ?? "", readerQuestion: brief.readerQuestion ?? "", conclusion: brief.conclusion ?? "",
+      sections: brief.sections, modules: brief.modules, radarOmission: brief.radarOmission }, radarBikeIds);
+    if (radar) blockers.push(radar);
+  }
   if (!Array.isArray(brief.blockingRisks)) blockers.push("Outline sem classificação de riscos materiais; gere o outline de novo.");
   else blockers.push(...brief.blockingRisks.map((risk) => `Risco material: ${risk}`));
   blockers.push(...diversity.alerts);
