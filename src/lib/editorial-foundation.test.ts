@@ -69,7 +69,7 @@ describe("stage checkpoints", () => {
   });
 });
 
-import { briefMatchesSource, draftMatchesOutline, sourceFingerprint } from "../../supabase/functions/_shared/editorial-foundation";
+import { briefMatchesSource, draftMatchesOutline } from "../../supabase/functions/_shared/editorial-foundation";
 
 describe("stale brief and outline guards", () => {
   it("refuses a brief whose source checkpoint does not match the current transcript", () => {
