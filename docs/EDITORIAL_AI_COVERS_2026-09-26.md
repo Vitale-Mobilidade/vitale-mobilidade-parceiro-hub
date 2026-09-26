@@ -66,3 +66,32 @@ Nenhuma geração real foi feita (sem sessão editorial).
 | PMO | **Fail** | Gate de release: falta teste real do modelo e da UI autenticada; frontend não publicado. |
 
 **Release bloqueada** até: geração real de candidata em artigo antigo publicado com sessão editorial, inspeção visual lado a lado, descarte sem aplicar (zero alteração pública confirmada) e, só então, aplicação em publicado após aprovação visual explícita + verificação do hero/OG. Não há rascunhos disponíveis neste momento.
+
+## Autorização e publicação do recurso manual — 26/09/2026 (HEAD `1be0d87`)
+
+O usuário foi informado das pendências e autorizou explicitamente publicar ("pode publicar"). O deploy foi acionado no Lovable: **deployment `b564f04c-f08d-45d7-8c54-abb2fe3f31fc`** (frontend + funções já implantadas anteriormente).
+
+### Testes reais pós-publicação (domínio vitalemobilidade.com)
+- Artigo público: HTTP 200.
+- Editor autenticado: painel "Capa do artigo" com **Gerar capa com IA** visível.
+- Primeira geração real: artigo `e415a3dd-b41f-4c5c-b284-9fef472c6a1b` produziu candidata **JPG 1280×720, 156 KB**, com título legível e visual distinto da thumbnail de referência.
+- **A candidata NÃO foi aplicada.**
+- Consulta ao banco após a geração: artigo `published`, `revision` 10, `og_image_url` permanece `https://i.ytimg.com/vi/pLt9AmDyJ9Q/maxresdefault.jpg` — **nenhuma capa do artigo foi trocada**.
+- `/admin/growth` autenticado: funil e aviso de cobertura carregados.
+- `bike-image?id=v8_pro_s` → 200 `image/png`; IDs de capa inválidos → 400; inexistentes → 404.
+
+### Revisão pós das oito perspectivas — para publicação do recurso manual
+| Perspectiva | Status | Justificativa |
+|---|---|---|
+| Produto | Pass | Fluxo manual verificado de ponta a ponta: geração real, candidata inspecionada, artigo inalterado sem "Aplicar". |
+| CTO | Pass | Contrato do endpoint validado e confirmado em produção; funções e frontend no ar; bikes e ramos de capa operacionais. |
+| IA | Pass | Modelo chamado de ponta a ponta; candidata real produzida (1280×720, JPG, título legível, visual distinto da referência). |
+| Segurança | Pass | Allowlist, UUIDs, URL exata, bucket privado e chave no servidor confirmados em produção (400/404/200 conforme esperado). |
+| UX | Pass | Painel autenticado testado com sessão editorial real; comparação lado a lado disponível no editor. |
+| CX | N/A | Nenhuma capa aplicada; leitor não é afetado até a primeira aplicação revisada. |
+| Growth | N/A | OG dimensions/type da capa só se tornam públicos quando uma capa é aplicada (nenhuma aplicada). |
+| PMO | Pass | Autorização explícita, deploy concluído e verificação no domínio; pendências de teste resolvidas nesta rodada. |
+
+### Risco residual
+- **Fidelidade de produto em cada capa:** a qualidade da IA varia por candidata; cada capa gerada precisa ser avaliada quanto à representação fiel do produto antes de ser aceita.
+- **Aprovação humana antes de aplicar:** a aplicação em artigo publicado só deve ocorrer após aprovação visual explícita da candidata específica (gate do recurso e do processo).
