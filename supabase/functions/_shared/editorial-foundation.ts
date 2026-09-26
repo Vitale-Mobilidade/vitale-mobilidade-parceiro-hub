@@ -187,3 +187,45 @@ export function cautionReviewIssues(cautions: string[], violations: unknown): st
   return violations.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
     .slice(0, 12).map((v) => `Cautela desrespeitada: ${v.trim().slice(0, 300)}`);
 }
+
+export const DIVERSITY_CORPUS_LIMIT = 500;
+type CorpusArticleRow = { id: string; title?: string | null; summary?: string | null; status?: string | null; blocks?: unknown };
+type CorpusBriefRow = { article_id: string; status?: string | null; payload?: unknown };
+export type DiversityCorpus = { items: CorpusItem[]; counts: { published: number; written: number; outlines: number; total: number } };
+
+/**
+ * Differentiation corpus: published articles, drafts with written text and ready outlines (without text yet).
+ * One entry per article (written text wins over its outline), current article excluded, archived ignored.
+ */
+export function buildDiversityCorpus(articles: CorpusArticleRow[], briefs: CorpusBriefRow[], currentId: string, limit = DIVERSITY_CORPUS_LIMIT): DiversityCorpus {
+  const byId = new Map<string, CorpusItem>();
+  const counts = { published: 0, written: 0, outlines: 0, total: 0 };
+  const articleById = new Map(articles.map((a) => [a.id, a]));
+  for (const a of articles) {
+    if (!a?.id || a.id === currentId || byId.has(a.id) || a.status === "archived") continue;
+    const blocks = (Array.isArray(a.blocks) ? a.blocks : []) as { type?: string; heading?: string; text?: string }[];
+    const texts = blocks.filter((b) => b?.type === "text" && typeof b.text === "string" && b.text.trim());
+    if (a.status !== "published" && !texts.length) continue;
+    byId.set(a.id, { id: a.id, title: clean(a.title, 200), summary: clean(a.summary, 1000),
+      headings: blocks.map((b) => clean(b?.heading, 160)).filter(Boolean),
+      body: texts.map((b) => clean(b.text, 1200)).join(" ").slice(0, 4000), conclusion: clean(texts.at(-1)?.text, 1200) });
+    if (a.status === "published") counts.published++; else counts.written++;
+  }
+  for (const b of briefs) {
+    if (!b?.article_id || b.article_id === currentId || byId.has(b.article_id) || b.status !== "ready") continue;
+    const art = articleById.get(b.article_id);
+    if (art?.status === "archived") continue;
+    const p = (b.payload && typeof b.payload === "object" ? b.payload : {}) as Record<string, unknown>;
+    const sections = (Array.isArray(p.sections) ? p.sections : []) as Record<string, unknown>[];
+    const headings = sections.map((s) => clean(s?.heading, 160)).filter(Boolean);
+    if (!headings.length) continue;
+    byId.set(b.article_id, { id: b.article_id, title: clean(art?.title, 200) || "Outline sem título",
+      summary: clean(p.opening, 1000), headings, archetype: clean(p.archetype, 40),
+      body: [p.thesis, p.uniqueInsight, ...sections.map((s) => s?.purpose)].map((v) => clean(v, 600)).join(" ").slice(0, 4000),
+      conclusion: clean(p.conclusion, 1200) });
+    counts.outlines++;
+  }
+  const items = [...byId.values()].slice(0, limit);
+  counts.total = items.length;
+  return { items, counts };
+}
