@@ -1335,6 +1335,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
       try {
         const id = body.youtubeId;
         const title = str(body.title, 300);
+        const articleTitle = str(body.articleTitle, 200) || title;
         const transcript = str(body.transcript, 500_000);
         if (!validYoutubeId(id)) return fail("URL do YouTube inválida.");
         if (title.length < 3) return fail("Informe o título do vídeo.");
@@ -1359,8 +1360,8 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (!article) {
           const initial = {
             video_id: id,
-            title,
-            slug: slugifyEditorialTitle(title),
+            title: articleTitle,
+            slug: slugifyEditorialTitle(articleTitle),
             content_type: detectContentType(title),
             foundation_required: true,
             og_image_url: saved.video.thumbnail_url,
@@ -1375,6 +1376,28 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
               .select("*")
               .single());
           if (error || !data) throw new Error("article_create_failed");
+          article = data as EditorialArticle;
+        } else if (article.title !== articleTitle) {
+          let { data, error } = await db
+            .from("editorial_articles")
+            .update({ title: articleTitle, slug: slugifyEditorialTitle(articleTitle), updated_by: actor.id })
+            .eq("id", article.id)
+            .eq("revision", article.revision)
+            .select("*")
+            .maybeSingle();
+          if (error?.code === "23505")
+            ({ data, error } = await db
+              .from("editorial_articles")
+              .update({
+                title: articleTitle,
+                slug: `${slugifyEditorialTitle(articleTitle).slice(0, 100)}-${id.toLowerCase()}`,
+                updated_by: actor.id,
+              })
+              .eq("id", article.id)
+              .eq("revision", article.revision)
+              .select("*")
+              .maybeSingle());
+          if (error || !data) throw new Error("article_title_update_failed");
           article = data as EditorialArticle;
         }
         if (!article.foundation_required) {
