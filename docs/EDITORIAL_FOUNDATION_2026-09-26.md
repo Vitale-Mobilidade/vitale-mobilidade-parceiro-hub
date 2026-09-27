@@ -1,6 +1,43 @@
-# Atualização de 27/09/2026
+# Fluxo simples de artigos no Admin
 
-O fluxo de produto vigente é `EDITORIAL_SIMPLE_FLOW_2026-09-27.md`: vídeo/link, título, transcrição, Gerar artigo e, após a prévia, Publicar. As propostas de interface de outline, distribuição de arquétipos, operação em massa e publicação automática abaixo são registro histórico.
+Decisão de produto em 27/09/2026. Esta decisão substitui a interface de etapas e a proposta de publicação automática descritas no histórico de `EDITORIAL_FOUNDATION_2026-09-26.md`.
+
+## Contrato da experiência
+
+O operador escolhe um vídeo existente ou cola o link, informa o título e a transcrição, e clica **Gerar artigo**. O painel executa em sequência privada: análise da fonte, estratégia específica da intenção, redação, capa e QA. Exibe então a prévia do artigo completo e o botão **Publicar**. A criação e a revisão técnica não publicam. Se uma chamada falhar, o rascunho salvo pode ser concluído no mesmo artigo, sem mostrar as etapas internas. Não existe operação de criação em massa: 100+ vídeos serão processados individualmente.
+
+O plano, arquétipo, notas, evidências e alertas são artefatos internos. Não aparecem na criação, lista ou editor do artigo. A diferença editorial é julgada por artigo frente a publicados, rascunhos e planos privados. A variedade deve seguir o assunto e a fonte; não se deve forçar uma categoria só para preencher cotas nem prometer posição no Google. A orientação oficial do Google prioriza conteúdo original, útil, preciso e relevante, e alerta para geração de muitas páginas sem valor adicional. Ver: https://developers.google.com/search/docs/fundamentals/creating-helpful-content e https://developers.google.com/search/docs/fundamentals/using-gen-ai-content.
+
+## Revisão antes da implementação — estrutural
+
+| Perspectiva | Parecer | Condição incorporada                                                                                              |
+| ----------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| Produto     | Pass    | Fluxo individual de quatro elementos e publicação explícita.                                                      |
+| CTO         | Pass    | Reutilizar etapas persistidas e revision lock; nenhuma migration.                                                 |
+| IA          | Pass    | Fonte não confiável, evidência literal e QA privado preservados.                                                  |
+| Segurança   | Pass    | Somente perfis editoriais; QA atrelado à revisão para publicar.                                                   |
+| UX/UI       | Pass    | Sem plano, jargão ou botões técnicos no fluxo principal.                                                          |
+| CX/Operação | Pass    | Retomar um rascunho após interrupção, com erro compreensível.                                                     |
+| Growth/SEO  | Pass    | Diferenciação por fonte e intenção, sem estrutura fixa ou cota global de arquétipos.                              |
+| PMO/QA      | Pass    | Testar compilação, contrato da publicação e tela publicada; créditos insuficientes impedem teste real de geração. |
+
+Conflito resolvido: a antiga prova de cinco intenções era uma avaliação para um conceito de produção em massa que o operador rejeitou. A checagem de semelhança por artigo permanece; a cota global deixa de aparecer e de bloquear a criação. A flag antiga `EDITORIAL_AUTO_PUBLISH` deixa de comandar publicação de artigos novos: a ação **Publicar** exige relatório QA aprovado e revisão exata. O banco mantém o gatilho de segurança.
+
+## Verificação e release
+
+`pnpm validate`: typecheck, 47 testes e build aprovados localmente. Pós revisão: Produto Pass; CTO Pass; IA Pass com teste real pendente por falta de créditos; Segurança Pass; UX/UI Pass local, smoke visual no Lovable pendente; CX Pass local; Growth/SEO Pass para contrato, sem alegação de ranking; PMO Pass local, publicação condicionada à correspondência exata do código implantado e smoke. Nenhum artigo novo será criado com créditos esgotados. Rollback: reverter o commit de frontend e da Edge Function no Lovable; os rascunhos privados permanecem salvos e artigos já publicados não são alterados.
+
+## Evidência de integração
+
+Código aplicado pelo Lovable Code Editor em `src/pages/AdminEditorial.tsx` e `supabase/functions/editorial-admin/index.ts`; HEAD remoto `be8a696`. O checkout limpo deste HEAD passou `pnpm validate`: 47 testes, typecheck e build. Não foram enviados prompts ao agente Lovable nem chamadas de geração, preservando os créditos indisponíveis. Após publicar, verificar a interface autenticada e que nenhum artigo privado foi publicado por efeito colateral.
+
+## Publicação e conferência
+
+O botão **Publish changes** do Lovable concluiu com “Your website was updated”. A URL viva `/admin/conteudos/novo` respondeu HTTP 200 e carregou o bundle `AdminEditorial-GiL0zqes.js`; nele estão “Gerar artigo” e “Publicar”, sem “Gerar somente outline”, “Plano editorial”, “Distribuição por arquétipo” ou “Produção em massa”. Consulta somente leitura ao banco vivo após o deploy: 2 artigos publicados, 5 rascunhos e 1 registro `validation_error`, iguais às contagens anteriores. A geração completa e o QA com IA não foram executados por falta de créditos; esse é o limite da verificação viva. O backend foi salvo no Lovable em `be8a696` e o checkout desse commit passou `pnpm validate`.
+
+---
+
+# Histórico da fundação editorial (26/09/2026)
 
 # Fundação editorial orientada por fonte, SEO e diversidade
 
