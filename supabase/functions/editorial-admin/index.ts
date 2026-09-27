@@ -1323,6 +1323,8 @@ function stageStream(
 
 export function stageError(code: string): string {
   const map: Record<string, string> = {
+    ai_http_402:
+      "Créditos de IA do workspace Lovable esgotados. Novos outlines e QA dependem da reposição de créditos.",
     revision_conflict: "O artigo foi alterado em outra aba. Recarregue a página.",
     draft_not_found: "Rascunho não encontrado (artigos publicados não são reprocessados).",
     brief_source_stale: "A transcrição mudou depois do outline. Gere um novo outline antes de continuar.",
