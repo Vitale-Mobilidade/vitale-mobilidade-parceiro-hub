@@ -6,16 +6,16 @@
 
 Mudança **estrutural**: IA, SEO, Supabase, Radar, Quiz, Admin e publicação de conteúdo. Escopo: preservar os dois artigos publicados; adicionar artefatos privados de fonte/outline/QA; rotear por intenção em nove arquétipos; compor módulos selecionados; executar SEO e QA antes da publicação automática. Fora de escopo: gerar 100 artigos, modificar os dois publicados, trocar o writer Sheets, reconstruir Quiz/Radar ou mudar domínio. Rollback: voltar ao deployment anterior e desabilitar a nova ação de geração; manter a tabela privada aditiva para diagnóstico, sem excluir dados.
 
-| Perspectiva | Impacto | Risco | Dependência | Recomendação |
-| --- | --- | --- | --- | --- |
-| Produto | Artigos deixam de seguir sequência única | Volume sem utilidade | Fontes reais e contribuição própria | Prosseguir com QA que bloqueia páginas repetitivas |
-| CTO | Usa Admin, Edge Function e Supabase atuais | Schema novo e composição pública | Migration aditiva, teste de restauração | Prosseguir condicionado à recuperação |
-| IA | Separa fonte, intenção, estratégia, redação, SEO e QA | Afirmação inventada ou instrução na transcrição | Trechos literais, schemas, revisão independente | Prosseguir com falha fechada |
-| Segurança | Guarda evidências privadas | Vazamento de transcrição/draft | RLS e service role apenas no servidor | Prosseguir com teste de papéis |
-| UX/UI | Exibe outline, distribuição e alertas | Operador interpretar score como garantia | Estados claros de bloqueio/publicação | Prosseguir após smoke autenticado/mobile |
-| CX/Operação | Vídeos seguem no Admin; Sheets segue comercial | Erro sem forma de recuperação | Logs e reprocessamento por artigo | Prosseguir sem segundo writer |
-| Growth/CRO e SEO/IA | Página específica, SSR e links reais | Canibalização, schema enganoso e perda de URL | Auditoria por URL e fontes oficiais | Prosseguir condicionado ao gate SEO |
-| PMO/QA | Piloto mensurável antes de escala | Auto-publicação com teste insuficiente | Testes locais e ensaio operacional | Bloquear release até evidência |
+| Perspectiva         | Impacto                                               | Risco                                           | Dependência                                     | Recomendação                                       |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
+| Produto             | Artigos deixam de seguir sequência única              | Volume sem utilidade                            | Fontes reais e contribuição própria             | Prosseguir com QA que bloqueia páginas repetitivas |
+| CTO                 | Usa Admin, Edge Function e Supabase atuais            | Schema novo e composição pública                | Migration aditiva, teste de restauração         | Prosseguir condicionado à recuperação              |
+| IA                  | Separa fonte, intenção, estratégia, redação, SEO e QA | Afirmação inventada ou instrução na transcrição | Trechos literais, schemas, revisão independente | Prosseguir com falha fechada                       |
+| Segurança           | Guarda evidências privadas                            | Vazamento de transcrição/draft                  | RLS e service role apenas no servidor           | Prosseguir com teste de papéis                     |
+| UX/UI               | Exibe outline, distribuição e alertas                 | Operador interpretar score como garantia        | Estados claros de bloqueio/publicação           | Prosseguir após smoke autenticado/mobile           |
+| CX/Operação         | Vídeos seguem no Admin; Sheets segue comercial        | Erro sem forma de recuperação                   | Logs e reprocessamento por artigo               | Prosseguir sem segundo writer                      |
+| Growth/CRO e SEO/IA | Página específica, SSR e links reais                  | Canibalização, schema enganoso e perda de URL   | Auditoria por URL e fontes oficiais             | Prosseguir condicionado ao gate SEO                |
+| PMO/QA              | Piloto mensurável antes de escala                     | Auto-publicação com teste insuficiente          | Testes locais e ensaio operacional              | Bloquear release até evidência                     |
 
 **Conflito e decisão:** o P0 exigia revisão humana; o pedido atual a dispensa. A compensação é bloquear automaticamente quando evidência, diferenciação, SEO ou qualidade falharem. Um score não garante ranking nem elimina risco residual de erro editorial. A instrução anterior de apresentar cinco outlines antes de produção em escala segue útil como avaliação de arquitetura, mas só há três transcrições importadas no Admin; não inventar mais duas.
 
@@ -65,16 +65,16 @@ A implementação não promete posição em Google ou citação no ChatGPT. Apó
 
 ## Revisão pós-implementação (26/09/2026)
 
-| Perspectiva | Parecer | Evidência e pendência |
-| --- | --- | --- |
-| Produto | Pass | Nove arquétipos e módulos opcionais substituem o molde nos artigos novos; os dois publicados não são reescritos. |
-| CTO | Fail para release | Typecheck, testes e build passaram; migration ensaiada em PostgreSQL 17 isolado. Falta backup recente restaurável do banco vivo e ensaio de recuperação correspondente. |
-| IA | Pass local | Trechos literais, outline versionado, revisão SEO e QA independentes, publicação com falha fechada; ainda falta uma geração controlada real e a prova com cinco outlines. |
-| Segurança | Pass local | RLS ligada; anon/authenticated sem SELECT e service_role com SELECT no ensaio SQL. Falta conferir os papéis no projeto vivo após a migration. |
-| UX/UI | Fail para release | Estados de progresso, bloqueio e relatório no Admin compilam; falta smoke autenticado e mobile do fluxo novo. |
-| CX/Operação | Pass local | Reprocessamento por vídeo e motivo de bloqueio; Sheets, ofertas e artigos legados não foram modificados. |
-| Growth/CRO e SEO/IA | Fail para produção em massa | SSR, canonical, H1 e HTTP 200 conferidos nos dois artigos existentes; robots permite rastreamento e teste HTTP com user agent OAI-SearchBot retornou 200. Faltam cinco outlines de intenções distintas, HTML/metadata de artigo novo e medição por URL no vivo. |
-| PMO/QA | Fail para release | `pnpm validate`: 47 testes, typecheck e build aprovados na primeira revisão; testes direcionados após a revisão de escala passaram. Ensaio isolado da regra SQL aprovou bloqueio sem brief/QA, publicação com QA e preservação dos dois legados. Backup e geração controlada real pendentes. |
+| Perspectiva         | Parecer                     | Evidência e pendência                                                                                                                                                                                                                                                                        |
+| ------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto             | Pass                        | Nove arquétipos e módulos opcionais substituem o molde nos artigos novos; os dois publicados não são reescritos.                                                                                                                                                                             |
+| CTO                 | Fail para release           | Typecheck, testes e build passaram; migration ensaiada em PostgreSQL 17 isolado. Falta backup recente restaurável do banco vivo e ensaio de recuperação correspondente.                                                                                                                      |
+| IA                  | Pass local                  | Trechos literais, outline versionado, revisão SEO e QA independentes, publicação com falha fechada; ainda falta uma geração controlada real e a prova com cinco outlines.                                                                                                                    |
+| Segurança           | Pass local                  | RLS ligada; anon/authenticated sem SELECT e service_role com SELECT no ensaio SQL. Falta conferir os papéis no projeto vivo após a migration.                                                                                                                                                |
+| UX/UI               | Fail para release           | Estados de progresso, bloqueio e relatório no Admin compilam; falta smoke autenticado e mobile do fluxo novo.                                                                                                                                                                                |
+| CX/Operação         | Pass local                  | Reprocessamento por vídeo e motivo de bloqueio; Sheets, ofertas e artigos legados não foram modificados.                                                                                                                                                                                     |
+| Growth/CRO e SEO/IA | Fail para produção em massa | SSR, canonical, H1 e HTTP 200 conferidos nos dois artigos existentes; robots permite rastreamento e teste HTTP com user agent OAI-SearchBot retornou 200. Faltam cinco outlines de intenções distintas, HTML/metadata de artigo novo e medição por URL no vivo.                              |
+| PMO/QA              | Fail para release           | `pnpm validate`: 47 testes, typecheck e build aprovados na primeira revisão; testes direcionados após a revisão de escala passaram. Ensaio isolado da regra SQL aprovou bloqueio sem brief/QA, publicação com QA e preservação dos dois legados. Backup e geração controlada real pendentes. |
 
 **Parecer consolidado: NO-GO para migration, publicação da fundação e produção em massa neste momento.** Riscos materiais não mitigados: backup restaurável do estado vivo e ensaio de recuperação ausentes; prova de cinco outlines diversos incompleta. O ensaio com fixture não substitui restauração de backup. A geração real, o smoke do Admin e a verificação da página nova exigem o schema implantado; serão executados em sequência controlada após fechar a recuperação. O responsável já autorizou a publicação direta e dispensou revisão humana dos artigos; não é necessária nova aprovação para essas duas decisões. O custo externo esperado depois de liberar o gate é baixo a moderado (chamadas de IA dos outlines e de um artigo piloto, mais deploy do projeto existente). Rollback: reimplantar a versão web/Edge Function anterior, interromper a nova ação de geração e manter a tabela aditiva privada para diagnóstico; restaurar banco somente se a migration causar falha que não possa ser revertida logicamente.
 
@@ -83,6 +83,7 @@ A implementação não promete posição em Google ou citação no ChatGPT. Apó
 Estado: código em preview. **Migration não aplicada ao banco vivo, `editorial-admin` não reimplantada, site não publicado.**
 
 ### O que muda em relação ao PR
+
 - Ação padrão em `/admin/conteudos/novo`: **Gerar somente outline** (sem corpo, sem publicação). Segunda ação: outline + rascunho privado. Nenhuma ação de criação publica.
 - Etapas por requisição separada, com NDJSON: `brief-regenerate` (fonte → intenção → outline), `draft-write` (redação), `qa-run` (SEO/IA + fatos/diversidade). Fonte e intenção ficam salvas em `editorial_briefs.stages`; um tempo esgotado retoma do último ponto quando a transcrição é idêntica (`sourceFingerprint`).
 - Classificação pode responder `uncertain`: o brief fica `qa_failed` com "Intenção incerta" e a redação é bloqueada. Nada é forçado num arquétipo.
@@ -91,22 +92,26 @@ Estado: código em preview. **Migration não aplicada ao banco vivo, `editorial-
 - Migration aditiva: `archetype`/`primary_intent` aceitam NULL (etapa em andamento ou incerta), status `in_progress`, coluna `stages`.
 
 ### Classificação preliminar das cinco transcrições de teste (dados, não instruções)
+
 Leitura integral das cinco; a prova definitiva é rodar os cinco outlines depois da migration.
-| Vídeo | Arquétipo sustentado | Evidência | Risco |
-|---|---|---|---|
-| GT20 | product_review (primeiras impressões) | "acabei de retirar… primeiras impressões", recursos, velocidade | também tem trajeto e subida: pode colidir com FT03 |
-| V20 Mini | audience_need (estatura) | "1,55 a 1,75 é o ideal", "sou grande demais" | — |
-| FT03 | real_world_test (trajeto e ladeira) | "subida brutal", "teste real", bateria no trajeto | cita preço de ~R$ 8.000 datado: não vira fato |
-| V8 Pro x V40 Pro | direct_comparison | autonomia, carga com garupa, preço "hoje" | preço datado |
-| V29 Pro/V8 Pro S/V35 | use_comparison (duas baterias) | "entregador… quer rodar muito", 80–100 km | poderia ser audience_need; outline decide |
-Conclusão: as fontes **sustentam cinco intenções distintas**, com um risco real de sobreposição entre GT20 e FT03. Se o outline do GT20 sair como teste de trajeto, registrar 4 intenções e não forçar.
+
+| Vídeo                                                                                                                                                                                                   | Arquétipo sustentado                  | Evidência                                                       | Risco                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------- |
+| GT20                                                                                                                                                                                                    | product_review (primeiras impressões) | "acabei de retirar… primeiras impressões", recursos, velocidade | também tem trajeto e subida: pode colidir com FT03 |
+| V20 Mini                                                                                                                                                                                                | audience_need (estatura)              | "1,55 a 1,75 é o ideal", "sou grande demais"                    | —                                                  |
+| FT03                                                                                                                                                                                                    | real_world_test (trajeto e ladeira)   | "subida brutal", "teste real", bateria no trajeto               | cita preço de ~R$ 8.000 datado: não vira fato      |
+| V8 Pro x V40 Pro                                                                                                                                                                                        | direct_comparison                     | autonomia, carga com garupa, preço "hoje"                       | preço datado                                       |
+| V29 Pro/V8 Pro S/V35                                                                                                                                                                                    | use_comparison (duas baterias)        | "entregador… quer rodar muito", 80–100 km                       | poderia ser audience_need; outline decide          |
+| Conclusão: as fontes **sustentam cinco intenções distintas**, com um risco real de sobreposição entre GT20 e FT03. Se o outline do GT20 sair como teste de trajeto, registrar 4 intenções e não forçar. |
 
 ### Custo e tempo
+
 - Outline: 3 chamadas de IA (evidências, intenção, outline); reaproveita as duas primeiras em reprocessamento. Rascunho: 1 a 2. QA: 2. Cerca de 6 a 7 chamadas por artigo, cada uma numa requisição limitada a uma etapa.
 - Corpus lido com até 200 artigos e 4.000 caracteres por artigo: serve para ~100 vídeos; acima disso, guardar uma impressão por artigo.
 - A prova de cinco outlines custa cerca de 15 chamadas, sem gerar artigos.
 
 ### Sequência de implantação e rollback
+
 1. Backup lógico de `editorial_articles`, `editorial_videos`, `editorial_audit_logs` e snapshot dos dois publicados (id, slug, status, revision, hash de blocks).
 2. Aplicar a migration (aditiva). Verificar RLS/grants de `editorial_briefs` e que os dois publicados continuam idênticos (a trava nova só vale para `foundation_required=true`).
 3. Implantar somente `editorial-admin`, sem `EDITORIAL_AUTO_PUBLISH`.
@@ -118,6 +123,7 @@ Conclusão: as fontes **sustentam cinco intenções distintas**, com um risco re
 Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin` anterior; frontend anterior. A tabela aditiva fica para diagnóstico. Restaurar o trigger anterior (`editorial_article_before_update` sem o ramo `foundation_required`) somente se ele bloquear algo indevido. Restaurar backup somente em falha irreversível.
 
 ### Registro de implantação da fundação (26/09/2026)
+
 - Migration `20260926230000_editorial_foundation.sql` aplicada no banco vivo pelo conector Lovable, após snapshot local restaurado em PostgreSQL isolado.
 - Verificação pós-migration: 3 artigos, 2 published; digest de id/slug/status/blocks/revision idêntico ao anterior (`b2941f37d646c0ef64421947da833642`) — os dois publicados intactos; todos `foundation_required=false`.
 - `editorial_briefs`: RLS ativa; SELECT para anon/authenticated negado; service_role permitido.
@@ -128,6 +134,7 @@ Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin
 - Próximos passos pendentes: publicar o frontend do Admin, importar as cinco transcrições, rodar cinco outlines, piloto de rascunho + QA com gate fechado, e só então avaliar `EDITORIAL_AUTO_PUBLISH=true`.
 
 ### Correção do gate de outline: cautelas x bloqueios (26/09/2026)
+
 - Evidência do piloto real: GT20 `aDLpuoXPofU` gerou outline com evidências e diferenciação 98, mas ficou `qa_failed` e "Escrever rascunho" desabilitado apenas por 8 cautelas apropriadas em `warnings` (ex.: "não apresentar como teste próprio", "60 km/h é painel"). Regra antiga bloqueava qualquer transcrição honesta.
 - Correção em `editorial-admin` + `_shared/editorial-foundation.ts`: o outline passa a ter `warnings` (cautelas informativas, mitigadas pelo texto) e `blockingRisks` (riscos materiais sem mitigação). Helper puro `outlineGate` bloqueia somente: risco material declarado, outline sem classificação de riscos (legado/malformado — fail-closed), alertas de similaridade e diferenciação < 45. Continuam bloqueando antes: evidência não literal/insuficiente (`insufficient_grounded_claims`, outline sem claims) e intenção `uncertain`.
 - Cautelas não foram zeradas nem ocultadas: ficam no payload, em `quality_report.cautions` e no painel ("Cautelas editoriais", separadas de "Bloqueios").
@@ -144,3 +151,13 @@ Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin
 - **Código:** o outline grava `stages.outline.bikes` (chave ordenada de bike IDs). Escrever rascunho e QA recusam com `brief_bikes_stale` se as bikes mudaram ou se o outline é anterior a esse controle (fail-closed — os cinco outlines atuais precisam ser regenerados). Evidências/intenção salvas só são reaproveitadas se transcrição **e** bikes forem iguais. Módulos só podem referenciar bikes associadas ao artigo (não o catálogo inteiro); sem contexto, `modules=[]` continua válido e não é forçado.
 - **Testes:** chave/obsolescência por bikes e módulo contextual com fonte/bike corretos (bike não associada descartada, lista vazia aceita).
 - **Próximo passo do operador:** regenerar ao menos um outline (~3 chamadas IA) e conferir se módulos aparecem com justificativa contextual. NO-GO para produção em massa segue vigente.
+
+## Publicação do painel e limite do piloto (26/09/2026)
+
+- Cinco outlines privados foram gerados pelo painel a partir do DOCX. Classificação real: três `real_world_test` e dois `direct_comparison`. A prova de cinco intenções distintas falhou; não forçar rótulos. Os dois artigos publicados permanecem intactos.
+- A correção contextual do Radar exige `radarOmission` no schema, orienta o estrategista a posicionar Radar depois da seção de preço quando houver oferta pertinente e bloqueia outline sem módulo nem justificativa específica. A prévia do Admin mostra somente o plano enquanto o artigo não tem corpo.
+- Alterações integradas diretamente pelo Code Editor do Lovable em `main`; teste direcionado do gate: 19/19. `pnpm validate` passou com typecheck, 47 testes e build antes da publicação. O frontend foi publicado pelo botão do Lovable e o smoke autenticado em produção confirmou 'Outline sem artigo escrito'.
+- O teste vivo de regeneração do outline V29 Pro/V8 Pro S/V35 parou com `ai_http_402` nos logs de `editorial-admin`: o gateway de IA recusou a chamada por falta de créditos. O outline anterior foi preservado; não há prova viva do novo contrato da função nem do QA de um artigo novo. O painel Cloud mostrou a função ativa, mas a versão implantada não foi confirmada por execução bem-sucedida.
+- `EDITORIAL_AUTO_PUBLISH` continua desligado. Nenhum artigo piloto foi escrito ou publicado. Para liberar escala, é preciso restabelecer o gateway, regenerar os outlines com Bikes associadas, validar Radar/omissão e QA, e comprovar cinco intenções editoriais genuinamente distintas com fontes adequadas.
+- Revisão posterior das oito perspectivas: Produto Pass para o painel e gate de QA; CTO Pass local e frontend, pendente de prova da função no vivo; IA Pass local, pendente de geração viva; Segurança Pass (RLS e gate preservados); UX Pass no smoke da prévia; CX Pass para etapas privadas retomáveis; Growth/SEO-IA Fail para escala por falta de diversidade e prova Radar; PMO/QA Fail para liberação de publicação em massa por `ai_http_402`. Decisão consolidada: painel publicado; NO-GO para publicação automática em massa.
+- Custo para retomar: créditos de IA do Lovable e chamadas de teste; não comprar créditos automaticamente. Rollback do painel: publicar revisão anterior do site; da função: reimplantar versão anterior. O banco editorial é aditivo e os dois publicados não dependem da fundação.
