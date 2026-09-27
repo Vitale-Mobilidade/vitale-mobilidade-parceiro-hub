@@ -913,7 +913,8 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
         "outline-only",
         {
           youtubeId: selected.videoId,
-          title: articleTitle.trim() || selected.title,
+          title: selected.title,
+          articleTitle: articleTitle.trim(),
           transcript,
         },
         () => setBusy("Gerando artigo…"),
