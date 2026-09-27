@@ -1306,21 +1306,19 @@ function stageStream(
 
 export function stageError(code: string): string {
   const map: Record<string, string> = {
-    ai_http_402:
-      "Créditos de IA do workspace Lovable esgotados. Novos outlines e QA dependem da reposição de créditos.",
+    ai_http_402: "Os créditos de IA do Lovable acabaram. Recarregue os créditos para gerar este artigo.",
     revision_conflict: "O artigo foi alterado em outra aba. Recarregue a página.",
     draft_not_found: "Rascunho não encontrado (artigos publicados não são reprocessados).",
-    brief_source_stale: "A transcrição mudou depois do outline. Gere um novo outline antes de continuar.",
-    brief_bikes_stale:
-      "As bikes associadas mudaram depois do outline (ou o outline é anterior a esse controle). Gere um novo outline antes de continuar.",
-    ready_brief_required: "Gere um outline aprovado pelo QA antes de escrever.",
-    editorial_brief_not_ready: "O outline não está aprovado; gere outro outline.",
+    brief_source_stale: "A transcrição mudou. Gere o artigo novamente.",
+    brief_bikes_stale: "Os dados das bikes mudaram. Gere o artigo novamente.",
+    ready_brief_required: "Não foi possível preparar este artigo. Tente gerar novamente.",
+    editorial_brief_not_ready: "Não foi possível preparar este artigo. Tente gerar novamente.",
     transcript_required: "Cadastre a transcrição completa do vídeo.",
-    insufficient_grounded_claims: "A fonte não tem evidências literais suficientes.",
-    article_does_not_follow_grounded_outline: "O rascunho não seguiu o outline; tente escrever de novo.",
-    article_not_reliable: "O rascunho falhou na validação de fatos.",
+    insufficient_grounded_claims: "A transcrição não traz informação suficiente para criar um artigo confiável.",
+    article_does_not_follow_grounded_outline: "A versão gerada precisa de ajustes. Gere o artigo novamente.",
+    article_not_reliable: "Não foi possível confirmar os fatos do artigo. Gere outra versão.",
   };
-  return map[code] ?? "A etapa falhou. O progresso anterior foi preservado; tente novamente.";
+  return map[code] ?? "Não foi possível gerar o artigo. O que já foi salvo permanece disponível; tente novamente.";
 }
 
 function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body, outlineOnly = false): Response {
@@ -1426,7 +1424,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         controller.close();
       } catch (e) {
         console.error("[editorial-admin] generate", errorMessage(e));
-        fail();
+        fail(stageError(errorMessage(e)));
       }
     },
   });
