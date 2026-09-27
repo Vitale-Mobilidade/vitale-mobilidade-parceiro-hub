@@ -66,6 +66,7 @@ import {
   COVER_MAX_BYTES,
   COVER_PROMPT,
   COVER_WIDTH,
+  articleReferencesCover,
   coverObjectPath,
   coverPublicUrl,
   decodeBase64Jpeg,
@@ -1206,27 +1207,9 @@ async function qualityAndPublish(
     if (error || !data) throw new Error("quality_failure_write_failed");
     return data as EditorialArticle;
   }
-  if (Deno.env.get("EDITORIAL_AUTO_PUBLISH") !== "true") {
-    // Technical release gate closed: the QA pass is recorded, the article stays private.
-    await log(db, actor, "article_qa_passed_publication_gated", "article", article.id, { briefVersion: brief.version });
-    return article;
-  }
-  const { data, error } = await db
-    .from("editorial_articles")
-    .update({
-      status: "published",
-      indexable: true,
-      validation_errors: [],
-      published_by: actor.id,
-      updated_by: actor.id,
-    })
-    .eq("id", article.id)
-    .eq("revision", article.revision)
-    .select("*")
-    .single();
-  if (error || !data) throw new Error("quality_publication_failed");
-  await log(db, actor, "article_auto_published", "article", article.id, { briefVersion: brief.version });
-  return data as EditorialArticle;
+  // QA prepares a private draft. The only publication action is the explicit
+  // Publicar button, which checks this saved, revision-matched report.
+  return article;
 }
 
 async function saveVideo(db: SupabaseClient, actor: Actor, id: string, title: string, transcript: string) {
@@ -2039,25 +2022,33 @@ Deno.serve(async (req) => {
       const article = await articleById(db, body.id);
       if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
       if (target === "published" && article.foundation_required) {
-        const video = await videoById(db, article.video_id);
-        if (!video) return json(req, { error: "Vídeo não encontrado." }, 404);
-        const checked = await qualityAndPublish(db, actor, article, video);
-        if (checked.status === "published") return json(req, { article: checked });
-        if (checked.status !== "validation_error")
-          return json(
-            req,
-            {
-              error: "QA aprovado, publicação aguardando liberação técnica.",
-              article: checked,
-              publicationGated: true,
-            },
-            409,
-          );
-        return json(
-          req,
-          { error: "Publicação bloqueada pelo QA. Consulte os alertas do artigo.", article: checked },
-          422,
-        );
+        const brief = await briefFor(db, article.id);
+        if (
+          brief?.status !== "ready" ||
+          brief.article_revision !== article.revision ||
+          brief.quality_report?.articleQaPass !== true ||
+          article.validation_errors.length > 0
+        )
+          return json(req, { error: "O artigo ainda não está pronto para publicar. Gere o artigo novamente." }, 422);
+        let coverFile = "";
+        try {
+          coverFile = new URL(article.og_image_url).searchParams.get("file") ?? "";
+        } catch {
+          /* invalid cover URL */
+        }
+        if (!articleReferencesCover(article.og_image_url, SUPABASE_URL, article.id, coverFile))
+          return json(req, { error: "A capa ainda não está pronta. Conclua a geração do artigo." }, 422);
+        const { data, error } = await db
+          .from("editorial_articles")
+          .update({ status: "published", indexable: true, published_by: actor.id, updated_by: actor.id })
+          .eq("id", article.id)
+          .eq("revision", Number(body.revision))
+          .select("*")
+          .maybeSingle();
+        if (error || !data)
+          return json(req, { error: "O artigo mudou antes da publicação. Recarregue e tente novamente." }, 409);
+        await log(db, actor, "article_published", "article", article.id, { briefVersion: brief.version });
+        return json(req, { article: data });
       }
       let patch: Body = { status: target, updated_by: actor.id };
       if (target === "published") {
