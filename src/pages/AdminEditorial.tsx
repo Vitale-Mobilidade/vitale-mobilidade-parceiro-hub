@@ -781,13 +781,6 @@ function Articles() {
   const items = workspace.data?.articles ?? [];
   const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
   const visible = items.filter((a) => status === "all" || simpleStatus(a.status) === status);
-  const distribution = Object.entries(
-    (workspace.data?.briefs ?? []).reduce<Record<string, number>>((counts, brief) => {
-      const key = brief.archetype ?? (brief.status === "in_progress" ? "em andamento" : "intenção incerta");
-      counts[key] = (counts[key] ?? 0) + 1;
-      return counts;
-    }, {}),
-  ).sort((a, b) => b[1] - a[1]);
   return (
     <>
       <Heading title="Artigos">
@@ -796,34 +789,6 @@ function Articles() {
         </Link>
       </Heading>
       {error && <Notice danger>{error}</Notice>}
-      <section className={`${PANEL} mb-5`} aria-label="Distribuição editorial">
-        <h2 className="font-semibold">Distribuição por arquétipo</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Outlines criados: {workspace.data?.briefs.length ?? 0}. A diferenciação compara cada outline com publicados,
-          rascunhos escritos e outlines prontos.
-        </p>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {distribution.map(([name, count]) => (
-            <li key={name} className="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-950">
-              {name}: {count}
-            </li>
-          ))}
-        </ul>
-        {(() => {
-          const distinct = distribution.filter(
-            ([name]) => name !== "em andamento" && name !== "intenção incerta",
-          ).length;
-          return (
-            distinct < 5 && (
-              <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-                <strong>Produção em massa: NO-GO.</strong> Só {distinct}{" "}
-                {distinct === 1 ? "intenção distinta" : "intenções distintas"} com amostra real; faltam fontes genuínas
-                de outras intenções antes de escalar.
-              </p>
-            )
-          );
-        })()}
-      </section>
       <select
         aria-label="Filtrar por status"
         value={status}
@@ -874,7 +839,6 @@ export function AdminNewArticlePage({ initialVideoId }: { initialVideoId?: strin
 function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const videoUrlInput = useRef<HTMLInputElement>(null);
   const transcriptDrafts = useRef(new Map<string, string>());
   const catalogQuery = useQuery({
     queryKey: ["admin", "video-catalog"],
@@ -896,8 +860,8 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const [videoId, setVideoId] = useState(initialVideoId ?? "");
   const [videoSearch, setVideoSearch] = useState("");
   const [manualUrl, setManualUrl] = useState("");
-  const [manualTitle, setManualTitle] = useState("");
-  const [copyStatus, setCopyStatus] = useState("");
+  const [articleTitle, setArticleTitle] = useState("");
+  const [createdId, setCreatedId] = useState("");
   const [transcript, setTranscript] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -922,9 +886,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const selected =
     videoSource === "library"
       ? (videos.find((video) => video.videoId === videoId) ?? null)
-      : existingManualVideo
-        ? null
-        : manualAdminVideo(manualUrl, manualTitle);
+      : (existingManualVideo ?? manualAdminVideo(manualUrl, articleTitle));
   const selectedVideoId = selected?.videoId ?? "";
 
   useEffect(() => {
@@ -936,42 +898,28 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
     setTranscript(transcriptDrafts.current.get(selectedVideoId) ?? saved?.transcript ?? "");
   }, [selectedVideoId, savedVideos]);
 
-  async function copyVideoUrl() {
-    if (!selected) return;
-    try {
-      await navigator.clipboard.writeText(selected.url);
-      setCopyStatus("Link copiado.");
-    } catch {
-      videoUrlInput.current?.focus();
-      videoUrlInput.current?.select();
-      setCopyStatus("Selecione e copie o link no campo.");
-    }
-  }
-
   async function create(event: FormEvent) {
     event.preventDefault();
     setError("");
     if (!selected) {
       setError(
-        existingManualVideo
-          ? "Este vídeo já está na biblioteca. Selecione-o na busca."
-          : videoSource === "url"
-            ? "Informe um link válido do YouTube e o título do vídeo."
-            : "Escolha um vídeo da biblioteca.",
+        videoSource === "url" ? "Informe um link válido do vídeo e um título." : "Escolha um vídeo da biblioteca.",
       );
       return;
     }
-    setBusy("Analisando para o outline…");
+    setBusy("Gerando artigo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle }>(
+      const result = await adminStream<{ article: EditorialArticle; brief: BriefRow | null }>(
         "outline-only",
         {
           youtubeId: selected.videoId,
-          title: selected.title,
+          title: articleTitle.trim() || selected.title,
           transcript,
         },
-        setBusy,
+        () => setBusy("Gerando artigo…"),
       );
+      setCreatedId(result.article.id);
+      if (result.article.status !== "published") await prepareArticle(result.article, result.brief, setBusy);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
       await navigate({ to: "/admin/conteudos/$id", params: { id: result.article.id } });
     } catch (e) {
@@ -1003,11 +951,10 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               className={videoSource === "library" ? BTN : OUTLINE}
               onClick={() => {
                 setVideoSource("library");
-                setCopyStatus("");
                 setError("");
               }}
             >
-              Buscar na biblioteca
+              Escolher vídeo
             </button>
             <button
               type="button"
@@ -1015,17 +962,16 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               className={videoSource === "url" ? BTN : OUTLINE}
               onClick={() => {
                 setVideoSource("url");
-                setCopyStatus("");
                 setError("");
               }}
             >
-              Usar outro vídeo
+              Colar link
             </button>
           </div>
           {videoSource === "library" ? (
             <div>
               <label htmlFor="article-video-search" className="block text-sm font-semibold">
-                Buscar por título ou ID
+                Vídeo
               </label>
               <input
                 id="article-video-search"
@@ -1053,17 +999,16 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${videoId === video.videoId ? "bg-emerald-50 font-semibold text-emerald-900" : ""}`}
                     onClick={() => {
                       setVideoId(video.videoId);
-                      setCopyStatus("");
+                      setArticleTitle(video.title);
                       setError("");
                     }}
                   >
                     {video.title}
-                    <span className="mt-1 block text-xs font-normal text-muted-foreground">{video.videoId}</span>
                   </button>
                 ))}
                 {!catalogQuery.isPending && !workspaceQuery.isPending && filteredVideos.length === 0 && (
                   <p className="p-3 text-sm text-muted-foreground">
-                    Nenhum vídeo encontrado. Tente outro termo ou use “Usar outro vídeo”.
+                    Nenhum vídeo encontrado. Tente outro termo ou cole o link.
                   </p>
                 )}
               </div>
@@ -1078,7 +1023,6 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
                   value={manualUrl}
                   onChange={(e) => {
                     setManualUrl(e.target.value);
-                    setCopyStatus("");
                   }}
                   placeholder="https://www.youtube.com/watch?v=…"
                   required
@@ -1089,85 +1033,24 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
                   Use um link válido do YouTube ou youtu.be.
                 </p>
               )}
-              {existingManualVideo && (
-                <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-                  <p>
-                    Este vídeo já está na biblioteca: <strong>{existingManualVideo.title}</strong>.
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-2 font-semibold underline"
-                    onClick={() => {
-                      setVideoId(existingManualVideo.videoId);
-                      setVideoSearch(existingManualVideo.title);
-                      setVideoSource("library");
-                    }}
-                  >
-                    Selecionar este vídeo na biblioteca
-                  </button>
-                </div>
-              )}
-              <label className="block text-sm font-semibold">
-                Título do vídeo
-                <input
-                  className={`${INPUT} mt-2 py-3`}
-                  value={manualTitle}
-                  onChange={(e) => setManualTitle(e.target.value)}
-                  placeholder="Título que identifica este vídeo"
-                  required
-                  minLength={3}
-                  maxLength={300}
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                O vídeo será incluído no acervo editorial do Admin ao gerar o artigo. A planilha não será alterada.
-              </p>
             </div>
           )}
         </fieldset>
-        {selected && (
-          <div className="space-y-3 rounded-2xl bg-surface p-4">
-            <div className="flex gap-4">
-              {selected.thumbnail && (
-                <img src={selected.thumbnail} alt="" className="h-20 w-32 rounded-lg object-cover" />
-              )}
-              <div className="min-w-0">
-                <p className="font-semibold">{selected.title}</p>
-                <a
-                  href={selected.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-block text-sm text-emerald-800 underline"
-                >
-                  Abrir no YouTube
-                </a>
-              </div>
-            </div>
-            <label htmlFor="selected-video-url" className="block text-sm font-semibold">
-              Link do vídeo para copiar
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                id="selected-video-url"
-                ref={videoUrlInput}
-                readOnly
-                value={selected.url}
-                className={`${INPUT} min-w-0 flex-1`}
-                onFocus={(e) => e.target.select()}
-              />
-              <button type="button" className={OUTLINE} onClick={() => void copyVideoUrl()}>
-                Copiar link
-              </button>
-            </div>
-            {copyStatus && (
-              <p role="status" className="text-sm text-emerald-800">
-                {copyStatus}
-              </p>
-            )}
-          </div>
-        )}
         <label className="block text-base font-semibold">
-          Transcrição completa
+          Título
+          <input
+            className={`${INPUT} mt-2 py-3`}
+            value={articleTitle}
+            onChange={(e) => setArticleTitle(e.target.value)}
+            placeholder={selected?.title ?? "Título do artigo"}
+            required
+            minLength={3}
+            maxLength={200}
+            disabled={Boolean(busy)}
+          />
+        </label>
+        <label className="block text-base font-semibold">
+          Transcrição
           <textarea
             className={`${INPUT} mt-2 min-h-72 leading-7`}
             value={transcript}
@@ -1178,25 +1061,24 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
             required
             minLength={200}
             disabled={Boolean(busy)}
-            placeholder={
-              videoSource === "library"
-                ? "Cole aqui a transcrição revisada. URL e título já vêm da biblioteca."
-                : "Cole aqui a transcrição revisada deste vídeo."
-            }
+            placeholder="Cole aqui a transcrição do vídeo."
           />
         </label>
         <button type="submit" className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">
-          {busy || "Gerar somente outline"}
+          {busy || "Gerar artigo"}
         </button>
-        <p className="text-center text-sm text-muted-foreground">
-          O outline não escreve o artigo nem publica: mostra fonte, intenção, tese, módulos e alertas de repetição.
-        </p>
-        <p className="text-center text-sm text-muted-foreground">
-          Depois, dentro do artigo, escreva o rascunho (privado) e rode o QA em etapas separadas.
-        </p>
+        {createdId && error && (
+          <Link
+            to="/admin/conteudos/$id"
+            params={{ id: createdId }}
+            className="block text-center text-emerald-800 underline"
+          >
+            Continuar artigo salvo
+          </Link>
+        )}
         {busy && (
           <p className="text-center text-sm text-muted-foreground">
-            A análise pode levar alguns minutos. Mantenha esta aba aberta.
+            Isso pode levar alguns minutos. Mantenha esta aba aberta.
           </p>
         )}
       </form>
@@ -1265,6 +1147,7 @@ export function AdminArticleEditorPage({ id }: { id: string }) {
 type BriefRow = {
   version: number;
   status: string;
+  article_revision?: number | null;
   archetype?: string | null;
   primary_intent?: string | null;
   payload: Partial<EditorialBrief>;
@@ -1281,166 +1164,72 @@ type BriefRow = {
   };
 };
 
-const ARCHETYPE_LABEL: Record<string, string> = {
-  direct_comparison: "Comparação direta",
-  product_review: "Review de produto",
-  real_world_test: "Teste real",
-  buying_guide: "Guia de compra",
-  audience_need: "Necessidade de público",
-  education: "Educação",
-  market_price: "Mercado e preço",
-  curated_list: "Lista curada",
-  use_comparison: "Comparação por uso",
-};
-const STAGE_LABEL: [string, string][] = [
-  ["source", "Fonte"],
-  ["intent", "Intenção"],
-  ["outline", "Outline"],
-];
+type PipelineResult = { article: EditorialArticle; brief: BriefRow | null };
+const articleReady = (article: EditorialArticle, brief: BriefRow | null) =>
+  hasGeneratedCover(article) &&
+  brief?.status === "ready" &&
+  brief.article_revision === article.revision &&
+  brief.quality_report?.articleQaPass === true &&
+  article.validation_errors.length === 0;
+const hasGeneratedCover = (article: EditorialArticle) =>
+  article.og_image_url?.includes(`/functions/v1/bike-image?type=editorial-cover&id=${article.id}&`) ?? false;
 
-/** Read-only view of the private brief: evidence, intent, thesis, modules, links and repetition alerts. */
-function BriefPanel({ brief, index }: { brief: BriefRow; index: { id: string; slug: string; title: string }[] }) {
-  const p = brief.payload ?? {};
-  const claims = p.claims ?? [];
-  const sections = p.sections ?? [];
-  const modules = p.modules ?? [];
-  const links = modules.filter((m) => m.type === "article_link" && m.articleId);
-  const closest = index.find((item) => item.id === brief.quality_report?.closestArticleId);
-  const issues = brief.quality_report?.issues ?? [];
-  return (
-    <section className={`${PANEL} mb-6`} aria-label="Plano e qualidade editorial">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">Plano editorial</h2>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold">
-          {brief.quality_report?.intentUncertain
-            ? "Intenção incerta"
-            : (ARCHETYPE_LABEL[p.archetype ?? brief.archetype ?? ""] ?? "Em andamento")}{" "}
-          · {brief.status} · v{brief.version}
-        </span>
-      </div>
-      <ol className="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Etapas salvas">
-        {STAGE_LABEL.map(([key, label]) => (
-          <li
-            key={key}
-            className={`rounded-full px-2 py-1 ${brief.stages?.[key]?.at ? "bg-emerald-100 text-emerald-900" : "bg-muted text-muted-foreground"}`}
-          >
-            {label}
-            {brief.stages?.[key]?.at ? " ✓" : ""}
-          </li>
-        ))}
-      </ol>
-      {(p.primaryIntent || brief.primary_intent) && (
-        <p className="mt-3">
-          <strong>Intenção:</strong> {p.primaryIntent ?? brief.primary_intent}
-        </p>
-      )}
-      {p.thesis && (
-        <p className="mt-1">
-          <strong>Tese:</strong> {p.thesis}
-        </p>
-      )}
-      {p.uniqueInsight && (
-        <p className="mt-1">
-          <strong>Diferencial:</strong> {p.uniqueInsight}
-        </p>
-      )}
-      {sections.length > 0 && (
-        <ol className="mt-4 list-decimal space-y-1 pl-5">
-          {sections.map((section, i) => (
-            <li key={`${i}-${section.heading}`}>
-              <strong>{section.heading}</strong>
-              <span className="text-muted-foreground"> — {section.purpose}</span>
-            </li>
-          ))}
-        </ol>
-      )}
-      {modules.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Módulos contextuais</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-            {modules.map((m, i) => (
-              <li key={i}>
-                <strong>{m.type}</strong> após seção {m.afterSection + 1} — {m.reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {p.radarOmission && (
-        <p className="mt-3 text-sm">
-          <strong>Radar omitido:</strong> {p.radarOmission}
-        </p>
-      )}{" "}
-      {links.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Links sugeridos</h3>
-          <ul className="mt-1 list-disc pl-5 text-sm">
-            {links.map((m, i) => {
-              const target = index.find((item) => item.id === m.articleId);
-              return (
-                <li key={i}>
-                  {target ? target.title : "Artigo publicado"} — {m.reason}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-      {claims.length > 0 && (
-        <details className="mt-4">
-          <summary className="cursor-pointer font-semibold">Evidências da fonte ({claims.length})</summary>
-          <ul className="mt-2 space-y-2 text-sm">
-            {claims.map((c) => (
-              <li key={c.id}>
-                <strong>{c.id}</strong> [{c.kind}] {c.statement}
-                <blockquote className="mt-1 border-l-2 border-line pl-2 text-muted-foreground">
-                  “{c.excerpt}”
-                </blockquote>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-      <p className="mt-3 text-sm text-muted-foreground">
-        {(() => {
-          const c = brief.quality_report?.corpusCounts;
-          return c
-            ? `Diferença frente ao par mais próximo: ${brief.quality_report?.differentiationScore ?? "—"}/100 · comparado com ${c.total} itens (${c.published} publicados, ${c.written} rascunhos escritos, ${c.outlines} outlines prontos)`
-            : `Diferença frente ao par mais próximo (base antiga: só publicados): ${brief.quality_report?.differentiationScore ?? "—"}/100 — gere o outline de novo para comparar com rascunhos e outlines`;
-        })()}
-        {closest
-          ? ` · mais próximo: ${closest.title}`
-          : brief.quality_report?.closestArticleId
-            ? " · mais próximo: outro rascunho/outline"
-            : ""}{" "}
-        · SEO/IA {brief.quality_report?.seoScore ?? "—"}/100 · qualidade {brief.quality_report?.qualityScore ?? "—"}/100
-      </p>
-      {issues.length > 0 && (
-        <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-950">
-          <strong>Bloqueios</strong>
-          <ul className="mt-2 list-disc pl-5">
-            {issues.map((issue, i) => (
-              <li key={i}>{issue}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {(p.warnings ?? []).length > 0 && (
-        <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-          <strong>Cautelas editoriais</strong>
-          <span className="text-amber-900">
-            {" "}
-            — não bloqueiam; o rascunho deve respeitá-las e a revisão final confere.
-          </span>
-          <ul className="mt-2 list-disc pl-5">
-            {(p.warnings ?? []).map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </section>
-  );
+/** One user action, with private, saved checkpoints that can resume after interruption. */
+async function prepareArticle(
+  initial: EditorialArticle,
+  initialBrief: BriefRow | null,
+  onProgress: (message: string) => void,
+  restart = false,
+): Promise<PipelineResult> {
+  let article = initial;
+  let brief = initialBrief;
+  const rewrite = restart || article.status === "validation_error" || brief?.status === "qa_failed";
+  if (restart || brief?.status !== "ready") {
+    onProgress("Preparando artigo…");
+    const result = await adminStream<PipelineResult>(
+      "brief-regenerate",
+      { id: article.id, revision: article.revision, force: rewrite },
+      () => onProgress("Gerando artigo…"),
+    );
+    article = result.article;
+    brief = result.brief;
+  }
+  if (brief?.status !== "ready") throw new Error("Não foi possível preparar este artigo a partir da transcrição.");
+  if (rewrite || article.blocks.length === 0) {
+    onProgress("Escrevendo artigo…");
+    const result = await adminStream<PipelineResult>(
+      "draft-write",
+      { id: article.id, revision: article.revision },
+      () => onProgress("Gerando artigo…"),
+    );
+    article = result.article;
+    brief = result.brief;
+  }
+  if (rewrite || !hasGeneratedCover(article)) {
+    onProgress("Criando capa…");
+    const cover = await adminCall<{ background: string; title: string; revision: number }>("cover-generate", {
+      id: article.id,
+      revision: article.revision,
+    });
+    const image = await composeCover(cover.background, cover.title);
+    const applied = await adminCall<{ article: EditorialArticle }>("cover-apply", {
+      id: article.id,
+      revision: cover.revision,
+      image: image.dataUrl,
+    });
+    article = applied.article;
+  }
+  if (!articleReady(article, brief)) {
+    onProgress("Conferindo artigo…");
+    const result = await adminStream<PipelineResult>("qa-run", { id: article.id, revision: article.revision }, () =>
+      onProgress("Finalizando artigo…"),
+    );
+    article = result.article;
+    brief = result.brief;
+  }
+  if (!articleReady(article, brief))
+    throw new Error("O artigo precisa de ajustes. Gere novamente para tentar outra versão.");
+  return { article, brief };
 }
 
 function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
@@ -1473,35 +1262,26 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
       })
       .catch((e) => setError(e.message));
   }, [id]);
-  async function stage(
-    name: "brief-regenerate" | "draft-write" | "qa-run",
-    label: string,
-    payload: Record<string, unknown> = {},
-  ) {
+  async function generate(restart = false) {
     if (!article) return;
-    setBusy(label);
+    setBusy("Gerando artigo…");
     setError("");
     setMessage("");
     try {
-      const result = await adminStream<{
-        article?: EditorialArticle;
-        brief?: typeof brief;
-        publicationGated?: boolean;
-      }>(name, { id, revision: article.revision, ...payload }, setBusy);
-      if (result.article) setArticle(result.article);
-      if (result.brief) setBrief(result.brief);
+      const result = await prepareArticle(article, brief, setBusy, restart);
+      setArticle(result.article);
+      setBrief(result.brief);
       await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
-      setMessage(
-        name === "qa-run"
-          ? result.article?.status === "published"
-            ? "QA aprovado e publicado."
-            : result.publicationGated
-              ? "QA aprovado, publicação aguardando liberação técnica."
-              : "QA reprovado. Veja os alertas abaixo."
-          : "Etapa concluída.",
-      );
+      setMessage("Artigo e capa prontos para publicar.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "A etapa falhou.");
+      setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo.");
+      try {
+        const detail = await adminCall<{ article: EditorialArticle; brief: BriefRow | null }>("article-get", { id });
+        setArticle(detail.article);
+        setBrief(detail.brief);
+      } catch {
+        /* original error remains visible */
+      }
     } finally {
       setBusy("");
     }
@@ -1603,21 +1383,6 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
           <Link to="/admin/conteudos" className="mr-auto text-sm text-emerald-800 underline">
             ← Artigos
           </Link>
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            Status
-            <select
-              className={`${INPUT} w-auto`}
-              value={status}
-              disabled={Boolean(busy) || Boolean(draft)}
-              onChange={(e) => void changeStatus(e.target.value as SimpleStatus)}
-            >
-              {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
-          </label>
           {status === "published" && publicUrl ? (
             <a href={publicUrl} target="_blank" rel="noopener noreferrer" className={OUTLINE}>
               Abrir página
@@ -1637,9 +1402,16 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
               </button>
             </>
           ) : (
-            <button className={BTN} disabled={Boolean(busy)} onClick={() => setDraft(toDraft(article))}>
-              Editar
-            </button>
+            <>
+              {status !== "published" && status !== "archived" && articleReady(article, brief) && (
+                <button className={BTN} disabled={Boolean(busy)} onClick={() => void changeStatus("published")}>
+                  {busy || "Publicar"}
+                </button>
+              )}
+              <button className={OUTLINE} disabled={Boolean(busy)} onClick={() => setDraft(toDraft(article))}>
+                Editar
+              </button>
+            </>
           )}
           <details className="relative">
             <summary className={`${OUTLINE} cursor-pointer list-none`} aria-label="Mais ações">
@@ -1651,10 +1423,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
                 disabled={Boolean(busy) || status === "published"}
                 title={status === "published" ? "Mude para Rascunho para regenerar" : undefined}
                 onClick={() => {
-                  if (window.confirm("Gerar o artigo novamente a partir da transcrição?"))
-                    void run("compile-article", {}, "Regenerando… (1–2 min)").then(
-                      (r) => r?.article && setMessage("Artigo regenerado."),
-                    );
+                  if (window.confirm("Gerar outra versão do artigo a partir da transcrição?")) void generate(true);
                 }}
               >
                 Regenerar artigo
@@ -1681,7 +1450,9 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         <p className="mt-2 text-sm text-muted-foreground">
           {busy ||
             (status === "draft"
-              ? "Rascunho privado. A publicação automática depende do QA."
+              ? articleReady(article, brief)
+                ? "Pronto para publicar."
+                : "Artigo privado em preparação."
               : status === "published"
                 ? `No ar em vitalemobilidade.com${publicUrl}`
                 : "Arquivado — fora do site.")}
@@ -1689,43 +1460,14 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
       </div>
       {error && <Notice danger>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
-      {article.foundation_required && status !== "published" && (
-        <section className={`${PANEL} mb-6`} aria-label="Etapas editoriais">
-          <h2 className="text-xl font-bold">Etapas</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cada etapa roda separada e fica salva. Uma falha não apaga a etapa anterior.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              className={OUTLINE}
-              disabled={Boolean(busy)}
-              onClick={() => void stage("brief-regenerate", "Gerando outline…", { force: true })}
-            >
-              Gerar outline de novo
-            </button>
-            <button
-              className={OUTLINE}
-              disabled={Boolean(busy) || brief?.status !== "ready"}
-              title={brief?.status !== "ready" ? "Precisa de outline aprovado" : undefined}
-              onClick={() => void stage("draft-write", "Escrevendo rascunho…")}
-            >
-              Escrever rascunho
-            </button>
-            <button
-              className={OUTLINE}
-              disabled={Boolean(busy) || brief?.status !== "ready" || article.blocks.length === 0}
-              onClick={() => void stage("qa-run", "Revisando SEO, fatos e diversidade…")}
-            >
-              Rodar QA de publicação
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Publicação automática só acontece quando o QA aprova e a liberação técnica estiver ativa; até lá o artigo
-            aprovado fica privado.
-          </p>
-        </section>
-      )}
-      {brief && <BriefPanel brief={brief} index={index} />}
+      {article.foundation_required &&
+        status !== "published" &&
+        status !== "archived" &&
+        !articleReady(article, brief) && (
+          <button className={`${BTN} mb-6`} disabled={Boolean(busy)} onClick={() => void generate()}>
+            {busy || (article.blocks.length ? "Concluir artigo" : "Gerar artigo")}
+          </button>
+        )}
       {draft ? (
         <section className="mx-auto max-w-4xl space-y-5 rounded-3xl bg-white p-6 shadow-sm sm:p-10">
           <label className="block text-sm font-semibold">
@@ -1820,20 +1562,11 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         </section>
       ) : (
         <>
-          <CoverPanel
-            article={article}
-            disabled={Boolean(busy)}
-            onApplied={async (next) => {
-              setArticle(next);
-              await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
-            }}
-          />
           {article.foundation_required && article.blocks.length === 0 ? (
             <section className={`${PANEL} text-sm`} aria-label="Prévia do artigo">
-              <h2 className="text-xl font-bold">Outline sem artigo escrito</h2>
+              <h2 className="text-xl font-bold">Artigo em preparação</h2>
               <p className="mt-2 text-muted-foreground">
-                O plano editorial acima mostra o que será escrito. A prévia pública aparece depois de escrever o
-                rascunho.
+                Clique em Gerar artigo para continuar. A prévia aparecerá aqui quando estiver pronta.
               </p>
             </section>
           ) : (
@@ -1849,189 +1582,6 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         </>
       )}
     </>
-  );
-}
-
-/** Manual AI cover pilot: generate/discard never write; apply is a separate, confirmed, revision-locked action. */
-function CoverPanel({
-  article,
-  disabled,
-  onApplied,
-}: {
-  article: EditorialArticle;
-  disabled: boolean;
-  onApplied: (a: EditorialArticle) => Promise<void>;
-}) {
-  const [candidate, setCandidate] = useState<{ dataUrl: string; bytes: number; revision: number } | null>(null);
-  const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
-  const [reviewed, setReviewed] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [currentBroken, setCurrentBroken] = useState(false);
-  useEffect(() => {
-    setCurrentBroken(false);
-  }, [article.og_image_url]);
-  const published = article.status === "published";
-  async function generate() {
-    setBusy("Gerando capa… (até 1 min)");
-    setError("");
-    setReviewed(false);
-    try {
-      const r = await adminCall<{ background: string; title: string; revision: number }>("cover-generate", {
-        id: article.id,
-        revision: article.revision,
-      });
-      const composed = await composeCover(r.background, r.title);
-      setCandidate({ ...composed, revision: r.revision });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível gerar a capa.");
-    } finally {
-      setBusy("");
-    }
-  }
-  async function apply() {
-    if (!candidate || !reviewed) return;
-    if (
-      published &&
-      !window.confirm(
-        "Este artigo está publicado. A nova capa aparece imediatamente na página, nos cards e no compartilhamento. Aplicar?",
-      )
-    )
-      return;
-    setBusy("Aplicando…");
-    setError("");
-    try {
-      const r = await adminCall<{ article: EditorialArticle }>("cover-apply", {
-        id: article.id,
-        revision: candidate.revision,
-        image: candidate.dataUrl,
-      });
-      setCandidate(null);
-      setReviewed(false);
-      await onApplied(r.article);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível aplicar. A capa anterior foi mantida.");
-    } finally {
-      setBusy("");
-    }
-  }
-  const stale = candidate && candidate.revision !== article.revision;
-  return (
-    <section aria-labelledby="cover-title" className={`${PANEL} mb-6`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 id="cover-title" className="text-lg font-semibold">
-            Capa do artigo
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Usada no topo do artigo, nos cards e no compartilhamento. O player do vídeo mantém a miniatura do YouTube.
-          </p>
-        </div>
-        {!open && !candidate && (
-          <button className={OUTLINE} disabled={disabled || Boolean(busy)} onClick={() => setOpen(true)}>
-            Gerar capa com IA
-          </button>
-        )}
-      </div>
-      {(open || candidate) && (
-        <>
-          {error && (
-            <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">
-              {error}
-            </p>
-          )}
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <figure>
-              <figcaption className="mb-2 text-sm font-semibold">Capa atual</figcaption>
-              {article.og_image_url && !currentBroken ? (
-                <img
-                  src={article.og_image_url}
-                  alt="Capa atual"
-                  width={1280}
-                  height={720}
-                  onError={() => setCurrentBroken(true)}
-                  className="aspect-video w-full rounded-xl border border-line object-cover"
-                />
-              ) : (
-                <div className="grid aspect-video place-items-center rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted-foreground">
-                  {article.og_image_url
-                    ? "Capa aprovada fica visível publicamente quando o artigo está publicado."
-                    : "Sem capa."}
-                </div>
-              )}
-            </figure>
-            <figure>
-              <figcaption className="mb-2 text-sm font-semibold">Candidata (não salva)</figcaption>
-              {candidate ? (
-                <img
-                  src={candidate.dataUrl}
-                  alt="Capa candidata gerada por IA"
-                  width={1280}
-                  height={720}
-                  className="aspect-video w-full rounded-xl border border-line object-cover"
-                />
-              ) : (
-                <div
-                  aria-busy={Boolean(busy)}
-                  className="grid aspect-video place-items-center rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted-foreground"
-                >
-                  {busy ||
-                    "Gere uma candidata: fundo novo por IA a partir da miniatura do vídeo, com o título exato e a marca Vitale."}
-                </div>
-              )}
-            </figure>
-          </div>
-          {candidate && (
-            <label className="mt-4 flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={reviewed}
-                onChange={(e) => setReviewed(e.target.checked)}
-              />
-              <span>
-                Revisei a imagem: sem texto inventado pela IA, título correto e legível, nada ofensivo ou enganoso. JPG
-                1280×720, {(candidate.bytes / 1024).toFixed(0)} KB.
-              </span>
-            </label>
-          )}
-          {stale && (
-            <p role="alert" className="mt-3 text-sm text-red-800">
-              O artigo mudou desde a geração. Gere outra candidata.
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap gap-2" aria-live="polite">
-            <button className={OUTLINE} disabled={disabled || Boolean(busy)} onClick={() => void generate()}>
-              {busy.startsWith("Gerando") ? busy : candidate ? "Gerar outra" : "Gerar candidata"}
-            </button>
-            <button
-              className={OUTLINE}
-              disabled={Boolean(busy)}
-              onClick={() => {
-                setCandidate(null);
-                setReviewed(false);
-                setError("");
-                if (!candidate) setOpen(false);
-              }}
-            >
-              {candidate ? "Descartar" : "Fechar"}
-            </button>
-            <button
-              className={BTN}
-              disabled={disabled || Boolean(busy) || !candidate || !reviewed || Boolean(stale)}
-              onClick={() => void apply()}
-            >
-              {busy === "Aplicando…" ? busy : "Aplicar capa"}
-            </button>
-          </div>
-          {published && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Artigo publicado: aplicar altera a página pública imediatamente.
-            </p>
-          )}
-        </>
-      )}
-    </section>
   );
 }
 
@@ -2103,10 +1653,7 @@ function AiStatus({ role }: { role: AdminRole }) {
   }
   return (
     <>
-      <Heading
-        title="Article Compiler"
-        detail="Outlines e rascunhos ancorados em vídeo e dados reais. Publicação automática somente após QA aprovado e liberação técnica do servidor, sem revisão humana por artigo."
-      />
+      <Heading title="Article Compiler" detail="Gere o artigo completo a partir do vídeo e da transcrição." />
       {error && <Notice danger>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
       {!data ? (
