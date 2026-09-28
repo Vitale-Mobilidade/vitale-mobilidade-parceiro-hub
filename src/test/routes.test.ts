@@ -2,12 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter, isRedirect } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { routeTree } from "@/routeTree.gen";
+import { getRouter } from "@/router";
+import {
+  parseCampaignSearch,
+  stringifyCampaignSearch,
+  parseUtmsFromUrl,
+  resolveQuizAttribution,
+} from "@/lib/quiz-attribution";
 import { attributionPayload, captureQuizAttribution } from "@/lib/quiz-attribution";
 import { legacyRedirect } from "@/lib/legacy-redirects";
 
 function makeRouter(path = "/") {
   return createRouter({
     routeTree,
+    parseSearch: parseCampaignSearch,
+    stringifySearch: stringifyCampaignSearch,
     history: createMemoryHistory({ initialEntries: [path] }),
     context: { queryClient: new QueryClient() },
   });
@@ -201,5 +210,65 @@ describe("campanha na entrada pública até o payload do Quiz", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("UTMs sempre nas URLs internas", () => {
+  const query =
+    "?UTM_Source=Video&utm_medium=true&utm_campaign=123&utm_content=%7B%22bike%22%3A%20%22V9%22%7D&utm_term=Bike%2BTeste%20%C3%A1";
+  const expected = parseUtmsFromUrl(`/${query}`);
+
+  it("router de produção usa serialização literal de campanha", () => {
+    expect(getRouter().options.parseSearch).toBe(parseCampaignSearch);
+    expect(getRouter().options.stringifySearch).toBe(stringifyCampaignSearch);
+  });
+
+  it.each(["/quiz", "/radar", "/conteudos", "/ferramentas", "/"])(
+    "href SSR/cliente de %s mantém valores exatos",
+    (to) => {
+      const router = makeRouter(`/${query}`);
+      const href = router.buildLocation({ to }).href;
+      expect(parseUtmsFromUrl(href)).toEqual(expected);
+      // Nova aba/reload com storage bloqueado consegue produzir o mesmo payload.
+      const blocked = {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
+      };
+      expect(attributionPayload(resolveQuizAttribution(href, blocked))).toMatchObject({
+        ...expected,
+        traffic_origin: "Video",
+      });
+    },
+  );
+
+  it("mantém filtros JSON e hash, sem mesclar uma campanha explícita nova", () => {
+    const router = makeRouter(`/${query}`);
+    const href = router.buildLocation({
+      to: "/radar",
+      search: { page: 2, filters: ["urbano", "garupa"] } as never,
+      hash: "precos",
+    }).href;
+    expect(parseUtmsFromUrl(href)).toEqual(expected);
+    expect(parseCampaignSearch(new URL(href, "https://local.invalid").search)).toMatchObject({
+      page: 2,
+      filters: ["urbano", "garupa"],
+    });
+    expect(href.endsWith("#precos")).toBe(true);
+    const next = router.buildLocation({ to: "/quiz", search: { utm_source: "Nova" } as never }).href;
+    expect(parseUtmsFromUrl(next)).toEqual({
+      utm_source: "Nova",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    });
+  });
+
+  it("sem campanha na entrada não fabrica UTMs", () => {
+    expect(makeRouter("/").buildLocation({ to: "/quiz" }).href).toBe("/quiz");
   });
 });
