@@ -132,6 +132,11 @@ describe("edição e regeneração por bikes", () => {
     expect(html).not.toContain("Bike principal (ID)");
     expect(html).not.toContain("Bikes relacionadas (IDs)");
     expect(html).toContain("Salve as bikes e demais alterações antes de regenerar");
+    expect(html).toContain("Salve ou cancele a edição para trocar a capa usando as bikes salvas");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Gerar nova capa com IA<\/button>/);
+    expect(html).toContain('aria-controls="article-cover-menu"');
+    expect(html).toContain('id="article-cover-menu" hidden=""');
+    expect(html).toContain('id="article-more-menu" hidden=""');
   });
   it("permite regenerar publicado quando não existem alterações por salvar", () => {
     state.published = true;

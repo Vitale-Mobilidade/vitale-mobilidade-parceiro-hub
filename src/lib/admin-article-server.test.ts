@@ -190,6 +190,9 @@ describe("geração real — assunto da fonte prevalece sobre bike associada", (
     expect(system.endsWith(contract.EDITORIAL_SOURCE_PRIORITY)).toBe(true);
     expect(user).not.toContain("summary = abertura sobre a proposta da bike");
     expect(user).toContain("summary = abertura sobre o assunto central da transcrição");
+    expect(system).toContain(contract.EDITORIAL_FAQ_GUIDANCE);
+    expect(user).not.toContain("FAQ somente quando houver pergunta nova");
+    expect(user).toContain("As perguntas podem retomar pontos explicados no corpo");
     const payload = sourcePayload(user);
     expect(payload.transcript).toBe(businessTranscript);
     expect(payload.bikes[0].bikeId).toBe("ft03");
@@ -391,7 +394,13 @@ describe("regeneração publicada com associações salvas", () => {
           sourceExcerpt: "ocupação não é garantida e receita não é lucro líquido",
         },
       ],
-      faq: [],
+      faq: [
+        {
+          question: "Receita de locação é lucro líquido?",
+          answer: "Não. A ocupação não é garantida e os custos precisam entrar na conta.",
+          sourceExcerpt: "ocupação não é garantida e receita não é lucro líquido",
+        },
+      ],
     });
     exports.injectOfflineAI!(mock);
     const db = regenerationDatabase();
@@ -414,6 +423,7 @@ describe("regeneração publicada com associações salvas", () => {
       foundation_required: false,
     });
     expect(db.patches[0]).not.toHaveProperty("published_at");
+    expect((db.patches[0].faq as { question: string }[])[0].question).toBe("Receita de locação é lucro líquido?");
   });
   it("falha da IA mantém conteúdo publicado sem qualquer escrita no artigo", async () => {
     exports.injectOfflineAI!(vi.fn().mockRejectedValue(new Error("offline_failure")));

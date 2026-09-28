@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
@@ -1273,6 +1274,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [openMenu, setOpenMenu] = useState<"cover" | "more" | null>(null);
+  const coverInput = useRef<HTMLInputElement>(null);
   const privateCover = Boolean(article && isEditorialCoverUrl(article.og_image_url));
   const coverPreviewKey = ["admin", "article-cover-preview", id, article?.og_image_url] as const;
   const coverPreview = useQuery({
@@ -1363,7 +1366,12 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     }
   }
   async function changeCover(file?: File) {
-    if (!article) return;
+    if (!article || busy) return;
+    if (draft) {
+      setError("Salve ou cancele a edição antes de trocar a capa.");
+      return;
+    }
+    setOpenMenu(null);
     setBusy(file ? "Salvando capa…" : "Gerando capa…");
     setError("");
     setMessage("");
@@ -1414,7 +1422,11 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "editorial-workspace"],
       });
-      setMessage("Capa atualizada.");
+      setMessage(
+        file
+          ? "Imagem adicionada e aplicada. Confira a capa na prévia abaixo."
+          : "Nova capa gerada e aplicada. Confira a capa na prévia abaixo.",
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível trocar a capa. A capa anterior foi mantida.");
     } finally {
@@ -1530,42 +1542,58 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
               </button>
             </>
           )}
-          {!draft && (articleReady(article, brief) || status === "published") && (
-            <details className="relative">
-              <summary className={`${OUTLINE} cursor-pointer list-none`}>Capa</summary>
-              <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-line bg-white p-2 shadow-lg">
-                <label className="block cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-emerald-50">
-                  Adicionar imagem
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="sr-only"
-                    disabled={Boolean(busy)}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (file) void changeCover(file);
-                    }}
-                  />
-                </label>
-                <button
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50"
-                  disabled={Boolean(busy)}
-                  onClick={() => void changeCover()}
-                >
-                  Gerar nova capa com IA
-                </button>
+          <input
+            ref={coverInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={Boolean(busy) || Boolean(draft)}
+            aria-label="Arquivo da capa"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void changeCover(file);
+            }}
+          />
+          {(articleReady(article, brief) || status === "published") && (
+            <EditorActionMenu
+              id="article-cover-menu"
+              label="Capa"
+              open={openMenu === "cover"}
+              onOpenChange={(open) => setOpenMenu(open ? "cover" : null)}
+              disabled={Boolean(busy)}
+            >
+              <button
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50"
+                disabled={Boolean(busy) || Boolean(draft)}
+                onClick={() => coverInput.current?.click()}
+              >
+                Adicionar imagem
+              </button>
+              <button
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50"
+                disabled={Boolean(busy) || Boolean(draft)}
+                onClick={() => void changeCover()}
+              >
+                Gerar nova capa com IA
+              </button>
+              {draft && (
                 <p className="px-3 py-2 text-xs text-muted-foreground">
-                  Gerar com IA usa créditos. Adicionar imagem não usa IA.
+                  Salve ou cancele a edição para trocar a capa usando as bikes salvas.
                 </p>
-              </div>
-            </details>
+              )}
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                Gerar com IA usa créditos. Adicionar imagem não usa IA.
+              </p>
+            </EditorActionMenu>
           )}
-          <details className="relative">
-            <summary className={`${OUTLINE} cursor-pointer list-none`} aria-label="Mais ações">
-              Mais
-            </summary>
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-line bg-white p-2 shadow-lg">
+          <EditorActionMenu
+            id="article-more-menu"
+            label="Mais"
+            open={openMenu === "more"}
+            onOpenChange={(open) => setOpenMenu(open ? "more" : null)}
+            disabled={Boolean(busy)}
+          >
               <button
                 className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50"
                 disabled={Boolean(busy) || Boolean(draft) || status === "archived"}
@@ -1599,8 +1627,12 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
                   Excluir
                 </button>
               )}
-            </div>
-          </details>
+            {draft && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                Salve ou cancele a edição antes de regenerar o artigo.
+              </p>
+            )}
+          </EditorActionMenu>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           {busy ||
