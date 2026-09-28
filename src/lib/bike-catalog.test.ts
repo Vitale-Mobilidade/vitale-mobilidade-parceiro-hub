@@ -10,13 +10,19 @@ import {
   resolveBikeId,
   snapshotHash,
 } from "../../supabase/functions/_shared/bike-sheet";
-import { mergeCatalog, tierForPrice } from "./bike-catalog";
+import { mergeCatalog, tierForPrice, resolveBikeImage, resolveBikeRecordImage } from "./bike-catalog";
 import { BIKES } from "@/data/bikes";
 import { recommend, type Answers } from "./quiz-engine";
 
 const HEADER = "Nome,Link Vitale,Preço R$,Link YouTube,Autonomia,Capacidade,Descrição,Video Gravado";
-const row = (name: string, link: string, price: string, autonomy = "Até 50km", cap = "2 pessoas", desc = "Descrição completa do modelo.") =>
-  `${name},${link},"${price}",Não tem,${autonomy},${cap},"${desc}",Sim`;
+const row = (
+  name: string,
+  link: string,
+  price: string,
+  autonomy = "Até 50km",
+  cap = "2 pessoas",
+  desc = "Descrição completa do modelo.",
+) => `${name},${link},"${price}",Não tem,${autonomy},${cap},"${desc}",Sim`;
 
 describe("parsing de moeda brasileira", () => {
   it("aceita formatos com R$, milhar e centavos", () => {
@@ -69,7 +75,8 @@ describe("links", () => {
 
 describe("descrição curta determinística", () => {
   it("é estável e limitada", () => {
-    const full = "Primeira frase bem completa sobre o modelo e suas características gerais de uso urbano. Segunda frase adicional com detalhes técnicos que não precisam aparecer no card do resultado.";
+    const full =
+      "Primeira frase bem completa sobre o modelo e suas características gerais de uso urbano. Segunda frase adicional com detalhes técnicos que não precisam aparecer no card do resultado.";
     const a = buildShortDescription(full);
     const b = buildShortDescription(full);
     expect(a).toBe(b);
@@ -118,16 +125,18 @@ describe("snapshot da planilha", () => {
 });
 
 describe("merge do catálogo", () => {
-  const snapshot = [{
-    id: "ft03",
-    name: "FT03",
-    linkVitale: "https://meli.la/NOVOLINK",
-    price: 6500,
-    autonomyKm: 72,
-    capacity: 1 as const,
-    description: "Descrição integral da planilha.",
-    shortDescription: "Descrição curta.",
-  }];
+  const snapshot = [
+    {
+      id: "ft03",
+      name: "FT03",
+      linkVitale: "https://meli.la/NOVOLINK",
+      price: 6500,
+      autonomyKm: 72,
+      capacity: 1 as const,
+      description: "Descrição integral da planilha.",
+      shortDescription: "Descrição curta.",
+    },
+  ];
 
   it("sobrescreve somente os seis campos oficiais", () => {
     const merged = mergeCatalog(BIKES, snapshot);
@@ -152,13 +161,16 @@ describe("merge do catálogo", () => {
     const withoutAsset = mergeCatalog(BIKES, [{ ...snapshot[0], image: "https://cdn.exemplo.com/ft03.jpg" }]);
     expect(withoutAsset.find((b) => b.id === "ft03")!.image).toBe(staticFt03.image);
     // RPC com asset pronto (proxy) → imagem persistida vence
-    const withAsset = mergeCatalog(BIKES, [{
-      ...snapshot[0],
-      image: "https://backend.example/functions/v1/bike-image?id=ft03",
-      imageReady: true,
-    }]);
-    expect(withAsset.find((b) => b.id === "ft03")!.image)
-      .toBe("https://backend.example/functions/v1/bike-image?id=ft03");
+    const withAsset = mergeCatalog(BIKES, [
+      {
+        ...snapshot[0],
+        image: "https://backend.example/functions/v1/bike-image?id=ft03",
+        imageReady: true,
+      },
+    ]);
+    expect(withAsset.find((b) => b.id === "ft03")!.image).toBe(
+      "https://backend.example/functions/v1/bike-image?id=ft03",
+    );
     // demais bikes intocadas
     expect(withAsset.find((b) => b.id === "v35")!.image).toBe(BIKES.find((b) => b.id === "v35")!.image);
   });
@@ -202,16 +214,19 @@ describe("fallback da engine", () => {
   });
 
   it("respeita o preço do catálogo dinâmico no filtro de orçamento", () => {
-    const dynamic = mergeCatalog(BIKES, BIKES.map((b) => ({
-      id: b.id,
-      name: b.name,
-      linkVitale: b.linkVitale,
-      price: 20000,
-      autonomyKm: b.autonomyKm,
-      capacity: b.capacity,
-      description: "x",
-      shortDescription: "x",
-    })));
+    const dynamic = mergeCatalog(
+      BIKES,
+      BIKES.map((b) => ({
+        id: b.id,
+        name: b.name,
+        linkVitale: b.linkVitale,
+        price: 20000,
+        autonomyKm: b.autonomyKm,
+        capacity: b.capacity,
+        description: "x",
+        shortDescription: "x",
+      })),
+    );
     const res = recommend(answers, null, dynamic);
     expect(res.budgetLimited).toBe(true); // nenhuma elegível -> sinaliza limite e usa pool completo
     expect(res.primary.internalPrice).toBe(20000);
@@ -219,9 +234,7 @@ describe("fallback da engine", () => {
 });
 
 // ---------- Colunas opcionais / bikes novas ----------
-import {
-  buildCatalogRows,
-} from "./bike-catalog";
+import { buildCatalogRows } from "./bike-catalog";
 import { buildPanelRows } from "./painel-bikes";
 import {
   buildStableId,
@@ -237,12 +250,29 @@ const fullRow = (
   name: string,
   link: string,
   price: string,
-  extra: Partial<Record<"id" | "image" | "weight" | "usos" | "terrenos" | "fortes" | "dif" | "perfil" | "ativa", string>> = {},
-) => [
-  name, link, `"${price}"`, "Não tem", "Até 60km", "2 pessoas", '"Descrição completa."', "Não",
-  extra.id ?? "", extra.image ?? "", extra.weight ?? "", `"${extra.usos ?? ""}"`, `"${extra.terrenos ?? ""}"`,
-  `"${extra.fortes ?? ""}"`, `"${extra.dif ?? ""}"`, `"${extra.perfil ?? ""}"`, extra.ativa ?? "",
-].join(",");
+  extra: Partial<
+    Record<"id" | "image" | "weight" | "usos" | "terrenos" | "fortes" | "dif" | "perfil" | "ativa", string>
+  > = {},
+) =>
+  [
+    name,
+    link,
+    `"${price}"`,
+    "Não tem",
+    "Até 60km",
+    "2 pessoas",
+    '"Descrição completa."',
+    "Não",
+    extra.id ?? "",
+    extra.image ?? "",
+    extra.weight ?? "",
+    `"${extra.usos ?? ""}"`,
+    `"${extra.terrenos ?? ""}"`,
+    `"${extra.fortes ?? ""}"`,
+    `"${extra.dif ?? ""}"`,
+    `"${extra.perfil ?? ""}"`,
+    extra.ativa ?? "",
+  ].join(",");
 
 describe("parsers das colunas opcionais", () => {
   it("aceita somente URL de imagem https pública", () => {
@@ -271,7 +301,9 @@ describe("parsers das colunas opcionais", () => {
 
 describe("bikes novas: draft x elegível", () => {
   it("sem Imagem da Bike a linha continua válida (imagem vem do Link Vitale)", () => {
-    const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", { usos: "Urbano" })].join("\n");
+    const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", { usos: "Urbano" })].join(
+      "\n",
+    );
     const res = buildSnapshotFromCsv(csv);
     const bike = res.bikes[0];
     expect(bike.id).toBe("nova_x9");
@@ -284,10 +316,18 @@ describe("bikes novas: draft x elegível", () => {
   });
 
   it("fica elegível e entra no quiz com os dados mínimos", () => {
-    const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", {
-      image: "https://cdn.exemplo.com/x9.jpg", weight: "150 kg",
-      usos: "Trabalho, Urbano", terrenos: "Plano, Misto", fortes: "Motor forte", dif: "Bateria dupla", perfil: "Entregador",
-    })].join("\n");
+    const csv = [
+      HEADER_FULL,
+      fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", {
+        image: "https://cdn.exemplo.com/x9.jpg",
+        weight: "150 kg",
+        usos: "Trabalho, Urbano",
+        terrenos: "Plano, Misto",
+        fortes: "Motor forte",
+        dif: "Bateria dupla",
+        perfil: "Entregador",
+      }),
+    ].join("\n");
     const res = buildSnapshotFromCsv(csv);
     expect(res.bikes[0].status).toBe("eligible");
     const merged = mergeCatalog(BIKES, res.bikes);
@@ -300,9 +340,15 @@ describe("bikes novas: draft x elegível", () => {
 
     // participa da recomendação por atributos (usos/terrenos/autonomia)
     const rec = recommend(
-      { main_use: "trabalho_delivery_renda", daily_km_range: "10_25_km", route_type: "plano",
-        rider_capacity_need: "garupa_as_vezes", weight_range: "100_120kg", budget_range: "7000_8000",
-        had_ebike_before: "nao" },
+      {
+        main_use: "trabalho_delivery_renda",
+        daily_km_range: "10_25_km",
+        route_type: "plano",
+        rider_capacity_need: "garupa_as_vezes",
+        weight_range: "100_120kg",
+        budget_range: "7000_8000",
+        had_ebike_before: "nao",
+      },
       null,
       merged,
     );
@@ -310,9 +356,16 @@ describe("bikes novas: draft x elegível", () => {
   });
 
   it("bike marcada como inativa não entra no quiz", () => {
-    const csv = [HEADER_FULL, fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", {
-      image: "https://cdn.exemplo.com/x9.jpg", weight: "150 kg", usos: "Urbano", terrenos: "Plano", ativa: "Não",
-    })].join("\n");
+    const csv = [
+      HEADER_FULL,
+      fullRow("Nova X9", "https://meli.la/1abc999", "R$ 7.500,00", {
+        image: "https://cdn.exemplo.com/x9.jpg",
+        weight: "150 kg",
+        usos: "Urbano",
+        terrenos: "Plano",
+        ativa: "Não",
+      }),
+    ].join("\n");
     const res = buildSnapshotFromCsv(csv);
     expect(res.bikes[0].status).toBe("inactive");
     expect(mergeCatalog(BIKES, res.bikes)).toHaveLength(BIKES.length);
@@ -353,14 +406,12 @@ describe("linhas do painel", () => {
     expect(nova.missingFields).toEqual([]);
     expect(outra.state).toBe("static");
     expect(rows).toHaveLength(BIKES.length + 1);
-
   });
 });
 
 // ---------- Atomicidade do snapshot ----------
 describe("atomicidade: erro estrutural não substitui o snapshot", () => {
-  const validRow = (n: number) =>
-    row(`Modelo Novo ${n}`, `https://meli.la/1abc${n}`, "R$ 7.500,00");
+  const validRow = (n: number) => row(`Modelo Novo ${n}`, `https://meli.la/1abc${n}`, "R$ 7.500,00");
 
   it("18 válidas + 1 incompleta: as válidas passam e a incompleta vira pendência", () => {
     const linhas = Array.from({ length: 18 }, (_, i) => validRow(i + 1));
@@ -391,7 +442,11 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
       HEADER_FULL,
       fullRow("Nova Draft", "https://meli.la/1abc001", "R$ 7.500,00"),
       fullRow("Nova Inativa", "https://meli.la/1abc002", "R$ 7.500,00", {
-        image: "https://cdn.exemplo.com/a.jpg", weight: "150 kg", usos: "Urbano", terrenos: "Plano", ativa: "Não",
+        image: "https://cdn.exemplo.com/a.jpg",
+        weight: "150 kg",
+        usos: "Urbano",
+        terrenos: "Plano",
+        ativa: "Não",
       }),
     ].join("\n");
     const res = buildSnapshotFromCsv(csv);
@@ -404,11 +459,13 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
   });
 
   it("duplicata é erro estrutural; campos faltantes viram pendência", () => {
-    const dup = buildSnapshotFromCsv([
-      HEADER,
-      row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
-      row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
-    ].join("\n"));
+    const dup = buildSnapshotFromCsv(
+      [
+        HEADER,
+        row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
+        row("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
+      ].join("\n"),
+    );
     expect(dup.recognizedCount).toBe(1);
     expect(dup.ignoredCount).toBe(1);
 
@@ -430,16 +487,30 @@ describe("atomicidade: erro estrutural não substitui o snapshot", () => {
 // ---------- Linhas sem Nome nunca viram pendência ----------
 describe("linhas sem Nome são sempre ignoradas silenciosamente", () => {
   it("Nome vazio com Status/Categoria/Imagem preenchidos não gera pending nem ignored", () => {
-    const linhas = [
-      HEADER_FULL,
-      fullRow("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00"),
-    ];
+    const linhas = [HEADER_FULL, fullRow("FT03", "https://meli.la/2gjJctS", "R$ 6.129,00")];
     // 5 linhas com valores padrão em colunas auxiliares, porém sem Nome.
     for (let i = 0; i < 5; i++) {
-      linhas.push([
-        "", "", "", "", "", "", "", "",
-        "", "https://cdn.exemplo.com/x.jpg", "", '"Urbano"', '""', '""', '""', '""', "Sim",
-      ].join(","));
+      linhas.push(
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "https://cdn.exemplo.com/x.jpg",
+          "",
+          '"Urbano"',
+          '""',
+          '""',
+          '""',
+          '""',
+          "Sim",
+        ].join(","),
+      );
     }
     const res = buildSnapshotFromCsv(linhas.join("\n"));
     expect(res.recognizedCount).toBe(1);
@@ -450,11 +521,9 @@ describe("linhas sem Nome são sempre ignoradas silenciosamente", () => {
   });
 
   it("linha COM Nome e campo obrigatório ausente continua pendente", () => {
-    const res = buildSnapshotFromCsv([
-      HEADER,
-      row("Modelo Sem Link", "site-errado", "R$ 7.500,00"),
-      ",,,,,,,",
-    ].join("\n"));
+    const res = buildSnapshotFromCsv(
+      [HEADER, row("Modelo Sem Link", "site-errado", "R$ 7.500,00"), ",,,,,,,"].join("\n"),
+    );
     expect(res.pendingCount).toBe(1);
     expect(res.pending[0].missingFields).toContain("Link Vitale");
     expect(res.ignoredCount).toBe(0);
@@ -476,13 +545,47 @@ describe("bike nova pronta aparece Elegível no painel", () => {
     expect(bw1.state).toBe("eligible");
     const panel = buildPanelRows(
       rows,
-      [{ bike_id: "bw1", eligible: true }, { bike_id: "v9_max_duas_baterias", eligible: false }],
+      [
+        { bike_id: "bw1", eligible: true },
+        { bike_id: "v9_max_duas_baterias", eligible: false },
+      ],
       "2026-09-09T12:00:00Z",
-      [{ bike_id: "bw1", status: "ready" }, { bike_id: "v9_max_duas_baterias", status: "ready" }],
-      [{ bike_id: "bw1", status: "ready" }, { bike_id: "v9_max_duas_baterias", status: "ready" }],
+      [
+        { bike_id: "bw1", status: "ready" },
+        { bike_id: "v9_max_duas_baterias", status: "ready" },
+      ],
+      [
+        { bike_id: "bw1", status: "ready" },
+        { bike_id: "v9_max_duas_baterias", status: "ready" },
+      ],
     );
     expect(panel.find((r) => r.id === "bw1")!.effective).toBe("eligible");
     // Status "Não Elegível" nunca aparece como Pendente.
     expect(panel.find((r) => r.id === "v9_max_duas_baterias")!.effective).toBe("not_eligible");
+  });
+});
+
+describe("images from older deployments", () => {
+  it("replaces a persisted stale build hash with this bike's current bundled image", () => {
+    expect(resolveBikeImage("v8_pro", "https://vitalemobilidade.com/assets/v8-pro-CK6ficSZ.jpg")).toBe(
+      BIKES.find((bike) => bike.id === "v8_pro")!.image,
+    );
+    expect(
+      resolveBikeRecordImage({ id: "v8_pro", image: "https://vitalemobilidade.com/assets/old.jpg", price: 5100 }),
+    ).toEqual({ id: "v8_pro", image: BIKES.find((bike) => bike.id === "v8_pro")!.image, price: 5100 });
+  });
+  it("preserves external catalog images and the persistent image proxy", () => {
+    for (const image of [
+      "https://http2.mlstatic.com/model.webp",
+      "https://project.supabase.co/functions/v1/bike-image?id=v8_pro",
+      "https://vitalemobilidade.com/__l5e/assets-v1/id/model.png",
+    ]) {
+      expect(resolveBikeImage("v8_pro", image)).toBe(image);
+    }
+  });
+  it("never substitutes an unrelated bike for models outside the bundled catalog", () => {
+    expect(resolveBikeImage("unknown", null)).toBeNull();
+    expect(resolveBikeImage("unknown", "http://unsafe.example/x.png")).toBeNull();
+    expect(resolveBikeImage("v8_pro", null)).toBe(BIKES.find((bike) => bike.id === "v8_pro")!.image);
   });
 });
