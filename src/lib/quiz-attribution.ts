@@ -1,5 +1,5 @@
 /**
- * Atribuição de campanha do quiz /quiz.
+ * Atribuição capturada na entrada pública e consumida pelo quiz /quiz.
  *
  * Regras:
  * - Captura os UTMs REAIS da URL de entrada (nomes de parâmetro case-insensitive,
@@ -13,13 +13,7 @@
 
 export const QUIZ_ATTRIBUTION_KEY = "vitale_quiz_attribution_v2";
 
-export const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-] as const;
+export const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 export type UtmKey = (typeof UTM_KEYS)[number];
 
@@ -95,7 +89,12 @@ export function resolveQuizAttribution(
   now: Date = new Date(),
 ): QuizAttribution {
   const urlUtms = parseUtmsFromUrl(href);
-  const stored = storage ? safeParse(storage.getItem(QUIZ_ATTRIBUTION_KEY)) : null;
+  let stored: QuizAttribution | null = null;
+  try {
+    stored = storage ? safeParse(storage.getItem(QUIZ_ATTRIBUTION_KEY)) : null;
+  } catch {
+    /* Leitura bloqueada não pode interromper navegação nem o Quiz. */
+  }
 
   let next: QuizAttribution;
   if (hasAnyUtm(urlUtms)) {
