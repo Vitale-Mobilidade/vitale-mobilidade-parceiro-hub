@@ -100,3 +100,20 @@ describe("sem hardcodes de campanha", () => {
     expect(trafficOriginFromUtms(parseUtmsFromUrl("/x?utm_source=CodexSrc"))).toBe("CodexSrc");
   });
 });
+
+it("storage bloqueado na leitura e escrita não interrompe captura", () => {
+  const blocked = {
+    getItem: () => {
+      throw new Error("blocked");
+    },
+    setItem: () => {
+      throw new Error("blocked");
+    },
+  };
+  expect(attributionPayload(resolveQuizAttribution(FULL, blocked))).toMatchObject({
+    utm_source: "CodexSrc",
+    traffic_origin: "CodexSrc",
+    source_url: FULL,
+  });
+  expect(resolveQuizAttribution("/quiz", blocked).utm_source).toBeNull();
+});
