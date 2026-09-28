@@ -2411,10 +2411,11 @@ Deno.serve(async (req) => {
     if (action === "prompt-create") {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode alterar prompts." }, 403);
       const previous = await activePrompt(db);
-      const systemPrompt = str(body.systemPrompt, 12000);
+      const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt.trim() : "";
       const reason = str(body.reason, 500);
-      if (systemPrompt.length < 100 || reason.length < 10)
-        return json(req, { error: "Prompt e motivo são obrigatórios." }, 400);
+      if (systemPrompt.length < 100 || systemPrompt.length > 32000)
+        return json(req, { error: "O prompt deve ter entre 100 e 32.000 caracteres. O texto não foi salvo." }, 400);
+      if (!reason) return json(req, { error: "Informe o motivo da alteração." }, 400);
       const { error } = await db.from("editorial_prompt_versions").insert({
         version: previous.version + 1,
         system_prompt: systemPrompt,
