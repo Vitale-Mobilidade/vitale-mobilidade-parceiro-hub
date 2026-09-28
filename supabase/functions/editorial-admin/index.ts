@@ -129,7 +129,11 @@ async function actorFor(db: SupabaseClient, req: Request): Promise<Actor | null>
     .eq("user_id", user.user.id)
     .maybeSingle();
   if (!member?.active || !["admin", "content", "operation"].includes(member.role)) return null;
-  return { id: user.user.id, role: member.role as Role, email: user.user.email ?? null };
+  return {
+    id: user.user.id,
+    role: member.role as Role,
+    email: user.user.email ?? null,
+  };
 }
 
 async function log(db: SupabaseClient, actor: Actor, action: string, type: string, id: string, detail: Body = {}) {
@@ -166,7 +170,10 @@ async function resolveThumbnail(id: string): Promise<{ url: string | null; varia
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3500);
     try {
-      const response = await fetch(url, { method: "HEAD", signal: controller.signal });
+      const response = await fetch(url, {
+        method: "HEAD",
+        signal: controller.signal,
+      });
       const length = Number(response.headers.get("content-length"));
       if (
         response.ok &&
@@ -252,7 +259,11 @@ async function aiStructured(
   if (!AI_KEY) throw new Error("ai_not_configured");
   const response = await fetch(RESPONSES_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": AI_KEY, "X-Lovable-AIG-SDK": "fetch" },
+    headers: {
+      "Content-Type": "application/json",
+      "Lovable-API-Key": AI_KEY,
+      "X-Lovable-AIG-SDK": "fetch",
+    },
     body: JSON.stringify({
       model: ARTICLE_MODEL,
       instructions: system,
@@ -327,7 +338,11 @@ const ARTICLE_SCHEMA: Body = {
         type: "object",
         additionalProperties: false,
         required: ["heading", "body", "sourceExcerpt"],
-        properties: { heading: { type: "string" }, body: { type: "string" }, sourceExcerpt: { type: "string" } },
+        properties: {
+          heading: { type: "string" },
+          body: { type: "string" },
+          sourceExcerpt: { type: "string" },
+        },
       },
     },
     faq: {
@@ -336,7 +351,11 @@ const ARTICLE_SCHEMA: Body = {
         type: "object",
         additionalProperties: false,
         required: ["question", "answer", "sourceExcerpt"],
-        properties: { question: { type: "string" }, answer: { type: "string" }, sourceExcerpt: { type: "string" } },
+        properties: {
+          question: { type: "string" },
+          answer: { type: "string" },
+          sourceExcerpt: { type: "string" },
+        },
       },
     },
     standsAloneWithoutVideo: { type: "boolean" },
@@ -359,7 +378,11 @@ const REWRITE_SCHEMA: Body = {
         type: "object",
         additionalProperties: false,
         required: ["heading", "body", "sourceExcerpt"],
-        properties: { heading: { type: "string" }, body: { type: "string" }, sourceExcerpt: { type: "string" } },
+        properties: {
+          heading: { type: "string" },
+          body: { type: "string" },
+          sourceExcerpt: { type: "string" },
+        },
       },
     },
     faq: {
@@ -368,7 +391,11 @@ const REWRITE_SCHEMA: Body = {
         type: "object",
         additionalProperties: false,
         required: ["question", "answer", "sourceExcerpt"],
-        properties: { question: { type: "string" }, answer: { type: "string" }, sourceExcerpt: { type: "string" } },
+        properties: {
+          question: { type: "string" },
+          answer: { type: "string" },
+          sourceExcerpt: { type: "string" },
+        },
       },
     },
   },
@@ -452,7 +479,10 @@ const BRIEF_SCHEMA: Body = {
         additionalProperties: false,
         required: ["type", "afterSection", "reason", "bikeIds", "toolSlug", "articleId"],
         properties: {
-          type: { type: "string", enum: ["video", "radar", "quiz", "tool", "comparison", "faq", "article_link"] },
+          type: {
+            type: "string",
+            enum: ["video", "radar", "quiz", "tool", "comparison", "faq", "article_link"],
+          },
           afterSection: { type: "integer" },
           reason: { type: "string" },
           bikeIds: { type: "array", items: { type: "string" } },
@@ -524,7 +554,10 @@ async function relatedArticlesFor(
     .map((a) => {
       const ids = [a.primary_bike_id, ...(a.related_bike_ids ?? [])].filter(Boolean) as string[];
       const shared = ids.filter((id) => bikeIds.includes(id)).length;
-      return { id: a.id as string, score: shared * 10 + (a.content_type === contentType ? 1 : 0) };
+      return {
+        id: a.id as string,
+        score: shared * 10 + (a.content_type === contentType ? 1 : 0),
+      };
     })
     .filter((a) => a.score >= 10)
     .sort((a, b) => b.score - a.score)
@@ -570,7 +603,12 @@ async function generateBrief(
           .single()
       : await db
           .from("editorial_briefs")
-          .insert({ article_id: article.id, video_id: video.youtube_id, status: "in_progress", stages })
+          .insert({
+            article_id: article.id,
+            video_id: video.youtube_id,
+            status: "in_progress",
+            stages,
+          })
           .select("*")
           .single();
     if (error || !data) throw new Error("stage_checkpoint_failed");
@@ -607,7 +645,12 @@ async function generateBrief(
     )) as Body;
     claims = parseSourceClaims(extracted.claims, transcript);
     if (claims.length >= 3)
-      await checkpoint("source", { key: sourceKey, bikes: bikesKey, claims, claimCount: claims.length });
+      await checkpoint("source", {
+        key: sourceKey,
+        bikes: bikesKey,
+        claims,
+        claimCount: claims.length,
+      });
   }
   if (claims.length < 3) throw new Error("insufficient_grounded_claims");
   let classification: Body;
@@ -680,7 +723,11 @@ async function generateBrief(
         bikes: [...bikeIds].filter((id) => [article.primary_bike_id, ...article.related_bike_ids].includes(id)),
         radarAvailableBikeIds: [...offers],
         toolSlugs: EDITORIAL_TOOL_SLUGS,
-        publishedArticles: (published ?? []).map((item) => ({ id: item.id, title: item.title, summary: item.summary })),
+        publishedArticles: (published ?? []).map((item) => ({
+          id: item.id,
+          title: item.title,
+          summary: item.summary,
+        })),
       },
     )}</untrusted_source_json>`,
     "vitale_editorial_outline",
@@ -925,13 +972,6 @@ async function generateInto(
     progress("Preparando SEO…");
     const videoImage = video.thumbnail_url?.startsWith("https://") ? video.thumbnail_url : null;
     const bikeImage = catalog.find((item) => item.bike_id === primaryBikeId)?.image_url ?? null;
-    const editorialImage =
-      article.og_image_url &&
-      article.og_image_url !== EDITORIAL_OG_FALLBACK &&
-      !article.og_image_url.includes("i.ytimg.com") &&
-      article.og_image_url !== bikeImage
-        ? article.og_image_url
-        : null;
     const layout = completeEditorialDraft({
       title,
       slug: article.slug,
@@ -952,7 +992,7 @@ async function generateInto(
       relatedBikeIds,
       contentType,
       offerBikeIds: offerIds,
-      ogImageUrl: editorialImage || videoImage || bikeImage || EDITORIAL_OG_FALLBACK,
+      ogImageUrl: videoImage || bikeImage || EDITORIAL_OG_FALLBACK,
       relatedArticleIds,
       plannedModules: brief?.modules,
     });
@@ -1014,9 +1054,15 @@ async function generateInto(
   } catch (e) {
     await db
       .from("editorial_compiler_runs")
-      .update({ status: "failed", error_code: errorMessage(e), completed_at: new Date().toISOString() })
+      .update({
+        status: "failed",
+        error_code: errorMessage(e),
+        completed_at: new Date().toISOString(),
+      })
       .eq("id", run.id);
-    await log(db, actor, "generation_failed", "article", article.id, { code: errorMessage(e) });
+    await log(db, actor, "generation_failed", "article", article.id, {
+      code: errorMessage(e),
+    });
     throw e;
   }
 }
@@ -1075,7 +1121,11 @@ async function qualityAndPublish(
       .from("editorial_briefs")
       .update({
         status: "qa_failed",
-        quality_report: { ...(brief.quality_report ?? {}), articleQaPass: false, issues: deterministic },
+        quality_report: {
+          ...(brief.quality_report ?? {}),
+          articleQaPass: false,
+          issues: deterministic,
+        },
         article_revision: null,
         updated_at: new Date().toISOString(),
       })
@@ -1083,7 +1133,11 @@ async function qualityAndPublish(
     if (briefError) throw new Error("quality_report_write_failed");
     const { data, error } = await db
       .from("editorial_articles")
-      .update({ status: "validation_error", validation_errors: deterministic, updated_by: actor.id })
+      .update({
+        status: "validation_error",
+        validation_errors: deterministic,
+        updated_by: actor.id,
+      })
       .eq("id", article.id)
       .eq("revision", article.revision)
       .select("*")
@@ -1114,7 +1168,10 @@ async function qualityAndPublish(
       archetype: brief.archetype,
       title: article.title,
       summary: article.summary,
-      sections: textBlocks.map((block) => ({ heading: block.heading, text: block.text })),
+      sections: textBlocks.map((block) => ({
+        heading: block.heading,
+        text: block.text,
+      })),
       seoTitle: article.seo_title,
       metaDescription: article.meta_description,
       ogTitle: article.og_title,
@@ -1142,7 +1199,12 @@ async function qualityAndPublish(
       transcript: transcript.slice(0, 90000),
       brief: brief.payload,
       editorialCautions: (brief.payload as EditorialBrief).warnings ?? [],
-      article: { title: article.title, summary: article.summary, blocks: article.blocks, faq: article.faq },
+      article: {
+        title: article.title,
+        summary: article.summary,
+        blocks: article.blocks,
+        faq: article.faq,
+      },
       peerArticles: peers.map((peer) => ({
         title: peer.title,
         summary: peer.summary,
@@ -1199,7 +1261,11 @@ async function qualityAndPublish(
   if (!pass) {
     const { data, error } = await db
       .from("editorial_articles")
-      .update({ validation_errors: issues, status: "validation_error", updated_by: actor.id })
+      .update({
+        validation_errors: issues,
+        status: "validation_error",
+        updated_by: actor.id,
+      })
       .eq("id", article.id)
       .eq("revision", article.revision)
       .select("*")
@@ -1255,13 +1321,33 @@ async function saveVideo(db: SupabaseClient, actor: Actor, id: string, title: st
   return { video: data as EditorialVideo };
 }
 
+/** Reuse historical drafts without exposing incomplete new-foundation output as ready. */
+async function restoreDraftMode(db: SupabaseClient, actor: Actor, article: EditorialArticle) {
+  if (!article.foundation_required) return article;
+  const { data, error } = await db
+    .from("editorial_articles")
+    .update({
+      foundation_required: false,
+      status: "validation_error",
+      validation_errors: ["Gere o artigo para concluir a restauração."],
+      updated_by: actor.id,
+    })
+    .eq("id", article.id)
+    .eq("revision", article.revision)
+    .select("*")
+    .maybeSingle();
+  if (error || !data) throw new Error("revision_conflict");
+  await log(db, actor, "article_model_restored", "article", article.id, revisionSnapshot(article));
+  return data as EditorialArticle;
+}
+
 /** One stage per request (outline, draft or QA), streamed and checkpointed in editorial_briefs. */
 function stageStream(
   req: Request,
   db: SupabaseClient,
   actor: Actor,
   body: Body,
-  stage: "outline" | "draft" | "qa",
+  stage: "outline" | "draft" | "qa" | "article",
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -1269,13 +1355,22 @@ function stageStream(
       const send = (v: Body) => controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));
       try {
         if (!uuid(body.id) || !Number.isInteger(body.revision)) throw new Error("invalid_id");
-        const article = await articleById(db, body.id as string);
-        if (!article || article.status === "published") throw new Error("draft_not_found");
+        let article = await articleById(db, body.id as string);
+        if (!article || article.status === "published" || article.status === "archived")
+          throw new Error("draft_not_found");
         if (article.revision !== body.revision) throw new Error("revision_conflict");
         const video = await videoById(db, article.video_id);
         if (!video) throw new Error("video_not_found");
         const progress = (step: string) => send({ type: "progress", step });
-        if (stage === "outline") {
+        if (stage === "article") {
+          if ((video.transcript ?? "").trim().length < 200) throw new Error("transcript_required");
+          article = await restoreDraftMode(db, actor, article);
+          send({
+            type: "done",
+            article: await generateInto(db, actor, article, video, progress),
+            brief: null,
+          });
+        } else if (stage === "outline") {
           const brief = await generateBrief(db, actor, article, video, progress, body.force === true);
           send({ type: "done", article, brief });
         } else if (stage === "draft") {
@@ -1292,7 +1387,12 @@ function stageStream(
             nextBrief?.status === "ready" &&
             nextBrief?.quality_report?.articleQaPass === true &&
             nextBrief?.article_revision === result.revision;
-          send({ type: "done", article: result, brief: nextBrief, publicationGated });
+          send({
+            type: "done",
+            article: result,
+            brief: nextBrief,
+            publicationGated,
+          });
         }
       } catch (e) {
         console.error("[editorial-admin] stage", stage, errorMessage(e));
@@ -1301,7 +1401,9 @@ function stageStream(
       controller.close();
     },
   });
-  return new Response(stream, { headers: { ...headers(req), "Content-Type": "application/x-ndjson" } });
+  return new Response(stream, {
+    headers: { ...headers(req), "Content-Type": "application/x-ndjson" },
+  });
 }
 
 export function stageError(code: string): string {
@@ -1321,7 +1423,7 @@ export function stageError(code: string): string {
   return map[code] ?? "Não foi possível gerar o artigo. O que já foi salvo permanece disponível; tente novamente.";
 }
 
-function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body, outlineOnly = false): Response {
+function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -1361,7 +1463,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
             title: articleTitle,
             slug: slugifyEditorialTitle(articleTitle),
             content_type: detectContentType(title),
-            foundation_required: true,
+            foundation_required: false,
             og_image_url: saved.video.thumbnail_url,
             created_by: actor.id,
             updated_by: actor.id,
@@ -1370,7 +1472,10 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (error?.code === "23505")
             ({ data, error } = await db
               .from("editorial_articles")
-              .insert({ ...initial, slug: `${initial.slug.slice(0, 100)}-${id.toLowerCase()}` })
+              .insert({
+                ...initial,
+                slug: `${initial.slug.slice(0, 100)}-${id.toLowerCase()}`,
+              })
               .select("*")
               .single());
           if (error || !data) throw new Error("article_create_failed");
@@ -1378,7 +1483,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         } else if (article.title !== articleTitle) {
           let { data, error } = await db
             .from("editorial_articles")
-            .update({ title: articleTitle, slug: slugifyEditorialTitle(articleTitle), updated_by: actor.id })
+            .update({
+              title: articleTitle,
+              slug: slugifyEditorialTitle(articleTitle),
+              updated_by: actor.id,
+            })
             .eq("id", article.id)
             .eq("revision", article.revision)
             .select("*")
@@ -1398,29 +1507,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (error || !data) throw new Error("article_title_update_failed");
           article = data as EditorialArticle;
         }
-        if (!article.foundation_required) {
-          const { data, error } = await db
-            .from("editorial_articles")
-            .update({ foundation_required: true, updated_by: actor.id })
-            .eq("id", article.id)
-            .eq("revision", article.revision)
-            .select("*")
-            .single();
-          if (error || !data) throw new Error("article_foundation_update_failed");
-          article = data as EditorialArticle;
-        }
-        send({ type: "progress", step: "Analisando a fonte e criando outline…" });
-        const brief = await generateBrief(db, actor, article, saved.video, (step) => send({ type: "progress", step }));
-        // Creation always stops at the outline (outlineOnly kept for API compatibility);
-        // the draft is written by the separate "draft-write" stage in the editor.
-        void outlineOnly;
-        send({
-          type: "done",
-          article,
-          brief,
-          blocked: brief.status !== "ready",
-          next: brief.status === "ready" ? "draft-write" : undefined,
-        });
+        article = await restoreDraftMode(db, actor, article);
+        const generated = await generateInto(db, actor, article, saved.video, (step) =>
+          send({ type: "progress", step }),
+        );
+        send({ type: "done", article: generated, brief: null });
         controller.close();
       } catch (e) {
         console.error("[editorial-admin] generate", errorMessage(e));
@@ -1428,7 +1519,9 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
       }
     },
   });
-  return new Response(stream, { headers: { ...headers(req), "Content-Type": "application/x-ndjson" } });
+  return new Response(stream, {
+    headers: { ...headers(req), "Content-Type": "application/x-ndjson" },
+  });
 }
 
 async function rebuildLayout(
@@ -1493,7 +1586,13 @@ async function coverGenerate(
   if (!AI_KEY) return json(req, { error: "IA de imagem não configurada no servidor." }, 503);
   const thumb = await coverReference(db, article);
   if (!thumb)
-    return json(req, { error: "Este artigo não tem miniatura válida do YouTube para servir de referência." }, 422);
+    return json(
+      req,
+      {
+        error: "Este artigo não tem miniatura válida do YouTube para servir de referência.",
+      },
+      422,
+    );
   let thumbBytes: Uint8Array;
   try {
     const r = await fetchWithTimeout(thumb, {}, 8000);
@@ -1501,7 +1600,13 @@ async function coverGenerate(
     thumbBytes = new Uint8Array(await r.arrayBuffer());
     if (thumbBytes.length < 2000 || thumbBytes.length > THUMB_MAX_BYTES) throw new Error("thumb_size");
   } catch {
-    return json(req, { error: "Não foi possível baixar a miniatura do YouTube. Tente novamente." }, 502);
+    return json(
+      req,
+      {
+        error: "Não foi possível baixar a miniatura do YouTube. Tente novamente.",
+      },
+      502,
+    );
   }
 
   let response: Response;
@@ -1510,7 +1615,10 @@ async function coverGenerate(
       IMAGE_URL,
       {
         method: "POST",
-        headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${AI_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           model: COVER_MODEL,
           modalities: ["image", "text"],
@@ -1519,7 +1627,12 @@ async function coverGenerate(
               role: "user",
               content: [
                 { type: "text", text: COVER_PROMPT },
-                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${toBase64(thumbBytes)}` } },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${toBase64(thumbBytes)}`,
+                  },
+                },
               ],
             },
           ],
@@ -1529,7 +1642,9 @@ async function coverGenerate(
     );
   } catch (e) {
     const timeout = e instanceof DOMException && e.name === "AbortError";
-    await log(db, actor, "cover_generate_failed", "article", article.id, { reason: timeout ? "timeout" : "network" });
+    await log(db, actor, "cover_generate_failed", "article", article.id, {
+      reason: timeout ? "timeout" : "network",
+    });
     return json(
       req,
       {
@@ -1541,7 +1656,9 @@ async function coverGenerate(
     );
   }
   if (!response.ok) {
-    await log(db, actor, "cover_generate_failed", "article", article.id, { status: response.status });
+    await log(db, actor, "cover_generate_failed", "article", article.id, {
+      status: response.status,
+    });
     const msg =
       response.status === 429
         ? "Muitas gerações seguidas. Aguarde um minuto e tente de novo."
@@ -1565,7 +1682,9 @@ async function coverGenerate(
     /* handled below */
   }
   if (!b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) {
-    await log(db, actor, "cover_generate_failed", "article", article.id, { reason: "empty_or_refused" });
+    await log(db, actor, "cover_generate_failed", "article", article.id, {
+      reason: "empty_or_refused",
+    });
     return json(req, { error: "A IA não devolveu imagem. Tente gerar outra." }, 502);
   }
   const mime = b64.startsWith("/9j/")
@@ -1605,9 +1724,11 @@ async function coverApply(
   }
   const fileId = crypto.randomUUID();
   const path = coverObjectPath(article.id, fileId);
-  const { error: uploadError } = await db.storage
-    .from(COVER_BUCKET)
-    .upload(path, bytes, { contentType: "image/jpeg", upsert: false, cacheControl: "86400" });
+  const { error: uploadError } = await db.storage.from(COVER_BUCKET).upload(path, bytes, {
+    contentType: "image/jpeg",
+    upsert: false,
+    cacheControl: "86400",
+  });
   if (uploadError) {
     console.error("[editorial-admin] cover upload failed", uploadError.message);
     return json(req, { error: "Não foi possível salvar a capa. A capa anterior foi mantida." }, 502);
@@ -1624,7 +1745,9 @@ async function coverApply(
     await db.storage.from(COVER_BUCKET).remove([path]);
     return json(
       req,
-      { error: "O artigo mudou antes da aplicação. A capa anterior foi mantida; recarregue a página." },
+      {
+        error: "O artigo mudou antes da aplicação. A capa anterior foi mantida; recarregue a página.",
+      },
       409,
     );
   }
@@ -1651,7 +1774,9 @@ Deno.serve(async (req) => {
   } catch {
     return json(req, { error: "invalid_json" }, 400);
   }
-  const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  const db = createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { persistSession: false },
+  });
   const actor = await actorFor(db, req);
   if (!actor) return json(req, { error: "Acesso não autorizado." }, 403);
   const action = str(body.action, 40);
@@ -1782,7 +1907,11 @@ Deno.serve(async (req) => {
         db.from("editorial_briefs").select("article_id, archetype, status, primary_intent, quality_report").limit(300),
       ]);
       if (videos.error || articles.error || briefs.error) throw new Error("editorial_workspace_read_failed");
-      return json(req, { videos: videos.data ?? [], articles: articles.data ?? [], briefs: briefs.data ?? [] });
+      return json(req, {
+        videos: videos.data ?? [],
+        articles: articles.data ?? [],
+        briefs: briefs.data ?? [],
+      });
     }
     if (action === "video-save") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
@@ -1817,7 +1946,9 @@ Deno.serve(async (req) => {
         if (count)
           return json(
             req,
-            { error: "Despublique os artigos ligados a este vídeo antes de alterar sua transcrição ou arquivá-lo." },
+            {
+              error: "Despublique os artigos ligados a este vídeo antes de alterar sua transcrição ou arquivá-lo.",
+            },
             409,
           );
       }
@@ -1852,7 +1983,11 @@ Deno.serve(async (req) => {
         thumbnailVariant: thumbnail.variant ?? "unavailable_fallback_required",
         ambiguousBike: detection.ambiguous,
       });
-      return json(req, { video: data, bikeDetection: detection, thumbnailVariant: thumbnail.variant });
+      return json(req, {
+        video: data,
+        bikeDetection: detection,
+        thumbnailVariant: thumbnail.variant,
+      });
     }
     if (action === "articles") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
@@ -1923,7 +2058,7 @@ Deno.serve(async (req) => {
         related_bike_ids: video.related_bike_ids,
         og_image_url: video.thumbnail_url || bike?.image_url || EDITORIAL_OG_FALLBACK,
         content_type: video.content_type,
-        foundation_required: true,
+        foundation_required: false,
         created_by: actor.id,
         updated_by: actor.id,
       };
@@ -1939,38 +2074,31 @@ Deno.serve(async (req) => {
       if (error || !data) return json(req, { error: "Não foi possível criar o artigo." }, 409);
       return json(req, { article: data });
     }
-    if (action === "generate" || action === "outline-only") {
+    if (["outline-only", "brief-regenerate", "brief-generate", "draft-write", "qa-run"].includes(action)) {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
-      return generateStream(req, db, actor, body, action === "outline-only");
-    }
-    if (action === "brief-regenerate" || action === "draft-write" || action === "qa-run") {
-      if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
-      return stageStream(
+      return json(
         req,
-        db,
-        actor,
-        body,
-        action === "brief-regenerate" ? "outline" : action === "draft-write" ? "draft" : "qa",
+        {
+          error: "O fluxo foi simplificado. Recarregue a página e use Gerar artigo.",
+        },
+        410,
       );
     }
-    if (action === "brief-generate") {
-      if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão ou ID inválido." }, 403);
-      const article = await articleById(db, body.id);
-      if (!article || article.status === "published") return json(req, { error: "Rascunho não encontrado." }, 404);
-      const video = await videoById(db, article.video_id);
-      if (!video) return json(req, { error: "Vídeo não encontrado." }, 404);
-      try {
-        return json(req, { brief: await generateBrief(db, actor, article, video) });
-      } catch (e) {
-        return json(req, { error: errorMessage(e) }, 422);
-      }
+    if (action === "generate") {
+      if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
+      return generateStream(req, db, actor, body);
     }
     if (action === "cover-generate" || action === "cover-apply") {
-      if (!canContent(actor) || !uuid(body.id) || !Number.isInteger(body.revision)) {
+      if (!canContent(actor) || !uuid(body.id) || !Number.isInteger(body.revision))
         return json(req, { error: "Sem permissão, ID ou revisão inválidos." }, 403);
-      }
       const article = await articleById(db, body.id);
       if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
+      if (
+        article.foundation_required ||
+        article.validation_errors.length ||
+        article.blocks.filter((b) => b.type === "text" && b.text?.trim()).length < 2
+      )
+        return json(req, { error: "Gere o artigo antes de trocar a capa." }, 422);
       if (article.revision !== body.revision)
         return json(req, { error: "O artigo foi alterado em outra aba. Recarregue a página." }, 409);
       return action === "cover-generate"
@@ -2050,7 +2178,13 @@ Deno.serve(async (req) => {
           brief.quality_report?.articleQaPass !== true ||
           article.validation_errors.length > 0
         )
-          return json(req, { error: "O artigo ainda não está pronto para publicar. Gere o artigo novamente." }, 422);
+          return json(
+            req,
+            {
+              error: "O artigo ainda não está pronto para publicar. Gere o artigo novamente.",
+            },
+            422,
+          );
         let coverFile = "";
         try {
           coverFile = new URL(article.og_image_url).searchParams.get("file") ?? "";
@@ -2058,19 +2192,40 @@ Deno.serve(async (req) => {
           /* invalid cover URL */
         }
         if (!articleReferencesCover(article.og_image_url, SUPABASE_URL, article.id, coverFile))
-          return json(req, { error: "A capa ainda não está pronta. Conclua a geração do artigo." }, 422);
+          return json(
+            req,
+            {
+              error: "A capa ainda não está pronta. Conclua a geração do artigo.",
+            },
+            422,
+          );
         const { data, error } = await db
           .from("editorial_articles")
-          .update({ status: "published", indexable: true, published_by: actor.id, updated_by: actor.id })
+          .update({
+            status: "published",
+            indexable: true,
+            published_by: actor.id,
+            updated_by: actor.id,
+          })
           .eq("id", article.id)
           .eq("revision", Number(body.revision))
           .select("*")
           .maybeSingle();
         if (error || !data)
-          return json(req, { error: "O artigo mudou antes da publicação. Recarregue e tente novamente." }, 409);
-        await log(db, actor, "article_published", "article", article.id, { briefVersion: brief.version });
+          return json(
+            req,
+            {
+              error: "O artigo mudou antes da publicação. Recarregue e tente novamente.",
+            },
+            409,
+          );
+        await log(db, actor, "article_published", "article", article.id, {
+          briefVersion: brief.version,
+        });
         return json(req, { article: data });
       }
+      if (target === "published" && article.validation_errors.length > 0)
+        return json(req, { error: "Gere o artigo novamente antes de publicar." }, 422);
       let patch: Body = { status: target, updated_by: actor.id };
       if (target === "published") {
         // Automatic QA immediately before going live; only an empty/unreliable article is refused.
@@ -2087,7 +2242,9 @@ Deno.serve(async (req) => {
         if (errors.length)
           return json(
             req,
-            { error: "Este artigo ainda não tem conteúdo suficiente para ir ao ar. Use Regenerar artigo." },
+            {
+              error: "Este artigo ainda não tem conteúdo suficiente para ir ao ar. Use Regenerar artigo.",
+            },
             422,
           );
         patch = {
@@ -2118,33 +2275,28 @@ Deno.serve(async (req) => {
       if (error?.code === "23505" && target === "published") {
         ({ data, error } = await db
           .from("editorial_articles")
-          .update({ ...patch, slug: `${String(patch.slug).slice(0, 100)}-${article.video_id.toLowerCase()}` })
+          .update({
+            ...patch,
+            slug: `${String(patch.slug).slice(0, 100)}-${article.video_id.toLowerCase()}`,
+          })
           .eq("id", article.id)
           .eq("revision", Number(body.revision))
           .select("*")
           .maybeSingle());
       }
       if (error || !data)
-        return json(req, { error: "Não foi possível alterar o status. Recarregue a página e tente novamente." }, 409);
+        return json(
+          req,
+          {
+            error: "Não foi possível alterar o status. Recarregue a página e tente novamente.",
+          },
+          409,
+        );
       return json(req, { article: data });
     }
     if (action === "compile-article") {
-      // "Regenerar artigo": same orchestration as the first generation, into the same draft.
       if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão editorial." }, 403);
-      const article = await articleById(db, body.id);
-      if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
-      if (article.status === "published") return json(req, { error: "Mude para Rascunho antes de regenerar." }, 409);
-      const video = await videoById(db, article.video_id);
-      if (!video || (video.transcript ?? "").trim().length < 200)
-        return json(req, { error: "Não conseguimos gerar o artigo. Tente novamente." }, 422);
-      try {
-        const generated = await generateInto(db, actor, article, video, () => {});
-        return json(req, {
-          article: article.foundation_required ? await qualityAndPublish(db, actor, generated, video) : generated,
-        });
-      } catch {
-        return json(req, { error: "Não conseguimos gerar o artigo. Tente novamente." }, 422);
-      }
+      return stageStream(req, db, actor, body, "article");
     }
     if (["archive-article", "delete-article"].includes(action)) {
       if (!canContent(actor) || !uuid(body.id)) return json(req, { error: "Sem permissão ou ID inválido." }, 403);
@@ -2152,7 +2304,13 @@ Deno.serve(async (req) => {
       if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
       if (action === "delete-article") {
         if (actor.role !== "admin" || article.status !== "archived" || body.confirm !== article.slug) {
-          return json(req, { error: "Exclusão exige Admin, artigo arquivado e confirmação do endereço." }, 403);
+          return json(
+            req,
+            {
+              error: "Exclusão exige Admin, artigo arquivado e confirmação do endereço.",
+            },
+            403,
+          );
         }
         const { data: references, error: referencesError } = await db
           .from("editorial_articles")
@@ -2169,7 +2327,9 @@ Deno.serve(async (req) => {
           .eq("revision", Number(body.revision));
         if (error) throw new Error("article_delete_failed");
         if (count !== 1) return json(req, { error: "O artigo mudou. Recarregue antes de excluir." }, 409);
-        await log(db, actor, "article_deleted", "article", article.id, { slug: article.slug });
+        await log(db, actor, "article_deleted", "article", article.id, {
+          slug: article.slug,
+        });
         return json(req, { ok: true });
       }
       const { data, error } = await db
@@ -2238,7 +2398,13 @@ Deno.serve(async (req) => {
     }
     if (action === "sync-now") {
       // Intentionally not proxied: the existing bike-panel remains the sole manual-sync owner.
-      return json(req, { error: "Use o painel de bikes existente para sincronizar a planilha." }, 409);
+      return json(
+        req,
+        {
+          error: "Use o painel de bikes existente para sincronizar a planilha.",
+        },
+        409,
+      );
     }
     return json(req, { error: "Ação desconhecida." }, 400);
   } catch (e) {
