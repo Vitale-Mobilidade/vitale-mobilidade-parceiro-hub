@@ -52,6 +52,7 @@ async function readDiversityCorpus(db: SupabaseClient, currentId: string) {
 import {
   completeEditorialDraft,
   detectContentType,
+  detectArticleBikes,
   detectEditorialBikes,
   EDITORIAL_OG_FALLBACK,
   layoutArticle,
@@ -842,9 +843,9 @@ async function generateInto(
   try {
     progress("Identificando bikes…");
     const catalog = await bikeCandidates(db);
-    const detection = detectEditorialBikes(video.title, video.transcript ?? "", catalog);
+    const detection = detectArticleBikes(video.title, video.transcript ?? "", catalog);
     const primaryBikeId = detection.primaryBikeId ?? video.primary_bike_id ?? null;
-    const relatedBikeIds = [...new Set([...detection.relatedBikeIds, ...video.related_bike_ids])]
+    const relatedBikeIds = [...new Set(detection.relatedBikeIds)]
       .filter((id) => id !== primaryBikeId && catalog.some((bike) => bike.bike_id === id))
       .slice(0, 6);
     const bikeIds = [primaryBikeId, ...relatedBikeIds].filter(Boolean) as string[];
