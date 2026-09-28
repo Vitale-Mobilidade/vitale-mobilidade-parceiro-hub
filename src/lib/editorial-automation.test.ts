@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { detectContentType, detectEditorialBikes, layoutArticle } from "../../supabase/functions/_shared/editorial-automation";
-import { autoRepairArticle, blocksToMarkdown, hasEditorialDistance, markdownToSections, VIDEO_META_RE } from "../../supabase/functions/_shared/editorial-contract";
+import {
+  detectArticleBikes,
+  detectContentType,
+  detectEditorialBikes,
+  layoutArticle,
+} from "../../supabase/functions/_shared/editorial-automation";
+import {
+  autoRepairArticle,
+  blocksToMarkdown,
+  hasEditorialDistance,
+  markdownToSections,
+  VIDEO_META_RE,
+} from "../../supabase/functions/_shared/editorial-contract";
 
 const bikes = [
   { bike_id: "v9_max", name: "V9 Max" },
@@ -26,19 +37,36 @@ describe("editorial automation", () => {
     expect(found.ambiguous).toBe(false);
   });
 
+  it("links article subjects from the title without transcript-only bikes", () => {
+    expect(detectArticleBikes("Teste da V8 Pro", "Comparando com a V9 Max S.", bikes)).toEqual({
+      primaryBikeId: "v8_pro",
+      relatedBikeIds: [],
+      ambiguous: false,
+    });
+    expect(detectArticleBikes("V8 Pro vs V9 Max S", "Também existe a V9 Max.", bikes).relatedBikeIds).toEqual([
+      "v9_max_s",
+    ]);
+  });
+
   it("chooses content type from the video title", () => {
     expect(detectContentType("V8 Pro vs V9 Max: comparativo")).toBe("comparison");
     expect(detectContentType("Guia de compra")).toBe("guide");
   });
 
   it("interleaves comparison, both Radars, complementary video and Quiz before FAQ", () => {
-    const blocks = layoutArticle({ sections: ["A", "B", "C", "D", "E"].map(text), videoId: "pLt9AmDyJ9Q",
-      bikeId: "v9_max_s", relatedBikeIds: ["v9_max_ufofast_duas_baterias"], contentType: "comparison",
-      offerBikeIds: new Set(["v9_max_s", "v9_max_ufofast_duas_baterias"]), hasFaq: true });
-    const types = blocks.map(b => b.type);
-    expect(types.filter(t => t === "radar")).toHaveLength(2);
+    const blocks = layoutArticle({
+      sections: ["A", "B", "C", "D", "E"].map(text),
+      videoId: "pLt9AmDyJ9Q",
+      bikeId: "v9_max_s",
+      relatedBikeIds: ["v9_max_ufofast_duas_baterias"],
+      contentType: "comparison",
+      offerBikeIds: new Set(["v9_max_s", "v9_max_ufofast_duas_baterias"]),
+      hasFaq: true,
+    });
+    const types = blocks.map((b) => b.type);
+    expect(types.filter((t) => t === "radar")).toHaveLength(2);
     expect(types).toContain("comparator");
-    expect(blocks.find(b => b.type === "video")?.heading).toBe("Assista ao comparativo completo");
+    expect(blocks.find((b) => b.type === "video")?.heading).toBe("Assista ao comparativo completo");
     expect(types).not.toContain("cta");
     expect(types.indexOf("comparator")).toBeLessThan(types.indexOf("radar"));
     expect(types.indexOf("radar")).toBeLessThan(types.lastIndexOf("text"));
@@ -48,17 +76,34 @@ describe("editorial automation", () => {
   });
 
   it("never adds Radar or purchase CTA without a current offer", () => {
-    const blocks = layoutArticle({ sections: [text("A"), text("B")], videoId: "3impuq3th8g", bikeId: "v9_max",
-      offerBikeIds: new Set(), hasFaq: false });
-    expect(blocks.map(b => b.type)).toEqual(["text", "text", "video", "quiz"]);
+    const blocks = layoutArticle({
+      sections: [text("A"), text("B")],
+      videoId: "3impuq3th8g",
+      bikeId: "v9_max",
+      offerBikeIds: new Set(),
+      hasFaq: false,
+    });
+    expect(blocks.map((b) => b.type)).toEqual(["text", "text", "video", "quiz"]);
   });
 });
 
 describe("automatic QA", () => {
-  const base = { title: "V9 Max S vs Ufofast: qual faz mais sentido?", slug: null, summary: "Duas bikes com duas baterias. Custa R$ 7.999 hoje.",
-    faq: [{ question: "Tem garupa?", answer: "", sourceExcerpt: "" }], seo_title: "", meta_description: "", og_title: "", og_description: "", og_image_url: null };
+  const base = {
+    title: "V9 Max S vs Ufofast: qual faz mais sentido?",
+    slug: null,
+    summary: "Duas bikes com duas baterias. Custa R$ 7.999 hoje.",
+    faq: [{ question: "Tem garupa?", answer: "", sourceExcerpt: "" }],
+    seo_title: "",
+    meta_description: "",
+    og_title: "",
+    og_description: "",
+    og_image_url: null,
+  };
   it("drops prices, links, empty FAQ, merges untitled 'Seção' and fills SEO/OG", () => {
-    const fixed = autoRepairArticle({ ...base, blocks: [text("Bateria"), { type: "text", heading: "Seção", text: "Veja https://x.y mais." }] }, "https://vitalemobilidade.com/og.webp");
+    const fixed = autoRepairArticle(
+      { ...base, blocks: [text("Bateria"), { type: "text", heading: "Seção", text: "Veja https://x.y mais." }] },
+      "https://vitalemobilidade.com/og.webp",
+    );
     expect(fixed.summary).not.toMatch(/R\$/);
     expect(fixed.faq).toEqual([]);
     expect(fixed.blocks).toHaveLength(1);
@@ -69,7 +114,7 @@ describe("automatic QA", () => {
   });
   it("round-trips the editor body as continuous markdown", () => {
     const md = blocksToMarkdown([text("Bateria e autonomia"), text("Conforto")]);
-    expect(markdownToSections(md).map(s => s.heading)).toEqual(["Bateria e autonomia", "Conforto"]);
+    expect(markdownToSections(md).map((s) => s.heading)).toEqual(["Bateria e autonomia", "Conforto"]);
   });
   it("flags meta commentary about the video", () => {
     expect(VIDEO_META_RE.test("Neste vídeo mostramos a bike")).toBe(true);
