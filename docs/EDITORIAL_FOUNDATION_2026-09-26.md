@@ -1,3 +1,45 @@
+# Refinamento Gemini e navegação de artigos — 28/09/2026
+
+Base de produção: d413b2f873b3f60a765c8a325f4db550fbeb2b63. Pedido: manter Gemini, desenvolver melhor o artigo antes do próximo teste feito pelo usuário; bikes antes de três destaques; quatro vídeos iniciais e Ver mais, com mobile compacto. Publicação autorizada na mesma conversa para continuidade dos ajustes; não gerar artigo pago nesta entrega.
+
+## Pré-implementação — estrutural (IA e SEO)
+
+| Perspectiva | Impacto, risco, dependência e recomendação                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Aumentar utilidade com fluxo simples. Risco: inflar texto. Depende da riqueza da fonte. Prosseguir com extensão flexível.                                                                          |
+| CTO         | Prompt compartilhado e ArticleView/loader SSR. Risco: perder links ao limitar lista. Depende de manter coleção completa. Prosseguir com details nativo, sem nova chamada/requisição.               |
+| IA          | Cobertura, voz e fidelidade. Risco: generalizações e fatos inventados ao alongar. Depende de instrução explícita sobre estimativas/opiniões/medidas. Prosseguir em uma resposta, sem etapas novas. |
+| Segurança   | Só texto tipado e links existentes. Risco: instruções da fonte e HTML arbitrário. Depende dos contratos atuais. Prosseguir preservando validação e permissões.                                     |
+| UX          | Bikes primeiro, três destaques, quatro vídeos e expansão. Risco: listas longas mobile e disclosure inacessível. Depende de summary operável por teclado e cards compactos. Prosseguir.             |
+| CX          | Usuário gera próximo teste. Risco: resultado não demonstrado de prompt. Depende de avaliar o próximo artigo real. Prosseguir sem teste pago do agente.                                             |
+| Growth      | Conteúdo útil, links SSR completos e sem promessa de ranking por extensão. Risco: filler e mudanças de URL. Depende de preservar canonical/slug publicados. Prosseguir.                            |
+| PMO/QA      | Mudança pequena de implementação, com validação proporcional. Risco: integração de prompt e UI. Depende de teste SSR, typecheck/build e pnpm validate. Prosseguir; rollback pela base acima.       |
+
+## Decisão consolidada
+
+Escopo: orientar 7–9 mil caracteres apenas como referência flexível para fontes ricas, aprofundar detalhes pertinentes, evitar relatos do vídeo e extrapolações. Manter google/gemini-3.8-flash, transporte e custo de uma geração. Limitar destaques no loader e render, priorizar bikes. Renderizar quatro vídeos mais details com todos os restantes; mobile em cards horizontais compactos. Sem migração, alteração de artigos existentes, geração de capa ou regeneração paga.
+
+Conflito/trade-off: maior cobertura pode aumentar tokens, tempo e custo de saída; extensão rígida levaria a repetição. Decisão: prioridade à evidência e à utilidade, sem mínimo obrigatório. Native details recolhe vídeos e preserva links SSR sem JavaScript adicional.
+
+Aceite: prompt aplicado à geração e reescrita; bikes precedem até três destaques; 0–4 vídeos sem controle desnecessário, 5+ com quatro iniciais e todos os restantes acessíveis; teclado e mobile; validar sem crédito de IA. Rollback: restaurar os quatro arquivos de código da base e republicar.
+
+## Pós-implementação
+
+| Perspectiva | Status | Evidência                                                                                                                                                                                                                    |
+| ----------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Pass   | Mesmo fluxo simples e modelo; extensão flexível por fonte.                                                                                                                                                                   |
+| CTO         | Pass   | Links completos no SSR; details nativo; typecheck e build passaram.                                                                                                                                                          |
+| IA          | Pass   | Instruções compartilhadas em geração e reescrita, contra estimativas transformadas em médias, procedimentos incertos, sensores/jornadas inventados; sem etapa adicional. Qualidade real será avaliada pelo teste do usuário. |
+| Segurança   | Pass   | Sem novas permissões, banco, secrets ou HTML arbitrário.                                                                                                                                                                     |
+| UX          | Pass   | Bikes antes de destaques, limite três na rota e renderer, summary nativo com foco visível, cards mobile horizontais.                                                                                                         |
+| CX          | Pass   | Sem geração paga nem alteração dos artigos publicados; próximo teste manual do usuário.                                                                                                                                      |
+| Growth      | Pass   | Todos os vídeos permanecem em anchors SSR; nenhuma mudança de canonical, slug ou dados de preço. Comprimento não é promessa de ranking.                                                                                      |
+| PMO/QA      | Pass   | 17 testes editoriais direcionados e 5 testes SSR passaram; pnpm validate passou (typecheck, 47 regressões, build).                                                                                                           |
+
+Fechamento local: sem divergência material pendente. O teste real do próximo artigo é necessário para medir cobertura, fidelidade e custo; o ajuste de prompt por si só não comprova melhora. Rollback: restaurar ArticleView, loader de conteudos/$slug, editorial-contract e editorial-admin/index da base d413b2f e republicar. Publicação direta no editor, sem pedido ao agente pago do Lovable, sem migração ou chamada de geração. Status: preparado para publicação autorizada.
+
+---
+
 # Gemini Flash como padrão editorial — 28/09/2026
 
 ## Contexto e autorização
