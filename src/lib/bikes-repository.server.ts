@@ -2,6 +2,7 @@
 // via RPC pública read-only. Nunca usa service role nem lê tabelas diretamente.
 // Substitui a leitura direta do CSV da planilha nas páginas /bikes e /bikes/$slug.
 import { SLUG_RE, type CatalogBike } from "./editorial-bikes";
+import { resolveBikeImage } from "./bike-catalog";
 
 const TIMEOUT_MS = 6000;
 const TTL_MS = 5 * 60 * 1000;
@@ -50,7 +51,7 @@ export function mapCatalogRow(row: RpcRow): CatalogBike | null {
     autonomy: text(row.autonomy),
     capacity: text(row.capacity),
     description: text(row.description),
-    image: text(row.image),
+    image: resolveBikeImage(bikeId, row.image),
     category: text(row.category),
   };
 }
