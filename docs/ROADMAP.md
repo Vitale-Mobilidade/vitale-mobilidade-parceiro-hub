@@ -472,3 +472,6 @@ continuam não implementadas e sem links públicos.
 - [ ] Mapa SEO para eventuais redirects do legado.
 
 Riscos residuais (não bloqueantes): erro preexistente de console `gtag is not defined` do GTM; posições `ferramenta_*` a cadastrar/validar no GTM. Rollback: commit-base `9ca39e5cdd92d45813db1b5299fd42365452a4ff`.
+
+## Delta local — formulário Criar artigo, 28/09/2026
+Implementado e validado localmente: formulário por link, título/transcrição manuais, aviso de artigo existente, seleção opcional de Bikes e geração de capa por checkbox desmarcada. Sem publicação ou migração de banco. Frontend e editorial-admin devem ser aplicados juntos. Ver [registro e revisão](ARTICLE_CREATE_FORM_2026-09-28.md).

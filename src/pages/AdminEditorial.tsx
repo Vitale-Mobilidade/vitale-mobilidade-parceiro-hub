@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -19,6 +19,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
+import { filterArticleBikes, applyRequestedArticleCover } from "@/lib/admin-article-create";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import {
   blocksToMarkdown,
@@ -861,14 +862,6 @@ export function AdminNewArticlePage({ initialVideoId }: { initialVideoId?: strin
 function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const transcriptDrafts = useRef(new Map<string, string>());
-  const catalogQuery = useQuery({
-    queryKey: ["admin", "video-catalog"],
-    queryFn: getSheetVideoCatalog,
-    staleTime: ADMIN_STALE_MS,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
   const workspaceQuery = useQuery({
     queryKey: ["admin", "editorial-workspace"],
     queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"),
@@ -876,64 +869,42 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
     refetchOnWindowFocus: false,
     retry: false,
   });
-  const catalog = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
-  const savedVideos = useMemo(() => workspaceQuery.data?.videos ?? [], [workspaceQuery.data?.videos]);
-  const [videoSource, setVideoSource] = useState<"library" | "url">("library");
-  const [videoId, setVideoId] = useState(initialVideoId ?? "");
-  const [videoSearch, setVideoSearch] = useState("");
-  const [manualUrl, setManualUrl] = useState("");
+  const bikesQuery = useQuery({
+    queryKey: ["admin", "bikes"],
+    queryFn: () => adminCall<{ bikes: AdminBike[]; offers: AdminOffer[] }>("bikes"),
+    staleTime: ADMIN_STALE_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const [manualUrl, setManualUrl] = useState(initialVideoId ? `https://www.youtube.com/watch?v=${initialVideoId}` : "");
   const [articleTitle, setArticleTitle] = useState("");
-  const [createdId, setCreatedId] = useState("");
+  const [bikeSearch, setBikeSearch] = useState("");
+  const [bikeIds, setBikeIds] = useState<string[]>([]);
   const [transcript, setTranscript] = useState("");
+  const [generateCover, setGenerateCover] = useState(false);
+  const [createdId, setCreatedId] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const videos = useMemo(() => {
-    const merged = [...catalog];
-    for (const video of savedVideos)
-      if (!merged.some((item) => item.videoId === video.youtube_id))
-        merged.push({
-          videoId: video.youtube_id,
-          title: video.title,
-          date: video.published_on,
-          url: video.youtube_url,
-          thumbnail: video.thumbnail_url ?? "",
-          bikeIds: video.related_bike_ids,
-          unmatched: [],
-        });
-    return merged;
-  }, [catalog, savedVideos]);
-  const filteredVideos = useMemo(() => filterAdminVideos(videos, videoSearch), [videos, videoSearch]);
-  const existingManualVideo =
-    videoSource === "url" ? (videos.find((video) => video.videoId === parseYoutubeId(manualUrl)) ?? null) : null;
-  const selected =
-    videoSource === "library"
-      ? (videos.find((video) => video.videoId === videoId) ?? null)
-      : (existingManualVideo ?? manualAdminVideo(manualUrl, articleTitle));
-  const selectedVideoId = selected?.videoId ?? "";
-
-  useEffect(() => {
-    if (!selectedVideoId) {
-      setTranscript("");
-      return;
-    }
-    const saved = savedVideos.find((video) => video.youtube_id === selectedVideoId);
-    setTranscript(transcriptDrafts.current.get(selectedVideoId) ?? saved?.transcript ?? "");
-  }, [selectedVideoId, savedVideos]);
+  const selectedVideoId = parseYoutubeId(manualUrl);
+  const existingArticle = workspaceQuery.data?.articles.find((article) => article.video_id === selectedVideoId);
+  const bikes = bikesQuery.data?.bikes ?? [];
+  const filteredBikes = filterArticleBikes(bikes, bikeSearch);
 
   async function create(event: FormEvent) {
     event.preventDefault();
     setError("");
+    const selected = manualAdminVideo(manualUrl, articleTitle);
     if (!selected) {
-      setError(
-        videoSource === "url" ? "Informe um link válido do vídeo e um título." : "Escolha um vídeo da biblioteca.",
-      );
+      setError("Informe um link válido do vídeo e um título.");
       return;
     }
     setBusy("Gerando artigo…");
+    let savedId = "";
     try {
       const result = await adminStream<{
         article: EditorialArticle;
         brief: BriefRow | null;
+        reused?: boolean;
       }>(
         "generate",
         {
@@ -941,173 +912,177 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
           title: selected.title,
           articleTitle: articleTitle.trim(),
           transcript,
+          bikeIds,
         },
-        () => setBusy("Gerando artigo…"),
+        setBusy,
       );
-      setCreatedId(result.article.id);
+      savedId = result.article.id;
+      setCreatedId(savedId);
+      if (generateCover && !result.reused && result.article.status === "draft") setBusy("Gerando capa…");
+      await applyRequestedArticleCover(result.article, generateCover, result.reused === true);
       await queryClient.invalidateQueries({
         queryKey: ["admin", "editorial-workspace"],
       });
-      await navigate({
-        to: "/admin/conteudos/$id",
-        params: { id: result.article.id },
-      });
+      await navigate({ to: "/admin/conteudos/$id", params: { id: savedId } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente.");
+      const message = e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente.";
+      setError(
+        savedId
+          ? `O artigo foi salvo, mas a operação não foi concluída. ${message} Abra o artigo salvo para continuar.`
+          : message,
+      );
+    } finally {
       setBusy("");
     }
   }
   return (
     <>
       <Heading title="Criar artigo" />
-      {(error || (videoSource === "library" && catalogQuery.error) || workspaceQuery.error) && (
-        <Notice danger>
-          {error ||
-            (workspaceQuery.error
-              ? queryError(workspaceQuery.error, "Não foi possível carregar os vídeos.")
-              : "A planilha de vídeos está indisponível. Você ainda pode usar um vídeo já importado.")}
-        </Notice>
-      )}
+      {error && <Notice danger>{error}</Notice>}
       <form
         onSubmit={create}
         className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-9"
       >
-        <fieldset disabled={Boolean(busy)} className="space-y-4">
-          <legend className="text-base font-semibold">Qual vídeo será usado?</legend>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              aria-pressed={videoSource === "library"}
-              className={videoSource === "library" ? BTN : OUTLINE}
-              onClick={() => {
-                setVideoSource("library");
-                setError("");
-              }}
-            >
-              Escolher vídeo
-            </button>
-            <button
-              type="button"
-              aria-pressed={videoSource === "url"}
-              className={videoSource === "url" ? BTN : OUTLINE}
-              onClick={() => {
-                setVideoSource("url");
-                setError("");
-              }}
-            >
-              Colar link
-            </button>
-          </div>
-          {videoSource === "library" ? (
-            <div>
-              <label htmlFor="article-video-search" className="block text-sm font-semibold">
-                Vídeo
-              </label>
-              <input
-                id="article-video-search"
-                type="search"
-                autoComplete="off"
-                className={`${INPUT} mt-2 py-3`}
-                value={videoSearch}
-                onChange={(e) => setVideoSearch(e.target.value)}
-                placeholder="Ex.: V9 Max, autonomia, teste…"
-              />
-              <p role="status" className="mt-2 text-xs text-muted-foreground">
-                {catalogQuery.isPending || workspaceQuery.isPending
-                  ? "Carregando vídeos…"
-                  : `${filteredVideos.length} de ${videos.length} vídeos encontrados`}
+        <fieldset disabled={Boolean(busy) || Boolean(createdId)} className="min-w-0 space-y-6">
+          <label className="block text-base font-semibold">
+            Link do vídeo
+            <input
+              type="url"
+              className={`${INPUT} mt-2 py-3`}
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=…"
+              required
+            />
+          </label>
+          {manualUrl && !selectedVideoId && (
+            <p role="alert" className="text-sm text-red-700">
+              Use um link válido do YouTube ou youtu.be.
+            </p>
+          )}
+          {workspaceQuery.error && <Notice danger>Não foi possível verificar se este vídeo já tem artigo.</Notice>}
+          {existingArticle && (
+            <Notice>
+              Já existe um artigo deste vídeo.{" "}
+              <Link to="/admin/conteudos/$id" params={{ id: existingArticle.id }} className="font-semibold underline">
+                Abrir artigo existente
+              </Link>
+            </Notice>
+          )}
+          <label className="block text-base font-semibold">
+            Título
+            <input
+              className={`${INPUT} mt-2 py-3`}
+              value={articleTitle}
+              onChange={(e) => setArticleTitle(e.target.value)}
+              placeholder="Título do artigo"
+              required
+              minLength={3}
+              maxLength={200}
+            />
+          </label>
+          <div className="space-y-2">
+            <label htmlFor="article-bike-search" className="block text-base font-semibold">
+              Bikes <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <input
+              id="article-bike-search"
+              type="search"
+              autoComplete="off"
+              className={INPUT}
+              value={bikeSearch}
+              onChange={(e) => setBikeSearch(e.target.value)}
+              placeholder="Buscar bike por nome…"
+              aria-controls="article-bike-results"
+            />
+            <p className="text-xs text-muted-foreground">
+              Selecione até 7 bikes. A primeira selecionada será a principal.
+            </p>
+            {bikeIds.length > 0 && (
+              <p role="status" className="text-sm text-emerald-900">
+                Selecionadas: {bikeIds.map((id) => bikes.find((bike) => bike.bike_id === id)?.name ?? id).join(", ")}
               </p>
-              <div
-                aria-label="Resultados da busca de vídeos"
-                className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border border-line p-2"
-              >
-                {filteredVideos.map((video) => (
-                  <button
-                    key={video.videoId}
-                    type="button"
-                    aria-pressed={videoId === video.videoId}
-                    className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${videoId === video.videoId ? "bg-emerald-50 font-semibold text-emerald-900" : ""}`}
-                    onClick={() => {
-                      setVideoId(video.videoId);
-                      setArticleTitle(video.title);
-                      setError("");
-                    }}
-                  >
-                    {video.title}
-                  </button>
-                ))}
-                {!catalogQuery.isPending && !workspaceQuery.isPending && filteredVideos.length === 0 && (
-                  <p className="p-3 text-sm text-muted-foreground">
-                    Nenhum vídeo encontrado. Tente outro termo ou cole o link.
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <label className="block text-sm font-semibold">
-                Link do vídeo no YouTube
-                <input
-                  type="url"
-                  className={`${INPUT} mt-2 py-3`}
-                  value={manualUrl}
-                  onChange={(e) => {
-                    setManualUrl(e.target.value);
-                  }}
-                  placeholder="https://www.youtube.com/watch?v=…"
-                  required
-                />
-              </label>
-              {manualUrl && !manualAdminVideo(manualUrl, "Título provisório") && (
-                <p role="alert" className="text-sm text-red-700">
-                  Use um link válido do YouTube ou youtu.be.
+            )}
+            <div
+              id="article-bike-results"
+              role="group"
+              aria-label="Bikes relacionadas ao vídeo"
+              className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line p-2"
+            >
+              {bikesQuery.isPending && (
+                <p role="status" className="p-3 text-sm text-muted-foreground">
+                  Carregando bikes…
                 </p>
               )}
+              {bikesQuery.error && (
+                <p role="alert" className="p-3 text-sm text-red-700">
+                  Não foi possível carregar as bikes. Você pode criar o artigo sem selecioná-las.
+                </p>
+              )}
+              {filteredBikes.map((bike) => (
+                <label
+                  key={bike.bike_id}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-emerald-50"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 shrink-0 accent-emerald-700"
+                    checked={bikeIds.includes(bike.bike_id)}
+                    disabled={!bikeIds.includes(bike.bike_id) && bikeIds.length >= 7}
+                    onChange={(e) =>
+                      setBikeIds((ids) =>
+                        e.target.checked ? [...ids, bike.bike_id] : ids.filter((id) => id !== bike.bike_id),
+                      )
+                    }
+                  />
+                  {bike.name}
+                </label>
+              ))}
+              {!bikesQuery.isPending && !bikesQuery.error && filteredBikes.length === 0 && (
+                <p className="p-3 text-sm text-muted-foreground">Nenhuma bike encontrada.</p>
+              )}
             </div>
-          )}
+          </div>
+          <label className="block text-base font-semibold">
+            Transcrição
+            <textarea
+              className={`${INPUT} mt-2 min-h-72 leading-7`}
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              required
+              minLength={200}
+              maxLength={500000}
+              placeholder="Cole aqui a transcrição do vídeo."
+            />
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 shrink-0 accent-emerald-700"
+              checked={generateCover}
+              onChange={(e) => setGenerateCover(e.target.checked)}
+            />
+            <span>
+              <span className="block font-semibold">Gerar uma nova imagem de capa</span>
+              <span className="text-sm text-muted-foreground">
+                Criar com IA ao gerar o artigo. Consome créditos de imagem.
+              </span>
+            </span>
+          </label>
         </fieldset>
-        <label className="block text-base font-semibold">
-          Título
-          <input
-            className={`${INPUT} mt-2 py-3`}
-            value={articleTitle}
-            onChange={(e) => setArticleTitle(e.target.value)}
-            placeholder={selected?.title ?? "Título do artigo"}
-            required
-            minLength={3}
-            maxLength={200}
-            disabled={Boolean(busy)}
-          />
-        </label>
-        <label className="block text-base font-semibold">
-          Transcrição
-          <textarea
-            className={`${INPUT} mt-2 min-h-72 leading-7`}
-            value={transcript}
-            onChange={(e) => {
-              setTranscript(e.target.value);
-              if (selectedVideoId) transcriptDrafts.current.set(selectedVideoId, e.target.value);
-            }}
-            required
-            minLength={200}
-            disabled={Boolean(busy)}
-            placeholder="Cole aqui a transcrição do vídeo."
-          />
-        </label>
-        {selectedVideoId && savedVideos.some((video) => video.youtube_id === selectedVideoId && video.transcript) && (
-          <p className="text-xs text-muted-foreground">
-            A transcrição preenchida vem do cadastro deste vídeo. Você pode substituir pelo texto correto antes de
-            gerar.
-          </p>
-        )}
-        <button type="submit" className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">
-          {busy || "Gerar artigo"}
+        <button
+          type="submit"
+          className={`${BTN} w-full py-3.5 text-base`}
+          disabled={Boolean(busy) || Boolean(createdId)}
+          aria-live="polite"
+        >
+          {busy || (createdId ? "Artigo salvo" : "Gerar artigo")}
         </button>
         {createdId && error && (
           <Link
             to="/admin/conteudos/$id"
             params={{ id: createdId }}
-            className="block text-center text-emerald-800 underline"
+            className="block text-center font-semibold text-emerald-800 underline"
           >
             Continuar artigo salvo
           </Link>
