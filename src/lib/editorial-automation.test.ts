@@ -122,7 +122,7 @@ describe("automatic QA", () => {
   });
   it("flags distant third-person source framing without flagging factual bike analysis", () => {
     expect(hasEditorialDistance("A VL20 é apresentada na avaliação da Vitale como outra versão.")).toBe(true);
-    expect(hasEditorialDistance("Nas configurações avaliadas, as duas usam 48 V.")).toBe(true);
+    expect(hasEditorialDistance("Nas configurações avaliadas, as duas usam 48 V.")).toBe(false);
     expect(hasEditorialDistance("O material analisado aponta 50 km.")).toBe(true);
     expect(hasEditorialDistance("A VL20 e a V9 Pro usam baterias de 48 V; a autonomia depende do uso.")).toBe(false);
     expect(hasEditorialDistance("Segundo a ficha do fabricante, a autonomia é de até 50 km.")).toBe(false);

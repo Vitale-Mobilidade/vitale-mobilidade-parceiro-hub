@@ -118,14 +118,60 @@ describe("article title and expert prose", () => {
       120,
     );
   });
-  it("flags review attribution while allowing useful test evidence and guides without bikes", () => {
-    expect(hasEditorialDistance("A suspensão recebeu uma impressão positiva ao longo do percurso.")).toBe(true);
-    expect(hasEditorialDistance("A percepção relatada é de alguma redução de força.")).toBe(true);
-    expect(hasEditorialDistance("O conforto se destacou nas primeiras impressões.")).toBe(true);
+  it("allows qualified observations, useful test evidence and guides without bikes", () => {
+    expect(hasEditorialDistance("A suspensão recebeu uma impressão positiva ao longo do percurso.")).toBe(false);
+    expect(hasEditorialDistance("A percepção relatada é de alguma redução de força.")).toBe(false);
+    expect(hasEditorialDistance("O conforto se destacou nas primeiras impressões.")).toBe(false);
     expect(
       hasEditorialDistance("Na subida com cerca de 130 kg, o painel indicou 33 km/h com auxílio dos pedais."),
     ).toBe(false);
     expect(hasEditorialDistance("Para escolher um acessório, confira sua finalidade e compatibilidade.")).toBe(false);
+  });
+});
+
+describe("editorial voice — contextual source narration", () => {
+  it.each([
+    "Gravar vídeo durante o trajeto exige um suporte firme para a câmera.",
+    "Uma câmera com boa estabilização melhora a qualidade do vídeo.",
+    "A transcrição automática pode errar nomes de modelos.",
+    "A bike foi apresentada como uma alternativa para deslocamentos urbanos.",
+    "A FT03 foi usada em trajetos noturnos no Morumbi.",
+    "Nas primeiras impressões, o banco pareceu confortável.",
+    "Nas configurações avaliadas, as duas bikes usam baterias de 48 V.",
+    "A suspensão recebeu uma impressão positiva no piso irregular.",
+    "A percepção relatada é de redução de força nas subidas.",
+    "O que o percurso urbano mostrou foi a importância da pressão dos pneus.",
+    "A gravação de vídeo exige espaço no cartão de memória.",
+    "Segundo a ficha do fabricante, a autonomia é de até 50 km.",
+    "No teste com 130 kg, o painel indicou 33 km/h com auxílio dos pedais.",
+    "Uma bike para entregas: conforto, autonomia e manutenção",
+  ])("allows independent subject prose: %s", (prose) => {
+    expect(hasEditorialDistance(prose)).toBe(false);
+  });
+
+  it.each([
+    "O vídeo mostra como a FT03 se comporta na subida.",
+    "O vídeo apresenta cinco motivos para comprar uma bike elétrica.",
+    "Neste vídeo, o apresentador explica o conforto da bike.",
+    "Nesse vídeo acompanhamos o trajeto noturno.",
+    "Durante o vídeo, a bike percorre ruas do Morumbi.",
+    "A gravação relata as impressões do condutor.",
+    "O motor é apresentado no vídeo como silencioso.",
+    "Os resultados foram mencionados na transcrição.",
+    "Segundo a transcrição, o percurso foi feito à noite.",
+    "De acordo com o vídeo, a bike tem bom conforto.",
+    "A transcrição descreve um passeio no Morumbi.",
+    "O material fornecido destaca a suspensão.",
+    "O material analisado aponta 50 km.",
+    "Na avaliação da Vitale, a bike mostrou boa autonomia.",
+    "As informações fornecidas pelo vídeo indicam boa autonomia.",
+    "O apresentador relata que a suspensão é confortável.",
+    "Quem conduzia achou o banco confortável.",
+    "O VÍDEO\n  MOSTRA a bike durante o trajeto.",
+    "O **vídeo** mostra a bike durante o trajeto.",
+    "Segundo a\n_transcrição_, a bike percorreu ruas do Morumbi.",
+  ])("flags explicit source narration: %s", (prose) => {
+    expect(hasEditorialDistance(prose)).toBe(true);
   });
 });
 
