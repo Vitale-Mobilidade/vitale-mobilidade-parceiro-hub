@@ -466,6 +466,30 @@ function Block({
   return null;
 }
 
+/** Compact on mobile; all video links remain in the SSR HTML, including the disclosure. */
+function RelatedVideoLink({ video }: { video: VideoCard }) {
+  return (
+    <a
+      href={video.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center overflow-hidden rounded-xl border border-line hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action sm:block"
+    >
+      <img
+        src={video.thumbnail}
+        alt=""
+        width={640}
+        height={360}
+        sizes="(max-width: 639px) 112px, 320px"
+        loading="lazy"
+        decoding="async"
+        className="aspect-video w-28 shrink-0 object-cover sm:w-full"
+      />
+      <span className="block min-w-0 p-3 text-sm font-semibold leading-snug sm:p-4 sm:text-base">{video.title}</span>
+    </a>
+  );
+}
+
 export function ArticleView({
   article,
   bikes,
@@ -658,29 +682,24 @@ export function ArticleView({
         {relatedVideos.length > 0 && (
           <section className="my-10">
             <h2 className="text-2xl font-bold">Outros vídeos da Vitale sobre esta bike</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {relatedVideos.map((video) => (
-                <a
-                  key={video.videoId}
-                  href={video.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="overflow-hidden rounded-xl border border-line hover:border-emerald-500"
-                >
-                  <img
-                    src={video.thumbnail}
-                    alt=""
-                    width={640}
-                    height={360}
-                    sizes="(max-width: 640px) 100vw, 320px"
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-video w-full object-cover"
-                  />
-                  <span className="block p-4 font-semibold">{video.title}</span>
-                </a>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+              {relatedVideos.slice(0, 4).map((video) => (
+                <RelatedVideoLink key={video.videoId} video={video} />
               ))}
             </div>
+            {relatedVideos.length > 4 && (
+              <details className="group mt-4 rounded-xl border border-line">
+                <summary className="cursor-pointer rounded-xl px-4 py-3 font-semibold text-action hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+                  <span className="group-open:hidden">Ver mais vídeos ({relatedVideos.length - 4})</span>
+                  <span className="hidden group-open:inline">Ver menos vídeos</span>
+                </summary>
+                <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4">
+                  {relatedVideos.slice(4).map((video) => (
+                    <RelatedVideoLink key={video.videoId} video={video} />
+                  ))}
+                </div>
+              </details>
+            )}
           </section>
         )}
       </article>
@@ -688,24 +707,6 @@ export function ArticleView({
         className="space-y-5 lg:sticky lg:top-28 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
         aria-label="Explore conteúdos relacionados"
       >
-        {sidebarArticles.length > 0 && (
-          <div className="rounded-2xl border border-line bg-card p-5">
-            <h2 className="text-lg font-bold">Artigos em destaque</h2>
-            <ul className="mt-3 divide-y divide-line">
-              {sidebarArticles.map((a) => (
-                <li key={a.id}>
-                  <a
-                    href={`/conteudos/${a.slug}`}
-                    className="flex min-h-12 items-center gap-2 py-3 font-semibold leading-snug hover:text-action focus-visible:ring-2 focus-visible:ring-action"
-                  >
-                    <BookOpen className="h-4 w-4 shrink-0 text-action" aria-hidden="true" />
-                    {a.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
         {connectedBikes.length > 0 && (
           <div className="rounded-2xl border border-line bg-card p-5">
             <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -721,6 +722,24 @@ export function ArticleView({
                     <BikeMedia src={bike.image} name={bike.name} className="h-12 w-16 shrink-0 rounded" />
                     <span className="min-w-0 flex-1 font-semibold">{bike.name}</span>
                     <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {sidebarArticles.length > 0 && (
+          <div className="rounded-2xl border border-line bg-card p-5">
+            <h2 className="text-lg font-bold">Artigos em destaque</h2>
+            <ul className="mt-3 divide-y divide-line">
+              {sidebarArticles.slice(0, 3).map((a) => (
+                <li key={a.id}>
+                  <a
+                    href={`/conteudos/${a.slug}`}
+                    className="flex min-h-12 items-center gap-2 py-3 font-semibold leading-snug hover:text-action focus-visible:ring-2 focus-visible:ring-action"
+                  >
+                    <BookOpen className="h-4 w-4 shrink-0 text-action" aria-hidden="true" />
+                    {a.title}
                   </a>
                 </li>
               ))}
