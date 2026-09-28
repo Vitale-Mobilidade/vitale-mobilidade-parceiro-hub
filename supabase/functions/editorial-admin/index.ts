@@ -250,7 +250,7 @@ async function validate(db: SupabaseClient, article: EditorialArticle): Promise<
 }
 
 const RESPONSES_URL = "https://ai.gateway.lovable.dev/v1/responses";
-const ARTICLE_MODEL = "openai/gpt-6-astra";
+const ARTICLE_MODEL = "google/gemini-3.8-flash";
 
 /** Streaming Responses call with a strict JSON schema; no timer abort (reasoning runs are long). */
 async function aiStructured(
@@ -2369,7 +2369,7 @@ Deno.serve(async (req) => {
       return json(req, {
         prompt: {
           version: prompt.version,
-          model: prompt.model,
+          model: ARTICLE_MODEL,
           schemaVersion: prompt.schema_version,
           createdAt: prompt.created_at,
           changeReason: prompt.change_reason,
@@ -2389,7 +2389,7 @@ Deno.serve(async (req) => {
         version: previous.version + 1,
         system_prompt: systemPrompt,
         schema_version: previous.schema_version,
-        model: previous.model,
+        model: ARTICLE_MODEL,
         change_reason: reason,
         changed_by: actor.id,
       });
