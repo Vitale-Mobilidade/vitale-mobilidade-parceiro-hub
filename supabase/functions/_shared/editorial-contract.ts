@@ -32,7 +32,11 @@ export type ArticleBlock = {
   articleId?: string;
   planned?: boolean;
 };
-export type ArticleFaq = { question: string; answer: string; sourceExcerpt: string };
+export type ArticleFaq = {
+  question: string;
+  answer: string;
+  sourceExcerpt: string;
+};
 
 export type EditorialArticle = {
   id: string;
@@ -113,6 +117,7 @@ export function uniqueEditorialSlug(slug: string, articleId: string): string {
 }
 
 export const EDITORIAL_READER_VOICE = `VOZ DA VITALE — DIREÇÃO FINAL DE ESCRITA:
+Use o nome e a marca canônicos de bikes fornecidos pelo cadastro Vitale; a transcrição automática pode grafá-los errado. A abertura apresenta a bike, sua proposta e as dúvidas que o artigo resolve (ou o assunto e a dúvida central, quando não há bike). Use a descrição de cadastro para contextualizar sem copiar propaganda ou criar garantias. Não comece contando onde alguém rodou, como foi o trajeto ou o que o apresentador achou.
 Explique o assunto ao leitor com clareza, sem parecer uma ficha de catálogo ou um relatório sobre a gravação. Use sujeito e verbo concretos: 'o motor', 'a bike', 'o freio', 'na subida', 'para quem leva garupa'. Prefira 'uso no dia a dia' a 'aplicabilidade urbana', 'o que muda na escolha' a 'critério definidor' e 'andar na chuva' a 'durabilidade climática'. Evite elogios vagos como 'conjunto vigoroso', 'torque de sobra', 'pacote completo' e 'alto rendimento'. Um detalhe concreto explica melhor a vantagem.
 Cada parágrafo deve avançar o raciocínio: informação, consequência prática e, quando necessário, limitação. Faça as transições pelo assunto, sem abertura padronizada para cada seção. Varie o ritmo naturalmente; não transforme todas as seções em listas, mini-resumos ou blocos de ressalvas. Não repita no FAQ o que o leitor acabou de aprender.
 A referência abaixo é um trecho do artigo VL20/V9 Pro aprovado pelo responsável. Use-a SOMENTE para observar clareza, ritmo e ligação entre fato e decisão. Não reutilize seus fatos, nomes, frases ou estrutura em outros artigos:
@@ -199,7 +204,7 @@ export function hasEditorialDistance(value: string): boolean {
   return (
     /\b(?:v[íi]deo|transcri[cç][aã]o)\b/i.test(value) ||
     SOURCE_DISTANCE_RE.test(value) ||
-    /\b(?:a percep[cç][aã]o relatada|recebeu (?:uma )?(?:impress[aã]o|avalia[cç][aã]o) (?:positiva|favor[aá]vel)|nas primeiras impress[oõ]es)\b/i.test(
+    /\b(?:a percep[cç][aã]o relatada|recebeu (?:uma )?(?:impress[aã]o|avalia[cç][aã]o) (?:positiva|favor[aá]vel)|nas primeiras impress[oõ]es|(?:percurso|trecho|trajeto|teste|impress[aã]o) relatad[oa]|(?:o condutor|o apresentador|quem conduzia) (?:disse|conta|relata|observou|achou|considerou)|foi (?:usada|apresentada) (?:em|como)|o que o (?:percurso|trajeto).* mostrou)\b/i.test(
       value,
     )
   );
