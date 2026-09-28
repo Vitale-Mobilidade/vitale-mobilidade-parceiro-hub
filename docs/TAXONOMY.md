@@ -1,5 +1,7 @@
 # Taxonomia e contrato de rotas — Vitale Mobilidade
 
+
+> Atualização de rotas em 28/09/2026, preparada localmente: Quiz em `/quiz`; `/escolherbike` redireciona com 301 para `/` preservando query/UTM. Substitui as referências anteriores ao endereço do Quiz; demais estados históricos deste documento permanecem. Ver [decisão e validação](QUIZ_ROUTE_2026-09-28.md).
 > **Status (23/09/2026):** rotas canônicas vigentes abaixo. `/radar` e `/ferramentas` são rotas reais; `/acompanhamento` e `/calc` são aliases 301. Reconciliação de slugs `/bikes/{slug}` ↔ IDs legados segue pendente.
 
 ## 1. Rotas públicas vigentes
@@ -7,7 +9,7 @@
 | Rota                | Propósito                             | Observação                                                                        |
 | ------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
 | `/`                 | Home B2C (orientação)                 | Âncoras internas `#bikes`, `#comparar`, `#ferramentas`, `#conteudos`.             |
-| `/escolherbike`     | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo.    |
+| `/quiz`     | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo.    |
 | `/radar`            | Radar de preços (listagem)            | **Canônica.** Publicada e verificada.                                             |
 | `/radar/{bikeId}`   | Radar de preços (detalhe)             | Usa o `bike_id` legado literal, incluindo `_`, sem conversão de formato.          |
 | `/bikes`            | Catálogo/descoberta de bikes          | Lê `get_bikes_public_catalog` (Supabase).                                         |
@@ -64,7 +66,7 @@ A `Bike` é a raiz do domínio. Ela se relaciona com:
 O sitemap só inclui páginas públicas existentes e elegíveis à indexação. Hoje:
 
 - `/`
-- `/escolherbike`
+- `/quiz`
 - `/radar`
 - `/bikes`
 - `/ferramentas`
@@ -85,7 +87,7 @@ Fora do sitemap: painel (bloqueado no robots.txt), aliases 301 (`/acompanhamento
 - Filtros combináveis: preço mín./máx. (preço do Radar quando monitorado, senão referência da planilha), autonomia mínima (km extraído de "Até N km"), capacidade (1/2 pessoas). Categoria omitida: todas as linhas têm o mesmo valor ("Bike elétrica").
 - Ordenação: nome, menor/maior preço, maior autonomia; dados ausentes sempre por último.
 - Card: o card inteiro é um único link para `/bikes/{slug}` (foto 4:3, nome, status do Radar quando existe, preço com fonte explícita, autonomia/capacidade, nº de vídeos e CTA visual "Conhecer a bike"). Selo/preço/fonte são informativos e não têm destino próprio. Acesso ao Radar fica na página de detalhe da bike. Sem link direto ao Mercado Livre.
-- Blocos: Quiz (`/escolherbike`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
+- Blocos: Quiz (`/quiz`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
 - Pendências: `/radar` e `/comparar` não existem (sem links para eles; seleção de comparação não implementada); `/bikes` fora do sitemap; filtros não persistem na URL.
 
 ### 7.2 `/bikes/{slug}` — hub de decisão (rascunho, 23/09/2026)
@@ -111,4 +113,4 @@ Apenas Home, `/bikes` e o Radar (`/radar`) usam hero fotográfico com tema próp
 
 ## 9. `/ferramentas` (23/09/2026, publicada)
 
-Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/escolherbike`), Radar (`/radar`) e catálogo (`/bikes`). Seção "Um caminho para decidir" ordena o percurso exploratório catálogo → Radar → Quiz (Quiz como passo terminal). Comparador e calculadora **não são citados** (sem "em construção" nem promessa pública). Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
+Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/quiz`), Radar (`/radar`) e catálogo (`/bikes`). Seção "Um caminho para decidir" ordena o percurso exploratório catálogo → Radar → Quiz (Quiz como passo terminal). Comparador e calculadora **não são citados** (sem "em construção" nem promessa pública). Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).

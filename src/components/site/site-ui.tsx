@@ -70,7 +70,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <Link
-          to="/escolherbike"
+          to="/quiz"
           reloadDocument
           className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex"
         >
@@ -88,7 +88,7 @@ export function SiteHeader() {
               <NavLink key={n.label} item={n} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted" />
             ))}
             <Link
-              to="/escolherbike"
+              to="/quiz"
               reloadDocument
               className="mt-2 block rounded-lg bg-mint px-3 py-3 text-center font-bold text-mint-foreground"
             >
@@ -108,13 +108,13 @@ export function SiteFooter() {
     items: {
       label: string;
       href?: string;
-      to?: "/escolherbike" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos";
+      to?: "/quiz" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos";
     }[];
   }[] = [
     {
       title: "Escolher",
       items: [
-        { label: "Quiz", to: "/escolherbike" },
+        { label: "Quiz", to: "/quiz" },
         { label: "Radar de preços", to: "/radar" },
         { label: "Ferramentas", to: "/ferramentas" },
       ],
@@ -137,7 +137,7 @@ export function SiteFooter() {
               Ferramentas e informação para escolher sua bike elétrica no Brasil.
             </p>
             <Link
-              to="/escolherbike"
+              to="/quiz"
               reloadDocument
               className="mt-5 inline-flex h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90"
             >
@@ -151,7 +151,7 @@ export function SiteFooter() {
                 {c.items.map((i) => (
                   <li key={i.label}>
                     {i.to ? (
-                      <Link to={i.to} reloadDocument={i.to === "/escolherbike"} className="hover:text-mint">
+                      <Link to={i.to} reloadDocument={i.to === "/quiz"} className="hover:text-mint">
                         {i.label}
                       </Link>
                     ) : (

@@ -1,5 +1,9 @@
 # Roadmap Vitale Mobilidade
 
+
+## Alteração local de rotas — 28/09/2026
+
+Quiz preparado em `/quiz`; `/escolherbike` passa a redirecionar com 301 para a Home `/`, preservando query/UTM para os QR Codes de vídeos antigos. Links, reinício, compartilhamento, metadata e sitemap acompanham a nova URL. Scoring, CRM, Supabase e integrações permanecem. **Ainda não publicado.** Detalhes e evidências: [QUIZ_ROUTE_2026-09-28.md](QUIZ_ROUTE_2026-09-28.md). Referências abaixo a `/escolherbike` descrevem o estado anterior.
 > **Fundação editorial de 26/09/2026:** implementação local para artigos orientados por fonte, arquétipo, SEO/descoberta por IA e publicação automática com QA, sem revisão humana. Os dois artigos publicados são preservados. Migration e release ainda dependem dos gates em [EDITORIAL_FOUNDATION_2026-09-26.md](./EDITORIAL_FOUNDATION_2026-09-26.md); este código local não é capacidade publicada.
 
 > **Atualização em 25/09/2026:** o corte de UX do Radar foi publicado no Lovable e conferido em `vitalemobilidade.com`: destaque e rankings antes do catálogo, filtros rápidos exclusivos, histórico contínuo, régua de preços com pin, alerta com nome/WhatsApp/e-mail e newsletter com nome/e-mail. As duas Edge Functions capturam interesse sem disparar mensagens. Veja [RADAR_UX_REVIEW_2026-09-25.md](./RADAR_UX_REVIEW_2026-09-25.md) para evidências, limites e rollback.

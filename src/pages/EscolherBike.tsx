@@ -247,7 +247,7 @@ export default function EscolherBike() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Catálogo dinâmico (planilha oficial via snapshot) com fallback estático.
-  const quizInitial = useLoaderData({ from: "/escolherbike" });
+  const quizInitial = useLoaderData({ from: "/quiz" });
   const { catalog } = useBikeCatalog(quizInitial?.ok ? (quizInitial.bikes as unknown[]) : null);
   const catalogRef = useRef(catalog);
   useEffect(() => { catalogRef.current = catalog; }, [catalog]);
@@ -1602,12 +1602,12 @@ function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, o
     }
     try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
     // Volta para intro mantendo dados já salvos no banco intactos
-    window.location.href = "/escolherbike";
+    window.location.href = "/quiz";
   };
 
   const handleShareWhatsApp = () => {
     onMainAction?.();
-    const url = typeof window !== "undefined" ? window.location.origin + "/escolherbike" : "";
+    const url = typeof window !== "undefined" ? window.location.origin + "/quiz" : "";
     const principal = recommendation.primary?.name ?? "";
     const alternativa = recommendation.secondary?.name ?? "";
     const msg = alternativa

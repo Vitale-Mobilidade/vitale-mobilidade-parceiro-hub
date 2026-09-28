@@ -1,5 +1,5 @@
 /**
- * Funil anônimo do Quiz (/escolherbike). Nunca carrega nome, telefone, respostas
+ * Funil anônimo do Quiz (/quiz). Nunca carrega nome, telefone, respostas
  * nem leadId: apenas um session_id aleatório por aba e o estágio alcançado.
  * Falhas são engolidas — analytics jamais bloqueia ou atrasa o Quiz.
  */

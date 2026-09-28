@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
+import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
@@ -68,6 +69,11 @@ const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
 const PainelBikesRoute = PainelBikesRouteImport.update({
   id: '/painel-bikes',
   path: '/painel-bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/painel-bikes': typeof PainelBikesRoute
+  '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/escolherbike'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/quiz'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/escolherbike'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/quiz'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/escolherbike'
     | '/grupodeofertas'
     | '/painel-bikes'
+    | '/quiz'
     | '/sitemap.xml'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -520,6 +532,7 @@ export interface RootRouteChildren {
   EscolherbikeRoute: typeof EscolherbikeRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   PainelBikesRoute: typeof PainelBikesRoute
+  QuizRoute: typeof QuizRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
@@ -585,6 +598,13 @@ declare module '@tanstack/react-router' {
       path: '/painel-bikes'
       fullPath: '/painel-bikes'
       preLoaderRoute: typeof PainelBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -858,6 +878,7 @@ const rootRouteChildren: RootRouteChildren = {
   EscolherbikeRoute: EscolherbikeRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
   PainelBikesRoute: PainelBikesRoute,
+  QuizRoute: QuizRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,

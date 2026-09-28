@@ -9,20 +9,28 @@ import { TOOL_PATHS } from "@/lib/mobility/tools-registry";
 export const STATIC_SITEMAP_PATHS = [
   "/",
   "/radar",
-  "/escolherbike",
+  "/quiz",
   "/ferramentas",
   "/conteudos",
   ...TOOL_PATHS,
 ] as const;
 
 const xmlEscape = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 
 /** Slugs válidos e únicos (padrão editorial). */
-export function bikeSlugPaths(bikes: ReadonlyArray<{ slug?: unknown }>): string[] {
+export function bikeSlugPaths(
+  bikes: ReadonlyArray<{ slug?: unknown }>,
+): string[] {
   const out = new Set<string>();
   for (const b of bikes) {
-    if (typeof b?.slug === "string" && SLUG_RE.test(b.slug)) out.add(`/bikes/${encodeURIComponent(b.slug)}`);
+    if (typeof b?.slug === "string" && SLUG_RE.test(b.slug))
+      out.add(`/bikes/${encodeURIComponent(b.slug)}`);
   }
   return [...out];
 }
@@ -32,21 +40,28 @@ export function radarIdPaths(items: ReadonlyArray<unknown>): string[] {
   const out = new Set<string>();
   for (const it of items) {
     const id = (it as { id?: unknown })?.id;
-    if (typeof id === "string" && BIKE_ID_RE.test(id)) out.add(`/radar/${encodeURIComponent(id)}`);
+    if (typeof id === "string" && BIKE_ID_RE.test(id))
+      out.add(`/radar/${encodeURIComponent(id)}`);
   }
   return [...out];
 }
 
 /** Only published/indexable editorial slugs returned by the dedicated RPC. */
-export function articleSlugPaths(items: ReadonlyArray<{ slug?: unknown }>): string[] {
+export function articleSlugPaths(
+  items: ReadonlyArray<{ slug?: unknown }>,
+): string[] {
   const out = new Set<string>();
   for (const item of items) {
-    if (typeof item.slug === "string" && SLUG_RE.test(item.slug)) out.add(`/conteudos/${encodeURIComponent(item.slug)}`);
+    if (typeof item.slug === "string" && SLUG_RE.test(item.slug))
+      out.add(`/conteudos/${encodeURIComponent(item.slug)}`);
   }
   return [...out];
 }
 
-export function buildSitemapXml(paths: ReadonlyArray<string>, origin: string = SITE_URL): string {
+export function buildSitemapXml(
+  paths: ReadonlyArray<string>,
+  origin: string = SITE_URL,
+): string {
   const seen = new Set<string>();
   const urls: string[] = [];
   for (const p of paths) {
