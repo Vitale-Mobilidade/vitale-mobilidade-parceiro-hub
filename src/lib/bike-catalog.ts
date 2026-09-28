@@ -93,7 +93,6 @@ export interface CatalogRow {
   sheetEligible?: boolean | null;
 }
 
-
 /** Faixa de orçamento correspondente ao preço. */
 export function tierForPrice(price: number): BudgetTier {
   if (price <= 7000) return "ate_7000";
@@ -106,12 +105,20 @@ const MELI_RE = /^https:\/\/meli\.la\/[A-Za-z0-9]+$/;
 
 function isValidSnapshotBike(b: unknown): b is SnapshotBike {
   const x = b as SnapshotBike;
-  return !!x && typeof x.id === "string" && x.id.length > 0
-    && typeof x.linkVitale === "string" && MELI_RE.test(x.linkVitale)
-    && typeof x.price === "number" && x.price > 0
-    && typeof x.autonomyKm === "number" && x.autonomyKm > 0
-    && (x.capacity === 1 || x.capacity === 2)
-    && typeof x.description === "string" && x.description.trim().length > 0;
+  return (
+    !!x &&
+    typeof x.id === "string" &&
+    x.id.length > 0 &&
+    typeof x.linkVitale === "string" &&
+    MELI_RE.test(x.linkVitale) &&
+    typeof x.price === "number" &&
+    x.price > 0 &&
+    typeof x.autonomyKm === "number" &&
+    x.autonomyKm > 0 &&
+    (x.capacity === 1 || x.capacity === 2) &&
+    typeof x.description === "string" &&
+    x.description.trim().length > 0
+  );
 }
 
 /** Índice id -> linha válida do snapshot (primeira ocorrência vence). */
@@ -213,11 +220,7 @@ export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
  * Linhas para o painel: bikes do catálogo + drafts/inativas do snapshot +
  * linhas NOMEADAS incompletas da planilha (pendências).
  */
-export function buildCatalogRows(
-  base: Bike[],
-  snapshotBikes: unknown,
-  pendingRows: PendingRow[] = [],
-): CatalogRow[] {
+export function buildCatalogRows(base: Bike[], snapshotBikes: unknown, pendingRows: PendingRow[] = []): CatalogRow[] {
   const byId = indexSnapshot(snapshotBikes);
   const baseIds = new Set(base.map((b) => b.id));
   const merged = mergeCatalog(base, snapshotBikes);
@@ -232,7 +235,13 @@ export function buildCatalogRows(
       autonomyKm: bike.autonomyKm,
       capacity: bike.capacity,
       linkVitale: bike.linkVitale,
-      state: s ? (statusOf(s) === "eligible" ? "eligible" : statusOf(s) === "inactive" ? "inactive" : "draft") : "static",
+      state: s
+        ? statusOf(s) === "eligible"
+          ? "eligible"
+          : statusOf(s) === "inactive"
+            ? "inactive"
+            : "draft"
+        : "static",
       isNew: !baseIds.has(bike.id),
       missingFields: s?.missingFields ?? [],
       fromSheet: !!s,
@@ -262,7 +271,6 @@ export function buildCatalogRows(
     });
   }
 
-
   // Linhas nomeadas incompletas: aparecem como pendentes, sem dados inventados.
   for (const p of Array.isArray(pendingRows) ? pendingRows : []) {
     const id = p?.id;
@@ -284,8 +292,40 @@ export function buildCatalogRows(
   }
 
   return rows;
-
 }
 
 /** Catálogo estático (fallback final). */
 export const STATIC_CATALOG: Bike[] = BIKES;
+
+/** A persisted /assets URL contains a build hash that expires on the next deployment. */
+export function resolveBikeImage(bikeId: string, raw: unknown): string | null {
+  const fallback = BIKES.find((bike) => bike.id === bikeId)?.image ?? null;
+  if (typeof raw !== "string" || !raw.trim()) return fallback;
+  const image = raw.trim();
+  try {
+    const url = new URL(image);
+    if (url.protocol !== "https:") return fallback;
+    if (
+      ["vitalemobilidade.com", "www.vitalemobilidade.com"].includes(url.hostname) &&
+      url.pathname.startsWith("/assets/") &&
+      fallback
+    ) {
+      return fallback;
+    }
+    return image;
+  } catch {
+    return image.startsWith("/assets/") ? (fallback ?? image) : fallback;
+  }
+}
+
+export function resolveBikeRecordImage<T>(record: T): T {
+  if (!record || typeof record !== "object" || Array.isArray(record)) return record;
+  const item = record as Record<string, unknown>;
+  const id = typeof item.id === "string" ? item.id : typeof item.bikeId === "string" ? item.bikeId : null;
+  return id ? { ...record, image: resolveBikeImage(id, item.image) } : record;
+}
+
+/** Exact model-name lookup for a runtime failure of the same bike image. */
+export function bikeImageFallback(name: string): string | null {
+  return BIKES.find((bike) => bike.name.toLowerCase() === name.trim().toLowerCase())?.image ?? null;
+}
