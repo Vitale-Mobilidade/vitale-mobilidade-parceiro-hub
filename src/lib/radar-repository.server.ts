@@ -2,6 +2,7 @@
 // Nunca usa service role nem lê tabelas diretamente.
 
 import { BIKE_ID_RE } from "@/lib/bike-identity";
+import { resolveBikeRecordImage } from "./bike-catalog";
 
 const TIMEOUT_MS = 6000;
 
@@ -52,8 +53,9 @@ function hasCurrentOffer(item: unknown): boolean {
 export async function fetchTrackerSplit(): Promise<RadarResult<{ active: unknown[]; archived: unknown[] }>> {
   const r = await callRpc<unknown>("get_price_tracker_catalog", {});
   if (!r.ok || !Array.isArray(r.data)) return { ok: false };
-  const active = r.data.filter(hasCurrentOffer);
-  const archived = r.data.filter((item) => {
+  const records = r.data.map(resolveBikeRecordImage);
+  const active = records.filter(hasCurrentOffer);
+  const archived = records.filter((item) => {
     const x = item as { observations?: unknown };
     return !hasCurrentOffer(item) && typeof x.observations === "number" && x.observations > 0;
   });
@@ -71,5 +73,5 @@ export async function fetchBikeHistory(bikeId: string): Promise<RadarResult<unkn
   // p_days 0 = série completa; a janela é aplicada no cliente (mesmo contrato da página).
   const r = await callRpc<unknown>("get_bike_price_history", { p_bike_id: bikeId, p_days: 0 });
   if (!r.ok) return { ok: false };
-  return { ok: true, data: r.data ?? null };
+  return { ok: true, data: resolveBikeRecordImage(r.data ?? null) };
 }
