@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,22 +10,24 @@ import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { isChatOpen, isChatCoolingDown } from "@/lib/lucas-chat-bus";
 import { detectSourceBikeInterest } from "@/lib/source-bike-interest";
 import { getPurchaseLink, isMetaTraffic } from "@/data/bikes";
-import {
-  savePendingLead,
-  queuePendingUpdate,
-  queuePendingEvent,
-  retryPendingLeadSync,
-} from "@/lib/quiz-storage";
+import { savePendingLead, queuePendingUpdate, queuePendingEvent, retryPendingLeadSync } from "@/lib/quiz-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getHomeCards } from "@/lib/home-cards.functions";
 import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
-import { useLoaderData } from "@tanstack/react-router";
+import { useLoaderData, useRouter } from "@tanstack/react-router";
 import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 
 // ---------- Quiz config ----------
-type StepKey = "main_use" | "daily_km_range" | "route_type" | "rider_capacity_need" | "weight_range" | "budget_range" | "had_ebike_before";
+type StepKey =
+  | "main_use"
+  | "daily_km_range"
+  | "route_type"
+  | "rider_capacity_need"
+  | "weight_range"
+  | "budget_range"
+  | "had_ebike_before";
 
 interface Option {
   value: string;
@@ -36,16 +37,30 @@ interface Option {
 
 const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[] = [
   {
-    key: "main_use", field: "main_use",
+    key: "main_use",
+    field: "main_use",
     title: "Qual será o principal uso da sua bike elétrica?",
     options: [
-      { value: "trabalho_delivery_renda", label: "Trabalho, delivery ou renda", micro: "Para quem roda bastante e precisa de autonomia, força e confiabilidade." },
-      { value: "locomocao_diaria", label: "Locomoção diária", micro: "Para ir e voltar com economia, conforto e praticidade." },
-      { value: "lazer_passeio", label: "Lazer ou passeio", micro: "Para curtir trajetos com conforto, estilo e segurança." },
+      {
+        value: "trabalho_delivery_renda",
+        label: "Trabalho, delivery ou renda",
+        micro: "Para quem roda bastante e precisa de autonomia, força e confiabilidade.",
+      },
+      {
+        value: "locomocao_diaria",
+        label: "Locomoção diária",
+        micro: "Para ir e voltar com economia, conforto e praticidade.",
+      },
+      {
+        value: "lazer_passeio",
+        label: "Lazer ou passeio",
+        micro: "Para curtir trajetos com conforto, estilo e segurança.",
+      },
     ],
   },
   {
-    key: "daily_km_range", field: "daily_km_range",
+    key: "daily_km_range",
+    field: "daily_km_range",
     title: "Quantos km você roda por dia?",
     options: [
       { value: "ate_10_km", label: "Até 10 km", micro: "Uso leve, autonomia padrão costuma atender bem." },
@@ -55,7 +70,8 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
   {
-    key: "route_type", field: "route_type",
+    key: "route_type",
+    field: "route_type",
     title: "Como é o trajeto?",
     options: [
       { value: "plano", label: "Plano", micro: "Menor exigência de motor, mais foco em conforto e economia." },
@@ -64,36 +80,64 @@ const STEPS: { key: StepKey; title: string; field: string; options: Option[] }[]
     ],
   },
   {
-    key: "rider_capacity_need", field: "rider_capacity_need",
+    key: "rider_capacity_need",
+    field: "rider_capacity_need",
     title: "A bike será usada por quantas pessoas?",
     options: [
-      { value: "apenas_1_pessoa", label: "Só eu", micro: "Melhor para quem vai usar sozinho e quer uma escolha mais simples e racional." },
-      { value: "garupa_as_vezes", label: "Eu e garupa às vezes", micro: "Indicado para quem pode levar outra pessoa ocasionalmente." },
-      { value: "garupa_frequente", label: "Eu e garupa com frequência", micro: "Prioriza modelos com estrutura para 2 pessoas e mais conforto." },
+      {
+        value: "apenas_1_pessoa",
+        label: "Só eu",
+        micro: "Melhor para quem vai usar sozinho e quer uma escolha mais simples e racional.",
+      },
+      {
+        value: "garupa_as_vezes",
+        label: "Eu e garupa às vezes",
+        micro: "Indicado para quem pode levar outra pessoa ocasionalmente.",
+      },
+      {
+        value: "garupa_frequente",
+        label: "Eu e garupa com frequência",
+        micro: "Prioriza modelos com estrutura para 2 pessoas e mais conforto.",
+      },
     ],
   },
   {
-    key: "weight_range", field: "weight_range",
+    key: "weight_range",
+    field: "weight_range",
     title: "Qual faixa de peso total a bike precisa suportar?",
     options: [
       { value: "ate_80kg", label: "Até 80 kg", micro: "Uso leve, com menor exigência estrutural." },
       { value: "80_100kg", label: "80 a 100 kg", micro: "Faixa comum para uso urbano e deslocamento diário." },
       { value: "100_120kg", label: "100 a 120 kg", micro: "Prioriza estrutura, estabilidade e segurança." },
-      { value: "acima_120kg", label: "Acima de 120 kg", micro: "Prioriza modelos mais robustos e capacidade superior." },
+      {
+        value: "acima_120kg",
+        label: "Acima de 120 kg",
+        micro: "Prioriza modelos mais robustos e capacidade superior.",
+      },
     ],
   },
   {
-    key: "budget_range", field: "budget_range",
+    key: "budget_range",
+    field: "budget_range",
     title: "Qual seu orçamento?",
     options: [
       { value: "ate_7000", label: "Até R$7.000", micro: "Buscar melhor custo benefício dentro do essencial." },
       { value: "7000_8000", label: "R$7.000 a R$8.000", micro: "Boa faixa para modelos urbanos fortes e completos." },
-      { value: "8000_10000", label: "R$8.000 a R$10.000", micro: "Permite modelos com mais conforto, tecnologia e desempenho." },
-      { value: "acima_10000", label: "Mais de R$10.000", micro: "Priorizar autonomia, estrutura superior e uso mais exigente." },
+      {
+        value: "8000_10000",
+        label: "R$8.000 a R$10.000",
+        micro: "Permite modelos com mais conforto, tecnologia e desempenho.",
+      },
+      {
+        value: "acima_10000",
+        label: "Mais de R$10.000",
+        micro: "Priorizar autonomia, estrutura superior e uso mais exigente.",
+      },
     ],
   },
   {
-    key: "had_ebike_before", field: "had_ebike_before",
+    key: "had_ebike_before",
+    field: "had_ebike_before",
     title: "Você já teve uma bike elétrica antes?",
     options: [
       { value: "sim", label: "Sim", micro: "A recomendação pode considerar critérios mais técnicos." },
@@ -109,8 +153,26 @@ function detectDevice() {
   if (typeof window === "undefined") return { device_type: "", browser: "", operating_system: "" };
   const ua = navigator.userAgent;
   const device_type = /Mobi|Android|iPhone|iPad/i.test(ua) ? "mobile" : "desktop";
-  const browser = /Chrome/.test(ua) ? "Chrome" : /Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : /Edg/.test(ua) ? "Edge" : "Other";
-  const operating_system = /Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "macOS" : /Android/.test(ua) ? "Android" : /Linux/.test(ua) ? "Linux" : /iPhone|iPad/.test(ua) ? "iOS" : "Other";
+  const browser = /Chrome/.test(ua)
+    ? "Chrome"
+    : /Firefox/.test(ua)
+      ? "Firefox"
+      : /Safari/.test(ua)
+        ? "Safari"
+        : /Edg/.test(ua)
+          ? "Edge"
+          : "Other";
+  const operating_system = /Windows/.test(ua)
+    ? "Windows"
+    : /Mac/.test(ua)
+      ? "macOS"
+      : /Android/.test(ua)
+        ? "Android"
+        : /Linux/.test(ua)
+          ? "Linux"
+          : /iPhone|iPad/.test(ua)
+            ? "iOS"
+            : "Other";
   return { device_type, browser, operating_system };
 }
 
@@ -154,7 +216,9 @@ function readStoredTracking(): Partial<StoredTracking> {
   try {
     const raw = localStorage.getItem(TRACKING_STORAGE_KEY) || sessionStorage.getItem(TRACKING_STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 function persistTracking(t: StoredTracking) {
@@ -195,7 +259,6 @@ function captureAndPersistTracking(): StoredTracking {
   return merged;
 }
 
-
 function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
@@ -205,8 +268,6 @@ function extractDomain(url: string | null | undefined): string | null {
     return null;
   }
 }
-
-
 
 async function invokeQuizTrack(body: Record<string, any>) {
   const { data, error } = await supabase.functions.invoke("quiz-track", { body });
@@ -250,7 +311,9 @@ export default function EscolherBike() {
   const quizInitial = useLoaderData({ from: "/quiz" });
   const { catalog } = useBikeCatalog(quizInitial?.ok ? (quizInitial.bikes as unknown[]) : null);
   const catalogRef = useRef(catalog);
-  useEffect(() => { catalogRef.current = catalog; }, [catalog]);
+  useEffect(() => {
+    catalogRef.current = catalog;
+  }, [catalog]);
 
   const baseLeadDataRef = useRef<any>({});
   const startedAtRef = useRef<string | null>(null);
@@ -272,7 +335,6 @@ export default function EscolherBike() {
     return null;
   }, [answers, catalog]);
 
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { device_type, browser, operating_system } = detectDevice();
@@ -291,7 +353,9 @@ export default function EscolherBike() {
       gclid: tracking.gclid,
       // Atribuição real da sessão: sem UTM na URL não há valor padrão.
       ...attr,
-      device_type, browser, operating_system,
+      device_type,
+      browser,
+      operating_system,
     };
     funnel("page_view");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,9 +366,13 @@ export default function EscolherBike() {
     const t = baseLeadDataRef.current || {};
     trackQuizFunnel(event, step, {
       path: typeof window !== "undefined" ? window.location.pathname : null,
-      referrer: t.referrer ?? null, device: t.device_type ?? null,
-      utm_source: t.utm_source ?? null, utm_medium: t.utm_medium ?? null, utm_campaign: t.utm_campaign ?? null,
-      utm_content: t.utm_content ?? null, utm_term: t.utm_term ?? null,
+      referrer: t.referrer ?? null,
+      device: t.device_type ?? null,
+      utm_source: t.utm_source ?? null,
+      utm_medium: t.utm_medium ?? null,
+      utm_campaign: t.utm_campaign ?? null,
+      utm_content: t.utm_content ?? null,
+      utm_term: t.utm_term ?? null,
     });
   };
   const funnelCompletedRef = useRef(false);
@@ -315,7 +383,6 @@ export default function EscolherBike() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, recommendation]);
-
 
   // ---------- Intro ----------
   if (phase === "intro") {
@@ -331,8 +398,7 @@ export default function EscolherBike() {
             </h1>
             <h2 className="text-xl lg:text-2xl text-muted-foreground mb-8 font-medium">
               Descubra em 2 minutos qual modelo ideal
-              <br />
-              e evite jogar dinheiro fora
+              <br />e evite jogar dinheiro fora
             </h2>
 
             <Button
@@ -386,7 +452,6 @@ export default function EscolherBike() {
       }, 100);
     };
 
-
     return (
       <main className="min-h-[calc(100svh-4.5rem)] flex items-center justify-center px-6 py-12 bg-background">
         <div className="max-w-md w-full">
@@ -402,7 +467,9 @@ export default function EscolherBike() {
             <div>
               <label className="text-base font-medium mb-2 block">Nome</label>
               <input
-                type="text" value={name} onChange={e => setName(e.target.value)}
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome"
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
@@ -410,28 +477,32 @@ export default function EscolherBike() {
             <div>
               <label className="text-base font-medium mb-2 block">WhatsApp</label>
               <input
-                type="tel" value={phone} onChange={e => setPhone(maskPhone(e.target.value))}
-                placeholder="(11) 99999-9999" inputMode="numeric"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                placeholder="(11) 99999-9999"
+                inputMode="numeric"
                 className="w-full p-3 text-base border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
               />
               {phoneInvalid && (
-                <p className="text-sm text-destructive mt-2">
-                  Informe um WhatsApp válido para concluir sua inscrição.
-                </p>
+                <p className="text-sm text-destructive mt-2">Informe um WhatsApp válido para concluir sua inscrição.</p>
               )}
             </div>
-            {submitError && (
-              <p className="text-sm text-destructive text-center">{submitError}</p>
-            )}
+            {submitError && <p className="text-sm text-destructive text-center">{submitError}</p>}
             <Button
               onClick={handleSubmit}
               disabled={!valid || submitting}
               data-event="lead_capture_submitted"
               className="w-full py-6 text-base font-bold"
             >
-              {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando recomendação...</>) : "Ver minha recomendação"}
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando recomendação...
+                </>
+              ) : (
+                "Ver minha recomendação"
+              )}
             </Button>
-
           </div>
         </div>
       </main>
@@ -467,10 +538,15 @@ export default function EscolherBike() {
           <div className="mb-8">
             <Progress value={progress} className="h-2" />
             <div className="flex items-center justify-between mt-3 text-base text-muted-foreground">
-              <button onClick={() => stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro")} className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <button
+                onClick={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : setPhase("intro"))}
+                className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
-              <span>Pergunta {stepIdx + 1} de {STEPS.length}</span>
+              <span>
+                Pergunta {stepIdx + 1} de {STEPS.length}
+              </span>
             </div>
           </div>
 
@@ -488,7 +564,7 @@ export default function EscolherBike() {
             )}
             <div className="mb-2" />
             <div className="space-y-3">
-              {step.options.map(opt => (
+              {step.options.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => handleAnswer(opt)}
@@ -520,7 +596,9 @@ export default function EscolherBike() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-6" />
           <h1 className="text-lg font-medium text-foreground mb-2">Analisando seu perfil...</h1>
-          <p className="text-base text-muted-foreground">Estamos cruzando uso, trajeto, distância e orçamento para recomendar a melhor opção.</p>
+          <p className="text-base text-muted-foreground">
+            Estamos cruzando uso, trajeto, distância e orçamento para recomendar a melhor opção.
+          </p>
         </div>
       </main>
     );
@@ -661,7 +739,13 @@ export default function EscolherBike() {
     // ✅ Lead criado com sucesso. Disparar event_lead p/ Meta/GTM uma única vez por lead_id.
     try {
       const flagKey = EVENT_LEAD_FLAG_PREFIX + activeLeadId;
-      const alreadySent = (() => { try { return localStorage.getItem(flagKey) === "true"; } catch { return false; } })();
+      const alreadySent = (() => {
+        try {
+          return localStorage.getItem(flagKey) === "true";
+        } catch {
+          return false;
+        }
+      })();
       if (alreadySent) {
         console.info("[GTM] event_lead bloqueado por dedup", activeLeadId);
       } else {
@@ -686,7 +770,9 @@ export default function EscolherBike() {
           referrer: document.referrer || null,
           device_type: t.device_type || null,
         });
-        try { localStorage.setItem(flagKey, "true"); } catch {}
+        try {
+          localStorage.setItem(flagKey, "true");
+        } catch {}
         console.log("[GTM] event_lead pushed", { lead_id: activeLeadId });
       }
     } catch (e) {
@@ -719,13 +805,15 @@ export default function EscolherBike() {
               field_value: value,
               field_label: label,
               payload: {
-                field_name: s.key, field_value: value, field_label: label,
+                field_name: s.key,
+                field_value: value,
+                field_label: label,
                 ...baseLeadDataRef.current,
                 ...answersFlat,
               },
             },
           }).catch((err) => console.error("[quiz] Erro evento retroativo", s.key, err));
-        })
+        }),
       );
       console.info("[quiz] Eventos retroativos salvos");
     } catch (e) {
@@ -748,7 +836,8 @@ export default function EscolherBike() {
         webhook_payload: webhookPayload,
         recommendation_event_payload: rawRecommendation,
       });
-      if (result?.webhook?.success) console.info("[quiz] Webhook quiz_completed enviado com sucesso", result.webhook.status);
+      if (result?.webhook?.success)
+        console.info("[quiz] Webhook quiz_completed enviado com sucesso", result.webhook.status);
       else console.error("[quiz] Erro ao enviar webhook quiz_completed", result?.webhook ?? result);
     } catch (e) {
       console.error("[quiz] Erro ao enviar webhook quiz_completed", e);
@@ -760,22 +849,25 @@ export default function EscolherBike() {
       }
     }
 
-
-    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
+    try {
+      sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble");
+    } catch {}
 
     setPhase("result");
   }
 
   if (phase === "result" && recommendation) {
-    return <ResultScreen
-      answers={answers as Answers}
-      labels={labels}
-      recommendation={recommendation}
-      leadId={leadId}
-      name={name}
-      phone={phone}
-      baseLeadData={baseLeadDataRef.current}
-    />;
+    return (
+      <ResultScreen
+        answers={answers as Answers}
+        labels={labels}
+        recommendation={recommendation}
+        leadId={leadId}
+        name={name}
+        phone={phone}
+        baseLeadData={baseLeadDataRef.current}
+      />
+    );
   }
 
   return null;
@@ -785,7 +877,9 @@ export default function EscolherBike() {
 function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
   const basePrimaryCopy = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
   const reasonPrimary = basePrimaryCopy;
-  const reasonSecondary = recommendation.secondary ? buildSecondaryCopy(recommendation.primary, recommendation.secondary) : null;
+  const reasonSecondary = recommendation.secondary
+    ? buildSecondaryCopy(recommendation.primary, recommendation.secondary)
+    : null;
 
   // ---- Popup tracking state ----
   const mainActionClickedRef = useRef(false);
@@ -810,8 +904,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
       (window as any).dataLayer.push({ event: event_name, ...finalPayload });
     } catch {}
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name, payload: finalPayload } }).catch((e) =>
-        console.error("[quiz] track event failed", event_name, e)
+      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name, payload: finalPayload } }).catch(
+        (e) => console.error("[quiz] track event failed", event_name, e),
       );
     }
   };
@@ -892,8 +986,11 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           const webhookPayload = {
             event_name: eventName,
             event_created_at: clickedAt,
-            lead_id: activeLeadId, name, phone,
-            ...answers, ...labels,
+            lead_id: activeLeadId,
+            name,
+            phone,
+            ...answers,
+            ...labels,
             clicked_bike_name: bike.name,
             clicked_bike_position: position,
             clicked_bike_link: purchaseLink,
@@ -936,7 +1033,8 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         queuePendingUpdate(clickUpdate);
         queuePendingEvent({
           event_name: eventName,
-          field_value: bike.id, field_label: bike.name,
+          field_value: bike.id,
+          field_label: bike.name,
           payload: { position, link: purchaseLink, link_group_used: linkGroup, bike_model_clicked: bike.name },
         });
       }
@@ -961,7 +1059,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => setShowSticky(!entry.isIntersecting && entry.boundingClientRect.top < 0),
-      { threshold: 0 }
+      { threshold: 0 },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -974,10 +1072,16 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     clicked: "vitale_primary_offer_popup_clicked",
   };
   const ssGet = (k: string) => {
-    try { return sessionStorage.getItem(k) === "true"; } catch { return false; }
+    try {
+      return sessionStorage.getItem(k) === "true";
+    } catch {
+      return false;
+    }
   };
   const ssSet = (k: string) => {
-    try { sessionStorage.setItem(k, "true"); } catch {}
+    try {
+      sessionStorage.setItem(k, "true");
+    } catch {}
   };
 
   const tryShowPrimaryOffer = () => {
@@ -1033,9 +1137,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     return () => window.removeEventListener("lucas-chat-changed", handler);
   }, [showPrimaryOfferPopup]);
 
-
-
-
   const handlePrimaryOfferClick = () => {
     ssSet(SS_KEYS.clicked);
     markMainActionClicked();
@@ -1058,7 +1159,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
   return (
     <main className="min-h-[calc(100svh-4.5rem)] bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-12 pb-28 lg:pb-12">
-
         {/* Título + Subtítulo */}
         <div className="text-center mb-7">
           <p className="mb-2 text-xs font-bold tracking-[0.25em] text-action">RESULTADO DO QUIZ</p>
@@ -1080,14 +1180,20 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               <img
                 src={recommendation.primary.image}
                 alt={`Bike elétrica ${recommendation.primary.name}`}
-                width={800} height={600} decoding="async"
+                width={800}
+                height={600}
+                decoding="async"
                 className="w-full h-auto object-contain max-h-[280px] lg:max-h-none lg:aspect-[4/3]"
               />
             </div>
             <div>
-              <h2 className="text-[26px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.primary.name}</h2>
+              <h2 className="text-[26px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">
+                {recommendation.primary.name}
+              </h2>
               <RadarPriceLine item={radarById.get(recommendation.primary.id)} />
-              <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.primary.shortDescription}</p>
+              <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">
+                {recommendation.primary.shortDescription}
+              </p>
               <BikeSpecsRow bike={recommendation.primary} />
               <ul className="space-y-2 mb-5">
                 {recommendation.primary.strengths.slice(0, 4).map((s: string, i: number) => (
@@ -1113,9 +1219,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
 
-              {reasonPrimary && (
-                <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />
-              )}
+              {reasonPrimary && <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />}
             </div>
           </div>
         </div>
@@ -1131,14 +1235,20 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <img
                   src={recommendation.secondary.image}
                   alt={`Bike elétrica ${recommendation.secondary.name}`}
-                  width={800} height={600} loading="lazy"
+                  width={800}
+                  height={600}
+                  loading="lazy"
                   className="w-full h-auto object-contain max-h-[260px] lg:max-h-none lg:aspect-[4/3]"
                 />
               </div>
               <div>
-                <h3 className="text-[24px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">{recommendation.secondary.name}</h3>
+                <h3 className="text-[24px] lg:text-3xl font-extrabold text-ink mb-2 leading-tight">
+                  {recommendation.secondary.name}
+                </h3>
                 <RadarPriceLine item={radarById.get(recommendation.secondary.id)} />
-                <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">{recommendation.secondary.shortDescription}</p>
+                <p className="text-[15px] sm:text-base text-muted-foreground mb-3 leading-relaxed">
+                  {recommendation.secondary.shortDescription}
+                </p>
                 <BikeSpecsRow bike={recommendation.secondary} />
                 <ul className="space-y-2 mb-5">
                   {recommendation.secondary.strengths.slice(0, 4).map((s: string, i: number) => (
@@ -1163,9 +1273,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
                 </p>
 
-                {reasonSecondary && (
-                  <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />
-                )}
+                {reasonSecondary && <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />}
               </div>
             </div>
           </div>
@@ -1206,10 +1314,24 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
               {[recommendation.primary, recommendation.secondary].map((bike: any, idx: number) => (
                 <div key={idx} className="bg-card border border-line rounded-2xl p-4">
                   <div className="mb-3 flex items-center gap-3">
-                    <img src={bike.image} alt="" width={72} height={54} loading="lazy" decoding="async" className="h-14 w-18 shrink-0 rounded-lg bg-surface object-contain p-1" />
+                    <img
+                      src={bike.image}
+                      alt=""
+                      width={72}
+                      height={54}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-14 w-18 shrink-0 rounded-lg bg-surface object-contain p-1"
+                    />
                     <div className="min-w-0">
-                      <div className={`text-[16px] font-bold ${idx === 0 ? "text-action" : "text-ink"}`}>{bike.name}</div>
-                      {radarById.get(bike.id) && <div className="text-sm font-semibold text-action">{formatBRL(radarById.get(bike.id)!.currentPrice)}</div>}
+                      <div className={`text-[16px] font-bold ${idx === 0 ? "text-action" : "text-ink"}`}>
+                        {bike.name}
+                      </div>
+                      {radarById.get(bike.id) && (
+                        <div className="text-sm font-semibold text-action">
+                          {formatBRL(radarById.get(bike.id)!.currentPrice)}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <dl className="space-y-2 text-[15px]">
@@ -1219,7 +1341,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                     </div>
                     <div className="flex justify-between gap-3">
                       <dt className="text-muted-foreground">Capacidade</dt>
-                      <dd className="text-foreground text-right">{bike.capacity} {bike.capacity === 1 ? "pessoa" : "pessoas"}</dd>
+                      <dd className="text-foreground text-right">
+                        {bike.capacity} {bike.capacity === 1 ? "pessoa" : "pessoas"}
+                      </dd>
                     </div>
                     <div className="flex justify-between gap-3">
                       <dt className="text-muted-foreground">Peso suportado</dt>
@@ -1245,10 +1369,22 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 {[recommendation.primary, recommendation.secondary].map((b: any, i: number) => (
                   <div key={b.id} className="text-center">
                     <div className="mx-auto mb-2 flex h-28 items-center justify-center rounded-xl bg-surface">
-                      <img src={b.image} alt="" width={160} height={112} loading="lazy" decoding="async" className="h-full w-auto object-contain p-2" />
+                      <img
+                        src={b.image}
+                        alt=""
+                        width={160}
+                        height={112}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-auto object-contain p-2"
+                      />
                     </div>
                     <div className={`font-bold ${i === 0 ? "text-action" : "text-ink"}`}>{b.name}</div>
-                    {radarById.get(b.id) && <div className="text-sm font-semibold text-action">{formatBRL(radarById.get(b.id)!.currentPrice)}</div>}
+                    {radarById.get(b.id) && (
+                      <div className="text-sm font-semibold text-action">
+                        {formatBRL(radarById.get(b.id)!.currentPrice)}
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -1257,8 +1393,12 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <div className="text-center">Até {recommendation.secondary.autonomyKm} km</div>
 
                 <div className="text-muted-foreground">Capacidade</div>
-                <div className="text-center">{recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}</div>
-                <div className="text-center">{recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}</div>
+                <div className="text-center">
+                  {recommendation.primary.capacity} {recommendation.primary.capacity === 1 ? "pessoa" : "pessoas"}
+                </div>
+                <div className="text-center">
+                  {recommendation.secondary.capacity} {recommendation.secondary.capacity === 1 ? "pessoa" : "pessoas"}
+                </div>
 
                 <div className="text-muted-foreground">Peso suportado</div>
                 <div className="text-center">Até {recommendation.primary.weightSupportKg} kg</div>
@@ -1277,19 +1417,14 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         )}
 
         {/* Grupo de ofertas WhatsApp */}
-        <OffersGroupBlock
-          leadId={leadId}
-          name={name}
-          phone={phone}
-          baseLeadData={baseLeadData}
-        />
-
+        <OffersGroupBlock leadId={leadId} name={name} phone={phone} baseLeadData={baseLeadData} />
 
         {/* Bloco educativo */}
         <div className="bg-muted rounded-[18px] p-5 mb-4">
           <h3 className="font-bold text-foreground mb-2 text-base">Por que não recomendamos só pela ficha técnica?</h3>
           <p className="text-[15px] sm:text-base text-muted-foreground leading-relaxed">
-            Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária, do orçamento e do tipo de uso.
+            Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária,
+            do orçamento e do tipo de uso.
           </p>
         </div>
 
@@ -1317,7 +1452,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           <div className="flex items-center gap-3 max-w-md mx-auto">
             <div className="flex-1 min-w-0">
               <div className="text-[12px] text-muted-foreground leading-tight">Recomendada</div>
-              <div className="text-[15px] font-bold text-foreground truncate leading-tight">{recommendation.primary.name}</div>
+              <div className="text-[15px] font-bold text-foreground truncate leading-tight">
+                {recommendation.primary.name}
+              </div>
             </div>
             <Button
               onClick={(e) => handleBuy(recommendation.primary, "principal", e)}
@@ -1329,22 +1466,26 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
         </div>
       )}
 
-
-
-
-
       {/* Primary offer popup (Mercado Livre) */}
       {showPrimaryOfferPopup && (
-        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={handlePrimaryOfferDismiss}>
+        <div
+          className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-4"
+          onClick={handlePrimaryOfferDismiss}
+        >
           <div className="bg-background rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-foreground mb-2">Veja o preço atual da sua bike recomendada</h3>
             <p className="text-base text-muted-foreground mb-5 leading-relaxed">
-              A {recommendation.primary.name} foi selecionada com base no seu uso, trajeto e orçamento. Confira a oferta no Mercado Livre antes de decidir.
+              A {recommendation.primary.name} foi selecionada com base no seu uso, trajeto e orçamento. Confira a oferta
+              no Mercado Livre antes de decidir.
             </p>
             <Button onClick={handlePrimaryOfferClick} className="w-full py-5 text-base font-bold mb-2">
               <ShoppingCart className="mr-2 h-5 w-5" /> Ver oferta no Mercado Livre
             </Button>
-            <Button onClick={handlePrimaryOfferDismiss} variant="outline" className="w-full py-4 text-base font-semibold">
+            <Button
+              onClick={handlePrimaryOfferDismiss}
+              variant="outline"
+              className="w-full py-4 text-base font-semibold"
+            >
               Continuar vendo recomendação
             </Button>
           </div>
@@ -1359,7 +1500,6 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
             : `O Quiz da Vitale me recomendou ${recommendation.primary.name}. Pode me ajudar a entender se essa bike combina com o meu uso?`
         }
       />
-
     </main>
   );
 }
@@ -1393,7 +1533,6 @@ function BikeSpecsRow({ bike }: { bike: any }) {
   );
 }
 
-
 // ---------- Reason block (collapsible on mobile) ----------
 function ReasonBlock({ title, text }: { title: string; text: string }) {
   const [open, setOpen] = useState(false);
@@ -1406,9 +1545,7 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
       {/* Mobile: clamp + toggle */}
       <div className="lg:hidden">
         <Collapsible open={open} onOpenChange={setOpen}>
-          {!open && (
-            <p className="text-[15px] text-foreground leading-relaxed line-clamp-4">{text}</p>
-          )}
+          {!open && <p className="text-[15px] text-foreground leading-relaxed line-clamp-4">{text}</p>}
           <CollapsibleContent>
             <p className="text-[15px] text-foreground leading-relaxed">{text}</p>
           </CollapsibleContent>
@@ -1431,7 +1568,6 @@ function ReasonBlock({ title, text }: { title: string; text: string }) {
 // ---------- Paid consultation block ----------
 const OFFERS_GROUP_WA_URL = OFFERS_GROUP_URL;
 
-
 // ---------- Falar com a Vitale no WhatsApp (leva o resultado do quiz) ----------
 const VITALE_WHATSAPP_PHONE = "5511998693904";
 
@@ -1451,9 +1587,7 @@ function buildVitaleWhatsAppMessage({
     return s;
   };
   const trimmedName = (name ?? "").trim();
-  const greeting = trimmedName
-    ? `Fala Lucas, sou o ${trimmedName} e vim do quiz.`
-    : "Fala Lucas, vim do quiz.";
+  const greeting = trimmedName ? `Fala Lucas, sou o ${trimmedName} e vim do quiz.` : "Fala Lucas, vim do quiz.";
   const lines: string[] = [
     greeting,
     "",
@@ -1475,9 +1609,7 @@ function buildVitaleWhatsAppMessage({
   return lines.join("\n");
 }
 
-function VitaleWhatsAppBlock({
-  leadId, name, phone, labels, recommendation, baseLeadData, onMainAction,
-}: any) {
+function VitaleWhatsAppBlock({ leadId, name, phone, labels, recommendation, baseLeadData, onMainAction }: any) {
   const handleClick = () => {
     onMainAction?.();
     const message = buildVitaleWhatsAppMessage({ name, labels, recommendation });
@@ -1509,8 +1641,11 @@ function VitaleWhatsAppBlock({
       (window as any).dataLayer.push({ event: "whatsapp_specialist_clicked", ...payload });
     } catch {}
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "whatsapp_specialist_clicked", payload } })
-        .catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_specialist_clicked", e));
+      invokeQuizTrack({
+        action: "save_event",
+        lead_id: leadId,
+        event: { event_name: "whatsapp_specialist_clicked", payload },
+      }).catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_specialist_clicked", e));
     }
     setTimeout(() => window.open(waUrl, "_blank", "noopener,noreferrer"), 200);
   };
@@ -1559,8 +1694,11 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
       (window as any).dataLayer.push({ event: "whatsapp_group_clicked", ...payload });
     } catch {}
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "whatsapp_group_clicked", payload } })
-        .catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_group_clicked", e));
+      invokeQuizTrack({
+        action: "save_event",
+        lead_id: leadId,
+        event: { event_name: "whatsapp_group_clicked", payload },
+      }).catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_group_clicked", e));
     }
     setTimeout(() => window.open(OFFERS_GROUP_WA_URL, "_blank", "noopener,noreferrer"), 200);
   };
@@ -1571,7 +1709,8 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
         Quer acompanhar novas ofertas?
       </h3>
       <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
-        Entre no grupo de ofertas da Vitale Mobilidade e receba promoções, mudanças de preço e oportunidades de bikes elétricas no Mercado Livre.
+        Entre no grupo de ofertas da Vitale Mobilidade e receba promoções, mudanças de preço e oportunidades de bikes
+        elétricas no Mercado Livre.
       </p>
       <Button
         onClick={handleClick}
@@ -1587,27 +1726,37 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
   );
 }
 
-
-
-
 function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, onMainAction }: any) {
+  const router = useRouter();
   const handleRestart = () => {
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "quiz_restart_clicked", payload: { ...(baseLeadData ?? {}) } } })
+      invokeQuizTrack({
+        action: "save_event",
+        lead_id: leadId,
+        event: { event_name: "quiz_restart_clicked", payload: { ...(baseLeadData ?? {}) } },
+      })
         .then((result) => {
-          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", result });
+          if (!result?.success)
+            console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", result });
           else console.info("[quiz] Evento salvo com sucesso:", { event_name: "quiz_restart_clicked" });
         })
-        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", error }));
+        .catch((error) =>
+          console.error("[quiz] Erro ao salvar evento:", { event_name: "quiz_restart_clicked", error }),
+        );
     }
-    try { sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble"); } catch {}
+    try {
+      sessionStorage.removeItem("vitale_dismissed_floating_whatsapp_bubble");
+    } catch {}
     // Volta para intro mantendo dados já salvos no banco intactos
-    window.location.href = "/quiz";
+    window.location.href = router.buildLocation({ to: "/quiz" }).href;
   };
 
   const handleShareWhatsApp = () => {
     onMainAction?.();
-    const url = typeof window !== "undefined" ? window.location.origin + "/quiz" : "";
+    const url =
+      typeof window !== "undefined"
+        ? new URL(router.buildLocation({ to: "/quiz" }).href, window.location.origin).href
+        : "";
     const principal = recommendation.primary?.name ?? "";
     const alternativa = recommendation.secondary?.name ?? "";
     const msg = alternativa
@@ -1617,19 +1766,35 @@ function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, o
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     if (leadId) {
-      invokeQuizTrack({ action: "save_event", lead_id: leadId, event: { event_name: "result_shared_whatsapp", payload: { primary: recommendation.primary?.id, secondary: recommendation.secondary?.id, ...(baseLeadData ?? {}) } } })
+      invokeQuizTrack({
+        action: "save_event",
+        lead_id: leadId,
+        event: {
+          event_name: "result_shared_whatsapp",
+          payload: {
+            primary: recommendation.primary?.id,
+            secondary: recommendation.secondary?.id,
+            ...(baseLeadData ?? {}),
+          },
+        },
+      })
         .then((result) => {
-          if (!result?.success) console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", result });
+          if (!result?.success)
+            console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", result });
           else console.info("[quiz] Evento salvo com sucesso:", { event_name: "result_shared_whatsapp" });
         })
-        .catch((error) => console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", error }));
+        .catch((error) =>
+          console.error("[quiz] Erro ao salvar evento:", { event_name: "result_shared_whatsapp", error }),
+        );
     }
   };
 
   return (
     <section className="mt-6 border-t border-border pt-8">
       <h3 className="text-lg font-semibold text-foreground text-center mb-1">Ainda quer comparar melhor?</h3>
-      <p className="text-[15px] sm:text-base text-muted-foreground text-center mb-5">Outras formas de continuar sua jornada.</p>
+      <p className="text-[15px] sm:text-base text-muted-foreground text-center mb-5">
+        Outras formas de continuar sua jornada.
+      </p>
 
       <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2.5 sm:gap-3 max-w-2xl mx-auto mb-8">
         <Button
