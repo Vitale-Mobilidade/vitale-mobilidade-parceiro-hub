@@ -1,3 +1,41 @@
+# Restauração do modelo VL20 — 28/09/2026
+
+Esta decisão substitui o fluxo de geração da fundação documentado abaixo. Solicitação explícita do responsável: restaurar o artigo VL20, usar thumbnail como capa inicial, retirar arquétipos, reduzir custo/tempo; fluxo link/vídeo + título + transcrição → Gerar artigo → prévia → Publicar. Publicação autorizada na mesma tarefa. Nenhuma chamada paga será usada para testar.
+
+## Revisão prévia — estrutural (IA/SEO/Supabase)
+
+| Perspectiva | Impacto, risco, dependência e recomendação                                                                                                                                                                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Restaurar a referência aprovada. Risco: manter etapas rejeitadas. Depende do fluxo antigo ainda disponível. Prosseguir com uma geração completa.                                                                                                                             |
+| CTO         | Reusar generateInto e layoutArticle sem migration. Risco: draft novo com flag antiga. Converter somente o draft solicitado, com revisão concorrente; preservar publicados.                                                                                                   |
+| IA          | Mesmo prompt/modelo v4 da VL20, uma escrita e reescrita condicional. Risco factual permanece; transcrição não confiável, schema, evidência privada e validação determinística preservados. Desativar planejamento/QA pago; IA de capa somente quando acionada separadamente. |
+| Segurança   | Manter JWT, papéis, lock por revisão e auditoria. Risco: liberar draft incompleto ao converter. Marcar conversão pendente como erro até escrita concluída. Sem RLS/secrets novos.                                                                                            |
+| UX/UI       | Um botão para gerar e outro para publicar. Risco: jargão e espera por capa. Miniatura existente, menu opcional Capa com upload ou geração por IA; feedback simples e retomada por nova geração.                                                                              |
+| CX          | Artigos já publicados intocados; drafts novos podem ser regenerados. Risco: falha de créditos. Manter conteúdo salvo e erro legível, sem teste pago.                                                                                                                         |
+| Growth/SEO  | Restaurar módulos reais intercalados e voz da VL20. Risco: texto genérico sem contexto. Mesma composição/renderização pública, metadata e entidades; não prometer ranking.                                                                                                   |
+| PMO/QA      | Comparar bloco a bloco com VL20, testes de layout/contrato + validate. Risco: build não prova qualidade de nova IA. Documentar limite; deploy autorizado e rollback por release anterior.                                                                                    |
+
+Conflito: QA por modelos e seleção de arquétipos trouxeram custo, lentidão e pior composição. A decisão explícita do responsável restaura o modelo anterior. Mantemos validação determinística e grounding no escritor, sem apresentar isso como revisão factual independente. A skill SEO é referência de revisão, não impõe o fluxo rejeitado pelo responsável.
+
+Decisão: reativar geração completa sem brief; desativar endpoints de etapas extras; capa opcional, após gerar, por imagem enviada ou IA acionada separadamente; preservar prompt v4 usado pelo artigo ideal, miniatura do vídeo, módulos do catálogo, SEO/SSR e botão Publicar. Sem apagar históricos, dados ou imagens existentes, sem alterar texto/slug de publicados. Critérios: criação e regeneração não chamam outline/QA/capa; drafts só publicáveis com corpo válido; módulos intercalados como VL20; validate aprovado. Rollback: restaurar os dois arquivos do release 8c7c8a6; drafts já gerados permanecem legíveis no modo legado.
+
+## Revisão posterior local
+
+| Perspectiva | Resultado e evidência                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Produto     | Pass: criação completa e Publicar; geração de capa separada, conforme nova instrução do responsável.                                                                                             |
+| CTO         | Pass: caminho legado existente, lock por revisão; nenhum schema, rota pública ou writer do catálogo alterado.                                                                                    |
+| IA          | Pass: mesmo prompt v4/modelo registrado na VL20; um writer e eventual reescrita de voz. Etapas pagas extras retornam 410; capa apenas mediante clique. Sem geração paga no teste.                |
+| Segurança   | Pass: JWT/papéis, validação de JPG 1280×720/4MB e upload privado preservados; draft em restauração bloqueado até sucesso, fonte mínima conferida antes da chamada.                               |
+| UX/UI       | Pass local: Gerar artigo, preview, Publicar; menu Capa com upload JPG/PNG/WebP e IA opcional, indicação de créditos. Sem jargões no processo.                                                    |
+| CX          | Pass: falha mantém conteúdo anterior; publicados preservados. Regenerar converte somente o draft solicitado, não modifica o corpus em lote.                                                      |
+| Growth/SEO  | Pass: layout testado intercala comparativo, dois Radars, vídeo, Quiz e FAQ como VL20; renderização SSR/metadata/canonical inalterada, fonte e dados reais.                                       |
+| PMO/QA      | Pass local: 21 testes direcionados (automação, contrato, composição e capa), 47 regressões em pnpm validate, typecheck e build aprovados. Qualidade de nova resposta IA não medida sem créditos. |
+
+Release: aplicar frontend, função e esta documentação pelo Code Editor, sem prompt pago ao Lovable; publicar conforme autorização existente. Verificar bundle/interface e ausência de mudanças nos dois publicados. Custo de implementação sem chamadas IA; geração futura usa a mesma chamada principal da VL20 (reescrita somente quando necessária). Economia exata em créditos não medida. Rollback pelo release anterior e fontes 8c7c8a6. Artigos antigos do fluxo rejeitado precisam de Regenerar artigo para receber texto novo; não gerar todos automaticamente.
+
+---
+
 # Fluxo simples de artigos no Admin
 
 Decisão de produto em 27/09/2026. Esta decisão substitui a interface de etapas e a proposta de publicação automática descritas no histórico de `EDITORIAL_FOUNDATION_2026-09-26.md`.
