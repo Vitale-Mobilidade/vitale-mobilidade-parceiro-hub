@@ -62,7 +62,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
       relatedArticles: orderEditorialHighlights(
         contextualArticles.length ? contextualArticles : (index ?? []).filter((a) => a.id !== article.id),
       ).slice(0, 4),
-      sidebarArticles: orderEditorialHighlights((index ?? []).filter((a) => a.id !== article.id)).slice(0, 8),
+      sidebarArticles: orderEditorialHighlights((index ?? []).filter((a) => a.id !== article.id)).slice(0, 3),
       prices,
       histories,
       articlesShareContext: contextualArticles.length > 0,
