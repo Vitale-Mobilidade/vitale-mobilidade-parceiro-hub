@@ -117,3 +117,11 @@ it("storage bloqueado na leitura e escrita não interrompe captura", () => {
   });
   expect(resolveQuizAttribution("/quiz", blocked).utm_source).toBeNull();
 });
+
+it("campanha propagada na URL mantém source_url e entry_at originais", () => {
+  const storage = memStorage();
+  const entry = FULL.replace("/quiz?", "/?");
+  const first = resolveQuizAttribution(entry, storage, new Date("2026-09-28T12:00:00Z"));
+  const after = resolveQuizAttribution(FULL, storage, new Date("2026-09-28T12:30:00Z"));
+  expect(after).toEqual(first);
+});
