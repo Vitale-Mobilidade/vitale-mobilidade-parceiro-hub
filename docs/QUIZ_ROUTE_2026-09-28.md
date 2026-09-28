@@ -74,3 +74,37 @@ O responsável autorizou implementar e publicar nesta conversa. Aplicação no m
 Deployment `57ab79b2-2171-4879-9544-dade5ed02da0` iniciado pela API; interface confirmou “Seu site foi atualizado”. No Chrome sobre `https://vitalemobilidade.com`: `/quiz` exibe intro e botão Começar agora, canonical e OG `/quiz`; `/escolherbike` termina em `/`; entrada antiga com UTMs, `%2B` e parâmetros repetidos mantém query literal na Home; CTA da Home abre `/quiz`. Nenhum formulário, lead, compra, conversa ou serviço real acionado no smoke. O terminal externo recebeu 403 de acesso, por isso a evidência de domínio é a navegação no navegador; status 301 foi confirmado localmente e no servidor do Lovable.
 
 Estado final: concluído e publicado, oito perspectivas Pass conforme revisão registrada, agora com evidência de aplicação e release. Rollback de frontend: reverter somente o delta `f715326` para a base `5c0ec79` e republicar; caches de 301 podem persistir. Sem alteração de banco, scoring, CRM, RLS, Sheets, jobs, afiliados ou Edge Functions. Este adendo substitui o estado anterior “não publicado”.
+
+## Correção de atribuição Home → Quiz (2026-09-28)
+
+Classificação estrutural: Quiz/aquisição/legado. Diagnóstico: o 301 preserva query, mas o CTA Home → /quiz remove parâmetros antes da única captura, que ficava no Quiz. Consulta agregada somente leitura confirmou entradas com e sem fonte; não prova causa de todos os casos. A validação anterior não cobriu essa passagem.
+
+### Revisão prévia das oito perspectivas
+
+| Perspectiva | Impacto                                    | Risco                                              | Dependência                     | Recomendação                  |
+| ----------- | ------------------------------------------ | -------------------------------------------------- | ------------------------------- | ----------------------------- |
+| Produto     | Manter QR na Home e atribuição no Quiz     | Alterar jornada desejada                           | Redirect vigente                | Prosseguir sem mudar destinos |
+| CTO         | Captura na raiz pública                    | SSR/hidratação/navegação cliente                   | beforeLoad + efeito da URL      | Prosseguir com guards SSR     |
+| IA          | Preservar fonte usada no interesse de bike | Inventar contexto de campanha                      | Payload existente               | Prosseguir sem alterar IA     |
+| Segurança   | Mesmo storage por sessão                   | Storage bloqueado interromper site/admin capturado | Leitura segura e exclusão admin | Prosseguir com proteções      |
+| UX          | Sem etapa visual adicional                 | Atrasar clique                                     | Captura local sem rede          | Prosseguir                    |
+| CX          | Fonte nos novos leads                      | Prometer recuperar histórico                       | Contrato lead/CRM               | Prosseguir sem alterar dados  |
+| Growth      | Cinco UTMs e URL de entrada preservados    | Misturar campanhas/herdar outra sessão             | Resolver existente              | Prosseguir com testes         |
+| PMO/QA      | Corrigir lacuna da validação               | Testar somente redirect                            | Percurso até payload/gate       | Prosseguir após validação     |
+
+Decisão: captura na entrada pública com beforeLoad e efeito na hidratação/mudança de URL, utilizando o mesmo sessionStorage. Preservar SSR, /escolherbike → / e /quiz. Proteger leitura de storage; excluir admin. Testar redirect real e beforeLoad da raiz real até payload final, campanha nova, sessão nova e storage bloqueado. Sem migration, RLS, CRM real, IA, escrita de leads ou reprocessamento. Trade-off: pequena captura local em páginas públicas necessária para não perder campanha na navegação. Storage indisponível só permite UTMs da URL atual; não prometer persistência entre documentos nesse caso. Origem sem utm_source permanece null, sem padrões inventados.
+
+### Revisão posterior
+
+| Perspectiva | Status | Evidência                                                                                                                                             |
+| ----------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Pass   | Destinos desejados mantidos                                                                                                                           |
+| CTO         | Pass   | Guard SSR; typecheck/build client e server passaram                                                                                                   |
+| IA          | Pass   | Contrato real do payload mantido, sem mudança de prompts/modelos                                                                                      |
+| Segurança   | Pass   | Testes admin/SSR/storage bloqueado; sem novo envio ou acesso                                                                                          |
+| UX          | Pass   | Sem mudança visual ou etapa; sem espera de rede                                                                                                       |
+| CX          | Pass   | Sem escrita de dados, contrato de CRM preservado                                                                                                      |
+| Growth      | Pass   | Cinco UTMs e traffic_origin preservados no payload após Home/Radar/Quiz; source_url completo; campanha nova substitui conjunto; sessão nova não herda |
+| PMO/QA      | Pass   | 44 testes dirigidos; pnpm validate: 51 testes + typecheck + build; lint dos quatro arquivos                                                           |
+
+Release: src/routes/__root.tsx, src/lib/quiz-attribution.ts e os dois testes correspondentes. Risco baixo; limite: não criado lead produtivo para validação, nem acionado CRM/IA. Não recuperar automaticamente origem perdida de leads antigos. Rollback: reverter somente esta correção para base 815cd19 e republicar, mantendo as rotas novas. Autorização de implementar/publicar a migração já dada nesta thread cobre a correção do fluxo. Edição direta no Code Editor, sem créditos de agente Lovable. Evidência local completa: docs/QUIZ_UTM_FIX_2026-09-28.md no worktree de correção.
