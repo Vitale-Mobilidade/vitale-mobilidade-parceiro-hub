@@ -20,12 +20,12 @@ import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
-import { composeCover } from "@/lib/cover-compose";
 import {
   blocksToMarkdown,
   CONTENT_TYPES,
   type EditorialArticle,
 } from "../../supabase/functions/_shared/editorial-contract";
+import { composeCover } from "@/lib/cover-compose";
 import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 
 const BTN =
@@ -37,9 +37,19 @@ const PANEL = "rounded-2xl border border-line bg-white p-5 shadow-sm";
 const ADMIN_STALE_MS = 5 * 60 * 1000;
 const GROWTH_STALE_MS = 60 * 1000;
 const date = (v?: string | null) =>
-  v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+  v
+    ? new Date(v).toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "—";
 const money = (v?: number | null) =>
-  v == null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+  v == null
+    ? "—"
+    : new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(v);
 const queryError = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 function Heading({ title, detail, children }: { title: string; detail?: string; children?: React.ReactNode }) {
@@ -302,12 +312,18 @@ function Growth() {
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <RankedList
               title="Bikes mais clicadas no Quiz"
-              rows={data.topBikes.map((row) => ({ label: row.name, value: row.clicks }))}
+              rows={data.topBikes.map((row) => ({
+                label: row.name,
+                value: row.clicks,
+              }))}
               empty="Nenhuma bike clicada no período."
             />
             <RankedList
               title="Origens dos leads do Quiz"
-              rows={data.origins.map((row) => ({ label: row.name, value: row.leads }))}
+              rows={data.origins.map((row) => ({
+                label: row.name,
+                value: row.leads,
+              }))}
               empty="Nenhuma origem registrada no período."
             />
           </div>
@@ -612,7 +628,9 @@ function Videos() {
         contentType,
       });
       setMessage("Vídeo salvo. O catálogo comercial e a planilha não foram alterados.");
-      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "editorial-workspace"],
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao salvar.");
     } finally {
@@ -768,7 +786,11 @@ export function AdminArticlesPage() {
 type SimpleStatus = "draft" | "published" | "archived";
 const simpleStatus = (s: string): SimpleStatus =>
   s === "published" ? "published" : s === "archived" ? "archived" : "draft";
-const STATUS_LABEL: Record<SimpleStatus, string> = { draft: "Rascunho", published: "Publicado", archived: "Arquivado" };
+const STATUS_LABEL: Record<SimpleStatus, string> = {
+  draft: "Rascunho",
+  published: "Publicado",
+  archived: "Arquivado",
+};
 function Articles() {
   const [status, setStatus] = useState<"all" | SimpleStatus>("all");
   const workspace = useQuery({
@@ -909,8 +931,11 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
     }
     setBusy("Gerando artigo…");
     try {
-      const result = await adminStream<{ article: EditorialArticle; brief: BriefRow | null }>(
-        "outline-only",
+      const result = await adminStream<{
+        article: EditorialArticle;
+        brief: BriefRow | null;
+      }>(
+        "generate",
         {
           youtubeId: selected.videoId,
           title: selected.title,
@@ -920,9 +945,13 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
         () => setBusy("Gerando artigo…"),
       );
       setCreatedId(result.article.id);
-      if (result.article.status !== "published") await prepareArticle(result.article, result.brief, setBusy);
-      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
-      await navigate({ to: "/admin/conteudos/$id", params: { id: result.article.id } });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "editorial-workspace"],
+      });
+      await navigate({
+        to: "/admin/conteudos/$id",
+        params: { id: result.article.id },
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo. Tente novamente.");
       setBusy("");
@@ -1161,76 +1190,32 @@ type BriefRow = {
     closestArticleId?: string | null;
     intentUncertain?: boolean;
     articleQaPass?: boolean;
-    corpusCounts?: { published: number; written: number; outlines: number; total: number };
+    corpusCounts?: {
+      published: number;
+      written: number;
+      outlines: number;
+      total: number;
+    };
   };
 };
 
 type PipelineResult = { article: EditorialArticle; brief: BriefRow | null };
-const articleReady = (article: EditorialArticle, brief: BriefRow | null) =>
-  hasGeneratedCover(article) &&
-  brief?.status === "ready" &&
-  brief.article_revision === article.revision &&
-  brief.quality_report?.articleQaPass === true &&
+const articleReady = (article: EditorialArticle, _brief: BriefRow | null) =>
+  !article.foundation_required &&
+  article.blocks.filter((block) => block.type === "text" && block.text?.trim()).length >= 2 &&
   article.validation_errors.length === 0;
-const hasGeneratedCover = (article: EditorialArticle) =>
-  article.og_image_url?.includes(`/functions/v1/bike-image?type=editorial-cover&id=${article.id}&`) ?? false;
 
-/** One user action, with private, saved checkpoints that can resume after interruption. */
+/** Restore the complete writer and automatic layout used by the VL20 article. */
 async function prepareArticle(
   initial: EditorialArticle,
-  initialBrief: BriefRow | null,
+  _initialBrief: BriefRow | null,
   onProgress: (message: string) => void,
-  restart = false,
+  _restart = false,
 ): Promise<PipelineResult> {
-  let article = initial;
-  let brief = initialBrief;
-  const rewrite = restart || article.status === "validation_error" || brief?.status === "qa_failed";
-  if (restart || brief?.status !== "ready") {
-    onProgress("Preparando artigo…");
-    const result = await adminStream<PipelineResult>(
-      "brief-regenerate",
-      { id: article.id, revision: article.revision, force: rewrite },
-      () => onProgress("Gerando artigo…"),
-    );
-    article = result.article;
-    brief = result.brief;
-  }
-  if (brief?.status !== "ready") throw new Error("Não foi possível preparar este artigo a partir da transcrição.");
-  if (rewrite || article.blocks.length === 0) {
-    onProgress("Escrevendo artigo…");
-    const result = await adminStream<PipelineResult>(
-      "draft-write",
-      { id: article.id, revision: article.revision },
-      () => onProgress("Gerando artigo…"),
-    );
-    article = result.article;
-    brief = result.brief;
-  }
-  if (rewrite || !hasGeneratedCover(article)) {
-    onProgress("Criando capa…");
-    const cover = await adminCall<{ background: string; title: string; revision: number }>("cover-generate", {
-      id: article.id,
-      revision: article.revision,
-    });
-    const image = await composeCover(cover.background, cover.title);
-    const applied = await adminCall<{ article: EditorialArticle }>("cover-apply", {
-      id: article.id,
-      revision: cover.revision,
-      image: image.dataUrl,
-    });
-    article = applied.article;
-  }
-  if (!articleReady(article, brief)) {
-    onProgress("Conferindo artigo…");
-    const result = await adminStream<PipelineResult>("qa-run", { id: article.id, revision: article.revision }, () =>
-      onProgress("Finalizando artigo…"),
-    );
-    article = result.article;
-    brief = result.brief;
-  }
-  if (!articleReady(article, brief))
-    throw new Error("O artigo precisa de ajustes. Gere novamente para tentar outra versão.");
-  return { article, brief };
+  onProgress("Gerando artigo…");
+  return adminStream<PipelineResult>("compile-article", { id: initial.id, revision: initial.revision }, () =>
+    onProgress("Gerando artigo…"),
+  );
 }
 
 function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
@@ -1257,7 +1242,10 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         setBikes(catalog.bikes);
         setIndex(published ?? []);
         if (detail.article.primary_bike_id) {
-          const videos = await safeVideos({ bikeId: detail.article.primary_bike_id, limit: 12 });
+          const videos = await safeVideos({
+            bikeId: detail.article.primary_bike_id,
+            limit: 12,
+          });
           setRelatedVideos(videos.filter((item) => item.videoId !== detail.article.video_id).slice(0, 4));
         }
       })
@@ -1272,12 +1260,17 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
       const result = await prepareArticle(article, brief, setBusy, restart);
       setArticle(result.article);
       setBrief(result.brief);
-      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
-      setMessage("Artigo e capa prontos para publicar.");
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "editorial-workspace"],
+      });
+      setMessage("Artigo pronto para publicar.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não conseguimos gerar o artigo.");
       try {
-        const detail = await adminCall<{ article: EditorialArticle; brief: BriefRow | null }>("article-get", { id });
+        const detail = await adminCall<{
+          article: EditorialArticle;
+          brief: BriefRow | null;
+        }>("article-get", { id });
         setArticle(detail.article);
         setBrief(detail.brief);
       } catch {
@@ -1293,20 +1286,83 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     setError("");
     setMessage("");
     try {
-      const result = await adminCall<{ article?: EditorialArticle; brief?: typeof brief; ok?: boolean }>(name, {
+      const result = await adminCall<{
+        article?: EditorialArticle;
+        brief?: typeof brief;
+        ok?: boolean;
+      }>(name, {
         id,
         revision: article.revision,
         ...payload,
       });
       if (result.article) {
         setArticle(result.article);
-        await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["admin", "editorial-workspace"],
+        });
       }
       if (result.brief) setBrief(result.brief);
       return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
       return null;
+    } finally {
+      setBusy("");
+    }
+  }
+  async function changeCover(file?: File) {
+    if (!article) return;
+    setBusy(file ? "Salvando capa…" : "Gerando capa…");
+    setError("");
+    setMessage("");
+    try {
+      let image: string;
+      let revision = article.revision;
+      if (file) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024)
+          throw new Error("Escolha uma imagem JPG, PNG ou WebP de até 10 MB.");
+        const bitmap = await createImageBitmap(file);
+        if (bitmap.width * bitmap.height > 32_000_000) {
+          bitmap.close();
+          throw new Error("Esta imagem é grande demais. Escolha uma versão menor.");
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          bitmap.close();
+          throw new Error("Não foi possível preparar a imagem.");
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const scale = Math.max(1280 / bitmap.width, 720 / bitmap.height);
+        ctx.drawImage(
+          bitmap,
+          (1280 - bitmap.width * scale) / 2,
+          (720 - bitmap.height * scale) / 2,
+          bitmap.width * scale,
+          bitmap.height * scale,
+        );
+        bitmap.close();
+        image = canvas.toDataURL("image/jpeg", 0.9);
+      } else {
+        const cover = await adminCall<{
+          background: string;
+          title: string;
+          revision: number;
+        }>("cover-generate", { id: article.id, revision });
+        revision = cover.revision;
+        image = (await composeCover(cover.background, cover.title)).dataUrl;
+      }
+      const result = await adminCall<{ article: EditorialArticle }>("cover-apply", { id: article.id, revision, image });
+      setArticle(result.article);
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "editorial-workspace"],
+      });
+      setMessage("Capa atualizada.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível trocar a capa. A capa anterior foi mantida.");
     } finally {
       setBusy("");
     }
@@ -1356,8 +1412,14 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     }
     setBusy("Excluindo…");
     try {
-      await adminCall("delete-article", { id, revision: current.revision, confirm: current.slug });
-      await queryClient.invalidateQueries({ queryKey: ["admin", "editorial-workspace"] });
+      await adminCall("delete-article", {
+        id,
+        revision: current.revision,
+        confirm: current.slug,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "editorial-workspace"],
+      });
       await navigate({ to: "/admin/conteudos" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível excluir.");
@@ -1414,6 +1476,37 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
               </button>
             </>
           )}
+          {!draft && (articleReady(article, brief) || status === "published") && (
+            <details className="relative">
+              <summary className={`${OUTLINE} cursor-pointer list-none`}>Capa</summary>
+              <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-line bg-white p-2 shadow-lg">
+                <label className="block cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-emerald-50">
+                  Adicionar imagem
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={Boolean(busy)}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void changeCover(file);
+                    }}
+                  />
+                </label>
+                <button
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                  disabled={Boolean(busy)}
+                  onClick={() => void changeCover()}
+                >
+                  Gerar nova capa com IA
+                </button>
+                <p className="px-3 py-2 text-xs text-muted-foreground">
+                  Gerar com IA usa créditos. Adicionar imagem não usa IA.
+                </p>
+              </div>
+            </details>
+          )}
           <details className="relative">
             <summary className={`${OUTLINE} cursor-pointer list-none`} aria-label="Mais ações">
               Mais
@@ -1461,14 +1554,11 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
       </div>
       {error && <Notice danger>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
-      {article.foundation_required &&
-        status !== "published" &&
-        status !== "archived" &&
-        !articleReady(article, brief) && (
-          <button className={`${BTN} mb-6`} disabled={Boolean(busy)} onClick={() => void generate()}>
-            {busy || (article.blocks.length ? "Concluir artigo" : "Gerar artigo")}
-          </button>
-        )}
+      {status !== "published" && status !== "archived" && !articleReady(article, brief) && (
+        <button className={`${BTN} mb-6`} disabled={Boolean(busy)} onClick={() => void generate()}>
+          {busy || "Gerar artigo"}
+        </button>
+      )}
       {draft ? (
         <section className="mx-auto max-w-4xl space-y-5 rounded-3xl bg-white p-6 shadow-sm sm:p-10">
           <label className="block text-sm font-semibold">
@@ -1563,7 +1653,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         </section>
       ) : (
         <>
-          {article.foundation_required && article.blocks.length === 0 ? (
+          {article.blocks.length === 0 ? (
             <section className={`${PANEL} text-sm`} aria-label="Prévia do artigo">
               <h2 className="text-xl font-bold">Artigo em preparação</h2>
               <p className="mt-2 text-muted-foreground">
@@ -1642,7 +1732,10 @@ function AiStatus({ role }: { role: AdminRole }) {
     setError("");
     setMessage("");
     try {
-      const result = await adminCall<{ version: number }>("prompt-create", { systemPrompt: newPrompt, reason });
+      const result = await adminCall<{ version: number }>("prompt-create", {
+        systemPrompt: newPrompt,
+        reason,
+      });
       setMessage(`Prompt v${result.version} criado. Versões anteriores permanecem preservadas.`);
       setReason("");
       await load();
