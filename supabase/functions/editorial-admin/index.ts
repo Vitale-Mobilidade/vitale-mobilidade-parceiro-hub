@@ -251,7 +251,7 @@ async function validate(db: SupabaseClient, article: EditorialArticle): Promise<
 
 const RESPONSES_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const CHAT_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const ARTICLE_MODEL = "google/gemini-3.8-flash";
+const ARTICLE_MODEL = "openai/gpt-6-sol";
 
 /** Provider-compatible streaming call with strict JSON schema and low reasoning. */
 async function aiStructured(
