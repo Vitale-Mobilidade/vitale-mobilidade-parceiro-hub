@@ -250,9 +250,10 @@ async function validate(db: SupabaseClient, article: EditorialArticle): Promise<
 }
 
 const RESPONSES_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const CHAT_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const ARTICLE_MODEL = "google/gemini-3.8-flash";
 
-/** Streaming Responses call with a strict JSON schema; no timer abort (reasoning runs are long). */
+/** Provider-compatible streaming call with strict JSON schema and low reasoning. */
 async function aiStructured(
   system: string,
   user: string,
@@ -261,22 +262,36 @@ async function aiStructured(
   onTick?: () => void,
 ): Promise<unknown> {
   if (!AI_KEY) throw new Error("ai_not_configured");
-  const response = await fetch(RESPONSES_URL, {
+  // This gateway only serves OpenAI at /responses; Google uses Chat Completions.
+  const useChat = ARTICLE_MODEL.startsWith("google/");
+  const payload = useChat
+    ? {
+        model: ARTICLE_MODEL,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        stream: true,
+        reasoning_effort: "low",
+        response_format: { type: "json_schema", json_schema: { name, strict: true, schema } },
+      }
+    : {
+        model: ARTICLE_MODEL,
+        instructions: system,
+        input: user,
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        text: { format: { type: "json_schema", name, strict: true, schema } },
+      };
+  const response = await fetch(useChat ? CHAT_URL : RESPONSES_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Lovable-API-Key": AI_KEY,
       "X-Lovable-AIG-SDK": "fetch",
     },
-    body: JSON.stringify({
-      model: ARTICLE_MODEL,
-      instructions: system,
-      input: user,
-      stream: true,
-      store: false,
-      reasoning: { effort: "low" },
-      text: { format: { type: "json_schema", name, strict: true, schema } },
-    }),
+    body: JSON.stringify(payload),
   });
   if (!response.ok || !response.body) throw new Error(`ai_http_${response.status}`);
   const reader = response.body.getReader();
@@ -302,8 +317,21 @@ async function aiStructured(
         } catch {
           continue;
         }
-        if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
-        if (event.type === "response.failed" || event.type === "error") throw new Error("ai_failed");
+        if (useChat) {
+          const choice = event.choices?.[0];
+          if (typeof choice?.delta?.content === "string") text += choice.delta.content;
+          if (choice?.finish_reason === "length") throw new Error("ai_response_incomplete");
+          if (choice?.finish_reason === "content_filter") throw new Error("ai_failed");
+        } else if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+          text += event.delta;
+        }
+        if (
+          event.error ||
+          event.type === "response.failed" ||
+          event.type === "response.incomplete" ||
+          event.type === "error"
+        )
+          throw new Error("ai_failed");
       }
     }
     if (onTick && Date.now() - last > 4000) {
@@ -1422,6 +1450,8 @@ function stageStream(
 
 export function stageError(code: string): string {
   const map: Record<string, string> = {
+    ai_http_400: "A integração de IA recusou a configuração da geração. A transcrição foi preservada.",
+    ai_response_incomplete: "A IA não terminou o artigo. A transcrição foi preservada; tente novamente.",
     ai_http_402: "Os créditos de IA do Lovable acabaram. Recarregue os créditos para gerar este artigo.",
     revision_conflict: "O artigo foi alterado em outra aba. Recarregue a página.",
     draft_not_found: "Rascunho não encontrado (artigos publicados não são reprocessados).",
