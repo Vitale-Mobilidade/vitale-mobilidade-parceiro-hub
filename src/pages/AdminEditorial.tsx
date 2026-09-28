@@ -1094,6 +1094,12 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
             placeholder="Cole aqui a transcrição do vídeo."
           />
         </label>
+        {selectedVideoId && savedVideos.some((video) => video.youtube_id === selectedVideoId && video.transcript) && (
+          <p className="text-xs text-muted-foreground">
+            A transcrição preenchida vem do cadastro deste vídeo. Você pode substituir pelo texto correto antes de
+            gerar.
+          </p>
+        )}
         <button type="submit" className={`${BTN} w-full py-3.5 text-base`} disabled={Boolean(busy)} aria-live="polite">
           {busy || "Gerar artigo"}
         </button>
