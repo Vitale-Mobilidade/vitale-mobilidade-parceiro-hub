@@ -23,8 +23,7 @@ const MAX_RADAR = 4;
  */
 export const getHomeCards = createServerFn({ method: "GET" }).handler(
   async (): Promise<
-    | { ok: true; cards: HomeCard[]; search: HomeSearchItem[]; radar: HomeRadarItem[] }
-    | { ok: false }
+    { ok: true; cards: HomeCard[]; search: HomeSearchItem[]; radar: HomeRadarItem[] } | { ok: false }
   > => {
     try {
       const r = await fetchTrackerCatalog();
@@ -38,31 +37,34 @@ export const getHomeCards = createServerFn({ method: "GET" }).handler(
           typeof e.currentPrice === "number" &&
           Number.isFinite(e.currentPrice),
       );
-      const safeImg = (v: unknown) => (typeof v === "string" && /^https:\/\/[^\s"<>]+$/.test(v) ? v : null);
+      const safeImg = (v: unknown) =>
+        typeof v === "string" && /^(?:https:\/\/[^\s"<>]+|\/assets\/[^\s"<>]+)$/.test(v) ? v : null;
       const ranked = sortEntries(valid, "relevance");
-      const cards = ranked
-        .slice(0, MAX_CARDS)
-        .map((e) => ({
-          id: e.id,
-          name: e.name,
-          currentPrice: e.currentPrice,
-          // Imagem da bike já servida pelo catálogo (bike-image); só https.
-          image: typeof e.image === "string" && /^https:\/\/[^\s"<>]+$/.test(e.image) ? e.image : null,
-        }));
-      const search = valid.map((e) => ({ id: e.id, name: e.name, currentPrice: e.currentPrice, classification: e.metrics.classification }));
-      const radar = ranked
-        .slice(0, MAX_RADAR)
-        .map((e) => ({
-          id: e.id,
-          name: e.name,
-          currentPrice: e.currentPrice,
-          typicalPrice:
-            typeof e.metrics.typicalPrice === "number" && Number.isFinite(e.metrics.typicalPrice)
-              ? e.metrics.typicalPrice
-              : null,
-          classification: e.metrics.classification,
-          image: safeImg(e.image),
-        }));
+      const cards = ranked.slice(0, MAX_CARDS).map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPrice: e.currentPrice,
+        // Catálogo resolve fonte HTTPS ou asset da mesma bike no build atual.
+        image:
+          typeof e.image === "string" && /^(?:https:\/\/[^\s"<>]+|\/assets\/[^\s"<>]+)$/.test(e.image) ? e.image : null,
+      }));
+      const search = valid.map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPrice: e.currentPrice,
+        classification: e.metrics.classification,
+      }));
+      const radar = ranked.slice(0, MAX_RADAR).map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPrice: e.currentPrice,
+        typicalPrice:
+          typeof e.metrics.typicalPrice === "number" && Number.isFinite(e.metrics.typicalPrice)
+            ? e.metrics.typicalPrice
+            : null,
+        classification: e.metrics.classification,
+        image: safeImg(e.image),
+      }));
       return { ok: true, cards, search, radar };
     } catch {
       return { ok: false };
