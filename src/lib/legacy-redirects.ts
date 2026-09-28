@@ -2,11 +2,22 @@
 import { legacyRadarRedirect } from "./radar-base";
 
 /** /calc e /calc/ → /ferramentas, preservando query/UTM. Não captura /calculadoras/*. */
-export function legacyToolsRedirect(pathname: string, search: string): string | null {
+export function legacyToolsRedirect(
+  pathname: string,
+  search: string,
+): string | null {
   return /^\/calc\/?$/.test(pathname) ? `/ferramentas${search}` : null;
 }
 
 /** Único ponto de decisão de redirect legado do site. */
-export function legacyRedirect(pathname: string, search: string): string | null {
-  return legacyRadarRedirect(pathname, search) ?? legacyToolsRedirect(pathname, search);
+export function legacyRedirect(
+  pathname: string,
+  search: string,
+): string | null {
+  // QR Codes antigos abrem a Home, sem carregar Quiz ou consultar catálogo.
+  if (/^\/escolherbike\/?$/.test(pathname)) return `/${search}`;
+  return (
+    legacyRadarRedirect(pathname, search) ??
+    legacyToolsRedirect(pathname, search)
+  );
 }

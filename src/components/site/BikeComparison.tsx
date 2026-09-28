@@ -270,7 +270,7 @@ export function BikeComparison({ pair, onClose }: { pair: [DiscoveryBike, Discov
           </p>
         </div>
         <Link
-          to="/escolherbike"
+          to="/quiz"
           reloadDocument
           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-ink-foreground hover:opacity-90"
         >

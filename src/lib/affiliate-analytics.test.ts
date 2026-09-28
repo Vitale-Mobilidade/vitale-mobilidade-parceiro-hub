@@ -53,7 +53,7 @@ describe("affiliate analytics", () => {
   });
 
   it("omite route fora das rotas permitidas (sem texto livre)", () => {
-    setWindow({ dataLayer: [], location: { pathname: "/escolherbike" } });
+    setWindow({ dataLayer: [], location: { pathname: "/quiz" } });
     trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_final" });
     const evt = layer()[0] as Record<string, unknown>;
     expect(evt).not.toHaveProperty("route");

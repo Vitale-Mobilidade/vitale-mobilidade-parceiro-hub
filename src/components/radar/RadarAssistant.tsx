@@ -15,7 +15,7 @@ interface CatalogItem {
 
 /**
  * Assistente Vitale — UMA instância por rota.
- * /escolherbike já monta a sua própria instância: aqui é excluída de propósito.
+ * /quiz já monta a sua própria instância: aqui é excluída de propósito.
  */
 export function RadarAssistant({ initialOpen = false }: { initialOpen?: boolean }) {
   const location = useLocation();
@@ -24,7 +24,7 @@ export function RadarAssistant({ initialOpen = false }: { initialOpen?: boolean 
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
 
   const path = location.pathname;
-  const excluded = path.startsWith("/escolherbike") || path.startsWith("/painel-bikes");
+  const excluded = path.startsWith("/quiz") || path.startsWith("/painel-bikes");
   const base = radarBaseFromPath(path);
   const isDetail = /^\/(?:acompanhamento|radar)\/[^/]+$/.test(path);
   const isRadar = path === "/acompanhamento" || path === "/radar";

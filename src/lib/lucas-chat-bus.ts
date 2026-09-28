@@ -1,4 +1,4 @@
-// Simple pub/sub used to coordinate promotional popups on /escolherbike with
+// Simple pub/sub used to coordinate promotional popups on /quiz with
 // the SDR "Lucas" chat. When the chat is open (or was recently closed) other
 // promotional overlays MUST stay silent.
 

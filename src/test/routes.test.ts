@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createMemoryHistory, createRouter } from "@tanstack/react-router";
+import {
+  createMemoryHistory,
+  createRouter,
+  isRedirect,
+} from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { routeTree } from "@/routeTree.gen";
 
@@ -19,6 +23,7 @@ function leafId(path: string) {
 describe("fundação TanStack Start — rotas", () => {
   it.each([
     ["/", "/"],
+    ["/quiz", "/quiz"],
     ["/escolherbike", "/escolherbike"],
     ["/grupodeofertas", "/grupodeofertas"],
     ["/acompanhamento", "/acompanhamento/"],
@@ -33,8 +38,14 @@ describe("fundação TanStack Start — rotas", () => {
     ["/ferramentas/carro-vs-bike", "/ferramentas/carro-vs-bike"],
     ["/ferramentas/moto-vs-bike", "/ferramentas/moto-vs-bike"],
     ["/ferramentas/aplicativos-vs-bike", "/ferramentas/aplicativos-vs-bike"],
-    ["/ferramentas/transporte-publico-vs-bike", "/ferramentas/transporte-publico-vs-bike"],
-    ["/ferramentas/veiculo-alugado-vs-bike-propria", "/ferramentas/veiculo-alugado-vs-bike-propria"],
+    [
+      "/ferramentas/transporte-publico-vs-bike",
+      "/ferramentas/transporte-publico-vs-bike",
+    ],
+    [
+      "/ferramentas/veiculo-alugado-vs-bike-propria",
+      "/ferramentas/veiculo-alugado-vs-bike-propria",
+    ],
     ["/ferramentas/meta-entregas", "/ferramentas/meta-entregas"],
     ["/ferramentas/economia-de-tempo", "/ferramentas/economia-de-tempo"],
     ["/calculadoras/economia", "/calculadoras/economia"],
@@ -47,6 +58,37 @@ describe("fundação TanStack Start — rotas", () => {
     const leaf = matches[matches.length - 1];
     expect(leaf?.routeId).toBe("/acompanhamento/$bikeId");
     expect(leaf?.params).toMatchObject({ bikeId: "d50_cross" });
+  });
+
+  it("rota antiga redireciona para a Home sem loader; Quiz tem metadata nova", () => {
+    const router = makeRouter();
+    const old = router.routesById["/escolherbike"];
+    expect(old.options.loader).toBeUndefined();
+    const beforeLoad = old.options.beforeLoad!;
+    try {
+      beforeLoad({ location: { searchStr: "?utm_source=yt" } } as never);
+      expect.fail("A rota antiga deveria redirecionar");
+    } catch (result) {
+      expect(isRedirect(result)).toBe(true);
+      expect((result as { options: unknown }).options).toMatchObject({
+        href: "/?utm_source=yt",
+        statusCode: 301,
+      });
+    }
+    const quiz = router.routesById["/quiz"];
+    expect(quiz.options.loader).toBeTypeOf("function");
+    const head = quiz.options.head!({} as never) as {
+      links: Array<Record<string, string>>;
+      meta: Array<Record<string, string>>;
+    };
+    expect(head.links).toContainEqual({
+      rel: "canonical",
+      href: "https://vitalemobilidade.com/quiz",
+    });
+    expect(head.meta).toContainEqual({
+      property: "og:url",
+      content: "https://vitalemobilidade.com/quiz",
+    });
   });
 
   it("/radar/$bikeId extrai o parâmetro", () => {
@@ -65,22 +107,48 @@ describe("fundação TanStack Start — rotas", () => {
 
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
-    for (const id of ["/", "/escolherbike", "/radar/", "/radar/$bikeId", "/painel-bikes", "/admin/", "/admin/growth", "/admin/videos", "/conteudos/", "/ferramentas/", "/ferramentas/meta-entregas", "/ferramentas/economia-de-tempo"]) {
-      const route = (router.routesById as unknown as Record<string, { options: { component?: unknown } }>)[id];
+    for (const id of [
+      "/",
+      "/quiz",
+      "/radar/",
+      "/radar/$bikeId",
+      "/painel-bikes",
+      "/admin/",
+      "/admin/growth",
+      "/admin/videos",
+      "/conteudos/",
+      "/ferramentas/",
+      "/ferramentas/meta-entregas",
+      "/ferramentas/economia-de-tempo",
+    ]) {
+      const route = (
+        router.routesById as unknown as Record<
+          string,
+          { options: { component?: unknown } }
+        >
+      )[id];
       expect(route, id).toBeDefined();
       expect(route.options.component, id).toBeDefined();
     }
   });
 
   it("hub oficial lista exatamente as sete ferramentas e o legado é noindex", async () => {
-    const { MOBILITY_TOOLS, toolHead } = await import("@/lib/mobility/tools-registry");
+    const { MOBILITY_TOOLS, toolHead } =
+      await import("@/lib/mobility/tools-registry");
     expect(MOBILITY_TOOLS).toHaveLength(7);
     for (const t of MOBILITY_TOOLS) {
       const head = toolHead(t.slug);
       expect(head.links[0].href).toBe(`https://vitalemobilidade.com${t.path}`);
       expect(head.meta.some((m) => m.name === "robots")).toBe(false);
     }
-    const legacy = makeRouter().routesById["/calculadoras/economia" as never] as unknown as { options: { head: () => { meta: Array<Record<string, string>> } } };
-    expect(legacy.options.head().meta).toContainEqual({ name: "robots", content: "noindex, follow" });
+    const legacy = makeRouter().routesById[
+      "/calculadoras/economia" as never
+    ] as unknown as {
+      options: { head: () => { meta: Array<Record<string, string>> } };
+    };
+    expect(legacy.options.head().meta).toContainEqual({
+      name: "robots",
+      content: "noindex, follow",
+    });
   });
 });

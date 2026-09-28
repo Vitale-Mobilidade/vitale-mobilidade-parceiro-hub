@@ -11,7 +11,7 @@ Experiência pública canônica da Bike: Radar Vitale
 
 - [Home](https://vitalemobilidade.com/): visão geral do ecossistema Vitale e caminhos para Quiz, Radar, ferramentas e conteúdos.
 - [Radar de preços](https://vitalemobilidade.com/radar): catálogo de bicicletas elétricas monitoradas, com preço atual registrado, histórico e ficha de cada modelo.
-- [Quiz para escolher uma Bike](https://vitalemobilidade.com/escolherbike): jornada de sete perguntas sobre uso, trajeto, terreno, capacidade, orçamento e experiência.
+- [Quiz para escolher uma Bike](https://vitalemobilidade.com/quiz): jornada de sete perguntas sobre uso, trajeto, terreno, capacidade, orçamento e experiência.
 - [Ferramentas de mobilidade](https://vitalemobilidade.com/ferramentas): sete simulações gratuitas de custo, renda e tempo.
 - [Conteúdos](https://vitalemobilidade.com/conteudos): testes, guias e comparativos editoriais publicados pela Vitale.
 

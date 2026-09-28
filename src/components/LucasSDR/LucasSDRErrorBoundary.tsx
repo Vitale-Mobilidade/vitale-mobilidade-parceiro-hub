@@ -5,7 +5,7 @@ interface State { hasError: boolean }
 
 /**
  * Error boundary isolado para o SDR Lucas.
- * Falhas dentro do widget NUNCA devem derrubar a página /escolherbike.
+ * Falhas dentro do widget NUNCA devem derrubar a página /quiz.
  */
 export class LucasSDRErrorBoundary extends Component<Props, State> {
   override state: State = { hasError: false };

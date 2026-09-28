@@ -14,13 +14,13 @@ describe("quiz funnel normalization", () => {
     expect(normalizeFunnelEvent(SID, "page_view", 5)?.step).toBeNull();
   });
   it("strips query strings and full referrer URLs", () => {
-    expect(safePath("/escolherbike?name=Joao&phone=11999")).toBe("/escolherbike");
+    expect(safePath("/quiz?name=Joao&phone=11999")).toBe("/quiz");
     expect(safePath("https://x.com/a")).toBeNull();
     expect(safeReferrer("https://www.google.com/search?q=joao")).toBe("www.google.com");
     expect(safeReferrer("nope")).toBeNull();
   });
   it("payload never contains PII fields", () => {
-    const p = normalizeFunnelEvent(SID, "quiz_completed", null, { path: "/escolherbike", utm_source: "ig", ...( { name: "Ana", phone: "1199", lead_id: "x" } as object) });
+    const p = normalizeFunnelEvent(SID, "quiz_completed", null, { path: "/quiz", utm_source: "ig", ...( { name: "Ana", phone: "1199", lead_id: "x" } as object) });
     expect(Object.keys(p!).sort()).toEqual(["device", "event", "path", "referrer", "session_id", "step", "utm_campaign", "utm_content", "utm_medium", "utm_source", "utm_term"].sort());
   });
 });

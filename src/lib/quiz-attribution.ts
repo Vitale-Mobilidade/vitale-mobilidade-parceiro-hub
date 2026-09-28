@@ -1,5 +1,5 @@
 /**
- * Atribuição de campanha do quiz /escolherbike.
+ * Atribuição de campanha do quiz /quiz.
  *
  * Regras:
  * - Captura os UTMs REAIS da URL de entrada (nomes de parâmetro case-insensitive,

@@ -56,7 +56,7 @@ function Hero() {
         </p>
         <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row">
           <Link
-            to="/escolherbike"
+            to="/quiz"
             reloadDocument
             className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90"
           >
@@ -418,7 +418,7 @@ function CalculatorPanel() {
           Calcular minha economia <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         <Link
-          to="/escolherbike"
+          to="/quiz"
           reloadDocument
           className="text-sm font-semibold text-action underline underline-offset-2"
         >
