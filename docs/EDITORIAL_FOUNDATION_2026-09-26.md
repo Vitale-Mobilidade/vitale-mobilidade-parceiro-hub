@@ -240,3 +240,37 @@ Rollback: remover a flag (volta a não publicar); reimplantar a `editorial-admin
 - `EDITORIAL_AUTO_PUBLISH` continua desligado. Nenhum artigo piloto foi escrito ou publicado. Para liberar escala, é preciso restabelecer o gateway, regenerar os outlines com Bikes associadas, validar Radar/omissão e QA, e comprovar cinco intenções editoriais genuinamente distintas com fontes adequadas.
 - Revisão posterior das oito perspectivas: Produto Pass para o painel e gate de QA; CTO Pass para frontend e função ativa, pendente de geração bem-sucedida; IA Pass local, pendente de geração viva; Segurança Pass (RLS e gate preservados); UX Pass no smoke da prévia; CX Pass para etapas privadas retomáveis; Growth/SEO-IA Fail para escala por falta de diversidade e prova Radar; PMO/QA Fail para liberação de publicação em massa por `ai_http_402`. Decisão consolidada: painel publicado; NO-GO para publicação automática em massa.
 - Custo para retomar: créditos de IA do Lovable e chamadas de teste; não comprar créditos automaticamente. Rollback do painel: publicar revisão anterior do site; da função: reimplantar versão anterior. O banco editorial é aditivo e os dois publicados não dependem da fundação.
+
+# Voz de especialista e slug editorial — 28/09/2026
+
+## Revisão prévia (estrutural: IA e SEO)
+
+| Perspectiva | Impacto, risco, dependência e recomendação                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Explicar a bike para orientar o leitor. Risco de empobrecer informações; manter exemplos concretos e a estrutura aprovada.            |
+| CTO         | Slug do H1 final na geração. Risco de colisão e URLs existentes; sufixo de artigo e preservação de publicados.                        |
+| IA          | Organizar por problema/critério, sem cronologia nem ressalvas repetidas. Fonte privada, mesma chamada/modelo, nenhum teste inventado. |
+| Segurança   | Sem auth/RLS/schema novos. Fonte não confiável e revision lock preservados.                                                           |
+| UX          | Estrutura, capa, módulos e botão único preservados; nenhuma opção nova.                                                               |
+| CX          | Instrução corrigida na chamada existente; evitar testes pagos e geração repetida.                                                     |
+| Growth/SEO  | Slug acompanha H1 antes da primeira publicação. URLs publicadas estáveis. Voz de especialista não inventa experiência própria.        |
+| PMO/QA      | Testar slug novo, publicado preservado, colisão e linguagem de resenha; validate. Rollback ab09dca.                                   |
+
+Decisão: corrigir instrução primária/refinamento existentes e slug do H1 antes da primeira publicação. Preservar URLs já publicadas e disposição dos blocos. Detector sinaliza referências de resenha; não mede qualidade inteira por regex nem bloqueia contextos de teste úteis. Sem score ou etapa nova. Autorização de implementação/publicação persiste nesta tarefa; nenhum crédito IA usado nos testes. Não regenerar corpus. Exemplos de vídeos não constituem taxonomia fechada; tema e necessidade do leitor orientam qualquer artigo, com ou sem bike.
+
+## Revisão posterior
+
+| Perspectiva | Estado e evidência                                                                                                                                                                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Pass: voz orientada ao assunto e ao leitor; nenhuma mudança de estrutura visual.                                                                                                                                                                      |
+| CTO         | Pass: slug usa H1 final, mantém URL já pública, colisão usa ID de artigo, revision lock intacto.                                                                                                                                                      |
+| IA          | Pass local: instrução qualitativa na chamada principal/refinamento existente; assunto livre, fatos e sourceExcerpt preservados. Nenhum resultado de IA novo foi gerado como teste; qualidade final precisa ser observada nas próximas gerações reais. |
+| Segurança   | Pass: sem schema/RLS/auth/secret novo; não há escrita em artigos existentes.                                                                                                                                                                          |
+| UX          | Pass: diff sem componentes, sem controles novos ou alteração da disposição aprovada.                                                                                                                                                                  |
+| CX          | Pass: não exige classificar vídeo, definir plano ou consumir nova cadeia de IA.                                                                                                                                                                       |
+| Growth/SEO  | Pass: título e metadados refletem assunto; slug editorial para não publicados; URLs existentes estáveis.                                                                                                                                              |
+| PMO/QA      | Pass local:19 testes direcionados,47 regressões do validate, typecheck/build e sintaxe das duas fontes Edge aprovados.                                                                                                                                |
+
+Limite: a mudança vale para novas gerações; os dois artigos publicados não são reescritos por efeito de deploy. Slugs desses publicados ficam estáveis para manter links/canonical; alteração posterior exigiria aliases/redirect. Rollback: ab09dca. Sem chamada paga, sem nova versão do prompt no banco; regra editorial aplicada pelo escritor no código.
+
+---
