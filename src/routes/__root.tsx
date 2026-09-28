@@ -12,6 +12,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import NotFound from "@/pages/NotFound";
+import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
@@ -48,6 +49,12 @@ const SITE_JSONLD = {
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: () => {
+    // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+      captureQuizAttribution();
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -113,10 +120,18 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const href = useRouterState({ select: (s) => s.location.href });
   const excluded = path.startsWith("/quiz");
+  // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
+  useEffect(() => {
+    if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
+  }, [href]);
   return (
     <QueryClientProvider client={router.options.context.queryClient}>
-      <a href="#conteudo-principal" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:font-semibold focus:text-ink focus:shadow-lg">
+      <a
+        href="#conteudo-principal"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:font-semibold focus:text-ink focus:shadow-lg"
+      >
         Pular para o conteúdo
       </a>
       <div id="conteudo-principal" tabIndex={-1}>
