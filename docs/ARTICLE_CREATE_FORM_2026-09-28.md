@@ -49,3 +49,9 @@ Estrutural: altera entrada da IA editorial e relações de Bikes, sem migration.
 - Aplicação deve incluir frontend, editorial-admin e o novo helper compartilhado; apenas publicar o frontend deixaria o backend antigo ignorar a seleção de Bikes. Não é necessária migration.
 - Rollback: reverter este delta para `4f00b7b` no frontend e Edge Function; capas já aplicadas futuramente seguem o histórico/revisão existente. Sem rollback de banco nesta task.
 - Decisão: GO para handoff local. Publicação/aplicação externa requer autorização específica conforme EXECUTION_GUARDRAILS.md.
+
+## Aplicação no Lovable, 28/09/2026
+- Autorização do responsável nesta conversa para aplicar e implantar; Publish do frontend ainda não autorizado (aguarda revisão independente do diff).
+- Base atual confirmada: `fa1d2e8c81381b9102e9ba3bec9c9317e0a80c73`, árvore limpa; dry-run sem conflitos; patch aplicado sem alterações de linha (`patch -p1`, pois `git apply` é bloqueado no ambiente).
+- Evidência: 7 arquivos dirigidos, 34 testes aprovados; `pnpm validate` aprovado (59 testes, typecheck, build).
+- Backend: somente `editorial-admin` implantada, com o helper `_shared/editorial-create-input.ts`; chamada sem sessão retorna 403. Sem migration, RLS, segredos, geração real ou escrita de artigos.
