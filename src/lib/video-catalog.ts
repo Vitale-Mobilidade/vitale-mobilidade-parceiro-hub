@@ -30,6 +30,12 @@ export type VideoItem = {
   unmatched: string[];
 };
 
+/** Bike pages show the complete association; generic home/catalog previews remain compact. */
+export function selectCatalogVideos(items: VideoItem[], bikeId: string | null, limit: number | null): VideoItem[] {
+  const selected = bikeId ? items.filter((video) => video.bikeIds.includes(bikeId)) : items;
+  return limit === null ? selected : selected.slice(0, limit);
+}
+
 const YT_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
 export type YoutubeThumbnailVariant = "mqdefault" | "hqdefault" | "sddefault" | "maxresdefault";
@@ -39,12 +45,17 @@ export function youtubeThumbnailUrl(videoId: string, variant: YoutubeThumbnailVa
 }
 
 /** Reduz somente thumbnails oficiais do YouTube; outras imagens editoriais ficam intactas. */
-export function youtubeThumbnailVariant(raw: string | null, variant: YoutubeThumbnailVariant = "mqdefault"): string | null {
+export function youtubeThumbnailVariant(
+  raw: string | null,
+  variant: YoutubeThumbnailVariant = "mqdefault",
+): string | null {
   if (!raw) return null;
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" || url.hostname !== "i.ytimg.com") return raw;
-    const match = url.pathname.match(/^\/vi\/([A-Za-z0-9_-]{11})\/(?:mqdefault|hqdefault|sddefault|maxresdefault)\.jpg$/);
+    const match = url.pathname.match(
+      /^\/vi\/([A-Za-z0-9_-]{11})\/(?:mqdefault|hqdefault|sddefault|maxresdefault)\.jpg$/,
+    );
     return match ? `https://i.ytimg.com/vi/${match[1]}/${variant}.jpg` : raw;
   } catch {
     return raw;
@@ -75,9 +86,13 @@ export function parseYoutubeId(raw: string): string | null {
 
 /** "08/04/2026" -> "2026-04-08" | null. */
 export function parseBrDate(raw: string): string | null {
-  const m = String(raw ?? "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const m = String(raw ?? "")
+    .trim()
+    .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
-  const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3]);
+  const d = Number(m[1]),
+    mo = Number(m[2]),
+    y = Number(m[3]);
   if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
   return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
@@ -88,8 +103,17 @@ export function parseBrDate(raw: string): string | null {
  */
 export const VIDEO_BIKE_IDS = [
   ...KNOWN_BIKE_IDS,
-  "bw1", "vl20", "l10", "l20_cross", "v9_pro", "v9_max_s", "v9_max_20ah",
-  "v9_max_ufofast_duas_baterias", "x50_action_pro", "s12", "s14",
+  "bw1",
+  "vl20",
+  "l10",
+  "l20_cross",
+  "v9_pro",
+  "v9_max_s",
+  "v9_max_20ah",
+  "v9_max_ufofast_duas_baterias",
+  "x50_action_pro",
+  "s12",
+  "s14",
 ] as const;
 
 /**
@@ -122,23 +146,29 @@ export function buildVideoCatalog(csv: string): VideoItem[] {
   if (rows.length < 2) return [];
   const headers = rows[0].map((h) => normalizeName(h));
   const col = (n: string) => headers.indexOf(normalizeName(n));
-  const iDate = col("Data"), iTitle = col("Titulo"), iLink = col("Link Youtube"), iBikes = col("Bikes");
+  const iDate = col("Data"),
+    iTitle = col("Titulo"),
+    iLink = col("Link Youtube"),
+    iBikes = col("Bikes");
   if (iTitle < 0 || iLink < 0) return [];
   const seen = new Set<string>();
   const out: VideoItem[] = [];
   for (const cells of rows.slice(1)) {
     const videoId = parseYoutubeId(cells[iLink] ?? "");
-    const title = String(cells[iTitle] ?? "").replace(/\s+/g, " ").trim();
+    const title = String(cells[iTitle] ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!videoId || !title || seen.has(videoId)) continue;
     seen.add(videoId);
     const bikeIds: string[] = [];
     const unmatched: string[] = [];
-    for (const tok of String(iBikes >= 0 ? cells[iBikes] ?? "" : "").split(",")) {
+    for (const tok of String(iBikes >= 0 ? (cells[iBikes] ?? "") : "").split(",")) {
       const t = tok.trim();
       if (!t) continue;
       const id = matchBikeToken(t);
-      if (id) { if (!bikeIds.includes(id)) bikeIds.push(id); }
-      else unmatched.push(t);
+      if (id) {
+        if (!bikeIds.includes(id)) bikeIds.push(id);
+      } else unmatched.push(t);
     }
     out.push({
       videoId,
