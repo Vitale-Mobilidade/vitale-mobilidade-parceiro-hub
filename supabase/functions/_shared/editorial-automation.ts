@@ -7,8 +7,17 @@ import {
 } from "./editorial-contract.ts";
 import type { PlannedModule } from "./editorial-foundation.ts";
 
-export type BikeCandidate = { bike_id: string; name: string; image_url?: string | null; aliases?: string[] };
-export type BikeDetection = { primaryBikeId: string | null; relatedBikeIds: string[]; ambiguous: boolean };
+export type BikeCandidate = {
+  bike_id: string;
+  name: string;
+  image_url?: string | null;
+  aliases?: string[];
+};
+export type BikeDetection = {
+  primaryBikeId: string | null;
+  relatedBikeIds: string[];
+  ambiguous: boolean;
+};
 
 const normalize = (value: string) =>
   value
@@ -61,13 +70,103 @@ export function detectEditorialBikes(title: string, transcript: string, bikes: B
   const rest = selected.filter((item) => item.score < 100).sort((a, b) => b.score - a.score);
   const ordered = [...inTitle, ...rest];
   const primary = ordered[0]?.id ?? null;
-  return { primaryBikeId: primary, relatedBikeIds: ordered.slice(1, 8).map((i) => i.id), ambiguous: false };
+  return {
+    primaryBikeId: primary,
+    relatedBikeIds: ordered.slice(1, 8).map((i) => i.id),
+    ambiguous: false,
+  };
 }
 
-/** Articles focus on the titled models; transcript-only mentions remain video relationships. */
+// Speech recognition can split a model code (GT 20). Never approximate model numbers.
+const modelWords = (value: string) => normalize(value).replace(/\b([a-z]{1,4})\s+(\d+)\b/g, "$1$2");
+const containsName = (words: string, name: string) => ` ${words} `.includes(` ${name} `);
+
+function closeBrand(spoken: string, catalog: string): boolean {
+  if (spoken === catalog) return true;
+  if (Math.min(spoken.length, catalog.length) < 5 || Math.abs(spoken.length - catalog.length) > 2) return false;
+  let previous = Array.from({ length: catalog.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= spoken.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= catalog.length; j++)
+      next[j] = Math.min(
+        next[j - 1] + 1,
+        previous[j] + 1,
+        previous[j - 1] + (spoken[i - 1] === catalog[j - 1] ? 0 : 1),
+      );
+    previous = next;
+  }
+  return previous[catalog.length] <= 2;
+}
+
+/** Articles focus on titled models. Resolve a misspelled brand only beside an exact model. */
 export function detectArticleBikes(title: string, transcript: string, bikes: BikeCandidate[]): BikeDetection {
-  const titled = detectEditorialBikes(title, "", bikes);
-  return titled.primaryBikeId ? titled : detectEditorialBikes(title, transcript, bikes);
+  const titleWords = modelWords(title);
+  const transcriptWords = modelWords(transcript);
+  const references = bikes.flatMap((bike) =>
+    [...new Set([bike.name, ...(bike.aliases ?? [])].map((name) => modelWords(name).replace(SUFFIXES, "")))].flatMap(
+      (name) => {
+        const tokens = name.split(" ");
+        const at = tokens.findIndex((token) => /^[a-z]+\d/.test(token));
+        return at < 0
+          ? []
+          : [
+              {
+                id: bike.bike_id,
+                model: tokens.slice(at).join(" "),
+                brand: tokens.slice(0, at).join(" "),
+              },
+            ];
+      },
+    ),
+  );
+  const brandAt = (words: string, reference: (typeof references)[number]) => {
+    if (!reference.brand) return containsName(words, reference.model) ? words.indexOf(reference.model) : -1;
+    const exact = ` ${words} `.indexOf(` ${reference.brand} ${reference.model} `);
+    if (exact >= 0) return exact;
+    // Multiword brands require their exact catalog spelling; fuzzy matching is token bounded.
+    if (reference.brand.includes(" ")) return -1;
+    const tokens = words.split(" ");
+    const at = tokens.findIndex(
+      (token, i) =>
+        closeBrand(token, reference.brand) &&
+        tokens.slice(i + 1, i + 1 + reference.model.split(" ").length).join(" ") === reference.model,
+    );
+    return at < 0 ? -1 : tokens.slice(0, at).join(" ").length;
+  };
+  const inTitle = references.filter((reference) => containsName(titleWords, reference.model));
+  const subjects = inTitle.filter(
+    (reference) =>
+      !inTitle.some(
+        (other) => other.model.length > reference.model.length && containsName(other.model, reference.model),
+      ),
+  );
+  if (!subjects.length) {
+    const found = detectEditorialBikes(titleWords, transcriptWords, bikes);
+    return found;
+  }
+  const models = [...new Set(subjects.map((reference) => reference.model))].sort(
+    (a, b) => titleWords.indexOf(a) - titleWords.indexOf(b),
+  );
+  const resolved: string[] = [];
+  for (const model of models) {
+    const candidates = subjects.filter((reference) => reference.model === model);
+    const inTitleWithBrand = candidates
+      .filter((reference) => brandAt(titleWords, reference) >= 0)
+      .sort((a, b) => brandAt(titleWords, a) - brandAt(titleWords, b));
+    if (inTitleWithBrand.length) {
+      for (const reference of inTitleWithBrand) if (!resolved.includes(reference.id)) resolved.push(reference.id);
+      continue;
+    }
+    const withBrand = candidates.filter((reference) => brandAt(transcriptWords, reference) >= 0);
+    const ids = [...new Set((withBrand.length ? withBrand : candidates).map((reference) => reference.id))];
+    if (ids.length !== 1) return { primaryBikeId: null, relatedBikeIds: [], ambiguous: true };
+    if (!resolved.includes(ids[0])) resolved.push(ids[0]);
+  }
+  return {
+    primaryBikeId: resolved[0] ?? null,
+    relatedBikeIds: resolved.slice(1, 8),
+    ambiguous: false,
+  };
 }
 
 export function detectContentType(title: string): ContentType {
@@ -136,7 +235,11 @@ export function layoutArticle(input: {
         else if (module.type === "tool" && module.toolSlug)
           out.push({ type: "tool", toolSlug: module.toolSlug, planned: true });
         else if (module.type === "article_link" && module.articleId)
-          out.push({ type: "related", articleId: module.articleId, planned: true });
+          out.push({
+            type: "related",
+            articleId: module.articleId,
+            planned: true,
+          });
         else if (module.type === "faq") out.push({ type: "faq", planned: true });
       }
     });
@@ -158,13 +261,27 @@ export function layoutArticle(input: {
   const out: ArticleBlock[] = [];
   sections.forEach((section, i) => {
     out.push(section);
-    if (i === comparatorAt) out.push({ type: "comparator", bikeId: input.bikeId!, heading: "Comparação lado a lado" });
+    if (i === comparatorAt)
+      out.push({
+        type: "comparator",
+        bikeId: input.bikeId!,
+        heading: "Comparação lado a lado",
+      });
     if (i === radarAt) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
-    if (i === videoAt) out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
+    if (i === videoAt)
+      out.push({
+        type: "video",
+        videoId: input.videoId,
+        heading: videoHeading(input.contentType),
+      });
     if (i === quizAt) out.push({ type: "quiz" });
   });
   if (!out.some((b) => b.type === "video"))
-    out.push({ type: "video", videoId: input.videoId, heading: videoHeading(input.contentType) });
+    out.push({
+      type: "video",
+      videoId: input.videoId,
+      heading: videoHeading(input.contentType),
+    });
   if (radarAt >= n) for (const id of radarIds) out.push({ type: "radar", bikeId: id });
   if (input.hasFaq) out.push({ type: "faq" });
   if (quizAt < 0 && (input.bikeId || ["comparison", "guide", "test"].includes(input.contentType ?? "")))
