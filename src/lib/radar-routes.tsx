@@ -13,7 +13,11 @@ import { getPublishedArticlesForBike } from "@/lib/editorial.functions";
 import { pageHead } from "@/lib/seo";
 
 export async function loadRadarCatalog() {
-  const [r, videos, catalog] = await Promise.all([getRadarCatalog(), safeVideos({ limit: 4 }), getBikeCatalog().catch(() => ({ ok: false, bikes: [] }))]);
+  const [r, videos, catalog] = await Promise.all([
+    getRadarCatalog(),
+    safeVideos({ limit: 4 }),
+    getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
+  ]);
   return { ...r, videos, catalog: catalog.ok ? catalog.bikes : [] };
 }
 export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
@@ -21,7 +25,7 @@ export type RadarCatalogData = Awaited<ReturnType<typeof loadRadarCatalog>>;
 export async function loadRadarBike(bikeId: string) {
   const [r, videos, articleIndex, catalog] = await Promise.all([
     getRadarBike({ data: { bikeId } }),
-    safeVideos({ bikeId, limit: 8 }),
+    safeVideos({ bikeId }),
     getPublishedArticlesForBike({ data: bikeId }).catch(() => null),
     getBikeCatalog().catch(() => ({ ok: false, bikes: [] })),
   ]);
@@ -29,15 +33,19 @@ export async function loadRadarBike(bikeId: string) {
   if (r.ok && (r.bike === null || r.bike === undefined)) throw notFound();
   const articles = (articleIndex ?? []).slice(0, 6);
   const catalogBikes = catalog.ok ? catalog.bikes : [];
-  const detail = r.ok ? r.bike as { hasCurrentOffer?: unknown; currentPrice?: unknown; link?: unknown } | null : null;
+  const detail = r.ok ? (r.bike as { hasCurrentOffer?: unknown; currentPrice?: unknown; link?: unknown } | null) : null;
   const catalogBike = catalogBikes.find((bike) => bike.bikeId === bikeId) ?? null;
   // A coluna da bike principal usa o mesmo par oferta/preço da hero, sem criar duas leituras divergentes.
-  const currentCatalogBike = catalogBike && r.ok
-    ? detail?.hasCurrentOffer === true && typeof detail.currentPrice === "number" && detail.currentPrice > 0 &&
-      typeof detail.link === "string" && /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(detail.link)
-      ? { ...catalogBike, sheetPrice: detail.currentPrice, link: detail.link }
-      : { ...catalogBike, sheetPrice: null, link: null }
-    : catalogBike;
+  const currentCatalogBike =
+    catalogBike && r.ok
+      ? detail?.hasCurrentOffer === true &&
+        typeof detail.currentPrice === "number" &&
+        detail.currentPrice > 0 &&
+        typeof detail.link === "string" &&
+        /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(detail.link)
+        ? { ...catalogBike, sheetPrice: detail.currentPrice, link: detail.link }
+        : { ...catalogBike, sheetPrice: null, link: null }
+      : catalogBike;
   return {
     ...r,
     videos,
@@ -80,20 +88,59 @@ export function radarCatalogHead(base: RadarBase) {
 const FALLBACK_TITLE = "Histórico de preços | Vitale Mobilidade";
 const FALLBACK_DESCRIPTION = "Histórico real de preços de bikes elétricas acompanhado pela Vitale Mobilidade.";
 
-type HeadBike = { name?: unknown; currentPrice?: unknown; image?: unknown; description?: unknown; autonomyKm?: unknown; capacity?: unknown; hasCurrentOffer?: unknown; link?: unknown };
+type HeadBike = {
+  name?: unknown;
+  currentPrice?: unknown;
+  image?: unknown;
+  description?: unknown;
+  autonomyKm?: unknown;
+  capacity?: unknown;
+  hasCurrentOffer?: unknown;
+  link?: unknown;
+};
 
-function validBike(loaderData: unknown): { name: string; price: number | null; image: string | null; description: string | null; autonomyKm: number | null; capacity: number | null; category: string | null; link: string | null } | null {
-  const d = loaderData as { ok?: boolean; bike?: HeadBike | null; catalogBike?: { description?: unknown; category?: unknown } | null } | undefined;
+function validBike(
+  loaderData: unknown,
+): {
+  name: string;
+  price: number | null;
+  image: string | null;
+  description: string | null;
+  autonomyKm: number | null;
+  capacity: number | null;
+  category: string | null;
+  link: string | null;
+} | null {
+  const d = loaderData as
+    | { ok?: boolean; bike?: HeadBike | null; catalogBike?: { description?: unknown; category?: unknown } | null }
+    | undefined;
   const b = d?.ok ? d.bike : null;
   if (!b || typeof b.name !== "string" || !b.name.trim()) return null;
-  const price = b.hasCurrentOffer === true && typeof b.currentPrice === "number" && Number.isFinite(b.currentPrice) && b.currentPrice > 0 ? b.currentPrice : null;
-  const image = typeof b.image === "string" && /^https:\/\/[^\s"<>]+$/.test(b.image) ? b.image : null;
+  const price =
+    b.hasCurrentOffer === true &&
+    typeof b.currentPrice === "number" &&
+    Number.isFinite(b.currentPrice) &&
+    b.currentPrice > 0
+      ? b.currentPrice
+      : null;
+  const image =
+    typeof b.image === "string" && /^https:\/\/[^\s"<>]+$/.test(b.image)
+      ? b.image
+      : typeof b.image === "string" && /^\/assets\/[^\s"<>]+$/.test(b.image)
+        ? `${SITE_ORIGIN}${b.image}`
+        : null;
   const rawDescription = d?.catalogBike?.description ?? b.description;
   const description = typeof rawDescription === "string" ? rawDescription.replace(/\s+/g, " ").trim() || null : null;
   const autonomyKm = typeof b.autonomyKm === "number" && b.autonomyKm > 0 ? b.autonomyKm : null;
   const capacity = typeof b.capacity === "number" && b.capacity > 0 ? b.capacity : null;
   const category = typeof d?.catalogBike?.category === "string" ? d.catalogBike.category : null;
-  const link = price !== null && typeof b.link === "string" && /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(b.link) && isSafePurchaseLink(b.link) ? b.link : null;
+  const link =
+    price !== null &&
+    typeof b.link === "string" &&
+    /^https:\/\/meli\.la\/[A-Za-z0-9]+$/.test(b.link) &&
+    isSafePurchaseLink(b.link)
+      ? b.link
+      : null;
   return { name: b.name.trim(), price, image, description, autonomyKm, capacity, category, link };
 }
 
@@ -133,7 +180,12 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
 
   const title = `${bike.name}: preço, ficha técnica e comparativo | Vitale Mobilidade`;
   const ogTitle = `${bike.name}: conheça a bike e seu histórico de preços`;
-  const facts = [bike.autonomyKm && `autonomia declarada de até ${bike.autonomyKm} km`, bike.capacity && `capacidade para ${bike.capacity} pessoa(s)`].filter(Boolean).join(" e ");
+  const facts = [
+    bike.autonomyKm && `autonomia declarada de até ${bike.autonomyKm} km`,
+    bike.capacity && `capacidade para ${bike.capacity} pessoa(s)`,
+  ]
+    .filter(Boolean)
+    .join(" e ");
   const description = `${bike.name}${bike.price !== null && bike.link ? `: oferta atual de ${formatBRL(bike.price)}` : ""}${facts ? `, ${facts}` : ""}. Veja histórico de preços, ficha técnica, comparação e conteúdos da Vitale.`;
   const product = {
     "@context": "https://schema.org",
@@ -144,11 +196,15 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
     ...(bike.image ? { image: [bike.image] } : {}),
     ...(bike.description ? { description: bike.description } : {}),
     additionalProperty: [
-      ...(bike.autonomyKm ? [{ "@type": "PropertyValue", name: "Autonomia declarada", value: `${bike.autonomyKm} km` }] : []),
+      ...(bike.autonomyKm
+        ? [{ "@type": "PropertyValue", name: "Autonomia declarada", value: `${bike.autonomyKm} km` }]
+        : []),
       ...(bike.capacity ? [{ "@type": "PropertyValue", name: "Capacidade", value: `${bike.capacity} pessoa(s)` }] : []),
       ...(bike.category ? [{ "@type": "PropertyValue", name: "Categoria", value: bike.category }] : []),
     ],
-    ...(bike.price !== null && bike.link ? { offers: { "@type": "Offer", price: bike.price, priceCurrency: "BRL", url: bike.link } } : {}),
+    ...(bike.price !== null && bike.link
+      ? { offers: { "@type": "Offer", price: bike.price, priceCurrency: "BRL", url: bike.link } }
+      : {}),
   };
   const breadcrumbs = {
     "@context": "https://schema.org",
@@ -189,7 +245,9 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
           ]),
     ],
     links: [{ rel: "canonical", href: canonical }],
-    scripts: [{ type: "application/ld+json", children: JSON.stringify([product, breadcrumbs]).replace(/</g, "\\u003c") }],
+    scripts: [
+      { type: "application/ld+json", children: JSON.stringify([product, breadcrumbs]).replace(/</g, "\\u003c") },
+    ],
   };
 }
 
