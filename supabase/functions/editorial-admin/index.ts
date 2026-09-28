@@ -273,7 +273,10 @@ async function aiStructured(
         ],
         stream: true,
         reasoning_effort: "low",
-        response_format: { type: "json_schema", json_schema: { name, strict: true, schema } },
+        response_format: {
+          type: "json_schema",
+          json_schema: { name, strict: true, schema },
+        },
       }
     : {
         model: ARTICLE_MODEL,
@@ -875,17 +878,19 @@ async function generateInto(
     progress("Identificando bikes…");
     const catalog = await bikeCandidates(db);
     const detection = detectArticleBikes(video.title, video.transcript ?? "", catalog);
-    const primaryBikeId = detection.primaryBikeId ?? video.primary_bike_id ?? null;
+    if (detection.ambiguous) throw new Error("article_bike_ambiguous");
+    const primaryBikeId = detection.primaryBikeId;
     const relatedBikeIds = [...new Set(detection.relatedBikeIds)]
       .filter((id) => id !== primaryBikeId && catalog.some((bike) => bike.bike_id === id))
       .slice(0, 6);
     const bikeIds = [primaryBikeId, ...relatedBikeIds].filter(Boolean) as string[];
-    const { data: bikes } = bikeIds.length
+    const { data: bikes, error: bikeContextError } = bikeIds.length
       ? await db
           .from("bikes")
-          .select("bike_id, name, autonomy_km, motor_w, battery, capacity_people")
+          .select("bike_id, name, autonomy_km, motor_w, battery, capacity_people, description, short_description")
           .in("bike_id", bikeIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (bikeContextError || (bikes ?? []).length !== bikeIds.length) throw new Error("bike_catalog_unavailable");
     const contentType =
       brief?.archetype === "direct_comparison" || brief?.archetype === "use_comparison"
         ? "comparison"
@@ -899,15 +904,20 @@ async function generateInto(
       videoTitle: video.title,
       contentType,
       bikes: (bikes ?? []).map((b) => ({
+        bikeId: b.bike_id,
         name: b.name,
+        origem: "cadastro Vitale sincronizado da planilha",
+        description: b.description,
+        shortDescription: b.short_description,
         autonomiaKmCatalogo: b.autonomy_km,
         motorW: b.motor_w,
+        bateriaCatalogo: b.battery,
         lugares: b.capacity_people,
       })),
       transcript: video.transcript?.slice(0, 90000),
       ...(brief ? { approvedOutline: brief } : {}),
     });
-    const instruction = `Escreva o artigo completo seguindo a voz e a referência de escrita da Vitale. Explique as informações úteis com português natural e raciocínio contínuo, preservando sua fidelidade. Responda no schema JSON. title = H1 editorial. summary = abertura informativa. ${brief ? "Siga a tese, ordem e quantidade de seções do approvedOutline; não acrescente seções padrão. Use somente os módulos selecionados no outline, que serão renderizados separadamente. A conclusão deve resultar do argumento. Respeite no texto TODAS as cautelas de approvedOutline.warnings (ex.: não apresentar como teste próprio o que não é, atribuir leituras de painel e especificações ao fabricante); a revisão final bloqueia cautela desrespeitada." : "Use seções contextuais que avancem a análise."} Cada seção tem heading, body em markdown e sourceExcerpt LITERAL que sustente a afirmação central. Se não houver evidência, omita a afirmação. Use voz autoral sem atribuir a análise ao vídeo ou à transcrição. Não alegue teste presencial, medição, preço ou experiência ausente da fonte. Diferencie especificação declarada de observação prática. FAQ somente quando houver pergunta nova sustentada, com sourceExcerpt literal para cada resposta, ou []. seoTitle e metaDescription claros; standsAloneWithoutVideo indica autonomia do texto.`;
+    const instruction = `Escreva o artigo completo seguindo a voz e a referência de escrita da Vitale. Explique as informações úteis com português natural e raciocínio contínuo, preservando sua fidelidade. Os nomes de bikes vêm do campo bikes, nunca da grafia da transcrição. Dados de catálogo não são medições e descrições comerciais não comprovam segurança, legislação ou desempenho. Responda no schema JSON. title = H1 editorial. summary = abertura sobre a proposta da bike e as dúvidas do leitor, sem narrar o trajeto, a gravação ou impressões do condutor. ${brief ? "Siga a tese, ordem e quantidade de seções do approvedOutline; não acrescente seções padrão. Use somente os módulos selecionados no outline, que serão renderizados separadamente. A conclusão deve resultar do argumento. Respeite no texto TODAS as cautelas de approvedOutline.warnings (ex.: não apresentar como teste próprio o que não é, atribuir leituras de painel e especificações ao fabricante); a revisão final bloqueia cautela desrespeitada." : "Use seções contextuais que avancem a análise."} Cada seção tem heading, body em markdown e sourceExcerpt LITERAL que sustente a afirmação central. Se não houver evidência, omita a afirmação. Use voz autoral sem atribuir a análise ao vídeo ou à transcrição. Não alegue teste presencial, medição, preço ou experiência ausente da fonte. Diferencie especificação declarada de observação prática. FAQ somente quando houver pergunta nova sustentada, com sourceExcerpt literal para cada resposta, ou []. seoTitle e metaDescription claros; standsAloneWithoutVideo indica autonomia do texto.`;
     const raw = (await aiStructured(
       `${prompt.system_prompt}\n\n${EDITORIAL_READER_VOICE}`,
       `${instruction}\n\n<untrusted_source_json>\n${source}\n</untrusted_source_json>`,
@@ -1075,7 +1085,10 @@ async function generateInto(
     if (error?.code === "23505" && !article.published_at) {
       ({ data: saved, error } = await db
         .from("editorial_articles")
-        .update({ ...patch, slug: uniqueEditorialSlug(repaired.slug!, article.id) })
+        .update({
+          ...patch,
+          slug: uniqueEditorialSlug(repaired.slug!, article.id),
+        })
         .eq("id", article.id)
         .eq("revision", article.revision)
         .select("*")
@@ -1450,6 +1463,12 @@ function stageStream(
 
 export function stageError(code: string): string {
   const map: Record<string, string> = {
+    article_bike_ambiguous:
+      "Há bikes de marcas diferentes com esse modelo. Inclua a marca correta no título e gere novamente. A transcrição foi preservada.",
+    bike_catalog_unavailable:
+      "Não foi possível consultar o cadastro das bikes. A transcrição foi preservada; tente novamente.",
+    article_editorial_voice_failed:
+      "A IA ainda escreveu como uma análise da gravação. A versão foi bloqueada; tente gerar novamente.",
     ai_http_400: "A integração de IA recusou a configuração da geração. A transcrição foi preservada.",
     ai_response_incomplete: "A IA não terminou o artigo. A transcrição foi preservada; tente novamente.",
     ai_http_402: "Os créditos de IA do Lovable acabaram. Recarregue os créditos para gerar este artigo.",
@@ -2414,7 +2433,13 @@ Deno.serve(async (req) => {
       const systemPrompt = typeof body.systemPrompt === "string" ? body.systemPrompt.trim() : "";
       const reason = str(body.reason, 500);
       if (systemPrompt.length < 100 || systemPrompt.length > 32000)
-        return json(req, { error: "O prompt deve ter entre 100 e 32.000 caracteres. O texto não foi salvo." }, 400);
+        return json(
+          req,
+          {
+            error: "O prompt deve ter entre 100 e 32.000 caracteres. O texto não foi salvo.",
+          },
+          400,
+        );
       if (!reason) return json(req, { error: "Informe o motivo da alteração." }, 400);
       const { error } = await db.from("editorial_prompt_versions").insert({
         version: previous.version + 1,
