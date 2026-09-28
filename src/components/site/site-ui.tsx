@@ -205,11 +205,13 @@ export function SectionHeading({
 /** Imagem da bike protagonista (URL do catálogo); lazy por padrão, fallback sem imagem falsa. */
 export function BikeMedia({
   src,
+  fallbackSrc,
   name,
   className = "h-48",
   eager = false,
 }: {
   src: string | null;
+  fallbackSrc?: string | null;
   name: string;
   className?: string;
   eager?: boolean;
@@ -217,7 +219,7 @@ export function BikeMedia({
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const fallback = bikeImageFallback(name);
   const image =
-    [src, fallback].find(
+    [src, fallbackSrc, fallback].find(
       (candidate): candidate is string => Boolean(candidate) && !failedSources.includes(candidate!),
     ) ?? null;
   return (

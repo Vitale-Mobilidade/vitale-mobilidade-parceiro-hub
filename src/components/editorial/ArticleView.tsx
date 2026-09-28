@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { BikeMedia } from "@/components/site/site-ui";
+import { persistentBikeImage } from "@/lib/bike-catalog";
 import { QuizBanner } from "@/components/site/DecisionBanners";
 import { ArrowRight, BookOpen, Calculator, LineChart, Play } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
@@ -113,7 +114,8 @@ function BikeDecision({
         }
       >
         <BikeMedia
-          src={bike.image}
+          src={persistentBikeImage(bike.bikeId, import.meta.env.VITE_SUPABASE_URL) ?? bike.image}
+          fallbackSrc={bike.image}
           name={bike.name}
           className={wide ? "h-56 w-full rounded-xl sm:h-64" : "h-32 w-full rounded-xl"}
         />
@@ -405,7 +407,12 @@ function Block({
                 </th>
                 {compared.map((b) => (
                   <th key={b.bikeId} scope="col" className="p-3 align-bottom">
-                    <BikeMedia src={b.image} name={b.name} className="mb-2 h-24 w-32 rounded" />
+                    <BikeMedia
+                      src={persistentBikeImage(b.bikeId, import.meta.env.VITE_SUPABASE_URL) ?? b.image}
+                      fallbackSrc={b.image}
+                      name={b.name}
+                      className="mb-2 h-24 w-32 rounded"
+                    />
                     <span className="font-bold">{b.name}</span>
                   </th>
                 ))}
@@ -719,7 +726,12 @@ export function ArticleView({
                     href={`/radar/${encodeURIComponent(bike.bikeId)}`}
                     className="flex min-h-12 items-center gap-3 rounded-lg hover:text-action focus-visible:ring-2 focus-visible:ring-action"
                   >
-                    <BikeMedia src={bike.image} name={bike.name} className="h-12 w-16 shrink-0 rounded" />
+                    <BikeMedia
+                      src={persistentBikeImage(bike.bikeId, import.meta.env.VITE_SUPABASE_URL) ?? bike.image}
+                      fallbackSrc={bike.image}
+                      name={bike.name}
+                      className="h-12 w-16 shrink-0 rounded"
+                    />
                     <span className="min-w-0 flex-1 font-semibold">{bike.name}</span>
                     <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                   </a>

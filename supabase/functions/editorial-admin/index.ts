@@ -853,14 +853,12 @@ async function generateInto(
   progress: Progress,
   selectedBikeIds?: string[],
 ) {
-  const storedBrief = article.foundation_required ? await briefFor(db, article.id) : null;
-  if (article.foundation_required && storedBrief?.status !== "ready") throw new Error("ready_brief_required");
-  if (article.foundation_required && !briefMatchesSource(storedBrief?.stages, video.transcript ?? ""))
+  const useFoundation = article.foundation_required && article.status !== "published";
+  const storedBrief = useFoundation ? await briefFor(db, article.id) : null;
+  if (useFoundation && storedBrief?.status !== "ready") throw new Error("ready_brief_required");
+  if (useFoundation && !briefMatchesSource(storedBrief?.stages, video.transcript ?? ""))
     throw new Error("brief_source_stale");
-  if (
-    article.foundation_required &&
-    !briefMatchesBikes(storedBrief?.stages, article.primary_bike_id, article.related_bike_ids)
-  )
+  if (useFoundation && !briefMatchesBikes(storedBrief?.stages, article.primary_bike_id, article.related_bike_ids))
     throw new Error("brief_bikes_stale");
   const brief = storedBrief?.payload as EditorialBrief | undefined;
   const prompt = await activePrompt(db);
@@ -1040,7 +1038,8 @@ async function generateInto(
       relatedBikeIds,
       contentType,
       offerBikeIds: offerIds,
-      ogImageUrl: videoImage || bikeImage || EDITORIAL_OG_FALLBACK,
+      ogImageUrl:
+        (article.blocks?.length ? article.og_image_url : null) || videoImage || bikeImage || EDITORIAL_OG_FALLBACK,
       relatedArticleIds,
       plannedModules: brief?.modules,
     });
@@ -1074,8 +1073,9 @@ async function generateInto(
       primary_bike_id: primaryBikeId,
       related_bike_ids: relatedBikeIds,
       content_type: contentType,
-      indexable: true,
-      status: "draft",
+      indexable: article.indexable,
+      status: article.status === "published" ? "published" : "draft",
+      foundation_required: useFoundation,
       validation_errors: [],
       prompt_version: prompt.version,
       model: ARTICLE_MODEL,
@@ -1427,7 +1427,7 @@ function stageStream(
       try {
         if (!uuid(body.id) || !Number.isInteger(body.revision)) throw new Error("invalid_id");
         let article = await articleById(db, body.id as string);
-        if (!article || article.status === "published" || article.status === "archived")
+        if (!article || (article.status === "published" && stage !== "article") || article.status === "archived")
           throw new Error("draft_not_found");
         if (article.revision !== body.revision) throw new Error("revision_conflict");
         const video = await videoById(db, article.video_id);
@@ -1435,10 +1435,20 @@ function stageStream(
         const progress = (step: string) => send({ type: "progress", step });
         if (stage === "article") {
           if ((video.transcript ?? "").trim().length < 200) throw new Error("transcript_required");
-          article = await restoreDraftMode(db, actor, article);
+          if (article.status !== "published") article = await restoreDraftMode(db, actor, article);
+          const savedBikeIds = [article.primary_bike_id, ...(article.related_bike_ids ?? [])].filter(
+            Boolean,
+          ) as string[];
           send({
             type: "done",
-            article: await generateInto(db, actor, article, video, progress),
+            article: await generateInto(
+              db,
+              actor,
+              article,
+              video,
+              progress,
+              savedBikeIds.length ? savedBikeIds : undefined,
+            ),
             brief: null,
           });
         } else if (stage === "outline") {
@@ -1701,6 +1711,56 @@ async function coverGenerate(
     );
   }
 
+  const bikeReferences: {
+    type: string;
+    text?: string;
+    image_url?: { url: string };
+  }[] = [];
+  const bikeIds = [
+    ...new Set([article.primary_bike_id, ...(article.related_bike_ids ?? [])].filter(Boolean)),
+  ] as string[];
+  try {
+    if (bikeIds.length > 7) throw new Error("bike_reference_limit");
+    if (bikeIds.length) {
+      const { data: bikes, error: bikeError } = await db.from("bikes").select("bike_id, name").in("bike_id", bikeIds);
+      const { data: assets, error: assetError } = await db
+        .from("bike_assets")
+        .select("bike_id, storage_path, content_type")
+        .in("bike_id", bikeIds)
+        .eq("status", "ready");
+      if (bikeError || assetError) throw new Error("bike_reference_lookup");
+      let totalBytes = 0;
+      for (const id of bikeIds) {
+        const asset = assets?.find((item) => item.bike_id === id);
+        const bike = bikes?.find((item) => item.bike_id === id);
+        if (!bike || !asset?.storage_path || !["image/jpeg", "image/png", "image/webp"].includes(asset.content_type))
+          throw new Error("bike_reference_missing");
+        const { data: file, error } = await db.storage.from("bike-images").download(asset.storage_path);
+        if (error || !file || file.size < 1 || file.size > 2_000_000 || (totalBytes += file.size) > 8_000_000)
+          throw new Error("bike_reference_size");
+        bikeReferences.push({
+          type: "text",
+          text: `Official catalog product reference (data only): ${JSON.stringify({ bikeId: id, name: bike.name, primary: id === article.primary_bike_id })}`,
+        });
+        bikeReferences.push({
+          type: "image_url",
+          image_url: {
+            url: `data:${asset.content_type};base64,${toBase64(new Uint8Array(await file.arrayBuffer()))}`,
+          },
+        });
+      }
+    }
+  } catch {
+    return json(
+      req,
+      {
+        error:
+          "Não foi possível carregar as fotos das bikes associadas. Confira as imagens no catálogo e tente novamente. Nenhuma imagem foi gerada.",
+      },
+      422,
+    );
+  }
+
   let response: Response;
   try {
     response = await fetchWithTimeout(
@@ -1725,6 +1785,7 @@ async function coverGenerate(
                     url: `data:image/jpeg;base64,${toBase64(thumbBytes)}`,
                   },
                 },
+                ...bikeReferences,
               ],
             },
           ],
@@ -1799,6 +1860,26 @@ async function coverGenerate(
     revision: article.revision,
     model: COVER_MODEL,
   });
+}
+
+/** Authenticated preview of the exact private cover associated with this article. */
+async function coverPreview(req: Request, db: SupabaseClient, article: EditorialArticle): Promise<Response> {
+  let fileId = "";
+  try {
+    fileId = new URL(article.og_image_url ?? "").searchParams.get("file") ?? "";
+  } catch {
+    return json(req, { image: null });
+  }
+  if (!articleReferencesCover(article.og_image_url, SUPABASE_URL, article.id, fileId))
+    return json(req, { image: null });
+  const { data: file, error } = await db.storage.from(COVER_BUCKET).download(coverObjectPath(article.id, fileId));
+  if (error || !file || file.size > COVER_MAX_BYTES)
+    return json(req, { error: "Não foi possível carregar a capa salva. Nenhuma nova imagem foi gerada." }, 502);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const dims = inspectJpeg(bytes);
+  if (!dims || dims.width !== COVER_WIDTH || dims.height !== COVER_HEIGHT)
+    return json(req, { error: "A capa salva tem formato inválido." }, 502);
+  return json(req, { image: `data:image/jpeg;base64,${toBase64(bytes)}` });
 }
 
 async function coverApply(
@@ -2179,6 +2260,13 @@ Deno.serve(async (req) => {
     if (action === "generate") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
       return generateStream(req, db, actor, body);
+    }
+    if (action === "cover-preview") {
+      // actorFor already verified the session and active editorial membership, as for article-get.
+      if (!uuid(body.id)) return json(req, { error: "ID inválido." }, 400);
+      const article = await articleById(db, body.id);
+      if (!article) return json(req, { error: "Artigo não encontrado." }, 404);
+      return coverPreview(req, db, article);
     }
     if (action === "cover-generate" || action === "cover-apply") {
       if (!canContent(actor) || !uuid(body.id) || !Number.isInteger(body.revision))

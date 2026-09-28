@@ -1,3 +1,4 @@
+import { persistentBikeImage } from "./bike-catalog";
 import { describe, expect, it } from "vitest";
 import {
   buildShortDescription,
@@ -587,5 +588,52 @@ describe("images from older deployments", () => {
     expect(resolveBikeImage("unknown", null)).toBeNull();
     expect(resolveBikeImage("unknown", "http://unsafe.example/x.png")).toBeNull();
     expect(resolveBikeImage("v8_pro", null)).toBe(BIKES.find((bike) => bike.id === "v8_pro")!.image);
+  });
+});
+
+// All canonical models from the current public catalog, including those without bundled assets.
+describe("imagens persistidas de todos os modelos", () => {
+  const ids = [
+    "bw02",
+    "bw1",
+    "coswheel_gt20",
+    "d50_cross",
+    "f6_pro_s",
+    "ft03",
+    "gt2000",
+    "l10",
+    "l20_cross",
+    "ouxi_gt20",
+    "ouxi_gt20_pro",
+    "s12",
+    "s14",
+    "s8",
+    "v10_max",
+    "v20_mini",
+    "v20_pro",
+    "v29_pro",
+    "v35",
+    "v40_pro",
+    "v8_pro",
+    "v8_pro_s",
+    "v8_ultra",
+    "v9_max",
+    "v9_max_20ah",
+    "v9_max_s",
+    "v9_max_ufofast_duas_baterias",
+    "v9_pro",
+    "vl20",
+    "x50_action_pro",
+  ];
+  it.each(ids)("usa ID estável de %s, independente de hash ou cache", (id) => {
+    expect(persistentBikeImage(id, "https://test.invalid/")).toBe(
+      `https://test.invalid/functions/v1/bike-image?id=${id}`,
+    );
+  });
+  it("não permite caminho arbitrário ou servidor inseguro", () => {
+    expect(persistentBikeImage("../other", "https://test.invalid")).toBeNull();
+    expect(persistentBikeImage("v8_pro&file=other", "https://test.invalid")).toBeNull();
+    expect(persistentBikeImage("v8_pro", "http://test.invalid")).toBeNull();
+    expect(persistentBikeImage("v8_pro", undefined)).toBeNull();
   });
 });
