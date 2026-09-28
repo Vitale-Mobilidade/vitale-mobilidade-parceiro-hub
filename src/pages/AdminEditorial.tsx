@@ -1782,11 +1782,17 @@ function AiStatus({ role }: { role: AdminRole }) {
           {role === "admin" && (
             <form onSubmit={savePrompt} className={`${PANEL} mt-5 space-y-3`}>
               <h2 className="text-lg font-semibold">Nova versão do prompt</h2>
+              <p id="prompt-length-help" className="text-sm text-muted-foreground">
+                Prompt: entre 100 e 32.000 caracteres. O texto será salvo integralmente.
+              </p>
               <p className="text-sm text-muted-foreground">
                 Uma nova versão não altera execuções anteriores. Revise o texto completo antes de salvar.
               </p>
               <textarea
                 aria-label="Prompt de sistema"
+                aria-describedby="prompt-length-help"
+                minLength={100}
+                maxLength={32000}
                 className={`${INPUT} min-h-52`}
                 value={newPrompt}
                 onChange={(e) => setNewPrompt(e.target.value)}
@@ -1800,7 +1806,10 @@ function AiStatus({ role }: { role: AdminRole }) {
                 onChange={(e) => setReason(e.target.value)}
                 required
               />
-              <button className={BTN} disabled={busy || newPrompt.length < 100 || reason.length < 10}>
+              <button
+                className={BTN}
+                disabled={busy || newPrompt.trim().length < 100 || newPrompt.trim().length > 32000 || !reason.trim()}
+              >
                 Criar versão
               </button>
             </form>
