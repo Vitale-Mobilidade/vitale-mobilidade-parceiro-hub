@@ -1244,9 +1244,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         if (detail.article.primary_bike_id) {
           const videos = await safeVideos({
             bikeId: detail.article.primary_bike_id,
-            limit: 12,
           });
-          setRelatedVideos(videos.filter((item) => item.videoId !== detail.article.video_id).slice(0, 4));
+          setRelatedVideos(videos.filter((item) => item.videoId !== detail.article.video_id));
         }
       })
       .catch((e) => setError(e.message));
