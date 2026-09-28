@@ -1,3 +1,5 @@
+import { defaultParseSearch, defaultStringifySearch, type SearchMiddleware } from "@tanstack/react-router";
+
 /**
  * Atribuição capturada na entrada pública e consumida pelo quiz /quiz.
  *
@@ -53,6 +55,39 @@ export function parseUtmsFromUrl(href: string): UtmSet {
   return out;
 }
 
+/** UTMs são texto literal; os demais parâmetros mantêm o contrato JSON do router. */
+export function parseCampaignSearch(searchStr: string): Record<string, unknown> {
+  const search = defaultParseSearch(searchStr) as Record<string, unknown>;
+  for (const key of Object.keys(search)) {
+    if (UTM_KEYS.includes(key.toLowerCase() as UtmKey)) delete search[key];
+  }
+  const utms = parseUtmsFromUrl(`https://placeholder.local/${searchStr}`);
+  for (const key of UTM_KEYS) if (utms[key] !== null) search[key] = utms[key];
+  return search;
+}
+
+export function stringifyCampaignSearch(search: Record<string, unknown>): string {
+  const rest = { ...search };
+  for (const key of UTM_KEYS) delete rest[key];
+  const query = new URLSearchParams(defaultStringifySearch(rest));
+  for (const key of UTM_KEYS) {
+    const value = search[key];
+    if (typeof value === "string" && value.trim()) query.set(key, value);
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
+/** Links internos levam a campanha também sem storage e ao abrir outra aba. */
+export const preserveCampaignSearch: SearchMiddleware<Record<string, unknown>> = ({ search, next }) => {
+  const destination = next(search);
+  // Uma campanha explícita no destino substitui o conjunto, sem misturar origens.
+  if (UTM_KEYS.some((key) => typeof destination[key] === "string" && destination[key])) return destination;
+  const result = { ...destination };
+  for (const key of UTM_KEYS) if (typeof search[key] === "string") result[key] = search[key];
+  return result;
+};
+
 export function hasAnyUtm(utms: UtmSet): boolean {
   return UTM_KEYS.some((k) => !!utms[k]);
 }
@@ -97,7 +132,10 @@ export function resolveQuizAttribution(
   }
 
   let next: QuizAttribution;
-  if (hasAnyUtm(urlUtms)) {
+  if (stored && hasAnyUtm(urlUtms) && UTM_KEYS.every((key) => urlUtms[key] === stored[key])) {
+    // A URL propagada na navegação mantém a entrada original da mesma campanha.
+    next = { ...stored, source_url: stored.source_url ?? href };
+  } else if (hasAnyUtm(urlUtms)) {
     // Nova entrada com campanha => substitui integralmente o conjunto da sessão.
     next = { ...urlUtms, source_url: href, entry_at: now.toISOString() };
   } else if (stored) {
