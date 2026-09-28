@@ -1,5 +1,6 @@
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
 import {
   autoRepairArticle,
   EDITORIAL_READER_VOICE,
@@ -849,6 +850,7 @@ async function generateInto(
   article: EditorialArticle,
   video: EditorialVideo,
   progress: Progress,
+  selectedBikeIds?: string[],
 ) {
   const storedBrief = article.foundation_required ? await briefFor(db, article.id) : null;
   if (article.foundation_required && storedBrief?.status !== "ready") throw new Error("ready_brief_required");
@@ -878,9 +880,11 @@ async function generateInto(
     progress("Identificando bikes…");
     const catalog = await bikeCandidates(db);
     const detection = detectArticleBikes(video.title, video.transcript ?? "", catalog);
-    if (detection.ambiguous) throw new Error("article_bike_ambiguous");
-    const primaryBikeId = detection.primaryBikeId;
-    const relatedBikeIds = [...new Set(detection.relatedBikeIds)]
+    if (selectedBikeIds === undefined && detection.ambiguous) throw new Error("article_bike_ambiguous");
+    const primaryBikeId = selectedBikeIds !== undefined ? (selectedBikeIds[0] ?? null) : detection.primaryBikeId;
+    const relatedBikeIds = [
+      ...new Set(selectedBikeIds !== undefined ? selectedBikeIds.slice(1) : detection.relatedBikeIds),
+    ]
       .filter((id) => id !== primaryBikeId && catalog.some((bike) => bike.bike_id === id))
       .slice(0, 6);
     const bikeIds = [primaryBikeId, ...relatedBikeIds].filter(Boolean) as string[];
@@ -1333,7 +1337,14 @@ async function qualityAndPublish(
   return article;
 }
 
-async function saveVideo(db: SupabaseClient, actor: Actor, id: string, title: string, transcript: string) {
+async function saveVideo(
+  db: SupabaseClient,
+  actor: Actor,
+  id: string,
+  title: string,
+  transcript: string,
+  selectedBikeIds?: string[],
+) {
   const catalog = await bikeCandidates(db);
   const existing = await videoById(db, id);
   const effectiveTranscript = transcript || existing?.transcript || "";
@@ -1360,8 +1371,11 @@ async function saveVideo(db: SupabaseClient, actor: Actor, id: string, title: st
         thumbnail_url: thumbnail.url ?? existing?.thumbnail_url ?? null,
         published_on: existing?.published_on ?? null,
         transcript: effectiveTranscript || null,
-        primary_bike_id: detection.primaryBikeId ?? existing?.primary_bike_id ?? null,
-        related_bike_ids: detection.relatedBikeIds,
+        primary_bike_id:
+          selectedBikeIds !== undefined
+            ? (selectedBikeIds[0] ?? null)
+            : (detection.primaryBikeId ?? existing?.primary_bike_id ?? null),
+        related_bike_ids: selectedBikeIds !== undefined ? selectedBikeIds.slice(1) : detection.relatedBikeIds,
         content_type: detectContentType(title),
         status: "active",
         created_by: existing ? undefined : actor.id,
@@ -1502,11 +1516,15 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         const transcript = str(body.transcript, 500_000);
         if (!validYoutubeId(id)) return fail("URL do YouTube inválida.");
         if (title.length < 3) return fail("Informe o título do vídeo.");
-        send({ type: "progress", step: "Entendendo conteúdo…" });
-        const saved = await saveVideo(db, actor, id, title, transcript);
-        if ("error" in saved) return fail(saved.error);
-        if ((saved.video.transcript ?? "").trim().length < 200) return fail("Cole a transcrição completa do vídeo.");
-        const { data: previous } = await db
+        if (transcript.trim().length < 200) return fail("Cole a transcrição completa do vídeo.");
+        let selectedBikeIds: string[] | undefined;
+        try {
+          const catalog = await bikeCandidates(db);
+          selectedBikeIds = parseCreationBikeIds(body.bikeIds, new Set(catalog.map((bike) => bike.bike_id)));
+        } catch (e) {
+          return fail(e instanceof Error ? e.message : "Não foi possível validar as bikes.");
+        }
+        const { data: previous, error: previousError } = await db
           .from("editorial_articles")
           .select("*")
           .eq("video_id", id)
@@ -1514,12 +1532,16 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           .order("updated_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+        if (previousError) throw new Error("article_lookup_failed");
         let article = previous as EditorialArticle | null;
         if (article?.status === "published") {
           send({ type: "done", article, reused: true });
           controller.close();
           return;
         }
+        send({ type: "progress", step: "Entendendo conteúdo…" });
+        const saved = await saveVideo(db, actor, id, title, transcript, selectedBikeIds);
+        if ("error" in saved) return fail(saved.error);
         if (!article) {
           const initial = {
             video_id: id,
@@ -1571,8 +1593,13 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           article = data as EditorialArticle;
         }
         article = await restoreDraftMode(db, actor, article);
-        const generated = await generateInto(db, actor, article, saved.video, (step) =>
-          send({ type: "progress", step }),
+        const generated = await generateInto(
+          db,
+          actor,
+          article,
+          saved.video,
+          (step) => send({ type: "progress", step }),
+          selectedBikeIds,
         );
         send({ type: "done", article: generated, brief: null });
         controller.close();
