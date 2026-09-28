@@ -1,3 +1,47 @@
+# Gemini Flash como padrão editorial — 28/09/2026
+
+## Contexto e autorização
+
+Usuário autorizou explicitamente trocar o padrão e publicar para gerar pessoalmente um artigo de teste. Mudança estrutural por envolver IA. Base e rollback: `4f12849`.
+
+## Revisão prévia das oito perspectivas
+
+| Perspectiva | Impacto                                  | Risco                                      | Dependência                                                  | Recomendação                                        |
+| ----------- | ---------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------- |
+| Produto     | Reduzir custo por geração                | Qualidade equivalente ainda não comprovada | Teste solicitado pelo usuário                                | Prosseguir para teste                               |
+| CTO         | Modelo Google no mesmo gateway Responses | Compatibilidade de streaming/schema        | Contrato documentado pelo adaptador oficial TanStack/Lovable | Prosseguir com teste local do transporte            |
+| IA          | Gemini 3.8 Flash com instruções atuais   | Perda de detalhes/voz e schema inválido    | JSON estrito e validação existente                           | Prosseguir, qualidade avaliada no artigo do usuário |
+| Segurança   | Mesmo gateway/chave no servidor          | Exposição por nova integração              | Nenhuma nova credencial ou acesso                            | Prosseguir                                          |
+| UX          | Botão Gerar artigo permanece             | Painel indicar modelo antigo               | Exibir modelo efetivamente executado                         | Prosseguir com correção do status                   |
+| CX          | Próxima geração usa Gemini               | Uma falha impede gerar                     | Erros existentes; rollback disponível                        | Prosseguir                                          |
+| Growth      | Mesmo prompt, módulos e metadata         | Qualidade editorial/SEO do resultado       | Nenhuma garantia de ranking ou equivalência                  | Prosseguir para avaliação real                      |
+| PMO/QA      | Release pequeno e reversível             | Troca apenas cosmética                     | Conferir constante, log de execução, payload e deploy        | Prosseguir com testes e evidência                   |
+
+## Decisão consolidada e trade-off
+
+Alterar `ARTICLE_MODEL` para `google/gemini-3.8-flash`, mostrar esse modelo no status e registrar esse modelo em futuras versões de prompt. Preservar versão/conteúdo de prompts históricos e logs; não migrar banco. O gateway suporta Responses para modelos Google; manter streaming, JSON Schema e raciocínio low. Testes locais com fetch simulado, regressão editorial e pnpm validate. Não gerar artigo pago nesta task: o usuário realizará o teste. Não incluir fallback automático para Astra, para evitar gasto inesperado. Risco residual aceito pelo usuário: qualidade ainda será avaliada no teste. Rollback: restaurar arquivo de função a partir de `4f12849` e republicar.
+
+## Fontes técnicas
+
+- https://tanstack.com/ai/latest/docs/adapters/lovable
+- https://docs.lovable.dev/features/ai
+- https://ai.google.dev/gemini-api/docs/pricing
+
+## Pós-implementação
+
+| Perspectiva | Status | Evidência                                                                       |
+| ----------- | ------ | ------------------------------------------------------------------------------- |
+| Produto     | Pass   | Padrão econômico para teste explicitamente solicitado                           |
+| CTO         | Pass   | Mesmo contrato Responses; mock verifica SSE fragmentado/Unicode e JSON          |
+| IA          | Pass   | Gemini real no payload; low/strict schema mantidos; prompt intacto              |
+| Segurança   | Pass   | Chave server-side, store false, autenticação intacta                            |
+| UX          | Pass   | ai-status mostra constante efetivamente usada                                   |
+| CX          | Pass   | Erros HTTP/stream/vazio testados; sem fallback caro                             |
+| Growth      | Pass   | Contratos e instruções preservados; qualidade real pendente do teste autorizado |
+| PMO/QA      | Pass   | Transporte simulado + 19 testes editoriais + pnpm validate; rollback registrado |
+
+Limite: mocks não provam disponibilidade do modelo no gateway nem qualidade editorial. Primeiro artigo será gerado pelo usuário conforme solicitado. Sem chamada de IA paga nesta tarefa. Publicação aguardando transferência verificada e confirmação de deploy.
+
 # Restauração do modelo VL20 — 28/09/2026
 
 Esta decisão substitui o fluxo de geração da fundação documentado abaixo. Solicitação explícita do responsável: restaurar o artigo VL20, usar thumbnail como capa inicial, retirar arquétipos, reduzir custo/tempo; fluxo link/vídeo + título + transcrição → Gerar artigo → prévia → Publicar. Publicação autorizada na mesma tarefa. Nenhuma chamada paga será usada para testar.
