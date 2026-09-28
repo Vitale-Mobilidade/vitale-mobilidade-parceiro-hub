@@ -108,3 +108,39 @@ Decisão: captura na entrada pública com beforeLoad e efeito na hidratação/mu
 | PMO/QA      | Pass   | 44 testes dirigidos; pnpm validate: 51 testes + typecheck + build; lint dos quatro arquivos                                                           |
 
 Release: src/routes/__root.tsx, src/lib/quiz-attribution.ts e os dois testes correspondentes. Risco baixo; limite: não criado lead produtivo para validação, nem acionado CRM/IA. Não recuperar automaticamente origem perdida de leads antigos. Rollback: reverter somente esta correção para base 815cd19 e republicar, mantendo as rotas novas. Autorização de implementar/publicar a migração já dada nesta thread cobre a correção do fluxo. Edição direta no Code Editor, sem créditos de agente Lovable. Evidência local completa: docs/QUIZ_UTM_FIX_2026-09-28.md no worktree de correção.
+
+## Continuidade obrigatória de UTMs — 2026-09-28
+
+Classificação estrutural (Quiz/SEO/integrações). Objetivo: manter os cinco UTMs reais na URL dos links internos, além do sessionStorage existente, para preservar rastreio inclusive em reload/nova aba/storage bloqueado. Fonte/URL inicial permanecem para a mesma campanha. Não fabricar UTMs quando a entrada não os fornece.
+
+### Revisão prévia
+
+| Perspectiva | Impacto                            | Risco                                | Dependência                              | Recomendação                       |
+| ----------- | ---------------------------------- | ------------------------------------ | ---------------------------------------- | ---------------------------------- |
+| Produto     | Rastreio acompanha jornada         | Perder origem em nova aba            | Links router                             | Prosseguir                         |
+| CTO         | Middleware e serialização só UTM   | JSON interpretar true/123/texto      | Parser/serializer literal e teste router | Prosseguir com gate                |
+| IA          | Fonte/interesse preservados        | Misturar campanhas                   | Nova campanha substitui conjunto         | Prosseguir sem IA real             |
+| Segurança   | URLs + storage existente           | Reescrever externos/dados privados   | Só cinco UTMs e links internos           | Prosseguir sem novo storage/cookie |
+| UX          | Hrefs preservam campanha           | Perder filtro/hash                   | Outros parâmetros com contrato padrão    | Prosseguir com regressão           |
+| CX          | Quiz/newsletter mantêm origem      | Prometer histórico recuperado        | Campos existentes e sem escrita real     | Prosseguir                         |
+| Growth      | Reload/nova aba conservam campanha | Substituir source_url em cada página | Mesma campanha mantém entrada            | Prosseguir com teste               |
+| PMO/QA      | Cobertura sem storage              | Testar só helpers                    | Hrefs do router real + pnpm validate     | Prosseguir após gate               |
+
+Decisão consolidada: middleware da raiz preserva campanha nas navegações internas; parser/serializer mantém valores UTM literais enquanto filtros usam padrão JSON do router. Reinício/share do Quiz utilizam buildLocation. Retorno 404 e guias usam Link. Newsletter utiliza URL inicial da atribuição no mesmo campo sourceUrl. SSR e canonicals limpos preservados. Não alterar API/schema/CRM/IA/RLS/afiliados; não criar leads produtivos. Trade-off: UTMs ficam visíveis na URL para não depender do storage. Compartilhamento mantém campanha original conforme requisito de rastreio, sem inventar origem WhatsApp. Links externos/afiliados continuam diretos. Entrada sem UTM ou remoção de parâmetros por usuário/terceiro antes da entrada não permite inventar campanha.
+
+Aceite: Home/Radar/Conteúdos/Ferramentas/Quiz mantêm valores exatos em href SSR/cliente e payload sem storage; filtros/hash preservados; campanha nova não mistura conjunto antigo; source_url/entry_at mantidos na mesma campanha; gate passa. Rollback: reverter somente incremento para 2e3ad11 mantendo captura na entrada pública.
+
+### Revisão posterior local
+
+| Perspectiva | Status | Evidência                                                                                                                        |
+| ----------- | ------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Produto     | Pass   | Destinos/jornada preservados com rastreio                                                                                        |
+| CTO         | Pass   | Router real testado, typecheck/build SSR/client passaram                                                                         |
+| IA          | Pass   | Mesma origem real no payload/interesse, sem IA alterada                                                                          |
+| Segurança   | Pass   | Sem novo armazenamento/cookie ou reescrita de externos; admin guard mantido                                                      |
+| UX          | Pass   | Hrefs preservam filtros JSON e hash; restart/share usam router                                                                   |
+| CX          | Pass   | Newsletter preserva sourceUrl de entrada; nenhum lead/CRM real criado                                                            |
+| Growth      | Pass   | Cinco UTMs com números/JSON/plus/espaços/acentos preservados sem storage; campanha nova substitui conjunto; mesma mantém entrada |
+| PMO/QA      | Pass   | 53 testes dirigidos; pnpm validate: 59 testes, typecheck e build; lint dirigido                                                  |
+
+Publicação: nove arquivos de implementação/teste e este registro. Risco baixo, serializer só para UTM e filtros/hash testados. Custo: edição direta, sem agente pago. Autorização de implementar/publicar o fluxo nesta thread permanece. Avisos de build preexistentes, sem erros.
