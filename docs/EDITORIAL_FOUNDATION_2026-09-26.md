@@ -40,7 +40,27 @@ Alterar `ARTICLE_MODEL` para `google/gemini-3.8-flash`, mostrar esse modelo no s
 | Growth      | Pass   | Contratos e instruções preservados; qualidade real pendente do teste autorizado |
 | PMO/QA      | Pass   | Transporte simulado + 19 testes editoriais + pnpm validate; rollback registrado |
 
-Limite: mocks não provam disponibilidade do modelo no gateway nem qualidade editorial. Primeiro artigo será gerado pelo usuário conforme solicitado. Sem chamada de IA paga nesta tarefa. Publicação aguardando transferência verificada e confirmação de deploy.
+Limite: mocks não provam disponibilidade do modelo no gateway nem qualidade editorial. Primeiro artigo será gerado pelo usuário conforme solicitado. Sem chamada de IA paga nesta tarefa. Publicado no Lovable: commit d4987cd7e64a453628a60554c3c45d0d813d4bd2. Arquivo remoto normalizado idêntico ao local; editorial-admin Active, deploy 71, atualização recente; interface Published com Publish changes desabilitado confirma ausência de mudanças pendentes. Nenhum artigo gerado pelo agente.
+
+## Correção de integração após o teste real
+
+Evidência: runs do artigo FT03 falharam `ai_http_400`, modelo Gemini. Log do gateway: “Model not responses”; `/v1/responses` serve apenas OpenAI neste projeto, exige `/v1/chat/completions` para outros modelos. A documentação do adaptador TanStack não provou suporte no gateway efetivo. Teste mock anterior não validou o provedor; revisão técnica anterior foi insuficiente. Transcrição corrigida de 14.108 caracteres persistiu em editorial_videos/HTZASjgUxxQ; formulário usa cadastro do mesmo ID, não extrai YouTube.
+
+### Revisão prévia e decisão da correção
+
+- Produto: corrigir teste autorizado e manter Gemini; prosseguir.
+- CTO: usar endpoint Chat Completions para Google, conservar Responses para OpenAI e analisar SSE por contrato; risco de novo payload; prosseguir com testes direcionados.
+- IA: mesmo JSON Schema/low/prompt; recusar truncamento e erros; prosseguir.
+- Segurança: chave server-side e mesmo gateway; nenhum log de fonte ou segredo; prosseguir.
+- UX: mensagem útil para HTTP 400 e indicar origem do texto preenchido sem novas etapas; prosseguir.
+- CX: preservar transcrição/draft já salvos; nenhuma limpeza/reimportação; prosseguir.
+- Growth: composição editorial e dados reais intactos; prosseguir.
+- PMO: mock prova formato Chat Completions e erros; validate; verificar deploy, primeira geração real ainda deve comprovar gateway; prosseguir.
+  Trade-off: corrigir sem testar novamente via Responses que já falhou. Nenhum fallback caro. Escopo: transporte, aviso de transcrição cadastrada, erro legível. Rollback: arquivo da função e página do release d4987cd. Publicação autorizada pelo pedido de teste/padrão/publicação na mesma tarefa.
+
+### Revisão posterior da correção
+
+As oito perspectivas: Pass para o escopo técnico corrigido. Produto/IA/Growth mantêm avaliação editorial do primeiro artigo como teste, sem prometer equivalência; CTO verificou formato Chat Completions, sistema/usuário, low e schema; Segurança preserva segredo e ACL; UX/CX mantêm cadastro e mensagens; PMO registra testes de erro, truncamento, SSE fragmentado, OpenAI e Google, 19 testes editoriais e pnpm validate. Publicação pendente de transferência.
 
 # Restauração do modelo VL20 — 28/09/2026
 
