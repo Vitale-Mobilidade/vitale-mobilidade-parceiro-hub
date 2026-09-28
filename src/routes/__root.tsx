@@ -12,7 +12,7 @@ import {
   Link,
 } from "@tanstack/react-router";
 import NotFound from "@/pages/NotFound";
-import { captureQuizAttribution } from "@/lib/quiz-attribution";
+import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
@@ -49,6 +49,7 @@ const SITE_JSONLD = {
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  search: { middlewares: [preserveCampaignSearch] },
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
