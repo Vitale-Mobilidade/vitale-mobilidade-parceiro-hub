@@ -13,6 +13,7 @@
  */
 
 import { BIKES, type Bike, type BudgetTier } from "@/data/bikes";
+import { BIKE_ID_RE } from "./bike-identity";
 
 export type SnapshotBikeStatus = "eligible" | "draft" | "inactive";
 
@@ -328,4 +329,16 @@ export function resolveBikeRecordImage<T>(record: T): T {
 /** Exact model-name lookup for a runtime failure of the same bike image. */
 export function bikeImageFallback(name: string): string | null {
   return BIKES.find((bike) => bike.name.toLowerCase() === name.trim().toLowerCase())?.image ?? null;
+}
+
+/** Persisted image by canonical ID, independent of a frontend build hash or third-party CDN. */
+export function persistentBikeImage(bikeId: string, supabaseUrl: string | undefined): string | null {
+  if (!BIKE_ID_RE.test(bikeId) || !supabaseUrl) return null;
+  try {
+    const url = new URL(supabaseUrl);
+    if (url.protocol !== "https:" || url.username || url.password) return null;
+    return `${url.origin}/functions/v1/bike-image?id=${encodeURIComponent(bikeId)}`;
+  } catch {
+    return null;
+  }
 }

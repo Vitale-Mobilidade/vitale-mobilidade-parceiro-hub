@@ -23,6 +23,15 @@ const bikes = [
 const text = (heading: string) => ({ type: "text" as const, heading, text: `${heading} em detalhe.` });
 
 describe("editorial automation", () => {
+  it("detecta V9 Max na transcrição sem escolher variantes mais longas", () => {
+    expect(
+      detectArticleBikes(
+        "Autonomia, pedal e passageiro",
+        "Hoje a bordo da V9 Max modelo com 1000 W, bateria 48 V e 15,6 Ah.",
+        bikes,
+      ),
+    ).toMatchObject({ primaryBikeId: "v9_max", relatedBikeIds: [], ambiguous: false });
+  });
   it("detects the exact variant, not the shorter contained model", () => {
     const found = detectEditorialBikes("Teste da V9 Max 20Ah", "Comparando com a V8 Pro.", bikes);
     expect(found.primaryBikeId).toBe("v9_max_20ah");

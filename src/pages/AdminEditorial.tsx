@@ -19,7 +19,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { safeVideos, type VideoCard } from "@/lib/videos.functions";
 import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
-import { filterArticleBikes, applyRequestedArticleCover } from "@/lib/admin-article-create";
+import { filterArticleBikes, applyRequestedArticleCover, creationBikeSelection } from "@/lib/admin-article-create";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import {
   blocksToMarkdown,
@@ -27,6 +27,7 @@ import {
   type EditorialArticle,
 } from "../../supabase/functions/_shared/editorial-contract";
 import { composeCover } from "@/lib/cover-compose";
+import { isEditorialCoverUrl } from "../../supabase/functions/_shared/editorial-cover";
 import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 
 const BTN =
@@ -912,7 +913,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
           title: selected.title,
           articleTitle: articleTitle.trim(),
           transcript,
-          bikeIds,
+          ...creationBikeSelection(bikeIds),
         },
         setBusy,
       );
@@ -996,7 +997,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               aria-controls="article-bike-results"
             />
             <p className="text-xs text-muted-foreground">
-              Selecione até 7 bikes. A primeira selecionada será a principal.
+              Selecione até 7 bikes. A primeira será a principal. Sem seleção, identificamos pela transcrição.
             </p>
             {bikeIds.length > 0 && (
               <p role="status" className="text-sm text-emerald-900">
@@ -1119,6 +1120,67 @@ function previewArticle(a: EditorialArticle): PublishedArticle {
   };
 }
 
+function EditorBikePicker({
+  bikes,
+  selected,
+  onChange,
+}: {
+  bikes: { bikeId: string; name: string }[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const options = filterArticleBikes(
+    bikes.map((bike) => ({ bike_id: bike.bikeId, name: bike.name })),
+    search,
+  );
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-semibold">Bikes (opcional)</legend>
+      <input
+        type="search"
+        className={INPUT}
+        aria-label="Buscar bikes do artigo"
+        placeholder="Buscar bike por nome…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <p className="text-xs text-muted-foreground">
+        Selecione até 7 bikes. A primeira será a principal. Salve antes de regenerar o artigo ou a capa.
+      </p>
+      {selected.length > 0 && (
+        <p role="status" className="text-sm text-emerald-900">
+          Selecionadas: {selected.map((id) => bikes.find((bike) => bike.bikeId === id)?.name ?? id).join(", ")}
+        </p>
+      )}
+      <div
+        role="group"
+        aria-label="Bikes do artigo"
+        className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line p-2"
+      >
+        {options.map((bike) => (
+          <label
+            key={bike.bike_id}
+            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-emerald-50"
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4 shrink-0 accent-emerald-700"
+              checked={selected.includes(bike.bike_id)}
+              disabled={!selected.includes(bike.bike_id) && selected.length >= 7}
+              onChange={(e) =>
+                onChange(e.target.checked ? [...selected, bike.bike_id] : selected.filter((id) => id !== bike.bike_id))
+              }
+            />
+            {bike.name}
+          </label>
+        ))}
+        {options.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nenhuma bike encontrada.</p>}
+      </div>
+    </fieldset>
+  );
+}
+
 type EditDraft = {
   title: string;
   summary: string;
@@ -1211,6 +1273,16 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const privateCover = Boolean(article && isEditorialCoverUrl(article.og_image_url));
+  const coverPreviewKey = ["admin", "article-cover-preview", id, article?.og_image_url] as const;
+  const coverPreview = useQuery({
+    queryKey: coverPreviewKey,
+    queryFn: () => adminCall<{ image: string | null }>("cover-preview", { id }),
+    enabled: privateCover,
+    staleTime: ADMIN_STALE_MS,
+    gcTime: 0,
+    retry: false,
+  });
   useEffect(() => {
     void Promise.all([
       adminCall<{ article: EditorialArticle; brief: typeof brief }>("article-get", { id }),
@@ -1336,6 +1408,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         image = (await composeCover(cover.background, cover.title)).dataUrl;
       }
       const result = await adminCall<{ article: EditorialArticle }>("cover-apply", { id: article.id, revision, image });
+      // Show the composed cover immediately; reloads use the authenticated read endpoint.
+      queryClient.setQueryData(["admin", "article-cover-preview", id, result.article.og_image_url], { image });
       setArticle(result.article);
       await queryClient.invalidateQueries({
         queryKey: ["admin", "editorial-workspace"],
@@ -1494,10 +1568,17 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
             <div className="absolute right-0 mt-2 w-56 rounded-xl border border-line bg-white p-2 shadow-lg">
               <button
                 className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 disabled:opacity-50"
-                disabled={Boolean(busy) || status === "published"}
-                title={status === "published" ? "Mude para Rascunho para regenerar" : undefined}
+                disabled={Boolean(busy) || Boolean(draft) || status === "archived"}
+                title={draft ? "Salve as bikes e demais alterações antes de regenerar" : undefined}
                 onClick={() => {
-                  if (window.confirm("Gerar outra versão do artigo a partir da transcrição?")) void generate(true);
+                  if (
+                    window.confirm(
+                      status === "published"
+                        ? "Regenerar com a transcrição e as bikes salvas? Ao concluir, o novo texto substituirá o artigo publicado, preservando endereço e capa. Esta ação usa créditos de IA."
+                        : "Gerar outra versão com a transcrição e as bikes salvas? Esta ação usa créditos de IA.",
+                    )
+                  )
+                    void generate(true);
                 }}
               >
                 Regenerar artigo
@@ -1557,6 +1638,16 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
               onChange={(e) => set({ summary: e.target.value })}
             />
           </label>
+          <EditorBikePicker
+            bikes={bikes}
+            selected={[draft.primaryBikeId, ...draft.relatedBikeIds.split(",").map((id) => id.trim())].filter(Boolean)}
+            onChange={(ids) =>
+              set({
+                primaryBikeId: ids[0] ?? "",
+                relatedBikeIds: ids.slice(1).join(", "),
+              })
+            }
+          />
           <label className="block text-sm font-semibold">
             Corpo do artigo
             <span className="mt-1 block text-xs font-normal text-muted-foreground">
@@ -1600,22 +1691,6 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
                   onChange={(e) => set({ metaDescription: e.target.value })}
                 />
               </label>
-              <label>
-                Bike principal (ID)
-                <input
-                  className={`${INPUT} mt-1`}
-                  value={draft.primaryBikeId}
-                  onChange={(e) => set({ primaryBikeId: e.target.value })}
-                />
-              </label>
-              <label>
-                Bikes relacionadas (IDs)
-                <input
-                  className={`${INPUT} mt-1`}
-                  value={draft.relatedBikeIds}
-                  onChange={(e) => set({ relatedBikeIds: e.target.value })}
-                />
-              </label>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1642,8 +1717,24 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
             </section>
           ) : (
             <div className="rounded-3xl bg-white shadow-sm">
+              {privateCover && coverPreview.isPending && (
+                <p className="p-5" role="status">
+                  Carregando capa salva…
+                </p>
+              )}
+              {privateCover && coverPreview.isError && (
+                <p className="p-5 text-red-700" role="alert">
+                  Não foi possível carregar a capa salva.{" "}
+                  <button type="button" className="underline" onClick={() => void coverPreview.refetch()}>
+                    Tentar carregar novamente
+                  </button>
+                </p>
+              )}
               <ArticleView
-                article={previewArticle(article)}
+                article={previewArticle({
+                  ...article,
+                  og_image_url: privateCover ? (coverPreview.data?.image ?? null) : article.og_image_url,
+                })}
                 bikes={bikes}
                 relatedArticles={relatedArticles}
                 relatedVideos={relatedVideos}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { filterArticleBikes, applyRequestedArticleCover } from "./admin-article-create";
+import { filterArticleBikes, applyRequestedArticleCover, creationBikeSelection } from "./admin-article-create";
 import { adminCall } from "./admin-api";
 import { composeCover } from "./cover-compose";
 import type { EditorialArticle } from "../../supabase/functions/_shared/editorial-contract";
@@ -19,6 +19,11 @@ const bikes = [
 ];
 
 describe("criação de artigo — bikes", () => {
+  it("seletor vazio omite o opt-out da detecção, seleção manual mantém prioridade", () => {
+    expect(JSON.parse(JSON.stringify(creationBikeSelection([])))).not.toHaveProperty("bikeIds");
+    expect(parseCreationBikeIds(creationBikeSelection([]).bikeIds, new Set(["v9_max"]))).toBeUndefined();
+    expect(creationBikeSelection(["v9_max", "ft03"])).toEqual({ bikeIds: ["v9_max", "ft03"] });
+  });
   it("lista o catálogo sem termo e busca sem acentos, por nome e ID", () => {
     expect(filterArticleBikes(bikes, "")).toEqual(bikes);
     expect(filterArticleBikes(bikes, "ELETRICA")).toEqual([bikes[0]]);

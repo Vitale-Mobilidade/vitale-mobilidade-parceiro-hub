@@ -36,3 +36,8 @@ export async function applyRequestedArticleCover(
   });
   return result.article;
 }
+
+/** Leaving the optional selector blank asks the server to identify bikes from the source. */
+export function creationBikeSelection(ids: string[]): { bikeIds?: string[] } {
+  return ids.length ? { bikeIds: ids } : {};
+}
