@@ -9,7 +9,7 @@ async function build(): Promise<string | null> {
   const [radar, articles] = await Promise.all([fetchTrackerSplit(), fetchPublishedIndex()]);
   // A coleção editorial pode falhar isoladamente sem derrubar o sitemap de Bike/Radar.
   // O deploy do frontend ainda depende da migration editorial antes da publicação.
-  if (!radar.ok) return null;
+  if (!radar.ok || articles === null) return null;
   return buildSitemapXml([
     ...STATIC_SITEMAP_PATHS,
     ...radarIdPaths([...radar.data.active, ...radar.data.archived]),

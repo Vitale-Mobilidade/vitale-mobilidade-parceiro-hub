@@ -12,7 +12,9 @@ export function serializeJsonLd(value: unknown): string {
 export function canonicalUrl(path: string): string {
   const clean = (path || "/").split(/[?#]/)[0] || "/";
   const withSlash = clean.startsWith("/") ? clean : `/${clean}`;
-  return withSlash === "/" ? `${SITE_URL}/` : `${SITE_URL}${withSlash.replace(/\/+$/, "")}`;
+  return withSlash === "/"
+    ? `${SITE_URL}/`
+    : `${SITE_URL}${withSlash.replace(/\/+$/, "")}`;
 }
 
 type PageMetaInput = {
@@ -59,9 +61,16 @@ export function pageHead(input: PageMetaInput) {
     { name: "twitter:image", content: image.url },
     { name: "twitter:image:alt", content: image.alt ?? ogTitle },
   ];
-  if (image.width) meta.push({ property: "og:image:width", content: String(image.width) });
-  if (image.height) meta.push({ property: "og:image:height", content: String(image.height) });
+  if (image.width)
+    meta.push({ property: "og:image:width", content: String(image.width) });
+  if (image.height)
+    meta.push({ property: "og:image:height", content: String(image.height) });
   if (image.type) meta.push({ property: "og:image:type", content: image.type });
-  if (input.robots) meta.push({ name: "robots", content: input.robots });
+  meta.push({
+    name: "robots",
+    content: input.robots
+      ? `${input.robots}${input.robots.includes("noindex") ? "" : ", max-image-preview:large"}`
+      : "index, follow, max-image-preview:large",
+  });
   return { meta, links: [{ rel: "canonical", href: url }] };
 }

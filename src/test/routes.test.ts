@@ -134,7 +134,7 @@ describe("fundação TanStack Start — rotas", () => {
     for (const t of MOBILITY_TOOLS) {
       const head = toolHead(t.slug);
       expect(head.links[0].href).toBe(`https://vitalemobilidade.com${t.path}`);
-      expect(head.meta.some((m) => m.name === "robots")).toBe(false);
+      expect(head.meta).toContainEqual({ name: "robots", content: "index, follow, max-image-preview:large" });
     }
     const legacy = makeRouter().routesById["/calculadoras/economia" as never] as unknown as {
       options: { head: () => { meta: Array<Record<string, string>> } };

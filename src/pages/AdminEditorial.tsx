@@ -22,6 +22,7 @@ import { parseYoutubeId, type VideoItem } from "@/lib/video-catalog";
 import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
 import { filterArticleBikes, applyRequestedArticleCover, creationBikeSelection } from "@/lib/admin-article-create";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
+import { editorialFormat } from "@/lib/editorial-taxonomy";
 import {
   blocksToMarkdown,
   CONTENT_TYPES,
@@ -735,7 +736,7 @@ function Videos() {
                 >
                   {CONTENT_TYPES.map((t) => (
                     <option key={t} value={t}>
-                      {t}
+                      {editorialFormat(t).label}
                     </option>
                   ))}
                 </select>

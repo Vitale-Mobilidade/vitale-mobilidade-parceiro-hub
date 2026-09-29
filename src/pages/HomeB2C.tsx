@@ -19,7 +19,7 @@ import { HOME_PRODUCTS, ProductLink } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 import { OffersBanner } from "@/components/site/DecisionBanners";
-import { youtubeThumbnailVariant } from "@/lib/video-catalog";
+import { editorialImageProps } from "@/lib/editorial-images";
 
 /*
  * A Home usa catálogo e artigos publicados das fontes existentes. A newsletter
@@ -31,7 +31,9 @@ function Hero() {
   return (
     <section className="entry-hero">
       <picture>
+        <source media="(max-width: 767px)" type="image/avif" srcSet="/vitale-hero-v2-mobile-20260929.avif" width={600} height={909} />
         <source media="(max-width: 767px)" srcSet="/vitale-hero-v2-mobile.webp" width={600} height={909} />
+        <source media="(max-width: 1400px)" type="image/avif" srcSet="/vitale-hero-v2-1280-20260929.avif" width={1280} height={720} />
         <source media="(max-width: 1400px)" srcSet="/vitale-hero-v2-1280.webp" width={1280} height={720} />
         <img
           src="/vitale-hero-v2.webp"
@@ -455,7 +457,7 @@ function ArticlesBlock({ articles }: { articles: PublishedArticleSummary[] }) {
             >
               {article.ogImageUrl && (
                 <img
-                  src={youtubeThumbnailVariant(article.ogImageUrl) ?? undefined}
+                  {...editorialImageProps(article.ogImageUrl, "(max-width: 767px) calc(100vw - 32px), 384px")}
                   alt=""
                   width={320}
                   height={180}

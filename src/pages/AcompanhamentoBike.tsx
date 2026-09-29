@@ -166,7 +166,7 @@ const AcompanhamentoBike = ({ initial }: { initial: RadarBikeData }) => {
                   <>
                     <p className="mt-3 text-4xl font-extrabold tracking-tight text-action md:text-5xl">{formatBRL(currentPrice)}</p>
                     {metrics.deltaAbs !== null && metrics.deltaAbs !== 0 && (
-                      <p className={`mt-2 inline-flex w-fit rounded-lg px-3 py-1 text-sm font-semibold ${metrics.deltaAbs < 0 ? "bg-mint/25 text-ink" : "bg-destructive/10 text-destructive"}`}>
+                      <p className={`mt-2 inline-flex w-fit rounded-lg px-3 py-1 text-sm font-semibold ${metrics.deltaAbs < 0 ? "bg-mint/25 text-ink" : "bg-destructive/10 text-red-700"}`}>
                         {metrics.deltaAbs < 0 ? "▼" : "▲"} {formatBRL(Math.abs(metrics.deltaAbs))} ({Math.abs(metrics.deltaPct ?? 0).toFixed(1).replace(".", ",")}%) desde o preço anterior
                       </p>
                     )}

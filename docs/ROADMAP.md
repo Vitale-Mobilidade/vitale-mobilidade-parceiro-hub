@@ -475,3 +475,8 @@ Riscos residuais (não bloqueantes): erro preexistente de console `gtag is not d
 
 ## Delta local — formulário Criar artigo, 28/09/2026
 Implementado e validado localmente: formulário por link, título/transcrição manuais, aviso de artigo existente, seleção opcional de Bikes e geração de capa por checkbox desmarcada. Sem publicação ou migração de banco. Frontend e editorial-admin devem ser aplicados juntos. Ver [registro e revisão](ARTICLE_CREATE_FORM_2026-09-28.md).
+
+
+### 29/09/2026 — Auditoria final SEO/GEO, performance e taxonomia
+
+Inventário atual: 101 artigos, 143 URLs de sitemap. Sitemap enviado e processado no Search Console do perfil Lucas, propriedade de domínio Vitale. Correções locais preparadas e validadas; não publicadas. Etapas 2 e 4 parciais em produção e etapa 3 aberta até release e medição de campo. Evidências, limites e revisão de governança em [SEO_FINAL_2026-09-29.md](SEO_FINAL_2026-09-29.md); configurações reais em [SEARCH_CONSOLE_2026-09-29.md](SEARCH_CONSOLE_2026-09-29.md).

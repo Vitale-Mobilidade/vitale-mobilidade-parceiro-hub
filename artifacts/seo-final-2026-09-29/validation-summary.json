@@ -1,0 +1,66 @@
+{
+  "date": "2026-09-29",
+  "site": "https://vitalemobilidade.com",
+  "productionBase": "75ef227bf02fbd9310a27ae1a1ba71566dece272",
+  "publishedArticles": 101,
+  "canonicalSitemapUrls": 143,
+  "console": {
+    "profile": "Lucas (Vitale Mobilidade)",
+    "property": "sc-domain:vitalemobilidade.com",
+    "sitemapSubmitted": true,
+    "sitemapProcessed": true,
+    "discoveredPages": 143,
+    "httpsIssues": 0,
+    "manualActionsIssues": 0,
+    "securityIssues": 0,
+    "ga4AssociationVerified": true,
+    "searchGenerativeAi": "Incluir",
+    "crawlHostProblems": false,
+    "liveArticleIndexable": true,
+    "liveArticleVideoIssue": "uploadDate missing in current production"
+  },
+  "localProposal": {
+    "published": false,
+    "articlesUpdated": 30,
+    "classifications": 22,
+    "blockRepairs": 12,
+    "faqRepairs": 2,
+    "readOnlyGuardMatches": 30,
+    "taxonomyBrowserCounts": {
+      "test": 66,
+      "comparison": 23,
+      "guide": 5,
+      "tips": 3,
+      "economy": 4
+    },
+    "articleImages": 101,
+    "variants": 303,
+    "http404Robots": "noindex",
+    "titleRepairs": 1,
+    "performance": {
+      "contentIndex": {
+        "score": 90,
+        "lcpMs": 1963.611,
+        "tbtMs": 354.115,
+        "cls": 0
+      },
+      "article": {
+        "score": 98,
+        "lcpMs": 1919.026,
+        "tbtMs": 0,
+        "cls": 0
+      }
+    },
+    "accessibilityRetest": {
+      "radar": 100,
+      "quiz": 100
+    },
+    "getHeadOutageCases": 6
+  },
+  "limits": [
+    "Indexing and citations are engine decisions, not guaranteed by sitemap or schema.",
+    "Historical field CWV remain poor; local labs are not proof of good field CWV.",
+    "Local HTTP/1.1 lab and production HTTP/2 are not directly comparable.",
+    "No production deployment, migration or article data writes were performed."
+  ]
+}

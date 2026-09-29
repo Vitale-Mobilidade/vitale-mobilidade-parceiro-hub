@@ -54,7 +54,7 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
 
         <p className="mt-3 text-3xl font-bold tracking-tight text-primary">{formatBRL(entry.currentPrice)}</p>
         {savings !== null && (
-          <p className="text-sm font-medium text-primary">
+          <p className="text-sm font-medium text-action">
             {formatBRL(savings)} abaixo do típico ({Math.abs(entry.savingsPct ?? 0).toFixed(1)}%)
           </p>
         )}

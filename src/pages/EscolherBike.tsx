@@ -390,7 +390,7 @@ export default function EscolherBike() {
       <main className="min-h-[calc(100svh-4.5rem)] bg-background flex items-start sm:items-center justify-center">
         <div className="container mx-auto px-6 pt-4 pb-10 sm:py-12 lg:py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-base font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-emerald-800 text-base font-medium mb-6">
               <Sparkles className="h-4 w-4" /> Recomendação personalizada gratuita
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-5 text-foreground">
@@ -409,7 +409,7 @@ export default function EscolherBike() {
                 setPhase("quiz");
               }}
               data-event="quiz_start_click"
-              className="cta-pulse text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto bg-primary hover:bg-primary/90"
+              className="cta-pulse text-lg font-bold px-12 py-7 rounded-xl shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto bg-action hover:bg-action/90"
             >
               Começar agora
             </Button>
@@ -552,7 +552,7 @@ export default function EscolherBike() {
 
           <div className="bg-card border border-border rounded-2xl p-6 lg:p-10 shadow-sm">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-5">
-              <span className="text-base font-bold text-primary">Vitale Mobilidade</span>
+              <span className="text-base font-bold text-emerald-800">Vitale Mobilidade</span>
             </div>
             <h1 className="text-2xl lg:text-3xl font-bold mb-3 text-foreground">{step.title}</h1>
             {step.key === "weight_range" && (
@@ -1265,7 +1265,7 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                   data-bike-name={recommendation.secondary.name}
                   data-bike-position="segunda_opcao"
                   size="lg"
-                  className="w-full text-base font-bold py-6 rounded-xl shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="w-full text-base font-bold py-6 rounded-xl shadow-md shadow-primary/20 bg-action hover:bg-action/90 text-primary-foreground"
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" /> Comprar aqui
                 </Button>

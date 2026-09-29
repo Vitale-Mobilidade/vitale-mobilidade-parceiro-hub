@@ -5,7 +5,11 @@ import { renderErrorPage } from "./lib/error-page";
 import { legacyRedirect } from "./lib/legacy-redirects";
 
 type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
+  fetch: (
+    request: Request,
+    env: unknown,
+    ctx: unknown,
+  ) => Promise<Response> | Response;
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
@@ -21,7 +25,9 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(
+  response: Response,
+): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -29,7 +35,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  console.error(
+    consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`),
+  );
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -38,7 +46,10 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
-    const payload = JSON.parse(body) as { unhandled?: unknown; message?: unknown };
+    const payload = JSON.parse(body) as {
+      unhandled?: unknown;
+      message?: unknown;
+    };
     return payload.unhandled === true && payload.message === "HTTPError";
   } catch {
     return false;
@@ -47,15 +58,39 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 const RADAR_DOC_PATH = /^\/(?:acompanhamento|radar)(?:\/[^/]+)?\/?$/;
 
-// Converte 200 + marcador do Radar em 503, preservando o mesmo body stream (sem lê-lo) e headers.
-function applyRadarUnavailableStatus(request: Request, response: Response): Response {
-  if (request.method !== "GET" || response.status !== 200) return response;
-  if (response.headers.get("x-vitale-radar-unavailable") !== "1") return response;
-  if (!(response.headers.get("content-type") ?? "").includes("text/html")) return response;
-  if (!RADAR_DOC_PATH.test(new URL(request.url).pathname)) return response;
+// Normalize unavailable documents without consuming the SSR body stream.
+function applyPublicDocumentStatus(
+  request: Request,
+  response: Response,
+): Response {
+  if (response.status === 404) {
+    const headers = new Headers(response.headers);
+    headers.set("x-robots-tag", "noindex");
+    return new Response(response.body, { status: 404, headers });
+  }
+  if (
+    (request.method !== "GET" && request.method !== "HEAD") ||
+    response.status !== 200
+  )
+    return response;
+  const pathname = new URL(request.url).pathname;
+  const radarUnavailable =
+    response.headers.get("x-vitale-radar-unavailable") === "1" &&
+    RADAR_DOC_PATH.test(pathname);
+  const editorialUnavailable =
+    response.headers.get("x-vitale-editorial-unavailable") === "1" &&
+    /^\/conteudos(?:\/[^/]+)?\/?$/.test(pathname);
+  if (!radarUnavailable && !editorialUnavailable) return response;
+  if (!(response.headers.get("content-type") ?? "").includes("text/html"))
+    return response;
   const headers = new Headers(response.headers);
   headers.delete("x-vitale-radar-unavailable");
-  return new Response(response.body, { status: 503, statusText: "Service Unavailable", headers });
+  headers.delete("x-vitale-editorial-unavailable");
+  return new Response(response.body, {
+    status: 503,
+    statusText: "Service Unavailable",
+    headers,
+  });
 }
 
 export default {
@@ -66,21 +101,43 @@ export default {
         const url = new URL(request.url);
         const target = legacyRedirect(url.pathname, url.search);
         if (target) {
-          return new Response(null, { status: 301, headers: { location: target, "cache-control": "public, max-age=3600" } });
+          return new Response(null, {
+            status: 301,
+            headers: {
+              location: target,
+              "cache-control": "public, max-age=3600",
+            },
+          });
         }
-        const slug = /^\/bikes\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(url.pathname)?.[1];
+        const slug = /^\/bikes\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(
+          url.pathname,
+        )?.[1];
         if (slug) {
-          const { fetchBikeCatalogFromDb } = await import("./lib/bikes-repository.server");
+          const { fetchBikeCatalogFromDb } =
+            await import("./lib/bikes-repository.server");
           const catalog = await fetchBikeCatalogFromDb();
-          if (!catalog) return new Response(null, { status: 503, headers: { "cache-control": "no-store" } });
+          if (!catalog)
+            return new Response(null, {
+              status: 503,
+              headers: { "cache-control": "no-store" },
+            });
           const bike = catalog.find((entry) => entry.slug === slug);
           if (!bike) return new Response(null, { status: 404 });
-          return new Response(null, { status: 301, headers: { location: `/radar/${encodeURIComponent(bike.bikeId)}${url.search}`, "cache-control": "public, max-age=3600" } });
+          return new Response(null, {
+            status: 301,
+            headers: {
+              location: `/radar/${encodeURIComponent(bike.bikeId)}${url.search}`,
+              "cache-control": "public, max-age=3600",
+            },
+          });
         }
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return applyRadarUnavailableStatus(request, await normalizeCatastrophicSsrResponse(response));
+      return applyPublicDocumentStatus(
+        request,
+        await normalizeCatastrophicSsrResponse(response),
+      );
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

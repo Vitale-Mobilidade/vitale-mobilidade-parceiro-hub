@@ -11,6 +11,14 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+artifacts/seo-final-2026-09-29/html/
+artifacts/seo-final-2026-09-29/local/html/
+artifacts/seo-final-2026-09-29/article-blocks.json
+artifacts/seo-final-2026-09-29/evidence-review.local.json
+artifacts/seo-final-2026-09-29/release-backup.local.json
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.output/
+.wrangler/
+__pycache__/
+artifacts/seo-final-2026-09-29/new-article/html/

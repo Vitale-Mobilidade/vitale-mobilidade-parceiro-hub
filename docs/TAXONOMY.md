@@ -1,116 +1,90 @@
-# Taxonomia e contrato de rotas — Vitale Mobilidade
+# Taxonomia final e contrato de rotas — Vitale Mobilidade
 
+Versão de 29/09/2026, conferida no domínio e no commit `75ef227bf02fbd9310a27ae1a1ba71566dece272`. Este documento substitui as listas históricas deste arquivo. A estrutura de URLs já está publicada; as correções de classificação de 22 artigos e a projeção `contentType` estão preparadas localmente e dependem de aplicação autorizada.
 
-> Atualização de rotas em 28/09/2026, preparada localmente: Quiz em `/quiz`; `/escolherbike` redireciona com 301 para `/` preservando query/UTM. Substitui as referências anteriores ao endereço do Quiz; demais estados históricos deste documento permanecem. Ver [decisão e validação](QUIZ_ROUTE_2026-09-28.md).
-> **Status (23/09/2026):** rotas canônicas vigentes abaixo. `/radar` e `/ferramentas` são rotas reais; `/acompanhamento` e `/calc` são aliases 301. Reconciliação de slugs `/bikes/{slug}` ↔ IDs legados segue pendente.
+## 1. Estrutura pública estável
 
-## 1. Rotas públicas vigentes
+| URL canônica | Entidade e intenção | Estado |
+| --- | --- | --- |
+| `/` | Orientação para escolher transporte e navegar | Publicada |
+| `/radar` | Descoberta e preços das Bikes | Publicada |
+| `/radar/{bikeId}` | Página oficial da Bike: preço, histórico, ficha, comparação, vídeos e artigos | 30 páginas publicadas |
+| `/quiz` | Recomendação conforme uso e orçamento | Publicada |
+| `/ferramentas` | Hub de simulações de mobilidade | Publicada |
+| `/ferramentas/{toolSlug}` | Simulação específica, ligada a Bikes compatíveis, Radar, Quiz e conteúdo real | Sete ferramentas publicadas |
+| `/conteudos` | Hub editorial, busca e filtros | Publicada |
+| `/conteudos/{articleSlug}` | Artigo com fonte em vídeo e relações editoriais | 101 páginas publicadas |
+| `/grupodeofertas` | Redirecionamento para retenção via WhatsApp | Fora do sitemap |
 
-| Rota                | Propósito                             | Observação                                                                        |
-| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
-| `/`                 | Home B2C (orientação)                 | Âncoras internas `#bikes`, `#comparar`, `#ferramentas`, `#conteudos`.             |
-| `/quiz`     | Quiz de recomendação de bike elétrica | Landing de conversão terminal; sem header/links exploratórios; canonical fixo.    |
-| `/radar`            | Radar de preços (listagem)            | **Canônica.** Publicada e verificada.                                             |
-| `/radar/{bikeId}`   | Radar de preços (detalhe)             | Usa o `bike_id` legado literal, incluindo `_`, sem conversão de formato.          |
-| `/bikes`            | Catálogo/descoberta de bikes          | Lê `get_bikes_public_catalog` (Supabase).                                         |
-| `/bikes/{slug}`     | Página de decisão de uma bike         | `slug` = `bike_id` com `_` → `-`.                                                 |
-| `/ferramentas`      | Hub de ferramentas de decisão         | **Canônica.** Lista só Quiz, Radar e catálogo; comparador/calculadora sem CTA.    |
-| `/grupodeofertas`   | Grupo de ofertas (WhatsApp)           | Retenção.                                                                         |
-| `/painel-bikes`     | Painel operacional                    | `Disallow` no robots.txt.                                                         |
+Comparação entre Bikes integra o Radar. Não existe página pública independente `/comparar`. Busca, filtros e estados de comparação não criam URLs indexáveis: a canonical continua sendo a página base.
 
-### 1.1 Aliases 301 (compatibilidade)
+## 2. Identidade e aliases
 
-| Alias                      | Destino               | Regra                                                                     |
-| -------------------------- | --------------------- | ------------------------------------------------------------------------- |
-| `/acompanhamento`          | `/radar`              | 301 server-side, query/UTM preservados.                                   |
-| `/acompanhamento/{bikeId}` | `/radar/{bikeId}`     | 301, `bikeId` literal (sem decodificar/normalizar) + query.               |
-| `/calc`, `/calc/`          | `/ferramentas`        | 301, query/UTM preservados. Não captura `/calculadoras/*`.                |
-| `/#calc` (fragmento)       | bloco da calculadora  | Âncora alias mantida na Home; o ID canônico do bloco é `#ferramentas`.    |
+A entidade central é `Bike`. `bikeId` é o identificador persistido e literal, incluindo underscores, como `v9_max`. A URL oficial vigente é `/radar/v9_max`. `articleSlug` tem identidade própria e não deriva do ID de Bike.
 
-Implementação única em `src/lib/legacy-redirects.ts`, avaliada em `src/server.ts` antes do SSR. Rollback = remover o bloco de redirect e reverter os links de navegação; nada no banco muda.
+O mapa explícito dos 30 IDs, nomes, slugs legados e URLs está em [`bike-identity-map.json`](../artifacts/seo-final-2026-09-29/bike-identity-map.json). É um inventário do contrato publicado, sem renomear modelos. Uma futura mudança para slugs no Radar exige mapa e decisão específicos.
 
-## 2. Rotas futuras reservadas (sem páginas criadas)
+| Alias legado | Destino | HTTP |
+| --- | --- | --- |
+| `/acompanhamento` | `/radar` | 301 |
+| `/acompanhamento/{bikeId}` | `/radar/{bikeId}` | 301 |
+| `/calc` e `/calc/` | `/ferramentas` | 301 |
+| `/bikes` | `/radar` | 301 |
+| `/bikes/{slug}` | Radar da Bike resolvida pelo catálogo existente | 301; slug inexistente 404; falha de catálogo 503 |
+| `/escolherbike` | `/` | 301; preserva os QR Codes antigos |
 
-| Rota                | Propósito                    | Restrição                                                                                                                    |
-| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `/conteudos`        | Hub de conteúdo              | Reservado. Sem links internos até existir.                                                                                   |
-| `/conteudos/{slug}` | Artigo ou vídeo              | Reservado.                                                                                                                   |
-| `/comparar`         | Comparador de bikes          | Reservado (Etapa 19). Sem links internos até existir.                                                                        |
-| `/calculadoras/*`   | Calculadoras futuras         | Reservado; o redirect de `/calc` não interfere neste prefixo.                                                                |
+Query e UTM são preservadas nos redirects. Não atribuir significado comercial novo a IDs existentes. `/calculadoras/economia` é legado com `noindex`, fora do sitemap. Painel e `/admin/*` não são conteúdo público indexável.
 
-## 3. Entidade central: Bike
+## 3. Classificação editorial persistente
 
-A `Bike` é a raiz do domínio. Ela se relaciona com:
+`editorial_articles.content_type` é a fonte da classificação. Título não determina categoria em tempo de renderização. O contrato validado do CMS contém seis valores; labels públicos e no editor vêm de `src/lib/editorial-taxonomy.ts`.
 
-- `Offer` — ofertas/afiliados, preços e links de compra.
-- `PriceObservation` — registros históricos de preço (Radar).
-- `Article` — conteúdos editoriais que citam a bike.
-- `Video` — conteúdos em vídeo.
-- `Comparison` — comparações entre bikes.
+| Valor persistido | Label | Critério |
+| --- | --- | --- |
+| `test` | Testes e análises | Análise de um veículo e observações no uso ou teste |
+| `comparison` | Comparativos | Duas ou mais opções/versões comparadas para decidir |
+| `guide` | Guias de escolha | Critérios de compra e escolha, inclusive veículos usados |
+| `tips` | Uso e cuidados | Manutenção, segurança prática, recarga e uso |
+| `economy` | Custos e economia | Gastos de transporte, economia e rotina econômica |
+| `other` | Outros conteúdos | Conteúdo que não corresponde às intenções acima |
 
-**Regra importante:** dados de oferta (preço, link afiliado, estoque) nunca são copiados diretamente para o conteúdo editorial. O conteúdo referencia a bike e renderiza a oferta atual via API no momento da exibição.
+Só categorias com artigos reais aparecem no filtro; não criar arquivos vazios ou páginas artificiais para combinações de filtros. A correção proposta para os 101 artigos resulta em: **66 testes e análises, 23 comparativos, 5 guias, 3 de uso e cuidados e 4 de custos e economia**. Os 22 deltas estão em [`taxonomy-changes.json`](../artifacts/seo-final-2026-09-29/taxonomy-changes.json). Produção ainda tem 88 `test` e 13 `comparison`.
 
-## 4. IDs legados vs. slugs editoriais
+## 4. Relações e fontes
 
-- `bike_id` (legado): identificador técnico usado no catálogo, quiz, painel e Radar. Exemplos reais existentes no banco: `d50_cross`, `v8_pro`.
-- `slug` (editorial): identificador amigável da página `/bikes/{slug}`. Pode coincidir com o `bike_id`, mas **não há equivalência automática**. Cada slug deve ser mapeado explicitamente e reconciliado com todos os IDs legados antes de ser declarado oficial.
+- `primary_bike_id`: Bike principal quando o conteúdo tem uma principal real. Conteúdo geral ou veículo fora do catálogo pode não ter principal.
+- `related_bike_ids`: outras Bikes de fato tratadas no artigo, com IDs válidos. Artigo comparativo pode conter mais de uma; não adicionar relações só por palavra-chave.
+- `related_article_ids`: artigos publicados realmente complementares. Não criar relacionamento com drafts, IDs inexistentes ou com o próprio artigo.
+- `video_id`: vídeo fonte identificado. Autoria do artigo é a organização editorial Vitale Mobilidade; a autoria pessoal não é deduzida do vídeo.
+- `tool` nos blocos: slug de uma das sete ferramentas que ajuda a responder a intenção. Resultado depende das entradas e oferta real; não é previsão garantida.
+- Preço, oferta e histórico vêm dos repositórios do Radar. O texto pode registrar contexto histórico com data, sem transformar um preço de vídeo em oferta atual.
 
-## 5. Slugs, aliases e redirects
+A ida Article → Bike e a volta Bike → Article usam essas relações existentes. Se não houver relação verdadeira, a seção não ganha conteúdo inventado. Índice público entrega apenas publicados e indexáveis; fonte/transcrição privada e drafts não entram na hidratação.
 
-- **Feito:** `/acompanhamento[/{bikeId}]` → `/radar[/{bikeId}]` (301 real, publicado e verificado no domínio); `/calc` e `/calc/` → `/ferramentas` (301 publicado e verificado no domínio com query/UTM).
-- **Pendente:** mapeamento explícito entre `/bikes/{slug}` e IDs legados em redirects (hoje o slug é derivado por `_` → `-`, sem tabela de aliases).
-- Redirects são 301 centralizados em `src/lib/legacy-redirects.ts` + `src/server.ts`, nunca hardcoded em componentes.
+## 5. Ferramentas oficiais
 
-## 6. Sitemap
+Registro único: `src/lib/mobility/tools-registry.ts`, alinhado com o contrato editorial.
 
-O sitemap só inclui páginas públicas existentes e elegíveis à indexação. Hoje:
+| Grupo | Slugs |
+| --- | --- |
+| Economia | `carro-vs-bike`, `moto-vs-bike`, `aplicativos-vs-bike`, `transporte-publico-vs-bike` |
+| Renda | `veiculo-alugado-vs-bike-propria`, `meta-entregas` |
+| Tempo | `economia-de-tempo` |
 
-- `/`
-- `/quiz`
-- `/radar`
-- `/bikes`
-- `/ferramentas`
+## 6. Indexação e HTTP
 
-Fora do sitemap: painel (bloqueado no robots.txt), aliases 301 (`/acompanhamento`, `/calc`), rotas inexistentes (`/conteudos`, `/comparar`) e páginas de detalhe (`/radar/{bikeId}`, `/bikes/{slug}`) — estas dependem de geração dinâmica do sitemap, para não fixar uma lista que envelhece.
+Sitemap dinâmico: **143 URLs** (101 artigos, 30 Bikes e 12 páginas estruturais/ferramentas). Inclui só URLs canônicas, públicas, existentes e elegíveis. Aliases, painel, admin, filtros e rotas inexistentes ficam fora. Se uma fonte indispensável falhar, sitemap responde 503 em vez de publicar uma lista incompleta.
 
-## 7. `/bikes` e `/bikes/{slug}` (histórico do rascunho de 23/09/2026 — links de `/acompanhamento` já migrados para `/radar`)
+Documento válido: 200, conteúdo principal SSR, uma canonical e um H1. Documento inexistente: 404. Fonte editorial indisponível: 503, `no-store` e `Retry-After`; não converter indisponibilidade em artigo excluído. `robots.txt` permite crawlers públicos, incluindo Googlebot e OAI-SearchBot, e anuncia o sitemap. Esse acesso não garante indexação ou citação.
 
-- Fonte: aba oficial de bikes (gid=0), leitura read-only no servidor com cache; inclui todas as linhas nomeadas, inclusive "Não Elegível" (elegibilidade só afeta o Quiz).
-- `bikeId` canônico = mesmo resolvedor do sync (`resolveBikeId`/`normalizeName`); `slug` = `bikeId` com `_` → `-` (ex.: `v9_max_20ah` → `v9-max-20ah`). Colisões de ID/slug descartam a linha repetida, nunca sobrescrevem.
-- Link: só `meli.la` válido e idêntico ao da planilha; senão "Link indisponível no momento". Preço exibido como "Preço de referência cadastrado", nunca como preço de hoje.
-- Slug inexistente → 404 `noindex`. Ainda fora do sitemap; redirects `/acompanhamento/{bikeId}` ↔ `/bikes/{slug}` seguem pendentes.
+## 7. Regra para acrescentar conteúdo
 
-### 7.1 `/bikes` — página de descoberta (rascunho, 23/09/2026)
+1. Escolher a intenção e `content_type` no CMS antes da publicação. Usar a taxonomia existente.
+2. Vincular fonte/transcrição, Bike principal e relacionadas reais, artigos e ferramenta úteis.
+3. Revisar título/H1, resumo que responde à pergunta, condições das observações, limites, autoria organizacional, SEO title e descrição específicos, OG e slug único.
+4. Conferir fonte de números/afirmações. Distinguir teste, cadastro, opinião e estimativa. Nunca fabricar data, medição ou experiência.
+5. Rodar o QA editorial da revisão atual. No inventário legado, `foundation_required=false` para todos os 101 publicados; essa ausência de bloqueio não equivale a prova de fundamentação. Novos conteúdos devem usar o fluxo de fundação e aprovação de QA do CMS existente.
+6. Gerar variantes de capa com `scripts/optimize-editorial-images.py` no fluxo local aprovado e atualizar o manifest. Imagem nova funciona com a original até isso acontecer; OG preserva a imagem original.
+7. Confirmar HTML SSR, canonical, schema factual, links/relações, mobile e sitemap antes do release.
 
-- SSR via `getBikesDiscovery` (`src/lib/bikes-discovery.functions.ts`): catálogo editorial (30 linhas) + junção por `bikeId` com `get_price_tracker_catalog` (preço e classificação vindos de `buildRadarEntries`, sem recálculo) + contagem real de vídeos da aba "Videos Youtube".
-- Busca por nome no hero; atalhos: "Para 2 pessoas", "Autonomia de 100 km ou mais", "Com preço no Radar" (só aparecem se os dados existem).
-- Filtros combináveis: preço mín./máx. (preço do Radar quando monitorado, senão referência da planilha), autonomia mínima (km extraído de "Até N km"), capacidade (1/2 pessoas). Categoria omitida: todas as linhas têm o mesmo valor ("Bike elétrica").
-- Ordenação: nome, menor/maior preço, maior autonomia; dados ausentes sempre por último.
-- Card: o card inteiro é um único link para `/bikes/{slug}` (foto 4:3, nome, status do Radar quando existe, preço com fonte explícita, autonomia/capacidade, nº de vídeos e CTA visual "Conhecer a bike"). Selo/preço/fonte são informativos e não têm destino próprio. Acesso ao Radar fica na página de detalhe da bike. Sem link direto ao Mercado Livre.
-- Blocos: Quiz (`/quiz`), Radar (`/acompanhamento`), vídeos reais, Grupo (`/grupodeofertas`).
-- Pendências: `/radar` e `/comparar` não existem (sem links para eles; seleção de comparação não implementada); `/bikes` fora do sitemap; filtros não persistem na URL.
-
-### 7.2 `/bikes/{slug}` — hub de decisão (rascunho, 23/09/2026)
-
-- Loader SSR: catálogo editorial (cache) → bike pelo slug (404 noindex se inexistente) + `getRadarBike` read-only + todos os vídeos associados ao `bikeId` (até 60) + alternativas.
-- Hero: foto, nome, autonomia/capacidade; com Radar: `PriceStatus` + último preço registrado e data; sem Radar: "Preço não monitorado pelo Radar" + preço de referência cadastrado (nunca "hoje"). CTA "Ver oferta no Mercado Livre" com meli.la byte-idêntico; sem link: "Link indisponível no momento". Secundário "Análise de preço completa" → `/acompanhamento/{bikeId}` só com Radar.
-- Seções (ordem mobile): resumo rápido (só fatos estruturados), Preço no Radar (`dailyMetrics` 30 dias + `PriceRangeBar`, cobertura e última verificação), especificações/descrição, bloco Quiz, vídeos (4 visíveis + disclosure "Ver todos os vídeos" com o restante, sem perda), alternativas (mesma capacidade, menor diferença de preço de referência, até 3, critério exibido), Grupo de Ofertas, CTA final de compra (só com link válido).
-- Breadcrumb visível + JSON-LD BreadcrumbList.
-- Guias: contrato `BikeGuide`/`BikeGuides` pronto, sem fonte — nada é renderizado.
-- Pendências: `/comparar` e `/radar` inexistentes (sem links); sem gráfico temporal nesta página (histórico completo fica em `/acompanhamento/{bikeId}`); sem redirects entre as rotas do Radar e `/bikes`.
-
-### 7.3 Card do catálogo como link único (23/09/2026, publicado)
-
-`BikeCatalogCard` é um único link `bikeId → slug → /bikes/$slug`. A classificação do Radar é selo informativo, sem destino próprio; o CTA secundário "Analisar preço no Radar" saiu do card e o Radar continua acessível pelo detalhe da bike. Preços, fontes ("Preço registrado pelo Radar Vitale" / "Preço de referência cadastrado (não monitorado)" / "Preço não informado") e status inalterados.
-
-### 7.4 Heróis temáticos das páginas estruturais (23/09/2026, publicado)
-
-Apenas Home, `/bikes` e o Radar (`/radar`) usam hero fotográfico com tema próprio (imagens editoriais geradas, sem identificar modelo/preço/oferta). Quiz, `/ferramentas`, detalhe de bike e páginas internas não seguem esse padrão.
-
-## 8. Radar canônico em `/radar` (Etapa 9 — publicada)
-
-`/radar` e `/radar/{bikeId}` são as rotas canônicas do Radar, com canonical próprio. `/acompanhamento[/{bikeId}]` responde 301 antes do SSR, preservando `bikeId` literal e query/UTM. Menu, rodapé, Home, `/bikes`, cards, busca, assistente e sitemap apontam para `/radar`.
-
-## 9. `/ferramentas` (23/09/2026, publicada)
-
-Página estrutural SSR com H1 único, `head()` próprio e canonical `/ferramentas`. Lista com CTA apenas fluxos funcionais: Quiz (`/quiz`), Radar (`/radar`) e catálogo (`/bikes`). Seção "Um caminho para decidir" ordena o percurso exploratório catálogo → Radar → Quiz (Quiz como passo terminal). Comparador e calculadora **não são citados** (sem "em construção" nem promessa pública). Nenhuma lógica de Radar é duplicada. Nav "Ferramentas" (header, menu mobile, rodapé, atalhos da Home) aponta para `/ferramentas`; o atalho "Calculadora de economia" rola para `/#ferramentas`, com `#calc` mantido como âncora alias (sem H2 duplicado).
+Adicionar novos artigos e Bikes estende o inventário, sem mudar URLs publicadas ou abrir categorias vazias. Ver a auditoria e os gates em [`SEO_FINAL_2026-09-29.md`](SEO_FINAL_2026-09-29.md).

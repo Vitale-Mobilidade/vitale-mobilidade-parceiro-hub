@@ -12,20 +12,19 @@ import {
   Link,
 } from "@tanstack/react-router";
 import NotFound from "@/pages/NotFound";
-import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attribution";
+import {
+  captureQuizAttribution,
+  preserveCampaignSearch,
+} from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
+import { GTM_SNIPPET } from "@/lib/gtm-script";
 
-const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
+const TITLE =
+  "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
   "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
-
-const GTM_SNIPPET = `if (!location.pathname.startsWith('/admin')) (function(w,d,s,l,i){w[l]=w[l]||[];w.gtag=w.gtag||function(){w[l].push(arguments)};w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-NM9MGXNM');`;
 
 // Organization factual e global; serviços específicos não são atribuídos a todas as páginas.
 const ORG_JSONLD = {
@@ -35,7 +34,11 @@ const ORG_JSONLD = {
   name: "Vitale Mobilidade",
   url: "https://vitalemobilidade.com/",
   logo: "https://vitalemobilidade.com/logo-192.webp",
-  founder: { "@type": "Person", name: "Lucas Vitale", sameAs: "https://www.linkedin.com/in/lucasvitale1/" },
+  founder: {
+    "@type": "Person",
+    name: "Lucas Vitale",
+    sameAs: "https://www.linkedin.com/in/lucasvitale1/",
+  },
   sameAs: ["https://www.linkedin.com/in/lucasvitale1/"],
 };
 
@@ -48,58 +51,97 @@ const SITE_JSONLD = {
   publisher: { "@id": "https://vitalemobilidade.com/#organization" },
 };
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  search: { middlewares: [preserveCampaignSearch] },
-  beforeLoad: () => {
-    // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
-      captureQuizAttribution();
-    }
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    search: { middlewares: [preserveCampaignSearch] },
+    beforeLoad: () => {
+      // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/admin")
+      ) {
+        captureQuizAttribution();
+      }
+    },
+    head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+        { title: TITLE },
+        { name: "description", content: DESCRIPTION },
+        { name: "author", content: "Vitale Mobilidade" },
+        { name: "robots", content: "index, follow, max-image-preview:large" },
+        { property: "og:type", content: "website" },
+        { property: "og:locale", content: "pt_BR" },
+        { property: "og:site_name", content: "Vitale Mobilidade" },
+        {
+          property: "og:image",
+          content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
+        },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/jpeg" },
+        {
+          property: "og:image:alt",
+          content: "Vitale Mobilidade — escolha sua bicicleta elétrica",
+        },
+        { property: "og:title", content: TITLE },
+        { property: "og:description", content: DESCRIPTION },
+        { name: "twitter:card", content: "summary_large_image" },
+        {
+          name: "twitter:image",
+          content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
+        },
+        {
+          name: "twitter:image:alt",
+          content: "Vitale Mobilidade — escolha sua bicicleta elétrica",
+        },
+        { name: "twitter:title", content: TITLE },
+        { name: "twitter:description", content: DESCRIPTION },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", type: "image/png", href: "/favicon.png" },
+      ],
+      scripts: [
+        { children: GTM_SNIPPET },
+        { type: "application/ld+json", children: JSON.stringify(ORG_JSONLD) },
+        { type: "application/ld+json", children: JSON.stringify(SITE_JSONLD) },
+      ],
+    }),
+    shellComponent: RootShell,
+    component: RootComponent,
+    notFoundComponent: NotFound,
+    errorComponent: RootError,
   },
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { title: TITLE },
-      { name: "description", content: DESCRIPTION },
-      { name: "author", content: "Vitale Mobilidade" },
-      { name: "robots", content: "index, follow, max-image-preview:large" },
-      { property: "og:type", content: "website" },
-      { property: "og:locale", content: "pt_BR" },
-      { property: "og:site_name", content: "Vitale Mobilidade" },
-      { property: "og:image", content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:type", content: "image/jpeg" },
-      { property: "og:image:alt", content: "Vitale Mobilidade — escolha sua bicicleta elétrica" },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESCRIPTION },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg" },
-      { name: "twitter:image:alt", content: "Vitale Mobilidade — escolha sua bicicleta elétrica" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESCRIPTION },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-    ],
-    scripts: [
-      { children: GTM_SNIPPET },
-      { type: "application/ld+json", children: JSON.stringify(ORG_JSONLD) },
-      { type: "application/ld+json", children: JSON.stringify(SITE_JSONLD) },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFound,
-  errorComponent: RootError,
-});
+);
 
+// Emit the exact mobile picture source before framework modulepreloads, so the
+// critical image does not wait behind the hydration graph on constrained networks.
+const MOBILE_HERO_BY_PATH: Record<string, string> = {
+  "/": "/vitale-hero-v2-mobile-20260929.avif",
+  "/radar": "/vitale-hero-radar-2026-mobile-20260929.avif",
+  "/conteudos": "/vitale-hero-radar-2026-mobile-20260929.avif",
+  "/ferramentas": "/ferramentas-hero-mobile-20260929.avif",
+};
 function RootShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const mobileHero = MOBILE_HERO_BY_PATH[pathname.replace(/\/$/, "") || "/"];
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {mobileHero && (
+          <link
+            rel="preload"
+            as="image"
+            href={mobileHero}
+            type="image/avif"
+            media="(max-width: 767px)"
+            fetchPriority="high"
+          />
+        )}
         <HeadContent />
       </head>
       <body>
@@ -125,7 +167,8 @@ function RootComponent() {
   const excluded = path.startsWith("/quiz");
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
-    if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
+    if (!window.location.pathname.startsWith("/admin"))
+      captureQuizAttribution();
   }, [href]);
   return (
     <QueryClientProvider client={router.options.context.queryClient}>

@@ -2,17 +2,27 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { ArticleView } from "@/components/editorial/ArticleView";
 import { isEditorialCoverUrl } from "../../../supabase/functions/_shared/editorial-cover";
-import { getPublishedArticle } from "@/lib/editorial.functions";
+import { getPublishedArticleResult } from "@/lib/editorial.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
-import { safeVideos } from "@/lib/videos.functions";
+import { getSheetVideoCatalog } from "@/lib/videos.functions";
+import { articleSchemas } from "@/lib/article-seo";
 import { getRadarCatalog } from "@/lib/radar.functions";
-import { canonicalUrl, pageHead, serializeJsonLd } from "@/lib/seo";
-import { orderEditorialHighlights, relatedPublishedArticles } from "@/lib/editorial-discovery";
+import { pageHead, serializeJsonLd } from "@/lib/seo";
+import {
+  editorialHeaders,
+  EditorialUnavailable,
+} from "@/lib/editorial-availability";
+import {
+  orderEditorialHighlights,
+  relatedPublishedArticles,
+} from "@/lib/editorial-discovery";
 
 export const Route = createFileRoute("/conteudos/$slug")({
   loader: async ({ params }) => {
-    const article = await getPublishedArticle({ data: params.slug });
+    const result = await getPublishedArticleResult({ data: params.slug });
+    if (!result.ok) return { ok: false as const };
+    const article = result.article;
     if (!article) throw notFound();
     const [catalog, index, radar, videos] = await Promise.all([
       getBikeCatalog(),
@@ -20,30 +30,46 @@ export const Route = createFileRoute("/conteudos/$slug")({
       article.primaryBikeId || article.relatedBikeIds.length
         ? getRadarCatalog()
         : Promise.resolve({ ok: false as const }),
-      article.primaryBikeId ? safeVideos({ bikeId: article.primaryBikeId }) : Promise.resolve([]),
+      getSheetVideoCatalog(),
     ]);
     const contextualArticles = relatedPublishedArticles(article, index ?? []);
-    const connectedIds = new Set([article.primaryBikeId, ...article.relatedBikeIds].filter(Boolean));
+    const connectedIds = new Set(
+      [article.primaryBikeId, ...article.relatedBikeIds].filter(Boolean),
+    );
     const offers = (radar.ok ? radar.bikes : []).flatMap((item) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return [];
       const bike = item as Record<string, unknown>;
-      const id = typeof bike.id === "string" ? bike.id : typeof bike.bikeId === "string" ? bike.bikeId : null;
+      const id =
+        typeof bike.id === "string"
+          ? bike.id
+          : typeof bike.bikeId === "string"
+            ? bike.bikeId
+            : null;
       return id &&
         connectedIds.has(id) &&
         bike.hasCurrentOffer === true &&
         typeof bike.currentPrice === "number" &&
         Number.isFinite(bike.currentPrice) &&
         bike.currentPrice > 0
-        ? [{ id, price: bike.currentPrice, daily: Array.isArray(bike.daily) ? bike.daily : [] }]
+        ? [
+            {
+              id,
+              price: bike.currentPrice,
+              daily: Array.isArray(bike.daily) ? bike.daily : [],
+            },
+          ]
         : [];
     });
-    const prices = Object.fromEntries(offers.map((offer) => [offer.id, offer.price]));
+    const prices = Object.fromEntries(
+      offers.map((offer) => [offer.id, offer.price]),
+    );
     const histories = Object.fromEntries(
       offers.map((offer) => [
         offer.id,
         offer.daily
           .flatMap((point) => {
-            if (!point || typeof point !== "object" || Array.isArray(point)) return [];
+            if (!point || typeof point !== "object" || Array.isArray(point))
+              return [];
             const row = point as Record<string, unknown>;
             return typeof row.date === "string" &&
               /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
@@ -57,23 +83,59 @@ export const Route = createFileRoute("/conteudos/$slug")({
       ]),
     );
     return {
+      ok: true as const,
       article,
-      bikes: catalog.ok ? catalog.bikes : [],
+      bikes: catalog.ok
+        ? catalog.bikes.filter((bike) => connectedIds.has(bike.bikeId))
+        : [],
       relatedArticles: orderEditorialHighlights(
-        contextualArticles.length ? contextualArticles : (index ?? []).filter((a) => a.id !== article.id),
+        contextualArticles.length
+          ? contextualArticles
+          : (index ?? []).filter((a) => a.id !== article.id),
       ).slice(0, 4),
-      sidebarArticles: orderEditorialHighlights((index ?? []).filter((a) => a.id !== article.id)).slice(0, 3),
+      sidebarArticles: orderEditorialHighlights(
+        (index ?? []).filter((a) => a.id !== article.id),
+      ).slice(0, 3),
       prices,
       histories,
       articlesShareContext: contextualArticles.length > 0,
-      relatedVideos: videos.filter((video) => video.videoId !== article.videoId),
+      relatedVideos: videos
+        .filter(
+          (video) =>
+            video.videoId !== article.videoId &&
+            video.bikeIds.some((id) => connectedIds.has(id)),
+        )
+        .slice(0, 8)
+        .map(({ videoId, title, date, url, thumbnail }) => ({
+          videoId,
+          title,
+          date,
+          url,
+          thumbnail,
+        })),
+      sourceVideo: videos.find((video) => video.videoId === article.videoId)
+        ? (() => {
+            const { videoId, title, date, url, thumbnail } = videos.find(
+              (video) => video.videoId === article.videoId,
+            )!;
+            return { videoId, title, date, url, thumbnail };
+          })()
+        : null,
     };
   },
+  headers: editorialHeaders,
   head: ({ loaderData }) => {
-    if (!loaderData)
-      return { meta: [{ title: "Conteúdo indisponível | Vitale" }, { name: "robots", content: "noindex" }] };
+    if (!loaderData?.ok)
+      return {
+        meta: [
+          { title: "Conteúdo indisponível | Vitale" },
+          { name: "robots", content: "noindex" },
+        ],
+      };
     const a = loaderData.article;
-    const variant = a.ogImageUrl?.match(/\/(maxresdefault|sddefault|hqdefault|mqdefault)\.jpg(?:\?|$)/)?.[1];
+    const variant = a.ogImageUrl?.match(
+      /\/(maxresdefault|sddefault|hqdefault|mqdefault)\.jpg(?:\?|$)/,
+    )?.[1];
     const dimensions: Record<string, [number, number]> = {
       maxresdefault: [1280, 720],
       sddefault: [640, 480],
@@ -99,53 +161,40 @@ export const Route = createFileRoute("/conteudos/$slug")({
             url: a.ogImageUrl,
             width: imageDimensions?.[0],
             height: imageDimensions?.[1],
-            type: cover || /\.jpe?g(?:\?|$)/i.test(a.ogImageUrl) ? "image/jpeg" : undefined,
+            type:
+              cover || /\.jpe?g(?:\?|$)/i.test(a.ogImageUrl)
+                ? "image/jpeg"
+                : undefined,
             alt: a.ogTitle || a.title,
           }
         : undefined,
     });
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: a.title,
-      description: a.metaDescription || a.summary,
-      datePublished: a.publishedAt,
-      image: a.ogImageUrl || undefined,
-      inLanguage: "pt-BR",
-      mainEntityOfPage: canonicalUrl(`/conteudos/${a.slug}`),
-      publisher: { "@id": "https://vitalemobilidade.com/#organization" },
-      isBasedOn: `https://www.youtube.com/watch?v=${a.videoId}`,
-    };
-    const videoSchema = {
-      "@context": "https://schema.org",
-      "@type": "VideoObject",
-      name: a.title,
-      // VideoObject keeps the YouTube thumbnail even when an editorial cover is approved.
-      description: a.metaDescription || a.summary,
-      thumbnailUrl: `https://i.ytimg.com/vi/${a.videoId}/hqdefault.jpg`,
-      embedUrl: `https://www.youtube-nocookie.com/embed/${a.videoId}`,
-      contentUrl: `https://www.youtube.com/watch?v=${a.videoId}`,
-    };
-    const breadcrumbs = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Início", item: canonicalUrl("/") },
-        { "@type": "ListItem", position: 2, name: "Conteúdos", item: canonicalUrl("/conteudos") },
-        { "@type": "ListItem", position: 3, name: a.title, item: canonicalUrl(`/conteudos/${a.slug}`) },
-      ],
-    };
     return {
       ...head,
-      scripts: [{ type: "application/ld+json", children: serializeJsonLd([schema, videoSchema, breadcrumbs]) }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: serializeJsonLd(articleSchemas(a, loaderData.sourceVideo)),
+        },
+      ],
     };
   },
   component: ContentDetail,
 });
 
 function ContentDetail() {
-  const { article, bikes, relatedArticles, sidebarArticles, articlesShareContext, relatedVideos, prices, histories } =
-    Route.useLoaderData();
+  const data = Route.useLoaderData();
+  if (!data.ok) return <EditorialUnavailable />;
+  const {
+    article,
+    bikes,
+    relatedArticles,
+    sidebarArticles,
+    articlesShareContext,
+    relatedVideos,
+    prices,
+    histories,
+  } = data;
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />

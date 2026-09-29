@@ -9,7 +9,8 @@ import { composeArticleFlow } from "@/lib/article-flow";
 import { articleSubjectBikes, comparedBikesInTitle } from "@/lib/editorial-discovery";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
-import { youtubeThumbnailUrl, youtubeThumbnailVariant } from "@/lib/video-catalog";
+import { youtubeThumbnailUrl } from "@/lib/video-catalog";
+import { editorialImageProps } from "@/lib/editorial-images";
 
 export type PublishedArticle = {
   id: string;
@@ -551,6 +552,7 @@ export function ArticleView({
         )}
         <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Conteúdo Vitale</p>
         <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
+        <p className="mt-3 text-sm text-muted-foreground">Por <a href="/" rel="author" className="font-semibold underline">Vitale Mobilidade</a></p>
         {article.publishedAt && (
           <time dateTime={article.publishedAt} className="mt-3 block text-sm text-muted-foreground">
             Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}
@@ -558,7 +560,7 @@ export function ArticleView({
         )}
         {article.ogImageUrl && (
           <img
-            src={article.ogImageUrl}
+            {...editorialImageProps(article.ogImageUrl, "(max-width: 1023px) calc(100vw - 32px), 768px")}
             alt=""
             width={1280}
             height={720}
@@ -569,6 +571,10 @@ export function ArticleView({
         )}
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
+        </p>
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">
+          Baseado no <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="font-semibold underline">vídeo de origem</a>.
+          {" "}Os relatos se referem às condições apresentadas nesse vídeo. Especificações declaradas e estimativas não garantem o mesmo resultado em outro uso.
         </p>
         {planned
           ? article.blocks.map((block, index) => (
@@ -655,7 +661,7 @@ export function ArticleView({
                   >
                     {a.ogImageUrl ? (
                       <img
-                        src={youtubeThumbnailVariant(a.ogImageUrl) ?? undefined}
+                        {...editorialImageProps(a.ogImageUrl, "(max-width: 639px) 112px, 320px")}
                         alt=""
                         width={320}
                         height={180}
