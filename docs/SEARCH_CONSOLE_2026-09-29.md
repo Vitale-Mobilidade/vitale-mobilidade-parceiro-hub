@@ -29,13 +29,13 @@ Artigo inspecionado: `/conteudos/inow-v20-pro-ou-ouxi-v8-ultra-o-que-muda-na-esc
 - Melhoria de vídeo: 1 erro crítico real, **O campo uploadDate não foi encontrado**. Corrigido na proposta local usando a data do vídeo correspondente do catálogo; quando não houver data válida, o schema incompleto será omitido.
 - `contentUrl` publicado apontava para uma página YouTube, não para bytes do vídeo. A proposta usa `embedUrl` e `url` reais, sem inventar arquivo de mídia.
 
-Não foi solicitada indexação em massa. A solicitação individual e novo teste devem ocorrer após a publicação da correção, para enviar a versão final ao Google.
+Após a publicação do commit `1581ae92f29957e4af9fff16fc64f9c5608930a8`, o teste em tempo real em **29/09/2026, 20:51** mostrou **O URL está disponível para o Google**, **É possível indexar a página**, breadcrumb válido e **1 VideoObject válido**. O antigo erro crítico de uploadDate ausente desapareceu. Restaram dois avisos opcionais: data sem hora ISO completa e fuso horário não informado. A fonte confirma o dia, mas não a hora do upload; não foi fabricado horário. A solicitação individual de indexação foi aceita: **Indexação solicitada**, URL adicionado à fila prioritária. Não foi solicitada indexação em massa.
 
 ## Core Web Vitals de campo
 
 Atualização **26/09/2026**: mobile 2 ruins, 0 boas; desktop 2 que precisam de melhoria. Mobile: LCP > 4 s e INP > 200 ms. O grupo de LCP tem **4,3 s**, com `/escolherbike` como exemplo com dados suficientes; a home tem dados individuais insuficientes. `/escolherbike` é uma rota antiga, hoje com redirect. Isso descreve o histórico do grupo, não uma medição individual dos 101 novos artigos.
 
-A validação de correção do grupo não foi iniciada antes de publicar a correção. A atualização de dados de campo e a decisão de indexação dependem de novas visitas/rastreamento e do processamento do Google.
+A validação de correção do grupo não foi iniciada antes de publicar a correção. Após o release, Lighthouse mobile no domínio mediu índice 74/92 em duas rodadas, artigo 89, Radar 86 e Quiz 91, com variação relevante no tempo de resposta inicial. Esses valores de laboratório não substituem CWV de campo. A atualização de dados de campo e a decisão de indexação dependem de novas visitas/rastreamento e do processamento do Google.
 
 ## Referências e próximo passo
 
@@ -44,4 +44,4 @@ A validação de correção do grupo não foi iniciada antes de publicar a corre
 - [Recursos de IA da Pesquisa](https://developers.google.com/search/docs/appearance/ai-features): manter SEO, acesso e conteúdo útil; não existe um schema adicional obrigatório para IA.
 - [OpenAI: publishers e developers](https://help.openai.com/en/articles/12627856-publishers-and-developers-faq): permitir OAI-SearchBot e acompanhar referrals, sem promessa de citação.
 
-Após release autorizado: repetir inspeção em tempo real do artigo, verificar schema corrigido, solicitar indexação de amostra representativa e iniciar validação de CWV quando houver evidência apropriada. Não declarar os 101 artigos indexados ou CWV bons pelo simples processamento do sitemap.
+Inspeção em tempo real, schema e indexação individual de amostra foram concluídos após o release. Acompanhar indexação e CWV de campo quando o Google atualizar os relatórios; não declarar os 101 artigos indexados ou CWV bons pelo simples processamento do sitemap.

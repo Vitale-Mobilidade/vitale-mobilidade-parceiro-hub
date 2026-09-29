@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-29",
+  "commit": "1581ae92f29957e4af9fff16fc64f9c5608930a8",
+  "deploymentId": "e5fbb175-0d96-46cd-b5b1-1c066f18673a",
+  "domain": "https://vitalemobilidade.com",
+  "crawl": { "sitemapStatus": 200, "urls": 143, "articles": 101, "issues": {}, "articleSchemas": 101, "referencedEditorialImages": 101, "missingLocalEditorialImages": 0 },
+  "database": { "updatedArticles": 30, "typeCounts": { "test": 66, "comparison": 23, "guide": 5, "tips": 3, "economy": 4 } },
+  "lighthouseMobile": {
+    "contentIndexFirst": { "performance": 74, "seo": 100, "lcpSeconds": 3.6, "tbtMs": 310, "cls": 0, "serverResponseMs": 1950 },
+    "contentIndexRepeat": { "performance": 92, "seo": 100, "lcpSeconds": 2.2, "tbtMs": 190, "cls": 0, "serverResponseMs": 690 },
+    "article": { "performance": 89, "seo": 100, "lcpSeconds": 2.2, "tbtMs": 160, "cls": 0, "serverResponseMs": 1920 },
+    "radar": { "performance": 86, "seo": 100, "lcpSeconds": 2.4, "tbtMs": 220, "cls": 0, "serverResponseMs": 1310 },
+    "quiz": { "performance": 91, "seo": 100, "lcpSeconds": 2.1, "tbtMs": 260, "cls": 0, "serverResponseMs": 880 }
+  },
+  "searchConsole": { "profile": "Lucas (Vitale Mobilidade)", "property": "sc-domain:vitalemobilidade.com", "sitemapProcessedUrls": 143, "sampleLiveIndexable": true, "sampleBreadcrumbValid": true, "sampleVideoValid": true, "sampleVideoOptionalDatetimeWarnings": 2, "sampleIndexationRequested": true },
+  "limits": ["Indexation and AI citations are search-engine decisions.", "Core Web Vitals field data predates this release.", "The source video provides a calendar date without an exact upload time; no time was invented."]
+}

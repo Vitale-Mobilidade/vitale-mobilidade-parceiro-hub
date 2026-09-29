@@ -19,6 +19,7 @@ artifacts/seo-final-2026-09-29/local/html/
 artifacts/seo-final-2026-09-29/article-blocks.json
 artifacts/seo-final-2026-09-29/evidence-review.local.json
 artifacts/seo-final-2026-09-29/release-backup.local.json
+artifacts/seo-final-2026-09-29/production-post/
 
 # Editor directories and files
 .vscode/*
