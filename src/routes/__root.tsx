@@ -20,6 +20,8 @@ import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
 import { GTM_SNIPPET } from "@/lib/gtm-script";
+import { CONSENT_BOOTSTRAP } from "@/lib/consent";
+import { ConsentBanner } from "@/components/site/ConsentBanner";
 
 const TITLE =
   "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
@@ -104,6 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "icon", type: "image/png", href: "/favicon.png" },
       ],
       scripts: [
+        { children: CONSENT_BOOTSTRAP },
         { children: GTM_SNIPPET },
         { type: "application/ld+json", children: JSON.stringify(ORG_JSONLD) },
         { type: "application/ld+json", children: JSON.stringify(SITE_JSONLD) },
@@ -145,14 +148,6 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-NM9MGXNM"
-            height="0"
-            width="0"
-            style={{ display: "none", visibility: "hidden" }}
-          />
-        </noscript>
         {children}
         <Scripts />
       </body>
@@ -183,6 +178,7 @@ function RootComponent() {
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
       {!excluded && <HotPipeWidget />}
+      {!path.startsWith("/admin") && <ConsentBanner />}
     </QueryClientProvider>
   );
 }

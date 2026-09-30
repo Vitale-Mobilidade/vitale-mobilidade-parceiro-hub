@@ -83,6 +83,14 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-10 sm:mt-12 lg:mt-16 pt-8 sm:pt-10 lg:pt-12 text-center text-sm sm:text-base text-gray-400">
           <p>&copy; 2026 <strong className="text-white">Vitale Mobilidade</strong>. Todos os direitos reservados.</p>
           <p className="mt-2">Consultoria em veículos elétricos para uma mobilidade sustentável e lucrativa.</p>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('vitale:open-consent'))}
+            className="mt-3 underline underline-offset-2 hover:text-white"
+          >
+            Preferências de privacidade
+          </button>
+          <a href="/privacidade" className="ml-3 underline underline-offset-2 hover:text-white">Cookies e privacidade</a>
         </div>
       </div>
     </footer>
