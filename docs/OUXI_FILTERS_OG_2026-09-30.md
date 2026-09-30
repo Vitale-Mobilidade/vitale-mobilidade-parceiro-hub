@@ -39,10 +39,16 @@ Classificação: **estrutural**. Altera conteúdo editorial em Supabase, descobe
 | Produto e Estratégia | Pass | Correção limitada às três bikes e menções verificadas, sem reescrever fatos. |
 | CTO e Arquitetura | Pass | SSR local, metadata por rota, API admin sem mudança de autorização; typecheck e build aprovados. |
 | IA e Agent Engineering | Pass | Geração local determinística das capas; nenhum prompt ou fonte editorial reescrito. |
-| Segurança | Pass | Secrets mantidos no servidor; SQL de produção ainda não executado; proposta protegida e artefatos privados ignorados no Git. |
+| Segurança | Pass | Secrets mantidos no servidor; backup integral privado dos 34 registros, transação protegida por revisão e valor anterior; nenhum schema, RLS ou permissão alterado. |
 | UX/UI | Pass | Capas e Radar inspecionados em resolução final; filtro por modelo, contador e limpeza disponíveis. |
-| CX e Operação | Pass | Admin permite encontrar artigos por título, modelo e status após deploy da Edge Function. |
-| Growth e CRO | Pass | OG por página, título legível na arte e slugs canônicos preservados. |
-| PMO e QA | Fail | Aplicação no Supabase e deploy ainda não concluídos; a sessão disponível no dashboard não tem acesso ao projeto. Sem release até acesso e smoke público. |
+| CX e Operação | Pass | Edge Function reimplantada; painel autenticado mostrou 101 artigos e 16 ao filtrar GT2000. |
+| Growth e CRO | Pass | OG por página no SSR de produção, título legível na arte e slugs canônicos preservados. |
+| PMO e QA | Pass | `pnpm validate` já aprovado no commit; backup, merge, deploy e aplicação protegida concluídos; 34 registros conferidos, 84 imagens HTTP 200, smoke público e admin aprovado. |
 
-Estado: pacote local pronto; publicação bloqueada por acesso autenticado ao projeto Supabase. Após acesso, publicar assets e frontend/Edge Function, confirmar URLs de capa, salvar backup dos registros, aplicar SQL protegido, verificar 34 revisões e 19 correções públicas, então realizar smoke do admin e compartilhamento.
+## Publicação e conferência em produção
+
+- A conexão autorizada do projeto Lovable `638f4032-8ff8-45dd-b03b-e69c0c064154` confirmou o banco Supabase com 101 artigos publicados. O backup integral dos 34 registros foi salvo em `artifacts/ouxi-2026-09-30/production-backup-2026-09-30.json`, ignorado pelo Git. Onze revisões haviam avançado uma unidade desde a proposta inicial; os campos editoriais eram idênticos. A transação foi reconciliada com as revisões atuais antes da escrita.
+- PR #4 integrado ao `main` no commit `3980333583581b21bd9a05399a06b901b709098e`. O Lovable sincronizou esse commit, reimplantou somente `editorial-admin` e publicou o deployment `9986ca56-d1b8-41f4-b3aa-766facb50003` no domínio existente, sem DNS ou nova configuração.
+- Depois de confirmar as capas novas com HTTP 200, a transação SQL aplicou a correção aos 34 artigos. Leitura posterior confirmou 34/34 com revisão seguinte, status `published`, URL da nova capa e todos os campos públicos iguais à proposta; nenhuma ocorrência de `WANSHIDA` nos títulos, resumos, SEO, blocos ou FAQ desses artigos. Os slugs legados permanecem pelo motivo SEO registrado acima.
+- Todas as 84 imagens JPG novas responderam HTTP 200 no domínio. Home, Radar, Conteúdos, Quiz, Ferramentas, uma ferramenta individual e um artigo corrigido retornaram metadados OG específicos no HTML de produção. Os filtros público e admin mostraram 101 artigos inicialmente e 16 após seleção de GT2000, incluindo comparativos em que ela é bike relacionada.
+- Rollback: reverter o commit `3980333` no frontend e republicar; reimplantar a versão anterior de `editorial-admin`; aplicar `correction-rollback.sql` somente se as 34 revisões ainda corresponderem à versão desta transação. O backup privado integral permite recuperar valores caso haja edição posterior.
