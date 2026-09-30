@@ -4,6 +4,10 @@
 
 **URL**: https://lovable.dev/projects/638f4032-8ff8-45dd-b03b-e69c0c064154
 
+## Atenção: Supabase da Vitale
+
+**O banco Supabase de produção pertence a este projeto Lovable e é acessado pela integração do próprio Lovable.** Para consultar o banco ou implantar Edge Functions, selecione o projeto acima no Lovable e use sua conexão Supabase. A ausência do projeto em uma conta aberta diretamente no dashboard `supabase.com` não significa que a Vitale esteja sem acesso ao banco. Confira a conexão Lovable antes de declarar bloqueio ou pedir outro login. Alterações produtivas exigem backup, validação e autorização do escopo.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
