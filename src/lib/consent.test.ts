@@ -116,8 +116,9 @@ describe("consent choice updates", () => {
       dataLayer,
       gtag,
       dispatchEvent: vi.fn(),
-      location: { reload },
+      location: { reload, href: "https://vitalemobilidade.com/radar" },
     });
+    vi.stubGlobal("document", { title: "Radar | Vitale Mobilidade" });
     saveConsentChoice(true, false);
     expect(gtag).toHaveBeenCalledWith("consent", "update", {
       analytics_storage: "granted",
@@ -126,6 +127,11 @@ describe("consent choice updates", () => {
       ad_personalization: "denied",
     });
     expect(dataLayer).toContainEqual({ event: "vitale_analytics_granted" });
+    expect(gtag).toHaveBeenCalledWith("event", "page_view", {
+      send_to: "G-LXMH4RWQHV",
+      page_location: "https://vitalemobilidade.com/radar",
+      page_title: "Radar | Vitale Mobilidade",
+    });
     expect(dataLayer).not.toContainEqual({ event: "vitale_marketing_granted" });
     saveConsentChoice(true, true);
     expect(dataLayer).toContainEqual({ event: "vitale_marketing_granted" });
@@ -139,6 +145,11 @@ describe("consent choice updates", () => {
       ),
     ).toHaveLength(1);
     expect(reload).not.toHaveBeenCalled();
+    expect(
+      gtag.mock.calls.filter(([command, event]) =>
+        command === "event" && event === "page_view",
+      ),
+    ).toHaveLength(1);
     saveConsentChoice(false, false);
     expect(reload).toHaveBeenCalledTimes(1);
   });

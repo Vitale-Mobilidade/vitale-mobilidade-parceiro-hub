@@ -64,6 +64,13 @@ export function saveConsentChoice(
   });
   if (analytics && !previous?.analytics) {
     w.dataLayer?.push({ event: "vitale_analytics_granted" });
+    // The initial cookieless page view preceded this choice. Send the current
+    // page once with analytics consent so the consented visit is represented.
+    w.gtag?.("event", "page_view", {
+      send_to: "G-LXMH4RWQHV",
+      page_location: window.location.href,
+      page_title: document.title,
+    });
   }
   if (marketing && !previous?.marketing) {
     w.dataLayer?.push({ event: "vitale_marketing_granted" });
