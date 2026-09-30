@@ -32,21 +32,23 @@ Classificação: **estrutural**, por alterar medição pública e GTM. Objetivo:
 
 ## Revisão pós-implementação
 
-O código local restaura o download imediato e assíncrono do GTM. **O container GTM e o site em produção não foram alterados.** A correção de `page_view` ainda depende de duas mudanças no workspace do GTM e publicação autorizada: retirar `send_page_view=false` da tag `GA4 – Configuração Base` (ID 30) e pausar `GA4 - event_page_view_spa` (ID 28). A medição otimizada de mudanças de histórico já está ativa no fluxo; mantê-la. Não modificar a tag de consentimento, ID de medição ou outras tags.
+O código restaura o download imediato e assíncrono do GTM. No GTM, a versão **14** foi publicada em 29/09/2026, 21:50 BRT: a tag base `GA4 – Configuração Base` (ID 30) deixou de definir `send_page_view=false`, e `GA4 - event_page_view_spa` (ID 28) foi pausada. O JavaScript público do contêiner confirmou a versão 14 e as duas alterações. A medição otimizada de mudanças de histórico permanece ativa no fluxo; consentimento, ID de medição e demais tags não mudaram.
+
+No Tag Assistant Preview, a entrada na Home produziu um hit de visualização de página. Navegar para `/radar` produziu mais um hit, totalizando dois, sem disparo da tag manual pausada.
 
 | Perspectiva | Status | Evidência ou pendência |
 | --- | --- | --- |
-| Produto e Estratégia | Pass local | Escopo limitado à medição; sem promessa de recuperar dados históricos |
-| CTO e Arquitetura | Pass local | Bootstrap imediato com script assíncrono e teste de emissão única; GTM produtivo ainda pendente |
+| Produto e Estratégia | Pass | Escopo limitado à medição; sem promessa de recuperar dados históricos |
+| CTO e Arquitetura | Pass | Bootstrap imediato com script assíncrono e teste de emissão única; GTM versão 14 ativo |
 | IA e Agent Engineering | N/A | Nenhum fluxo de IA alterado |
-| Segurança | Pass local | Sem payload novo, consentimento ou segredo; tag global segue excluída de `/admin` |
-| UX/UI | Pass local | Sem interface alterada; custo de performance do carregamento imediato é risco aceito e deve ser observado após release |
+| Segurança | Pass | Sem payload novo, consentimento ou segredo; tag global segue excluída de `/admin` |
+| UX/UI | Pass | Sem interface alterada; custo de performance do carregamento imediato é risco aceito e deve ser observado após release |
 | CX e Operação | N/A | Sheets, CRM e rotinas não mudaram |
-| Growth e CRO | Fail para release | `page_view` inicial não volta até a mudança no GTM; conferir GA4 Tempo real e uma navegação SPA após publicação |
-| PMO e QA | Fail para release | Teste dirigido 2/2, lint dirigido, `pnpm validate` (typecheck, 59 testes, build) passaram; publicação e smoke produtivo pendentes |
+| Growth e CRO | Pass | Preview mostrou um `page_view` inicial e outro na navegação SPA; versão 14 publicada |
+| PMO e QA | Pass para publicação do frontend | Teste dirigido 2/2, lint dirigido, `pnpm validate` (typecheck, 59 testes, build) passaram; smoke produtivo do frontend ainda pendente |
 
 ### Fechamento
 
-- Estado: código e documentação locais prontos para revisão; publicação bloqueada até autorização específica para GTM e frontend.
-- Rollback: restaurar a versão anterior do GTM e reverter o commit local do bootstrap. Sem migration, banco ou dados produtivos.
+- Estado: usuário autorizou publicar; GTM versão 14 ativa; frontend em preparação para publicação.
+- Rollback: restaurar a versão 13 do GTM e reverter o commit do bootstrap. Sem migration, banco ou dados produtivos.
 - Smoke pós-publicação: abrir `/` e `/quiz` diretamente em sessões de teste, conferir exatamente um `page_view` por entrada no Preview/Tempo real; navegar para `/radar` sem recarga e conferir exatamente mais um; verificar que `/admin` não carrega o GTM. Registrar versão GTM, deploy e horário.
