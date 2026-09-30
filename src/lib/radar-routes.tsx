@@ -10,7 +10,7 @@ import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { SITE_ORIGIN, type RadarBase } from "@/lib/radar-base";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getPublishedArticlesForBike } from "@/lib/editorial.functions";
-import { pageHead } from "@/lib/seo";
+import { pageHead, socialImageForPath } from "@/lib/seo";
 
 export async function loadRadarCatalog() {
   const [r, videos, catalog] = await Promise.all([
@@ -76,7 +76,7 @@ export function radarCatalogHead(base: RadarBase) {
     ogTitle: OG_TITLE,
     ogDescription: OG_DESCRIPTION,
     image: {
-      url: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg`,
+      url: `${SITE_ORIGIN}/og/vitale-radar-20260930-1200x630.jpg`,
       width: 1200,
       height: 630,
       type: "image/jpeg",
@@ -187,6 +187,7 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
     .filter(Boolean)
     .join(" e ");
   const description = `${bike.name}${bike.price !== null && bike.link ? `: oferta atual de ${formatBRL(bike.price)}` : ""}${facts ? `, ${facts}` : ""}. Veja histórico de preços, ficha técnica, comparação e conteúdos da Vitale.`;
+  const shareImage = socialImageForPath(`/radar/${bikeId}`);
   const product = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -227,22 +228,13 @@ export function radarBikeHead(_base: RadarBase, bikeId: string, loaderData: unkn
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: ogTitle },
       { name: "twitter:description", content: description },
-      ...(bike.image
-        ? [
-            { property: "og:image", content: bike.image },
-            { property: "og:image:alt", content: `Bike elétrica ${bike.name}` },
-            { name: "twitter:image", content: bike.image },
-            { name: "twitter:image:alt", content: `Bike elétrica ${bike.name}` },
-          ]
-        : [
-            { property: "og:image", content: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg` },
-            { property: "og:image:width", content: "1200" },
-            { property: "og:image:height", content: "630" },
-            { property: "og:image:type", content: "image/jpeg" },
-            { property: "og:image:alt", content: ogTitle },
-            { name: "twitter:image", content: `${SITE_ORIGIN}/og/vitale-radar-1200x630.jpg` },
-            { name: "twitter:image:alt", content: ogTitle },
-          ]),
+      { property: "og:image", content: shareImage },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:alt", content: ogTitle },
+      { name: "twitter:image", content: shareImage },
+      { name: "twitter:image:alt", content: ogTitle },
     ],
     links: [{ rel: "canonical", href: canonical }],
     scripts: [

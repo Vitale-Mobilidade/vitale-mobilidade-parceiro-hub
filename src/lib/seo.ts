@@ -1,7 +1,28 @@
 // Contrato de metadata SSR (Etapa 2). Base canônica fixa, sem query/UTM/hash.
 export const SITE_URL = "https://vitalemobilidade.com";
 export const SITE_NAME = "Vitale Mobilidade";
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og/vitale-home-1200x630.jpg`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og/vitale-home-20260930-1200x630.jpg`;
+
+/** Each public non-article page has a share card with its own subject in the pixels. */
+export function socialImageForPath(path: string): string {
+  const clean = path.split(/[?#]/)[0].replace(/\/$/, "") || "/";
+  const sections: Record<string, string> = {
+    "/": "vitale-home",
+    "/radar": "vitale-radar",
+    "/quiz": "vitale-quiz",
+    "/conteudos": "vitale-conteudos",
+    "/ferramentas": "vitale-ferramentas",
+    "/grupodeofertas": "grupo-de-ofertas",
+    "/privacidade": "privacidade",
+  };
+  const direct = sections[clean];
+  if (direct) return `${SITE_URL}/og/${direct}${direct.startsWith("vitale-") ? "-20260930" : ""}-1200x630.jpg`;
+  const detail = clean.match(/^\/(?:ferramentas|calculadoras)\/([a-z0-9-]+)$/);
+  if (detail) return `${SITE_URL}/og/${detail[1]}-1200x630.jpg`;
+  const radar = clean.match(/^\/radar\/([a-z0-9_]+)$/);
+  if (radar) return `${SITE_URL}/og/radar-${radar[1]}-1200x630.jpg`;
+  return DEFAULT_OG_IMAGE;
+}
 
 /** Serializa JSON-LD sem permitir que dados dinâmicos encerrem a tag script. */
 export function serializeJsonLd(value: unknown): string {
@@ -40,7 +61,7 @@ export function pageHead(input: PageMetaInput) {
   const ogTitle = input.ogTitle ?? input.title;
   const ogDescription = input.ogDescription ?? input.description;
   const image = input.image ?? {
-    url: DEFAULT_OG_IMAGE,
+    url: socialImageForPath(input.path),
     width: 1200,
     height: 630,
     type: "image/jpeg",

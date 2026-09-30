@@ -101,7 +101,7 @@ export const Route = createFileRoute("/bikes/$slug")({
       image: b.image
         ? { url: b.image, alt: `Bike elétrica ${b.name}` }
         : {
-            url: canonicalUrl("/og/vitale-radar-1200x630.jpg"),
+            url: canonicalUrl("/og/vitale-radar-20260930-1200x630.jpg"),
             width: 1200,
             height: 630,
             type: "image/jpeg",

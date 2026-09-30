@@ -26,7 +26,7 @@ export function relatedPublishedArticles<T extends PublishedArticleSummary>(
 }
 
 export function articleMatchesSearch(
-  article: Pick<PublishedArticleSummary, "title" | "summary" | "primaryBikeId" | "relatedBikeIds">,
+  article: Pick<PublishedArticleSummary, "title" | "primaryBikeId" | "relatedBikeIds"> & { summary?: string },
   query: string,
   bikeNames: Record<string, string>,
 ): boolean {
@@ -42,13 +42,20 @@ export function articleMatchesSearch(
   const searchable = normalized(
     [
       article.title,
-      article.summary,
+      article.summary ?? "",
       ...[article.primaryBikeId, ...article.relatedBikeIds]
         .filter((id): id is string => Boolean(id))
         .map((id) => bikeNames[id] ?? ""),
     ].join(" "),
   );
   return terms.every((term) => searchable.includes(term));
+}
+
+export function articleMatchesBike(
+  article: Pick<PublishedArticleSummary, "primaryBikeId" | "relatedBikeIds">,
+  bikeId: string,
+): boolean {
+  return !bikeId || article.primaryBikeId === bikeId || article.relatedBikeIds.includes(bikeId);
 }
 
 /** The article's primary Bike may be context, not one of the two models in its headline. */

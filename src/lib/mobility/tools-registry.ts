@@ -2,7 +2,7 @@
  * Registro único das sete Ferramentas de Mobilidade oficiais (/ferramentas/*).
  * Hub, sitemap, metadata e "ferramentas relacionadas" leem daqui: nenhuma lista paralela.
  */
-import { canonicalUrl, pageHead, serializeJsonLd, SITE_NAME } from "@/lib/seo";
+import { canonicalUrl, pageHead, serializeJsonLd, SITE_NAME, socialImageForPath } from "@/lib/seo";
 import { EDITORIAL_TOOL_SLUGS } from "../../../supabase/functions/_shared/editorial-foundation";
 
 export const TOOL_SLUGS = EDITORIAL_TOOL_SLUGS;
@@ -162,7 +162,7 @@ export function toolHead(slug: ToolSlug) {
     ogTitle: tool.h1,
     ogDescription: tool.seoDescription,
     image: {
-      url: canonicalUrl("/og/vitale-ferramentas-1200x630.jpg"),
+      url: socialImageForPath(tool.path),
       width: 1200,
       height: 630,
       type: "image/jpeg",

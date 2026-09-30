@@ -64,7 +64,7 @@ export type AdminOffer = {
   bike_id: string; price: number; url: string; verified_at: string | null;
   synced_at: string | null; is_current: boolean; ended_at: string | null; end_reason: string | null;
 };
-export type ArticleRow = Pick<EditorialArticle, "id" | "title" | "slug" | "status" | "content_type" | "video_id" | "primary_bike_id" | "updated_at" | "published_at" | "validation_errors">;
+export type ArticleRow = Pick<EditorialArticle, "id" | "title" | "slug" | "status" | "content_type" | "video_id" | "primary_bike_id" | "related_bike_ids" | "updated_at" | "published_at" | "validation_errors">;
 
 export class AdminApiError extends Error {
   constructor(message: string, public readonly status: number) { super(message); }
