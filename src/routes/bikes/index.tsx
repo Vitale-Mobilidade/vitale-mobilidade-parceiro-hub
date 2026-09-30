@@ -28,7 +28,7 @@ export const Route = createFileRoute("/bikes/")({
       ogTitle: "Encontre a bike elétrica certa para o seu perfil",
       ogDescription: "Modelos, especificações, preços com fonte explícita e testes em vídeo.",
       image: {
-        url: "https://vitalemobilidade.com/og/vitale-radar-1200x630.jpg",
+        url: "https://vitalemobilidade.com/og/vitale-radar-20260930-1200x630.jpg",
         width: 1200,
         height: 630,
         type: "image/jpeg",

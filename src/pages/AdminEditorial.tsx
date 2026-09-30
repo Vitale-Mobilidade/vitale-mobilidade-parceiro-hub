@@ -13,6 +13,7 @@ import {
   type AdminOverview,
   type AdminRole,
   type AdminEditorialWorkspace,
+  type ArticleRow,
 } from "@/lib/admin-api";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { getBikesDiscovery } from "@/lib/bikes-discovery.functions";
@@ -23,6 +24,7 @@ import { filterAdminVideos, manualAdminVideo } from "@/lib/admin-video-picker";
 import { filterArticleBikes, applyRequestedArticleCover, creationBikeSelection } from "@/lib/admin-article-create";
 import { ArticleView, type PublishedArticle } from "@/components/editorial/ArticleView";
 import { editorialFormat } from "@/lib/editorial-taxonomy";
+import { articleMatchesBike, articleMatchesSearch } from "@/lib/editorial-discovery";
 import {
   blocksToMarkdown,
   CONTENT_TYPES,
@@ -39,6 +41,7 @@ const OUTLINE =
 const INPUT = "w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm";
 const PANEL = "rounded-2xl border border-line bg-white p-5 shadow-sm";
 const ADMIN_STALE_MS = 5 * 60 * 1000;
+const EMPTY_ARTICLES: ArticleRow[] = [];
 const GROWTH_STALE_MS = 60 * 1000;
 const date = (v?: string | null) =>
   v
@@ -797,6 +800,8 @@ const STATUS_LABEL: Record<SimpleStatus, string> = {
 };
 function Articles() {
   const [status, setStatus] = useState<"all" | SimpleStatus>("all");
+  const [query, setQuery] = useState("");
+  const [bikeId, setBikeId] = useState("");
   const workspace = useQuery({
     queryKey: ["admin", "editorial-workspace"],
     queryFn: () => adminCall<AdminEditorialWorkspace>("editorial-workspace"),
@@ -804,9 +809,28 @@ function Articles() {
     refetchOnWindowFocus: false,
     retry: false,
   });
-  const items = workspace.data?.articles ?? [];
+  const items = workspace.data?.articles ?? EMPTY_ARTICLES;
+  const bikesQuery = useQuery({
+    queryKey: ["admin", "bikes"],
+    queryFn: () => adminCall<{ bikes: AdminBike[]; offers: AdminOffer[] }>("bikes"),
+    staleTime: ADMIN_STALE_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const bikeNames = useMemo(() => Object.fromEntries((bikesQuery.data?.bikes ?? []).map((bike) => [bike.bike_id, bike.name])), [bikesQuery.data]);
+  const availableBikes = useMemo(() => {
+    const ids = new Set(items.flatMap((article) => [article.primary_bike_id, ...(article.related_bike_ids ?? [])]).filter(Boolean));
+    return [...ids].filter((id): id is string => typeof id === "string" && Boolean(bikeNames[id]))
+      .map((id) => ({ id, name: bikeNames[id] }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [items, bikeNames]);
   const error = workspace.error ? queryError(workspace.error, "Não foi possível carregar os artigos.") : "";
-  const visible = items.filter((a) => status === "all" || simpleStatus(a.status) === status);
+  const visible = items.filter((a) => {
+    const article = { title: a.title ?? "", primaryBikeId: a.primary_bike_id, relatedBikeIds: a.related_bike_ids ?? [] };
+    return (status === "all" || simpleStatus(a.status) === status)
+      && articleMatchesBike(article, bikeId)
+      && articleMatchesSearch(article, query, bikeNames);
+  });
   return (
     <>
       <Heading title="Artigos">
@@ -815,11 +839,12 @@ function Articles() {
         </Link>
       </Heading>
       {error && <Notice danger>{error}</Notice>}
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
       <select
         aria-label="Filtrar por status"
         value={status}
         onChange={(e) => setStatus(e.target.value as typeof status)}
-        className={`${INPUT} mb-4 max-w-xs`}
+        className={INPUT}
       >
         <option value="all">Todos</option>
         {(Object.keys(STATUS_LABEL) as SimpleStatus[]).map((s) => (
@@ -828,6 +853,18 @@ function Articles() {
           </option>
         ))}
       </select>
+      <label className="sr-only" htmlFor="admin-article-bike">Filtrar por bike</label>
+      <select id="admin-article-bike" value={bikeId} onChange={(e) => setBikeId(e.target.value)} className={INPUT}>
+        <option value="">Todas as bikes</option>
+        {availableBikes.map((bike) => <option key={bike.id} value={bike.id}>{bike.name}</option>)}
+      </select>
+      <label className="sr-only" htmlFor="admin-article-search">Buscar artigo ou bike</label>
+      <input id="admin-article-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar título ou modelo" className={INPUT} />
+      </div>
+      <p role="status" className="mb-3 text-sm text-muted-foreground">
+        {visible.length} {visible.length === 1 ? "artigo encontrado" : "artigos encontrados"}
+        {(status !== "all" || bikeId || query) && <button type="button" onClick={() => { setStatus("all"); setBikeId(""); setQuery(""); }} className="ml-3 font-semibold text-emerald-800 underline">Limpar filtros</button>}
+      </p>
       <div className={PANEL}>
         <ul className="divide-y divide-line">
           {visible.map((a) => (

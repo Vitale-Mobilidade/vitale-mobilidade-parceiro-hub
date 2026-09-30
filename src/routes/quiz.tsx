@@ -19,7 +19,7 @@ export const Route = createFileRoute("/quiz")({
       ogDescription:
         "Quiz rápido para encontrar a bike elétrica certa para você, com curadoria da Vitale Mobilidade.",
       image: {
-        url: "https://vitalemobilidade.com/og/vitale-quiz-1200x630.jpg",
+        url: "https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg",
         width: 1200,
         height: 630,
         type: "image/jpeg",

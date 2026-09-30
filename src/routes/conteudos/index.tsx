@@ -7,7 +7,7 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { formatDateBR } from "@/lib/price-tracker";
 import { pageHead } from "@/lib/seo";
-import { articleMatchesSearch } from "@/lib/editorial-discovery";
+import { articleMatchesBike, articleMatchesSearch } from "@/lib/editorial-discovery";
 import { editorialImageProps } from "@/lib/editorial-images";
 import {
   editorialHeaders,
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/conteudos/")({
       description:
         "Testes reais, guias e comparativos da Vitale para ajudar você a escolher sua bike elétrica.",
       image: {
-        url: "https://vitalemobilidade.com/og/vitale-conteudos-1200x630.jpg",
+        url: "https://vitalemobilidade.com/og/vitale-conteudos-20260930-1200x630.jpg",
         width: 1200,
         height: 630,
         type: "image/jpeg",
@@ -63,6 +63,13 @@ function ContentIndex() {
   const { ok, items, bikeNames } = Route.useLoaderData();
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("");
+  const [bikeId, setBikeId] = useState("");
+  const availableBikes = useMemo(() => {
+    const ids = new Set(items.flatMap((item) => [item.primaryBikeId, ...item.relatedBikeIds]).filter(Boolean));
+    return [...ids].filter((id): id is string => typeof id === "string" && Boolean(bikeNames[id]))
+      .map((id) => ({ id, name: bikeNames[id] }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [items, bikeNames]);
   const topics = useMemo(
     () =>
       EDITORIAL_FORMATS.filter((t) =>
@@ -77,10 +84,11 @@ function ContentIndex() {
       items.filter((item) => {
         return (
           articleMatchesSearch(item, query, bikeNames) &&
+          articleMatchesBike(item, bikeId) &&
           (!topic || editorialFormat(item.contentType).label === topic)
         );
       }),
-    [items, bikeNames, query, topic],
+    [items, bikeNames, query, topic, bikeId],
   );
   if (!ok) return <EditorialUnavailable />;
   return (
@@ -134,7 +142,8 @@ function ContentIndex() {
             <h2 id="artigos" className="section-h2 text-ink">
               Artigos publicados
             </h2>
-            <div className="mt-6 max-w-lg">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div>
               <label
                 htmlFor="buscar-artigos"
                 className="mb-2 block text-sm font-semibold"
@@ -155,6 +164,14 @@ function ContentIndex() {
                   className="h-12 min-w-0 flex-1 bg-transparent outline-none"
                 />
               </div>
+              </div>
+              <label htmlFor="filtrar-bike" className="block text-sm font-semibold">
+                Bike
+                <select id="filtrar-bike" value={bikeId} onChange={(e) => setBikeId(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-line bg-card px-3 font-normal focus-visible:ring-2 focus-visible:ring-action">
+                  <option value="">Todas as bikes</option>
+                  {availableBikes.map((bike) => <option key={bike.id} value={bike.id}>{bike.name}</option>)}
+                </select>
+              </label>
             </div>
             {topics.length > 0 && (
               <div
@@ -174,6 +191,10 @@ function ContentIndex() {
                 ))}
               </div>
             )}
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              {shown.length} {shown.length === 1 ? "artigo encontrado" : "artigos encontrados"}
+              {(query || topic || bikeId) && <button type="button" onClick={() => { setQuery(""); setTopic(""); setBikeId(""); }} className="ml-3 font-semibold text-action underline">Limpar filtros</button>}
+            </p>
             {shown.length ? (
               <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {shown.map((item) => (

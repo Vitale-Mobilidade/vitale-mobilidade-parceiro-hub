@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  articleMatchesBike,
   articleMatchesSearch,
   articleSubjectBikes,
   comparedBikesInTitle,
@@ -66,6 +67,14 @@ describe("descoberta editorial pública", () => {
     expect(articleMatchesSearch(article, "VL20", { v9_max: "V9 Max", vl20: "VL20 Ufofast" })).toBe(true);
     expect(articleMatchesSearch(article, "Ufofast", { v9_max: "V9 Max", vl20: "VL20 Ufofast" })).toBe(true);
     expect(articleMatchesSearch(article, "BW1", { v9_max: "V9 Max", vl20: "VL20 Ufofast" })).toBe(false);
+  });
+
+  it("filtra por bike principal ou relacionada sem confundir modelos de nome parecido", () => {
+    const article = item("comparativo", "gt2000", ["v8_pro_s"]);
+    expect(articleMatchesBike(article, "gt2000")).toBe(true);
+    expect(articleMatchesBike(article, "v8_pro_s")).toBe(true);
+    expect(articleMatchesBike(article, "v8_pro")).toBe(false);
+    expect(articleMatchesSearch(article, "Ouxi V8 Pro S", { gt2000: "Ouxi GT2000", v8_pro_s: "Ouxi V8 Pro S" })).toBe(true);
   });
 
   it("compara os modelos do título, sem confundir a Bike contextual com um dos lados", () => {

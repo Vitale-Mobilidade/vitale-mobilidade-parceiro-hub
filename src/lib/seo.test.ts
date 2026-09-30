@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalUrl, DEFAULT_OG_IMAGE, pageHead, serializeJsonLd } from "./seo";
+import { canonicalUrl, DEFAULT_OG_IMAGE, pageHead, serializeJsonLd, socialImageForPath } from "./seo";
 
 describe("SEO metadata", () => {
   it("remove query e hash da URL canônica", () => {
@@ -8,10 +8,17 @@ describe("SEO metadata", () => {
 
   it("entrega Open Graph grande e dimensionado por padrão", () => {
     const head = pageHead({ path: "/radar", title: "Radar", description: "Histórico de preços" });
-    expect(head.meta).toContainEqual({ property: "og:image", content: DEFAULT_OG_IMAGE });
+    expect(head.meta).toContainEqual({ property: "og:image", content: socialImageForPath("/radar") });
     expect(head.meta).toContainEqual({ property: "og:image:width", content: "1200" });
     expect(head.meta).toContainEqual({ property: "og:image:height", content: "630" });
     expect(head.meta).toContainEqual({ name: "twitter:image:alt", content: "Radar" });
+  });
+
+  it("seleciona imagem específica para ferramentas e bikes do Radar", () => {
+    expect(socialImageForPath("/ferramentas/meta-entregas")).toContain("/og/meta-entregas-1200x630.jpg");
+    expect(socialImageForPath("/radar/v8_pro_s")).toContain("/og/radar-v8_pro_s-1200x630.jpg");
+    expect(socialImageForPath("/radar")).toContain("/og/vitale-radar-20260930-1200x630.jpg");
+    expect(DEFAULT_OG_IMAGE).toContain("/og/vitale-home-20260930-1200x630.jpg");
   });
 
   it("preserva imagem específica de entidade sem duplicar a imagem padrão", () => {

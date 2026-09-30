@@ -2074,7 +2074,7 @@ Deno.serve(async (req) => {
         db
           .from("editorial_articles")
           .select(
-            "id, title, slug, status, content_type, video_id, primary_bike_id, updated_at, published_at, validation_errors",
+            "id, title, slug, status, content_type, video_id, primary_bike_id, related_bike_ids, updated_at, published_at, validation_errors",
           )
           .order("updated_at", { ascending: false })
           .limit(300),
@@ -2168,7 +2168,7 @@ Deno.serve(async (req) => {
       const { data, error } = await db
         .from("editorial_articles")
         .select(
-          "id, title, slug, status, content_type, video_id, primary_bike_id, updated_at, published_at, validation_errors",
+          "id, title, slug, status, content_type, video_id, primary_bike_id, related_bike_ids, updated_at, published_at, validation_errors",
         )
         .order("updated_at", { ascending: false })
         .limit(300);

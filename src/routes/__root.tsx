@@ -73,33 +73,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "description", content: DESCRIPTION },
         { name: "author", content: "Vitale Mobilidade" },
         { name: "robots", content: "index, follow, max-image-preview:large" },
-        { property: "og:type", content: "website" },
         { property: "og:locale", content: "pt_BR" },
         { property: "og:site_name", content: "Vitale Mobilidade" },
-        {
-          property: "og:image",
-          content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
-        },
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
-        { property: "og:image:type", content: "image/jpeg" },
-        {
-          property: "og:image:alt",
-          content: "Vitale Mobilidade — escolha sua bicicleta elétrica",
-        },
-        { property: "og:title", content: TITLE },
-        { property: "og:description", content: DESCRIPTION },
-        { name: "twitter:card", content: "summary_large_image" },
-        {
-          name: "twitter:image",
-          content: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
-        },
-        {
-          name: "twitter:image:alt",
-          content: "Vitale Mobilidade — escolha sua bicicleta elétrica",
-        },
-        { name: "twitter:title", content: TITLE },
-        { name: "twitter:description", content: DESCRIPTION },
       ],
       links: [
         { rel: "stylesheet", href: appCss },

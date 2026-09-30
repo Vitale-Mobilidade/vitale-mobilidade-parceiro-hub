@@ -24,7 +24,7 @@ export const Route = createFileRoute("/")({
       ogDescription:
         "Quiz de perfil, Radar com histórico de preços e bikes elétricas monitoradas no Brasil.",
       image: {
-        url: "https://vitalemobilidade.com/og/vitale-home-1200x630.jpg",
+        url: "https://vitalemobilidade.com/og/vitale-home-20260930-1200x630.jpg",
         width: 1200,
         height: 630,
         type: "image/jpeg",

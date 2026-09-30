@@ -39,7 +39,7 @@ export const Route = createFileRoute("/ferramentas/")({
       ogDescription:
         "Compare custo, renda e tempo com bike elétrica usando seus números e bikes reais com oferta atual.",
       image: {
-        url: "https://vitalemobilidade.com/og/vitale-ferramentas-1200x630.jpg",
+        url: "https://vitalemobilidade.com/og/vitale-ferramentas-20260930-1200x630.jpg",
         width: 1200,
         height: 630,
         type: "image/jpeg",
