@@ -34,4 +34,13 @@
 
 **Validações:** `pnpm exec vitest run --config vitest.config.ts src/components/radar/RadarBikeCard.test.tsx` (1 teste), ESLint dos dois arquivos, `pnpm exec tsc --noEmit`, `pnpm validate` (59 testes existentes e build), `git diff --check`.
 
-**Trade-off residual:** o CTA é uma representação visual dentro do link único, não um segundo foco de teclado. A ação e a etiqueta continuam acessíveis pelo card. Sem risco material pendente. **Estado:** alteração local validada. **Autorização de release:** o responsável pediu “publique” nesta conversa em 02/10/2026, após receber o escopo, testes, risco e rollback. Integração e verificação em produção serão registradas após a execução.
+**Trade-off residual:** o CTA é uma representação visual dentro do link único, não um segundo foco de teclado. A ação e a etiqueta continuam acessíveis pelo card. Sem risco material pendente. **Estado:** publicado e verificado. **Autorização de release:** o responsável pediu “publique” nesta conversa em 02/10/2026, após receber o escopo, testes, risco e rollback.
+
+## Publicação e verificação
+
+- PR [#5](https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/5) integrada no `main` pelo commit `72115a28ec52f7125c6274cb4ef6e21057f17774` em 02/10/2026.
+- O Lovable mostrou os commits da PR sincronizados, atualizou o preview e confirmou “Your website was updated” após a publicação. A interface não expôs identificador do deployment.
+- No preview do Lovable, o card da V9 Pro apareceu como um único link para `/radar/v9_pro` e abriu o detalhe.
+- Em `https://vitalemobilidade.com/radar`, a foto do primeiro card estava dentro do único link do card (`href=/radar/v9_pro`); clique diretamente na foto abriu a página pública da V9 Pro, com preço e histórico. A grade continuou exibindo 26 bikes monitoradas.
+- A verificação auxiliar de preview da Netlify passou. A verificação auxiliar da Vercel falhou, sem diagnóstico no status do GitHub; o domínio público é servido pelo Lovable e o build local e o smoke no Lovable/produção passaram. A falha da Vercel não foi tratada como bloqueio deste release e permanece para investigação separada caso aquele preview seja necessário.
+- Rollback de código: reverter a PR #5 no GitHub e publicar novamente no Lovable. Nenhuma migration, RLS, dado de produção ou link afiliado foi alterado.
