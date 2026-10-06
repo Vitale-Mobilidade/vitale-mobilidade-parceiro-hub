@@ -71,6 +71,7 @@ export interface SyncOutcome {
   runId?: string;
   error?: string;
   bikesProjection?: { ok: boolean; conflicts: number };
+  offersProjection?: { ok: boolean; skipped: number };
 }
 
 
