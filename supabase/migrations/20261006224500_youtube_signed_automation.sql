@@ -48,4 +48,4 @@ end $$;
 revoke all on function public.dispatch_youtube_editorial_tick(text) from public,anon,authenticated,service_role;
 select cron.schedule('youtube-editorial-hourly','12 * * * *', $$select public.dispatch_youtube_editorial_tick('youtube-hourly');$$);
 select cron.schedule('youtube-editorial-drain','*/2 * * * *', $$select public.dispatch_youtube_editorial_tick('youtube-drain');$$);
-update cron.job set active=false where jobname in ('youtube-editorial-hourly','youtube-editorial-drain');
+select cron.alter_job(jobid,active:=false) from cron.job where jobname in ('youtube-editorial-hourly','youtube-editorial-drain');

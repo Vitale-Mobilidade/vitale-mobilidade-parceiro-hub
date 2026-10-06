@@ -1561,7 +1561,7 @@ function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]
   if (article.status !== "draft" || !Array.isArray(article.blocks) || article.blocks.length ||
       article.published_at || !source || source.state !== "needs_review" ||
       (source.article_id && source.article_id !== article.id) || !runs.length ||
-      runs.some(run => run.status !== "failed" || run.error_code !== "ai_http_400")) return false;
+      runs.some(run => run.status !== "failed" || !(["ai_http_400", "ai_http_402"].includes(String(run.error_code))))) return false;
   const capture = source.capture as Record<string, unknown> | null;
   if (!capture || capture.source !== "youtube_captions" || capture.videoId !== article.video_id ||
       capture.channelId !== VITALE_YOUTUBE_CHANNEL || typeof capture.originalVtt !== "string" ||
@@ -1767,6 +1767,10 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
         }
         console.error("[editorial-admin] generate", errorMessage(e));
+        if (errorMessage(e) === "ai_http_402") {
+          await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
+          return fail("A transcrição original foi salva, mas o saldo de IA do Lovable acabou. Recarregue Cloud/AI para retomar a geração. Nenhum artigo ou capa foi concluído.");
+        }
         fail(body.action === "generate-from-sheet"
           ? savedAutomaticArticleId
             ? `O artigo foi salvo (${savedAutomaticArticleId}), mas a geração automática não foi concluída. Confira o artigo antes de repetir; a geração não será repetida automaticamente.`

@@ -701,6 +701,9 @@ describe("retomada restrita de rejeição sem saída", () => {
   const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", blocks: [], published_at: null };
   const source = { state: "needs_review", article_id: "draft", capture };
   const rejected = [{ status: "failed", error_code: "ai_http_400" }];
+  it("permite retomar rejeição 402 explícita após recarga, sem saída nem custo incerto", () => {
+    expect(exports.rejectedDraftCanResume!(article, source, [{ status: "failed", error_code: "ai_http_402" }])).toBe(true);
+  });
   it("permite somente fonte oficial íntegra e rejeição conhecida", () => {
     expect(exports.rejectedDraftCanResume!(article, source, rejected)).toBe(true);
   });
