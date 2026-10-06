@@ -1899,6 +1899,7 @@ export type Database = {
         Returns: Json
       }
       claim_youtube_editorial_cover: { Args: never; Returns: Json }
+      claim_youtube_editorial_cover_render: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
       dispatch_youtube_editorial_tick: {
         Args: { tick_action: string }
