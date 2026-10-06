@@ -572,10 +572,6 @@ export function ArticleView({
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
         </p>
-        <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          Baseado no <a href={`https://www.youtube.com/watch?v=${article.videoId}`} target="_blank" rel="noopener noreferrer" className="font-semibold underline">vídeo de origem</a>.
-          {" "}Os relatos se referem às condições apresentadas nesse vídeo. Especificações declaradas e estimativas não garantem o mesmo resultado em outro uso.
-        </p>
         {planned
           ? article.blocks.map((block, index) => (
               <Block

@@ -208,3 +208,13 @@ describe("preços com separadores não deixam fragmentos", () => {
     expect(hasEditorialDistance("A transcrição associa os 1.000 W a uma dispensa de burocracia." )).toBe(true);
   });
 });
+
+
+describe("artigo independente sem avisos sobre a fonte", () => {
+  it.each(["A V9 Max foi descrita como um produto sem marca identificada.", "A configuração mencionada combina freios.", "Baseado no vídeo de origem", "A oferta citada pode mudar a qualquer momento.", "Avaliada pelo apresentador.", "A própria fonte não assegura isso.", "A transcrição confirma o motor."])("bloqueia %s", (text) => {
+    expect(hasEditorialDistance(text)).toBe(true);
+  });
+  it("aceita análise direta com condição concreta de autonomia", () => {
+    expect(hasEditorialDistance("A V9 Max leva duas pessoas e tem bateria removível. A autonomia fica entre 40 e 50 km em uso moderado.")).toBe(false);
+  });
+});
