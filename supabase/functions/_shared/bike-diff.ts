@@ -154,8 +154,8 @@ export function diffBikes(
     }
 
     for (const { key, label } of AUDITED_FIELDS) {
-      const oldV = (before as Record<string, unknown>)[key];
-      const newV = (bike as Record<string, unknown>)[key];
+      const oldV = (before as unknown as Record<string, unknown>)[key];
+      const newV = (bike as unknown as Record<string, unknown>)[key];
       if (sameValue(oldV, newV)) continue;
       changes.push({
         bike_id: bike.id,
