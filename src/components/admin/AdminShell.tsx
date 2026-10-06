@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { adminCall, type AdminRole, type AdminSession } from "@/lib/admin-api";
 
+import { AdminSyncButton } from "./AdminSyncButton";
+
 type Props = { children: (role: AdminRole) => ReactNode };
 
 type AccessCache = { session: AdminSession; checkedAt: number };
@@ -171,6 +173,7 @@ export function AdminShell({ children }: Props) {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
         <Link to="/admin" preload="intent" className="text-lg font-bold tracking-tight">VITALE <span className="text-emerald-300">ADMIN</span></Link>
         <div className="flex items-center gap-4 text-sm">
+          {role === "admin" && <AdminSyncButton />}
           <span className="hidden text-emerald-100 sm:inline">{session.email} · {role}</span>
           <button onClick={() => { queryClient.removeQueries({ queryKey: ["admin"] }); void supabase.auth.signOut(); }} className="rounded-lg border border-emerald-600 px-3 py-1.5 hover:bg-emerald-900">Sair</button>
         </div>

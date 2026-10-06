@@ -2122,6 +2122,28 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "sync-video-catalog") {
+      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode sincronizar toda a operação." }, 403);
+      const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
+      if (!snapshot.ok) return json(req, { error: "Não foi possível atualizar a planilha de vídeos." }, 503);
+      const videos = buildStrictVideoCatalog(await snapshot.text());
+      if (!videos.length) return json(req, { error: "A planilha de vídeos está vazia ou inválida." }, 422);
+      // Only sheet metadata is refreshed. Original transcripts and article bodies are never overwritten.
+      const { error: writeError } = await db.from("editorial_videos").upsert(videos.map(video => ({
+        youtube_id: video.videoId, title: video.title, youtube_url: video.url,
+        thumbnail_url: video.thumbnail, published_on: video.date,
+        primary_bike_id: video.bikeIds[0] ?? null, related_bike_ids: video.bikeIds.slice(1),
+        content_type: detectContentType(video.title), status: "active",
+        updated_by: actor.id, updated_at: new Date().toISOString(),
+      })), { onConflict: "youtube_id" });
+      if (writeError) return json(req, { error: "Não foi possível salvar a atualização dos vídeos." }, 503);
+      const { data: candidate, error: ingestionError } = await db.rpc("ingest_youtube_editorial_snapshot", {
+        video_ids: videos.map(video => video.videoId),
+      });
+      if (ingestionError) return json(req, { error: "Vídeos atualizados, mas a fila não pôde ser consultada." }, 503);
+      await log(db, actor, "video_catalog_synced", "system", "video-catalog", { count: videos.length });
+      return json(req, { videos, candidate, enabled: Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true" });
+    }
     if (action === "overview") {
       const [bikes, sync, videos, videosWithTranscript, articles, failures] = await Promise.all([
         db.from("bikes").select("bike_id", { count: "exact", head: true }),

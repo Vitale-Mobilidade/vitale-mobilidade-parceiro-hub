@@ -1,3 +1,4 @@
+import { bikeAdminIdentity } from "../_shared/bike-admin-access.ts";
 /**
  * bike-panel — API administrativa do painel /painel-bikes.
  *
@@ -64,12 +65,28 @@ function json(req: Request, body: unknown, status = 200): Response {
 
 interface PanelSession {
   id: string;
+  admin?: boolean;
 }
 
 /** Exige Bearer token de sessão válida (não revogada, não expirada). */
 async function requireSession(supabase: SupabaseClient, req: Request): Promise<PanelSession | null> {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (token.length < 20 || token.length > 200) return null;
+  if (token.length < 20 || token.length > 8192) return null;
+  if (token.split(".").length === 3) {
+    const id = await bikeAdminIdentity(token, {
+      user: async jwt => {
+        const { data, error } = await supabase.auth.getUser(jwt);
+        return error ? null : data.user?.id ?? null;
+      },
+      membership: async userId => {
+        const { data, error } = await supabase.from("editorial_admin_memberships")
+          .select("role, active").eq("user_id", userId).maybeSingle();
+        return error ? null : data;
+      },
+    });
+    return id ? { id, admin: true } : null;
+  }
+  if (token.length > 200) return null;
   let hash: string;
   try {
     hash = await hashSessionToken(token);
@@ -191,7 +208,7 @@ async function handleGetData(supabase: SupabaseClient, req: Request): Promise<Re
   });
 }
 
-async function handleSyncNow(supabase: SupabaseClient, req: Request): Promise<Response> {
+async function handleSyncNow(supabase: SupabaseClient, req: Request, actor = "painel-admin"): Promise<Response> {
   const { status, body } = await runBikeCatalogSync(supabase, {
     force: true,
     supabaseUrl: SUPABASE_URL,
@@ -207,7 +224,7 @@ async function handleSyncNow(supabase: SupabaseClient, req: Request): Promise<Re
       ignored: body.ignored ?? null,
       snapshotWritten: body.snapshotWritten ?? false,
     },
-    actor: "painel-admin",
+    actor,
   });
   if (body.skipped) {
     return json(req, { ok: false, error: "Já existe uma sincronização em andamento. Aguarde alguns instantes." }, 409);
@@ -340,6 +357,7 @@ Deno.serve(async (req) => {
         return json(req, { ok: true });
       }
       case "logout": {
+        if (session.admin) return json(req, { ok: true });
         await supabase.from("bike_panel_sessions")
           .update({ revoked_at: new Date().toISOString() })
           .eq("id", session.id);
@@ -348,7 +366,7 @@ Deno.serve(async (req) => {
       case "get-data":
         return await handleGetData(supabase, req);
       case "sync-now":
-        return await handleSyncNow(supabase, req);
+        return await handleSyncNow(supabase, req, session.admin ? session.id : "painel-admin");
       case "set-eligibility":
         return await handleSetEligibility(supabase, req, body);
       case "get-history":

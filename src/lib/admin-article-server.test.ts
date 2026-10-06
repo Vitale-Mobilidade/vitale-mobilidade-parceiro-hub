@@ -710,3 +710,37 @@ describe("retomada restrita de rejeição sem saída", () => {
     expect(exports.rejectedDraftCanResume!(article, {...source, article_id:"other"}, rejected)).toBe(false);
   });
 });
+
+describe("Atualização geral de vídeos no Admin", () => {
+  function syncDatabase(role = "admin", active = true, candidate: string | null = null) {
+    const upsert = vi.fn(async (_rows: unknown, _options: unknown) => ({ error: null }));
+    const rpc = vi.fn(async () => ({ data: candidate, error: null }));
+    requestDatabase = {
+      auth: { getUser: async () => ({ data: { user: { id: "actor" } }, error: null }) },
+      from: (table: string) => table === "editorial_admin_memberships"
+        ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { role, active }, error: null }) }) }) }
+        : { upsert, insert: async () => ({ error: null }) }, rpc,
+    };
+    return { upsert, rpc };
+  }
+  const req = () => new Request("https://test.invalid", { method: "POST", headers: { Authorization: "Bearer offline-token", "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync-video-catalog" }) });
+  it("sincroniza metadados sem tocar transcrição/artigos e protege baseline", async () => {
+    const { upsert, rpc } = syncDatabase();
+    offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,V9 Max,https://youtu.be/abcDEFG1234,V9 Max'));
+    const response = await servedHandler(req()); const result = await response.json();
+    expect(response.status).toBe(200); expect(result.candidate).toBeNull(); expect(result.videos).toHaveLength(1);
+    const payload = upsert.mock.calls[0]?.[0] as unknown as Record<string, unknown>[];
+    expect(payload[0].youtube_id).toBe("abcDEFG1234"); expect(payload[0]).not.toHaveProperty("transcript");
+    expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
+  });
+  it.each(["content", "operation"])("%s não dispara sincronização geral editorial", async role => {
+    const { upsert, rpc } = syncDatabase(role); offlineFetch = vi.fn();
+    expect((await servedHandler(req())).status).toBe(403);
+    expect(offlineFetch).not.toHaveBeenCalled(); expect(upsert).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
+  });
+  it("erro de leitura não grava snapshot nem acervo", async () => {
+    const { upsert, rpc } = syncDatabase(); offlineFetch = vi.fn(async () => new Response("indisponível", { status: 503 }));
+    expect((await servedHandler(req())).status).toBe(503);
+    expect(upsert).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
+  });
+});

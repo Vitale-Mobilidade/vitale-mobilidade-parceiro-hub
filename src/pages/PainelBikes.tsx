@@ -17,6 +17,7 @@ import {
   ChevronsUpDown,
   Lock,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   buildCatalogRows,
@@ -75,6 +76,11 @@ async function panelCall<T = Record<string, unknown>>(
   body: Record<string, unknown> = {},
   token?: string,
 ): Promise<{ status: number; data: T & { ok?: boolean; error?: string } }> {
+  if (token?.split(".").length === 3) {
+    const { data: auth } = await supabase.auth.getSession();
+    token = auth.session?.access_token;
+    if (!token) return { status: 401, data: { ok: false, error: "Sessão expirada." } as T & { ok?: boolean; error?: string } };
+  }
   const res = await fetch(PANEL_URL, {
     method: "POST",
     headers: {
@@ -243,8 +249,9 @@ function SortableTh({
 
 // ---------------- Página ----------------
 
-export default function PainelBikes() {
+export default function PainelBikes({ embedded = false, bikeSyncOnly = false }: { embedded?: boolean; bikeSyncOnly?: boolean }) {
   const { toast } = useToast();
+  const syncLabel = embedded && !bikeSyncOnly ? "Sincronizar tudo" : "Sincronizar agora";
   const [token, setToken] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [data, setData] = useState<PanelData | null>(null);
@@ -315,9 +322,23 @@ export default function PainelBikes() {
   }, [token, loadData]);
 
 
+  useEffect(() => {
+    if (!embedded || !token) return;
+    const refresh = () => { void loadData(token); setHistoryKey(k => k + 1); };
+    window.addEventListener("vitale-admin-synced", refresh);
+    return () => window.removeEventListener("vitale-admin-synced", refresh);
+  }, [embedded, token, loadData]);
+
   // Valida sessão armazenada ao abrir a página.
   useEffect(() => {
     (async () => {
+      if (embedded) {
+        const { data: auth } = await supabase.auth.getSession();
+        const jwt = auth.session?.access_token;
+        if (jwt) { setToken(jwt); await loadData(jwt); }
+        setChecking(false);
+        return;
+      }
       const stored = readPanelSession(storages);
       if (!stored) { setChecking(false); return; }
       try {
@@ -334,7 +355,7 @@ export default function PainelBikes() {
         setChecking(false);
       }
     })();
-  }, [loadData]);
+  }, [loadData, embedded]);
 
   const handleSyncNow = async () => {
     if (!token || syncing) return; // bloqueia duplo clique
@@ -413,11 +434,13 @@ export default function PainelBikes() {
   }
 
   if (!token) {
+    if (embedded) return <p role="alert">Não foi possível acessar o painel de bikes com sua sessão. Entre novamente no Admin.</p>;
     return <LoginScreen onLoggedIn={(tok) => { setToken(tok); void loadData(tok); }} />;
   }
 
+  const PanelContainer = embedded ? "div" : "main";
   return (
-    <main className="min-h-screen bg-background px-4 py-10 md:px-8">
+    <PanelContainer className={embedded ? "min-w-0" : "min-h-screen bg-background px-4 py-10 md:px-8"}>
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -430,15 +453,15 @@ export default function PainelBikes() {
             <Button variant="outline" onClick={() => window.open(SHEET_PUBLIC_URL, "_blank", "noopener,noreferrer")}>
               <ExternalLink className="mr-2 h-4 w-4" /> Abrir planilha
             </Button>
-            <Button onClick={() => void handleSyncNow()} disabled={syncing || loadingData}>
+            {(!embedded || bikeSyncOnly) && <Button onClick={() => void handleSyncNow()} disabled={syncing || loadingData}>
               {syncing
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 : <RefreshCw className="mr-2 h-4 w-4" />}
               {syncing ? "Sincronizando…" : "Sincronizar agora"}
-            </Button>
-            <Button variant="ghost" onClick={() => void logout(token)}>
+            </Button>}
+            {!embedded && <Button variant="ghost" onClick={() => void logout(token)}>
               <LogOut className="mr-2 h-4 w-4" /> Sair
-            </Button>
+            </Button>}
           </div>
         </header>
 
@@ -464,7 +487,7 @@ export default function PainelBikes() {
           <div className="rounded-xl border border-border bg-card p-5 space-y-2 text-sm">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Execuções</p>
             <p className="text-xs text-muted-foreground">
-              Agenda fixa: toda hora no minuto :07 (horário de Brasília). Sincronizar agora não adia a automática.
+              Agenda fixa: toda hora no minuto :07 (horário de Brasília). {syncLabel} não adia a automática.
             </p>
             <p>Última tentativa: <strong>{fmt(syncState?.last_attempt_at)}</strong></p>
             <p>
@@ -476,7 +499,7 @@ export default function PainelBikes() {
             {scheduleLate && (
               <p className="flex items-center gap-2 text-xs text-destructive">
                 <AlertTriangle className="h-4 w-4" />
-                A execução automática está atrasada mais de 10 minutos — use “Sincronizar agora”.
+                A execução automática está atrasada mais de 10 minutos — use “{syncLabel}”.
               </p>
             )}
           </div>
@@ -631,7 +654,7 @@ export default function PainelBikes() {
           <h2 className="font-semibold text-foreground">Como editar o catálogo</h2>
           <p className="mt-1 text-muted-foreground">
             Todas as edições de conteúdo são feitas <strong>na planilha oficial</strong> — o painel sincroniza
-            a cada hora (ou sob demanda em “Sincronizar agora”). Colunas obrigatórias já existentes: Nome,
+            a cada hora (ou sob demanda em “{syncLabel}”). Colunas obrigatórias já existentes: Nome,
             Link Vitale, Preço R$, Autonomia, Capacidade e Descrição.
           </p>
           <p className="mt-2 text-muted-foreground">
@@ -645,7 +668,7 @@ export default function PainelBikes() {
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Esta tela se atualiza sozinha a cada 30 segundos. Para buscar mudanças da planilha na hora, use
-            “Sincronizar agora”.
+            “{syncLabel}”.
           </p>
         </section>
 
@@ -656,6 +679,6 @@ export default function PainelBikes() {
           refreshKey={historyKey}
         />
       </div>
-    </main>
+    </PanelContainer>
   );
 }

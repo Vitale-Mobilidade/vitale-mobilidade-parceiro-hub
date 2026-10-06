@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import PainelBikes from "@/pages/PainelBikes";
 import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -157,7 +158,7 @@ function Overview({ role }: { role: AdminRole }) {
             <p className="mt-3 text-sm text-muted-foreground">
               A planilha e o sincronizador existente continuam responsáveis por preços, links e elegibilidade.
             </p>
-            <a href="/painel-bikes" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
+            <a href="/admin/bikes" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
               Abrir painel operacional de bikes
             </a>
           </div>
@@ -411,7 +412,7 @@ function RankedList({
 }
 
 export function AdminBikesPage() {
-  return <AdminShell>{() => <Bikes />}</AdminShell>;
+  return <AdminShell>{(role) => role === "content" ? <Bikes /> : <PainelBikes embedded bikeSyncOnly={role === "operation"} />}</AdminShell>;
 }
 function Bikes() {
   const [query, setQuery] = useState("");
@@ -435,7 +436,7 @@ function Bikes() {
         title="Bikes"
         detail="Leitura do catálogo central. Preço, link e elegibilidade continuam na planilha oficial."
       >
-        <a href="/painel-bikes" className={OUTLINE}>
+        <a href="/admin/bikes" className={OUTLINE}>
           Painel operacional
         </a>
       </Heading>
