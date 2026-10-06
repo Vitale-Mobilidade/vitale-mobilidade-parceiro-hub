@@ -615,10 +615,10 @@ describe("entrada horária privada", () => {
       expect((requestDatabase as { from: ReturnType<typeof vi.fn> }).from).not.toHaveBeenCalled();
     } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
   });
-  it("não ativa cron/geração só por configurar chave", async () => {
-    integrationEnv.YOUTUBE_WORKER_KEY = "a".repeat(40);
+  it("assinatura válida não ativa geração com worker desativado", async () => {
+    requestDatabase = { rpc: vi.fn(async () => ({ data: { enabled: false, actor_id: "owner" }, error: null })) };
     try {
-      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-key": "a".repeat(40) }, body: JSON.stringify({ action: "youtube-hourly" }) }));
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-signature": "a".repeat(64), "x-youtube-worker-issued-at": "1791327600" }, body: JSON.stringify({ action: "youtube-hourly" }) }));
       expect(await response.json()).toEqual({ status: "disabled" });
     } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
   });
@@ -626,7 +626,7 @@ describe("entrada horária privada", () => {
     Object.assign(integrationEnv, { YOUTUBE_WORKER_KEY: "a".repeat(40), YOUTUBE_HOURLY_ENABLED: "true", YOUTUBE_EDITORIAL_ENABLED: "true", YOUTUBE_EDITORIAL_ACTOR_ID: "owner" });
     offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max'));
     offlineCapture.mockClear();
-    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    const rpc = vi.fn(async (name: string) => ({ data: name === "authorize_youtube_editorial_tick" ? { enabled: true, actor_id: "owner" } : null, error: null }));
     requestDatabase = { rpc, from: (table: string) => {
       if (table === "editorial_admin_memberships") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { active: true, role: "admin" }, error: null }) }) }) };
       if (table === "editorial_articles") return { select: () => ({ neq: async () => ({ data: [{ video_id: "abcDEFG1234", title: "Título independente" }], error: null }) }) };
@@ -634,7 +634,7 @@ describe("entrada horária privada", () => {
       return { insert: async () => ({ error: null }) };
     } };
     try {
-      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-key": "a".repeat(40) }, body: JSON.stringify({ action: "youtube-hourly" }) }));
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-signature": "a".repeat(64), "x-youtube-worker-issued-at": "1791327600" }, body: JSON.stringify({ action: "youtube-hourly" }) }));
       expect(await response.json()).toEqual({ status: "idle" });
       expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
       expect(offlineCapture).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 project_id = "ipectfejftfcikvozoyu"
 [functions.editorial-admin]
 # Each Admin request validates its user JWT and membership in actorFor.
-# Scheduled requests validate a dedicated private worker key and Admin owner instead.
+# Scheduled requests validate a database-signed expiring request and active Admin owner.
 verify_jwt = false

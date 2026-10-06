@@ -2122,14 +2122,17 @@ Deno.serve(async (req) => {
   const db = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { persistSession: false },
   });
-  // Scheduled runs use a dedicated private key, never a public API key or a service token in the browser.
+  // Scheduled requests are signed inside the database; the signing key never leaves the private settings table.
   if (body.action === "youtube-hourly" || body.action === "youtube-drain") {
-    const expected = Deno.env.get("YOUTUBE_WORKER_KEY") ?? "";
-    const provided = req.headers.get("x-youtube-worker-key") ?? "";
-    if (expected.length < 32 || expected !== provided) return json(req, { error: "unauthorized" }, 403);
-    if (Deno.env.get("YOUTUBE_HOURLY_ENABLED") !== "true" || Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") !== "true")
-      return json(req, { status: "disabled" });
-    const ownerId = Deno.env.get("YOUTUBE_EDITORIAL_ACTOR_ID") ?? "";
+    const signature = req.headers.get("x-youtube-worker-signature") ?? "";
+    const issuedAt = req.headers.get("x-youtube-worker-issued-at") ?? "";
+    if (!/^[a-f0-9]{64}$/.test(signature) || !/^[0-9]{10}$/.test(issuedAt)) return json(req, { error: "unauthorized" }, 403);
+    const { data: authorization, error: authorizationError } = await db.rpc("authorize_youtube_editorial_tick", {
+      signature, issued_at: issuedAt, tick_action: body.action,
+    });
+    if (authorizationError || !authorization) return json(req, { error: "unauthorized" }, 403);
+    if (!authorization.enabled || Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") !== "true") return json(req, { status: "disabled" });
+    const ownerId = authorization.actor_id as string;
     const { data: membership, error: membershipError } = await db.from("editorial_admin_memberships")
       .select("role, active").eq("user_id", ownerId).maybeSingle();
     if (membershipError || !membership?.active || membership.role !== "admin")
@@ -2174,10 +2177,11 @@ Deno.serve(async (req) => {
         db.from("youtube_editorial_sources").select("video_id,state,article_id"),
         db.from("editorial_articles").select("video_id").neq("status", "archived"),
       ]);
-      if (inventory.error || sources.error || articles.error) throw new Error("queue_read_failed");
+      const settings = await db.from("youtube_editorial_worker_settings").select("enabled").eq("singleton", true).maybeSingle();
+      if (settings.error || inventory.error || sources.error || articles.error) throw new Error("queue_read_failed");
       const occupied = new Set([...(articles.data ?? []).map(row => row.video_id), ...(sources.data ?? []).map(row => row.video_id)]);
       return json(req, {
-        enabled: Deno.env.get("YOUTUBE_HOURLY_ENABLED") === "true",
+        enabled: settings.data?.enabled === true,
         queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length,
         running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating"].includes(row.state)).length,
         review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
