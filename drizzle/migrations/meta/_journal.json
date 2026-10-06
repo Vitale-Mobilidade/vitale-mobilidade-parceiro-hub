@@ -8,6 +8,13 @@
       "when": 1791325399112,
       "tag": "0000_youtube_credit_resume",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791326599339,
+      "tag": "0001_youtube_cover_checkpoint",
+      "breakpoints": true
     }
   ]
 }
