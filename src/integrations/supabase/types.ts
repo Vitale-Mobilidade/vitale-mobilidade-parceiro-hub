@@ -1867,12 +1867,41 @@ export type Database = {
           },
         ]
       }
+      youtube_editorial_worker_settings: {
+        Row: {
+          actor_id: string
+          enabled: boolean
+          signing_key: string
+          singleton: boolean
+        }
+        Insert: {
+          actor_id: string
+          enabled?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Update: {
+          actor_id?: string
+          enabled?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
+      authorize_youtube_editorial_tick: {
+        Args: { issued_at: string; signature: string; tick_action: string }
+        Returns: Json
+      }
+      dispatch_youtube_editorial_tick: {
+        Args: { tick_action: string }
+        Returns: number
+      }
       get_bike_price_history: {
         Args: { p_bike_id: string; p_days?: number }
         Returns: Json
