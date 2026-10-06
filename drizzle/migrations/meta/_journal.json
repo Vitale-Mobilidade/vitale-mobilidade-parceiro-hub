@@ -15,6 +15,13 @@
       "when": 1791326599339,
       "tag": "0001_youtube_cover_checkpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791327149089,
+      "tag": "0002_youtube_voice_patch_recovery",
+      "breakpoints": true
     }
   ]
 }
