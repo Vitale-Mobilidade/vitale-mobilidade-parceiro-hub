@@ -15,7 +15,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -27,6 +27,7 @@ const integrationEnv: Record<string, string> = {};
 const offlineCapture = vi.fn();
 const offlineCompose = vi.fn();
 const exports: {
+  rejectedDraftCanResume?: (article: unknown, source: unknown, runs: unknown[]) => boolean;
   generateStream?: (req: Request, db: unknown, actor: unknown, body: unknown) => Response;
   generateInto?: (...args: unknown[]) => Promise<unknown>;
   stageStream?: (...args: unknown[]) => Response;
@@ -682,5 +683,30 @@ describe("capa obrigatória — mesmo gerador e aplicação, dentro do servidor"
       await expect(exports.generateAutomaticCover!(new Request("http://localhost"), {}, { id: "actor" }, article)).rejects.toThrow("automatic_cover_response_invalid");
       expect(applied).not.toHaveBeenCalled();
     } finally { restore(); }
+  });
+});
+
+
+describe("retomada restrita de rejeição sem saída", () => {
+  const text = "Salve salve galera, V9 Max. ".repeat(15);
+  const originalVtt = `WEBVTT\n\n00:00:00.000 --> 00:00:10.000\n${text.trim()}\n`;
+  const capture = { videoId: "abcDEFG1234", source: "youtube_captions", channelId: transcriptAdapter.VITALE_YOUTUBE_CHANNEL, originalVtt, transcript: text.trim() };
+  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", blocks: [], published_at: null };
+  const source = { state: "needs_review", article_id: "draft", capture };
+  const rejected = [{ status: "failed", error_code: "ai_http_400" }];
+  it("permite somente fonte oficial íntegra e rejeição conhecida", () => {
+    expect(exports.rejectedDraftCanResume!(article, source, rejected)).toBe(true);
+  });
+  it("não repete timeout, saída concluída, reserva concorrente ou artigo preenchido", () => {
+    for (const runs of [[], [{ status: "failed", error_code: "timeout" }], [...rejected, { status: "completed" }]])
+      expect(exports.rejectedDraftCanResume!(article, source, runs)).toBe(false);
+    expect(exports.rejectedDraftCanResume!({...article, blocks:[{text:"Salvo"}]}, source, rejected)).toBe(false);
+    expect(exports.rejectedDraftCanResume!({...article, status:"published"}, source, rejected)).toBe(false);
+    expect(exports.rejectedDraftCanResume!(article, {...source, state:"generating"}, rejected)).toBe(false);
+  });
+  it("bloqueia resumo, outro canal, outro vídeo e vínculo de artigo divergente", () => {
+    for (const changed of [{ transcript:"Resumo inventado. ".repeat(30) }, {channelId:"outro"}, {videoId:"xyzDEFG1234"}])
+      expect(exports.rejectedDraftCanResume!(article, {...source, capture:{...capture,...changed}}, rejected)).toBe(false);
+    expect(exports.rejectedDraftCanResume!(article, {...source, article_id:"other"}, rejected)).toBe(false);
   });
 });

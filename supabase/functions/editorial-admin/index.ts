@@ -82,7 +82,7 @@ import {
 } from "../_shared/editorial-cover.ts";
 
 import { buildStrictVideoCatalog, VIDEO_SHEET_CSV_URL } from "../_shared/video-catalog.ts";
-import { captureYoutubeTranscript } from "../_shared/youtube-transcript.ts";
+import { captureYoutubeTranscript, parseCaptionVtt, VITALE_YOUTUBE_CHANNEL } from "../_shared/youtube-transcript.ts";
 import { youtubeTokenProvider } from "../_shared/youtube-oauth.ts";
 
 const youtubeAccessToken = youtubeTokenProvider({
@@ -263,7 +263,7 @@ async function validate(db: SupabaseClient, article: EditorialArticle): Promise<
 
 const RESPONSES_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const CHAT_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const ARTICLE_MODEL = "openai/gpt-6-sol";
+const ARTICLE_MODEL = "openai/gpt-5.6-sol";
 
 /** Provider-compatible streaming call with strict JSON schema and low reasoning. */
 async function aiStructured(
@@ -1522,6 +1522,19 @@ export function stageError(code: string): string {
   return map[code] ?? "Não foi possível gerar o artigo. O que já foi salvo permanece disponível; tente novamente.";
 }
 
+function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]): boolean {
+  if (article.status !== "draft" || !Array.isArray(article.blocks) || article.blocks.length ||
+      article.published_at || !source || source.state !== "needs_review" ||
+      (source.article_id && source.article_id !== article.id) || !runs.length ||
+      runs.some(run => run.status !== "failed" || run.error_code !== "ai_http_400")) return false;
+  const capture = source.capture;
+  if (!capture || capture.source !== "youtube_captions" || capture.videoId !== article.video_id ||
+      capture.channelId !== VITALE_YOUTUBE_CHANNEL || typeof capture.originalVtt !== "string" ||
+      typeof capture.transcript !== "string" || capture.transcript.length < 200) return false;
+  try { return parseCaptionVtt(capture.originalVtt).transcript === capture.transcript; }
+  catch { return false; }
+}
+
 function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -1533,6 +1546,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
       };
       let reservedVideoId: string | null = null;
       let savedAutomaticArticleId: string | null = null;
+      let resumingRejectedDraft = false;
       try {
         const id = body.youtubeId;
         if (body.action === "generate-from-sheet") {
@@ -1550,22 +1564,43 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           const { data: existing, error: lookupError } = await db.from("editorial_articles")
             .select("*").eq("video_id", id).neq("status", "archived").limit(1).maybeSingle();
           if (lookupError) throw new Error("article_lookup_failed");
-          if (existing) {
+          let capture;
+          if (existing?.status === "draft" && Array.isArray(existing.blocks) && !existing.blocks.length) {
+            const { data: source, error: sourceError } = await db.from("youtube_editorial_sources")
+              .select("*").eq("video_id", id).maybeSingle();
+            const { data: runs, error: runsError } = await db.from("editorial_compiler_runs")
+              .select("status,error_code").eq("article_id", existing.id);
+            if (sourceError || runsError) throw new Error("rejected_draft_lookup_failed");
+            if (rejectedDraftCanResume(existing, source, runs ?? [])) {
+              const { data: claimed, error: claimError } = await db.from("youtube_editorial_sources")
+                .update({ state: "generating", article_id: existing.id }).eq("video_id", id)
+                .eq("state", "needs_review").select("video_id").maybeSingle();
+              if (claimError || !claimed) return fail("Este vídeo já está em processamento ou aguarda conferência.");
+              reservedVideoId = id;
+              savedAutomaticArticleId = existing.id;
+              resumingRejectedDraft = true;
+              capture = source!.capture;
+              send({ type: "progress", step: "Retomando rascunho vazio com a transcrição original preservada…" });
+            }
+          }
+          if (existing && !resumingRejectedDraft) {
             send({ type: "done", article: existing, reused: true });
             controller.close();
             return;
           }
-          // Durable, exclusive reservation: an interrupted run requires review, never paid replay.
-          const { error: reserveError } = await db.from("youtube_editorial_sources")
-            .insert({ video_id: id, state: "capturing", created_by: actor.id });
-          if (reserveError) return fail("Este vídeo já está em processamento ou aguarda conferência. Consulte os registros antes de repetir.");
-          reservedVideoId = id;
-          send({ type: "progress", step: "Capturando transcrição original do YouTube…" });
-          const capture = await captureYoutubeTranscript({ videoId: id, accessToken: await youtubeAccessToken() });
-          const { error: captureError } = await db.from("youtube_editorial_sources").update({
-            state: "generating", capture, captured_at: capture.capturedAt,
-          }).eq("video_id", id);
-          if (captureError) throw new Error("source_save_failed");
+          if (!resumingRejectedDraft) {
+            // Durable, exclusive reservation: uncertain results are never replayed.
+            const { error: reserveError } = await db.from("youtube_editorial_sources")
+              .insert({ video_id: id, state: "capturing", created_by: actor.id });
+            if (reserveError) return fail("Este vídeo já está em processamento ou aguarda conferência. Consulte os registros antes de repetir.");
+            reservedVideoId = id;
+            send({ type: "progress", step: "Capturando transcrição original do YouTube…" });
+            capture = await captureYoutubeTranscript({ videoId: id, accessToken: await youtubeAccessToken() });
+            const { error: captureError } = await db.from("youtube_editorial_sources").update({
+              state: "generating", capture, captured_at: capture.capturedAt,
+            }).eq("video_id", id);
+            if (captureError) throw new Error("source_save_failed");
+          }
           body = { ...body, title: selected.title, articleTitle: selected.title,
             bikeIds: selected.bikeIds, transcript: capture.transcript };
         }
@@ -1603,7 +1638,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (reservationError) return fail("Este vídeo já está em processamento ou aguarda conferência.");
           reservedVideoId = id;
         }
-        if (body.action === "generate-from-sheet" && article) {
+        if (body.action === "generate-from-sheet" && article && !resumingRejectedDraft) {
           await db.from("youtube_editorial_sources").update({ state: "done", article_id: article.id }).eq("video_id", id);
           send({ type: "done", article, reused: true });
           controller.close();
@@ -1663,6 +1698,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           article = data as EditorialArticle;
         }
         article = await restoreDraftMode(db, actor, article);
+        if (reservedVideoId) {
+          savedAutomaticArticleId = article.id;
+          const { error: linkError } = await db.from("youtube_editorial_sources").update({ article_id: article.id }).eq("video_id", id);
+          if (linkError) throw new Error("source_article_link_failed");
+        }
         let generated = await generateInto(
           db,
           actor,
@@ -1694,7 +1734,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         console.error("[editorial-admin] generate", errorMessage(e));
         fail(body.action === "generate-from-sheet"
           ? savedAutomaticArticleId
-            ? `O artigo foi salvo (${savedAutomaticArticleId}), mas a capa não foi concluída. Confira o artigo antes de repetir; a geração não será repetida automaticamente.`
+            ? `O artigo foi salvo (${savedAutomaticArticleId}), mas a geração automática não foi concluída. Confira o artigo antes de repetir; a geração não será repetida automaticamente.`
             : "O processo automático foi interrompido. Nenhum resumo foi usado. Confira a fonte e o artigo salvo antes de repetir."
           : stageError(errorMessage(e)));
       }
