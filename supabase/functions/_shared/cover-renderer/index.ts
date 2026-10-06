@@ -161,15 +161,23 @@ export async function composeServerCover(
     for (const char of title)
       if (!/\s/.test(char) && !font(76).has(char))
         throw new Error("cover_title_glyph_unsupported");
-    const fit = fitTitle(
-      title,
-      (text, size) =>
-        Array.from(text).reduce(
-          (total, char) => total + font(size).metrics(char, size).advance_width,
-          0,
-        ),
-      W - 128,
-    );
+    const advances = new Map<string, number>();
+    const measure = (text: string, size: number) => Array.from(text).reduce((total, char) => {
+      const key = `${size}:${char}`;
+      if (!advances.has(key)) advances.set(key, font(size).metrics(char, size).advance_width);
+      return total + advances.get(key)!;
+    }, 0);
+    let sizes = [76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
+    let fit: ReturnType<typeof fitTitle> = null;
+    let lines: Raster[] = [];
+    // Glyph advances can under-estimate the final raster bounds. Validate actual lines and shrink without cutting text.
+    while (sizes.length) {
+      const candidate = fitTitle(title, measure, W - 128, 3, sizes);
+      if (!candidate) break;
+      const rendered = candidate.lines.map(line => rasterText(font(candidate.size), line, candidate.size));
+      if (rendered.every(line => line.width <= W - 128)) { fit = candidate; lines = rendered; break; }
+      sizes = sizes.filter(size => size < candidate.size);
+    }
     if (!fit) throw new Error("cover_title_does_not_fit");
     const out = fitBackground(decode(background));
     const brand = rasterText(font(26), "Vitale Mobilidade", 26);
@@ -184,8 +192,7 @@ export async function composeServerCover(
     composite(out, brand, 86, 56 + Math.floor((52 - brand.height) / 2));
     const lineHeight = Math.round(fit.size * 1.15);
     for (let i = 0; i < fit.lines.length; i++) {
-      const line = rasterText(font(fit.size), fit.lines[i], fit.size);
-      if (line.width > W - 128) throw new Error("cover_title_does_not_fit");
+      const line = lines[i];
       const y = H - 64 - lineHeight * (fit.lines.length - 1 - i) - line.height;
       composite(out, line, 66, y + 3, true);
       composite(out, line, 64, y);

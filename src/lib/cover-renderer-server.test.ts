@@ -1,3 +1,4 @@
+import { deflateSync } from "node:zlib";
 import { readFile, writeFile } from "node:fs/promises";
 import { beforeAll, describe, expect, it } from "vitest";
 import { inspectJpeg } from "../../supabase/functions/_shared/editorial-cover";
@@ -58,4 +59,21 @@ describe("composição real de capa no servidor, sem IA ou navegador", () => {
       ),
     ).rejects.toThrow("cover_background_dimensions_invalid");
   });
+});
+
+
+it("composes the exact PNG RGB dimensions observed in the Cloud failure (1376×768)", async () => {
+  const w = 1376, h = 768;
+  const raw = Buffer.alloc(h * (1 + w * 3));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const p = y * (1 + w * 3) + 1 + x * 3; raw[p] = x % 256; raw[p + 1] = y % 256; raw[p + 2] = 100;
+  }
+  const crc = (bytes: Buffer) => { let value = 0xffffffff; for (const byte of bytes) { value ^= byte; for (let bit = 0; bit < 8; bit++) value = (value >>> 1) ^ ((value & 1) ? 0xedb88320 : 0); } return (value ^ 0xffffffff) >>> 0; };
+  const chunk = (type: string, bytes: Buffer) => { const data = Buffer.concat([Buffer.from(type), bytes]); const size = Buffer.alloc(4); size.writeUInt32BE(bytes.length); const checksum = Buffer.alloc(4); checksum.writeUInt32BE(crc(data)); return Buffer.concat([size, data, checksum]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const png = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+  const title = "Ouxi GT2000 sobe ladeiras? Potência, limites e uso no dia a dia";
+  const result = await render(`data:image/png;base64,${png.toString("base64")}`, title);
+  expect(inspectJpeg(result.bytes)).toEqual({ width: 1280, height: 720 });
+  expect(result.lines.join(" ")).toBe(title);
 });

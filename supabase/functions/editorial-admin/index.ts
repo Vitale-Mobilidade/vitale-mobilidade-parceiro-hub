@@ -2122,15 +2122,51 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
     const article = await articleById(db, lease.article_id);
     if (!article || article.video_id !== lease.video_id || article.status !== "draft" || !article.blocks?.length)
       throw new Error("cover_queue_article_invalid");
-    const generated = await generateAutomaticCover(req, db, actor, article);
-    const result = await db.from("youtube_editorial_sources").update({ state: "done" })
-      .eq("video_id", lease.video_id).eq("state", "cover_generating");
-    if (result.error) throw new Error("source_completion_failed");
-    return json(req, { status: "done", articleId: generated.id, stage: "cover" });
-  } catch {
-    await db.from("youtube_editorial_sources").update({ state: "needs_review" })
-      .eq("video_id", lease.video_id).eq("state", "cover_generating");
+    const result = await coverGenerate(req, db, actor, article);
+    if (!result.ok) { if (result.status === 402) await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true); throw new Error("automatic_cover_generation_failed"); }
+    const payload = await result.json();
+    const match = typeof payload.background === "string" ? /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(payload.background) : null;
+    if (!match || payload.title !== article.title || payload.revision !== article.revision) throw new Error("automatic_cover_response_invalid");
+    const bytes = Uint8Array.from(atob(match[2]), char => char.charCodeAt(0));
+    if (!bytes.length || bytes.length > AI_IMAGE_MAX_BYTES) throw new Error("cover_background_invalid");
+    const path = `${article.id}/backgrounds/${crypto.randomUUID()}.${match[1] === "jpeg" ? "jpg" : match[1]}`;
+    const upload = await db.storage.from(COVER_BUCKET).upload(path, bytes, { contentType: `image/${match[1]}`, upsert: false });
+    if (upload.error) throw new Error("cover_background_storage_failed");
+    const source = await db.from("youtube_editorial_sources").select("capture").eq("video_id", lease.video_id).maybeSingle();
+    if (source.error || !source.data?.capture) throw new Error("original_source_invalid");
+    const saved = await db.from("youtube_editorial_sources").update({ state: "cover_render_pending", capture: {
+      ...source.data.capture, coverBackground: { path, title: article.title, mime: `image/${match[1]}` }
+    } }).eq("video_id", lease.video_id).eq("state", "cover_generating");
+    if (saved.error) throw new Error("cover_background_checkpoint_failed");
+    return json(req, { status: "cover_render_pending", articleId: article.id, stage: "cover_background" });
+  } catch (e) {
+    await log(db, actor, "automatic_cover_failed", "article", lease.article_id, { code: errorMessage(e) });
+    await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_generating");
     return json(req, { error: "automatic_cover_failed", articleId: lease.article_id }, 502);
+  }
+}
+
+/** Composes a persisted paid image in a fresh CPU budget; this stage makes no AI request. */
+async function finishQueuedCoverRender(req: Request, db: SupabaseClient, actor: Actor, lease: { video_id: string; article_id: string; background: { path: string; title: string; mime: string } }): Promise<Response> {
+  try {
+    const article = await articleById(db, lease.article_id);
+    if (!article || article.status !== "draft" || article.video_id !== lease.video_id || !article.blocks?.length ||
+        article.title !== lease.background?.title || !["image/jpeg", "image/png", "image/webp"].includes(lease.background?.mime) ||
+        !lease.background?.path?.startsWith(`${article.id}/backgrounds/`) || lease.background.path.includes(".."))
+      throw new Error("cover_background_lease_invalid");
+    const file = await db.storage.from(COVER_BUCKET).download(lease.background.path);
+    if (file.error || !file.data || file.data.size > AI_IMAGE_MAX_BYTES) throw new Error("cover_background_missing");
+    const { composeServerCover } = await import("../_shared/cover-renderer/index.ts");
+    const composed = await composeServerCover(`data:${lease.background.mime};base64,${toBase64(new Uint8Array(await file.data.arrayBuffer()))}`, article.title);
+    const applied = await coverApply(req, db, actor, article, { image: `data:image/jpeg;base64,${toBase64(composed.bytes)}` });
+    if (!applied.ok) throw new Error("automatic_cover_apply_failed");
+    const saved = await db.from("youtube_editorial_sources").update({ state: "done" }).eq("video_id", lease.video_id).eq("state", "cover_rendering");
+    if (saved.error) throw new Error("source_completion_failed");
+    return json(req, { status: "done", articleId: article.id, stage: "cover_render" });
+  } catch (e) {
+    await log(db, actor, "automatic_cover_render_failed", "article", lease.article_id, { code: errorMessage(e) });
+    await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_rendering");
+    return json(req, { error: "automatic_cover_render_failed", articleId: lease.article_id }, 502);
   }
 }
 
@@ -2239,6 +2275,9 @@ Deno.serve(async (req) => {
       return json(req, { error: "worker_owner_not_configured" }, 503);
     try {
       const owner: Actor = { id: ownerId, role: "admin", email: null };
+      const render = await db.rpc("claim_youtube_editorial_cover_render");
+      if (render.error) throw new Error("render_queue_read_failed");
+      if (render.data) return await finishQueuedCoverRender(req, db, owner, render.data);
       const cover = await db.rpc("claim_youtube_editorial_cover");
       if (cover.error) throw new Error("cover_queue_read_failed");
       if (cover.data) return await finishQueuedCover(req, db, owner, cover.data);
@@ -2289,7 +2328,7 @@ Deno.serve(async (req) => {
       return json(req, {
         enabled: settings.data?.enabled === true,
         queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length,
-        running: (sources.data ?? []).filter(row => ["capturing", "generating", "rewrite_pending", "cover_pending", "cover_generating"].includes(row.state)).length,
+        running: (sources.data ?? []).filter(row => ["capturing", "generating", "rewrite_pending", "cover_pending", "cover_generating", "cover_render_pending", "cover_rendering"].includes(row.state)).length,
         review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
         done: (sources.data ?? []).filter(row => row.state === "done").length,
       });

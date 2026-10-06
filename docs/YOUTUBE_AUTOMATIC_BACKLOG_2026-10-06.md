@@ -43,3 +43,9 @@ Cron real após41491f5/260742e: GT2000 texto revisado e capa concluída sem nova
 
 
 Correção de rascunhos salvos usa o mesmo generateInto em modo repairStoredVoice: parte do output salvo e pede à IA somente campos reprovados; não paga uma nova redação integral nem capa. Gate mantém fidelidade/identidade/evidência/slug/capa, não há prosa escrita pelo operador. Ampliada detecção para preço citado/foi citada velocidade/são classificados/segundo cadastro. Reconciliar somente drafts não históricos com essas expressões ou último run de vozfailed, uma vez na migration, sem replay incerto.
+
+
+Correção do status QU72: texto pronto, audit cover_generated mas502aoaplicar; não concluído. Introduzido checkpoint privado do background pago no bucket existente (limite8MB somenteprivado; finalJPEGcontinua4MB), geração/composição em ticks separados. Composer falhas passamagravar código privado; rendernãochamaIA. Dispatchlimitauma chamadaaguardando emnetparanãoacumularassinaturasexpiradas. Pré8Produto/CTO/IA/Segurança/UX/CX/Growth/QA GO condicionadoatestelease/storage/semIA ecronreal. OriginalVTT/transcriptpreservados; captureganhametadadosdeassetprivado.
+
+
+Causa reproduzida localmente com PNG RGB1376×768 e H1 exatoQU72: cover_title_does_not_fit na checagem raster. A largura estimada por avançosdeglyph divergiu do bitmap final; fit agora verifica limites reais e reduzfonte atécaber, semcortarH1; métricascacheadasparareduzirCPU. ImagemQU72 irrecuperável (gatewaytruncado/semstorage), umanova geração será realizada somenteparaessecasodeterminadoapósfix. AcoesIApagas de instalação não geram conteúdo; recuperação executadacron.
