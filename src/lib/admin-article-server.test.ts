@@ -871,3 +871,25 @@ it("persists the paid background and original captions before composition, leavi
     expect(writes[0]).toMatchObject({ state: "cover_render_pending" });
   } finally { restore(); }
 });
+
+
+it("hourly refreshes the spreadsheet before serving a pending cover stage", async () => {
+  integrationEnv.YOUTUBE_EDITORIAL_ENABLED = "true";
+  offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título,https://youtu.be/abcDEFG1234,V9 Max'));
+  const query = (data: unknown) => { const q = { eq: () => q, neq: () => q, in: () => q, maybeSingle: async () => ({ data, error: null }), then: (resolve: (v: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve) }; return q; };
+  const rpc = vi.fn(async (name: string) => ({ data: name === "authorize_youtube_editorial_tick" ? { enabled: true, actor_id: "owner" } : name === "claim_youtube_editorial_cover" ? { video_id: "abcDEFG1234", article_id: "draft" } : null, error: null }));
+  requestDatabase = { rpc, from: (table: string) => {
+    if (table === "editorial_admin_memberships") return { select: () => query({ active: true, role: "admin" }) };
+    if (table === "editorial_articles") return { select: (columns: string) => query(columns === "*" ? null : []) };
+    if (table === "editorial_videos") return { select: async () => ({ data: [], error: null }), upsert: async () => ({ error: null }) };
+    if (table === "youtube_editorial_sources" || table === "youtube_editorial_inventory") return { update: () => query(null) };
+    return { insert: async () => ({ error: null }) };
+  } };
+  try {
+    const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-signature": "a".repeat(64), "x-youtube-worker-issued-at": "1791327600" }, body: JSON.stringify({ action: "youtube-hourly" }) }));
+    expect(response.status).toBe(502); // Invalid mocked article blocks paid cover work, after discovery.
+    expect(offlineFetch).toHaveBeenCalledTimes(1);
+    const names = rpc.mock.calls.map(call => call[0]);
+    expect(names.indexOf("ingest_youtube_editorial_snapshot")).toBeLessThan(names.indexOf("claim_youtube_editorial_cover"));
+  } finally { delete integrationEnv.YOUTUBE_EDITORIAL_ENABLED; }
+});

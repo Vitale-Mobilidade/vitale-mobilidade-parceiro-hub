@@ -2,7 +2,8 @@
 alter table public.youtube_editorial_sources drop constraint youtube_editorial_sources_state_check;
 alter table public.youtube_editorial_sources add constraint youtube_editorial_sources_state_check
   check(state in ('capturing','generating','rewrite_pending','cover_pending','cover_generating','cover_render_pending','cover_rendering','done','needs_review'));
-update storage.buckets set file_size_limit=8388608 where id='editorial-covers' and not public;
+-- Cloud storage tool configured editorial-covers private with file_size_limit=8388608 before this migration.
+-- Cloud's SQL migration API refuses storage.buckets writes; apply that configuration separately on another host.
 create or replace function public.claim_youtube_editorial_cover_render() returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare source public.youtube_editorial_sources;

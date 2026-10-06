@@ -49,3 +49,9 @@ Correção do status QU72: texto pronto, audit cover_generated mas502aoaplicar; 
 
 
 Causa reproduzida localmente com PNG RGB1376×768 e H1 exatoQU72: cover_title_does_not_fit na checagem raster. A largura estimada por avançosdeglyph divergiu do bitmap final; fit agora verifica limites reais e reduzfonte atécaber, semcortarH1; métricascacheadasparareduzirCPU. ImagemQU72 irrecuperável (gatewaytruncado/semstorage), umanova geração será realizada somenteparaessecasodeterminadoapósfix. AcoesIApagas de instalação não geram conteúdo; recuperação executadacron.
+
+
+Instalação a2a0ca4/c1434a0: Deno check0, editorial-admin deploy confirmado, unsigned403. Cloud recusou SQLstorage.buckets sem aplicartransação; limite8MBprivado configurado porferramentaStorage antes de aplicar restanteSQLexato. Migration de referência alinhada para explicitar configuraçãoStorage separada, nãoduas SQLdivergentes. Jobs/settings reativados e validação seguinte exclusivamentecron. Pré-execuçãolocal121testesdirigidos+pnpmvalidate Pass; oito perspectivas pós-localPass, pós-cron aindaaguardando conclusão8itens.
+
+
+A execução horária real ocorreu23:12UTC enquanto a última capa estava em montagem. Revisão da ordem mostrou descoberta da planilha depois das etapas, podendo adiá-la quando houvesse capa pendente. Ajuste final: hourly sempre refreshYoutubeQueue primeiro, depois consome estágio disponível; drain preserva prioridade de etapas sem nova consulta obrigatória. Mesmas8perspectivas Pass local para cumprir periodicidade; teste cobre descoberta mesmo com lease de capa existente. Instalar apenas após8itensconcluídos, seminterrompercaptura/capa.

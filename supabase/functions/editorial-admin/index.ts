@@ -2275,6 +2275,8 @@ Deno.serve(async (req) => {
       return json(req, { error: "worker_owner_not_configured" }, 503);
     try {
       const owner: Actor = { id: ownerId, role: "admin", email: null };
+      // Discovery is never postponed by pending text/cover stages.
+      let candidate: string | null = body.action === "youtube-hourly" ? (await refreshYoutubeQueue(db, owner)).candidate : null;
       const render = await db.rpc("claim_youtube_editorial_cover_render");
       if (render.error) throw new Error("render_queue_read_failed");
       if (render.data) return await finishQueuedCoverRender(req, db, owner, render.data);
@@ -2284,10 +2286,7 @@ Deno.serve(async (req) => {
       const rewrite = await db.rpc("claim_youtube_editorial_rewrite");
       if (rewrite.error) throw new Error("rewrite_queue_read_failed");
       if (rewrite.data) return await finishQueuedRewrite(req, db, owner, rewrite.data);
-      let candidate: string | null;
-      if (body.action === "youtube-hourly") {
-        candidate = (await refreshYoutubeQueue(db, owner)).candidate;
-      } else {
+      if (body.action === "youtube-drain") {
         const inventory = await db.from("youtube_editorial_inventory").select("video_id").eq("historical", false);
         if (inventory.error) throw new Error("queue_read_failed");
         if (!(inventory.data ?? []).length) return json(req, { status: "idle" });
