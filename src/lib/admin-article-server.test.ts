@@ -16,7 +16,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -34,6 +34,8 @@ const exports: {
   stageStream?: (...args: unknown[]) => Response;
   coverGenerate?: (...args: unknown[]) => Promise<Response>;
   coverPreview?: (req: Request, db: unknown, article: unknown) => Promise<Response>;
+  finishQueuedCover?: (...args: unknown[]) => Promise<Response>;
+  finishQueuedRewrite?: (...args: unknown[]) => Promise<Response>;
   generateAutomaticCover?: (...args: unknown[]) => Promise<unknown>;
   injectOfflineCover?: (generate: unknown, apply: unknown) => () => void;
   injectOfflineAI?: (mock: ReturnType<typeof vi.fn>) => void;
@@ -754,5 +756,47 @@ describe("Atualização geral de vídeos no Admin", () => {
     const { upsert, rpc } = syncDatabase(); offlineFetch = vi.fn(async () => new Response("indisponível", { status: 503 }));
     expect((await servedHandler(req())).status).toBe(503);
     expect(upsert).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("fresh automatic cover checkpoint", () => {
+  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", title: "Título", revision: 4, blocks: [{ type: "text", text: "corpo" }] };
+  function checkpointDb(value: unknown) {
+    const states: string[] = [];
+    const filters: unknown[][] = [];
+    const update = (patch: { state: string }) => {
+      states.push(patch.state);
+      const query = { eq: (...args: unknown[]) => { filters.push(args); return query; }, then: (resolve: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(resolve) };
+      return query;
+    };
+    return { states, filters, from: (table: string) => table === "editorial_articles"
+      ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: value, error: null }) }) }) }
+      : { update } };
+  }
+  it("finishes only the claimed draft, never calls the text writer or changes other sources", async () => {
+    const db = checkpointDb(article);
+    const generated = vi.fn(async () => new Response(JSON.stringify({ background: "data:image/png;base64,AA==", title: article.title, revision: 4 })));
+    const applied = vi.fn(async () => new Response(JSON.stringify({ article: { ...article, revision: 5 } })));
+    offlineCompose.mockResolvedValueOnce({ bytes: new Uint8Array([1,2,3]) });
+    const restore = exports.injectOfflineCover!(generated, applied);
+    try {
+      const response = await exports.finishQueuedCover!(new Request("http://localhost"), db, { id: "actor" }, { article_id: "draft", video_id: "abcDEFG1234" });
+      expect(await response.json()).toEqual({ status: "done", articleId: "draft", stage: "cover" });
+      expect(generated).toHaveBeenCalledTimes(1);
+      expect(db.states).toEqual(["done"]);
+      expect(db.filters).toEqual([["video_id", "abcDEFG1234"], ["state", "cover_generating"]]);
+    } finally { restore(); }
+  });
+  it.each([{ ...article, status: "published" }, { ...article, video_id: "other-video" }, { ...article, blocks: [] }])("refuses an invalid lease before paid image work", async value => {
+    const db = checkpointDb(value);
+    const generated = vi.fn();
+    const restore = exports.injectOfflineCover!(generated, vi.fn());
+    try {
+      const response = await exports.finishQueuedCover!(new Request("http://localhost"), db, { id: "actor" }, { article_id: "draft", video_id: "abcDEFG1234" });
+      expect(response.status).toBe(502);
+      expect(generated).not.toHaveBeenCalled();
+      expect(db.states).toEqual(["needs_review"]);
+    } finally { restore(); }
   });
 });
