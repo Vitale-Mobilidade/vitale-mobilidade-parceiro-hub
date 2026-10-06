@@ -1,5 +1,7 @@
 # Fila automática de pendentes — 06/10/2026
 
+**Estado final em 06/10/2026: CONCLUÍDO.** Oito pendentes criados com capa pelo pipeline do projeto; 107 publicados preservados; 9 drafts (8 novos + piloto anterior), 116 vídeos. Fila sem itens pendentes/em execução/revisão. Busca horária :12 e drainer a cada minuto ativos, settings.enabled=true. Resultados em /admin/conteudos; Sincronizar tudo em /admin.
+
 Autorização explícita nesta thread: criar os artigos pendentes por automação no projeto, sem criação manual pelo Codex, e partir para modelo automático. Inclui captura original, texto e capa com créditos Lovable já indicados. Escopo ampliado revoga exclusão anterior do backlog. Conferência somente leitura: 116 linhas, 107 publicados + 1 draft; 8 candidatos por ID e título de artigo/vídeo vinculado.
 
 Revisão prévia estrutural: Produto — processar oito faltantes, não regenerar acervo; CTO — mesmo generateStream e reserva por vídeo, cron privado + drainer; IA — transcrição original obrigatória, prompt independente instalado, verificação real do primeiro resultado antes de declarar qualidade; Segurança — chave worker privada em Vault/env, owner Admin ativo, nenhum token em cliente/log; UX — Sincronizar tudo no Admin e painel completo integrado, status por etapa; CX — fila persistida continua sem navegador/computador, falhas incertas em needs_review sem repetição paga; Growth — geração draft, sem alteração dos 107 publicados; QA — testes backlog/deduplicação/permissões, pnpm validate, instalação exclusiva Cloud e observação real. Decisão GO condicionado aos testes e smoke do resultado automático. Conflito “já”/custo: um item por tick, drainer a cada 2 minutos escoa backlog; descoberta horária no minuto :12. Não é loop de geração pelo Codex. Publicação de artigos não incluída nesta ativação (mantém contrato de draft).
@@ -55,3 +57,25 @@ Instalação a2a0ca4/c1434a0: Deno check0, editorial-admin deploy confirmado, un
 
 
 A execução horária real ocorreu23:12UTC enquanto a última capa estava em montagem. Revisão da ordem mostrou descoberta da planilha depois das etapas, podendo adiá-la quando houvesse capa pendente. Ajuste final: hourly sempre refreshYoutubeQueue primeiro, depois consome estágio disponível; drain preserva prioridade de etapas sem nova consulta obrigatória. Mesmas8perspectivas Pass local para cumprir periodicidade; teste cobre descoberta mesmo com lease de capa existente. Instalar apenas após8itensconcluídos, seminterrompercaptura/capa.
+
+
+## Revisão final de execução
+
+A criação dos oito usou a captura oficial no servidor e o writer do projeto. A primeira revisão por botão foi uma intervenção de teste; após o reforço do responsável, toda correção/continuação passou para leases e cron, sem redação manual e sem geração individual pelo operador. A execução real revelou duas falhas: CPU acumulada entre etapas e diferença entre largura estimada/raster do título. Ambas reproduzidas/mitigadas com checkpoints e teste do título/dimensões reais. Não confundir HTTP200 truncado com conclusão: oito fontes em done e oito JPGs privados correspondentes encontrados no Storage.
+
+Fontes: oito WEBVTT integrais do canal UC9LuObKw8ZLoQBk6qHydEeg, 7.362–16.596 caracteres cada. Prosa: 5.419–8.005 caracteres, 6–9 seções; detector aplicado a H1/abertura/corpo/FAQ/metadados dos oito outputs encontrou zero expressões reprovadas. Isso valida a regra implementada, sem alegar infalibilidade de toda redação gerativa. Originais e histórico de falhas preservados. O contador antigo de erros agrega falhas históricas; não representa pendências atuais da fila.
+
+| Perspectiva | Resultado | Evidência |
+|---|---|---|
+| Produto | Pass | 8 pendentes completos; nenhuma regeneração dos 107 publicados; drafts no Admin |
+| CTO | Pass | Writer único; etapas persistidas; leases transacionais; cron e Storage do projeto |
+| IA | Pass | Fonte integral validada; voz independente; correção limitada por campo executada pela IA |
+| Segurança | Pass | HMAC/owner ativo; unsigned403; RPCs restritas; captura/background privados; nenhum segredo lido |
+| UX/UI | Pass | Sincronizar tudo no Admin, bikes integrado, fila visível e destino /admin/conteudos |
+| CX/operação | Pass | Cron real concluiu backlog/correções/capas; fila e revisão zeradas; rotina ativa |
+| Growth/SEO | Pass | 107 publicados/SSR preservados; drafts privados; fontes não narradas nos campos públicos testados |
+| PMO/QA | Pass | 122 testes dirigidos, pnpm validate, Deno/deploy, audit das oito fontes e oito arquivos reais |
+
+Release backend final dd33919 confirmado; endpoints por POST editorial-admin/action, não funções separadas. Nenhuma nova publicação frontend necessária. Publicação dos oito artigos continua fora desta ativação: os resultados são rascunhos. Custos de instalação/diagnóstico ficaram registrados no histórico de operações Lovable; geração de conteúdo usa o gateway de IA do projeto. Recuperação da única imagem perdida foi necessária, explicada ao responsável e feita pelo cron depois da correção, sem repetição geral de imagens.
+
+Rollback operacional: pausar youtube-editorial-hourly/youtube-editorial-drain por cron.alter_job e settings.enabled=false; preservar arquivos/capturas/artigos para diagnóstico. Rollback de código: reverter commits do fluxo, mantendo schema/checkpoints e bucket privado; não reduzir o limite antes de reconciliar backgrounds existentes. Não remover jobs anteriores, secrets ou histórico.
