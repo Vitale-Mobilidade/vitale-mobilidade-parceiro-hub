@@ -1,1 +1,5 @@
 project_id = "ipectfejftfcikvozoyu"
+[functions.editorial-admin]
+# Each Admin request validates its user JWT and membership in actorFor.
+# Scheduled requests validate a dedicated private worker key and Admin owner instead.
+verify_jwt = false

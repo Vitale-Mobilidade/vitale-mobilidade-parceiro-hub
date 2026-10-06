@@ -81,6 +81,15 @@ import {
   isAllowedCoverThumbnail,
 } from "../_shared/editorial-cover.ts";
 
+import { buildStrictVideoCatalog, VIDEO_SHEET_CSV_URL } from "../_shared/video-catalog.ts";
+import { captureYoutubeTranscript } from "../_shared/youtube-transcript.ts";
+import { youtubeTokenProvider } from "../_shared/youtube-oauth.ts";
+
+const youtubeAccessToken = youtubeTokenProvider({
+  clientId: Deno.env.get("YOUTUBE_CLIENT_ID") ?? "",
+  clientSecret: Deno.env.get("YOUTUBE_CLIENT_SECRET") ?? "",
+  refreshToken: Deno.env.get("YOUTUBE_REFRESH_TOKEN") ?? "",
+});
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const AI_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
@@ -1522,8 +1531,43 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         send({ type: "error", message });
         controller.close();
       };
+      let reservedVideoId: string | null = null;
       try {
         const id = body.youtubeId;
+        if (body.action === "generate-from-sheet") {
+          if (Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") !== "true")
+            return fail("A integração automática ainda não está ativada.");
+          if (!validYoutubeId(id)) return fail("URL do YouTube inválida.");
+          send({ type: "progress", step: "Buscando vídeo na planilha…" });
+          const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
+          if (!snapshot.ok) throw new Error("video_sheet_unavailable");
+          const videos = buildStrictVideoCatalog(await snapshot.text());
+          const selected = videos.find((video) => video.videoId === id);
+          if (!selected) return fail("Vídeo não encontrado na planilha. Nenhum artigo foi gerado.");
+          if (selected.unmatched.length || selected.bikeIds.length > 7)
+            return fail("As bikes da planilha precisam de conferência antes de gerar este artigo.");
+          const { data: existing, error: lookupError } = await db.from("editorial_articles")
+            .select("*").eq("video_id", id).neq("status", "archived").limit(1).maybeSingle();
+          if (lookupError) throw new Error("article_lookup_failed");
+          if (existing) {
+            send({ type: "done", article: existing, reused: true });
+            controller.close();
+            return;
+          }
+          // Durable, exclusive reservation: an interrupted run requires review, never paid replay.
+          const { error: reserveError } = await db.from("youtube_editorial_sources")
+            .insert({ video_id: id, state: "capturing", created_by: actor.id });
+          if (reserveError) return fail("Este vídeo já está em processamento ou aguarda conferência. Consulte os registros antes de repetir.");
+          reservedVideoId = id;
+          send({ type: "progress", step: "Capturando transcrição original do YouTube…" });
+          const capture = await captureYoutubeTranscript({ videoId: id, accessToken: await youtubeAccessToken() });
+          const { error: captureError } = await db.from("youtube_editorial_sources").update({
+            state: "generating", capture, captured_at: capture.capturedAt,
+          }).eq("video_id", id);
+          if (captureError) throw new Error("source_save_failed");
+          body = { ...body, title: selected.title, articleTitle: selected.title,
+            bikeIds: selected.bikeIds, transcript: capture.transcript };
+        }
         const title = str(body.title, 300);
         const articleTitle = str(body.articleTitle, 200) || title;
         const transcript = str(body.transcript, 500_000);
@@ -1548,6 +1592,18 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (previousError) throw new Error("article_lookup_failed");
         let article = previous as EditorialArticle | null;
         if (article?.status === "published") {
+          send({ type: "done", article, reused: true });
+          controller.close();
+          return;
+        }
+        if (!article && !reservedVideoId && Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true") {
+          const { error: reservationError } = await db.from("youtube_editorial_sources")
+            .insert({ video_id: id, state: "generating", created_by: actor.id });
+          if (reservationError) return fail("Este vídeo já está em processamento ou aguarda conferência.");
+          reservedVideoId = id;
+        }
+        if (body.action === "generate-from-sheet" && article) {
+          await db.from("youtube_editorial_sources").update({ state: "done", article_id: article.id }).eq("video_id", id);
           send({ type: "done", article, reused: true });
           controller.close();
           return;
@@ -1614,11 +1670,22 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           (step) => send({ type: "progress", step }),
           selectedBikeIds,
         );
+        if (reservedVideoId) {
+          const { error: completedError } = await db.from("youtube_editorial_sources")
+            .update({ state: "done", article_id: generated.id }).eq("video_id", id);
+          if (completedError) throw new Error("source_completion_failed");
+        }
         send({ type: "done", article: generated, brief: null });
         controller.close();
       } catch (e) {
+        if (reservedVideoId) {
+          // Do not replay uncertain AI results or copy provider errors into persistent records.
+          await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
+        }
         console.error("[editorial-admin] generate", errorMessage(e));
-        fail(stageError(errorMessage(e)));
+        fail(body.action === "generate-from-sheet"
+          ? "O processo automático foi interrompido. Nenhum resumo foi usado. Confira a fonte e o artigo salvo antes de repetir."
+          : stageError(errorMessage(e)));
       }
     },
   });
@@ -1951,6 +2018,36 @@ Deno.serve(async (req) => {
   const db = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { persistSession: false },
   });
+  // Scheduled runs use a dedicated private key, never a public API key or a service token in the browser.
+  if (body.action === "youtube-hourly") {
+    const expected = Deno.env.get("YOUTUBE_WORKER_KEY") ?? "";
+    const provided = req.headers.get("x-youtube-worker-key") ?? "";
+    if (expected.length < 32 || expected !== provided) return json(req, { error: "unauthorized" }, 403);
+    if (Deno.env.get("YOUTUBE_HOURLY_ENABLED") !== "true" || Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") !== "true")
+      return json(req, { status: "disabled" });
+    const ownerId = Deno.env.get("YOUTUBE_EDITORIAL_ACTOR_ID") ?? "";
+    const { data: membership, error: membershipError } = await db.from("editorial_admin_memberships")
+      .select("role, active").eq("user_id", ownerId).maybeSingle();
+    if (membershipError || !membership?.active || membership.role !== "admin")
+      return json(req, { error: "worker_owner_not_configured" }, 503);
+    try {
+      const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
+      if (!snapshot.ok) throw new Error("video_sheet_unavailable");
+      const videos = buildStrictVideoCatalog(await snapshot.text());
+      if (!videos.length) throw new Error("invalid_video_snapshot");
+      const { data: candidate, error: ingestionError } = await db.rpc("ingest_youtube_editorial_snapshot", {
+        video_ids: videos.map((video) => video.videoId),
+      });
+      if (ingestionError) throw new Error("snapshot_ingestion_failed");
+      if (!candidate) return json(req, { status: "idle_or_baseline_saved" });
+      // The same authenticated server generator is used by the Admin pilot and hourly job.
+      return generateStream(req, db, { id: ownerId, role: "admin", email: null }, {
+        action: "generate-from-sheet", youtubeId: candidate,
+      });
+    } catch {
+      return json(req, { error: "youtube_hourly_failed" }, 503);
+    }
+  }
   const actor = await actorFor(db, req);
   if (!actor) return json(req, { error: "Acesso não autorizado." }, 403);
   const action = str(body.action, 40);
@@ -2258,7 +2355,7 @@ Deno.serve(async (req) => {
         410,
       );
     }
-    if (action === "generate") {
+    if (action === "generate" || action === "generate-from-sheet") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
       return generateStream(req, db, actor, body);
     }

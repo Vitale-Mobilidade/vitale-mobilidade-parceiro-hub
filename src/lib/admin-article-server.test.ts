@@ -6,6 +6,9 @@ import * as contract from "../../supabase/functions/_shared/editorial-contract";
 import * as foundation from "../../supabase/functions/_shared/editorial-foundation";
 import * as automation from "../../supabase/functions/_shared/editorial-automation";
 import * as cover from "../../supabase/functions/_shared/editorial-cover";
+import * as videoCatalog from "../../supabase/functions/_shared/video-catalog";
+import * as transcriptAdapter from "../../supabase/functions/_shared/youtube-transcript";
+import * as oauthAdapter from "../../supabase/functions/_shared/youtube-oauth";
 import * as input from "../../supabase/functions/_shared/editorial-create-input";
 
 // Execute the real Edge Function in an isolated VM with offline dependencies.
@@ -20,6 +23,8 @@ const code = ts.transpileModule(
 let servedHandler: (req: Request) => Promise<Response>;
 let requestDatabase: unknown = {};
 let offlineFetch = vi.fn();
+const integrationEnv: Record<string, string> = {};
+const offlineCapture = vi.fn();
 const exports: {
   generateStream?: (req: Request, db: unknown, actor: unknown, body: unknown) => Response;
   generateInto?: (...args: unknown[]) => Promise<unknown>;
@@ -40,6 +45,9 @@ runInNewContext(code, {
       "../_shared/editorial-automation.ts": automation,
       "../_shared/editorial-cover.ts": cover,
       "../_shared/editorial-create-input.ts": input,
+      "../_shared/video-catalog.ts": videoCatalog,
+      "../_shared/youtube-transcript.ts": { ...transcriptAdapter, captureYoutubeTranscript: (...args: unknown[]) => offlineCapture(...args) },
+      "../_shared/youtube-oauth.ts": { ...oauthAdapter, youtubeTokenProvider: () => async () => "offline-access-token" },
       "../_shared/bike-sheet.ts": { SHEET_NAME_ALIASES: {} },
     };
     if (!(name in modules)) throw new Error(`Unmocked import ${name}`);
@@ -48,11 +56,11 @@ runInNewContext(code, {
   Deno: {
     env: {
       get: (name: string) =>
-        name === "SUPABASE_URL"
+        integrationEnv[name] ?? (name === "SUPABASE_URL"
           ? "https://test.invalid"
           : ["SUPABASE_SERVICE_ROLE_KEY", "LOVABLE_API_KEY"].includes(name)
             ? "offline-key"
-            : undefined,
+            : undefined),
     },
     serve: (handler: typeof servedHandler) => {
       servedHandler = handler;
@@ -60,6 +68,7 @@ runInNewContext(code, {
   },
   fetch: (...args: unknown[]) => offlineFetch(...args),
   AbortController,
+  AbortSignal,
   DOMException,
   setTimeout,
   clearTimeout,
@@ -506,5 +515,128 @@ describe("capa — referências reais sem chamadas pagas", () => {
     );
     expect(response.status).toBe(422);
     expect(offlineFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe("piloto integrado — planilha e captura no servidor", () => {
+  const csv = 'Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max';
+  async function integrated(db: unknown) {
+    integrationEnv.YOUTUBE_EDITORIAL_ENABLED = "true";
+    try {
+      return await exports.generateStream!(new Request("http://localhost"), db, { id: "actor", role: "content" }, {
+        action: "generate-from-sheet", youtubeId: "abcDEFG1234", transcript: "Resumo forjado", title: "Título forjado", bikeIds: [],
+      }).text();
+    } finally {
+      delete integrationEnv.YOUTUBE_EDITORIAL_ENABLED;
+    }
+  }
+  it("feature flag desativada não consulta planilha ou gera IA", async () => {
+    const db = database();
+    const result = await exports.generateStream!(new Request("http://localhost"), db, { id: "actor" }, { action: "generate-from-sheet" }).text();
+    expect(result).toContain("ainda não está ativada");
+    expect(db.from).not.toHaveBeenCalled();
+  });
+  it("artigo existente é reutilizado antes de OAuth, captura ou reserva", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    offlineCapture.mockClear();
+    const existing = { id: "existing", status: "draft" };
+    const db = database(existing);
+    const events = (await integrated(db)).trim().split("\n").map((line) => JSON.parse(line));
+    expect(events.at(-1)).toMatchObject({ type: "done", article: existing, reused: true });
+    expect(offlineCapture).not.toHaveBeenCalled();
+    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["editorial_articles"]);
+  });
+  it("vídeo ausente da planilha nunca usa o título ou resumo enviado pelo cliente", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv.replaceAll("abcDEFG1234", "xyzDEFG1234")));
+    const db = database();
+    expect(await integrated(db)).toContain("Vídeo não encontrado na planilha");
+    expect(db.from).not.toHaveBeenCalled();
+  });
+  it("bikes desconhecidas bloqueiam antes de captura ou gasto", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv.replace("V9 Max", "modelo inexistente")));
+    const db = database();
+    expect(await integrated(db)).toContain("bikes da planilha precisam de conferência");
+    expect(db.from).not.toHaveBeenCalled();
+  });
+  it("reserva concorrente bloqueia antes de captura", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    offlineCapture.mockClear();
+    const db = database();
+    const original = db.from;
+    const wrapped = { from: (table: string) => table === "youtube_editorial_sources"
+      ? { insert: async () => ({ error: { code: "23505" } }) } : original(table) };
+    expect(await integrated(wrapped)).toContain("já está em processamento");
+    expect(offlineCapture).not.toHaveBeenCalled();
+  });
+  it("falha de legenda preserva reserva para conferência e não usa resumo", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    offlineCapture.mockRejectedValueOnce(new transcriptAdapter.TranscriptError("portuguese_captions_unavailable", true));
+    const db = database();
+    const original = db.from;
+    const updates: unknown[] = [];
+    const wrapped = { from: (table: string) => table === "youtube_editorial_sources"
+      ? { insert: async () => ({ error: null }), update: (value: unknown) => { updates.push(value); return { eq: async () => ({ error: null }) }; } } : original(table) };
+    expect(await integrated(wrapped)).toContain('"type":"error"');
+    expect(updates).toEqual([{ state: "needs_review" }]);
+  });
+  it("persiste VTT e transcrição oficiais antes de entrar no gerador", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    const capture = { videoId: "abcDEFG1234", source: "youtube_captions", capturedAt: "2026-10-06T20:00:00Z", originalVtt: "WEBVTT\n\noriginal", transcript: "Salve salve galera. ".repeat(30), cues: [] };
+    offlineCapture.mockResolvedValueOnce(capture);
+    const updates: Record<string, unknown>[] = [];
+    const base = database();
+    const wrapped = { from: (table: string) => table === "youtube_editorial_sources"
+      ? { insert: async () => ({ error: null }), update: (value: Record<string, unknown>) => { updates.push(value); return { eq: async () => ({ error: null }) }; } }
+      : table === "bikes" ? { select: async () => ({ error: { message: "catalog unavailable" } }) } : base.from(table) };
+    await integrated(wrapped);
+    expect(updates[0]).toEqual({ state: "generating", capture, captured_at: capture.capturedAt });
+    expect(JSON.stringify(updates)).not.toContain("Resumo forjado");
+    expect(offlineCapture).toHaveBeenLastCalledWith({ videoId: "abcDEFG1234", accessToken: "offline-access-token" });
+  });
+
+});
+
+
+describe("entrada horária privada", () => {
+  it("nega chave ausente antes de consultar membros, planilha ou IA", async () => {
+    integrationEnv.YOUTUBE_WORKER_KEY = "a".repeat(40);
+    requestDatabase = { from: vi.fn() };
+    try {
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", body: JSON.stringify({ action: "youtube-hourly" }) }));
+      expect(response.status).toBe(403);
+      expect((requestDatabase as { from: ReturnType<typeof vi.fn> }).from).not.toHaveBeenCalled();
+    } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
+  });
+  it("não ativa cron/geração só por configurar chave", async () => {
+    integrationEnv.YOUTUBE_WORKER_KEY = "a".repeat(40);
+    try {
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-key": "a".repeat(40) }, body: JSON.stringify({ action: "youtube-hourly" }) }));
+      expect(await response.json()).toEqual({ status: "disabled" });
+    } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
+  });
+  it("primeiro snapshot transacional não dispara geração do histórico", async () => {
+    Object.assign(integrationEnv, { YOUTUBE_WORKER_KEY: "a".repeat(40), YOUTUBE_HOURLY_ENABLED: "true", YOUTUBE_EDITORIAL_ENABLED: "true", YOUTUBE_EDITORIAL_ACTOR_ID: "owner" });
+    offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max'));
+    offlineCapture.mockClear();
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    requestDatabase = { rpc, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { active: true, role: "admin" }, error: null }) }) }) }) };
+    try {
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-key": "a".repeat(40) }, body: JSON.stringify({ action: "youtube-hourly" }) }));
+      expect(await response.json()).toEqual({ status: "idle_or_baseline_saved" });
+      expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
+      expect(offlineCapture).not.toHaveBeenCalled();
+    } finally { for (const key of Object.keys(integrationEnv)) delete integrationEnv[key]; }
+  });
+});
+
+
+describe("snapshot de automação íntegro", () => {
+  it("rejeita linha inválida em vez de inicializar baseline parcial", () => {
+    expect(() => videoCatalog.buildStrictVideoCatalog('Titulo,Link Youtube,Bikes\nVálido,https://youtu.be/abcDEFG1234,V9 Max\nOutro,link quebrado,V9 Max')).toThrow("invalid_video_snapshot");
+  });
+  it("rejeita vídeo duplicado e cabeçalho incompleto", () => {
+    expect(() => videoCatalog.buildStrictVideoCatalog('Titulo,Link Youtube,Bikes\nVálido,https://youtu.be/abcDEFG1234,V9 Max\nOutro,https://youtube.com/watch?v=abcDEFG1234,V9 Max')).toThrow("invalid_video_snapshot");
+    expect(() => videoCatalog.buildStrictVideoCatalog('Titulo,Link Youtube\nVálido,https://youtu.be/abcDEFG1234')).toThrow("invalid_video_sheet_headers");
   });
 });

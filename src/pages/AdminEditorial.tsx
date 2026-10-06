@@ -922,6 +922,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   const [bikeIds, setBikeIds] = useState<string[]>([]);
   const [transcript, setTranscript] = useState("");
   const [generateCover, setGenerateCover] = useState(false);
+  const [fromSheet, setFromSheet] = useState(false);
   const [createdId, setCreatedId] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -933,7 +934,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
   async function create(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const selected = manualAdminVideo(manualUrl, articleTitle);
+    const selected = manualAdminVideo(manualUrl, fromSheet ? "Vídeo da planilha" : articleTitle);
     if (!selected) {
       setError("Informe um link válido do vídeo e um título.");
       return;
@@ -946,8 +947,8 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
         brief: BriefRow | null;
         reused?: boolean;
       }>(
-        "generate",
-        {
+        fromSheet ? "generate-from-sheet" : "generate",
+        fromSheet ? { youtubeId: selected.videoId } : {
           youtubeId: selected.videoId,
           title: selected.title,
           articleTitle: articleTitle.trim(),
@@ -1009,6 +1010,13 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               </Link>
             </Notice>
           )}
+          <label className="flex items-start gap-3 rounded-xl border border-line p-4">
+            <input type="checkbox" checked={fromSheet} onChange={(e) => setFromSheet(e.target.checked)} className="mt-1 h-4 w-4 accent-emerald-700" />
+            <span><span className="block font-semibold">Usar os dados da planilha e a transcrição do YouTube</span>
+              <span className="text-sm text-muted-foreground">Título e bikes vêm da planilha. A transcrição original é capturada pelo servidor ao gerar.</span>
+            </span>
+          </label>
+          {!fromSheet && <>
           <label className="block text-base font-semibold">
             Título
             <input
@@ -1095,6 +1103,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               placeholder="Cole aqui a transcrição do vídeo."
             />
           </label>
+          </>}
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4">
             <input
               type="checkbox"
