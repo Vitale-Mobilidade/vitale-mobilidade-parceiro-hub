@@ -15,7 +15,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { generateStream, generateInto, stageStream, coverGenerate, coverPreview };\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -25,12 +25,15 @@ let requestDatabase: unknown = {};
 let offlineFetch = vi.fn();
 const integrationEnv: Record<string, string> = {};
 const offlineCapture = vi.fn();
+const offlineCompose = vi.fn();
 const exports: {
   generateStream?: (req: Request, db: unknown, actor: unknown, body: unknown) => Response;
   generateInto?: (...args: unknown[]) => Promise<unknown>;
   stageStream?: (...args: unknown[]) => Response;
   coverGenerate?: (...args: unknown[]) => Promise<Response>;
   coverPreview?: (req: Request, db: unknown, article: unknown) => Promise<Response>;
+  generateAutomaticCover?: (...args: unknown[]) => Promise<unknown>;
+  injectOfflineCover?: (generate: unknown, apply: unknown) => () => void;
   injectOfflineAI?: (mock: ReturnType<typeof vi.fn>) => void;
 } = {};
 runInNewContext(code, {
@@ -46,6 +49,7 @@ runInNewContext(code, {
       "../_shared/editorial-cover.ts": cover,
       "../_shared/editorial-create-input.ts": input,
       "../_shared/video-catalog.ts": videoCatalog,
+      "../_shared/cover-renderer/index.ts": { composeServerCover: (...args: unknown[]) => offlineCompose(...args) },
       "../_shared/youtube-transcript.ts": { ...transcriptAdapter, captureYoutubeTranscript: (...args: unknown[]) => offlineCapture(...args) },
       "../_shared/youtube-oauth.ts": { ...oauthAdapter, youtubeTokenProvider: () => async () => "offline-access-token" },
       "../_shared/bike-sheet.ts": { SHEET_NAME_ALIASES: {} },
@@ -638,5 +642,45 @@ describe("snapshot de automação íntegro", () => {
   it("rejeita vídeo duplicado e cabeçalho incompleto", () => {
     expect(() => videoCatalog.buildStrictVideoCatalog('Titulo,Link Youtube,Bikes\nVálido,https://youtu.be/abcDEFG1234,V9 Max\nOutro,https://youtube.com/watch?v=abcDEFG1234,V9 Max')).toThrow("invalid_video_snapshot");
     expect(() => videoCatalog.buildStrictVideoCatalog('Titulo,Link Youtube\nVálido,https://youtu.be/abcDEFG1234')).toThrow("invalid_video_sheet_headers");
+  });
+});
+
+
+describe("capa obrigatória — mesmo gerador e aplicação, dentro do servidor", () => {
+  const article = { id: "draft", status: "draft", title: "Título exato", revision: 4 };
+  it("gera, compõe e aplica uma vez sem navegador ou checkbox", async () => {
+    const generated = vi.fn(async () => new Response(JSON.stringify({ background: "data:image/png;base64,AA==", title: article.title, revision: 4 })));
+    const updated = { ...article, revision: 5, og_image_url: "private-cover" };
+    const applied = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ article: updated })));
+    offlineCompose.mockResolvedValueOnce({ bytes: new Uint8Array([1,2,3]) });
+    const restore = exports.injectOfflineCover!(generated, applied);
+    try {
+      expect(await exports.generateAutomaticCover!(new Request("http://localhost"), {}, { id: "actor" }, article)).toEqual(updated);
+      expect(generated).toHaveBeenCalledTimes(1);
+      expect(offlineCompose).toHaveBeenLastCalledWith("data:image/png;base64,AA==", article.title);
+      expect(applied).toHaveBeenCalledTimes(1);
+      expect(applied.mock.calls[0][4]).toEqual({ image: "data:image/jpeg;base64,AQID" });
+    } finally { restore(); }
+  });
+  it("falha de provedor não aplica capa nem repete geração", async () => {
+    const generated = vi.fn(async () => new Response("failure", { status: 502 }));
+    const applied = vi.fn();
+    const restore = exports.injectOfflineCover!(generated, applied);
+    try {
+      await expect(exports.generateAutomaticCover!(new Request("http://localhost"), {}, { id: "actor" }, article)).rejects.toThrow("automatic_cover_generation_failed");
+      expect(generated).toHaveBeenCalledTimes(1);
+      expect(applied).not.toHaveBeenCalled();
+    } finally { restore(); }
+  });
+  it("não altera artigo publicado ou título divergente", async () => {
+    const generated = vi.fn(async () => new Response(JSON.stringify({ background: "anything", title: "Outro título", revision: 4 })));
+    const applied = vi.fn();
+    const restore = exports.injectOfflineCover!(generated, applied);
+    try {
+      await expect(exports.generateAutomaticCover!(new Request("http://localhost"), {}, { id: "actor" }, { ...article, status: "published" })).rejects.toThrow("automatic_cover_requires_draft");
+      expect(generated).not.toHaveBeenCalled();
+      await expect(exports.generateAutomaticCover!(new Request("http://localhost"), {}, { id: "actor" }, article)).rejects.toThrow("automatic_cover_response_invalid");
+      expect(applied).not.toHaveBeenCalled();
+    } finally { restore(); }
   });
 });

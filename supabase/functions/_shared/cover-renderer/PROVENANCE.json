@@ -1,0 +1,41 @@
+{
+  "jpeg.js": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/jpeg.js",
+    "sha256": "75295e2fcf96b4f7bb894b3844fdaa8140d63169d28b466b5d5be89d59a7b6e6",
+    "bytes": 1693
+  },
+  "jpeg.wasm": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/jpeg.wasm",
+    "sha256": "019bcef4d864045e9b2df7e39ef6e7f3227d80b08a33742e1438441f2ddc2368",
+    "bytes": 91769
+  },
+  "png.js": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/png.js",
+    "sha256": "0659536a8dd8f892c8346e268b2754b4414fad0ec1e9794dfcde1ba1c804ee02",
+    "bytes": 1142
+  },
+  "png.wasm": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/png.wasm",
+    "sha256": "3687bebda95af7572626ab02c09c60a79f160385abad979dbb494f6b17cda2cf",
+    "bytes": 103776
+  },
+  "font.js": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/font.js",
+    "sha256": "9e75d842608c057045698d6a7cdf5ffd27241b5cdea0391c89a1917b31294524",
+    "bytes": 4157
+  },
+  "font.wasm": {
+    "url": "https://deno.land/x/imagescript@1.3.0/utils/wasm/font.wasm",
+    "sha256": "c244cd87aa57bd3ea39b55fc5d6c891fa2040dae6c5c41c49d9084b8e43919e8",
+    "bytes": 211325
+  },
+  "InterExtraBold.ttf": {
+    "source": "https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/InterVariable.ttf",
+    "source_sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
+    "instance_axes": {
+      "opsz": 14.0,
+      "wght": 800
+    },
+    "sha256": "45047cb8560929d8cc581d66070c1c664c35cf78696fe15d38d064e9edc6631b"
+  }
+}

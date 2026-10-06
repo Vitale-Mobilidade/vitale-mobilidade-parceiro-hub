@@ -52,3 +52,42 @@ Migration privada; secrets YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REF
 | QA | Pass | 55 testes dirigidos + validate; preparação não é prova integrada de produção |
 
 Estado: código preparado localmente para instalação e piloto de artigo no Lovable. NÃO validado em cloud. NÃO concluído o fluxo autônomo de capa/publicação nem liberado cron. Nenhum GO para operação editorial contínua; somente instalação controlada e teste unitário real após autorização de escopo.
+
+## Mudança de escopo solicitada — capa obrigatória no servidor
+
+Usuário exige geração de capa automática, sem marcar checkbox e sem navegador aberto. Classificação estrutural. A limitação anterior de compositor browser deixa de ser escopo aceitável para o novo piloto.
+
+| Perspectiva | Impacto / risco | Dependência / decisão antes da implementação |
+|---|---|---|
+| Produto | Artigo só conclui com capa; crédito adicional de uma imagem | Um piloto; acervo não disparado |
+| CTO | Composição 1280×720 no servidor; CPU/memória/WASM | Assets locais empacotados, dimensão/bytes limitados, smoke real pendente |
+| IA | Reaproveita coverGenerate e modelo/prompt/referências atuais | Não trocar modelo nem chamar imagem em teste offline |
+| Segurança | Decodificar imagem do provedor e carregar font/WASM | Pacote fixado, proveniência/hash/licenças; sem rede na composição; limite antes de decode |
+| UX | Capa obrigatória na entrada automática | Checkbox fica só no manual; mostrar etapa e falha, sem fingir sucesso |
+| CX | Falha de capa conserva artigo e reserva para conferência | Nunca repetir article/cover pagos automaticamente após resultado incerto |
+| Growth | Preservar marca e título exatos; imagem no rascunho | Nenhuma publicação pública no piloto; validar aparência |
+| QA | Testar compositor offline e caminho compartilhado | Testes de bytes/dimensões/fidelidade e revisão de imagem sintética, validate e cloud depois |
+
+Decisão: mover somente regras comuns de quebra de título para helper puro; implementar compositor server com codecs WASM fixados e Inter ExtraBold local licenciado; integrar coverGenerate → composição → coverApply dentro do generateStream no modo da planilha, usado igualmente pelo job. Não introduzir segundo gerador nem dependência de API de renderização paga. Risco residual de runtime Cloud só se resolve no piloto. Rollback por flags/code; preservar fontes/artigos. Sem ativar cron nem publicar conteúdo automaticamente nesta etapa.
+
+## Capa no servidor — preparação implementada e segunda revisão
+
+- generateStream no modo da planilha agora executa coverGenerate (modelo/prompt/referências existentes) → composeServerCover → coverApply (mesmo storage privado e lock de revisão). O job usa o mesmo caminho; nenhum checkbox é enviado/necessário. A interface não chama novamente a geração/composição browser nesse modo.
+- Estado cover_generating salva o ID do artigo antes do custo de imagem; só marca done depois de aplicação confirmada. Falha conserva artigo/capa anterior e reserva em needs_review, sem repetir texto/imagem pagos.
+- Compositor server: recorte proporcional com interpolação, gradiente, marca, Inter ExtraBold e título exato sem truncar; JPG 1280×720 até 4 MB. PNG/JPEG de entrada até 12 MB e 4,2 MP; WebP ou glyph ausente falham explicitamente, sem fallback pago ou perda do título.
+- Fontes/codecs locais fixados e licenciados, hashes em PROVENANCE.json. Assets embutidos em TypeScript, sem fetch/arquivos em runtime; evita depender do bundle de arquivos estáticos/Docker no deploy por API Cloud. Regeneração offline: python3 scripts/build-cover-assets.py.
+- Referência técnica verificada: https://supabase.com/docs/guides/functions/wasm (suporte a WASM e restrição do deploy de static_files via API). Codecs ImageScript 1.3.0 sob opção MIT, somente loaders adaptados para assets embutidos; Inter sob OFL incluída.
+- 66 testes dirigidos aprovados; pnpm validate aprovado (typecheck, 59 regressões, build SSR); lint de código sem erros, mesmos quatro avisos preexistentes de hooks. Testes renderizam PNG/JPEG reais com dados sintéticos offline, sem chamar modelos. Saída visual conferida: título/brand legíveis e sem corte. Não é uma capa real do vídeo piloto.
+
+| Perspectiva | Resultado da preparação da capa | Evidência / limite |
+|---|---|---|
+| Produto | Pass | Capa obrigatória no fluxo automático, apenas um piloto proposto |
+| CTO | Pass | Composição sem navegador/rede, WASM/assets embutidos, armazenamento atual; runtime Cloud ainda pendente |
+| IA | Pass | Mesmo gerador/prompt/referências; título aplicado por código; zero chamadas pagas em testes |
+| Segurança | Pass | Limites antes do decode, assets fixados, fonte/storage privados, sem secrets novos públicos |
+| UX | Pass | Sem checkbox no modo automático; etapa/falha claras; revisão visual offline realizada |
+| CX | Pass | Artigo salvo sobrevive à falha da capa, reserva bloqueia replay pago |
+| Growth | Pass | Marca/título exatos e imagem 1280×720; nenhum conteúdo publicado no piloto |
+| QA | Pass | 66 testes dirigidos, validate e render real offline; teste Cloud não declarado concluído |
+
+Estado atual substitui a limitação de capa browser do escopo anterior: artigo+capa preparados no servidor, ainda não instalados/testados no projeto Lovable. Próxima ação relevante: instalar migration/function/secrets/frontend e gerar um único rascunho com capa, usando os créditos atuais; não ativar cron contínuo nem publicar artigos. Rollback por flags/código, preservando registros.

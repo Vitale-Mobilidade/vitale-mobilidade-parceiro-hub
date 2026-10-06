@@ -1532,6 +1532,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         controller.close();
       };
       let reservedVideoId: string | null = null;
+      let savedAutomaticArticleId: string | null = null;
       try {
         const id = body.youtubeId;
         if (body.action === "generate-from-sheet") {
@@ -1662,7 +1663,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           article = data as EditorialArticle;
         }
         article = await restoreDraftMode(db, actor, article);
-        const generated = await generateInto(
+        let generated = await generateInto(
           db,
           actor,
           article,
@@ -1670,6 +1671,14 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           (step) => send({ type: "progress", step }),
           selectedBikeIds,
         );
+        if (body.action === "generate-from-sheet") {
+          savedAutomaticArticleId = generated.id;
+          const { error: coverStageError } = await db.from("youtube_editorial_sources")
+            .update({ state: "cover_generating", article_id: generated.id }).eq("video_id", id);
+          if (coverStageError) throw new Error("cover_stage_save_failed");
+          send({ type: "progress", step: "Gerando e salvando a capa automaticamente…" });
+          generated = await generateAutomaticCover(req, db, actor, generated);
+        }
         if (reservedVideoId) {
           const { error: completedError } = await db.from("youtube_editorial_sources")
             .update({ state: "done", article_id: generated.id }).eq("video_id", id);
@@ -1684,7 +1693,9 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         }
         console.error("[editorial-admin] generate", errorMessage(e));
         fail(body.action === "generate-from-sheet"
-          ? "O processo automático foi interrompido. Nenhum resumo foi usado. Confira a fonte e o artigo salvo antes de repetir."
+          ? savedAutomaticArticleId
+            ? `O artigo foi salvo (${savedAutomaticArticleId}), mas a capa não foi concluída. Confira o artigo antes de repetir; a geração não será repetida automaticamente.`
+            : "O processo automático foi interrompido. Nenhum resumo foi usado. Confira a fonte e o artigo salvo antes de repetir."
           : stageError(errorMessage(e)));
       }
     },
@@ -1928,6 +1939,24 @@ async function coverGenerate(
     revision: article.revision,
     model: COVER_MODEL,
   });
+}
+
+/** Same image generator and storage/revision guard as the manual flow, entirely server-side. */
+async function generateAutomaticCover(req: Request, db: SupabaseClient, actor: Actor, article: EditorialArticle): Promise<EditorialArticle> {
+  if (article.status !== "draft") throw new Error("automatic_cover_requires_draft");
+  // Load/test compositor before spending image credits. Assets are embedded to support Cloud API deployment.
+  const { composeServerCover } = await import("../_shared/cover-renderer/index.ts");
+  const generated = await coverGenerate(req, db, actor, article);
+  if (!generated.ok) throw new Error("automatic_cover_generation_failed");
+  const payload = await generated.json();
+  if (typeof payload.background !== "string" || payload.title !== article.title || payload.revision !== article.revision)
+    throw new Error("automatic_cover_response_invalid");
+  const composed = await composeServerCover(payload.background, article.title);
+  const applied = await coverApply(req, db, actor, article, { image: `data:image/jpeg;base64,${toBase64(composed.bytes)}` });
+  if (!applied.ok) throw new Error("automatic_cover_apply_failed");
+  const result = await applied.json();
+  if (!result.article?.id || result.article.id !== article.id) throw new Error("automatic_cover_result_invalid");
+  return result.article as EditorialArticle;
 }
 
 /** Authenticated preview of the exact private cover associated with this article. */

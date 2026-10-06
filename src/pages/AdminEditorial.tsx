@@ -959,8 +959,8 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
       );
       savedId = result.article.id;
       setCreatedId(savedId);
-      if (generateCover && !result.reused && result.article.status === "draft") setBusy("Gerando capa…");
-      await applyRequestedArticleCover(result.article, generateCover, result.reused === true);
+      if (!fromSheet && generateCover && !result.reused && result.article.status === "draft") setBusy("Gerando capa…");
+      if (!fromSheet) await applyRequestedArticleCover(result.article, generateCover, result.reused === true);
       await queryClient.invalidateQueries({
         queryKey: ["admin", "editorial-workspace"],
       });
@@ -1104,7 +1104,9 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
             />
           </label>
           </>}
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4">
+          {fromSheet ? <p className="rounded-xl border border-line p-4 text-sm">
+            O artigo e a capa serão gerados automaticamente com IA. Consome créditos de texto e imagem.
+          </p> : <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4">
             <input
               type="checkbox"
               className="mt-1 h-4 w-4 shrink-0 accent-emerald-700"
@@ -1117,7 +1119,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
                 Criar com IA ao gerar o artigo. Consome créditos de imagem.
               </span>
             </span>
-          </label>
+          </label>}
         </fieldset>
         <button
           type="submit"

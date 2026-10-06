@@ -1,7 +1,7 @@
 -- Private original caption evidence and exclusive per-video reservation. No cron activation here.
 create table public.youtube_editorial_sources (
   video_id text primary key check (video_id ~ '^[A-Za-z0-9_-]{11}$'),
-  state text not null check (state in ('capturing', 'generating', 'done', 'needs_review')),
+  state text not null check (state in ('capturing', 'generating', 'cover_generating', 'done', 'needs_review')),
   capture jsonb,
   captured_at timestamptz,
   article_id uuid references public.editorial_articles(id) on delete set null,
