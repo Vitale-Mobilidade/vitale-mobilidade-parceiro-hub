@@ -1796,6 +1796,77 @@ export type Database = {
         }
         Relationships: []
       }
+      youtube_editorial_inventory: {
+        Row: {
+          created_at: string
+          historical: boolean
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          historical: boolean
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          historical?: boolean
+          video_id?: string
+        }
+        Relationships: []
+      }
+      youtube_editorial_snapshot_state: {
+        Row: {
+          initialized: boolean
+          singleton: boolean
+        }
+        Insert: {
+          initialized?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          initialized?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      youtube_editorial_sources: {
+        Row: {
+          article_id: string | null
+          capture: Json | null
+          captured_at: string | null
+          created_at: string
+          created_by: string
+          state: string
+          video_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          capture?: Json | null
+          captured_at?: string | null
+          created_at?: string
+          created_by: string
+          state: string
+          video_id: string
+        }
+        Update: {
+          article_id?: string | null
+          capture?: Json | null
+          captured_at?: string | null
+          created_at?: string
+          created_by?: string
+          state?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_editorial_sources_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1814,6 +1885,10 @@ export type Database = {
       }
       get_published_editorial_index: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
+      ingest_youtube_editorial_snapshot: {
+        Args: { video_ids: string[] }
+        Returns: string
+      }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
         Returns: Json
