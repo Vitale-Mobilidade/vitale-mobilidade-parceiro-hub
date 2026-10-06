@@ -122,6 +122,8 @@ describe("article title and expert prose", () => {
   it("allows qualified observations, useful test evidence and guides without bikes", () => {
     expect(hasEditorialDistance("A suspensão recebeu uma impressão positiva ao longo do percurso.")).toBe(false);
     expect(hasEditorialDistance("A percepção relatada é de alguma redução de força.")).toBe(false);
+    expect(hasEditorialDistance("A locação pode ser uma fonte de renda.")).toBe(false);
+    expect(hasEditorialDistance("Confira a fonte de alimentação do carregador.")).toBe(false);
     expect(hasEditorialDistance("O conforto se destacou nas primeiras impressões.")).toBe(false);
     expect(
       hasEditorialDistance("Na subida com cerca de 130 kg, o painel indicou 33 km/h com auxílio dos pedais."),
@@ -152,6 +154,9 @@ describe("editorial voice — contextual source narration", () => {
 
   it.each([
     "O vídeo mostra como a FT03 se comporta na subida.",
+    "A fonte sustenta a flexibilidade dos períodos de locação.",
+    "A fonte não fornece custos operacionais completos.",
+    "Um site próprio e marketplaces são caminhos citados.",
     "O vídeo apresenta cinco motivos para comprar uma bike elétrica.",
     "Neste vídeo, o apresentador explica o conforto da bike.",
     "Nesse vídeo acompanhamos o trajeto noturno.",
