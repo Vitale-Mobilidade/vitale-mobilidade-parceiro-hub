@@ -1898,6 +1898,8 @@ export type Database = {
         Args: { issued_at: string; signature: string; tick_action: string }
         Returns: Json
       }
+      claim_youtube_editorial_cover: { Args: never; Returns: Json }
+      claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
       dispatch_youtube_editorial_tick: {
         Args: { tick_action: string }
         Returns: number
