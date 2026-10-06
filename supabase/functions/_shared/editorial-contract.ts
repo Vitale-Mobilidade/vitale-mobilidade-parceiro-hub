@@ -210,7 +210,7 @@ export const VIDEO_META_RE =
   /\b(n[eo]ste? v[íi]deo|n[oa] v[íi]deo|o v[íi]deo (mostra|aborda|apresenta|explica|detalha)|durante o v[íi]deo|a grava[cç][aã]o|o conte[úu]do apresenta|apresentad[oa]s? no v[íi]deo)\b/i;
 /** Detect source narration, not vocabulary or qualified observations about the subject. */
 export const SOURCE_DISTANCE_RE =
-  /\b(?:na|pela|segundo a|conforme a) avalia[cç][aã]o (?:da vitale|pr[áa]tica|do v[íi]deo)|\b(?:segundo|conforme|de acordo com) (?:a transcri[cç][aã]o|o v[íi]deo|a grava[cç][aã]o|o material (?:analisado|fornecido))\b|\b(?:a transcri[cç][aã]o|o material (?:avaliado|analisado|fornecido)|a avalia[cç][aã]o(?: da vitale)?) (?:indica|aponta|ressalta|mostra|descreve|relata|menciona|explica|apresenta|aborda|destaca)\b|\b(?:dados|informa[cç][õo]es) fornecid[oa]s? (?:na transcri[cç][aã]o|pelo v[íi]deo)/i;
+  /\b(?:na|pela|segundo a|conforme a) avalia[cç][aã]o (?:da vitale|pr[áa]tica|do v[íi]deo)|\b(?:segundo|conforme|de acordo com) (?:a transcri[cç][aã]o|o v[íi]deo|a grava[cç][aã]o|o material (?:analisado|fornecido))\b|\b(?:a transcri[cç][aã]o|o material (?:avaliado|analisado|fornecido)|a avalia[cç][aã]o(?: da vitale)?) (?:indica|aponta|ressalta|mostra|descreve|relata|menciona|explica|apresenta|aborda|destaca|associa)\b|\b(?:dados|informa[cç][õo]es) fornecid[oa]s? (?:na transcri[cç][aã]o|pelo v[íi]deo)/i;
 const SOURCE_NARRATION_RE =
   /\b(?:neste|nesse|no|durante o|ao longo do) v[íi]deo\b|\b(?:o v[íi]deo|a grava[cç][aã]o) (?:mostra|aborda|apresenta|explica|detalha|relata|menciona|descreve|destaca|acompanha|come[cç]a|termina)\b|\b(?:apresentad[oa]s?|mostrad[oa]s?|mencionad[oa]s?|relatad[oa]s?) (?:no v[íi]deo|na grava[cç][aã]o|na transcri[cç][aã]o)\b|\b(?:o condutor|o apresentador|quem conduzia) (?:disse|conta|relata|observou|achou|considerou)\b/i;
 export function hasEditorialDistance(value: string): boolean {
@@ -221,7 +221,9 @@ export function hasEditorialDistance(value: string): boolean {
 
 /** Removes sentences with prices (commercial data comes only from entities) and any link. */
 export function sanitizeEditorialText(value: string): string {
+  // Currency separators are not sentence boundaries. Protect only dots followed by digits.
   return value
+    .replace(/R\$\s*\d[\d.,]*/g, (amount) => amount.replace(/\.(?=\d)/g, "\uE000"))
     .replace(/\[([^\]]+)\]\((?:[^)]+)\)/g, "$1")
     .replace(/https?:\/\/\S+/gi, "")
     .split(/\n/)
@@ -233,6 +235,7 @@ export function sanitizeEditorialText(value: string): string {
     )
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
+    .replace(/\uE000/g, ".")
     .trim();
 }
 

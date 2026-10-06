@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  sanitizeEditorialText,
   parseArticleBlocks,
   parseCompilerOutput,
   slugifyEditorialTitle,
@@ -190,5 +191,20 @@ describe("compiler output isolation", () => {
   });
   it("creates stable ASCII slugs", () => {
     expect(slugifyEditorialTitle("V8 Ultra: subida e comparação! ")).toBe("v8-ultra-subida-e-comparacao");
+  });
+});
+
+
+describe("preços com separadores não deixam fragmentos", () => {
+  it("remove a frase inteira com preços em milhares e preserva a próxima", () => {
+    expect(sanitizeEditorialText("A oferta cita **R$ 5.959 no Pix ou R$ 6.472 parcelados em dez vezes**. Confira o anúncio atual."))
+      .toBe("Confira o anúncio atual.");
+  });
+  it("preserva medidas e frases sem preços", () => {
+    expect(sanitizeEditorialText("Motor de 1.000 W. Bateria de 15,6 Ah. Valor de R$ 6.472,50. Confira."))
+      .toBe("Motor de 1.000 W. Bateria de 15,6 Ah. Confira.");
+  });
+  it("detecta a transcrição como narradora", () => {
+    expect(hasEditorialDistance("A transcrição associa os 1.000 W a uma dispensa de burocracia." )).toBe(true);
   });
 });
