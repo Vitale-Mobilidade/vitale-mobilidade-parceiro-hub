@@ -37,3 +37,9 @@ Pré-revisão8: Produto Pass mesmo fluxo automático; CTO Pass checkpoint reduz 
 
 
 Após reforço do usuário (seguir somente fluxo diário), nenhum botão individual será usado. Migration coloca as duas correções conhecidas em rewrite_pending; cron privado faz lease e recompila com captura íntegra validada, pelo writer existente. Capa existente da VL20 é preservada e H1 mantido; GT2000 segue para cover_pending. Não há loop geral de retentativa, acervo publicado ou vídeo externo. Refinamento recebe os fragmentos concretos rejeitados para evitar substituições equivalentes.
+
+
+Cron real após41491f5/260742e: GT2000 texto revisado e capa concluída sem nova falha de CPU; V9MaxDuasBaterias texto criado/cover_pending. VL20 falhou voz após refinamento: rascunho anterior preservado, estado needs_review, não sucesso. Preparada edição final limitada aos campos ainda reprovados, pela IA, mantendo evidências e detalhes; se falhar mantém bloqueio e grava fragmentos privados para diagnóstico. Migration retoma somente falhas determinadas de voz, drafts do inventário novo autorizado; nada incerto/capa/acervo publicado. Mesmas8perspectivas GO condicionado a testes e cron real. Drain configurado a cada minuto, dispatch parado não chama Edge sem pendência.
+
+
+Correção de rascunhos salvos usa o mesmo generateInto em modo repairStoredVoice: parte do output salvo e pede à IA somente campos reprovados; não paga uma nova redação integral nem capa. Gate mantém fidelidade/identidade/evidência/slug/capa, não há prosa escrita pelo operador. Ampliada detecção para preço citado/foi citada velocidade/são classificados/segundo cadastro. Reconciliar somente drafts não históricos com essas expressões ou último run de vozfailed, uma vez na migration, sem replay incerto.

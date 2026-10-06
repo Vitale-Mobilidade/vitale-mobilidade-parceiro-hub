@@ -800,3 +800,45 @@ describe("fresh automatic cover checkpoint", () => {
     } finally { restore(); }
   });
 });
+
+
+describe("bounded automatic voice correction", () => {
+  it("edits only rejected fields through AI, keeps literal evidence and ignores arbitrary field IDs", async () => {
+    const draft = { title: "Negócios com bicicletas", summary: "Receita e custos determinam o resultado.", sections: [
+      { heading: "Custos", body: "A fonte sustenta que a margem precisa cobrir custos e taxas.", sourceExcerpt: "A margem de venda precisa cobrir custos e taxas." },
+      { heading: "Locação", body: "A ocupação não é garantida e receita não é lucro líquido.", sourceExcerpt: "ocupação não é garantida e receita não é lucro líquido" },
+    ], faq: [] };
+    const mock = vi.fn().mockResolvedValueOnce(draft).mockResolvedValueOnce(draft).mockResolvedValueOnce({ edits: [
+      { id: 7, value: "A margem precisa cobrir custos e taxas." },
+      { id: 0, value: "Título indevido" }, { id: 999, value: "Outro campo" },
+    ] });
+    exports.injectOfflineAI!(mock);
+    const db = regenerationDatabase();
+    const result = await exports.stageStream!(new Request("http://localhost"), db, { id: "actor" }, { id: coverArticleId, revision: 12 }, "article").text();
+    expect(result).toContain('"type":"done"');
+    expect(mock).toHaveBeenCalledTimes(3);
+    expect(mock.mock.calls[2][2]).toBe("vitale_voice_patch");
+    const blocks = db.patches[0].blocks as { text?: string; sourceExcerpt?: string }[];
+    expect(blocks.find(block => block.text)?.text).toBe("A margem precisa cobrir custos e taxas.");
+    expect(blocks.find(block => block.text)?.sourceExcerpt).toBe(draft.sections[0].sourceExcerpt);
+    expect(db.patches[0].title).not.toBe("Título indevido");
+  });
+});
+
+
+it("repairs a stored draft through one AI field edit without regenerating its article or cover", async () => {
+  const article = { ...regenerationArticle, status: "draft", foundation_required: false, title: "Negócios com bicicletas", summary: "Receita e custos determinam o resultado.", faq: [], blocks: [
+    { type: "text", heading: "Custos", text: "A fonte sustenta que a margem precisa cobrir custos e taxas.", sourceExcerpt: "A margem de venda precisa cobrir custos e taxas." },
+    { type: "text", heading: "Locação", text: "A ocupação não é garantida e receita não é lucro líquido.", sourceExcerpt: "ocupação não é garantida e receita não é lucro líquido" },
+  ] };
+  const mock = vi.fn().mockResolvedValue({ edits: [{ id: 7, value: "A margem precisa cobrir custos e taxas." }] });
+  exports.injectOfflineAI!(mock);
+  const db = regenerationDatabase(article);
+  const result = await exports.generateInto!(db, { id: "actor" }, article, { youtube_id: article.video_id, title: "Negócios", transcript: businessTranscript }, () => {}, ["ft03"], true, true);
+  expect(result).toBeTruthy();
+  expect(mock).toHaveBeenCalledTimes(1);
+  expect(mock.mock.calls[0][2]).toBe("vitale_voice_patch");
+  expect(db.patches[0].title).toBe(article.title);
+  expect(db.patches[0].og_image_url).toBe(article.og_image_url);
+  expect(JSON.stringify(db.patches[0].blocks)).not.toContain("A fonte sustenta");
+});
