@@ -6,6 +6,7 @@ import * as contract from "../../supabase/functions/_shared/editorial-contract";
 import * as foundation from "../../supabase/functions/_shared/editorial-foundation";
 import * as automation from "../../supabase/functions/_shared/editorial-automation";
 import * as cover from "../../supabase/functions/_shared/editorial-cover";
+import * as backlog from "../../supabase/functions/_shared/youtube-backlog";
 import * as videoCatalog from "../../supabase/functions/_shared/video-catalog";
 import * as transcriptAdapter from "../../supabase/functions/_shared/youtube-transcript";
 import * as oauthAdapter from "../../supabase/functions/_shared/youtube-oauth";
@@ -50,6 +51,7 @@ runInNewContext(code, {
       "../_shared/editorial-cover.ts": cover,
       "../_shared/editorial-create-input.ts": input,
       "../_shared/video-catalog.ts": videoCatalog,
+      "../_shared/youtube-backlog.ts": backlog,
       "../_shared/cover-renderer/index.ts": { composeServerCover: (...args: unknown[]) => offlineCompose(...args) },
       "../_shared/youtube-transcript.ts": { ...transcriptAdapter, captureYoutubeTranscript: (...args: unknown[]) => offlineCapture(...args) },
       "../_shared/youtube-oauth.ts": { ...oauthAdapter, youtubeTokenProvider: () => async () => "offline-access-token" },
@@ -620,15 +622,20 @@ describe("entrada horária privada", () => {
       expect(await response.json()).toEqual({ status: "disabled" });
     } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
   });
-  it("primeiro snapshot transacional não dispara geração do histórico", async () => {
+  it("automação não gera vídeos que já têm artigo", async () => {
     Object.assign(integrationEnv, { YOUTUBE_WORKER_KEY: "a".repeat(40), YOUTUBE_HOURLY_ENABLED: "true", YOUTUBE_EDITORIAL_ENABLED: "true", YOUTUBE_EDITORIAL_ACTOR_ID: "owner" });
     offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max'));
     offlineCapture.mockClear();
     const rpc = vi.fn(async () => ({ data: null, error: null }));
-    requestDatabase = { rpc, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { active: true, role: "admin" }, error: null }) }) }) }) };
+    requestDatabase = { rpc, from: (table: string) => {
+      if (table === "editorial_admin_memberships") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { active: true, role: "admin" }, error: null }) }) }) };
+      if (table === "editorial_articles") return { select: () => ({ neq: async () => ({ data: [{ video_id: "abcDEFG1234", title: "Título independente" }], error: null }) }) };
+      if (table === "editorial_videos") return { select: async () => ({ data: [], error: null }), upsert: async () => ({ error: null }) };
+      return { insert: async () => ({ error: null }) };
+    } };
     try {
       const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-key": "a".repeat(40) }, body: JSON.stringify({ action: "youtube-hourly" }) }));
-      expect(await response.json()).toEqual({ status: "idle_or_baseline_saved" });
+      expect(await response.json()).toEqual({ status: "idle" });
       expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
       expect(offlineCapture).not.toHaveBeenCalled();
     } finally { for (const key of Object.keys(integrationEnv)) delete integrationEnv[key]; }
@@ -719,7 +726,9 @@ describe("Atualização geral de vídeos no Admin", () => {
       auth: { getUser: async () => ({ data: { user: { id: "actor" } }, error: null }) },
       from: (table: string) => table === "editorial_admin_memberships"
         ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { role, active }, error: null }) }) }) }
-        : { upsert, insert: async () => ({ error: null }) }, rpc,
+        : table === "editorial_articles" ? { select: () => ({ neq: async () => ({ data: [], error: null }) }) }
+        : { select: async () => ({ data: [], error: null }), upsert,
+            update: () => ({ in: async () => ({ error: null }) }), insert: async () => ({ error: null }) }, rpc,
     };
     return { upsert, rpc };
   }

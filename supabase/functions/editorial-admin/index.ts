@@ -1,3 +1,4 @@
+import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
@@ -37,6 +38,40 @@ import {
   outlineGate,
   sourceFingerprint,
 } from "../_shared/editorial-foundation.ts";
+
+/** Sheet reconciliation is shared by hourly, manual Admin sync and initial backlog activation. */
+async function refreshYoutubeQueue(db: SupabaseClient, actor: Actor) {
+  const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
+  if (!snapshot.ok) throw new Error("video_sheet_unavailable");
+  const videos = buildStrictVideoCatalog(await snapshot.text());
+  if (!videos.length) throw new Error("invalid_video_snapshot");
+  const [articles, stored] = await Promise.all([
+    db.from("editorial_articles").select("video_id,title").neq("status", "archived"),
+    db.from("editorial_videos").select("youtube_id,title"),
+  ]);
+  if (articles.error || stored.error) throw new Error("article_reconciliation_failed");
+  const pending = independentVideoQueue(videos, articles.data ?? [], stored.data ?? []);
+  const { error: writeError } = await db.from("editorial_videos").upsert(videos.map(video => ({
+    youtube_id: video.videoId, title: video.title, youtube_url: video.url,
+    thumbnail_url: video.thumbnail, published_on: video.date,
+    primary_bike_id: video.bikeIds[0] ?? null, related_bike_ids: video.bikeIds.slice(1),
+    content_type: detectContentType(video.title), status: "active",
+    updated_by: actor.id, updated_at: new Date().toISOString(),
+  })), { onConflict: "youtube_id" });
+  if (writeError) throw new Error("video_catalog_write_failed");
+  const ingestion = await db.rpc("ingest_youtube_editorial_snapshot", { video_ids: videos.map(video => video.videoId) });
+  if (ingestion.error) throw new Error("snapshot_ingestion_failed");
+  // User explicitly authorized all missing sheet videos. Historical rows with articles remain excluded.
+  if (pending.length) {
+    const { error } = await db.from("youtube_editorial_inventory").update({ historical: false })
+      .in("video_id", pending.map(video => video.videoId));
+    if (error) throw new Error("backlog_enqueue_failed");
+  }
+  const next = await db.rpc("ingest_youtube_editorial_snapshot", { video_ids: videos.map(video => video.videoId) });
+  if (next.error) throw new Error("snapshot_ingestion_failed");
+  await log(db, actor, "video_catalog_synced", "system", "video-catalog", { count: videos.length, pending: pending.length });
+  return { videos, candidate: next.data, pending: pending.length, enabled: Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true" };
+}
 
 /** Differentiation corpus: published + written drafts + ready outlines, current article excluded, one entry per article. */
 async function readDiversityCorpus(db: SupabaseClient, currentId: string) {
@@ -2088,7 +2123,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   // Scheduled runs use a dedicated private key, never a public API key or a service token in the browser.
-  if (body.action === "youtube-hourly") {
+  if (body.action === "youtube-hourly" || body.action === "youtube-drain") {
     const expected = Deno.env.get("YOUTUBE_WORKER_KEY") ?? "";
     const provided = req.headers.get("x-youtube-worker-key") ?? "";
     if (expected.length < 32 || expected !== provided) return json(req, { error: "unauthorized" }, 403);
@@ -2100,15 +2135,19 @@ Deno.serve(async (req) => {
     if (membershipError || !membership?.active || membership.role !== "admin")
       return json(req, { error: "worker_owner_not_configured" }, 503);
     try {
-      const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
-      if (!snapshot.ok) throw new Error("video_sheet_unavailable");
-      const videos = buildStrictVideoCatalog(await snapshot.text());
-      if (!videos.length) throw new Error("invalid_video_snapshot");
-      const { data: candidate, error: ingestionError } = await db.rpc("ingest_youtube_editorial_snapshot", {
-        video_ids: videos.map((video) => video.videoId),
-      });
-      if (ingestionError) throw new Error("snapshot_ingestion_failed");
-      if (!candidate) return json(req, { status: "idle_or_baseline_saved" });
+      const owner: Actor = { id: ownerId, role: "admin", email: null };
+      let candidate: string | null;
+      if (body.action === "youtube-hourly") {
+        candidate = (await refreshYoutubeQueue(db, owner)).candidate;
+      } else {
+        const inventory = await db.from("youtube_editorial_inventory").select("video_id").eq("historical", false);
+        if (inventory.error) throw new Error("queue_read_failed");
+        if (!(inventory.data ?? []).length) return json(req, { status: "idle" });
+        const next = await db.rpc("ingest_youtube_editorial_snapshot", { video_ids: (inventory.data ?? []).map(row => row.video_id) });
+        if (next.error) throw new Error("queue_read_failed");
+        candidate = next.data;
+      }
+      if (!candidate) return json(req, { status: "idle" });
       // The same authenticated server generator is used by the Admin pilot and hourly job.
       return generateStream(req, db, { id: ownerId, role: "admin", email: null }, {
         action: "generate-from-sheet", youtubeId: candidate,
@@ -2124,25 +2163,26 @@ Deno.serve(async (req) => {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
     if (action === "sync-video-catalog") {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode sincronizar toda a operação." }, 403);
-      const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
-      if (!snapshot.ok) return json(req, { error: "Não foi possível atualizar a planilha de vídeos." }, 503);
-      const videos = buildStrictVideoCatalog(await snapshot.text());
-      if (!videos.length) return json(req, { error: "A planilha de vídeos está vazia ou inválida." }, 422);
-      // Only sheet metadata is refreshed. Original transcripts and article bodies are never overwritten.
-      const { error: writeError } = await db.from("editorial_videos").upsert(videos.map(video => ({
-        youtube_id: video.videoId, title: video.title, youtube_url: video.url,
-        thumbnail_url: video.thumbnail, published_on: video.date,
-        primary_bike_id: video.bikeIds[0] ?? null, related_bike_ids: video.bikeIds.slice(1),
-        content_type: detectContentType(video.title), status: "active",
-        updated_by: actor.id, updated_at: new Date().toISOString(),
-      })), { onConflict: "youtube_id" });
-      if (writeError) return json(req, { error: "Não foi possível salvar a atualização dos vídeos." }, 503);
-      const { data: candidate, error: ingestionError } = await db.rpc("ingest_youtube_editorial_snapshot", {
-        video_ids: videos.map(video => video.videoId),
+      try { return json(req, await refreshYoutubeQueue(db, actor)); }
+      catch { return json(req, { error: "Não foi possível concluir a sincronização da planilha e da fila." }, 503); }
+    }
+
+    if (action === "youtube-status") {
+      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler a fila automática." }, 403);
+      const [inventory, sources, articles] = await Promise.all([
+        db.from("youtube_editorial_inventory").select("video_id").eq("historical", false),
+        db.from("youtube_editorial_sources").select("video_id,state,article_id"),
+        db.from("editorial_articles").select("video_id").neq("status", "archived"),
+      ]);
+      if (inventory.error || sources.error || articles.error) throw new Error("queue_read_failed");
+      const occupied = new Set([...(articles.data ?? []).map(row => row.video_id), ...(sources.data ?? []).map(row => row.video_id)]);
+      return json(req, {
+        enabled: Deno.env.get("YOUTUBE_HOURLY_ENABLED") === "true",
+        queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length,
+        running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating"].includes(row.state)).length,
+        review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
+        done: (sources.data ?? []).filter(row => row.state === "done").length,
       });
-      if (ingestionError) return json(req, { error: "Vídeos atualizados, mas a fila não pôde ser consultada." }, 503);
-      await log(db, actor, "video_catalog_synced", "system", "video-catalog", { count: videos.length });
-      return json(req, { videos, candidate, enabled: Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true" });
     }
     if (action === "overview") {
       const [bikes, sync, videos, videosWithTranscript, articles, failures] = await Promise.all([

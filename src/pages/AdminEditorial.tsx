@@ -93,6 +93,11 @@ export function AdminOverviewPage() {
   return <AdminShell>{(role) => <Overview role={role} />}</AdminShell>;
 }
 function Overview({ role }: { role: AdminRole }) {
+  const youtube = useQuery({
+    queryKey: ["admin", "youtube-status"],
+    queryFn: () => adminCall<{ enabled: boolean; queued: number; running: number; review: number; done: number }>("youtube-status"),
+    enabled: role === "admin", refetchInterval: 30_000, retry: false,
+  });
   const overview = useQuery({
     queryKey: ["admin", "overview"],
     queryFn: () => adminCall<AdminOverview>("overview"),
@@ -114,6 +119,14 @@ function Overview({ role }: { role: AdminRole }) {
     <>
       <Heading title="Visão geral" detail="O que precisa da atenção da equipe hoje." />
       {error && <Notice danger>{error}</Notice>}
+      {role === "admin" && <section className={`${PANEL} mb-5`} aria-label="Artigos automáticos">
+        <h2 className="text-lg font-semibold">Artigos automáticos</h2>
+        {youtube.data ? <>
+          <p className="mt-2 text-sm">{youtube.data.enabled ? "Busca horária ativada" : "Busca horária desativada"} · Pendentes na fila: <strong>{youtube.data.queued}</strong> · Em processamento: <strong>{youtube.data.running}</strong> · Concluídos: <strong>{youtube.data.done}</strong></p>
+          <p className="mt-2 text-sm text-muted-foreground">A fila prepara artigo e capa automaticamente. Os resultados aparecem em Artigos como rascunhos.</p>
+          {youtube.data.review > 0 && <Notice danger>{youtube.data.review} execução(ões) precisam de conferência. Consulte Artigos e Logs; a IA não será repetida automaticamente.</Notice>}
+        </> : <p className="mt-2 text-sm" role={youtube.error ? "alert" : "status"}>{youtube.error ? "Não foi possível consultar a fila automática." : "Consultando fila…"}</p>}
+      </section>}
       {!data ? (
         <p aria-busy="true">Carregando operação…</p>
       ) : (
