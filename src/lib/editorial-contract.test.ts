@@ -137,7 +137,6 @@ describe("editorial voice — contextual source narration", () => {
     "Gravar vídeo durante o trajeto exige um suporte firme para a câmera.",
     "Uma câmera com boa estabilização melhora a qualidade do vídeo.",
     "A transcrição automática pode errar nomes de modelos.",
-    "A bike foi apresentada como uma alternativa para deslocamentos urbanos.",
     "A FT03 foi usada em trajetos noturnos no Morumbi.",
     "Nas primeiras impressões, o banco pareceu confortável.",
     "Nas configurações avaliadas, as duas bikes usam baterias de 48 V.",
@@ -154,6 +153,11 @@ describe("editorial voice — contextual source narration", () => {
 
   it.each([
     "O vídeo mostra como a FT03 se comporta na subida.",
+    "A bike foi apresentada como uma alternativa para deslocamentos urbanos.",
+    "A UFOFAST é apresentada como uma marca brasileira.",
+    "O conjunto Logan foi avaliado como suficiente.",
+    "As setas foram consideradas visíveis.",
+    "Não foi apresentada uma classificação específica de resistência à água.",
     "A fonte sustenta a flexibilidade dos períodos de locação.",
     "A fonte não fornece custos operacionais completos.",
     "Um site próprio e marketplaces são caminhos citados.",

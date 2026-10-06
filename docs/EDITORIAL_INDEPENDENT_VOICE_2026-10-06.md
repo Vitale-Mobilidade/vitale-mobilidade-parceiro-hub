@@ -14,3 +14,6 @@ Limite encontrado na auditoria somente leitura: 45 de 107 publicados têm ao men
 ## Retomada com créditos — revisão automática
 
 A geração real revelou “A fonte sustenta” e “caminhos citados”, variantes não cobertas pelo detector. Correção estrutural pequena: prompt final e detector passam a rejeitá-las, preservando “fonte de renda/alimentação”. O artigo será recompilado pela IA do próprio projeto usando a transcrição salva; nenhuma redação manual, nova capa ou alteração dos publicados. Pré-revisão: Produto, CTO, IA, Segurança, UX, Growth, CX e QA aprovam esse escopo; risco mitigado por teste de falsos positivos, compilação com revisão e cron suspenso até conferir a saída. Rollback: reverter o commit; manter jobs pausados.
+
+
+Conferência do segundo resultado detectou passivas de relato (avaliado/consideradas/apresentada como) e comentário sobre classificação ausente. Detector e direção final ampliados para bloquear esses casos, mantendo resultados concretos de painel/carga e limitações reais. Mesma pré-revisão oito perspectivas aprova; fila pausada durante instalação e correção automática dos dois outputs anteriores.
