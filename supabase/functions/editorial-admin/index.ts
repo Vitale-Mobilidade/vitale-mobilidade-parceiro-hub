@@ -333,7 +333,7 @@ async function aiStructured(
           continue;
         }
         if (useChat) {
-          const choice = event.choices?.[0];
+          const choice = (event.choices as { delta?: { content?: unknown }; finish_reason?: unknown }[] | undefined)?.[0];
           if (typeof choice?.delta?.content === "string") text += choice.delta.content;
           if (choice?.finish_reason === "length") throw new Error("ai_response_incomplete");
           if (choice?.finish_reason === "content_filter") throw new Error("ai_failed");
