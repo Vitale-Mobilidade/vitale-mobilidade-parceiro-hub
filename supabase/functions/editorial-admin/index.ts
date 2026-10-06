@@ -1527,7 +1527,7 @@ function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]
       article.published_at || !source || source.state !== "needs_review" ||
       (source.article_id && source.article_id !== article.id) || !runs.length ||
       runs.some(run => run.status !== "failed" || run.error_code !== "ai_http_400")) return false;
-  const capture = source.capture;
+  const capture = source.capture as Record<string, unknown> | null;
   if (!capture || capture.source !== "youtube_captions" || capture.videoId !== article.video_id ||
       capture.channelId !== VITALE_YOUTUBE_CHANNEL || typeof capture.originalVtt !== "string" ||
       typeof capture.transcript !== "string" || capture.transcript.length < 200) return false;
@@ -2534,7 +2534,7 @@ Deno.serve(async (req) => {
           );
         let coverFile = "";
         try {
-          coverFile = new URL(article.og_image_url).searchParams.get("file") ?? "";
+          coverFile = new URL(article.og_image_url ?? "").searchParams.get("file") ?? "";
         } catch {
           /* invalid cover URL */
         }
