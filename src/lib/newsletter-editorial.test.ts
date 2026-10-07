@@ -201,3 +201,37 @@ describe("newsletter price pauta", () => {
     ).toEqual([]);
   });
 });
+
+it("accepts only typographic whitespace/case differences in a contiguous source quote", () => {
+  expect(() =>
+    validateNewsletterEvidence(
+      {
+        ...draft,
+        curiosity: {
+          ...draft.curiosity,
+          evidence: source.text.toUpperCase().replace(/ /g, "\n"),
+        },
+        sections: [
+          {
+            ...draft.sections[0],
+            evidence: [source.text.toUpperCase().replace(/ /g, "\n")],
+          },
+        ],
+      },
+      [source],
+    ),
+  ).not.toThrow();
+  expect(() =>
+    validateNewsletterEvidence(
+      {
+        ...draft,
+        curiosity: {
+          ...draft.curiosity,
+          evidence:
+            "A escolha começa com autonomia garantida em qualquer trajeto.",
+        },
+      },
+      [source],
+    ),
+  ).toThrow("curiosity_invalid");
+});
