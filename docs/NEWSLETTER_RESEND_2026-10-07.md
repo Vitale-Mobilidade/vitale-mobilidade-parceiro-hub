@@ -121,3 +121,8 @@ Rollback: pausar pelo painel /admin/newsletter (desativa settings e cron); prese
 ### Bloqueio detectado na checagem final do worker
 
 Após ativação condicional, a sonda real request10029 retornou503 resend_network. Agenda imediatamente pausada (enabled=false,cron_active=false), sem campanhas disparadas. Diagnóstico: fetch nativo invocado com receiver ResendNewsletter, incompatível com Workers. Correção local chama o transporte com globalThis e teste exige esse receiver. A conclusão Pass operacional acima fica suspensa até nova sonda HTTP200 e reativação confirmada. Custo acumulado11,8créditos.
+
+
+### Correção publicada e ativação final
+
+PR7 integrado, commit7dee5e01d150ed9d7e9f9f98a198f857894d5103, deployment53733b00-c13b-45b8-995b-8cda6b6b01df. Sonda10033 ainda atingiu versão anterior durante publicação; mantivemos cron pausado. Após atualização, sonda10036 retornouHTTP200 {ok:true,due:false}: servidor conseguiu validar provedor e respeitou quarta-feira fora da janela. Sem novos emails. Reativação confirmada enabled=true,cron_active=true,19elegíveis,0campanhas. Risco material de transporte resolvido; oito perspectivas voltam a Pass com a limitação da primeira edição já registrada. Regressão transporte10testes e pnpm validate passaram após correção.
