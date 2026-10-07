@@ -89,3 +89,30 @@ Diagnóstico de transporte: publicação cc9 confirmada por hash/chunk público 
 Revisão estrutural — autocorreção necessária após diagnóstico real: Produto/IA exigem agente que repare rascunhos, não operador reescrevendo; CTO/Operação limitam o writer inteiro a120s, dentro do dispatch180s; Segurança preserva fontes, validação literal e revisão independente na tentativa final, sem retries de auth/quota/rede; UX mostra o orçamento no painel; Growth preserva voz editorial; QA verifica máximo de4 chamadas e rejeição final. Decisão: no máximo uma correção de conteúdo com feedback, sem loop ilimitado e sem envio se ainda reprovado. Aspas externas/estilo tipográfico podem normalizar; palavras e números não podem mudar. Custo base2 chamadas, máximo4; modelo/escopo já autorizado.
 
 Revisão prévia adicional: provar runtime publicado com Mac bloqueado exige uma prévia pelo worker já assinado. Produto/CX recomendam prévia sem disparo; CTO reutiliza pipeline existente, assinatura e lease; Segurança exige validar assinatura ANTES de ler o modo, sem dados de destinatários, sem habilitar rotina nem chamar Resend; IA mantém gates e orçamento; UX preservada; Growth conserva UTMs; QA exige unsigned403 e prova de zero chamadas Resend/campaign. Decisão: header x-newsletter-mode=preview apenas em requisição já autenticada pelo signer privado; retornar edição/HTML para auditoria restrita do operador. Não criar nova chave/permissão/RPC, não alterar cron. Rollback remover o ramo e manter automação pausada.
+
+## Implantação concluída — 07/10/2026
+
+Release de código: PR8–PR12, runtime 3a33c54fcf8408a6f35d35b9752c702e1025d4b2. Migration 20261007233000 aplicada e registrada uma vez. A validação inicial encontrou timeout, truncamento e evidências inválidas; não houve envio por esses erros. A versão final faz no máximo uma autocorreção com feedback, quatro chamadas de IA e120s no writer inteiro, sem repetir erros de transporte/auth/quota. Conteúdo continua bloqueado se a validação ou revisão final falhar.
+
+Prova do próprio servidor publicado: requisição privada assinada 10142, HTTP200, ok=true e preview=true. Este caminho invoca automaticNewsletter, o redator real e o revisor, antes de produzir HTML. Não é conteúdo escrito no chat nem execução com mocks. HTML original em artifacts/newsletter-agent-proof.html; nenhuma campanha/contato/envio criado pela validação.
+
+Assunto produzido: #1 — Banco reto, banho de roda e sete jeitos de fazer a bike trabalhar
+Curiosidade: para-lama da VL20 e água nas costas, sustentada por fonte literal. Artigos: comparativo S20/V9; análise VL20; guia de negócios do acervo. Vídeos: GT2000/preços e apresentação das ferramentas/variedades. Destaque BW02 distinto de V9Max DuasBaterias, V9Max e S8 das quedas. Três artigos e dois vídeos, no máximo um comparativo e associações de bikes diferentes nas pautas escolhidas. Quiz presente. Histórico paginado exclui URLs/títulos efetivamente enviados e busca todo o acervo sem corte de30dias.
+
+Auditoria do HTML:29 links,28 destinos editoriais com utm_source=vitale_newsletter, utm_medium=email, utm_campaign=giro_1, utm_content=segmento/seção; único link sem UTMs é o descadastro nativo assinado do Resend. Imagens preservadas, HTML25559bytes. GA4 existente recebe a URL da visita conforme consentimento; Quiz preserva a atribuição. UTMs de YouTube não prometem relatório externo de cliques.
+
+Retomada: enabled=true, cron ativo, last_error=null, lease livre, zero campanhas, próxima edição#1. Probe normal10151 HTTP200 {ok:true,due:false} confirma conexão Resend no runtime e ausência de disparo fora da janela. Agenda app e SQL: segunda/quinta10–12h SãoPaulo; próximo início08/10/2026 às10h. Prévia não consome sequência nem substitui pauta gerada na janela real. Nenhum novo teste de e-mail enviado nesta revisão.
+
+### Revisão posterior das oito perspectivas
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Agente publicado, acervo e variedade, três leituras opcionais |
+| CTO | Pass | Runtime e migration confirmados; assinatura/lease preservados |
+| IA | Pass | Geração real aprovada com evidência e revisão; reparo limitado |
+| Segurança | Pass | Sem PII em UTMs/IA; prévia assinada não envia nem cria campanha |
+| UX/UI | Pass | Layout aprovado preservado, cards/fotos/tags/Quiz e destaque distinto |
+| CX/Operação | Pass | Agenda reativada sem erro, próximo#1, nenhuma campanha de teste |
+| Growth | Pass | Todos os28 links editoriais rastreáveis, parâmetros de destino preservados |
+| PMO/QA | Pass | 38 testes direcionados, pnpm validate59 regressões/types/build, lint/diff; probes reais200 |
+
+Rollback: pausar newsletter; reverter app, mantendo histórico; coordenar agenda SQL caso volte ao release anterior. Custo adicional do uso do agente Lovable para diagnóstico nesta revisão:7,0 créditos reportados (3,5+1,9+1,6), além do consumo de IA das validações e da futura redação/revisão. Não houve gasto com geração de imagens nem mudança de DNS. O Mac bloqueou a validação visual nova; a prova final veio do servidor assinado. A aprovação do formato visual anterior foi preservada e o conteúdo final está nos artefatos.
