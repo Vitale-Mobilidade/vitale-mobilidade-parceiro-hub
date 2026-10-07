@@ -12,19 +12,12 @@ import {
   Link,
 } from "@tanstack/react-router";
 import NotFound from "@/pages/NotFound";
-import {
-  captureQuizAttribution,
-  preserveCampaignSearch,
-} from "@/lib/quiz-attribution";
+import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import appCss from "../styles.css?url";
-import { GTM_SNIPPET } from "@/lib/gtm-script";
-import { CONSENT_BOOTSTRAP } from "@/lib/consent";
-import { ConsentBanner } from "@/components/site/ConsentBanner";
 
-const TITLE =
-  "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
+const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
 const DESCRIPTION =
   "Plataforma para quem quer escolher uma bike elétrica, entender preços e acompanhar o histórico de modelos no Brasil.";
 
@@ -53,46 +46,39 @@ const SITE_JSONLD = {
   publisher: { "@id": "https://vitalemobilidade.com/#organization" },
 };
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
-  {
-    search: { middlewares: [preserveCampaignSearch] },
-    beforeLoad: () => {
-      // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
-      if (
-        typeof window !== "undefined" &&
-        !window.location.pathname.startsWith("/admin")
-      ) {
-        captureQuizAttribution();
-      }
-    },
-    head: () => ({
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-        { title: TITLE },
-        { name: "description", content: DESCRIPTION },
-        { name: "author", content: "Vitale Mobilidade" },
-        { name: "robots", content: "index, follow, max-image-preview:large" },
-        { property: "og:locale", content: "pt_BR" },
-        { property: "og:site_name", content: "Vitale Mobilidade" },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "icon", type: "image/png", href: "/favicon.png" },
-      ],
-      scripts: [
-        { children: CONSENT_BOOTSTRAP },
-        { children: GTM_SNIPPET },
-        { type: "application/ld+json", children: JSON.stringify(ORG_JSONLD) },
-        { type: "application/ld+json", children: JSON.stringify(SITE_JSONLD) },
-      ],
-    }),
-    shellComponent: RootShell,
-    component: RootComponent,
-    notFoundComponent: NotFound,
-    errorComponent: RootError,
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  search: { middlewares: [preserveCampaignSearch] },
+  beforeLoad: () => {
+    // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+      captureQuizAttribution();
+    }
   },
-);
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { name: "author", content: "Vitale Mobilidade" },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:site_name", content: "Vitale Mobilidade" },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+    ],
+    scripts: [
+      { type: "application/ld+json", children: JSON.stringify(ORG_JSONLD) },
+      { type: "application/ld+json", children: JSON.stringify(SITE_JSONLD) },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFound,
+  errorComponent: RootError,
+});
 
 // Emit the exact mobile picture source before framework modulepreloads, so the
 // critical image does not wait behind the hydration graph on constrained networks.
@@ -137,8 +123,7 @@ function RootComponent() {
   const excluded = path.startsWith("/quiz");
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
-    if (!window.location.pathname.startsWith("/admin"))
-      captureQuizAttribution();
+    if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
   }, [href]);
   return (
     <QueryClientProvider client={router.options.context.queryClient}>
@@ -153,7 +138,6 @@ function RootComponent() {
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
       {!excluded && <HotPipeWidget />}
-      {!path.startsWith("/admin") && <ConsentBanner />}
     </QueryClientProvider>
   );
 }
