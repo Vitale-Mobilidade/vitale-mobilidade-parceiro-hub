@@ -140,7 +140,7 @@ function Overview({ role }: { role: AdminRole }) {
               ["Artigos publicados", data.articles.published ?? 0],
               ["Rascunhos", data.articles.draft ?? 0],
               ["Bikes no catálogo", data.bikes],
-              ["Erros de geração", data.generationErrors],
+              ["Falhas no histórico", data.generationErrors],
             ].map(([label, value]) => (
               <div key={label} className={PANEL}>
                 <p className="text-sm text-muted-foreground">{label}</p>

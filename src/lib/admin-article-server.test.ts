@@ -16,7 +16,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineWriter(mock) { const previous = generateInto; generateInto = mock; return () => { generateInto = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -42,6 +42,7 @@ const exports: {
   finishQueuedRewrite?: (...args: unknown[]) => Promise<Response>;
   generateAutomaticCover?: (...args: unknown[]) => Promise<unknown>;
   injectOfflineCover?: (generate: unknown, apply: unknown) => () => void;
+  injectOfflineWriter?: (mock: ReturnType<typeof vi.fn>) => () => void;
   injectOfflineAI?: (mock: ReturnType<typeof vi.fn>) => void;
 } = {};
 runInNewContext(code, {
@@ -989,4 +990,38 @@ it("Admin separates queued publication from actively leased work", async () => {
   } };
   const req = new Request("https://test.invalid", { method: "POST", headers: { Authorization: "Bearer offline-token", "Content-Type": "application/json" }, body: JSON.stringify({ action: "youtube-status" }) });
   expect(await (await servedHandler(req)).json()).toMatchObject({ queued: 3, running: 1, done: 1, enabled: true });
+});
+
+
+it("a newly written factual correction still receives the full voice refinement", async () => {
+  const article = { ...regenerationArticle, status: "draft", foundation_required: false, title: "Negócios com bicicletas", summary: "Receita e custos determinam o resultado.", faq: [], blocks: [{ type: "text", heading: "Custos", text: "Corpo anterior." }] };
+  const narrated = { title: article.title, summary: article.summary, sections: [
+    { heading: "Custos", body: "A fonte sustenta que a margem precisa cobrir custos e taxas.", sourceExcerpt: "A margem de venda precisa cobrir custos e taxas." },
+    { heading: "Locação", body: "A ocupação não é garantida e receita não é lucro líquido.", sourceExcerpt: "ocupação não é garantida e receita não é lucro líquido" },
+  ], faq: [] };
+  const direct = { ...narrated, sections: [{ ...narrated.sections[0], body: "A margem precisa cobrir custos e taxas." }, narrated.sections[1]] };
+  const mock = vi.fn().mockResolvedValueOnce(narrated).mockResolvedValueOnce(direct); exports.injectOfflineAI!(mock);
+  const db = regenerationDatabase(article);
+  await exports.generateInto!(db, { id: "actor" }, article, { youtube_id: article.video_id, title: "Negócios", transcript: businessTranscript }, () => {}, ["ft03"], true, true, ["Corrigir o dado não sustentado"]);
+  expect(mock.mock.calls.map(call => call[2])).toEqual(["vitale_article", "vitale_rewrite"]);
+  expect(JSON.stringify(db.patches[0].blocks)).not.toContain("A fonte sustenta");
+  expect(db.patches[0].title).toBe(article.title); expect(db.patches[0].og_image_url).toBe(article.og_image_url);
+});
+
+
+it("a distinct grounded title reuses the paid background through the real cover-render queue", async () => {
+  const transcript = "A autonomia depende do percurso.";
+  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 4, title: "Título anterior", primary_bike_id: null, related_bike_ids: [], blocks: [{ type: "text", text: "Corpo." }] };
+  const capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationQa: { pass: false, articleRevision: 4, sourceKey: foundation.sourceFingerprint(transcript), issues: ["Similaridade narrativa material com o artigo existente."] }, coverBackground: { path: "draft/backgrounds/paid.png", mime: "image/png", title: article.title } };
+  const writes: Record<string, unknown>[] = [];
+  const db = { from: (table: string) => {
+    const data = table === "editorial_articles" ? article : table === "editorial_videos" ? { transcript } : { capture };
+    const chain = { select: () => chain, eq: () => chain, maybeSingle: async () => ({ data, error: null }), update: (patch: Record<string, unknown>) => { writes.push(patch); return chain; }, then: (resolve: (value: unknown) => unknown) => Promise.resolve({ error: null }).then(resolve) }; return chain;
+  } };
+  const writer = vi.fn(async (..._args: unknown[]) => ({ ...article, title: "Novo recorte da autonomia" })); const restore = exports.injectOfflineWriter!(writer);
+  try {
+    expect(await (await exports.finishQueuedRewrite!(new Request("http://localhost"), db, { id: "owner" }, { article_id: article.id, video_id: article.video_id })).json()).toMatchObject({ status: "cover_render_pending" });
+    expect(writer.mock.calls[0][6]).toBe(false);
+    expect(writes[0]).toMatchObject({ state: "cover_render_pending", capture: { coverBackground: { path: capture.coverBackground.path, title: "Novo recorte da autonomia" } } });
+  } finally { restore(); }
 });
