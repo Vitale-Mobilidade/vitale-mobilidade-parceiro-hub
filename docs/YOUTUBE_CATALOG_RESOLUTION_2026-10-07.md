@@ -32,3 +32,13 @@ Decisão: resolver apenas tokens pendentes por igualdade normalizada com nome ou
 | PMO | Pass | 80 testes editoriais; pnpm validate com 59 regressões, typecheck e build passou. |
 
 Conflito: operação automática versus associação incorreta. Decisão: consultar catálogo e manter bloqueio em ambiguidades; sem fallback aproximado. Validação produtiva permanece pendente até implantação e execução habitual do cron.
+
+## Evidência produtiva final
+- Implantação exclusiva editorial-admin: Deno check aprovado, Lovable 0,8 crédito; commit 96bca22, integrado em f3f1fba.
+- Atualização automática de dependência feita pelo ambiente Lovable foi revertida em e8d5690, preservando as versões anteriores; alterações independentes do usuário no Code Editor foram preservadas.
+- Sem chamada manual de geração, dispatch, publicação ou alteração de dados/cron.
+- Cron reconheceu `s20_pro` + `v20_max`, registrou 07/10/2026 (corrigida pelo usuário) e capturou 8.742 caracteres da transcrição.
+- Artigo 0f2d9ce3-80a4-413b-b18e-8919bdbdb3aa: texto → capa → composição → QA → publicado às 15:16:11 BRT. Fonte em estado done; QA automatic-publication-v5 pass=true, issues=[], diversidade94, corpus115 publicados.
+- Título: Zurbe S20 Pro ou Zurbe V20 Max: banco, aro e bagageiro definem a escolha.
+- URL: https://vitalemobilidade.com/conteudos/zurbe-s20-pro-ou-zurbe-v20-max-banco-aro-e-bagageiro-definem-a-escolha
+- Revisão posterior das oito perspectivas: Pass, confirmada pela execução produtiva integral. Risco residual: nomes inexistentes ou ambíguos continuam corretamente bloqueados antes da geração.
