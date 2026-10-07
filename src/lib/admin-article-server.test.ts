@@ -978,3 +978,15 @@ describe("literal proof repair never rewrites the article", () => {
     expect(from).not.toHaveBeenCalled();
   });
 });
+
+
+it("Admin separates queued publication from actively leased work", async () => {
+  requestDatabase = { auth: { getUser: async () => ({ data: { user: { id: "actor" } }, error: null }) }, from: (table: string) => {
+    const data = table === "editorial_admin_memberships" ? { role: "admin", active: true } : table === "youtube_editorial_worker_settings" ? { enabled: true } : table === "youtube_editorial_sources" ? [
+      { video_id: "one", state: "publish_pending" }, { video_id: "two", state: "rewrite_pending" }, { video_id: "three", state: "publishing" }, { video_id: "four", state: "done" }
+    ] : table === "youtube_editorial_inventory" ? ["one", "two", "three", "four", "five"].map(video_id => ({ video_id })) : [];
+    const chain = { select: () => chain, eq: () => chain, neq: () => chain, maybeSingle: async () => ({ data, error: null }), then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve) }; return chain;
+  } };
+  const req = new Request("https://test.invalid", { method: "POST", headers: { Authorization: "Bearer offline-token", "Content-Type": "application/json" }, body: JSON.stringify({ action: "youtube-status" }) });
+  expect(await (await servedHandler(req)).json()).toMatchObject({ queued: 3, running: 1, done: 1, enabled: true });
+});

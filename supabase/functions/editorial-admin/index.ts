@@ -2427,8 +2427,8 @@ Deno.serve(async (req) => {
       const occupied = new Set([...(articles.data ?? []).map(row => row.video_id), ...(sources.data ?? []).map(row => row.video_id)]);
       return json(req, {
         enabled: settings.data?.enabled === true,
-        queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length,
-        running: (sources.data ?? []).filter(row => ["capturing", "generating", "rewrite_pending", "cover_pending", "cover_generating", "cover_render_pending", "cover_rendering", "publish_pending", "publishing"].includes(row.state)).length,
+        queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length + (sources.data ?? []).filter(row => ["rewrite_pending", "cover_pending", "cover_render_pending", "publish_pending"].includes(row.state)).length,
+        running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating", "cover_rendering", "publishing"].includes(row.state)).length,
         review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
         done: (sources.data ?? []).filter(row => row.state === "done").length,
       });
