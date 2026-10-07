@@ -24,7 +24,7 @@ const content = {
 };
 const config: NewsletterSettings = {
   enabled: true,
-  from_email: "newsletter@news.vitalemobilidade.com",
+  from_email: "newsletter@news.hotpipe.com.br",
   reply_to: "guilherme@hotpipe.com.br",
   segments: { general: id },
   last_error: null,
@@ -88,6 +88,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 describe("newsletter authorization and dispatch recovery", () => {
   it("rejects unsigned worker requests before database access", async () => {
@@ -180,7 +181,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     };
     const request = vi.fn(async (url: string, init: RequestInit) => {
       if (url.endsWith(`/segments/${id}`))
-        return json({ id, name: "Vitale newsletter · general" });
+        return json({ id, name: "Vitale newsletter" });
       if (url.includes("/contacts/mock%40example.com")) return json(contact);
       if (url.includes(`/segments/${id}/contacts`))
         return json({ data: [contact], has_more: false });
@@ -206,39 +207,43 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect(updates.some((x) => x.change.status === "uncertain")).toBe(true);
     expect(updates.some((x) => x.change.enabled === false)).toBe(true);
   });
-  it("submits a frozen, consented audience once inside the sending window", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-09T13:10:00Z"));
-    const { db, updates } = fakeDb(true);
-    const contact = {
-      id,
-      email: "mock@example.com",
-      first_name: "Mock",
-      unsubscribed: false,
-    };
-    const request = vi.fn(async (url: string, init: RequestInit) => {
-      if (url.includes(`/segments/${id}/contacts`))
-        return json({ data: [contact], has_more: false });
-      if (url.endsWith(`/segments/${id}`) && init.method === "GET")
-        return json({ id, name: "Vitale newsletter · general" });
-      if (url.includes("/contacts/mock%40example.com")) return json(contact);
-      return json({ id });
-    });
-    await processNewsletterCampaign(
-      db,
-      new ResendNewsletter("test", request as typeof fetch, 0),
-      config,
-      { ...campaign },
-      "lease",
-    );
-    expect(
-      request.mock.calls.filter(
-        ([u, i]) => u.endsWith(`/broadcasts/${id}/send`) && i.method === "POST",
-      ),
-    ).toHaveLength(1);
-    expect(updates.some((x) => x.change.status === "submitting")).toBe(true);
-    expect(updates.some((x) => x.change.status === "submitted")).toBe(true);
-  });
+  it.each(["general", "radar", "content"] as const)(
+    "submits the %s cohort once using the same dedicated provider segment",
+    async (segment) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-10-09T13:10:00Z"));
+      const { db, updates } = fakeDb(true);
+      const contact = {
+        id,
+        email: "mock@example.com",
+        first_name: "Mock",
+        unsubscribed: false,
+      };
+      const request = vi.fn(async (url: string, init: RequestInit) => {
+        if (url.includes(`/segments/${id}/contacts`))
+          return json({ data: [contact], has_more: false });
+        if (url.endsWith(`/segments/${id}`) && init.method === "GET")
+          return json({ id, name: "Vitale newsletter" });
+        if (url.includes("/contacts/mock%40example.com")) return json(contact);
+        return json({ id });
+      });
+      await processNewsletterCampaign(
+        db,
+        new ResendNewsletter("test", request as typeof fetch, 0),
+        config,
+        { ...campaign, segment },
+        "lease",
+      );
+      expect(
+        request.mock.calls.filter(
+          ([u, i]) =>
+            u.endsWith(`/broadcasts/${id}/send`) && i.method === "POST",
+        ),
+      ).toHaveLength(1);
+      expect(updates.some((x) => x.change.status === "submitting")).toBe(true);
+      expect(updates.some((x) => x.change.status === "submitted")).toBe(true);
+    },
+  );
   it("pauses after an uncertain send acknowledgement without retrying", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-09T13:10:00Z"));
@@ -253,7 +258,7 @@ describe("newsletter authorization and dispatch recovery", () => {
       if (url.includes(`/segments/${id}/contacts`))
         return json({ data: [contact], has_more: false });
       if (url.endsWith(`/segments/${id}`) && init.method === "GET")
-        return json({ id, name: "Vitale newsletter · general" });
+        return json({ id, name: "Vitale newsletter" });
       if (url.includes("/contacts/mock%40example.com")) return json(contact);
       if (url.endsWith(`/broadcasts/${id}/send`))
         throw new Error("lost acknowledgement");
@@ -307,7 +312,7 @@ describe("newsletter authorization and dispatch recovery", () => {
       if (url.includes(`/segments/${id}/contacts`))
         return json({ data: [contact], has_more: false });
       if (url.endsWith(`/segments/${id}`) && init.method === "GET")
-        return json({ id, name: "Vitale newsletter · general" });
+        return json({ id, name: "Vitale newsletter" });
       if (url.includes("/contacts/mock%40example.com")) return json(contact);
       return json({ id });
     });
@@ -324,5 +329,66 @@ describe("newsletter authorization and dispatch recovery", () => {
       request.mock.calls.filter(([u]) => u.endsWith(`/broadcasts/${id}/send`)),
     ).toHaveLength(1);
     expect(updates.at(-1)?.change.status).toBe("submitting");
+  });
+  it("keeps the shared segment frozen while a prior broadcast is sending", async () => {
+    vi.stubEnv("RESEND_API_KEY", "synthetic-only");
+    vi.stubEnv("LOVABLE_API_KEY", "");
+    const nextCohort = vi.fn();
+    const query = {
+      eq: () => query,
+      then: (resolve: (v: unknown) => unknown) =>
+        Promise.resolve({
+          data: [{ ...campaign, status: "submitted", resend_id: id }],
+          error: null,
+        }).then(resolve),
+      in: nextCohort,
+    };
+    const db = {
+      from: vi.fn((table: string) =>
+        table === "newsletter_settings"
+          ? {
+              select: () => ({
+                eq: () => ({
+                  single: async () => ({ data: config, error: null }),
+                }),
+              }),
+            }
+          : { select: () => query },
+      ),
+      rpc: vi.fn(async (name: string) => ({
+        data:
+          name === "newsletter_authorize"
+            ? true
+            : name === "newsletter_acquire"
+              ? id
+              : null,
+        error: null,
+      })),
+    };
+    createClient.mockReturnValue(db);
+    const request = vi.fn(async (url: string) => {
+      if (url.includes("/domains?"))
+        return json({
+          data: [{ id, name: "news.hotpipe.com.br", status: "verified" }],
+          has_more: false,
+        });
+      if (url.includes(`/domains/${id}`))
+        return json({ capabilities: { sending: "enabled" } });
+      return json({ status: "sending" });
+    });
+    vi.stubGlobal("fetch", request);
+    const response = await newsletterTick(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: {
+          "x-worker-signature": "synthetic",
+          "x-worker-issued-at": "1791403200",
+        },
+      }),
+    );
+    expect(await response.json()).toEqual({ ok: true, waiting: true });
+    expect(nextCohort).not.toHaveBeenCalled();
+    expect(request.mock.calls).toHaveLength(3);
+    expect(db.rpc).toHaveBeenLastCalledWith("newsletter_release", { tok: id });
   });
 });

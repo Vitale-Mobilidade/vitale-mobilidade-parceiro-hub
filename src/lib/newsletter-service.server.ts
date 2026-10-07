@@ -116,18 +116,20 @@ async function ensureSegment(
   db: SupabaseClient,
   resend: ResendNewsletter,
   s: NewsletterSettings,
-  group: NewsletterSegment,
+  _group: NewsletterSegment,
 ) {
-  if (s.segments[group]) {
+  // One dedicated provider segment, reused only after the previous broadcast finishes.
+  // Declared-interest cohorts remain exclusive in the private ledger.
+  const segmentName = "Vitale newsletter";
+  if (s.segments.general) {
     const found = await resend.call<{ id: string; name: string }>(
-      `/segments/${s.segments[group]}`,
+      `/segments/${s.segments.general}`,
     );
-    if (found.name !== `Vitale newsletter · ${group}`)
-      throw new Error("segment_not_dedicated");
-    return s.segments[group]!;
+    if (found.name !== segmentName) throw new Error("segment_not_dedicated");
+    return s.segments.general!;
   }
   const list = await resend.list<{ id: string; name: string }>("/segments");
-  let id = list.find((x) => x.name === `Vitale newsletter · ${group}`)?.id;
+  let id = list.find((x) => x.name === segmentName)?.id;
   if (!id) {
     const usage = await resend.call<ResendUsage>("/usage");
     if (
@@ -136,12 +138,12 @@ async function ensureSegment(
     )
       throw new Error("free_segment_limit");
     const created = await resend.call<{ id: string }>("/segments", "POST", {
-      name: `Vitale newsletter · ${group}`,
+      name: segmentName,
     });
     id = created.id;
   }
   if (!id || !UUID.test(id)) throw new Error("invalid_segment_ack");
-  s.segments[group] = id;
+  s.segments = Object.fromEntries(GROUPS.map((group) => [group, id]));
   await must(
     db
       .from("newsletter_settings")
