@@ -45,3 +45,19 @@ Publicação depende de nova autorização específica para V2: merge/deploy e s
 
 
 Validação final local: 24 testes direcionados em três arquivos passaram, incluindo rejeição factual, falha de gateway, escaping, imagens e quedas antigas/sem confirmação, além de prevenção de regeneração em ticks após preparação. Lint dos oito arquivos alterados passou. pnpm validate passou (59 regressões, TypeScript e build). Nenhum envio, chamada paga ao modelo, migration ou publicação V2 realizados.
+
+## Revisão de curadoria e visual — feedback do responsável
+
+Problema: duas leituras e dois vídeos comparativos tornam a edição repetitiva. Nova decisão consolidada (estrutural, mesmas oito perspectivas): taxonomia visível por peça, no máximo um comparativo no conjunto artigo+vídeo, sem repetir a mesma peça adaptada, prioridade à diversidade e depois à data. Usar tipo editorial existente quando específico, heurística conservadora pelo título quando ausente; nunca rotular apresentação como teste prático. Sem variedade recente suficiente, reduzir itens, não preencher com comparativos nem inventar classificação. Acrescentar Quiz com CTA e arte própria existente; Radar deve mostrar foto/modelo, preço de referência datado, preço verificado e queda calculada em cards, não texto genérico apenas. Produto/Growth priorizam diversidade sobre estrita ordem cronológica; IA/Segurança exigem rótulos conservadores e fatos verificáveis; Arquitetura/Operação preservam fontes/RLS/cron; UX exige cards mobile e tags legíveis; QA exige casos de duplicação e seleção escassa. Produção segue sem mudança até liberação.
+
+
+## Agenda e edicoes independentes (pedido final)
+
+Segunda e quinta, duas vezes por semana, janela10-12h Sao Paulo. App e migration additive20261007233000 preparados, nao aplicados. Respiro70h acomoda a janela de2h sem atrasar o envio seguinte; nao aumenta frequencia. PostgreSQL17 isolado aceitou quinta e rejeitou sexta. Migration historica preservada. Rollback: pausar e coordenar reversao da funcao/app.
+
+Curadoria exclui titulos usados nas duas edicoes anteriores. Curiosidade inicial com sourceId e citacao literal obrigatorios: ate3frases, sem repetir ideia anterior ou depender de continuidade. Leitura server-only das transcricoes dos videos selecionados, max4fontes6000caracteres cada, sem dados dos assinantes. Se a transcricao faltar, usa fonte publicada e nao inventa experiencia de video. Revisor verifica curiosidade e diversidade de abertura, alem de fatos.
+
+Quiz com arte e CTA existentes. Radar em cards: foto, referencia datada, preco verificado, percentual calculado, barras proporcionais e historico. Preview usa snapshot real V9Max6273 (04/10) para5889 (07/10,19h07),queda6,1%. Pauta da preview:1comparativo,1guia de rotina,1video de precos,1teste pratico. Sem chamada paga IA/envio/publicacao nesta revisao. As oito perspectivas mantem Pass para preparacao local; geracao/inbox reais continuam gates de release.
+
+
+Validacao posterior deste ajuste:29testes direcionados passaram; pnpm validate passou (59regressoes, types/build), lint passou, SQL17 isolado validou quinta/sexta. Sete imagens reais carregadas na preview, desktop800 e mobile390 sem overflow. Todos os oito pareceres Pass para preparacao: Produto (diversidade/autonomia); CTO (migration additive/servicos privados); IA (curiosidade sustentada/revisor/memoria); Seguranca (somente transcricoes selecionadas no servidor); UX (tags/cards/Quiz/mobile); Operacao (agenda coerente e respiro); Growth (CTAs/maiores quedas datadas); PMO (testes/documentacao/rollback). Publicacao/migration/geracao real/inbox seguem pendentes de liberacao do novo escopo, sem declarar implantacao.

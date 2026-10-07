@@ -19,10 +19,16 @@ import {
   selectNewsletterDrops,
   type NewsletterDropBike,
 } from "./newsletter-pauta";
+import {
+  curateNewsletter,
+  newsletterCategoryLabel,
+} from "./newsletter-curation";
+import { newsletterTranscripts } from "./newsletter-transcripts.server";
 import { createHash } from "node:crypto";
 export async function automaticNewsletter(
   weekday: number,
-  since = new Date(Date.now() - (weekday === 5 ? 4 : 3) * 86_400_000),
+  since = new Date(Date.now() - (weekday === 4 ? 3 : 4) * 86_400_000),
+  previousEditions: NewsletterContent[] = [],
 ): Promise<{ content: NewsletterContent; fingerprint: string }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -32,12 +38,19 @@ export async function automaticNewsletter(
   ]);
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
-  const freshArticles = articles.filter(
-    (a) => a.publishedAt && Date.parse(a.publishedAt) > since.getTime(),
+  const curated = curateNewsletter(
+    articles,
+    videos,
+    since,
+    new Date(),
+    previousEditions.flatMap((p) =>
+      [...p.articles, ...p.videos].map((x) => x.title),
+    ),
   );
-  const pickedArticles = [...(freshArticles.length ? freshArticles : articles)]
-    .sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""))
-    .slice(0, 2);
+  const pickedArticles = curated.articles;
+  let pickedVideos = curated.videos;
+  if (!pickedArticles.length || !pickedVideos.length)
+    throw new Error("newsletter_sources_insufficient_diversity");
   const drops = selectNewsletterDrops(
     radar.data.active as NewsletterDropBike[],
     since,
@@ -65,12 +78,15 @@ export async function automaticNewsletter(
   );
   if (fullArticles.some((a) => !a))
     throw new Error("newsletter_sources_unavailable");
-  const freshVideos = videos.filter(
-    (v) => v.date && Date.parse(v.date) > since.getTime(),
+  pickedVideos = pickedVideos.filter(
+    (v) => !fullArticles.some((a) => a?.videoId === v.videoId),
   );
-  const pickedVideos = [...(freshVideos.length ? freshVideos : videos)]
-    .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
-    .slice(0, 2);
+  if (!pickedVideos.length)
+    throw new Error("newsletter_sources_insufficient_diversity");
+  const transcripts = await newsletterTranscripts([
+    ...fullArticles.map((a) => a!.videoId),
+    ...pickedVideos.map((v) => v.videoId),
+  ]);
   const brl = (n: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -89,6 +105,7 @@ export async function automaticNewsletter(
       text: [
         a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
         a.summary,
+        transcripts.get(fullArticles[i]!.videoId) ?? "",
         ...fullArticles[i]!.blocks.filter((b) => !b.planned).map((b) =>
           [b.heading, b.text].filter(Boolean).join("\n"),
         ),
@@ -125,13 +142,18 @@ export async function automaticNewsletter(
     ...pickedVideos.map((v, i) => ({
       id: `video-${i}`,
       title: v.title,
-      text: `Título do vídeo: ${v.title}. Data informada no catálogo: ${v.date ?? "não informada"}. Sem transcrição fornecida: a única pauta confirmada é a do título. Não afirmar resultados, recomendações ou testes feitos no vídeo.`,
+      text: `Título do vídeo: ${v.title}. Data informada no catálogo: ${v.date ?? "não informada"}. ${transcripts.has(v.videoId) ? "Transcrição da fonte: " + transcripts.get(v.videoId) : "Sem transcrição fornecida: a única pauta confirmada é a do título. Não afirmar resultados, recomendações ou testes feitos no vídeo."}`,
     })),
   ];
   const fingerprint = createHash("sha256")
     .update(JSON.stringify([sources, drops]))
     .digest("hex");
-  const draft = await writeNewsletter(sources, weekday);
+  const draft = await writeNewsletter(
+    sources,
+    weekday,
+    undefined,
+    previousEditions.map((p) => p.curiosity?.text ?? p.intro),
+  );
   const enrich = (id: string) => {
     const s = draft.sections.find((s) => s.id === id)!;
     return { paragraphs: s.paragraphs, bullets: s.bullets };
@@ -140,11 +162,13 @@ export async function automaticNewsletter(
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
   const content: NewsletterContent = {
     subject: draft.subject,
+    curiosity: draft.curiosity,
     headline: draft.headline,
     preheader: draft.preheader,
     intro: draft.opening.join("\n\n"),
     articles: pickedArticles.map((a, i) => ({
       title: a.title,
+      category: newsletterCategoryLabel(a.title, a.contentType),
       url: `https://vitalemobilidade.com/conteudos/${a.slug}`,
       ...image(a.ogImageUrl),
       ...enrich(`article-${i}`),
@@ -156,6 +180,18 @@ export async function automaticNewsletter(
     },
     drops: drops.map((d) => ({
       title: d.name,
+      previousPrice: brl(d.previous),
+      currentPrice: brl(d.current),
+      priceRatio: d.current / d.previous,
+      dropLabel: `−${d.percent.toFixed(1).replace(".", ",")}%`,
+      checkedAt: new Date(d.verifiedAt).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+      }),
+      image:
+        persistentBikeImage(
+          d.id,
+          process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL,
+        ) ?? undefined,
       url: `https://vitalemobilidade.com/radar/${d.id}`,
       paragraphs: [
         `De ${brl(d.previous)} (${d.baselineDate}) para ${brl(d.current)}: queda de ${d.percent.toFixed(1).replace(".", ",")}%. Verificação: ${new Date(d.verifiedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}. Confira o preço vigente no Radar.`,
@@ -174,6 +210,7 @@ export async function automaticNewsletter(
     },
     videos: pickedVideos.map((v, i) => ({
       title: v.title,
+      category: newsletterCategoryLabel(v.title),
       url: v.url,
       ...image(v.thumbnail),
       ...enrich(`video-${i}`),

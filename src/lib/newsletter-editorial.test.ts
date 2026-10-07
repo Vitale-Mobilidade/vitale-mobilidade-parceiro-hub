@@ -14,6 +14,7 @@ const source = {
 const sentence =
   "A escolha começa pelas necessidades do trajeto e pelos dados da ficha publicada. ";
 const draft: NewsletterDraft = {
+  curiosity: { text: source.text, sourceId: source.id, evidence: source.text },
   subject: "O que observar antes da próxima escolha",
   preheader: "Leituras e modelos para entender melhor a sua escolha.",
   headline: "Escolher uma bike começa pelo trajeto",
@@ -51,6 +52,20 @@ describe("newsletter editorial", () => {
       ),
     ).toThrow("source_mismatch");
   });
+  it("rejects a curiosity without literal evidence", () => {
+    expect(() =>
+      validateNewsletterEvidence(
+        {
+          ...draft,
+          curiosity: {
+            ...draft.curiosity,
+            evidence: "A curiosity absent from this source.",
+          },
+        },
+        [source],
+      ),
+    ).toThrow("curiosity_invalid");
+  });
   it("never accepts a draft rejected by the independent reviewer", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "mock-key");
     const response = (value: unknown) =>
@@ -64,6 +79,7 @@ describe("newsletter editorial", () => {
     const sources = [0, 1, 2, 3].map((i) => ({ ...source, id: `source-${i}` }));
     const reviewedDraft = {
       ...draft,
+      curiosity: { ...draft.curiosity, sourceId: sources[0].id },
       sections: sources.map((s) => ({
         ...draft.sections[0],
         id: s.id,

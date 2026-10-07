@@ -421,18 +421,27 @@ export async function newsletterTick(request: Request): Promise<Response> {
       : await must(
           db
             .from("newsletter_campaigns")
-            .select("created_at")
+            .select("created_at,payload")
             .lt("edition_day", window.day)
             .in("status", ["sent", "submitted"])
             .order("created_at", { ascending: false })
-            .limit(1),
+            .limit(6),
         );
     const since = previous?.[0]?.created_at
       ? new Date(previous[0].created_at)
       : undefined;
     const edition = saved
       ? { content: saved.payload.content, fingerprint: saved.fingerprint }
-      : await automaticNewsletter(window.weekday, since);
+      : await automaticNewsletter(
+          window.weekday,
+          since,
+          (previous ?? [])
+            .map(
+              (p: { payload: { content: NewsletterContent } }) =>
+                p.payload.content,
+            )
+            .filter(Boolean),
+        );
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {

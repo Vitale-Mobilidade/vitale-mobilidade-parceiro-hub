@@ -54,7 +54,7 @@ function NewsletterOperation() {
         });
         setNotice(
           name === "enable"
-            ? "Automação ativada para segunda e sexta às 10h. Nenhum lote antecipado."
+            ? "Automação ativada para segunda e quinta às 10h. Nenhum lote antecipado."
             : name === "pause"
               ? "Automação pausada. Campanhas já aceitas pelo Resend podem continuar em entrega."
               : "Configuração atualizada.",
@@ -103,7 +103,7 @@ function NewsletterOperation() {
       <div>
         <h1 className="text-2xl font-bold">Newsletter</h1>
         <p className="mt-2 text-muted-foreground">
-          Artigos, Radar, bike em destaque e vídeos recentes. Segunda e sexta,
+          Artigos, Radar, bike em destaque e vídeos recentes. Segunda e quinta,
           às 10h de São Paulo.
         </p>
       </div>
