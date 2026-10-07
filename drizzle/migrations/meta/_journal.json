@@ -29,6 +29,13 @@
       "when": 1791327596889,
       "tag": "0003_youtube_cover_background_checkpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791332198745,
+      "tag": "0004_youtube_automatic_publication",
+      "breakpoints": true
     }
   ]
 }
