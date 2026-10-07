@@ -138,6 +138,10 @@ async function structured(
     clearTimeout(timer);
   }
 }
+// Model quotes may differ from transcripts only by whitespace, quote style or case.
+const norm = (t: string) =>
+  t.normalize("NFC").replace(/[\u2018\u2019\u201c\u201d"']/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+const quoted = (hay: string, q: string) => norm(q).length >= 12 && norm(hay).includes(norm(q));
 export function validateNewsletterEvidence(
   draft: NewsletterDraft,
   sources: NewsletterEvidence[],
@@ -153,7 +157,7 @@ export function validateNewsletterEvidence(
   );
   if (
     !curiositySource ||
-    !curiositySource.text.includes(draft.curiosity.evidence)
+    !quoted(curiositySource.text, draft.curiosity.evidence)
   )
     throw new Error("newsletter_writer_curiosity_invalid");
   const ids = draft.sections.map((s) => s.id);
@@ -167,7 +171,7 @@ export function validateNewsletterEvidence(
     const source = sources.find((s) => s.id === section.id)!;
     if (
       section.evidence.some(
-        (q) => !source.text.includes(q) && !source.title.includes(q),
+        (q) => !quoted(source.text, q) && !quoted(source.title, q),
       )
     )
       throw new Error("newsletter_writer_evidence_invalid");
