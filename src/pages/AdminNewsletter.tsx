@@ -54,7 +54,7 @@ function NewsletterOperation() {
         });
         setNotice(
           name === "enable"
-            ? "Automação ativada para segunda e sexta às 10h. Nenhum lote antecipado."
+            ? "Automação ativada para segunda e quinta às 10h. Nenhum lote antecipado."
             : name === "pause"
               ? "Automação pausada. Campanhas já aceitas pelo Resend podem continuar em entrega."
               : "Configuração atualizada.",
@@ -88,10 +88,27 @@ function NewsletterOperation() {
   }
   return (
     <section className="space-y-6">
+      <div className="rounded-xl border border-line bg-white p-5">
+        <h2 className="font-semibold">Redator da newsletter</h2>
+        <p className="mt-2 text-sm text-ink-muted">
+          Cada edição recebe abertura, resumos com tópicos e imagens dos
+          artigos, bike e vídeos. O redator usa artigos e transcrições do canal,
+          consulta o acervo ainda não enviado e passa por uma revisão factual
+          automática antes do envio. As pautas exploram bikes diferentes; a bike
+          em destaque não repete as quedas do Radar.
+        </p>
+        <p className="mt-2 text-sm text-ink-muted">
+          Gerar prévia usa IA: duas chamadas ao modelo, uma para redação e outra
+          para revisão. Os envios da mesma edição reutilizam o texto preparado.
+          Links levam UTMs por edição, seção e segmento. No GA4, filtre origem
+          vitale_newsletter e mídia email; o Quiz também preserva essa
+          atribuição.
+        </p>
+      </div>
       <div>
         <h1 className="text-2xl font-bold">Newsletter</h1>
         <p className="mt-2 text-muted-foreground">
-          Artigos, Radar, bike em destaque e vídeos recentes. Segunda e sexta,
+          Artigos, Radar, bike em destaque e vídeos recentes. Segunda e quinta,
           às 10h de São Paulo.
         </p>
       </div>

@@ -17,9 +17,44 @@ const linkSchema = z
       ].includes(url.hostname)
     );
   }, "Use um link HTTPS da Vitale ou do YouTube.");
+export const newsletterImageSchema = z
+  .string()
+  .url()
+  .refine((value) => {
+    const u = new URL(value);
+    return (
+      u.protocol === "https:" &&
+      !u.username &&
+      !u.password &&
+      [
+        "vitalemobilidade.com",
+        "ipectfejftfcikvozoyu.supabase.co",
+        "i.ytimg.com",
+      ].includes(u.hostname)
+    );
+  }, "Imagem precisa vir do acervo Vitale ou YouTube.");
 const item = z.object({
   title: z.string().trim().min(1).max(180),
   url: linkSchema,
+  image: newsletterImageSchema.optional(),
+  category: z
+    .enum([
+      "Comparativo",
+      "Teste na prática",
+      "Conheça a bike",
+      "Guia e dicas",
+      "Preço de maluco",
+      "Preços e mercado",
+      "Variedades",
+    ])
+    .optional(),
+  previousPrice: z.string().max(40).optional(),
+  currentPrice: z.string().max(40).optional(),
+  dropLabel: z.string().max(30).optional(),
+  checkedAt: z.string().max(60).optional(),
+  priceRatio: z.number().min(0).max(1).optional(),
+  paragraphs: z.array(z.string().trim().min(20).max(900)).max(2).optional(),
+  bullets: z.array(z.string().trim().min(10).max(180)).max(3).optional(),
 });
 export const newsletterSchema = z.object({
   subject: z
@@ -28,8 +63,20 @@ export const newsletterSchema = z.object({
     .min(1)
     .max(100)
     .refine((s) => !/[\r\n]/.test(s)),
-  intro: z.string().trim().min(1).max(400),
-  articles: z.array(item).min(1).max(2),
+  intro: z.string().trim().min(1).max(1800),
+  editionNumber: z.number().int().min(1).optional(),
+  curiosity: z
+    .object({
+      text: z.string().min(30).max(400),
+      sourceId: z.string().max(50),
+      evidence: z.string().min(20).max(500),
+    })
+    .optional(),
+  headline: z.string().trim().min(10).max(100).optional(),
+  preheader: z.string().trim().min(20).max(150).optional(),
+  radar: item.optional(),
+  drops: z.array(item).max(3).optional(),
+  articles: z.array(item).min(1).max(3),
   bike: item,
   videos: z.array(item).min(1).max(2),
   unsubscribeUrl: z
@@ -47,7 +94,7 @@ export const NEWSLETTER_OPENINGS = {
     intro:
       "Olá! Separamos duas leituras, uma bike para conhecer e os vídeos recentes. Confira os destaques e consulte o Radar antes de decidir.",
   },
-  friday: {
+  thursday: {
     subject: "Vitale no fim de semana: bikes e vídeos para conferir",
     intro:
       "Olá! Aqui estão os destaques para acompanhar com calma no fim de semana. Os preços podem mudar: confira a oferta vigente no Radar.",
@@ -115,7 +162,7 @@ export function segmentNewsletterRecipients(
     const last = recipient.lastSentAt ? Date.parse(recipient.lastSentAt) : null;
     if (
       last !== null &&
-      (!Number.isFinite(last) || now.getTime() - last < 72 * 60 * 60_000)
+      (!Number.isFinite(last) || now.getTime() - last < 70 * 60 * 60_000)
     )
       continue;
     seen.add(recipient.id);
@@ -132,6 +179,7 @@ export function renderResendNewsletter(
 ) {
   const marker =
     "https://vitalemobilidade.com/__newsletter_provider_unsubscribe__";
+  if (input.headline) return renderEditorialNewsletter(input, segment);
   const rendered = renderNewsletter({ ...input, unsubscribeUrl: marker });
   let html = rendered.html
     .replace(marker, "{{{RESEND_UNSUBSCRIBE_URL}}}")
@@ -177,6 +225,140 @@ export function newsletterWindow(now: Date): {
   return {
     day,
     weekday,
-    due: [1, 5].includes(weekday) && hour >= 10 && hour < 12,
+    due: [1, 4].includes(weekday) && hour >= 10 && hour < 12,
   };
+}
+
+/** Email-safe tables and inline styles; the model never creates markup or URLs. */
+export function renderEditorialNewsletter(
+  input: NewsletterContent,
+  segment: NewsletterSegment = "general",
+) {
+  const data = newsletterSchema.parse({
+    ...input,
+    unsubscribeUrl: "https://vitalemobilidade.com/privacidade",
+  });
+  const campaign = `giro_${data.editionNumber ?? "preview"}`;
+  const tracked = (url: string, section: string) =>
+    newsletterUtmUrl(url, campaign, section, segment);
+  data.articles = data.articles.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `article_${i + 1}`),
+  }));
+  data.videos = data.videos.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `video_${i + 1}`),
+  }));
+  data.bike.url = tracked(data.bike.url, "bike");
+  if (data.radar) data.radar.url = tracked(data.radar.url, "radar");
+  data.drops = data.drops?.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `radar_drop_${i + 1}`),
+  }));
+  const quizUrl = tracked("https://vitalemobilidade.com/quiz", "quiz");
+  const e = escapeNewsletter;
+  const button = (url: string, label: string) =>
+    `<table role="presentation" cellspacing="0" cellpadding="0"><tr><td bgcolor="#165b42" style="border-radius:6px"><a href="${e(url)}" style="display:inline-block;padding:13px 20px;color:#ffffff;font-weight:bold;text-decoration:none;font-size:14px">${label} →</a></td></tr></table>`;
+  const photo = (item: NewsletterContent["bike"], size = 568) =>
+    item.image
+      ? `<a href="${e(item.url)}"><img src="${e(item.image)}" alt="${e(item.title)}" width="${size}" style="display:block;width:100%;max-width:${size}px;height:auto;border:0;border-radius:8px"></a>`
+      : "";
+  const prose = (item: NewsletterContent["bike"]) =>
+    (item.paragraphs ?? [])
+      .map(
+        (p) =>
+          `<p style="margin:14px 0;font-size:16px;line-height:1.65">${e(p)}</p>`,
+      )
+      .join("") +
+    (item.bullets?.length
+      ? `<ul style="padding-left:22px;margin:16px 0;font-size:15px;line-height:1.7">${item.bullets.map((b) => `<li style="margin:7px 0">${e(b)}</li>`).join("")}</ul>`
+      : "");
+  const section = (label: string, body: string) =>
+    `<tr><td style="padding:28px 24px;border-top:1px solid #e0e8e2"><p style="font-size:11px;letter-spacing:2px;font-weight:bold;color:#476756;margin:0 0 16px;text-transform:uppercase">${label}</p>${body}</td></tr>`;
+  const articleRows = data.articles
+    .map((a, i) =>
+      section(
+        i === 0
+          ? "01 / A leitura em destaque"
+          : i === 1
+            ? "02 / Para aprofundar"
+            : "03 / Do acervo",
+        `${a.category ? `<p style="display:inline-block;background:#e6f0e8;color:#165b42;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold">${e(a.category)}</p>` : ""}${photo(a)}<h2 style="font-size:25px;line-height:1.3;margin:20px 0 12px"><a href="${e(a.url)}" style="color:#173d2a;text-decoration:none">${e(a.title)}</a></h2>${prose(a)}${button(a.url, "Leia mais no artigo")}`,
+      ),
+    )
+    .join("");
+  const radar = data.radar ?? {
+    title: "O preço de hoje merece atenção",
+    url: tracked("https://vitalemobilidade.com/radar", "radar"),
+    paragraphs: [
+      "Antes de decidir, consulte o preço atual e o histórico no Radar. As ofertas podem mudar entre esta edição e a sua visita.",
+    ],
+  };
+  const radarRow = section(
+    "Radar de preços",
+    `<table role="presentation" width="100%" bgcolor="#edf4ee" style="border-radius:10px"><tr><td style="padding:22px"><h2 style="font-size:24px;line-height:1.3;margin:0">${e(radar.title)}</h2>${prose(radar)}${(data.drops ?? []).map((d) => `<div style="margin:18px 0;padding-top:16px;border-top:1px solid #c8d8cb"><h3 style="font-size:18px;margin:0"><a href="${e(d.url)}" style="color:#173d2a">${e(d.title)}</a></h3>${photo(d, 250)}${d.currentPrice ? `<p style="font-size:13px;color:#526658;margin:12px 0 3px">Referência: ${e(d.previousPrice ?? "")} · <strong style="color:#165b42">${e(d.dropLabel ?? "")}</strong></p><p style="font-size:30px;font-weight:bold;margin:5px 0;color:#173d2a">${e(d.currentPrice)}</p>${d.priceRatio !== undefined ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:12px 0"><tr><td style="font-size:11px;padding:4px 0">Referência registrada</td></tr><tr><td bgcolor="#cad8cd" height="8" style="height:8px;border-radius:4px"></td></tr><tr><td style="font-size:11px;padding:7px 0 4px">Preço verificado</td></tr><tr><td><table role="presentation" width="${Math.round(d.priceRatio * 100)}%" cellspacing="0" cellpadding="0"><tr><td bgcolor="#165b42" height="8" style="height:8px;border-radius:4px"></td></tr></table></td></tr></table>` : ""}<p style="font-size:11px;color:#526658">Verificado em ${e(d.checkedAt ?? "")}</p>` : ""}${prose(d)}${button(d.url, "Ver preço e histórico")}</div>`).join("")}${button(radar.url, "Explorar o Radar")}</td></tr></table>`,
+  );
+  const bikeRow = section(
+    "Bike em destaque",
+    `${photo(data.bike)}<h2 style="font-size:27px;margin:20px 0 12px">${e(data.bike.title)}</h2>${prose(data.bike)}${button(data.bike.url, "Conhecer a bike no Radar")}`,
+  );
+  const videosRow = section(
+    "Vídeos em destaque",
+    data.videos
+      .map(
+        (v) =>
+          `<div style="margin-bottom:28px">${v.category ? `<p style="font-size:12px;color:#165b42;font-weight:bold">${e(v.category)}</p>` : ""}${photo(v)}<h2 style="font-size:21px;line-height:1.4;margin:16px 0 10px">${e(v.title)}</h2>${prose(v)}${button(v.url, "Assistir ao vídeo")}</div>`,
+      )
+      .join(""),
+  );
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Olá, {{{contact.first_name|amigo(a)}}}!</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.curiosity ? `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:20px"><p style="font-size:11px;letter-spacing:2px;font-weight:bold;color:#165b42;margin:0 0 10px">UMA CURIOSIDADE PARA COMEÇAR</p><p style="font-size:18px;line-height:1.6;margin:0">${e(data.curiosity.text)}</p></td></tr></table>` : ""}${data.intro
+    .split(/\n\n/)
+    .map(
+      (p) =>
+        `<p style="font-size:17px;line-height:1.7;margin:16px 0">${e(p)}</p>`,
+    )
+    .join(
+      "",
+    )}<p style="font-size:12px;color:#476756;margin:24px 0 0">NESTA EDIÇÃO · LEITURAS · RADAR · BIKE · VÍDEOS</p></td></tr>${segment === "radar" ? radarRow + bikeRow + articleRows : articleRows + radarRow + bikeRow}${videosRow}${section("Encontre a bike para o seu perfil", `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:22px"><a href="${e(quizUrl)}"><img src="https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg" alt="Quiz Vitale: encontre a bike para seu perfil" width="568" style="width:100%;height:auto;display:block;border:0"></a><h2 style="font-size:24px">Qual bike combina com a sua rotina?</h2><p style="font-size:16px;line-height:1.65">Responda sobre seu uso, trajeto e orçamento. O Quiz da Vitale ajuda a conectar seu perfil às bikes compatíveis; depois, confira os detalhes e os preços no Radar.</p>${button(quizUrl, "Fazer o Quiz")}</td></tr></table>`)}<tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#d9e6d5;font-size:12px;line-height:1.7"><p style="font-size:16px;color:white;font-weight:bold">Vamos conversar sobre mobilidade?</p><p>Responda este e-mail para falar com a equipe Vitale Mobilidade.</p><p>Você recebeu esta edição porque se inscreveu na newsletter. Preços e disponibilidade podem mudar; confira os dados atuais no Radar.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#ffffff">Cancelar inscrição</a> · <a href="${e(tracked("https://vitalemobilidade.com/privacidade", "privacy"))}" style="color:#ffffff">Privacidade</a></p></td></tr></table></td></tr></table></body></html>`;
+  const items =
+    segment === "radar"
+      ? [radar, data.bike, ...data.articles, ...data.videos]
+      : [...data.articles, radar, data.bike, ...data.videos];
+  if (data.drops?.length) items.push(...data.drops);
+  const text =
+    `Olá, {{{contact.first_name|amigo(a)}}}!\n\n${data.headline ?? data.subject}\n\n${data.intro}\n\n` +
+    items
+      .map((x) =>
+        [
+          x.title,
+          ...(x.paragraphs ?? []),
+          ...(x.bullets ?? []).map((b) => `• ${b}`),
+          x.url,
+        ].join("\n\n"),
+      )
+      .join("\n\n---\n\n") +
+    "\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}";
+  if (new TextEncoder().encode(html).length > 85_000)
+    throw new Error("newsletter_html_too_large");
+  return { html, text };
+}
+
+export function numberNewsletterSubject(title: string, editionNumber: number) {
+  if (!Number.isSafeInteger(editionNumber) || editionNumber < 1)
+    throw new Error("newsletter_number_invalid");
+  return `#${editionNumber} — ${title.trim().replace(/^#\d+\s*[—:-]?\s*/, "")}`;
+}
+
+export function newsletterUtmUrl(
+  value: string,
+  campaign: string,
+  content: string,
+  segment: NewsletterSegment = "general",
+) {
+  const url = new URL(value);
+  url.searchParams.set("utm_source", "vitale_newsletter");
+  url.searchParams.set("utm_medium", "email");
+  url.searchParams.set("utm_campaign", campaign);
+  url.searchParams.set("utm_content", `${segment}_${content}`);
+  return url.toString();
 }

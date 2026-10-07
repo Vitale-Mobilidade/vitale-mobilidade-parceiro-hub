@@ -404,7 +404,38 @@ export async function newsletterTick(request: Request): Promise<Response> {
     }
     const window = newsletterWindow(new Date());
     if (!window.due) return Response.json({ ok: true, due: false });
-    const edition = await automaticNewsletter(window.weekday);
+    // Once all cohorts exist for the day, never pay to rewrite the same edition on every cron tick.
+    const existing = await must(
+      db
+        .from("newsletter_campaigns")
+        .select("segment,payload,fingerprint")
+        .eq("edition_day", window.day),
+    );
+    if ((existing?.length ?? 0) >= GROUPS.length)
+      return Response.json({ ok: true, prepared: false });
+    const saved = existing?.find(
+      (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
+    );
+    const previous = saved ? [] : await newsletterHistory(db, window.day);
+    const since = previous?.[0]?.created_at
+      ? new Date(previous[0].created_at)
+      : undefined;
+    const nextNumber = saved
+      ? null
+      : await must(db.rpc("newsletter_next_edition_number"));
+    const edition = saved
+      ? { content: saved.payload.content, fingerprint: saved.fingerprint }
+      : await automaticNewsletter(
+          window.weekday,
+          since,
+          (previous ?? [])
+            .map(
+              (p: { payload: { content: NewsletterContent } }) =>
+                p.payload.content,
+            )
+            .filter(Boolean),
+          nextNumber,
+        );
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {
@@ -595,7 +626,13 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
         }),
       );
     } else if (body.action === "preview") {
-      const edition = await automaticNewsletter(new Date().getUTCDay());
+      const nextNumber = await must(db.rpc("newsletter_next_edition_number"));
+      const edition = await automaticNewsletter(
+        new Date().getUTCDay(),
+        undefined,
+        (await newsletterHistory(db)).map((p) => p.payload.content),
+        nextNumber,
+      );
       return Response.json(
         {
           content: edition.content,
@@ -610,4 +647,25 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
   } finally {
     if (tok) await db.rpc("newsletter_release", { tok });
   }
+}
+
+async function newsletterHistory(db: SupabaseClient, before?: string) {
+  const history: {
+    created_at: string;
+    payload: { content: NewsletterContent };
+  }[] = [];
+  for (let offset = 0; ; offset += 500) {
+    let query = db
+      .from("newsletter_campaigns")
+      .select("created_at,payload")
+      .in("status", ["sent", "submitted"])
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + 499);
+    if (before) query = query.lt("edition_day", before);
+    const rows = await must(query);
+    history.push(...(rows ?? []));
+    if ((rows?.length ?? 0) < 500) break;
+  }
+  return history;
 }
