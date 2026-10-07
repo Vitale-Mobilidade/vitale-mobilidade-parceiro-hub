@@ -2243,6 +2243,7 @@ export type Database = {
           synced: boolean
         }[]
       }
+      newsletter_next_edition_number: { Args: never; Returns: number }
       newsletter_record_event: {
         Args: {
           p_broadcast?: string
