@@ -88,7 +88,10 @@ async function structured(
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("newsletter_writer_not_configured");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 40_000);
+  const timer = setTimeout(
+    () => controller.abort(),
+    schema === newsletterDraftSchema ? 90_000 : 45_000,
+  );
   try {
     const response = await request.call(
       globalThis,
@@ -98,7 +101,8 @@ async function structured(
         redirect: "manual",
         signal: controller.signal,
         headers: {
-          Authorization: `Bearer ${key}`,
+          "Lovable-API-Key": key,
+          "X-Lovable-AIG-SDK": "fetch",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -132,7 +136,10 @@ async function structured(
       .map((x) => x.text ?? "")
       .join("");
     return schema.parse(JSON.parse(text ?? ""));
-  } catch {
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("newsletter_writer_timeout");
+    if (error instanceof z.ZodError || error instanceof SyntaxError)
+      throw new Error("newsletter_writer_invalid_output");
     throw new Error("newsletter_writer_unavailable");
   } finally {
     clearTimeout(timer);

@@ -42,6 +42,16 @@ export async function newsletterCall<T>(
     .catch(() => ({ error: "newsletter_unavailable" }));
   if (!response.ok) {
     const messages: Record<string, string> = {
+      newsletter_writer_timeout:
+        "O redator excedeu o tempo de geração. Nenhum e-mail foi enviado.",
+      newsletter_writer_unavailable:
+        "O serviço de IA não respondeu. Nenhum e-mail foi enviado.",
+      newsletter_writer_invalid_output:
+        "O redator retornou um texto fora do formato esperado. Nenhum e-mail foi enviado.",
+      newsletter_writer_review_failed:
+        "A revisão editorial rejeitou o rascunho. Nenhum e-mail foi enviado.",
+      newsletter_sources_insufficient_diversity:
+        "Não há pautas inéditas com diversidade suficiente nesta seleção.",
       resend_not_configured: "Conecte o Resend ao servidor da Vitale.",
       sender_not_verified:
         "O domínio de envio ainda não foi verificado no Resend.",

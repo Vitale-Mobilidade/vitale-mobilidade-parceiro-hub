@@ -5,7 +5,7 @@ export async function newsletterTranscripts(
 ): Promise<Map<string, string>> {
   const selected = [...new Set(ids)]
     .filter((id) => /^[A-Za-z0-9_-]{11}$/.test(id))
-    .slice(0, 4);
+    .slice(0, 5);
   const url = process.env.SUPABASE_URL,
     key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key || !selected.length) return new Map();

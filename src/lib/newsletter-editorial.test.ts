@@ -98,6 +98,10 @@ describe("newsletter editorial", () => {
     );
     expect(request).toHaveBeenCalledTimes(2);
     expect(JSON.parse(request.mock.calls[0][1].body).store).toBe(false);
+    expect(request.mock.calls[0][1].headers["Lovable-API-Key"]).toBe(
+      "mock-key",
+    );
+    expect(request.mock.calls[0][1].headers["X-Lovable-AIG-SDK"]).toBe("fetch");
   });
   it("fails closed when the AI service is unavailable", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "mock-key");
