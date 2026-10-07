@@ -69,3 +69,9 @@ Conflito de evidência: Lovable afirmou que `/usage` não existe, mas documenta�
 5. Ativar no painel para próxima janela segunda/sexta10h, somente após gate real. Não antecipar envio fora da agenda. Nenhum upgrade ou contratação.
 
 Rollback: pausar automação e job primeiro; preservar ledger e supressões; cancelar broadcasts identificados ainda não iniciados se necessário; reverter código ao commit anterior sem remover tabelas/dados. Mensagens entregues não podem ser desfeitas. Risco residual: dependência do gateway e webhook precisa prova real; domínio Hotpipe compartilha reputação organizacional, nenhuma garantia de inbox. Mudança de remetente com automação pausada permite migração futura sem novo código.
+
+## Vínculo concluído e bloqueio de credencial — 07/10/2026
+
+Responsável autorizou explicitamente acesso ao Guilherme e confirmou que gpalmerio é sua conta Lovable. UI salvou apenas Guilherme Can use, manteve Lucas Owner; Permissions updated successfully. Vínculo standard_connectors concluído somente neste projeto: is_linked_to_project=true; RESEND_API_KEY injetado pelo mecanismo seguro sem ler/exibir valor. Nenhum envio, contato ou broadcast criado.
+
+GET /domains, /usage e /segments via gateway retornaram HTTP401 restricted_api_key: credencial é Sending access (somente envio). A operação por Broadcasts necessita gerir contatos/segmentos e exige chave Full access. Responsável deve criar/substituir chave pelo formulário seguro Resend/Lovable; não pedir chave em chat, não manipular valor local, não compartilhar workspace inteiro. Não remover preflight nem tentar contornar permissão com chave restrita. Gate de ativação permanece Fail até atualização segura e consultas reais bem-sucedidas. Custo desta etapa1,6 créditos Lovable, total inspeção/vínculo3,6 créditos. Publish/migration e envios permanecem não executados.
