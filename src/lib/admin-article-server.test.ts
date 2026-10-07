@@ -930,6 +930,7 @@ describe("automatic publication uses the leased daily pipeline", () => {
       expect(filters).toContainEqual(["editorial_articles", "revision", 7]);
       expect(filters).toContainEqual(["editorial_articles", "status", "draft"]);
       expect(reviewer).toHaveBeenCalledOnce();
+      expect(reviewer.mock.calls[0][1]).toContain('"bikes":[]');
     } finally { restore(); }
   });
   it.each(["wrong_source", "failed_qa", "conflict"])("does not publish %s or replay the writer/image", async failure => {
