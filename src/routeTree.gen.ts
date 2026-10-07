@@ -50,6 +50,7 @@ import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
+import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -265,6 +266,12 @@ const AdminConteudosNovoRoute = AdminConteudosNovoRouteImport.update({
   path: '/admin/conteudos/novo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPriceAlertOutboxRoute =
+  ApiPublicPriceAlertOutboxRouteImport.update({
+    id: '/api/public/price-alert-outbox',
+    path: '/api/public/price-alert-outbox',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -312,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -356,6 +364,7 @@ export interface FileRoutesByTo {
   '/radar': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -401,6 +410,7 @@ export interface FileRoutesById {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/public/price-alert-outbox'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/radar'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/public/price-alert-outbox'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
   id:
@@ -535,6 +547,7 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/public/price-alert-outbox'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesById: FileRoutesById
@@ -580,6 +593,7 @@ export interface RootRouteChildren {
   RadarIndexRoute: typeof RadarIndexRoute
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
+  ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
   AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
 }
 
@@ -872,6 +886,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConteudosNovoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/price-alert-outbox': {
+      id: '/api/public/price-alert-outbox'
+      path: '/api/public/price-alert-outbox'
+      fullPath: '/api/public/price-alert-outbox'
+      preLoaderRoute: typeof ApiPublicPriceAlertOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/conteudos/$id/preview': {
       id: '/admin/conteudos/$id/preview'
       path: '/preview'
@@ -937,6 +958,7 @@ const rootRouteChildren: RootRouteChildren = {
   RadarIndexRoute: RadarIndexRoute,
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
+  ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,
   AdminConteudosIndexRoute: AdminConteudosIndexRoute,
 }
 export const routeTree = rootRouteImport
