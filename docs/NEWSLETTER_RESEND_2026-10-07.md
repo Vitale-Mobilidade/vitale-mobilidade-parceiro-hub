@@ -36,3 +36,36 @@ Usar `news.hotpipe.com.br` inicialmente, identidade visual e nome do remetente V
 ## Evidência local parcial às 17h47
 
 22 testes direcionados passaram: renderer, cliente Resend, webhook e fluxo administrativo/worker. `pnpm validate` passou (types, 59 testes de regressão e build). Ensaio SQL isolado confirmou exclusão V1, consentimento vigente, replay, lease, cron OFF e intervalo/repetição. Ainda falta gate final e publicação autorizada: estes resultados não significam integração produtiva ativa.
+
+## Revisão pós-implementação local — 18h40
+
+Base real incorporada até `3b4869e`; merge local sem conflitos e sem modificar o outbox de terceiros. Código continua exclusivamente no branch `codex/newsletter-admin`; nenhuma migration ou publicação produtiva foi feita.
+
+| Perspectiva | Status local | Evidência / condição |
+|---|---|---|
+| Produto | Pass | Quatro blocos curtos; segunda/sexta; hash evita repetição; domínio inicial configurável |
+| CTO | Pass | Rotas servidor, ledger e lease; crash após ACK mantém submitting; 27 testes alvo e build |
+| IA | Pass | Não usa geração ou crédito IA para fatos; apenas fontes publicadas e URLs validadas |
+| Segurança | Pass | JWT admin no backend; HMAC cron/Svix webhook; RLS/grants privados; consentimento V2; bundle público sem nomes de secrets operacionais |
+| UX | Pass | HTML inspecionado em desktop e 390px sem overflow; painel com loading/erro, preview e labels de entrega; links admin preservam navegação |
+| CX | Pass | Pausa disponível e falhas incertas suspendem operação; replies Guilherme; cron provisionado desligado |
+| Growth | Pass | Descadastro nativo; sem importação do Quiz; segmentação só por interesse declarado; SMTP Zoho descartado |
+| PMO/QA | Pass | 27 testes newsletter, validate com 59 regressões/types/build, lint alvo, diff check e SQL sintético reproduzível |
+
+Esta matriz é a aprovação do código local, não da operação ao vivo. **Gate de ativação produtiva: Fail (evidência insuficiente)** até vínculo/acesso do conector, webhook autenticado, migration e deploy autorizados, preflight real do domínio/quota e teste controlado de entrega. Não declarar automação ativa ou entrega real antes disso.
+
+Evidências: `docs/qa/newsletter` contém stubs/assertions sintéticos; PostgreSQL17 isolado sem listener TCP passou o ensaio final (DB newsletter_release); artefatos visuais em `/tmp/vitale-newsletter-artifacts`. Inspeção agregada produtiva confirmou 19 V2, 2 V1 e ausência da nova migration. Nenhuma PII exportada. Inspeção Lovable consumiu 2 créditos pequenos ao todo para contrato e vínculo; não voltar a usar créditos para implementação de código.
+
+Domínio: screenshot do responsável às 18h32 mostra os três registros Verified e envio enabled. Lovable `My Resend` continua Private/No linked projects; projeto More > Connectors mostra No connections yet. Sessão MCP é Guilherme Palmerio (`gpalmerio@gmail.com`), conexão pertence ao Lucas. Confirmado caminho workspace Connectors > Resend > My Resend > Sharing > Share with others > Add people by email. O vínculo deve ser feito depois no projeto ou pela ferramenta de conexão do chat; Linked projects não é seletor. Pedido de autorização para acesso específico ficou pendente; nenhum acesso ampliado.
+
+Conflito de evidência: Lovable afirmou que `/usage` não existe, mas documentação oficial atual em https://resend.com/docs/api-reference/usage/retrieve-usage mostra GET /usage e campos contacts/segments/broadcasts. Mantido preflight /usage; provar passagem pelo gateway antes de ativar. Não remover proteção de quota para contornar esse ponto.
+
+## Sequência de liberação proposta
+
+1. Permissão restrita do My Resend ao Guilherme + vínculo somente Vitale (sem compartilhar workspace inteiro, sem mudar Ask each time).
+2. Publicar exclusivamente diff newsletter no projeto existente e aplicar somente migration 20261007195000_newsletter_resend.sql (aditiva, cron OFF). Deploy Edge newsletter-interest preserva demais funções.
+3. Criar webhook Resend para https://vitalemobilidade.com/api/public/newsletter-webhook, eventos contact.updated/email.delivered/email.bounced/email.complained/email.failed; inserir signing secret exclusivamente via formulário seguro como RESEND_WEBHOOK_SECRET. Não passar pelo chat, arquivo ou browser bundle.
+4. Configurar from newsletter@news.hotpipe.com.br e reply_to guilherme@hotpipe.com.br; preparar segmento dedicado; verificar domínio, /usage, webhook, preview real e teste controlado antes do lote.
+5. Ativar no painel para próxima janela segunda/sexta10h, somente após gate real. Não antecipar envio fora da agenda. Nenhum upgrade ou contratação.
+
+Rollback: pausar automação e job primeiro; preservar ledger e supressões; cancelar broadcasts identificados ainda não iniciados se necessário; reverter código ao commit anterior sem remover tabelas/dados. Mensagens entregues não podem ser desfeitas. Risco residual: dependência do gateway e webhook precisa prova real; domínio Hotpipe compartilha reputação organizacional, nenhuma garantia de inbox. Mudança de remetente com automação pausada permite migração futura sem novo código.

@@ -1,5 +1,4 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   newsletterWindow,
@@ -11,7 +10,6 @@ import { automaticNewsletter } from "./newsletter-sources.server";
 import {
   ResendNewsletter,
   ResendFault,
-  type ResendContact,
   type ResendUsage,
 } from "./resend-newsletter.server";
 
@@ -316,7 +314,6 @@ export async function processNewsletterCampaign(
       {},
     );
     if (sent.id !== c.resend_id) throw new ResendFault(200, true);
-    await updateCampaign(db, c.id, { status: "submitted", last_error: null });
   } catch (e) {
     const uncertain = e instanceof ResendFault && e.uncertain;
     await updateCampaign(db, c.id, {
@@ -326,6 +323,8 @@ export async function processNewsletterCampaign(
     if (uncertain) await pause(db, "broadcast_send_uncertain");
     throw e;
   }
+  // Persisting an acknowledged send can fail. Leave submitting intact so the next tick reconciles, never resends.
+  await updateCampaign(db, c.id, { status: "submitted", last_error: null });
 }
 export async function newsletterTick(request: Request): Promise<Response> {
   if (request.method !== "POST") return new Response(null, { status: 405 });
@@ -609,8 +608,4 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
   } finally {
     if (tok) await db.rpc("newsletter_release", { tok });
   }
-}
-
-export function newsletterFingerprint(raw: string) {
-  return createHash("sha256").update(raw).digest("hex");
 }

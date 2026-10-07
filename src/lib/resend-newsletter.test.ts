@@ -99,4 +99,34 @@ describe("Resend newsletter transport", () => {
       new ResendNewsletter("test", request, 0).call("/broadcasts", "POST", {}),
     ).rejects.toBeInstanceOf(ResendFault);
   });
+  it("rejects redirects without forwarding provider credentials", async () => {
+    const request = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { Location: "https://other.invalid" },
+      }),
+    );
+    await expect(
+      new ResendNewsletter("test", request, 0).call("/broadcasts", "POST", {}),
+    ).rejects.toMatchObject({ status: 302, uncertain: false });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][1].redirect).toBe("manual");
+  });
+  it("retains Retry-After rather than immediately repeating a rejected operation", async () => {
+    const now = Date.now();
+    const request = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(null, { status: 429, headers: { "Retry-After": "600" } }),
+      );
+    await expect(
+      new ResendNewsletter("test", request, 0).call("/usage"),
+    ).rejects.toMatchObject({ status: 429, retryAt: expect.any(Number) });
+    expect(request).toHaveBeenCalledTimes(1);
+    try {
+      await new ResendNewsletter("test", request, 0).call("/usage");
+    } catch (e) {
+      expect((e as ResendFault).retryAt).toBeGreaterThanOrEqual(now + 600000);
+    }
+  });
 });
