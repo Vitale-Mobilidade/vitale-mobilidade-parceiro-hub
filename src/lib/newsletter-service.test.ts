@@ -11,6 +11,7 @@ import {
   processNewsletterCampaign,
   type NewsletterSettings,
 } from "./newsletter-service.server";
+import { automaticNewsletter } from "./newsletter-sources.server";
 import { ResendNewsletter } from "./resend-newsletter.server";
 const id = "00000000-0000-0000-0000-000000000001";
 const content = {
@@ -390,5 +391,80 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect(nextCohort).not.toHaveBeenCalled();
     expect(request.mock.calls).toHaveLength(3);
     expect(db.rpc).toHaveBeenLastCalledWith("newsletter_release", { tok: id });
+  });
+  it("does not regenerate a paid edition on later ticks after all cohorts exist", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T13:10:00Z"));
+    vi.stubEnv("RESEND_API_KEY", "synthetic-only");
+    vi.stubEnv("LOVABLE_API_KEY", "");
+    const db = {
+      from: (table: string) =>
+        table === "newsletter_settings"
+          ? {
+              select: () => ({
+                eq: () => ({
+                  single: async () => ({ data: config, error: null }),
+                }),
+              }),
+            }
+          : {
+              select: (columns: string) => {
+                const result =
+                  columns === "segment,payload,fingerprint"
+                    ? ["general", "radar", "content"].map((segment) => ({
+                        segment,
+                        payload: { content },
+                        fingerprint: "saved",
+                      }))
+                    : [];
+                const chain = {
+                  eq: () => chain,
+                  in: () => chain,
+                  order: () => chain,
+                  limit: () => chain,
+                  then: (resolve: (value: unknown) => unknown) =>
+                    Promise.resolve({ data: result, error: null }).then(
+                      resolve,
+                    ),
+                };
+                return chain;
+              },
+            },
+      rpc: vi.fn(async (name: string) => ({
+        data:
+          name === "newsletter_authorize"
+            ? true
+            : name === "newsletter_acquire"
+              ? id
+              : null,
+        error: null,
+      })),
+    };
+    createClient.mockReturnValue(db);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.includes("/domains?")
+          ? json({
+              data: [{ id, name: "news.hotpipe.com.br", status: "verified" }],
+              has_more: false,
+            })
+          : json({ capabilities: { sending: "enabled" } }),
+      ),
+    );
+    const response = await newsletterTick(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: {
+          "x-worker-signature": "synthetic",
+          "x-worker-issued-at": "1791403200",
+        },
+      }),
+    );
+    expect(await response.json()).toEqual({ ok: true, prepared: false });
+    expect(automaticNewsletter).not.toHaveBeenCalled();
+    expect(
+      db.rpc.mock.calls.some(([name]) => name === "newsletter_form_campaign"),
+    ).toBe(false);
   });
 });

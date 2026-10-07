@@ -88,6 +88,18 @@ function NewsletterOperation() {
   }
   return (
     <section className="space-y-6">
+      <div className="rounded-xl border border-line bg-white p-5">
+        <h2 className="font-semibold">Redator da newsletter</h2>
+        <p className="mt-2 text-sm text-ink-muted">
+          Cada edição recebe abertura, resumos com tópicos e imagens dos
+          artigos, bike e vídeos. O redator usa conteúdo publicado da Vitale e
+          passa por uma revisão factual automática antes do envio.
+        </p>
+        <p className="mt-2 text-sm text-ink-muted">
+          Gerar prévia usa IA: duas chamadas ao modelo, uma para redação e outra
+          para revisão. Os envios da mesma edição reutilizam o texto preparado.
+        </p>
+      </div>
       <div>
         <h1 className="text-2xl font-bold">Newsletter</h1>
         <p className="mt-2 text-muted-foreground">

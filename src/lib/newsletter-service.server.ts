@@ -404,7 +404,35 @@ export async function newsletterTick(request: Request): Promise<Response> {
     }
     const window = newsletterWindow(new Date());
     if (!window.due) return Response.json({ ok: true, due: false });
-    const edition = await automaticNewsletter(window.weekday);
+    // Once all cohorts exist for the day, never pay to rewrite the same edition on every cron tick.
+    const existing = await must(
+      db
+        .from("newsletter_campaigns")
+        .select("segment,payload,fingerprint")
+        .eq("edition_day", window.day),
+    );
+    if ((existing?.length ?? 0) >= GROUPS.length)
+      return Response.json({ ok: true, prepared: false });
+    const saved = existing?.find(
+      (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
+    );
+    const previous = saved
+      ? null
+      : await must(
+          db
+            .from("newsletter_campaigns")
+            .select("created_at")
+            .lt("edition_day", window.day)
+            .in("status", ["sent", "submitted"])
+            .order("created_at", { ascending: false })
+            .limit(1),
+        );
+    const since = previous?.[0]?.created_at
+      ? new Date(previous[0].created_at)
+      : undefined;
+    const edition = saved
+      ? { content: saved.payload.content, fingerprint: saved.fingerprint }
+      : await automaticNewsletter(window.weekday, since);
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {
