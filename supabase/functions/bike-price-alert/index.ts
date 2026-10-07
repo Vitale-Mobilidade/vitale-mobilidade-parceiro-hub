@@ -5,6 +5,8 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+import { minimumAlertPrice, minimumAlertMessage } from "../_shared/price-alert-policy.ts";
+
 const MAX_BODY_BYTES = 4000;
 const RATE_LIMIT = 8;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
@@ -126,13 +128,17 @@ Deno.serve(async (req) => {
     }
     const referencePrice = Number((bike as Record<string, unknown>).currentPrice ?? 0);
     const bikeName = String((bike as Record<string, unknown>).name ?? "");
-    if (!(referencePrice > 0) || !bikeName) {
+    if (!Number.isFinite(referencePrice) || !(referencePrice > 0) || !bikeName) {
       return json({ ok: false, error: "Bike indisponível para alerta." }, 400);
     }
     if (condition === "target") {
       if (!Number.isFinite(targetPrice as number) || (targetPrice as number) <= 0 || (targetPrice as number) >= referencePrice) {
         return json({ ok: false, error: "Escolha um valor abaixo do preço atual." }, 400);
       }
+    }
+
+    if (condition === "target" && targetPrice! < minimumAlertPrice(referencePrice)) {
+      return json({ ok: false, error: minimumAlertMessage(referencePrice) }, 400);
     }
 
     const attribution = (body.attribution ?? {}) as Record<string, unknown>;
