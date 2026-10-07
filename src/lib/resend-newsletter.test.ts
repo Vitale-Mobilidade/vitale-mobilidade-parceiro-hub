@@ -9,6 +9,14 @@ const contact = {
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), { status });
 describe("Resend newsletter transport", () => {
+  it("preserves the platform fetch receiver required by Workers", async () => {
+    const request = function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(json({ ok: true }));
+    } as typeof fetch;
+    expect(await new ResendNewsletter("test", request, 0).call("/domains"))
+      .toEqual({ ok: true });
+  });
   it("never reactivates an upstream unsubscribe", async () => {
     const request = vi
       .fn()
