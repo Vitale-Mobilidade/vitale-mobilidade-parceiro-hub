@@ -349,6 +349,23 @@ export async function newsletterTick(request: Request): Promise<Response> {
   let tok: string | undefined;
   try {
     const s = await settings(db);
+    if (request.headers.get("x-newsletter-mode") === "preview") {
+      tok = await lock(db);
+      const nextNumber = await must(db.rpc("newsletter_next_edition_number"));
+      const history = await newsletterHistory(db);
+      const edition = await automaticNewsletter(
+        new Date().getUTCDay(),
+        undefined,
+        history.map((p) => p.payload.content),
+        nextNumber,
+      );
+      return Response.json({
+        ok: true,
+        preview: true,
+        content: edition.content,
+        ...renderResendNewsletter(edition.content),
+      });
+    }
     if (!s.enabled) return Response.json({ ok: true, enabled: false });
     if (s.retry_until && Date.parse(s.retry_until) > Date.now())
       return Response.json({ ok: true, waiting: true });
