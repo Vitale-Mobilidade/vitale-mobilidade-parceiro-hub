@@ -101,6 +101,7 @@ async function structured(
         redirect: "manual",
         signal: controller.signal,
         headers: {
+          Authorization: `Bearer ${key}`,
           "Lovable-API-Key": key,
           "X-Lovable-AIG-SDK": "fetch",
           "Content-Type": "application/json",
@@ -126,7 +127,13 @@ async function structured(
         }),
       },
     );
-    if (!response.ok) throw new Error("newsletter_writer_unavailable");
+    if (!response.ok) {
+      if ([401, 403].includes(response.status))
+        throw new Error("newsletter_writer_auth_failed");
+      if ([402, 429].includes(response.status))
+        throw new Error("newsletter_writer_budget_limit");
+      throw new Error("newsletter_writer_gateway_failed");
+    }
     const data = (await response.json()) as {
       output?: { content?: { type: string; text?: string }[] }[];
     };
@@ -137,10 +144,15 @@ async function structured(
       .join("");
     return schema.parse(JSON.parse(text ?? ""));
   } catch (error) {
+    if (
+      error instanceof Error &&
+      /^newsletter_writer_[a-z_]+$/.test(error.message)
+    )
+      throw error;
     if (controller.signal.aborted) throw new Error("newsletter_writer_timeout");
     if (error instanceof z.ZodError || error instanceof SyntaxError)
       throw new Error("newsletter_writer_invalid_output");
-    throw new Error("newsletter_writer_unavailable");
+    throw new Error("newsletter_writer_network_failed");
   } finally {
     clearTimeout(timer);
   }
