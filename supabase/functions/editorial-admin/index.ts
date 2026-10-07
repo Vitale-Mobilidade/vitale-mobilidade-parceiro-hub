@@ -2254,8 +2254,9 @@ async function finishQueuedPublication(req: Request, db: SupabaseClient, actor: 
     const checkpoint = await db.from("youtube_editorial_sources").update({ capture: { ...capture, publicationQa: report } }).eq("video_id", lease.video_id).eq("state", "publishing");
     if (checkpoint.error) throw new Error("publication_report_write_failed");
     if (!pass) {
-      if (capture.publicationRepairAttempted !== true) {
-        const correction = await db.from("youtube_editorial_sources").update({ state: "rewrite_pending", capture: { ...capture, publicationQa: report, publicationRepairAttempted: true } }).eq("video_id", lease.video_id).eq("state", "publishing");
+      const repairCount = Number(capture.publicationRepairCount) || (capture.publicationRepairAttempted === true ? 1 : 0);
+      if (repairCount < 2) {
+        const correction = await db.from("youtube_editorial_sources").update({ state: "rewrite_pending", capture: { ...capture, publicationQa: report, publicationRepairAttempted: true, publicationRepairCount: repairCount + 1 } }).eq("video_id", lease.video_id).eq("state", "publishing");
         if (correction.error) throw new Error("publication_repair_queue_failed");
         await log(db, actor, "automatic_publication_correction_queued", "article", article.id, report);
         return json(req, { status: "rewrite_pending", articleId: article.id, stage: "publication" });

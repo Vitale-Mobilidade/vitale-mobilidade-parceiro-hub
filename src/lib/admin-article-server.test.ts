@@ -901,7 +901,7 @@ it("hourly refreshes the spreadsheet before serving a pending cover stage", asyn
 describe("automatic publication uses the leased daily pipeline", () => {
   const transcript = "Motor forte e autonomia dependem do percurso.";
   const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 7, title: "Motor e autonomia", slug: "motor-e-autonomia", summary: "Conheça o funcionamento.", seo_title: "Motor e autonomia no uso diário", meta_description: "Entenda a autonomia.", og_title: "Motor e autonomia", og_description: "Uso diário.", validation_errors: [], primary_bike_id: null, related_bike_ids: [], related_article_ids: [], faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "A autonomia depende do percurso.", sourceExcerpt: transcript }] };
-  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true }, conflict = false) {
+  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationRepairCount: 2 }, conflict = false) {
     const writes: { table: string; patch: Record<string, unknown> }[] = [];
     const filters: unknown[] = [];
     const db = { from: (table: string) => {
@@ -934,17 +934,17 @@ describe("automatic publication uses the leased daily pipeline", () => {
       expect(reviewer.mock.calls[0][1]).toContain('"bikes":[]');
     } finally { restore(); }
   });
-  it("queues exactly one correction after a completed factual rejection", async () => {
-    const { db, writes } = publicationDb({ videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: false });
+  it("queues a bounded correction after a completed factual rejection", async () => {
+    const { db, writes } = publicationDb({ videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: false, publicationRepairCount: 0 });
     const restore = mockChecks(); exports.injectOfflineAI!(vi.fn(async () => ({ pass: false, issues: ["Remover a característica não sustentada"], cautionViolations: [] })));
     try {
       expect(await (await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).json()).toMatchObject({ status: "rewrite_pending" });
-      expect(writes.at(-1)?.patch).toMatchObject({ state: "rewrite_pending", capture: { publicationRepairAttempted: true } });
+      expect(writes.at(-1)?.patch).toMatchObject({ state: "rewrite_pending", capture: { publicationRepairAttempted: true, publicationRepairCount: 1 } });
       expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
     } finally { restore(); }
   });
   it.each(["wrong_source", "failed_qa", "conflict"])("does not publish %s or replay the writer/image", async failure => {
-    const { db, writes } = publicationDb(failure === "wrong_source" ? { videoId: article.video_id, channelId: "other", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true } : undefined, failure === "conflict");
+    const { db, writes } = publicationDb(failure === "wrong_source" ? { videoId: article.video_id, channelId: "other", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationRepairCount: 2 } : undefined, failure === "conflict");
     const restore = mockChecks(); const reviewer = vi.fn(async () => ({ pass: failure !== "failed_qa", issues: failure === "failed_qa" ? ["Afirmação sem suporte"] : [], cautionViolations: [] })); exports.injectOfflineAI!(reviewer);
     try {
       expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
