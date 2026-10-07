@@ -1203,6 +1203,132 @@ export type Database = {
           },
         ]
       }
+      newsletter_campaigns: {
+        Row: {
+          created_at: string
+          edition_day: string
+          fingerprint: string
+          id: string
+          last_error: string | null
+          payload: Json
+          resend_id: string | null
+          segment: string
+          sent_at: string | null
+          status: string
+          submitted_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          edition_day: string
+          fingerprint: string
+          id?: string
+          last_error?: string | null
+          payload: Json
+          resend_id?: string | null
+          segment: string
+          sent_at?: string | null
+          status?: string
+          submitted_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          edition_day?: string
+          fingerprint?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          resend_id?: string | null
+          segment?: string
+          sent_at?: string | null
+          status?: string
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      newsletter_recipients: {
+        Row: {
+          campaign_id: string
+          consent_at: string
+          edition_day: string
+          excluded: boolean
+          subscription_id: string
+          synced: boolean
+        }
+        Insert: {
+          campaign_id: string
+          consent_at: string
+          edition_day: string
+          excluded?: boolean
+          subscription_id: string
+          synced?: boolean
+        }
+        Update: {
+          campaign_id?: string
+          consent_at?: string
+          edition_day?: string
+          excluded?: boolean
+          subscription_id?: string
+          synced?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "newsletter_recipients_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      newsletter_settings: {
+        Row: {
+          enabled: boolean
+          from_email: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          reply_to: string
+          retry_until: string | null
+          segments: Json
+          signing_key: string
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          from_email?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          reply_to?: string
+          retry_until?: string | null
+          segments?: Json
+          signing_key?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          from_email?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          reply_to?: string
+          retry_until?: string | null
+          segments?: Json
+          signing_key?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_subscriptions: {
         Row: {
           consent_at: string
@@ -1212,9 +1338,12 @@ export type Database = {
           delivery_enabled: boolean
           email: string
           id: string
+          interest: string
           person_name: string
+          resend_contact_id: string | null
           source_url: string | null
           status: string
+          suppressed_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1225,9 +1354,12 @@ export type Database = {
           delivery_enabled?: boolean
           email: string
           id?: string
+          interest?: string
           person_name: string
+          resend_contact_id?: string | null
           source_url?: string | null
           status?: string
+          suppressed_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1238,9 +1370,12 @@ export type Database = {
           delivery_enabled?: boolean
           email?: string
           id?: string
+          interest?: string
           person_name?: string
+          resend_contact_id?: string | null
           source_url?: string | null
           status?: string
+          suppressed_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1262,6 +1397,38 @@ export type Database = {
           window_started_at?: string
         }
         Relationships: []
+      }
+      newsletter_webhook_events: {
+        Row: {
+          campaign_id: string | null
+          email_id: string | null
+          event_id: string
+          event_type: string
+          received_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          email_id?: string | null
+          event_id: string
+          event_type: string
+          received_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          email_id?: string | null
+          event_id?: string
+          event_type?: string
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_webhook_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_alert_hotpipe_outbox: {
         Row: {
@@ -2046,6 +2213,53 @@ export type Database = {
       ingest_youtube_editorial_snapshot: {
         Args: { video_ids: string[] }
         Returns: string
+      }
+      newsletter_acquire: { Args: never; Returns: string }
+      newsletter_authorize: {
+        Args: { issued_at: string; signature: string }
+        Returns: boolean
+      }
+      newsletter_campaign_report: { Args: never; Returns: Json }
+      newsletter_dispatch: { Args: never; Returns: number }
+      newsletter_form_campaign: {
+        Args: {
+          p_clock?: string
+          p_day: string
+          p_fingerprint: string
+          p_payload: Json
+          p_segment: string
+          tok: string
+        }
+        Returns: string
+      }
+      newsletter_live_recipients: {
+        Args: { p_campaign: string }
+        Returns: {
+          consent_at: string
+          email: string
+          id: string
+          person_name: string
+          resend_contact_id: string
+          synced: boolean
+        }[]
+      }
+      newsletter_record_event: {
+        Args: {
+          p_broadcast?: string
+          p_contact: string
+          p_email_id?: string
+          p_emails: string[]
+          p_id: string
+          p_occurred: string
+          p_type: string
+        }
+        Returns: boolean
+      }
+      newsletter_release: { Args: { tok: string }; Returns: undefined }
+      newsletter_renew: { Args: { tok: string }; Returns: boolean }
+      newsletter_set_enabled: {
+        Args: { actor_id: string; p_enabled: boolean }
+        Returns: undefined
       }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
