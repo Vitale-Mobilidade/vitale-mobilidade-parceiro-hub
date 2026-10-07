@@ -6,20 +6,27 @@ const event = {sequence:1,lease_token:"lease",attempts:1,payload:{event_id:"even
 const signed = () => new Request("https://vitale.example/api/public/price-alert-outbox", {method:"POST",headers:{"x-worker-signature":"signature","x-worker-issued-at":"1234567890"}});
 describe("Hotpipe server delivery with mocked services", () => {
  beforeEach(() => {
-  vi.stubEnv("SUPABASE_URL","https://database.example"); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY","mock-service"); vi.stubEnv("HOTPIPE_PRICE_ALERT_API_KEY","mock-api");
+  vi.stubEnv("SUPABASE_URL","https://database.example"); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY","mock-service"); vi.stubEnv("HOTPIPE_PRICE_ALERT_API_KEY","hp_"+"a".repeat(48));
   mock.updates.length=0;mock.filters.length=0;
   mock.rpc.mockReset().mockResolvedValueOnce({data:true}).mockResolvedValueOnce({data:[event]});
   mock.from.mockImplementation(() => ({update:(data:Record<string,unknown>) => {mock.updates.push(data); const chain={eq:(...args:unknown[])=>{mock.filters.push(args);return chain;},then:(resolve:(v:unknown)=>unknown)=>Promise.resolve({error:null}).then(resolve)};return chain;}}));
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ok:true,...event.payload,result:"accepted"})));
  });
- afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
+ afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});
  it("rejects unsigned request without DB access",async()=>{
   expect((await deliverPriceAlertOutbox(new Request("https://vitale.example",{method:"POST"}))).status).toBe(403);expect(mock.rpc).not.toHaveBeenCalled();
  });
  it("does not claim events without API credential",async()=>{
   vi.stubEnv("HOTPIPE_PRICE_ALERT_API_KEY","");expect((await deliverPriceAlertOutbox(signed())).status).toBe(503);expect(mock.rpc).toHaveBeenCalledTimes(1);
  });
- it("rejects invalid signature before claiming",async()=>{
+  it("rejects malformed credential before claiming",async()=>{
+   vi.stubEnv("HOTPIPE_PRICE_ALERT_API_KEY","invalid-key");expect((await deliverPriceAlertOutbox(signed())).status).toBe(503);expect(mock.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("works without native AbortSignal.timeout",async()=>{
+   const timeout=vi.spyOn(AbortSignal,"timeout").mockImplementation(()=>{throw new TypeError("Unavailable");});
+   await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).toBe("delivered");expect(timeout).not.toHaveBeenCalled();
+  });
+  it("rejects invalid signature before claiming",async()=>{
   mock.rpc.mockReset().mockResolvedValue({data:false});expect((await deliverPriceAlertOutbox(signed())).status).toBe(403);expect(fetch).not.toHaveBeenCalled();
  });
  it("acknowledges matching event and checks lease ownership",async()=>{

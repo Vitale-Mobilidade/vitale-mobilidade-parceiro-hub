@@ -10,18 +10,24 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     signature: req.headers.get("x-worker-signature"), issued_at: req.headers.get("x-worker-issued-at"),
   });
   if (authError || authorized !== true) return new Response(null, { status: 403 });
-  const apiKey = process.env["HOTPIPE_PRICE_ALERT_API_KEY"];
+  const apiKey = process.env["HOTPIPE_PRICE_ALERT_API_KEY"]?.trim();
   if (!apiKey) return new Response(JSON.stringify({ ok: false, error: "integration_not_configured" }), { status: 503 });
+  if (!/^hp_[a-f0-9]{48}$/.test(apiKey)) return Response.json({ ok: false, error: "integration_invalid_config" }, { status: 503 });
   const { data: events, error: claimError } = await db.rpc("claim_price_alert_hotpipe");
   if (claimError) return new Response(null, { status: 500 });
   let delivered = 0;
   for (const event of events ?? []) {
     let status = 0; let ack: unknown; let retryAfter: string | null = null;
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(), 10000);
     try {
-      const response = await fetch(ENDPOINT, { method: "POST", redirect: "error", headers: { "Content-Type": "application/json", "x-api-key": apiKey }, body: JSON.stringify(event.payload), signal: AbortSignal.timeout(10000) });
+      const response = await fetch(ENDPOINT, { method: "POST", redirect: "error", headers: { "Content-Type": "application/json", "x-api-key": apiKey }, body: JSON.stringify(event.payload), signal: controller.signal });
       status = response.status; retryAfter = response.headers.get("retry-after");
       ack = await response.json().catch(() => null);
-    } catch { /* Network uncertainty is retried with the same immutable event ID. */ }
+    } catch (failure) {
+      const name = failure instanceof Error && ["TypeError", "AbortError", "TimeoutError"].includes(failure.name) ? failure.name : "Error";
+      console.error("[hotpipe-outbox] delivery_failed", { event_id: event.event_id, name });
+    } finally { clearTimeout(deadline); }
     const accepted = status === 200 && validHotpipeAck(ack, event.payload);
     const code = ack && typeof ack === "object" ? String((ack as Record<string, unknown>).error ?? (ack as Record<string, unknown>).code ?? "") : undefined;
     const retry = !accepted && (status === 200 || retryableHotpipeStatus(status, code)) && event.attempts < 10;
