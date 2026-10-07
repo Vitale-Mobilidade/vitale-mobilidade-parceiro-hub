@@ -64,6 +64,7 @@ export const newsletterSchema = z.object({
     .max(100)
     .refine((s) => !/[\r\n]/.test(s)),
   intro: z.string().trim().min(1).max(1800),
+  editionNumber: z.number().int().min(1).optional(),
   curiosity: z
     .object({
       text: z.string().min(30).max(400),
@@ -288,7 +289,7 @@ export function renderEditorialNewsletter(
       )
       .join(""),
   );
-  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">A SUA PRÓXIMA ESCOLHA COMEÇA AQUI</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Olá, {{{contact.first_name|amigo(a)}}}!</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.headline ?? data.subject)}</h1>${data.curiosity ? `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:20px"><p style="font-size:11px;letter-spacing:2px;font-weight:bold;color:#165b42;margin:0 0 10px">UMA CURIOSIDADE PARA COMEÇAR</p><p style="font-size:18px;line-height:1.6;margin:0">${e(data.curiosity.text)}</p></td></tr></table>` : ""}${data.intro
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Olá, {{{contact.first_name|amigo(a)}}}!</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.curiosity ? `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:20px"><p style="font-size:11px;letter-spacing:2px;font-weight:bold;color:#165b42;margin:0 0 10px">UMA CURIOSIDADE PARA COMEÇAR</p><p style="font-size:18px;line-height:1.6;margin:0">${e(data.curiosity.text)}</p></td></tr></table>` : ""}${data.intro
     .split(/\n\n/)
     .map(
       (p) =>
@@ -318,4 +319,10 @@ export function renderEditorialNewsletter(
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");
   return { html, text };
+}
+
+export function numberNewsletterSubject(title: string, editionNumber: number) {
+  if (!Number.isSafeInteger(editionNumber) || editionNumber < 1)
+    throw new Error("newsletter_number_invalid");
+  return `#${editionNumber} — ${title.trim().replace(/^#\d+\s*[—:-]?\s*/, "")}`;
 }

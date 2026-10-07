@@ -102,3 +102,14 @@ it("uses São Paulo weekdays and sending window, independent of host timezone", 
 it("does not send a third weekly edition on Friday", () => {
   expect(newsletterWindow(new Date("2026-10-09T13:00:00Z")).due).toBe(false);
 });
+
+import { numberNewsletterSubject } from "./newsletter";
+it("numbers the edition once without inheriting an old prefix", () => {
+  expect(numberNewsletterSubject("Ladeira acima", 1)).toBe(
+    "#1 — Ladeira acima",
+  );
+  expect(numberNewsletterSubject("#1 — Outra pauta", 2)).toBe(
+    "#2 — Outra pauta",
+  );
+  expect(() => numberNewsletterSubject("Pauta", 0)).toThrow("number_invalid");
+});

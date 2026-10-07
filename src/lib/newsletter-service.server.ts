@@ -430,6 +430,9 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const since = previous?.[0]?.created_at
       ? new Date(previous[0].created_at)
       : undefined;
+    const nextNumber = saved
+      ? null
+      : await must(db.rpc("newsletter_next_edition_number"));
     const edition = saved
       ? { content: saved.payload.content, fingerprint: saved.fingerprint }
       : await automaticNewsletter(
@@ -441,6 +444,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
                 p.payload.content,
             )
             .filter(Boolean),
+          nextNumber,
         );
     for (const group of GROUPS)
       await must(
@@ -632,7 +636,13 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
         }),
       );
     } else if (body.action === "preview") {
-      const edition = await automaticNewsletter(new Date().getUTCDay());
+      const nextNumber = await must(db.rpc("newsletter_next_edition_number"));
+      const edition = await automaticNewsletter(
+        new Date().getUTCDay(),
+        undefined,
+        [],
+        nextNumber,
+      );
       return Response.json(
         {
           content: edition.content,

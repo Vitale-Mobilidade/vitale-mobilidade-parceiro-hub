@@ -8,6 +8,7 @@ import { fetchBikeCatalogFromDb } from "./bikes-repository.server";
 import { persistentBikeImage } from "./bike-catalog";
 import {
   renderResendNewsletter,
+  numberNewsletterSubject,
   newsletterImageSchema,
   type NewsletterContent,
 } from "./newsletter";
@@ -29,6 +30,7 @@ export async function automaticNewsletter(
   weekday: number,
   since = new Date(Date.now() - (weekday === 4 ? 3 : 4) * 86_400_000),
   previousEditions: NewsletterContent[] = [],
+  editionNumber = 1,
 ): Promise<{ content: NewsletterContent; fingerprint: string }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -161,7 +163,8 @@ export async function automaticNewsletter(
   const image = (url: string | null | undefined) =>
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
   const content: NewsletterContent = {
-    subject: draft.subject,
+    editionNumber,
+    subject: numberNewsletterSubject(draft.subject, editionNumber),
     curiosity: draft.curiosity,
     headline: draft.headline,
     preheader: draft.preheader,

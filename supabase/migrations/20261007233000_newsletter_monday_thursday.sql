@@ -24,4 +24,10 @@ END $$;
 
 -- Recheck the same consent revision immediately before submission; do not add new recipients.
 
+CREATE FUNCTION public.newsletter_next_edition_number() RETURNS integer
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$
+ SELECT count(DISTINCT edition_day)::integer+1 FROM newsletter_campaigns WHERE status <> 'skipped';
+$$;
+REVOKE ALL ON FUNCTION public.newsletter_next_edition_number() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.newsletter_next_edition_number() TO service_role;
 COMMIT;

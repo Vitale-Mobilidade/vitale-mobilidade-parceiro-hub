@@ -61,3 +61,15 @@ Quiz com arte e CTA existentes. Radar em cards: foto, referencia datada, preco v
 
 
 Validacao posterior deste ajuste:29testes direcionados passaram; pnpm validate passou (59regressoes, types/build), lint passou, SQL17 isolado validou quinta/sexta. Sete imagens reais carregadas na preview, desktop800 e mobile390 sem overflow. Todos os oito pareceres Pass para preparacao: Produto (diversidade/autonomia); CTO (migration additive/servicos privados); IA (curiosidade sustentada/revisor/memoria); Seguranca (somente transcricoes selecionadas no servidor); UX (tags/cards/Quiz/mobile); Operacao (agenda coerente e respiro); Growth (CTAs/maiores quedas datadas); PMO (testes/documentacao/rollback). Publicacao/migration/geracao real/inbox seguem pendentes de liberacao do novo escopo, sem declarar implantacao.
+
+
+## Voz editorial e teste autorizado — ajuste de 7/10
+
+O responsavel rejeitou o titulo comercial e aprovou formato/imagens. Instrucao: newsletter divertida de conteudo, baseada na fala das transcricoes; numeracao a partir de#1; reenviar teste. Redator passou a usar conversa direta, perguntas e humor leve, atribuindo experiencias ao video/Vitale, sem fingir ter pedalado ou copiar propaganda. Titulo comercial generico bloqueado no validador e revisor. Texto deste teste foi refeito diretamente neste chat a partir das transcricoes selecionadas e artigos, nao e prova de chamada do writer no gateway.
+
+Assunto do teste:#1 — Ladeira nao le ficha tecnica (emoji bike). Curiosidade factual do teste VL20; variedade mantida com comparativo, rotina de trabalho, precos e teste pratico. Layout e imagens preservados. Somente guilherme@hotpipe.com.br; teste nativo Resend, sem campanha de lista.
+
+Numeracao de producao preparada: RPC privada retorna count(distinct edition_day)+1, payload congela o numero por edicao e todas coortes compartilham esse texto; preview/teste nao consomem sequencia. Primeiro disparo real continua#1, testes de revisao nao sao edicoes de lista. Funcao adicionada a migration local nova; nao aplicada em producao.
+
+
+Teste revisado enviado e entregue pelo Resend:01a1188f-022b-764f-953e-020cb229c35c, assunto [TEST]#1 — Ladeira nao le ficha tecnica (bike), somente Guilherme. UI confirmou Delivered. Rascunho segue Draft, sem segmento. Evidencia artifacts/newsletter-test-1-delivered.png. Nenhuma campanha de lista ou deploy/migration realizados neste teste. Gate local:30testes direcionados passaram; pnpm validate passou (59regressoes, TypeScript/build), lint limpo e SQL17 isolado comprovou leitura de contador sem consumir numero. Numeracao e voz preparados no codigo; ainda nao foram publicados no runtime automatico.
