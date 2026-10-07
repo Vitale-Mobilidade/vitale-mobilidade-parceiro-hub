@@ -1263,6 +1263,103 @@ export type Database = {
         }
         Relationships: []
       }
+      price_alert_hotpipe_outbox: {
+        Row: {
+          alert_id: string
+          attempts: number
+          created_at: string
+          delivered_at: string | null
+          event_id: string
+          last_http_status: number | null
+          lease_token: string | null
+          lease_until: string | null
+          next_attempt_at: string
+          payload: Json
+          sequence: number
+          status: string
+        }
+        Insert: {
+          alert_id: string
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          event_id?: string
+          last_http_status?: number | null
+          lease_token?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          payload: Json
+          sequence?: never
+          status?: string
+        }
+        Update: {
+          alert_id?: string
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          event_id?: string
+          last_http_status?: number | null
+          lease_token?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          sequence?: never
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alert_hotpipe_outbox_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "bike_price_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_alert_hotpipe_requests: {
+        Row: {
+          alert_id: string
+          request_id: string
+          revision: number
+        }
+        Insert: {
+          alert_id: string
+          request_id: string
+          revision?: number
+        }
+        Update: {
+          alert_id?: string
+          request_id?: string
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alert_hotpipe_requests_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: true
+            referencedRelation: "bike_price_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_alert_hotpipe_settings: {
+        Row: {
+          enabled: boolean
+          signing_key: string
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       quiz_events: {
         Row: {
           created_at: string
@@ -1894,14 +1991,42 @@ export type Database = {
     }
     Functions: {
       admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
+      authorize_price_alert_hotpipe: {
+        Args: { issued_at: string; signature: string }
+        Returns: boolean
+      }
       authorize_youtube_editorial_tick: {
         Args: { issued_at: string; signature: string; tick_action: string }
         Returns: Json
+      }
+      claim_price_alert_hotpipe: {
+        Args: never
+        Returns: {
+          alert_id: string
+          attempts: number
+          created_at: string
+          delivered_at: string | null
+          event_id: string
+          last_http_status: number | null
+          lease_token: string | null
+          lease_until: string | null
+          next_attempt_at: string
+          payload: Json
+          sequence: number
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "price_alert_hotpipe_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_youtube_editorial_cover: { Args: never; Returns: Json }
       claim_youtube_editorial_cover_render: { Args: never; Returns: Json }
       claim_youtube_editorial_publication: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
+      dispatch_price_alert_hotpipe: { Args: never; Returns: number }
       dispatch_youtube_editorial_tick: {
         Args: { tick_action: string }
         Returns: number
