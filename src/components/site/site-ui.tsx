@@ -168,14 +168,9 @@ export function SiteFooter() {
         <div className="border-t border-ink-foreground/10">
           <p className="responsive-container py-5 text-xs">
             © 2026 Vitale Mobilidade. Usamos links de afiliado do Mercado Livre em algumas páginas.
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new Event("vitale:open-consent"))}
-              className="ml-3 underline underline-offset-2 hover:text-mint"
-            >
-              Preferências de privacidade
-            </button>
-            <a href="/privacidade" className="ml-3 underline underline-offset-2 hover:text-mint">Cookies e privacidade</a>
+            <a href="/privacidade" className="ml-3 underline underline-offset-2 hover:text-mint">
+              Cookies e privacidade
+            </a>
           </p>
         </div>
       </footer>
