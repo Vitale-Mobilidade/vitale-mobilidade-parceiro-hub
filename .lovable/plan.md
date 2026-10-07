@@ -1,53 +1,39 @@
-# Revisão: fundação editorial (PR #2) no painel /admin/conteudos/novo
+# Inspeção da conexão Resend "My Resend" (somente leitura)
 
-Esta é a revisão pedida. Nada foi editado ou publicado. Aprovar este plano significa só iniciar a Fase 0 abaixo, sem publicar nada.
+## Resultado da inspeção (já verificado nesta sessão)
 
-## Resumo
-- **Arquitetura:** boa base. O PR adiciona `editorial_briefs` privada, 9 arquétipos, a ação `outline-only`, um score de diversidade contra o corpus e uma trava no banco para publicação. Mas o PR está **aberto, não mesclado**, e foi escrito sobre uma base anterior. Estes arquivos mudaram depois (capas, funil do Quiz): `editorial-admin/index.ts` (+293 linhas no PR), `AdminEditorial.tsx` e `ArticleView.tsx`. Por isso ele precisa ser adaptado ao HEAD `8c500b3`, e não aplicado às cegas.
-- **Prova de cinco outlines sem escrever artigos:** **o painel atual não permite.** Hoje `generate` sempre escreve o corpo completo. O painel proposto permite, pela ação `outline-only`. Só que o botão principal do PR é "Analisar, escrever e publicar", o que é arriscado demais como padrão.
-- **As cinco fontes suportam cinco intenções?** **Não.** Classificação honesta:
+- Conexão: **My Resend** (`std_01m4bze58febgaxk39p57y9jpd`), conector `resend`, auth `api_key`, **usa connector gateway: true**.
+- **Vinculada a este projeto: não** (`is linked to project: no`).
+- **Acesso do usuário atual: não** (`has access: no`) — a conexão é privada no workspace e o usuário atual não tem permissão; `linkable: yes` indica que pode ser vinculada depois que o acesso for concedido.
+- Nenhuma chave foi lida, exibida ou copiada. Nenhum código, recurso, secret, SQL ou e-mail foi alterado/enviado.
 
-| Vídeo | Intenção provável | Observação |
-|---|---|---|
-| GT20 (aDLpuoXPofU) | primeiras impressões / teste real | review |
-| V20 Mini (9FklzW-rpQU) | review de unidade emprestada | sobrepõe o GT20 |
-| FT03 (HTZASjgUxxQ) | review de produto | sobrepõe também |
-| V8 Pro vs V40 Pro (okTQuDvRlB8) | comparação direta + preço de jun/2026 | preço citado é datado, não pode virar fato atual |
-| V29 Pro vs V8 Pro S vs V35 (uhq6h4IIjyE) | necessidade de público (entregador, duas baterias) / comparação por uso | intenção de fato distinta |
+## Mecanismo que o servidor TanStack usaria (contrato real)
 
-Resultado: **3 intenções claras** (review/teste, comparação direta, necessidade de público). As três reviews só podem se diferenciar por ângulo, por exemplo teste de rua com velocidade máxima e chuva, ou autonomia. Isso é diferenciação de outline, não de intenção. A prova deve registrar "3 intenções + 2 variantes de review", sem forçar cinco.
+Como a conexão é **gateway-backed**, o servidor TanStack (server function / rota `src/routes/api/`) chamaria a API Resend **via connector gateway**, não com uma chave Resend direta:
 
-## Revisão pelas oito perspectivas
-- **Produto — Pass condicional.** Separar "outline" de "redação" é o ganho certo. Manter os dois artigos publicados intocados: a trava do PR só vale para `foundation_required=true`.
-- **CTO — Fail até adaptar.** Há conflito com o HEAD. A trava substitui `editorial_article_before_update` inteira. É preciso comparar com a versão viva (capas, revisão otimista) antes de trocar, ou os comportamentos atuais se perdem. `status` em `editorial_briefs` sem trava de revisão na escrita do brief é um risco de corrida.
-- **IA — Pass condicional.** Transcrição entra como `untrusted_source_json`, e as evidências têm IDs. Duas lacunas: ninguém mede se cada afirmação do texto aponta para um trecho literal, e a classificação precisa poder responder "intenção incerta" em vez de escolher à força um dos 9 arquétipos.
-- **Segurança — Pass.** A tabela é só `service_role`, com RLS ligada e sem acesso público. Links `meli.la` e preços ficam fora do brief. Um ponto: a trava do banco aceita publicar quando `articleQaPass='true'` no JSON. Esse valor tem de ser gravado só pela função, nunca vir do cliente.
-- **UX — Fail na proposta.** O botão padrão publica. Deve ser "Gerar outline" → mostrar outline, arquétipo, alertas de diversidade → "Escrever rascunho" → a publicação automática só acontece se o QA passar. Faltam mensagens para bloqueio de QA, tempo esgotado e intenção incerta.
-- **CX — N/A.** Nenhuma página pública muda nesta fase.
-- **Growth + SEO/IA (decisivo) — Fail para produção em massa, Pass para a fundação.** Está alinhado ao Google Search Central (conteúdo útil e original, sem conteúdo em escala para manipular ranking, FAQ sem rich result garantido) e ao FAQ de publishers da OpenAI (acesso do OAI-SearchBot via robots, sem promessa de citação). Sem llms.txt "mágico" e sem FAQ forçado: o outline do PR já trata FAQ como opcional. O risco principal é o de "scaled content abuse": três reviews com o mesmo esqueleto. O score de diversidade é heurístico (abertura e títulos iguais) e **não detecta paráfrase**. Ele precisa bloquear, não só alertar.
-- **PMO/QA — Fail até existir recuperação.** O próprio PR declara NO-GO: faltam backup restaurável e o ensaio de restauração.
-
-## Lacunas concretas
-1. **Escala e tempo:** um `generate` do PR faz em série classificação, outline, redação, revisão SEO e QA, ou seja, 4 a 5 chamadas de IA numa única requisição em streaming. Com transcrições de 12 a 17 mil caracteres, dá para estimar vários minutos por artigo. Isso pode estourar o tempo de uma Edge Function e perder o que já foi feito. As etapas precisam ser gravadas uma a uma e poder ser retomadas.
-2. **Corpus:** o corpus é lido com `limit(200)` e 4.000 caracteres por artigo, a cada geração. Serve para 100 artigos, mas o custo em tokens cresce. Melhor guardar uma "impressão" (headings, abertura, conclusão) por artigo.
-3. **Custo:** para 100 vídeos, cerca de 500 chamadas. Não há fila, limite por dia ou pausa quando os créditos acabam.
-4. **Recuperação do banco:** ainda não há backup lógico das tabelas editoriais nem ensaio de restauração. Existe `docs/GATE0_RESTORE_REHEARSAL.md`, que deve ser reaproveitado.
-5. **Fontes:** a quantidade de transcrições já importadas no Admin ainda precisa ser conferida. O PR citava 3. As cinco deste anexo precisam ser importadas pelo Admin (`video-save`), sempre como dado e nunca como instrução.
-
-## Sequência segura (próximas rodadas)
 ```text
-0. Conferir no banco quais transcrições existem e fazer backup lógico das tabelas editoriais
-1. Adaptar o PR ao HEAD atual (unir a trava do banco com a versão viva)
-2. Migration aditiva -> verificar se os 2 artigos publicados ficaram idênticos (slug/status/blocks/revision)
-3. Deploy só de editorial-admin, com outline-only e etapas retomáveis
-4. Painel: "Gerar outline" como ação padrão, publicação desligada por padrão
-5. Importar as 5 transcrições -> gerar 5 outlines -> relatório de intenção/diversidade (sem corpo)
-6. Um rascunho piloto não publicado -> QA automático falhando fechado
-7. Só então publicar o site; produção em lote apenas depois
+POST https://connector-gateway.lovable.dev/resend/<endpoint-resend>
+Headers:
+  Authorization: Bearer ${LOVABLE_API_KEY}        (secret de servidor)
+  X-Connection-Api-Key: ${RESEND_API_KEY}         (secret injetado ao vincular)
 ```
 
-## Detalhes técnicos
-- Base: HEAD `8c500b3`. PR #2 sobre a branch `codex/editorial-foundation-20260926`, 12 arquivos, sem mesclar.
-- Mudança pedida na trava do banco: exigir `brief.article_revision = OLD.revision` (o PR já faz) e acrescentar um `quality_report.stage='final'` gravado só pelo servidor.
-- A classificação ganha a saída `uncertain`, que bloqueia a etapa de redação.
-- O score de diversidade passa a bloquear abaixo de um limite, para artigos novos com `foundation_required`.
+- Após vincular (`standard_connectors--connect`), os secrets `LOVABLE_API_KEY` e `RESEND_API_KEY` ficam disponíveis apenas no runtime de servidor (`process.env` em server functions) — nunca no frontend nem em `VITE_*`.
+- O gateway repassa a API inteira do provedor; portanto **Broadcasts, Contacts, Segments (Audiences) e Usage** são alcançáveis pelos paths documentados da Resend (ex.: `/broadcasts`, `/contacts`, `/audiences`, `/usage`), não apenas `/emails` transacional.
+- Não há suporte nativo de Broadcasts no serviço transacional de Emails do Lovable — a newsletter precisa mesmo desta conexão gateway.
+
+## Pendência que exige ação do usuário (fora deste plano)
+
+1. O responsável (dono da conexão) precisa **conceder acesso** ao usuário atual nas configurações da conexão no workspace (seção de permissões da conexão "My Resend"), ou vinculá-la ele mesmo.
+2. Depois, vincular ao projeto: `standard_connectors--connect` com `connector_id=resend`, `connection_id=std_01m4bze58febgaxk39p57y9jpd`.
+
+## Plano (quando o acesso for concedido e a implementação for autorizada)
+
+1. Vincular a conexão ao projeto via `standard_connectors--connect` (sem criar nova conexão).
+2. Confirmar com `fetch_secrets` a presença booleana de `RESEND_API_KEY` (sem exibir valor).
+3. Implementar server function TanStack para newsletter usando o gateway com os paths Resend de Broadcasts/Contacts/Audiences, validação de entrada e tratamento de erros do provedor (status + corpo).
+4. Testes dirigidos e `pnpm validate`; sem envio real de e-mails sem autorização explícita.
+
+## Fora de escopo
+
+- Editar código, criar recursos, ler/exibir chaves, alterar sharing/roles/secrets, enviar e-mails, publicar frontend ou aplicar SQL — nada disso será feito nesta etapa.
