@@ -1,3 +1,4 @@
+import { minimumAlertPrice, minimumAlertMessage } from "../../../supabase/functions/_shared/price-alert-policy";
 import { useState } from "react";
 import { BellRing, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,10 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
       setError("Escolha uma meta abaixo do preço atual.");
       return;
     }
+    if (condition === "target" && targetPrice! < minimumAlertPrice(currentPrice)) {
+      setError(minimumAlertMessage(currentPrice));
+      return;
+    }
     setStatus("sending");
     trackRadar("radar_alert_submitted", { bike_id: bikeId, condition });
     try {
@@ -76,7 +81,14 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
       const ok = !fnError && (data as { ok?: boolean } | null)?.ok === true;
       if (!ok) {
         setStatus("idle");
-        setError("Não foi possível registrar agora. Confira os dados e tente de novo.");
+        let message = "Não foi possível registrar agora. Confira os dados e tente de novo.";
+        if (fnError?.context instanceof Response) {
+          try {
+            const failure = await fnError.context.json();
+            if (typeof failure?.error === "string") message = failure.error;
+          } catch { /* Keep the generic fallback. */ }
+        }
+        setError(message);
         trackRadar("radar_alert_error", { bike_id: bikeId });
         return;
       }
@@ -135,7 +147,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">Avise-me quando cair</legend>
               <div className="flex flex-wrap gap-2">
-                {DROP_OPTIONS.filter((amount) => currentPrice - amount > 0).map((amount) => (
+                {DROP_OPTIONS.filter((amount) => currentPrice - amount >= minimumAlertPrice(currentPrice)).map((amount) => (
                   <button key={amount} type="button" aria-pressed={condition === "target" && !target && drop === amount} onClick={() => { setCondition("target"); setTarget(""); setDrop(amount); }} className={`min-h-10 rounded-full border px-3 text-sm ${condition === "target" && !target && drop === amount ? "border-action bg-action text-primary-foreground" : "border-line"}`}>R$ {amount.toLocaleString("pt-BR")}</button>
                 ))}
               </div>
@@ -165,7 +177,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
               className="hidden"
             />
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
             <Button type="submit" className="min-h-12 w-full" disabled={status === "sending"}>
               {status === "sending" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
