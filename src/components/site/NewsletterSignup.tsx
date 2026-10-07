@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 export function NewsletterSignup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [interest, setInterest] = useState("general");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
@@ -21,14 +22,28 @@ export function NewsletterSignup() {
     setStatus("sending");
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data, error: fnError } = await supabase.functions.invoke("newsletter-interest", {
-        body: { name, email, consent, website, sourceUrl: captureQuizAttribution().source_url ?? window.location.href },
-      });
-      if (fnError || (data as { ok?: boolean } | null)?.ok !== true) throw new Error("signup failed");
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "newsletter-interest",
+        {
+          body: {
+            name,
+            email,
+            consent,
+            interest,
+            website,
+            sourceUrl:
+              captureQuizAttribution().source_url ?? window.location.href,
+          },
+        },
+      );
+      if (fnError || (data as { ok?: boolean } | null)?.ok !== true)
+        throw new Error("signup failed");
       setStatus("done");
     } catch {
       setStatus("idle");
-      setError("Não foi possível registrar agora. Tente novamente em instantes.");
+      setError(
+        "Não foi possível registrar agora. Tente novamente em instantes.",
+      );
     }
   };
 
@@ -42,23 +57,35 @@ export function NewsletterSignup() {
           <Mail className="h-6 w-6" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h2 id="newsletter" className="text-xl font-bold text-ink sm:text-2xl">
+          <h2
+            id="newsletter"
+            className="text-xl font-bold text-ink sm:text-2xl"
+          >
             Newsletter Vitale
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cadastre-se para receber novidades sobre bikes elétricas, preços e ferramentas.
+            Cadastre-se para receber novidades sobre bikes elétricas, preços e
+            ferramentas.
           </p>
         </div>
       </div>
       {status === "done" ? (
         <p role="status" className="rounded-lg bg-mint/20 p-4 text-sm text-ink">
-          Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da Vitale.
+          Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da
+          Vitale.
         </p>
       ) : (
-        <form onSubmit={submitNewsletter} aria-busy={status === "sending"} className="min-w-0 space-y-3">
+        <form
+          onSubmit={submitNewsletter}
+          aria-busy={status === "sending"}
+          className="min-w-0 space-y-3"
+        >
           <div className="grid gap-3 lg:grid-cols-2">
             <div>
-              <label htmlFor="nl-name" className="mb-1 block text-sm font-medium text-ink">
+              <label
+                htmlFor="nl-name"
+                className="mb-1 block text-sm font-medium text-ink"
+              >
                 Seu nome
               </label>
               <input
@@ -76,7 +103,10 @@ export function NewsletterSignup() {
               />
             </div>
             <div>
-              <label htmlFor="nl-email" className="mb-1 block text-sm font-medium text-ink">
+              <label
+                htmlFor="nl-email"
+                className="mb-1 block text-sm font-medium text-ink"
+              >
                 Seu e-mail
               </label>
               <input
@@ -94,6 +124,22 @@ export function NewsletterSignup() {
               />
             </div>
           </div>
+          <label
+            htmlFor="nl-interest"
+            className="block text-sm font-medium text-ink"
+          >
+            O que mais te interessa? (opcional)
+            <select
+              id="nl-interest"
+              value={interest}
+              onChange={(event) => setInterest(event.target.value)}
+              className="mt-1 h-12 w-full rounded-lg border border-input bg-card px-4 text-sm"
+            >
+              <option value="general">Todos os destaques</option>
+              <option value="radar">Radar e bikes em destaque</option>
+              <option value="content">Artigos e vídeos</option>
+            </select>
+          </label>
           <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
             <input
               type="checkbox"
@@ -103,7 +149,10 @@ export function NewsletterSignup() {
               aria-describedby={error ? "nl-error" : undefined}
               className="mt-0.5 shrink-0 accent-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
             />{" "}
-            <span>Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me contatar sobre a newsletter.</span>
+            <span>
+              Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me
+              contatar sobre a newsletter.
+            </span>
           </label>
           <input
             type="text"

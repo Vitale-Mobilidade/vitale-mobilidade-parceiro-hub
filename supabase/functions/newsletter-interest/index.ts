@@ -34,9 +34,11 @@ Deno.serve(async (req) => {
     if (attempts > 8) return json({ ok: false, error: "Tente novamente mais tarde." }, 429);
     const { error: rateError } = await supabase.from("newsletter_throttle").upsert({ fingerprint: fp, attempts, window_started_at: fresh ? now.toISOString() : throttle.window_started_at });
     if (rateError) return json({ ok: false }, 503);
+    const interest = ["general", "radar", "content"].includes(String(body.interest ?? "general")) ? String(body.interest ?? "general") : "general";
     const sourceUrl = typeof body.sourceUrl === "string" && /^https:\/\//.test(body.sourceUrl) ? body.sourceUrl.slice(0, 500) : null;
     const { error } = await supabase.from("newsletter_subscriptions").upsert({
       person_name: name,
+      interest,
       email,
       status: "interested",
       delivery_enabled: false,
