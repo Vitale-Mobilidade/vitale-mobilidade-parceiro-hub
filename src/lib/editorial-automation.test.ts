@@ -146,3 +146,9 @@ it("business articles use explanatory video headings and avoid a bike-selection 
   expect(blocks.find(block => block.type === "video")?.heading).toBe("Veja as explicações em vídeo");
   expect(blocks.some(block => block.type === "quiz")).toBe(false);
 });
+
+
+it("a bike video CTA does not invent a practical test", () => {
+  const blocks = layoutArticle({ sections: [{ type: "text", text: "Características da bike." }], videoId: "abcDEFG1234", bikeId: "v9-max", contentType: "test", offerBikeIds: new Set(), hasFaq: false });
+  expect(blocks.find(block => block.type === "video")?.heading).toBe("Veja a bike em vídeo");
+});

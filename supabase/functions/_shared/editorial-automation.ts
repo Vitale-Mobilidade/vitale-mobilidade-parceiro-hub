@@ -196,7 +196,7 @@ export function videoHeading(contentType?: ContentType): string {
     ? "Assista ao comparativo completo"
     : contentType === "guide" || contentType === "tips" || contentType === "economy"
       ? "Veja as explicações em vídeo"
-      : "Veja o teste completo em vídeo";
+      : "Veja a bike em vídeo";
 }
 
 /**
