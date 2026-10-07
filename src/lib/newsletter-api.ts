@@ -42,6 +42,20 @@ export async function newsletterCall<T>(
     .catch(() => ({ error: "newsletter_unavailable" }));
   if (!response.ok) {
     const messages: Record<string, string> = {
+      newsletter_writer_auth_failed:
+        "O gateway de IA rejeitou a autenticação do servidor.",
+      newsletter_writer_budget_limit:
+        "O gateway de IA informou limite de uso ou saldo. Nenhum e-mail foi enviado.",
+      newsletter_writer_gateway_failed:
+        "O gateway de IA retornou erro. Nenhum e-mail foi enviado.",
+      newsletter_writer_network_failed:
+        "A conexão do servidor com a IA falhou. Nenhum e-mail foi enviado.",
+      newsletter_writer_evidence_invalid:
+        "O rascunho não apresentou citações literais válidas das fontes.",
+      newsletter_writer_curiosity_invalid:
+        "A curiosidade não apresentou uma citação válida da fonte.",
+      newsletter_writer_length_invalid:
+        "O redator ultrapassou o tamanho editorial permitido.",
       newsletter_writer_timeout:
         "O redator excedeu o tempo de geração. Nenhum e-mail foi enviado.",
       newsletter_writer_unavailable:

@@ -109,7 +109,7 @@ describe("newsletter editorial", () => {
       .fn()
       .mockResolvedValue(new Response("unavailable", { status: 503 }));
     await expect(writeNewsletter([source], 5, request)).rejects.toThrow(
-      "writer_unavailable",
+      "writer_gateway_failed",
     );
     expect(request).toHaveBeenCalledTimes(1);
   });
