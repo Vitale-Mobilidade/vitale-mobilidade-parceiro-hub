@@ -965,14 +965,14 @@ describe("literal proof repair never rewrites the article", () => {
       if (table === "editorial_audit_logs") return { insert: async () => ({ error: null }) };
       const chain = { update: (patch: Record<string, unknown>) => { writes.push(patch); return chain; }, eq: (key: string, value: unknown) => { filters.push([key, value]); return chain; }, select: () => chain, maybeSingle: async () => ({ data: { ...article, ...writes[0], revision: 5 }, error: null }) }; return chain;
     } };
-    exports.injectOfflineAI!(vi.fn(async () => ({ evidence: [{ id: "section:0", sourceExcerpt: original }] })));
+    exports.injectOfflineAI!(vi.fn(async () => ({ evidence: [{ id: "section:0", sourceId: 0 }] })));
     const result = await exports.ensureLiteralPublicationEvidence!(db, { id: "owner" }, article, original) as typeof article;
     expect(result.title).toBe(article.title); expect(result.og_image_url).toBe(article.og_image_url); expect(result.blocks[0].text).toBe(article.blocks[0].text);
     expect(Object.keys(writes[0]).sort()).toEqual(["blocks", "faq", "updated_by"]);
     expect(filters).toContainEqual(["revision", 4]);
     expect(result.blocks[0].sourceExcerpt).toBe(original);
   });
-  it.each([{ id: "title", sourceExcerpt: original }, { id: "section:0", sourceExcerpt: "A bateria tem 60 Ah." }, { id: "section:0", sourceExcerpt: "" }])("blocks invented, absent or unauthorized evidence", async evidence => {
+  it.each([{ id: "title", sourceId: 0 }, { id: "section:0", sourceId: 99 }, { id: "section:0", sourceId: -1 }])("blocks invented, absent or unauthorized evidence", async evidence => {
     const from = vi.fn(); exports.injectOfflineAI!(vi.fn(async () => ({ evidence: [evidence] })));
     await expect(exports.ensureLiteralPublicationEvidence!({ from }, { id: "owner" }, article, original)).rejects.toThrow("publication_evidence_invalid");
     expect(from).not.toHaveBeenCalled();
