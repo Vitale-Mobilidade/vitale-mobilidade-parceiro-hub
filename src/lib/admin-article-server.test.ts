@@ -16,7 +16,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -36,6 +36,7 @@ const exports: {
   coverPreview?: (req: Request, db: unknown, article: unknown) => Promise<Response>;
   finishQueuedCover?: (...args: unknown[]) => Promise<Response>;
   finishQueuedCoverRender?: (...args: unknown[]) => Promise<Response>;
+  ensureLiteralPublicationEvidence?: (...args: unknown[]) => Promise<unknown>;
   finishQueuedPublication?: (...args: unknown[]) => Promise<Response>;
   injectPublicationChecks?: (...args: unknown[]) => () => void;
   finishQueuedRewrite?: (...args: unknown[]) => Promise<Response>;
@@ -899,8 +900,8 @@ it("hourly refreshes the spreadsheet before serving a pending cover stage", asyn
 
 describe("automatic publication uses the leased daily pipeline", () => {
   const transcript = "Motor forte e autonomia dependem do percurso.";
-  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 7, title: "Motor e autonomia", slug: "motor-e-autonomia", summary: "Conheça o funcionamento.", seo_title: "Motor e autonomia no uso diário", meta_description: "Entenda a autonomia.", og_title: "Motor e autonomia", og_description: "Uso diário.", validation_errors: [], related_article_ids: [], faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "A autonomia depende do percurso.", sourceExcerpt: transcript }] };
-  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript }, conflict = false) {
+  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 7, title: "Motor e autonomia", slug: "motor-e-autonomia", summary: "Conheça o funcionamento.", seo_title: "Motor e autonomia no uso diário", meta_description: "Entenda a autonomia.", og_title: "Motor e autonomia", og_description: "Uso diário.", validation_errors: [], primary_bike_id: null, related_bike_ids: [], related_article_ids: [], faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "A autonomia depende do percurso.", sourceExcerpt: transcript }] };
+  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true }, conflict = false) {
     const writes: { table: string; patch: Record<string, unknown> }[] = [];
     const filters: unknown[] = [];
     const db = { from: (table: string) => {
@@ -933,8 +934,17 @@ describe("automatic publication uses the leased daily pipeline", () => {
       expect(reviewer.mock.calls[0][1]).toContain('"bikes":[]');
     } finally { restore(); }
   });
+  it("queues exactly one correction after a completed factual rejection", async () => {
+    const { db, writes } = publicationDb({ videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: false });
+    const restore = mockChecks(); exports.injectOfflineAI!(vi.fn(async () => ({ pass: false, issues: ["Remover a característica não sustentada"], cautionViolations: [] })));
+    try {
+      expect(await (await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).json()).toMatchObject({ status: "rewrite_pending" });
+      expect(writes.at(-1)?.patch).toMatchObject({ state: "rewrite_pending", capture: { publicationRepairAttempted: true } });
+      expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
+    } finally { restore(); }
+  });
   it.each(["wrong_source", "failed_qa", "conflict"])("does not publish %s or replay the writer/image", async failure => {
-    const { db, writes } = publicationDb(failure === "wrong_source" ? { videoId: article.video_id, channelId: "other", originalVtt: "WEBVTT\n", transcript } : undefined, failure === "conflict");
+    const { db, writes } = publicationDb(failure === "wrong_source" ? { videoId: article.video_id, channelId: "other", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true } : undefined, failure === "conflict");
     const restore = mockChecks(); const reviewer = vi.fn(async () => ({ pass: failure !== "failed_qa", issues: failure === "failed_qa" ? ["Afirmação sem suporte"] : [], cautionViolations: [] })); exports.injectOfflineAI!(reviewer);
     try {
       expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
@@ -942,5 +952,29 @@ describe("automatic publication uses the leased daily pipeline", () => {
       if (failure !== "conflict") expect(writes.some(x => x.table === "editorial_articles")).toBe(false);
       if (failure === "wrong_source") expect(reviewer).not.toHaveBeenCalled();
     } finally { restore(); }
+  });
+});
+
+
+describe("literal proof repair never rewrites the article", () => {
+  const original = "A bateria tem 30 Ah e permite ampliar a autonomia.";
+  const article = { id: "draft", status: "draft", revision: 4, title: "Título preservado", og_image_url: "capa-preservada", faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "Com 30 Ah, há mais capacidade disponível.", sourceExcerpt: "Resumo não literal." }] };
+  it("persists only whitelisted literal evidence with revision guard", async () => {
+    const writes: Record<string, unknown>[] = []; const filters: unknown[] = [];
+    const db = { from: (table: string) => {
+      if (table === "editorial_audit_logs") return { insert: async () => ({ error: null }) };
+      const chain = { update: (patch: Record<string, unknown>) => { writes.push(patch); return chain; }, eq: (key: string, value: unknown) => { filters.push([key, value]); return chain; }, select: () => chain, maybeSingle: async () => ({ data: { ...article, ...writes[0], revision: 5 }, error: null }) }; return chain;
+    } };
+    exports.injectOfflineAI!(vi.fn(async () => ({ evidence: [{ id: "section:0", sourceExcerpt: original }] })));
+    const result = await exports.ensureLiteralPublicationEvidence!(db, { id: "owner" }, article, original) as typeof article;
+    expect(result.title).toBe(article.title); expect(result.og_image_url).toBe(article.og_image_url); expect(result.blocks[0].text).toBe(article.blocks[0].text);
+    expect(Object.keys(writes[0]).sort()).toEqual(["blocks", "faq", "updated_by"]);
+    expect(filters).toContainEqual(["revision", 4]);
+    expect(result.blocks[0].sourceExcerpt).toBe(original);
+  });
+  it.each([{ id: "title", sourceExcerpt: original }, { id: "section:0", sourceExcerpt: "A bateria tem 60 Ah." }, { id: "section:0", sourceExcerpt: "" }])("blocks invented, absent or unauthorized evidence", async evidence => {
+    const from = vi.fn(); exports.injectOfflineAI!(vi.fn(async () => ({ evidence: [evidence] })));
+    await expect(exports.ensureLiteralPublicationEvidence!({ from }, { id: "owner" }, article, original)).rejects.toThrow("publication_evidence_invalid");
+    expect(from).not.toHaveBeenCalled();
   });
 });

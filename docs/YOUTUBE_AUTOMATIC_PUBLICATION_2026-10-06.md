@@ -25,3 +25,9 @@ Revisão local: Produto Pass (publicação no mesmo fluxo); CTO Pass (lease/CAS)
 
 Release autorizado pelo pedido explícito nesta thread. Migration enfileira oito, não modifica status editorial. Snapshot dos 107 publicados: hash 18146aac3feea06926c4eec170f750b2. O resultado público ainda depende da execução real; não declarado pronto antes da conferência.
 
+
+## Descoberta no cron real
+
+Primeiro ciclo 00:25 UTC bloqueou referências internas que a geração condensou. A legenda tem sobreposição/repetição de linhas e alguns excerpts eram paráfrases. Fonte integral permaneceu correta. Gate v2 executa uma extração automática restrita dos trechos faltantes, verifica correspondência literal e CAS, sem alterar texto, título, capa ou original. Depois executa a mesma revisão factual/contextual integral. Mudança consolidada nas oito perspectivas: mantém o bloqueio factual; risco de extração inventada mitigado por correspondência determinística e whitelist; custo adicional somente quando referências não são literais. Recuperação enfileira apenas falhas determinísticas pré-QA v1 com esse motivo exato, sem repetir QA paga incerta.
+
+Segundo ciclo (VL20) terminou QA com apontamentos conhecidos, sem timeout. Gate v2 enfileira uma única correção automática pelo mesmo escritor com fonte integral e apontamentos privados, preservando título/capa. O revisor considera também os dados estáticos explicitamente cadastrados (não medições) e os títulos/CTAs dos módulos renderizados. Se a segunda revisão reprovar, needs_review; não há repetição indefinida. Recuperação de cf-AF7LgqpY registra esse limite antes de enfileirar. Todas as oito perspectivas recomendam GO condicionado a verificar o limite e a nova QA; não dispensar revisão factual para publicar.
