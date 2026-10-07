@@ -76,7 +76,7 @@ export const newsletterSchema = z.object({
   preheader: z.string().trim().min(20).max(150).optional(),
   radar: item.optional(),
   drops: z.array(item).max(3).optional(),
-  articles: z.array(item).min(1).max(2),
+  articles: z.array(item).min(1).max(3),
   bike: item,
   videos: z.array(item).min(1).max(2),
   unsubscribeUrl: z
@@ -238,6 +238,24 @@ export function renderEditorialNewsletter(
     ...input,
     unsubscribeUrl: "https://vitalemobilidade.com/privacidade",
   });
+  const campaign = `giro_${data.editionNumber ?? "preview"}`;
+  const tracked = (url: string, section: string) =>
+    newsletterUtmUrl(url, campaign, section, segment);
+  data.articles = data.articles.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `article_${i + 1}`),
+  }));
+  data.videos = data.videos.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `video_${i + 1}`),
+  }));
+  data.bike.url = tracked(data.bike.url, "bike");
+  if (data.radar) data.radar.url = tracked(data.radar.url, "radar");
+  data.drops = data.drops?.map((x, i) => ({
+    ...x,
+    url: tracked(x.url, `radar_drop_${i + 1}`),
+  }));
+  const quizUrl = tracked("https://vitalemobilidade.com/quiz", "quiz");
   const e = escapeNewsletter;
   const button = (url: string, label: string) =>
     `<table role="presentation" cellspacing="0" cellpadding="0"><tr><td bgcolor="#165b42" style="border-radius:6px"><a href="${e(url)}" style="display:inline-block;padding:13px 20px;color:#ffffff;font-weight:bold;text-decoration:none;font-size:14px">${label} →</a></td></tr></table>`;
@@ -260,14 +278,18 @@ export function renderEditorialNewsletter(
   const articleRows = data.articles
     .map((a, i) =>
       section(
-        i === 0 ? "01 / A leitura em destaque" : "02 / Para aprofundar",
+        i === 0
+          ? "01 / A leitura em destaque"
+          : i === 1
+            ? "02 / Para aprofundar"
+            : "03 / Do acervo",
         `${a.category ? `<p style="display:inline-block;background:#e6f0e8;color:#165b42;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold">${e(a.category)}</p>` : ""}${photo(a)}<h2 style="font-size:25px;line-height:1.3;margin:20px 0 12px"><a href="${e(a.url)}" style="color:#173d2a;text-decoration:none">${e(a.title)}</a></h2>${prose(a)}${button(a.url, "Leia mais no artigo")}`,
       ),
     )
     .join("");
   const radar = data.radar ?? {
     title: "O preço de hoje merece atenção",
-    url: "https://vitalemobilidade.com/radar",
+    url: tracked("https://vitalemobilidade.com/radar", "radar"),
     paragraphs: [
       "Antes de decidir, consulte o preço atual e o histórico no Radar. As ofertas podem mudar entre esta edição e a sua visita.",
     ],
@@ -297,7 +319,7 @@ export function renderEditorialNewsletter(
     )
     .join(
       "",
-    )}<p style="font-size:12px;color:#476756;margin:24px 0 0">NESTA EDIÇÃO · LEITURAS · RADAR · BIKE · VÍDEOS</p></td></tr>${segment === "radar" ? radarRow + bikeRow + articleRows : articleRows + radarRow + bikeRow}${videosRow}${section("Encontre a bike para o seu perfil", `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:22px"><a href="https://vitalemobilidade.com/quiz"><img src="https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg" alt="Quiz Vitale: encontre a bike para seu perfil" width="568" style="width:100%;height:auto;display:block;border:0"></a><h2 style="font-size:24px">Qual bike combina com a sua rotina?</h2><p style="font-size:16px;line-height:1.65">Responda sobre seu uso, trajeto e orçamento. O Quiz da Vitale ajuda a conectar seu perfil às bikes compatíveis; depois, confira os detalhes e os preços no Radar.</p>${button("https://vitalemobilidade.com/quiz", "Fazer o Quiz")}</td></tr></table>`)}<tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#d9e6d5;font-size:12px;line-height:1.7"><p style="font-size:16px;color:white;font-weight:bold">Vamos conversar sobre mobilidade?</p><p>Responda este e-mail para falar com a equipe Vitale Mobilidade.</p><p>Você recebeu esta edição porque se inscreveu na newsletter. Preços e disponibilidade podem mudar; confira os dados atuais no Radar.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#ffffff">Cancelar inscrição</a> · <a href="https://vitalemobilidade.com/privacidade" style="color:#ffffff">Privacidade</a></p></td></tr></table></td></tr></table></body></html>`;
+    )}<p style="font-size:12px;color:#476756;margin:24px 0 0">NESTA EDIÇÃO · LEITURAS · RADAR · BIKE · VÍDEOS</p></td></tr>${segment === "radar" ? radarRow + bikeRow + articleRows : articleRows + radarRow + bikeRow}${videosRow}${section("Encontre a bike para o seu perfil", `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:22px"><a href="${e(quizUrl)}"><img src="https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg" alt="Quiz Vitale: encontre a bike para seu perfil" width="568" style="width:100%;height:auto;display:block;border:0"></a><h2 style="font-size:24px">Qual bike combina com a sua rotina?</h2><p style="font-size:16px;line-height:1.65">Responda sobre seu uso, trajeto e orçamento. O Quiz da Vitale ajuda a conectar seu perfil às bikes compatíveis; depois, confira os detalhes e os preços no Radar.</p>${button(quizUrl, "Fazer o Quiz")}</td></tr></table>`)}<tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#d9e6d5;font-size:12px;line-height:1.7"><p style="font-size:16px;color:white;font-weight:bold">Vamos conversar sobre mobilidade?</p><p>Responda este e-mail para falar com a equipe Vitale Mobilidade.</p><p>Você recebeu esta edição porque se inscreveu na newsletter. Preços e disponibilidade podem mudar; confira os dados atuais no Radar.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#ffffff">Cancelar inscrição</a> · <a href="${e(tracked("https://vitalemobilidade.com/privacidade", "privacy"))}" style="color:#ffffff">Privacidade</a></p></td></tr></table></td></tr></table></body></html>`;
   const items =
     segment === "radar"
       ? [radar, data.bike, ...data.articles, ...data.videos]
@@ -315,7 +337,7 @@ export function renderEditorialNewsletter(
         ].join("\n\n"),
       )
       .join("\n\n---\n\n") +
-    "\n\nQUIZ — Qual bike combina com a sua rotina? https://vitalemobilidade.com/quiz\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}";
+    "\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}";
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");
   return { html, text };
@@ -325,4 +347,18 @@ export function numberNewsletterSubject(title: string, editionNumber: number) {
   if (!Number.isSafeInteger(editionNumber) || editionNumber < 1)
     throw new Error("newsletter_number_invalid");
   return `#${editionNumber} — ${title.trim().replace(/^#\d+\s*[—:-]?\s*/, "")}`;
+}
+
+export function newsletterUtmUrl(
+  value: string,
+  campaign: string,
+  content: string,
+  segment: NewsletterSegment = "general",
+) {
+  const url = new URL(value);
+  url.searchParams.set("utm_source", "vitale_newsletter");
+  url.searchParams.set("utm_medium", "email");
+  url.searchParams.set("utm_campaign", campaign);
+  url.searchParams.set("utm_content", `${segment}_${content}`);
+  return url.toString();
 }

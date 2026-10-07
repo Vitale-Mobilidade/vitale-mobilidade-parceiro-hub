@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { curateNewsletter, newsletterCategory } from "./newsletter-curation";
+import {
+  curateNewsletter,
+  newsletterCategory,
+  selectFeaturedNewsletterBike,
+} from "./newsletter-curation";
 const now = new Date("2026-10-07T22:00:00Z"),
   since = new Date("2026-10-04T13:00:00Z");
 const a = (title: string, contentType: string, day = "07") => ({
@@ -69,4 +73,44 @@ describe("newsletter editorial diversity", () => {
       "GT2000 por MENOS de R$9.400",
     ]);
   });
+});
+
+it("searches the entire unused archive and never repeats model associations", () => {
+  const result = curateNewsletter(
+    [
+      { ...a("Guide new", "guide"), primaryBikeId: "v9_max" },
+      { ...a("Guide same bike", "variety"), primaryBikeId: "v9_max" },
+      {
+        ...a("Old archive", "review"),
+        primaryBikeId: "bw02",
+        publishedAt: "2025-01-01",
+      },
+    ],
+    [
+      {
+        ...v("Practical ride"),
+        contentType: "real_world_test",
+        bikeIds: ["vl20"],
+      },
+    ],
+    since,
+    now,
+  );
+  expect(result.articles.map((x) => x.title)).toEqual([
+    "Guide new",
+    "Old archive",
+  ]);
+});
+it("featured bike excludes every radar card and prefers a different subject", () => {
+  const bikes = [{ id: "v9_max" }, { id: "vl20" }, { id: "bw02" }];
+  expect(selectFeaturedNewsletterBike(bikes, ["v9_max"], ["vl20"])?.id).toBe(
+    "bw02",
+  );
+  expect(
+    selectFeaturedNewsletterBike(
+      bikes,
+      bikes.map((b) => b.id),
+      [],
+    ),
+  ).toBeUndefined();
 });

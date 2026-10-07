@@ -416,17 +416,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const saved = existing?.find(
       (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
     );
-    const previous = saved
-      ? null
-      : await must(
-          db
-            .from("newsletter_campaigns")
-            .select("created_at,payload")
-            .lt("edition_day", window.day)
-            .in("status", ["sent", "submitted"])
-            .order("created_at", { ascending: false })
-            .limit(6),
-        );
+    const previous = saved ? [] : await newsletterHistory(db, window.day);
     const since = previous?.[0]?.created_at
       ? new Date(previous[0].created_at)
       : undefined;
@@ -640,7 +630,7 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
       const edition = await automaticNewsletter(
         new Date().getUTCDay(),
         undefined,
-        [],
+        (await newsletterHistory(db)).map((p) => p.payload.content),
         nextNumber,
       );
       return Response.json(
@@ -657,4 +647,25 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
   } finally {
     if (tok) await db.rpc("newsletter_release", { tok });
   }
+}
+
+async function newsletterHistory(db: SupabaseClient, before?: string) {
+  const history: {
+    created_at: string;
+    payload: { content: NewsletterContent };
+  }[] = [];
+  for (let offset = 0; ; offset += 500) {
+    let query = db
+      .from("newsletter_campaigns")
+      .select("created_at,payload")
+      .in("status", ["sent", "submitted"])
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + 499);
+    if (before) query = query.lt("edition_day", before);
+    const rows = await must(query);
+    history.push(...(rows ?? []));
+    if ((rows?.length ?? 0) < 500) break;
+  }
+  return history;
 }

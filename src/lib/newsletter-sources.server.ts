@@ -22,6 +22,7 @@ import {
 } from "./newsletter-pauta";
 import {
   curateNewsletter,
+  selectFeaturedNewsletterBike,
   newsletterCategoryLabel,
 } from "./newsletter-curation";
 import { newsletterTranscripts } from "./newsletter-transcripts.server";
@@ -41,8 +42,25 @@ export async function automaticNewsletter(
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
   const curated = curateNewsletter(
-    articles,
-    videos,
+    articles.filter(
+      (a) =>
+        !previousEditions.some((p) =>
+          p.articles.some(
+            (x) => new URL(x.url).pathname === `/conteudos/${a.slug}`,
+          ),
+        ),
+    ),
+    videos.filter(
+      (v) =>
+        !previousEditions.some((p) =>
+          p.videos.some(
+            (x) =>
+              new URL(x.url).pathname === new URL(v.url).pathname &&
+              new URL(x.url).searchParams.get("v") ===
+                new URL(v.url).searchParams.get("v"),
+          ),
+        ),
+    ),
     since,
     new Date(),
     previousEditions.flatMap((p) =>
@@ -58,10 +76,10 @@ export async function automaticNewsletter(
     since,
     new Date(),
   );
-  const related = pickedArticles.flatMap((a) => [
-    a.primaryBikeId,
-    ...a.relatedBikeIds,
-  ]);
+  const related = [
+    ...pickedVideos.flatMap((v) => v.bikeIds),
+    ...pickedArticles.flatMap((a) => [a.primaryBikeId, ...a.relatedBikeIds]),
+  ];
   const bikes = (radar.data.active as { id: string; name: string }[]).filter(
     (b) =>
       typeof b.id === "string" &&
@@ -69,10 +87,14 @@ export async function automaticNewsletter(
       typeof b.name === "string" &&
       catalog.some((c) => c.bikeId === b.id),
   );
-  const bike =
-    bikes.find((b) => b.id === drops[0]?.id) ??
-    bikes.find((b) => related.includes(b.id)) ??
-    bikes[0];
+  const bike = selectFeaturedNewsletterBike(
+    bikes,
+    drops.map((d) => d.id),
+    related.filter((id): id is string => Boolean(id)),
+    previousEditions
+      .slice(0, 6)
+      .map((p) => new URL(p.bike.url).pathname.split("/").pop() ?? ""),
+  );
   if (!bike) throw new Error("newsletter_no_active_bike");
   const details = catalog.find((c) => c.bikeId === bike.id)!;
   const fullArticles = await Promise.all(

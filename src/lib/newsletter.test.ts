@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   renderNewsletter,
+  newsletterUtmUrl,
   renderResendNewsletter,
   segmentNewsletterRecipients,
 } from "./newsletter";
@@ -50,7 +51,7 @@ describe("newsletter export", () => {
     expect(() =>
       renderNewsletter({
         ...edition,
-        articles: Array(3).fill(edition.articles[0]),
+        articles: Array(4).fill(edition.articles[0]),
       }),
     ).toThrow();
   });
@@ -112,4 +113,36 @@ it("numbers the edition once without inheriting an old prefix", () => {
     "#2 — Outra pauta",
   );
   expect(() => numberNewsletterSubject("Pauta", 0)).toThrow("number_invalid");
+});
+
+it("tracks every editorial destination without changing video identity or unsubscribe", () => {
+  const u = new URL(
+    newsletterUtmUrl(
+      "https://www.youtube.com/watch?v=abc&t=25#part",
+      "giro_1",
+      "video_1",
+      "radar",
+    ),
+  );
+  expect(u.searchParams.get("v")).toBe("abc");
+  expect(u.searchParams.get("t")).toBe("25");
+  expect(u.hash).toBe("#part");
+  expect(u.searchParams.get("utm_content")).toBe("radar_video_1");
+  const out = renderResendNewsletter({
+    ...edition,
+    headline: "Um giro divertido pela cidade",
+    editionNumber: 1,
+  });
+  const hrefs = [...out.html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+  expect(
+    hrefs.filter((v) => !v.includes("RESEND_UNSUBSCRIBE")),
+  ).not.toHaveLength(0);
+  expect(
+    hrefs.every(
+      (v) =>
+        v.includes("RESEND_UNSUBSCRIBE") ||
+        v.includes("utm_source=vitale_newsletter"),
+    ),
+  ).toBe(true);
+  expect(out.text).toContain("utm_campaign=giro_1");
 });

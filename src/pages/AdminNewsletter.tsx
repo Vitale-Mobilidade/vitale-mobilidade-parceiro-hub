@@ -92,12 +92,17 @@ function NewsletterOperation() {
         <h2 className="font-semibold">Redator da newsletter</h2>
         <p className="mt-2 text-sm text-ink-muted">
           Cada edição recebe abertura, resumos com tópicos e imagens dos
-          artigos, bike e vídeos. O redator usa conteúdo publicado da Vitale e
-          passa por uma revisão factual automática antes do envio.
+          artigos, bike e vídeos. O redator usa artigos e transcrições do canal,
+          consulta o acervo ainda não enviado e passa por uma revisão factual
+          automática antes do envio. As pautas exploram bikes diferentes; a bike
+          em destaque não repete as quedas do Radar.
         </p>
         <p className="mt-2 text-sm text-ink-muted">
           Gerar prévia usa IA: duas chamadas ao modelo, uma para redação e outra
           para revisão. Os envios da mesma edição reutilizam o texto preparado.
+          Links levam UTMs por edição, seção e segmento. No GA4, filtre origem
+          vitale_newsletter e mídia email; o Quiz também preserva essa
+          atribuição.
         </p>
       </div>
       <div>
