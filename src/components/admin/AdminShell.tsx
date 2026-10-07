@@ -34,7 +34,7 @@ async function verifyAdminAccess(force = false): Promise<AdminSession> {
 }
 
 const NAV = [
-  { title: "Operação", links: [["Visão geral", "/admin"], ["Growth", "/admin/growth"], ["Bikes", "/admin/bikes"]] },
+  { title: "Operação", links: [["Visão geral", "/admin"], ["Growth", "/admin/growth"], ["Newsletter", "/admin/newsletter"], ["Bikes", "/admin/bikes"]] },
   { title: "Conteúdo", links: [["Vídeos", "/admin/videos"], ["Artigos", "/admin/conteudos"]] },
   { title: "Sistema", links: [["IA", "/admin/ia"], ["Logs", "/admin/logs"]] },
 ] as const;
@@ -183,7 +183,7 @@ export function AdminShell({ children }: Props) {
       <nav aria-label="Navegação administrativa" className="flex gap-4 overflow-x-auto pb-2 md:block md:space-y-6">
         {NAV.map(group => {
           const links = group.links.filter(([, href]) => {
-            if (href === "/admin/growth" && role !== "admin") return false;
+            if (["/admin/growth", "/admin/newsletter"].includes(href) && role !== "admin") return false;
             return role !== "operation" || ["/admin", "/admin/bikes"].includes(href);
           });
           if (!links.length) return null;

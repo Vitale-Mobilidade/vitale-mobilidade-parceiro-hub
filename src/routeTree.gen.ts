@@ -23,6 +23,7 @@ import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
+import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
 import { Route as AdminVideosRouteImport } from './routes/admin/videos'
 import { Route as BikesIndexRouteImport } from './routes/bikes/index'
 import { Route as BikesSlugRouteImport } from './routes/bikes/$slug'
@@ -50,6 +51,9 @@ import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
+import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
+import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
+import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
 import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
 
@@ -121,6 +125,11 @@ const AdminIaRoute = AdminIaRouteImport.update({
 const AdminLogsRoute = AdminLogsRouteImport.update({
   id: '/admin/logs',
   path: '/admin/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
+  id: '/admin/newsletter',
+  path: '/admin/newsletter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminVideosRoute = AdminVideosRouteImport.update({
@@ -266,6 +275,23 @@ const AdminConteudosNovoRoute = AdminConteudosNovoRouteImport.update({
   path: '/admin/conteudos/novo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminNewsletterRoute = ApiAdminNewsletterRouteImport.update({
+  id: '/api/admin/newsletter',
+  path: '/api/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNewsletterWebhookRoute =
+  ApiPublicNewsletterWebhookRouteImport.update({
+    id: '/api/public/newsletter-webhook',
+    path: '/api/public/newsletter-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicNewsletterWorkerRoute =
+  ApiPublicNewsletterWorkerRouteImport.update({
+    id: '/api/public/newsletter-worker',
+    path: '/api/public/newsletter-worker',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPriceAlertOutboxRoute =
   ApiPublicPriceAlertOutboxRouteImport.update({
     id: '/api/public/price-alert-outbox',
@@ -291,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -319,6 +346,9 @@ export interface FileRoutesByFullPath {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
+  '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
@@ -336,6 +366,7 @@ export interface FileRoutesByTo {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -364,6 +395,9 @@ export interface FileRoutesByTo {
   '/radar': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
+  '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
@@ -382,6 +416,7 @@ export interface FileRoutesById {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/videos': typeof AdminVideosRoute
   '/bikes/$slug': typeof BikesSlugRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -410,6 +445,9 @@ export interface FileRoutesById {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
+  '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
@@ -429,6 +467,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
+    | '/admin/newsletter'
     | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -457,6 +496,9 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/newsletter'
+    | '/api/public/newsletter-webhook'
+    | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
@@ -474,6 +516,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
+    | '/admin/newsletter'
     | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -502,6 +545,9 @@ export interface FileRouteTypes {
     | '/radar'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/newsletter'
+    | '/api/public/newsletter-webhook'
+    | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
@@ -519,6 +565,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/ia'
     | '/admin/logs'
+    | '/admin/newsletter'
     | '/admin/videos'
     | '/bikes/$slug'
     | '/calculadoras/carro-vs-bike'
@@ -547,6 +594,9 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/newsletter'
+    | '/api/public/newsletter-webhook'
+    | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
@@ -565,6 +615,7 @@ export interface RootRouteChildren {
   AdminGrowthRoute: typeof AdminGrowthRoute
   AdminIaRoute: typeof AdminIaRoute
   AdminLogsRoute: typeof AdminLogsRoute
+  AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminVideosRoute: typeof AdminVideosRoute
   BikesSlugRoute: typeof BikesSlugRoute
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
@@ -593,6 +644,9 @@ export interface RootRouteChildren {
   RadarIndexRoute: typeof RadarIndexRoute
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
+  ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
+  ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
+  ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
   ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
   AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
 }
@@ -695,6 +749,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/logs'
       fullPath: '/admin/logs'
       preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/newsletter': {
+      id: '/admin/newsletter'
+      path: '/admin/newsletter'
+      fullPath: '/admin/newsletter'
+      preLoaderRoute: typeof AdminNewsletterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/videos': {
@@ -886,6 +947,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConteudosNovoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/newsletter': {
+      id: '/api/admin/newsletter'
+      path: '/api/admin/newsletter'
+      fullPath: '/api/admin/newsletter'
+      preLoaderRoute: typeof ApiAdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/newsletter-webhook': {
+      id: '/api/public/newsletter-webhook'
+      path: '/api/public/newsletter-webhook'
+      fullPath: '/api/public/newsletter-webhook'
+      preLoaderRoute: typeof ApiPublicNewsletterWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/newsletter-worker': {
+      id: '/api/public/newsletter-worker'
+      path: '/api/public/newsletter-worker'
+      fullPath: '/api/public/newsletter-worker'
+      preLoaderRoute: typeof ApiPublicNewsletterWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/price-alert-outbox': {
       id: '/api/public/price-alert-outbox'
       path: '/api/public/price-alert-outbox'
@@ -927,6 +1009,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGrowthRoute: AdminGrowthRoute,
   AdminIaRoute: AdminIaRoute,
   AdminLogsRoute: AdminLogsRoute,
+  AdminNewsletterRoute: AdminNewsletterRoute,
   AdminVideosRoute: AdminVideosRoute,
   BikesSlugRoute: BikesSlugRoute,
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
@@ -958,6 +1041,9 @@ const rootRouteChildren: RootRouteChildren = {
   RadarIndexRoute: RadarIndexRoute,
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
+  ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
+  ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
+  ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,
   ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,
   AdminConteudosIndexRoute: AdminConteudosIndexRoute,
 }

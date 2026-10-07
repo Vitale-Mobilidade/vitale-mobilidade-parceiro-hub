@@ -171,9 +171,9 @@ function Overview({ role }: { role: AdminRole }) {
             <p className="mt-3 text-sm text-muted-foreground">
               A planilha e o sincronizador existente continuam responsáveis por preços, links e elegibilidade.
             </p>
-            <a href="/admin/bikes" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
+            <Link to="/admin/bikes" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
               Abrir painel operacional de bikes
-            </a>
+            </Link>
           </div>
           {role !== "operation" && (
             <div className="mt-5 flex flex-wrap gap-3">
@@ -449,9 +449,9 @@ function Bikes() {
         title="Bikes"
         detail="Leitura do catálogo central. Preço, link e elegibilidade continuam na planilha oficial."
       >
-        <a href="/admin/bikes" className={OUTLINE}>
+        <Link to="/admin/bikes" className={OUTLINE}>
           Painel operacional
-        </a>
+        </Link>
       </Heading>
       {error && <Notice danger>{error}</Notice>}
       <label htmlFor="bike-search" className="sr-only">
