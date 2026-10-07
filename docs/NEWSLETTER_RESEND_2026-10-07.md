@@ -87,3 +87,37 @@ Pós-revisão das8 perspectivas: Pass para preparação local, mesmas justificat
 Gate atual: pronto para aprovação da instalação com automação OFF; não confundir com ativação produtiva. Publicação/schema, configuração segura de webhook, teste de entrega ao responsável e ativação dependem de autorização específica e de resultado real. Nenhum merge, migration, deploy, contatos, broadcast ou email foi executado. PR draft#6 contém código revisável. A criação de1 segmento dedicada deixa total esperado2/3.
 
 Proposta concreta: integrar branch da newsletter ao projeto vigente; aplicar apenas migration20261007195000_newsletter_resend.sql; publicar app e Edge newsletter-interest; configurar webhook e segredo no formulário seguro; configurar Vitale Mobilidade <newsletter@news.hotpipe.com.br> com reply-to Guilherme; validar preview real, quota/domínio/admin/assinaturas, preparar segmento e teste único para guilherme@hotpipe.com.br. Ativar segunda/sexta10h só após esses controles passarem, para19 inscritosV2 elegíveis (V1 permanece fora e contagens serão reconsultadas). Sem antecipar lote. Risco médio de operação de emails; mensagens aceitas/entregues não reversíveis. Sem upgrade/assinatura nova; custo externo pequeno de implantação Lovable. Rollback pause/crON OFF e reversão de código, mantendo ledger e supressões.
+
+## Instalação produtiva autorizada — 07/10/2026 às19h
+
+Humano aprovou expressamente publicação, migration, webhook, teste único para Guilherme e ativação condicionada ao teste. PR6 mergeado em e540d99; Lovable confirmou esse HEAD. Migration aplicada pela query do projeto em transação; schema_migrations registra20261007195000. Preflight confirmou crypto/net disponíveis,0 inscritos habilitados e nenhum job newsletter anterior. Cron/settings continuam OFF. Remetente configurado newsletter@news.hotpipe.com.br; reply_to Guilherme.
+
+Deploy do app3815c5ec-f017-4e47-a8f3-d8525f63617f: rota https://vitalemobilidade.com/admin/newsletter publicada com título Newsletter · Admin Vitale e tela login para não autenticado. curl GET/admin API401, GETworker405, POSTworker sem assinatura403, POSTwebhook503 enquanto segredo ausente. Probe assinado via pg_net id10009 respondeu200 {ok:true,enabled:false}; assinatura e ligação banco/servidor operacionais sem disparo. Python urllib foi bloqueado403 pelo agente HTTP; curl/browser e chamada pg_net demonstraram rotas reais. Não tratar403 genérico como erro da aplicação.
+
+Edge newsletter-interest deployada isoladamente. Lovable gerou só tipos do schema (a6fcd16) a partir da migration; nenhum outro código modificado. Checkout incorporou tipos e pnpm validate passou. Artigos públicos reais disponíveis; índice registra conteúdo publicado no dia.
+
+Setup conector: criação de segmento via agente foi rejeitada porque Ask each time exige approval card indisponível nessa sessão. Sem enfraquecer aprovação, operação autorizada concluída pela UI Resend: segmento `Vitale newsletter` criado com sucesso, UUID79491b84-883b-497f-8e3f-5ecc7a81733d. Settings general/radar/content apontam para esse segmento único. Nenhum contato inserido.
+
+Webhook: UI Resend preparada com endpoint/api/public/newsletter-webhook e exatamente5 eventos previstos; ainda NÃO salvo. Cadastro de segredo no Lovable Cloud > Secrets > Add secret aberto, Name RESEND_WEBHOOK_SECRET preenchido e Value vazio. O responsável deve finalizar Add no Resend, copiar Signing secret diretamente para Value e Save no Lovable. Não copiar chave pelo chat, arquivo ou log. Credencial nova requer inserção pelo humano; nunca automatizar entrada do segredo pela UI. Screenshots de prova em artifacts/resend-segment-created-2026-10-07.png, resend-webhook-ready-2026-10-07.png e resend-webhook-secret-form-ready-2026-10-07.png; nenhuma contém segredo.
+
+Custo adicional setup Lovable1,7 créditos; total6,3 até aqui. Nenhum envio de teste ou lote executado, nenhum broadcast/contact criado. Instalação parcial operacional, automação OFF. Próximo: humano salva segredo; publicar configuração de servidor, validar webhook assinado com entrega real ao Guilherme, ativar exclusivamente se prova passar. Autorização continua válida, não pedir outra aprovação para mesmos passos. Gate ativação: Fail enquanto teste real e webhook não comprovados; demais evidências de instalação Pass, sem declarar conclusão antecipada.
+
+
+## Conclusão operacional — 07/10/2026, 19h de São Paulo
+
+RESEND_WEBHOOK_SECRET foi cadastrado pelo responsável no formulário seguro; somente existência foi conferida. Configuração publicada no deployment b47e4bc6-dde0-4c47-8416-9114e3f43e9f. Webhook habilitado fa2d6dc2-6459-43ec-a496-f485eb739310. Endpoint publicado rejeita POST não assinado com 403 e GET com 405.
+
+O conector Ask each time não conseguiu apresentar cartão para a escrita de teste. Sem reduzir essa proteção, o teste previamente autorizado foi realizado pela interface nativa Resend, Send test email, somente para guilherme@hotpipe.com.br. E-mail 01a1186c-7252-7081-9207-6f77008334fc: Delivered, confirmado pela UI e GET do provedor. Evento email.delivered às 22:12:07 UTC: success no GET de eventos do webhook, confirmando resposta 2xx ao evento assinado. O teste é externo ao ledger; não comprova métricas de broadcast de lista nem a personalização do descadastro. Essas partes estão cobertas pelos testes locais, permanecendo observáveis na primeira edição.
+
+Rascunho 950cde51-5da1-4c5c-8503-3f99b2a7c2f4 permanece Draft, sem segmento destinatário; não enviar esse rascunho à lista. Conteúdo inclui dois artigos publicados, Radar, BW02 e dois vídeos reais. Prova visual em artifacts/newsletter-test-delivered-2026-10-07.png.
+
+Após aprovação condicional previamente concedida e teste entregue/webhook validado, newsletter_set_enabled foi executada para o único administrador ativo correspondente à conta do responsável, sem expor UUID. Verificação: enabled=true, cron_active=true, 19 inscrições elegíveis. Agenda segunda e sexta, 10h de São Paulo, janela até 12h; próximo envio regular sexta 09/10/2026. Nenhum disparo imediato à lista foi feito. V1 e suprimidos permanecem excluídos.
+
+Revisão final das oito perspectivas: Produto Pass (formato compacto e frequência acordada); Arquitetura Pass (SSR, serviços e processamento incremental); Growth Pass (consentimento, segmentação declarada e descadastro nativo); UX Pass (painel e HTML com QA desktop/mobile); IA Pass (fontes publicadas, sem inferir interesse do Quiz); Operação Pass (cron ativo, ledger e pausa); Segurança Pass (segredos no servidor, assinatura validada, consentimento/supressão); PMO/QA Pass (testes locais e prova de entrega/webhook). Limitação explícita: a primeira edição de lista ainda não ocorreu; ela validará os estados reais de broadcast/descadastro, sem confundir teste avulso com campanha concluída.
+
+Rollback: pausar pelo painel /admin/newsletter (desativa settings e cron); preservar ledger/inscrições e não reaplicar migration. Custo acumulado de consultas/setup Lovable nesta execução: 9,3 créditos; um e-mail de teste.
+
+
+### Bloqueio detectado na checagem final do worker
+
+Após ativação condicional, a sonda real request10029 retornou503 resend_network. Agenda imediatamente pausada (enabled=false,cron_active=false), sem campanhas disparadas. Diagnóstico: fetch nativo invocado com receiver ResendNewsletter, incompatível com Workers. Correção local chama o transporte com globalThis e teste exige esse receiver. A conclusão Pass operacional acima fica suspensa até nova sonda HTTP200 e reativação confirmada. Custo acumulado11,8créditos.

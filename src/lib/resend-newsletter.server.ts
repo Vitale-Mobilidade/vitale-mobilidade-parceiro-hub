@@ -36,7 +36,8 @@ export class ResendNewsletter {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
-      res = await this.request(
+      res = await this.request.call(
+        globalThis,
         `https://${this.gatewayKey ? "connector-gateway.lovable.dev/resend" : "api.resend.com"}${path}`,
         {
           method,
