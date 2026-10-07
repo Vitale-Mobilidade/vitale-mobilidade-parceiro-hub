@@ -174,7 +174,7 @@ export function detectContentType(title: string): ContentType {
   if (/\b(vs|versus|comparativo|comparando)\b/.test(text)) return "comparison";
   if (/\b(guia|como escolher|tutorial)\b/.test(text)) return "guide";
   if (/\b(dicas|erros|cuidados)\b/.test(text)) return "tips";
-  if (/\b(economia|economizar|custo)\b/.test(text)) return "economy";
+  if (/\b(economia|economizar|custo|ganhar dinheiro|negocio|negocios|lucrar|revenda|locacao)\b/.test(text)) return "economy";
   return "test";
 }
 
@@ -194,7 +194,7 @@ export const EDITORIAL_OG_FALLBACK = "https://vitalemobilidade.com/vitale-hero-v
 export function videoHeading(contentType?: ContentType): string {
   return contentType === "comparison"
     ? "Assista ao comparativo completo"
-    : contentType === "guide" || contentType === "tips"
+    : contentType === "guide" || contentType === "tips" || contentType === "economy"
       ? "Veja as explicações em vídeo"
       : "Veja o teste completo em vídeo";
 }

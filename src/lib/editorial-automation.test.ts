@@ -137,3 +137,12 @@ describe("automatic QA", () => {
     expect(hasEditorialDistance("Segundo a ficha do fabricante, a autonomia é de até 50 km.")).toBe(false);
   });
 });
+
+
+it("business articles use explanatory video headings and avoid a bike-selection quiz", () => {
+  const contentType = detectContentType("Como ganhar dinheiro com bicicletas elétricas: modelos de negócio");
+  expect(contentType).toBe("economy");
+  const blocks = layoutArticle({ sections: [{ type: "text", heading: "Revenda", text: "Receita, margem e custos." }], videoId: "abcDEFG1234", bikeId: null, contentType, offerBikeIds: new Set(), hasFaq: false });
+  expect(blocks.find(block => block.type === "video")?.heading).toBe("Veja as explicações em vídeo");
+  expect(blocks.some(block => block.type === "quiz")).toBe(false);
+});
