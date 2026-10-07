@@ -31,7 +31,12 @@ describe("Hotpipe server delivery with mocked services", () => {
  });
  it("acknowledges matching event and checks lease ownership",async()=>{
   expect((await deliverPriceAlertOutbox(signed())).status).toBe(200);expect(mock.updates[0].status).toBe("delivered");expect(mock.filters).toContainEqual(["lease_token","lease"]);
-  const init=vi.mocked(fetch).mock.calls[0][1];expect(init?.redirect).toBe("error");expect(init?.body).toBe(JSON.stringify(event.payload));
+  const init=vi.mocked(fetch).mock.calls[0][1];expect(init?.redirect).toBe("manual");expect(init?.body).toBe(JSON.stringify(event.payload));
+ });
+ it("does not accept or follow a 302 redirect to another host",async()=>{
+  vi.mocked(fetch).mockResolvedValue(new Response(null,{status:302,headers:{Location:"https://other-host.example/steal"}}));
+  await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).not.toBe("delivered");expect(mock.updates[0].last_http_status).toBe(302);
+  expect(fetch).toHaveBeenCalledTimes(1);expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("manual");
  });
  it("retries network failures with immutable event",async()=>{
   vi.mocked(fetch).mockRejectedValue(new Error("network"));await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).toBe("pending");
