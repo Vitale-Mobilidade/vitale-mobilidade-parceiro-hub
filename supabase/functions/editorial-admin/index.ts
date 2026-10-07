@@ -39,11 +39,20 @@ import {
   sourceFingerprint,
 } from "../_shared/editorial-foundation.ts";
 
+/** The synchronized database is authoritative for newly added bike names. */
+async function readAutomaticVideoCatalog(db: SupabaseClient, csv: string) {
+  const videos = buildStrictVideoCatalog(csv);
+  if (!videos.some(video => video.unmatched.length)) return videos;
+  const { data, error } = await db.from("bikes").select("bike_id,name");
+  if (error || !Array.isArray(data)) throw new Error("bike_catalog_read_failed");
+  return buildStrictVideoCatalog(csv, data);
+}
+
 /** Sheet reconciliation is shared by hourly, manual Admin sync and initial backlog activation. */
 async function refreshYoutubeQueue(db: SupabaseClient, actor: Actor) {
   const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
   if (!snapshot.ok) throw new Error("video_sheet_unavailable");
-  const videos = buildStrictVideoCatalog(await snapshot.text());
+  const videos = await readAutomaticVideoCatalog(db, await snapshot.text());
   if (!videos.length) throw new Error("invalid_video_snapshot");
   const [articles, stored] = await Promise.all([
     db.from("editorial_articles").select("video_id,title").neq("status", "archived"),
@@ -1646,7 +1655,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           send({ type: "progress", step: "Buscando vídeo na planilha…" });
           const snapshot = await fetch(VIDEO_SHEET_CSV_URL, { signal: AbortSignal.timeout(15_000) });
           if (!snapshot.ok) throw new Error("video_sheet_unavailable");
-          const videos = buildStrictVideoCatalog(await snapshot.text());
+          const videos = await readAutomaticVideoCatalog(db, await snapshot.text());
           const selected = videos.find((video) => video.videoId === id);
           if (!selected) return fail("Vídeo não encontrado na planilha. Nenhum artigo foi gerado.");
           if (selected.unmatched.length || selected.bikeIds.length > 7)

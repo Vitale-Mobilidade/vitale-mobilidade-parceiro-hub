@@ -572,9 +572,22 @@ describe("piloto integrado — planilha e captura no servidor", () => {
   });
   it("bikes desconhecidas bloqueiam antes de captura ou gasto", async () => {
     offlineFetch = vi.fn(async () => new Response(csv.replace("V9 Max", "modelo inexistente")));
-    const db = database();
+    const original = database();
+    const db = { ...original, from: vi.fn((table: string) => table === "bikes"
+      ? { select: async () => ({ data: [{ bike_id: "s20_pro", name: "S20 Pro" }], error: null }) }
+      : original.from(table)) };
     expect(await integrated(db)).toContain("bikes da planilha precisam de conferência");
-    expect(db.from).not.toHaveBeenCalled();
+    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes"]);
+  });
+  it("geração integrada aceita modelo novo do catálogo antes de reutilizar artigo", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv.replace("V9 Max", "S20 Pro")));
+    const original = database({ id: "existing", status: "draft" });
+    const db = { ...original, from: vi.fn((table: string) => table === "bikes"
+      ? { select: async () => ({ data: [{ bike_id: "s20_pro", name: "S20 Pro" }], error: null }) }
+      : original.from(table)) };
+    const events = (await integrated(db)).trim().split("\n").map(line => JSON.parse(line));
+    expect(events.at(-1)).toMatchObject({ type: "done", reused: true });
+    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes", "editorial_articles"]);
   });
   it("reserva concorrente bloqueia antes de captura", async () => {
     offlineFetch = vi.fn(async () => new Response(csv));
@@ -1024,4 +1037,32 @@ it("a distinct grounded title reuses the paid background through the real cover-
     expect(writer.mock.calls[0][6]).toBe(false);
     expect(writes[0]).toMatchObject({ state: "cover_render_pending", capture: { coverBackground: { path: capture.coverBackground.path, title: "Novo recorte da autonomia" } } });
   } finally { restore(); }
+});
+
+describe("modelos novos do catálogo sincronizado", () => {
+  const csv = 'Titulo,Link Youtube,Bikes\nComparativo novo,https://youtu.be/mJeIFZ_B2uY,"S20 Pro, V20 Max"';
+  it("resolve ambos os modelos reais sem alias estático e mantém variantes distintas", () => {
+    const videos = videoCatalog.buildStrictVideoCatalog(csv);
+    const result = videoCatalog.buildStrictVideoCatalog(csv, [
+      { bike_id: "s20_pro", name: "S20 Pro" }, { bike_id: "v20_max", name: "V20 Max" },
+      { bike_id: "v20_max_s", name: "V20 Max S" },
+    ]);
+    expect(result[0].bikeIds).toEqual(["s20_pro", "v20_max"]);
+    expect(result[0].unmatched).toEqual([]);
+    expect(videos[0].unmatched).toEqual(["S20 Pro", "V20 Max"]);
+  });
+  it("não adivinha nomes desconhecidos nem associa nome ambíguo", () => {
+    const result = videoCatalog.buildStrictVideoCatalog(csv, [
+      { bike_id: "s20_a", name: "S20 Pro" }, { bike_id: "s20_b", name: "S20 Pro" },
+      { bike_id: "v20_max_s", name: "V20 Max S" },
+    ]);
+    expect(result[0].bikeIds).toEqual([]);
+    expect(result[0].unmatched).toEqual(["S20 Pro", "V20 Max"]);
+  });
+});
+
+it("mantém a primeira bike da planilha quando mistura modelo novo e alias antigo", () => {
+  const csv = 'Titulo,Link Youtube,Bikes\nComparativo novo,https://youtu.be/mJeIFZ_B2uY,"S20 Pro, V9 Max"';
+  expect(videoCatalog.buildStrictVideoCatalog(csv, [{ bike_id: "s20_pro", name: "S20 Pro" }])[0].bikeIds)
+    .toEqual(["s20_pro", "v9_max"]);
 });

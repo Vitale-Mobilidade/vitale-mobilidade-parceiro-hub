@@ -141,7 +141,7 @@ export function matchBikeToken(token: string): string | null {
   return (VIDEO_BIKE_IDS as readonly string[]).includes(key) ? key : null;
 }
 
-export function buildVideoCatalog(csv: string): VideoItem[] {
+export function buildVideoCatalog(csv: string, bikes?: { bike_id: string; name: string }[]): VideoItem[] {
   const rows = parseCsvRows(csv);
   if (rows.length < 2) return [];
   const headers = rows[0].map((h) => normalizeName(h));
@@ -165,7 +165,10 @@ export function buildVideoCatalog(csv: string): VideoItem[] {
     for (const tok of String(iBikes >= 0 ? (cells[iBikes] ?? "") : "").split(",")) {
       const t = tok.trim();
       if (!t) continue;
-      const id = matchBikeToken(t);
+      const canonicalMatches = bikes ? [...new Set(bikes.filter(bike =>
+        normalizeName(bike.name) === normalizeName(t) || normalizeName(bike.bike_id) === normalizeName(t)
+      ).map(bike => bike.bike_id))] : [];
+      const id = canonicalMatches.length > 1 ? null : canonicalMatches[0] ?? matchBikeToken(t);
       if (id) {
         if (!bikeIds.includes(id)) bikeIds.push(id);
       } else unmatched.push(t);
@@ -187,7 +190,7 @@ export function buildVideoCatalog(csv: string): VideoItem[] {
 
 
 /** Automation rejects partial/invalid snapshots instead of silently seeding a baseline. */
-export function buildStrictVideoCatalog(csv: string): VideoItem[] {
+export function buildStrictVideoCatalog(csv: string, bikes?: { bike_id: string; name: string }[]): VideoItem[] {
   if (new TextEncoder().encode(csv).length > 1_000_000) throw new Error("video_sheet_too_large");
   const rows = parseCsvRows(csv);
   const headers = rows[0]?.map(normalizeName) ?? [];
@@ -199,5 +202,5 @@ export function buildStrictVideoCatalog(csv: string): VideoItem[] {
   const ids = dataRows.map((row) => parseYoutubeId(row[linkColumn] ?? ""));
   if (!dataRows.length || dataRows.some((row) => (row[titleColumn] ?? "").trim().length < 3) || ids.some((id) => !id) || new Set(ids).size !== ids.length)
     throw new Error("invalid_video_snapshot");
-  return buildVideoCatalog(csv);
+  return buildVideoCatalog(csv, bikes);
 }
