@@ -1,6 +1,6 @@
-import logo96 from '@/assets/logo-96.webp';
-import logo192 from '@/assets/logo-192.webp';
-import { OFFERS_GROUP_URL } from '@/lib/offers-group';
+import logo96 from "@/assets/logo-96.webp";
+import logo192 from "@/assets/logo-192.webp";
+import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 
 const Footer = () => {
   return (
@@ -23,31 +23,70 @@ const Footer = () => {
             </div>
             <h2 className="sr-only">Sobre a Vitale Mobilidade</h2>
             <p className="text-gray-400 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xs mx-auto sm:mx-0">
-              <strong className="text-white">Consultoria estratégica nacional em veículos elétricos.</strong> Ajudamos empresas, lojistas e empreendedores a escolher fornecedores confiáveis, estruturar operações B2B e B2C e crescer com segurança no mercado de mobilidade elétrica.
+              <strong className="text-white">Consultoria estratégica nacional em veículos elétricos.</strong> Ajudamos
+              empresas, lojistas e empreendedores a escolher fornecedores confiáveis, estruturar operações B2B e B2C e
+              crescer com segurança no mercado de mobilidade elétrica.
             </p>
             <p className="text-gray-400 text-sm sm:text-base mt-4 max-w-xs mx-auto sm:mx-0">
-              Mais de <strong className="text-white">10 anos de experiência</strong> e <strong className="text-white">R$ 100 milhões</strong> em vendas no setor.
+              Mais de <strong className="text-white">10 anos de experiência</strong> e{" "}
+              <strong className="text-white">R$ 100 milhões</strong> em vendas no setor.
             </p>
           </div>
 
           <div className="text-center sm:text-left">
             <h3 className="font-semibold mb-4 lg:mb-5 text-base sm:text-lg">Serviços</h3>
             <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-400">
-              <li><a href="#servicos" className="hover:text-white transition-colors">Diagnóstico de Mercado</a></li>
-              <li><a href="#servicos" className="hover:text-white transition-colors">Avaliação de Fornecedores</a></li>
-              <li><a href="#servicos" className="hover:text-white transition-colors">Estruturação Comercial</a></li>
-              <li><a href="#servicos" className="hover:text-white transition-colors">Treinamento de Equipes</a></li>
+              <li>
+                <a href="#servicos" className="hover:text-white transition-colors">
+                  Diagnóstico de Mercado
+                </a>
+              </li>
+              <li>
+                <a href="#servicos" className="hover:text-white transition-colors">
+                  Avaliação de Fornecedores
+                </a>
+              </li>
+              <li>
+                <a href="#servicos" className="hover:text-white transition-colors">
+                  Estruturação Comercial
+                </a>
+              </li>
+              <li>
+                <a href="#servicos" className="hover:text-white transition-colors">
+                  Treinamento de Equipes
+                </a>
+              </li>
             </ul>
           </div>
 
           <div className="text-center sm:text-left">
             <h3 className="font-semibold mb-4 lg:mb-5 text-base sm:text-lg">Empresa</h3>
             <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-400">
-              <li><a href="/" className="hover:text-white transition-colors">Home</a></li>
-              <li><a href="#sobre" className="hover:text-white transition-colors">Sobre Nós</a></li>
-              <li><a href="#casos-sucesso" className="hover:text-white transition-colors">Casos de Sucesso</a></li>
-              <li><a href="#faq" className="hover:text-white transition-colors">Perguntas Frequentes</a></li>
-              <li><a href="#contato" className="hover:text-white transition-colors">Contato</a></li>
+              <li>
+                <a href="/" className="hover:text-white transition-colors">
+                  Home
+                </a>
+              </li>
+              <li>
+                <a href="#sobre" className="hover:text-white transition-colors">
+                  Sobre Nós
+                </a>
+              </li>
+              <li>
+                <a href="#casos-sucesso" className="hover:text-white transition-colors">
+                  Casos de Sucesso
+                </a>
+              </li>
+              <li>
+                <a href="#faq" className="hover:text-white transition-colors">
+                  Perguntas Frequentes
+                </a>
+              </li>
+              <li>
+                <a href="#contato" className="hover:text-white transition-colors">
+                  Contato
+                </a>
+              </li>
               <li>
                 <a
                   href={OFFERS_GROUP_URL}
@@ -72,7 +111,11 @@ const Footer = () => {
               <li>📍 Atendimento Nacional — Brasil</li>
               <li>🕒 Seg-Sex: 8h às 18h</li>
               <li>
-                <a href="https://www.linkedin.com/in/lucasvitale1/" className="hover:text-white transition-colors" rel="noopener">
+                <a
+                  href="https://www.linkedin.com/in/lucasvitale1/"
+                  className="hover:text-white transition-colors"
+                  rel="noopener"
+                >
                   LinkedIn de Lucas Vitale
                 </a>
               </li>
@@ -81,16 +124,13 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-800 mt-10 sm:mt-12 lg:mt-16 pt-8 sm:pt-10 lg:pt-12 text-center text-sm sm:text-base text-gray-400">
-          <p>&copy; 2026 <strong className="text-white">Vitale Mobilidade</strong>. Todos os direitos reservados.</p>
+          <p>
+            &copy; 2026 <strong className="text-white">Vitale Mobilidade</strong>. Todos os direitos reservados.
+          </p>
           <p className="mt-2">Consultoria em veículos elétricos para uma mobilidade sustentável e lucrativa.</p>
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event('vitale:open-consent'))}
-            className="mt-3 underline underline-offset-2 hover:text-white"
-          >
-            Preferências de privacidade
-          </button>
-          <a href="/privacidade" className="ml-3 underline underline-offset-2 hover:text-white">Cookies e privacidade</a>
+          <a href="/privacidade" className="ml-3 underline underline-offset-2 hover:text-white">
+            Cookies e privacidade
+          </a>
         </div>
       </div>
     </footer>
