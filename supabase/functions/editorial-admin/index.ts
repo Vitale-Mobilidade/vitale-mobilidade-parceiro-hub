@@ -2181,7 +2181,7 @@ async function finishQueuedPublication(req: Request, db: SupabaseClient, actor: 
     if (source.error || !article || article.status !== "draft" || article.video_id !== lease.video_id || !video ||
         capture?.videoId !== lease.video_id || capture?.channelId !== VITALE_YOUTUBE_CHANNEL ||
         typeof capture.originalVtt !== "string" || !capture.originalVtt.startsWith("WEBVTT") ||
-        capture.transcript !== video.transcript) throw new Error("original_source_invalid");
+        typeof video.transcript !== "string" || !video.transcript.trim() || capture.transcript !== video.transcript) throw new Error("original_source_invalid");
     const errors = [...article.validation_errors, ...await validate(db, article)];
     const texts = article.blocks.filter(block => block.type === "text");
     const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
