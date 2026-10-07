@@ -1,5 +1,7 @@
 # Captura de transcrição do canal — 06/10/2026
 
+> **Estado vigente após autorização de publicação automática:** oito pendentes publicados pelo cron, 115 publicados + 1 piloto antigo em draft; artigo+capa+QA→publicação automática, jobs ativos e fila zerada. Conferência completa em [YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md](./YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md). Referências abaixo a entrega draft, cron pausado ou publicação fora de escopo documentam marcos anteriores, não o contrato atual.
+
 ## Classificação e objetivo
 Estrutural: YouTube OAuth, Google Sheets, IA editorial e futura fila privada. Capturar legendas existentes, sem resumo/modelo na captura, e gerar rascunhos dos vídeos novos da aba Videos Youtube (gid 1172520414). Canal confirmado no perfil Lucas: UC9LuObKw8ZLoQBk6qHydEeg / @vitalemobilidade. Base operacional 11206bf, branch codex/youtube-transcript-oct06; checkout de referência não é destino de implementação.
 

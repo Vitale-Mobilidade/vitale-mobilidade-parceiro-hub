@@ -1,5 +1,7 @@
 # Admin e sincronização geral — 06/10/2026
 
+> **Estado vigente após autorização de publicação automática:** oito pendentes publicados pelo cron, 115 publicados + 1 piloto antigo em draft; artigo+capa+QA→publicação automática, jobs ativos e fila zerada. Conferência completa em [YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md](./YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md). Referências abaixo a entrega draft, cron pausado ou publicação fora de escopo documentam marcos anteriores, não o contrato atual.
+
 Classificação estrutural: login operacional, Sheets e orquestração editorial. Pedido: botão no Admin que atualize tudo e painel completo de bikes dentro do Admin.
 
 ## Revisão prévia

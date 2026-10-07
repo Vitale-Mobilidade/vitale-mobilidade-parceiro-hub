@@ -1,5 +1,7 @@
 # Fila automática de pendentes — 06/10/2026
 
+> **Estado vigente após autorização de publicação automática:** oito pendentes publicados pelo cron, 115 publicados + 1 piloto antigo em draft; artigo+capa+QA→publicação automática, jobs ativos e fila zerada. Conferência completa em [YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md](./YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md). Referências abaixo a entrega draft, cron pausado ou publicação fora de escopo documentam marcos anteriores, não o contrato atual.
+
 **Estado final em 06/10/2026: CONCLUÍDO.** Oito pendentes criados com capa pelo pipeline do projeto; 107 publicados preservados; 9 drafts (8 novos + piloto anterior), 116 vídeos. Fila sem itens pendentes/em execução/revisão. Busca horária :12 e drainer a cada minuto ativos, settings.enabled=true. Resultados em /admin/conteudos; Sincronizar tudo em /admin.
 
 Autorização explícita nesta thread: criar os artigos pendentes por automação no projeto, sem criação manual pelo Codex, e partir para modelo automático. Inclui captura original, texto e capa com créditos Lovable já indicados. Escopo ampliado revoga exclusão anterior do backlog. Conferência somente leitura: 116 linhas, 107 publicados + 1 draft; 8 candidatos por ID e título de artigo/vídeo vinculado.

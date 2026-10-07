@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Operação editorial verificada em 06/10/2026:** captura oficial de legendas do próprio canal, escrita independente, capa, QA e publicação automática exercitados pelo cron no Lovable integrado. Oito pendentes publicados, total 115 publicados + 1 piloto histórico em draft; fila zerada e agendamento ativo. Sincronizar tudo e painel de bikes permanecem no Admin. Veja [YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md](./YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md). Estados editoriais anteriores abaixo são históricos; esta evidência não conclui as demais frentes do roadmap.
+
 
 ## Alteração local de rotas — 28/09/2026
 

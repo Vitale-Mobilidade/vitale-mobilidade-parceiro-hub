@@ -1,5 +1,36 @@
 # Publicação automática — 06/10/2026
 
+## Estado atual verificado — 06/10/2026, 22h
+
+**CONCLUÍDO:** oito artigos pendentes publicados pelo cron real, com capa e QA aprovados. Total 115 publicados + 1 piloto histórico em draft. Fila nova sem pendências, execução ou revisão; worker e jobs editoriais ativos. Nenhum artigo foi escrito, preenchido ou publicado manualmente pelo Codex.
+
+Decisão consolidada vigente: transcrição integral oficial do próprio canal → escritor com voz independente → evidências por IDs de spans originais → capa automática com checkpoint → QA factual, voz, metadata, links e comparação de corpos completos → publicação/indexação habilitada. Falha material fecha a publicação. Até duas correções automáticas concluídas; timeout/402/resultado incerto não é repetido. A exceção pontual documentada de QE9 usou a terceira tentativa depois da mudança de algoritmo, com marcador que impede reaplicação. Mudança de H1 por diferenciação antes de publicar recompõe a capa a partir do background salvo; se não houver background legado, faz nova imagem pelo mesmo gateway.
+
+Evidências finais: 8 eventos automatic_article_published, todos status=published/source=done/QA pass=true; fontes WEBVTT de 7.362–16.596 caracteres do canal UC9LuObKw8ZLoQBk6qHydEeg; 0 flags de distância editorial nos campos visíveis; artigos com 5.055–8.246 caracteres de prosa. O detector auxilia e não representa garantia de erro zero; a revisão integral permaneceu obrigatória.
+
+O hash dos 107 publicados permanece 18146aac3feea06926c4eec170f750b2, idêntico ao snapshot inicial. Cinco jobs preservados/ativos: bikes :07, imagens/perfis 15min, YouTube :12 e drainer por minuto. Frontend mostra “publica automaticamente”, “Falhas no histórico”, 115 publicados, 1 draft, zero pendentes/em execução. O piloto antigo é o único draft e permanece fora deste lote de oito pendentes.
+
+Smoke público dos oito: HTTP 200 com H1/conteúdo SSR, canonical da própria página, index/follow, Article JSON-LD, capa HTTP 200/JPG 1280×720. Sitemap HTTP 200 contém as oito URLs. A última V9 tem slug novo correspondente ao recorte de trabalho; não havia URL publicada anterior para redirecionar. Uma primeira leitura de smoke teve timeout de rede; nova leitura somente GET confirmou ambos os recursos, sem repetir IA.
+
+76 testes direcionados passaram; pnpm validate passou (typecheck, 59 regressões, build SSR). Deno check real e deploy confirmados no 107ea43. As migrations de recuperação só enfileiraram retornos concluídos conhecidos; a publicação ocorreu exclusivamente pela rotina assinada. A screenshot final é ../vitale-publicacao-automatica-concluida-2026-10-06.png.
+
+## Revisão posterior final
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Oito entregues como publicados, com capa; modo diário ativo. |
+| CTO | Pass | Leases exclusivos, checkpoints, CAS e SSR 200 real; mesmo projeto/banco. |
+| IA | Pass | Originais íntegros, QA completa aprovada, voz independente e correções automáticas verificadas. |
+| Segurança | Pass | Worker assinado, owner Admin ativo, claims service_role; secrets/capturas integrais privados e RLS preservada. |
+| UX | Pass | Admin visível com fila zerada, status e falhas históricas separados, botão global existente. |
+| CX | Pass | Agendamento autônomo, ausência de trabalho manual por artigo, falhas incertas não repetidas. |
+| Growth | Pass | Metadata/canonical/HTML/JSON-LD/capas/sitemap conferidos; acervo antigo byte a byte preservado. |
+| PMO | Pass | Testes/gates, evidências locais/Cloud/públicas, custos e exceções registrados, rollback disponível. |
+
+Não há Fail material pendente neste lote. Limitações operacionais: OAuth/YouTube/gateway dependem dos provedores e créditos; falha futura é reportada e mantém o artigo fechado. Não solicitar indexação em massa.
+
+## Histórico da revisão e correções
+
 Mudança estrutural: fila, IA, Supabase e SEO público. O usuário autorizou explicitamente publicação automática dos artigos gerados; os oito novos artigos entram na mesma fila diária. Os 107 publicados e o piloto histórico não são reprocessados.
 
 ## Revisão prévia e decisão
@@ -43,3 +74,7 @@ Nova QA do texto de negócios corrigido apontou um problema técnico diferente e
 A correção factual de cf-AF7LgqpY foi rejeitada por uma expressão de relato (“sua resposta foi considerada...”), antes de persistir prosa ou publicar. O parâmetro de reaproveitamento de rascunho estava pulando a revisão completa mesmo quando o escritor gerava uma nova correção factual. Corrigido: apenas rascunho realmente reaproveitado pula nova escrita; geração factual nova recebe a mesma revisão de voz completa. Falha de voz concluída pode consumir a segunda tentativa dentro do contador, com fragmentos privados como diagnóstico; nunca timeout. Recuperação restrita do caso conhecido pelo cron, sem editar prosa. Oito perspectivas: GO com fonte/CAS/teto e teste real do ramo, mantendo H1/capa/107 publicados.
 
 V9 recebeu uma segunda revisão concluída ainda com contador booleano legado. A sobreposição está comprovada em passagens, além de uma causalidade de geometria sem suporte. A correção deve diferenciar o argumento de verdade: para similaridade material, o escritor pode mudar H1/outline antes da primeira publicação, mantendo fonte e entidade Bike. A capa reutiliza o background pago persistido, com nova composição gratuita de texto pelo mesmo worker; não fica com título antigo. Slug não publicado pode acompanhar a mudança. Demais correções preservam título/capa. Gate valida o vínculo título/background. Recuperação específica de QE9 v5 registra a segunda e última correção. Oito perspectivas: GO com revisão nova, free render separado e testes, sem editar legado ou inventar tema/fatos.
+
+Conferência efetiva após migration 0110: CF foi reenfileirado; QE9 **não**, pois já possuía publicationRepairCount=2. A confirmação do fornecedor sobre as duas linhas não substituiu a leitura do estado real. Duas correções com título congelado já haviam sido executadas. Recuperação pontual 0115 permite uma terceira tentativa somente desse artigo, após mudança do algoritmo para foco/H1 distintos, registrando publicationTitleRecovery=true e contador=3. O teto recorrente continua em duas; nem scheduler nem reaplicação da migration repetem esta exceção. Todas as oito perspectivas: GO para a recuperação de implementação conhecida e concluída, com QA obrigatória, fonte original e free cover render; se reprovar, permanece fechado, sem forçar publicação. Custo adicional limitado a um escritor/refino e QA, sem nova imagem. Não confundir tentativa reservada com confirmação de resultado.
+
+Resultado parcial: CF aprovado e publicado, sete novos publicados (114 total). QE9 reescrito com novo recorte “V9 Max Ufofast Duas Baterias: como ela se encaixa em uma rotina de trabalho”. Seu background da primeira capa não estava persistido; a previsão de free render para este caso foi incorreta. O fallback previsto cover_pending executa nova imagem pelo mesmo gateway/cron, autorizada no escopo de capa automática; os demais backgrounds persistidos continuam reutilizáveis. Não afirmar custo zero para esta recuperação. O resultado só será declarado pronto após capa + QA + página pública.
