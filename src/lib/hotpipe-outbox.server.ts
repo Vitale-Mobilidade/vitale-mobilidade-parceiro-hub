@@ -16,6 +16,7 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
   const { data: events, error: claimError } = await db.rpc("claim_price_alert_hotpipe");
   if (claimError) return new Response(null, { status: 500 });
   let delivered = 0;
+  const failures: Array<{ event_id: unknown; name: string; stage: "fetch"; cause_code: string }> = [];
   for (const event of events ?? []) {
     let status = 0; let ack: unknown; let retryAfter: string | null = null;
     const controller = new AbortController();
@@ -26,7 +27,10 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
       ack = await response.json().catch(() => null);
     } catch (failure) {
       const name = failure instanceof Error && ["TypeError", "AbortError", "TimeoutError"].includes(failure.name) ? failure.name : "Error";
+      const rawCode = failure instanceof Error && failure.cause && typeof failure.cause === "object" ? String((failure.cause as { code?: unknown }).code ?? "") : "";
+      const cause_code = ["ENOTFOUND", "ECONNRESET", "ECONNREFUSED", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT"].includes(rawCode) ? rawCode : "unknown";
       console.error("[hotpipe-outbox] delivery_failed", { event_id: event.event_id, name });
+      failures.push({ event_id: event.payload?.event_id, name, stage: "fetch", cause_code });
     } finally { clearTimeout(deadline); }
     const accepted = status === 200 && validHotpipeAck(ack, event.payload);
     const code = ack && typeof ack === "object" ? String((ack as Record<string, unknown>).error ?? (ack as Record<string, unknown>).code ?? "") : undefined;
@@ -40,5 +44,5 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     if (error) return new Response(null, { status: 500 });
     if (accepted) delivered++;
   }
-  return Response.json({ ok: true, delivered });
+  return Response.json({ ok: true, delivered, build: "manual-v2", ...(failures.length ? { failures } : {}) });
 }

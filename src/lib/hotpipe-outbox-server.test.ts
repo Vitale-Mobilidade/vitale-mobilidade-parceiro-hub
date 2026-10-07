@@ -38,9 +38,19 @@ describe("Hotpipe server delivery with mocked services", () => {
   await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).not.toBe("delivered");expect(mock.updates[0].last_http_status).toBe(302);
   expect(fetch).toHaveBeenCalledTimes(1);expect(vi.mocked(fetch).mock.calls[0][1]?.redirect).toBe("manual");
  });
- it("retries network failures with immutable event",async()=>{
-  vi.mocked(fetch).mockRejectedValue(new Error("network"));await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).toBe("pending");
- });
+  it("retries network failures with immutable event",async()=>{
+   vi.mocked(fetch).mockRejectedValue(new Error("network"));await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).toBe("pending");
+  });
+  it("reports sanitized fetch failures with build marker",async()=>{
+   const failure=new TypeError("fetch failed");(failure as {cause?:unknown}).cause={code:"ENOTFOUND"};vi.mocked(fetch).mockRejectedValue(failure);
+   const response=await deliverPriceAlertOutbox(signed());const body=await response.json();
+   expect(body.build).toBe("manual-v2");expect(body.failures).toEqual([{event_id:"event",name:"TypeError",stage:"fetch",cause_code:"ENOTFOUND"}]);
+  });
+  it("sanitizes unknown failure names and causes",async()=>{
+   vi.mocked(fetch).mockRejectedValue(new RangeError("unexpected"));
+   const body=await (await deliverPriceAlertOutbox(signed())).json();
+   expect(body.failures[0]).toEqual({event_id:"event",name:"Error",stage:"fetch",cause_code:"unknown"});
+  });
  it("keeps permanent authentication failures for review",async()=>{
   vi.mocked(fetch).mockResolvedValue(Response.json({error:"invalid_api_key"},{status:401}));await deliverPriceAlertOutbox(signed());expect(mock.updates[0].status).toBe("failed");
  });
