@@ -21,7 +21,7 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     const controller = new AbortController();
     const deadline = setTimeout(() => controller.abort(), 10000);
     try {
-      const response = await fetch(ENDPOINT, { method: "POST", redirect: "error", headers: { "Content-Type": "application/json", "x-api-key": apiKey }, body: JSON.stringify(event.payload), signal: controller.signal });
+      const response = await fetch(ENDPOINT, { method: "POST", redirect: "manual", headers: { "Content-Type": "application/json", "x-api-key": apiKey }, body: JSON.stringify(event.payload), signal: controller.signal });
       status = response.status; retryAfter = response.headers.get("retry-after");
       ack = await response.json().catch(() => null);
     } catch (failure) {
