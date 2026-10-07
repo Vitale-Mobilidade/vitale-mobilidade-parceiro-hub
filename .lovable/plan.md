@@ -1,39 +1,23 @@
-# Inspeção da conexão Resend "My Resend" (somente leitura)
+# Diagnóstico Hotpipe outbox — status 0 (somente leitura)
 
-## Resultado da inspeção (já verificado nesta sessão)
+## O que foi confirmado
+- Site publicado está ativo (`is_published=true`). As ferramentas disponíveis não expõem o ID/revisão da publicação; não é possível confirmar por elas se `431cfa5c…` é a revisão servida.
+- Três ticks assinados (20:18:16, 20:21:13, 20:25:07 UTC) chegaram em `/api/public/price-alert-outbox` → 200. Portanto HMAC, service role, secret presente e com formato válido, e claim funcionaram (senão seria 403/503/500).
+- Evento `5b25293e-b8a1-4c1e-9bd9-927738c96f36`: `pending`, `attempts=3`, `last_http_status=0`, chaves do payload `event_id, operation, request_id, revision` (sem customer).
+- Nenhuma linha `[hotpipe-outbox] delivery_failed` nos logs. Os logs do servidor publicado só registram linhas de acesso; nenhuma saída de console aparece para nenhuma requisição na última hora. A ausência não prova que o erro não ocorreu.
 
-- Conexão: **My Resend** (`std_01m4bze58febgaxk39p57y9jpd`), conector `resend`, auth `api_key`, **usa connector gateway: true**.
-- **Vinculada a este projeto: não** (`is linked to project: no`).
-- **Acesso do usuário atual: não** (`has access: no`) — a conexão é privada no workspace e o usuário atual não tem permissão; `linkable: yes` indica que pode ser vinculada depois que o acesso for concedido.
-- Nenhuma chave foi lida, exibida ou copiada. Nenhum código, recurso, secret, SQL ou e-mail foi alterado/enviado.
+## Causa concreta (alta confiança, por código + runtime)
+`status=0` só ocorre quando o `fetch` lança exceção antes de qualquer resposta. A chamada usa `redirect: "error"`. O runtime de servidor do site (Cloudflare Workers) aceita apenas `"follow"` e `"manual"`; `"error"` lança `TypeError` de forma síncrona e determinística, antes de qualquer conexão. Isso explica:
+- falha idêntica em toda tentativa, antes e depois do patch AbortController;
+- testes locais (Node/Bun) passando, porque lá `"error"` é suportado;
+- nenhuma requisição chegar ao Hotpipe.
 
-## Mecanismo que o servidor TanStack usaria (contrato real)
+Enum sanitizado esperado: `name=TypeError`.
 
-Como a conexão é **gateway-backed**, o servidor TanStack (server function / rota `src/routes/api/`) chamaria a API Resend **via connector gateway**, não com uma chave Resend direta:
+## Correção mínima proposta (só se você autorizar)
+- Trocar para `redirect: "manual"` e tratar qualquer resposta 3xx como não aceita (sem seguir), preservando a mesma garantia de nunca seguir redirect.
+- Um teste dirigido que confirme: 3xx não é aceito e não segue redirect.
+- Sem migration, dados, cron, secrets ou chamadas reais.
 
-```text
-POST https://connector-gateway.lovable.dev/resend/<endpoint-resend>
-Headers:
-  Authorization: Bearer ${LOVABLE_API_KEY}        (secret de servidor)
-  X-Connection-Api-Key: ${RESEND_API_KEY}         (secret injetado ao vincular)
-```
-
-- Após vincular (`standard_connectors--connect`), os secrets `LOVABLE_API_KEY` e `RESEND_API_KEY` ficam disponíveis apenas no runtime de servidor (`process.env` em server functions) — nunca no frontend nem em `VITE_*`.
-- O gateway repassa a API inteira do provedor; portanto **Broadcasts, Contacts, Segments (Audiences) e Usage** são alcançáveis pelos paths documentados da Resend (ex.: `/broadcasts`, `/contacts`, `/audiences`, `/usage`), não apenas `/emails` transacional.
-- Não há suporte nativo de Broadcasts no serviço transacional de Emails do Lovable — a newsletter precisa mesmo desta conexão gateway.
-
-## Pendência que exige ação do usuário (fora deste plano)
-
-1. O responsável (dono da conexão) precisa **conceder acesso** ao usuário atual nas configurações da conexão no workspace (seção de permissões da conexão "My Resend"), ou vinculá-la ele mesmo.
-2. Depois, vincular ao projeto: `standard_connectors--connect` com `connector_id=resend`, `connection_id=std_01m4bze58febgaxk39p57y9jpd`.
-
-## Plano (quando o acesso for concedido e a implementação for autorizada)
-
-1. Vincular a conexão ao projeto via `standard_connectors--connect` (sem criar nova conexão).
-2. Confirmar com `fetch_secrets` a presença booleana de `RESEND_API_KEY` (sem exibir valor).
-3. Implementar server function TanStack para newsletter usando o gateway com os paths Resend de Broadcasts/Contacts/Audiences, validação de entrada e tratamento de erros do provedor (status + corpo).
-4. Testes dirigidos e `pnpm validate`; sem envio real de e-mails sem autorização explícita.
-
-## Fora de escopo
-
-- Editar código, criar recursos, ler/exibir chaves, alterar sharing/roles/secrets, enviar e-mails, publicar frontend ou aplicar SQL — nada disso será feito nesta etapa.
+## Boolean diagnóstico mínimo (se quiser prova antes da correção)
+Como o console não aparece nos logs publicados, persistir no próprio retorno do tick, sem segredo: `{ delivered, failures: [{ event_id, name, stage: "fetch" }] }`, com `name` limitado ao enum `TypeError | AbortError | TimeoutError | Error`. Nenhuma mensagem, header ou chave.
