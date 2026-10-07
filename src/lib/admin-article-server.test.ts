@@ -920,7 +920,7 @@ describe("automatic publication uses the leased daily pipeline", () => {
   const mockChecks = () => exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
   it("publishes only after persisted QA and guards the exact draft revision", async () => {
     const { db, writes, filters } = publicationDb(); const restore = mockChecks();
-    const reviewer = vi.fn(async () => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
+    const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
     try {
       const result = await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease);
       expect(await result.json()).toMatchObject({ status: "published" });
