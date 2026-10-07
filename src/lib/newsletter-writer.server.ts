@@ -106,7 +106,7 @@ async function structured(
           instructions: system,
           input: JSON.stringify(input),
           store: false,
-          max_output_tokens: schema === newsletterDraftSchema ? 3600 : 600,
+          max_output_tokens: schema === newsletterDraftSchema ? 6000 : 2000, // reasoning tokens count toward this cap
           reasoning: { effort: "low" },
           text: {
             format: {
