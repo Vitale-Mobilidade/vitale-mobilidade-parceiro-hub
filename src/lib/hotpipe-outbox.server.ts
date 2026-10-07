@@ -44,5 +44,5 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     if (error) return new Response(null, { status: 500 });
     if (accepted) delivered++;
   }
-  return Response.json({ ok: true, delivered });
+  return Response.json({ ok: true, delivered, build: "manual-v2", ...(failures.length ? { failures } : {}) });
 }
