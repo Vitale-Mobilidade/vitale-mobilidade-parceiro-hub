@@ -468,3 +468,78 @@ describe("newsletter authorization and dispatch recovery", () => {
     ).toBe(false);
   });
 });
+
+it("signed preview uses the real writer with automation paused and never calls Resend or creates campaigns", async () => {
+  const settingsChain = {
+    eq: () => ({
+      single: async () => ({
+        data: { ...config, enabled: false },
+        error: null,
+      }),
+    }),
+  };
+  const historyChain: Record<string, unknown> = {};
+  historyChain.in = () => historyChain;
+  historyChain.order = () => historyChain;
+  historyChain.range = async () => ({ data: [], error: null });
+  const from = vi.fn((table: string) => ({
+    select: () =>
+      table === "newsletter_settings" ? settingsChain : historyChain,
+  }));
+  const rpc = vi.fn(async (name: string) => ({
+    data:
+      name === "newsletter_authorize"
+        ? true
+        : name === "newsletter_acquire"
+          ? id
+          : name === "newsletter_next_edition_number"
+            ? 1
+            : null,
+    error: null,
+  }));
+  createClient.mockReturnValue({ from, rpc });
+  const request = vi.fn();
+  vi.stubGlobal("fetch", request);
+  vi.mocked(automaticNewsletter).mockResolvedValue({
+    content: {
+      ...content,
+      headline: "Um giro de conteúdo da Vitale",
+      editionNumber: 1,
+    },
+    fingerprint: "mock",
+  });
+  const out = await newsletterTick(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: {
+        "x-worker-signature": "synthetic",
+        "x-worker-issued-at": "1",
+        "x-newsletter-mode": "preview",
+      },
+    }),
+  );
+  expect(out.status).toBe(200);
+  expect(await out.json()).toMatchObject({ ok: true, preview: true });
+  expect(request).not.toHaveBeenCalled();
+  expect(rpc).not.toHaveBeenCalledWith(
+    "newsletter_form_campaign",
+    expect.anything(),
+  );
+  expect(rpc).toHaveBeenCalledWith("newsletter_release", { tok: id });
+  expect(
+    from.mock.calls.every(([table]) =>
+      ["newsletter_settings", "newsletter_campaigns"].includes(table),
+    ),
+  ).toBe(true);
+});
+it("unsigned preview is rejected before writer or database access", async () => {
+  const result = await newsletterTick(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: { "x-newsletter-mode": "preview" },
+    }),
+  );
+  expect(result.status).toBe(403);
+  expect(createClient).not.toHaveBeenCalled();
+  expect(automaticNewsletter).not.toHaveBeenCalled();
+});

@@ -92,11 +92,19 @@ describe("newsletter editorial", () => {
       .mockResolvedValueOnce(response(reviewedDraft))
       .mockResolvedValueOnce(
         response({ approved: false, issues: ["unsupported claim"] }),
+      )
+      .mockResolvedValueOnce(response(reviewedDraft))
+      .mockResolvedValueOnce(
+        response({ approved: false, issues: ["unsupported claim"] }),
       );
     await expect(writeNewsletter(sources, 5, request)).rejects.toThrow(
       "review_failed",
     );
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(4);
+    expect(
+      JSON.parse(JSON.parse(request.mock.calls[2][1].body).input).correction
+        .issues,
+    ).toContain("unsupported claim");
     expect(JSON.parse(request.mock.calls[0][1].body).store).toBe(false);
     expect(request.mock.calls[0][1].headers["Lovable-API-Key"]).toBe(
       "mock-key",
@@ -229,6 +237,69 @@ it("accepts only typographic whitespace/case differences in a contiguous source 
           ...draft.curiosity,
           evidence:
             "A escolha começa com autonomia garantida em qualquer trajeto.",
+        },
+      },
+      [source],
+    ),
+  ).toThrow("curiosity_invalid");
+});
+
+it("repairs invalid literal evidence once and requires final independent approval", async () => {
+  vi.stubEnv("LOVABLE_API_KEY", "mock-key");
+  const sources = [0, 1, 2, 3].map((i) => ({ ...source, id: `source-${i}` }));
+  const valid = {
+    ...draft,
+    curiosity: { ...draft.curiosity, sourceId: sources[0].id },
+    sections: sources.map((s) => ({
+      ...draft.sections[0],
+      id: s.id,
+      paragraphs: [sentence.repeat(5)],
+      bullets: [sentence],
+    })),
+  };
+  const invalid = {
+    ...valid,
+    sections: valid.sections.map((s) => ({
+      ...s,
+      evidence: ["Uma alegação que não consta na fonte publicada."],
+    })),
+  };
+  const response = (value: unknown) =>
+    new Response(
+      JSON.stringify({
+        output: [
+          { content: [{ type: "output_text", text: JSON.stringify(value) }] },
+        ],
+      }),
+    );
+  const request = vi
+    .fn()
+    .mockResolvedValueOnce(response(invalid))
+    .mockResolvedValueOnce(response(valid))
+    .mockResolvedValueOnce(response({ approved: true, issues: [] }));
+  await expect(writeNewsletter(sources, 1, request)).resolves.toMatchObject({
+    subject: valid.subject,
+  });
+  expect(request).toHaveBeenCalledTimes(3);
+  expect(
+    JSON.parse(JSON.parse(request.mock.calls[1][1].body).input).correction
+      .issues,
+  ).toContain("newsletter_writer_evidence_invalid");
+});
+it("normalizes wrapping typographic quotes without accepting changed facts", () => {
+  const valid = {
+    ...draft,
+    curiosity: { ...draft.curiosity, evidence: `“${source.text}”` },
+    sections: [{ ...draft.sections[0], evidence: [`“${source.text}”`] }],
+  };
+  expect(() => validateNewsletterEvidence(valid, [source])).not.toThrow();
+  expect(() =>
+    validateNewsletterEvidence(
+      {
+        ...valid,
+        curiosity: {
+          ...valid.curiosity,
+          evidence: `“${source.text.replace("necessidades", "garantias")}”`,
         },
       },
       [source],

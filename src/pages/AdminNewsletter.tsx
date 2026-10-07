@@ -98,11 +98,12 @@ function NewsletterOperation() {
           em destaque não repete as quedas do Radar.
         </p>
         <p className="mt-2 text-sm text-ink-muted">
-          Gerar prévia usa IA: duas chamadas ao modelo, uma para redação e outra
-          para revisão. Os envios da mesma edição reutilizam o texto preparado.
-          Links levam UTMs por edição, seção e segmento. No GA4, filtre origem
-          vitale_newsletter e mídia email; o Quiz também preserva essa
-          atribuição.
+          Gerar prévia usa IA: uma chamada para redação e outra para revisão. Se
+          houver rejeição editorial, o agente faz no máximo uma autocorreção;
+          até quatro chamadas e dois minutos no total. Os envios da mesma edição
+          reutilizam o texto preparado. Links levam UTMs por edição, seção e
+          segmento. No GA4, filtre origem vitale_newsletter e mídia email; o
+          Quiz também preserva essa atribuição.
         </p>
       </div>
       <div>
