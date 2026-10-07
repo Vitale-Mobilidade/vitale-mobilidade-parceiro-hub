@@ -16,7 +16,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -36,6 +36,8 @@ const exports: {
   coverPreview?: (req: Request, db: unknown, article: unknown) => Promise<Response>;
   finishQueuedCover?: (...args: unknown[]) => Promise<Response>;
   finishQueuedCoverRender?: (...args: unknown[]) => Promise<Response>;
+  finishQueuedPublication?: (...args: unknown[]) => Promise<Response>;
+  injectPublicationChecks?: (...args: unknown[]) => () => void;
   finishQueuedRewrite?: (...args: unknown[]) => Promise<Response>;
   generateAutomaticCover?: (...args: unknown[]) => Promise<unknown>;
   injectOfflineCover?: (generate: unknown, apply: unknown) => () => void;
@@ -786,9 +788,9 @@ describe("fresh automatic cover checkpoint", () => {
     const restore = exports.injectOfflineCover!(generated, applied);
     try {
       const response = await exports.finishQueuedCoverRender!(new Request("http://localhost"), db, { id: "actor" }, { article_id: "draft", video_id: "abcDEFG1234", background: { path: "draft/backgrounds/offline.png", mime: "image/png", title: article.title } });
-      expect(await response.json()).toEqual({ status: "done", articleId: "draft", stage: "cover_render" });
+      expect(await response.json()).toEqual({ status: "publish_pending", articleId: "draft", stage: "cover_render" });
       expect(generated).not.toHaveBeenCalled();
-      expect(db.states).toEqual(["done"]);
+      expect(db.states).toEqual(["publish_pending"]);
       expect(db.filters).toEqual([["video_id", "abcDEFG1234"], ["state", "cover_rendering"]]);
     } finally { restore(); }
   });
@@ -892,4 +894,52 @@ it("hourly refreshes the spreadsheet before serving a pending cover stage", asyn
     const names = rpc.mock.calls.map(call => call[0]);
     expect(names.indexOf("ingest_youtube_editorial_snapshot")).toBeLessThan(names.indexOf("claim_youtube_editorial_cover"));
   } finally { delete integrationEnv.YOUTUBE_EDITORIAL_ENABLED; }
+});
+
+
+describe("automatic publication uses the leased daily pipeline", () => {
+  const transcript = "Motor forte e autonomia dependem do percurso.";
+  const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 7, title: "Motor e autonomia", slug: "motor-e-autonomia", summary: "Conheça o funcionamento.", seo_title: "Motor e autonomia no uso diário", meta_description: "Entenda a autonomia.", og_title: "Motor e autonomia", og_description: "Uso diário.", validation_errors: [], related_article_ids: [], faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "A autonomia depende do percurso.", sourceExcerpt: transcript }] };
+  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript }, conflict = false) {
+    const writes: { table: string; patch: Record<string, unknown> }[] = [];
+    const filters: unknown[] = [];
+    const db = { from: (table: string) => {
+      let patch: Record<string, unknown> | undefined;
+      const chain = { select: () => chain, eq: (key: string, value: unknown) => { filters.push([table, key, value]); return chain; },
+        update: (value: Record<string, unknown>) => { patch = value; writes.push({ table, patch: value }); return chain; },
+        insert: async () => ({ error: null }),
+        maybeSingle: async () => ({ error: null, data: table === "editorial_articles" ? (patch ? (conflict ? null : { id: article.id }) : article) : table === "editorial_videos" ? { transcript, status: "active" } : { capture } }),
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({ error: null, data: [] }).then(resolve) };
+      if (table === "bikes") return { select: async () => ({ data: [], error: null }) };
+      return chain;
+    } };
+    return { db, writes, filters };
+  }
+  const req = new Request("http://localhost");
+  const lease = { article_id: article.id, video_id: article.video_id };
+  const mockChecks = () => exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
+  it("publishes only after persisted QA and guards the exact draft revision", async () => {
+    const { db, writes, filters } = publicationDb(); const restore = mockChecks();
+    const reviewer = vi.fn(async () => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
+    try {
+      const result = await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease);
+      expect(await result.json()).toMatchObject({ status: "published" });
+      expect(writes.map(x => x.patch.state).filter(Boolean)).toEqual(["done"]);
+      expect(writes[0].patch.capture).toMatchObject({ publicationQa: { pass: true, articleRevision: 7 } });
+      expect(writes[1]).toMatchObject({ table: "editorial_articles", patch: { status: "published", indexable: true } });
+      expect(filters).toContainEqual(["editorial_articles", "revision", 7]);
+      expect(filters).toContainEqual(["editorial_articles", "status", "draft"]);
+      expect(reviewer).toHaveBeenCalledOnce();
+    } finally { restore(); }
+  });
+  it.each(["wrong_source", "failed_qa", "conflict"])("does not publish %s or replay the writer/image", async failure => {
+    const { db, writes } = publicationDb(failure === "wrong_source" ? { videoId: article.video_id, channelId: "other", originalVtt: "WEBVTT\n", transcript } : undefined, failure === "conflict");
+    const restore = mockChecks(); const reviewer = vi.fn(async () => ({ pass: failure !== "failed_qa", issues: failure === "failed_qa" ? ["Afirmação sem suporte"] : [], cautionViolations: [] })); exports.injectOfflineAI!(reviewer);
+    try {
+      expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
+      expect(writes.at(-1)?.patch.state).toBe("needs_review");
+      if (failure !== "conflict") expect(writes.some(x => x.table === "editorial_articles")).toBe(false);
+      if (failure === "wrong_source") expect(reviewer).not.toHaveBeenCalled();
+    } finally { restore(); }
+  });
 });

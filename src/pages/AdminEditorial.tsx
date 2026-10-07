@@ -123,7 +123,7 @@ function Overview({ role }: { role: AdminRole }) {
         <h2 className="text-lg font-semibold">Artigos automáticos</h2>
         {youtube.data ? <>
           <p className="mt-2 text-sm">{youtube.data.enabled ? "Busca horária ativada" : "Busca horária desativada"} · Pendentes na fila: <strong>{youtube.data.queued}</strong> · Em processamento: <strong>{youtube.data.running}</strong> · Concluídos: <strong>{youtube.data.done}</strong></p>
-          <p className="mt-2 text-sm text-muted-foreground">A fila prepara artigo e capa automaticamente. Os resultados aparecem em Artigos como rascunhos.</p>
+          <p className="mt-2 text-sm text-muted-foreground">A fila gera artigo e capa, valida o conteúdo e publica automaticamente. Os resultados aparecem em Artigos.</p>
           {youtube.data.review > 0 && <Notice danger>{youtube.data.review} execução(ões) precisam de conferência. Consulte Artigos e Logs; a IA não será repetida automaticamente.</Notice>}
         </> : <p className="mt-2 text-sm" role={youtube.error ? "alert" : "status"}>{youtube.error ? "Não foi possível consultar a fila automática." : "Consultando fila…"}</p>}
       </section>}
