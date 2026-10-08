@@ -52,8 +52,10 @@ export async function newsletterCall<T>(
         "A conexão do servidor com a IA falhou. Nenhum e-mail foi enviado.",
       newsletter_writer_evidence_invalid:
         "O rascunho não apresentou citações literais válidas das fontes.",
-      newsletter_writer_curiosity_invalid:
-        "A curiosidade não apresentou uma citação válida da fonte.",
+      newsletter_writer_opening_invalid:
+        "A abertura não respeitou o formato editorial breve.",
+      newsletter_writer_repeated_opening:
+        "A abertura repetiu uma edição anterior.",
       newsletter_writer_length_invalid:
         "O redator ultrapassou o tamanho editorial permitido.",
       newsletter_writer_timeout:

@@ -52,7 +52,7 @@ const item = z.object({
   currentPrice: z.string().max(40).optional(),
   dropLabel: z.string().max(30).optional(),
   checkedAt: z.string().max(60).optional(),
-  priceRatio: z.number().min(0).max(1).optional(),
+  baselineDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   paragraphs: z.array(z.string().trim().min(20).max(900)).max(2).optional(),
   bullets: z.array(z.string().trim().min(10).max(180)).max(3).optional(),
 });
@@ -65,13 +65,6 @@ export const newsletterSchema = z.object({
     .refine((s) => !/[\r\n]/.test(s)),
   intro: z.string().trim().min(1).max(1800),
   editionNumber: z.number().int().min(1).optional(),
-  curiosity: z
-    .object({
-      text: z.string().min(30).max(400),
-      sourceId: z.string().max(50),
-      evidence: z.string().min(20).max(500),
-    })
-    .optional(),
   headline: z.string().trim().min(10).max(100).optional(),
   preheader: z.string().trim().min(20).max(150).optional(),
   radar: item.optional(),
@@ -287,16 +280,27 @@ export function renderEditorialNewsletter(
       ),
     )
     .join("");
-  const radar = data.radar ?? {
-    title: "O preço de hoje merece atenção",
-    url: tracked("https://vitalemobilidade.com/radar", "radar"),
-    paragraphs: [
-      "Antes de decidir, consulte o preço atual e o histórico no Radar. As ofertas podem mudar entre esta edição e a sua visita.",
-    ],
+  const radar = {
+    title: "Radar de preços",
+    url: data.radar?.url ?? tracked("https://vitalemobilidade.com/radar", "radar"),
   };
+  const drops = data.drops ?? [];
+  const context = (key: "baselineDate" | "checkedAt", label: string) => {
+    const values = [...new Set(drops.map((d) => d[key]).filter(Boolean))];
+    if (!values.length) return "";
+    return `${label}: ${values.length === 1 ? values[0] : drops.map((d) => `${d.title}: ${d[key] ?? "não informada"}`).join("; ")}.`;
+  };
+  const radarNote = [
+    context("baselineDate", "Fechamentos anteriores"),
+    context("checkedAt", "Verificação"),
+    "Preços e disponibilidade podem mudar.",
+  ].filter(Boolean).join(" ");
+  const dropCards = drops.map((d) =>
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #e0e8e2;border-radius:8px"><tr><td align="center" bgcolor="#f5f7f4" style="padding:12px">${d.image ? `<a href="${e(d.url)}"><img src="${e(d.image)}" alt="${e(d.title)}" width="280" height="190" style="display:block;width:100%;max-width:280px;height:190px;object-fit:contain;border:0"></a>` : ""}</td></tr><tr><td style="padding:16px"><h3 style="font-size:18px;line-height:1.35;margin:0 0 10px;color:#173d2a">${e(d.title)}</h3>${d.dropLabel ? `<span style="display:inline-block;background:#e6f0e8;color:#165b42;border-radius:4px;padding:4px 8px;font-size:13px;font-weight:bold">${e(d.dropLabel)}</span>` : ""}${d.previousPrice ? `<p style="margin:12px 0 3px;color:#526658;font-size:14px"><s>${e(d.previousPrice)}</s></p>` : ""}${d.currentPrice ? `<p style="margin:0 0 12px;font-size:26px;font-weight:bold;color:#173d2a">${e(d.currentPrice)}</p>` : ""}<a href="${e(d.url)}" style="color:#476756;font-size:13px;text-decoration:underline">Ver histórico →</a></td></tr></table>`
+  ).join("");
   const radarRow = section(
     "Radar de preços",
-    `<table role="presentation" width="100%" bgcolor="#edf4ee" style="border-radius:10px"><tr><td style="padding:22px"><h2 style="font-size:24px;line-height:1.3;margin:0">${e(radar.title)}</h2>${prose(radar)}${(data.drops ?? []).map((d) => `<div style="margin:18px 0;padding-top:16px;border-top:1px solid #c8d8cb"><h3 style="font-size:18px;margin:0"><a href="${e(d.url)}" style="color:#173d2a">${e(d.title)}</a></h3>${photo(d, 250)}${d.currentPrice ? `<p style="font-size:13px;color:#526658;margin:12px 0 3px">Referência: ${e(d.previousPrice ?? "")} · <strong style="color:#165b42">${e(d.dropLabel ?? "")}</strong></p><p style="font-size:30px;font-weight:bold;margin:5px 0;color:#173d2a">${e(d.currentPrice)}</p>${d.priceRatio !== undefined ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:12px 0"><tr><td style="font-size:11px;padding:4px 0">Referência registrada</td></tr><tr><td bgcolor="#cad8cd" height="8" style="height:8px;border-radius:4px"></td></tr><tr><td style="font-size:11px;padding:7px 0 4px">Preço verificado</td></tr><tr><td><table role="presentation" width="${Math.round(d.priceRatio * 100)}%" cellspacing="0" cellpadding="0"><tr><td bgcolor="#165b42" height="8" style="height:8px;border-radius:4px"></td></tr></table></td></tr></table>` : ""}<p style="font-size:11px;color:#526658">Verificado em ${e(d.checkedAt ?? "")}</p>` : ""}${prose(d)}${button(d.url, "Ver preço e histórico")}</div>`).join("")}${button(radar.url, "Explorar o Radar")}</td></tr></table>`,
+    `${dropCards || '<p style="font-size:15px;line-height:1.6">Nenhuma queda recente confirmada nesta edição.</p>'}<p style="font-size:12px;line-height:1.6;color:#526658;margin:12px 0">${e(radarNote)}</p><a href="${e(radar.url)}" style="color:#476756;font-size:14px;text-decoration:underline">Explorar o Radar →</a>`,
   );
   const bikeRow = section(
     "Bike em destaque",
@@ -311,7 +315,7 @@ export function renderEditorialNewsletter(
       )
       .join(""),
   );
-  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Olá, {{{contact.first_name|amigo(a)}}}!</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.curiosity ? `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:20px"><p style="font-size:11px;letter-spacing:2px;font-weight:bold;color:#165b42;margin:0 0 10px">UMA CURIOSIDADE PARA COMEÇAR</p><p style="font-size:18px;line-height:1.6;margin:0">${e(data.curiosity.text)}</p></td></tr></table>` : ""}${data.intro
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Olá, {{{contact.first_name|amigo(a)}}}!</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.intro
     .split(/\n\n/)
     .map(
       (p) =>
@@ -324,7 +328,7 @@ export function renderEditorialNewsletter(
     segment === "radar"
       ? [radar, data.bike, ...data.articles, ...data.videos]
       : [...data.articles, radar, data.bike, ...data.videos];
-  if (data.drops?.length) items.push(...data.drops);
+
   const text =
     `Olá, {{{contact.first_name|amigo(a)}}}!\n\n${data.headline ?? data.subject}\n\n${data.intro}\n\n` +
     items
@@ -337,7 +341,8 @@ export function renderEditorialNewsletter(
         ].join("\n\n"),
       )
       .join("\n\n---\n\n") +
-    "\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}";
+    "\n\nRADAR — QUEDAS\n" + drops.map((d) => [d.title, d.dropLabel, d.previousPrice ? `Anterior: ${d.previousPrice}` : "", d.currentPrice ? `Atual: ${d.currentPrice}` : "", d.url].filter(Boolean).join("\n")).join("\n\n") +
+    `\n${radarNote}\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}`;
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");
   return { html, text };
