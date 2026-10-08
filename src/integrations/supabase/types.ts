@@ -1245,6 +1245,36 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_drafts: {
+        Row: {
+          content: Json
+          created_at: string
+          edited_by: string
+          id: string
+          origin: string
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          edited_by: string
+          id?: string
+          origin: string
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          edited_by?: string
+          id?: string
+          origin?: string
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_recipients: {
         Row: {
           campaign_id: string
