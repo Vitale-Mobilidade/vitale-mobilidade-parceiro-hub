@@ -88,6 +88,13 @@ export async function newsletterCall<T>(
         "Há uma operação em andamento. Tente novamente em alguns instantes.",
       pause_before_configuring:
         "Pause a automação antes de alterar a configuração.",
+      newsletter_draft_conflict:
+        "Esta edição mudou em outra janela. Reabra o rascunho antes de salvar.",
+      newsletter_drafts_unavailable:
+        "Os rascunhos ainda não estão disponíveis no servidor.",
+      newsletter_test_already_imported: "O teste já está salvo nos rascunhos.",
+      newsletter_edit_structure_changed:
+        "Edite os textos mantendo as seções e suas fontes.",
       invalid_action: "Ação inválida.",
       newsletter_sources_unavailable:
         "Conteúdo indisponível. Nenhuma edição foi enviada.",
