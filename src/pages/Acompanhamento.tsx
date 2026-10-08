@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, Flame, LineChart, Target, TrendingDown, Youtube } from "lucide-react";
+import { ArrowDown, ArrowRight, Flame, LineChart, Target, TrendingDown } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
-import { VideoCards } from "@/components/site/VideoCards";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/site/site-ui";
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { radarUseLine, shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
-import { OffersGroupCta } from "@/components/radar/OffersGroupCta";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
 import { ArchivedHistorySection, parseArchived } from "@/components/radar/ArchivedHistorySection";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
@@ -237,15 +235,6 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
            {!error && entries.length > 0 && (
             <>
               <ArchivedHistorySection bikes={archived} base={base} />
-              <div className="mt-10"><OffersGroupCta source="radar_home" /></div>
-
-              {initial.videos?.length > 0 && (
-                <section aria-labelledby="radar-videos" className="mt-12">
-                  <h2 id="radar-videos" className="flex items-center gap-2 text-xl font-bold text-ink"><Youtube className="h-5 w-5 text-action" aria-hidden="true" /> Testes e análises em vídeo</h2>
-                  <VideoCards videos={initial.videos} className="mt-4" />
-                </section>
-              )}
-
               <div className="mt-10 space-y-2 text-sm text-muted-foreground">
                 <p>
                   Os preços exibidos são os que registramos nas nossas verificações. Preço e disponibilidade podem mudar
