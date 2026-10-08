@@ -377,7 +377,7 @@ it("keeps unflagged fields from the previous draft after a reviewer correction (
   const sources = ["article-0", "article-1", "article-2", "bike"].map((id) => ({ ...source, id }));
   const first = {
     ...draft,
-    sections: sources.map((s) => ({ ...draft.sections[0], id: s.id, paragraphs: [sentence.repeat(6)], bullets: [sentence] })),
+    sections: sources.map((s) => ({ ...draft.sections[0], id: s.id, paragraphs: [sentence.repeat(6).trim()], bullets: [sentence.trim()] })),
   };
   // Correction fixes the flagged opening/article-2 but invents a joke in article-1 and the preheader.
   const corrected = {
