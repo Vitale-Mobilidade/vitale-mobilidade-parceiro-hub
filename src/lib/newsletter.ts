@@ -213,16 +213,17 @@ export function newsletterWindow(now: Date): {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hourCycle: "h23",
   }).formatToParts(now);
   const value = (key: string) => parts.find((p) => p.type === key)!.value;
   const day = `${value("year")}-${value("month")}-${value("day")}`;
   const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
-  const hour = Number(value("hour"));
+  const minuteOfDay = Number(value("hour")) * 60 + Number(value("minute"));
   return {
     day,
     weekday,
-    due: [1, 4].includes(weekday) && hour >= 10 && hour < 12,
+    due: [1, 4].includes(weekday) && minuteOfDay >= 390 && minuteOfDay < 510,
   };
 }
 
