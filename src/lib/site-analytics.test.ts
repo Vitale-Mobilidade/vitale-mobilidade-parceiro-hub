@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeSiteAnalytics } from "./site-analytics";
+import {
+  makeSiteAnalytics,
+  siteAnalyticsClientEnabled,
+} from "./site-analytics";
 import {
   publicAnalyticsPath,
   siteAnalyticsStartDay,
@@ -74,6 +77,14 @@ describe("site analytics tracker", () => {
   const send = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
   beforeEach(() => send.mockClear());
+
+  it("habilita o cliente somente em build de produção sem override false", () => {
+    expect(siteAnalyticsClientEnabled(false, undefined)).toBe(false);
+    expect(siteAnalyticsClientEnabled(false, "true")).toBe(false);
+    expect(siteAnalyticsClientEnabled(true, undefined)).toBe(true);
+    expect(siteAnalyticsClientEnabled(true, "true")).toBe(true);
+    expect(siteAnalyticsClientEnabled(true, "false")).toBe(false);
+  });
 
   it("fica completamente inerte quando a flag cliente está desligada", () => {
     const analytics = makeSiteAnalytics("https://collector.test", false, send);

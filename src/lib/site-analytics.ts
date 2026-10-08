@@ -73,7 +73,17 @@ export function makeSiteAnalytics(
   };
 }
 
+export function siteAnalyticsClientEnabled(
+  production: boolean,
+  publicFlag?: string,
+) {
+  return production && publicFlag !== "false";
+}
+
 export const siteAnalytics = makeSiteAnalytics(
   `${import.meta.env.VITE_SUPABASE_URL ?? ""}/functions/v1/site-analytics`,
-  import.meta.env.VITE_SITE_ANALYTICS_ENABLED === "true",
+  siteAnalyticsClientEnabled(
+    import.meta.env.PROD,
+    import.meta.env.VITE_SITE_ANALYTICS_ENABLED,
+  ),
 );
