@@ -30,6 +30,7 @@ function leafId(path: string) {
 describe("fundação TanStack Start — rotas", () => {
   it.each([
     ["/", "/"],
+    ["/videos", "/videos"],
     ["/quiz", "/quiz"],
     ["/escolherbike", "/escolherbike"],
     ["/grupodeofertas", "/grupodeofertas"],

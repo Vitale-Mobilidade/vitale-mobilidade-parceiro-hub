@@ -19,6 +19,7 @@ import { HOME_PRODUCTS, ProductLink } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 import { OffersBanner } from "@/components/site/DecisionBanners";
+import { VideoCards } from "@/components/site/VideoCards";
 import { editorialImageProps } from "@/lib/editorial-images";
 
 /*
@@ -511,6 +512,15 @@ const HomeB2C = () => {
           </div>
           <ArticlesBlock articles={data?.articles ?? []} />
           <OffersBanner source="home" />
+          <section aria-labelledby="ultimos-videos">
+            <SectionHeading
+              id="ultimos-videos"
+              title="Últimos vídeos"
+              sub="Confira os vídeos mais recentes da Vitale."
+              action={<Link to="/videos" className="inline-flex min-h-11 items-center gap-1 hover:underline">Ver todos os vídeos <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}
+            />
+            {data.videos.length ? <VideoCards videos={data.videos} className="mt-6" /> : <p className="mt-6 text-muted-foreground">Nenhum vídeo disponível no momento.</p>}
+          </section>
         </div>
       </main>
       <SiteFooter />

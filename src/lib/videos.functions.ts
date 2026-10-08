@@ -11,7 +11,9 @@ export const getVideos = createServerFn({ method: "GET" })
     const d = (data ?? {}) as { bikeId?: unknown; limit?: unknown };
     const bikeId = typeof d.bikeId === "string" && BIKE_ID_RE.test(d.bikeId) ? d.bikeId.toLowerCase() : null;
     const limit =
-      typeof d.limit === "number" && Number.isFinite(d.limit)
+      d.limit === null
+        ? null
+        : typeof d.limit === "number" && Number.isFinite(d.limit)
         ? Math.min(Math.max(1, Math.floor(d.limit)), 200)
         : bikeId
           ? null
@@ -29,7 +31,7 @@ export const getVideos = createServerFn({ method: "GET" })
     }));
   });
 
-export async function safeVideos(input: { bikeId?: string; limit?: number }): Promise<VideoCard[]> {
+export async function safeVideos(input: { bikeId?: string; limit?: number | null }): Promise<VideoCard[]> {
   try {
     return await getVideos({ data: input });
   } catch {
