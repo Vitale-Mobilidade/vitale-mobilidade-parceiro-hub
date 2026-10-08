@@ -9,7 +9,7 @@ const GrupoDeOfertas = () => {
 
   return (
     <main>
-      <a href={GROUP_URL}>Acessar o grupo de ofertas da Vitale</a>
+      <a href={GROUP_URL} target="_blank" rel="noopener noreferrer">Acessar o grupo de ofertas da Vitale</a>
     </main>
   );
 };

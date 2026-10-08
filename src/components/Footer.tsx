@@ -104,7 +104,7 @@ const Footer = () => {
             <h3 className="font-semibold mb-4 lg:mb-5 text-base sm:text-lg">Contato</h3>
             <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-400">
               <li>
-                <a href="https://wa.me/5511998693904" className="hover:text-white transition-colors">
+                <a href="https://wa.me/5511998693904" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                   📱 WhatsApp (11) 99869-3904
                 </a>
               </li>
@@ -112,9 +112,8 @@ const Footer = () => {
               <li>🕒 Seg-Sex: 8h às 18h</li>
               <li>
                 <a
-                  href="https://www.linkedin.com/in/lucasvitale1/"
+                  href="https://www.linkedin.com/in/lucasvitale1/" target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors"
-                  rel="noopener"
                 >
                   LinkedIn de Lucas Vitale
                 </a>
