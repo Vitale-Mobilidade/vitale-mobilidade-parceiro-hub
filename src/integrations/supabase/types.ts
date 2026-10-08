@@ -2227,6 +2227,10 @@ export type Database = {
           secondary_recommendations: number
         }[]
       }
+      admin_quiz_bike_metrics_json: {
+        Args: { p_since: string }
+        Returns: Json
+      }
       admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
       admin_site_analytics_metrics: { Args: { p_since: string }; Returns: Json }
       authorize_price_alert_hotpipe: {

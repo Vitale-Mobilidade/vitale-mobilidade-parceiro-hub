@@ -1,5 +1,6 @@
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 import { siteAnalyticsStartDay } from "../_shared/site-analytics.ts";
+import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
@@ -2525,7 +2526,7 @@ Deno.serve(async (req) => {
       const sinceDay = siteAnalyticsStartDay(new Date(), rangeDays);
       const [funnel, quizBikeMetrics, siteMetrics] = await Promise.all([
         db.rpc("admin_quiz_funnel_metrics", { p_since: since }),
-        db.rpc("admin_quiz_bike_metrics", { p_since: since }),
+        db.rpc("admin_quiz_bike_metrics_json", { p_since: since }),
         db.rpc("admin_site_analytics_metrics", { p_since: sinceDay }),
       ]);
       if (funnel.error)
@@ -2541,19 +2542,27 @@ Deno.serve(async (req) => {
         : site?.coverageSince
           ? "active"
           : "no_coverage";
+      const quizBikes = quizBikeMetrics.error
+        ? null
+        : parseQuizBikeMetrics(quizBikeMetrics.data);
+      const quizBikesAvailable = quizBikes !== null;
+      if (!quizBikesAvailable) {
+        const rawCode = quizBikeMetrics.error?.code;
+        const code =
+          typeof rawCode === "string" && /^[a-z0-9_]{1,32}$/i.test(rawCode)
+            ? rawCode
+            : quizBikeMetrics.error
+              ? "unknown"
+              : "invalid_shape";
+        console.error("growth_quiz_metrics_failed", { code });
+      }
       return json(req, {
         rangeDays,
         generatedAt: new Date().toISOString(),
         funnel: funnel.data,
-        quizBikesAvailable: !quizBikeMetrics.error,
-        quizBikesStatus: quizBikeMetrics.error ? "unavailable" : "active",
-        quizBikes: (quizBikeMetrics.data ?? []).map((row) => ({
-          bikeId: row.bike_id,
-          name: row.bike_name,
-          primaryRecommendations: Number(row.primary_recommendations) || 0,
-          secondaryRecommendations: Number(row.secondary_recommendations) || 0,
-          quizOfferClicks: Number(row.quiz_offer_clicks) || 0,
-        })),
+        quizBikesAvailable,
+        quizBikesStatus: quizBikesAvailable ? "active" : "unavailable",
+        quizBikes: quizBikes ?? [],
         sitewide: {
           available: Boolean(site?.coverageSince),
           status: siteStatus,

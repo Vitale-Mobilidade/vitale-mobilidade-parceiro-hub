@@ -89,3 +89,11 @@ Publicação autorizada e concluída no mesmo projeto Lovable e no domínio `vit
 - não houve sync, lead, CRM, e-mail, WhatsApp ou geração de conteúdo/IA.
 
 O Lovable confirmou a publicação, mas não expôs identificador do deployment. O smoke autenticado visual do conteúdo de `/admin/growth` permanece como aceite operacional do responsável, porque a sessão disponível para automação não tinha credenciais da equipe. A rota respondeu `200`, o backend agregado está ativo e o build contém os três blocos novos. Rollback imediato continua sendo `SITE_ANALYTICS_ENABLED=false`; a tabela deve ser preservada.
+
+## Correção do contrato de recomendações — 08/10/2026
+
+O aceite autenticado posterior mostrou que apenas “Bikes recomendadas pelo Quiz” estava indisponível. O histórico nunca esteve ausente: a RPC tabular retornou, inclusive com `SET ROLE service_role`, BW1, V40 Pro, L10, V9 Max S e V8 Pro S com suas contagens. A RPC também estava registrada no PostgREST e protegida corretamente; o defeito ficou isolado ao contrato tabular RPC → Edge, que era tratado como degradação parcial sem registrar o código sanitizado.
+
+A correção aprovada localmente é aditiva: `admin_quiz_bike_metrics_json` encapsula a mesma agregação em `{ "bikes": [...] }`, continua `security invoker` e executável somente por `service_role`. A RPC tabular original permanece intacta como rollback. `editorial-admin` passa a validar rigorosamente o JSON; array vazio é um resultado válido, enquanto erro ou formato inválido mantém a fonte indisponível. O log contém apenas o evento fixo e um código sanitizado, sem payload, lead, telefone ou respostas.
+
+Rollback: reimplantar a versão anterior de `editorial-admin`; a RPC JSON pode permanecer privada e dormente. Não há alteração em Quiz, scoring, CRM, sync, IA, Radar, afiliados, dados existentes ou frontend público. A aplicação da migration corretiva e o deploy da Edge exigem a sequência migration → smoke RPC via PostgREST/service-role → deploy da Edge → smoke autenticado do Admin.
