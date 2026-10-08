@@ -51,7 +51,11 @@ const data: AdminGrowth = {
     pageViews: 300,
     bikeClicks: 20,
     affiliateClicks: 8,
-    pages: [{ path: "/radar", views: 90 }],
+    pages: [
+      { path: "/", views: 120 },
+      { path: "/radar", views: 90 },
+      { path: "/quiz", views: 30 },
+    ],
     bikes: [
       {
         bikeId: "v8_ultra",
@@ -86,6 +90,12 @@ describe("Admin Growth v2 UI", () => {
     expect(html).toContain("Pergunta 7 · Experiência com bike elétrica");
     expect(html).toContain("Bikes recomendadas pelo Quiz");
     expect(html).toContain("Interesse nas bikes em todo o site");
+    expect(html).toContain("Rotas públicas com mais visualizações");
+    expect(html).toContain("Cobertura do top 20");
+    expect(html).toContain("Página inicial");
+    expect(html).toContain("40.0%");
+    expect(html).toContain("3 de até 20 rotas exibidas");
+    expect(html).not.toContain('href="/radar"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toMatch(/private@example|Guilherme|\+55\s?11/i);
   });
