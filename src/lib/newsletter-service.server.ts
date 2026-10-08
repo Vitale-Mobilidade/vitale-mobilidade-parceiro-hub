@@ -577,8 +577,18 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     if (request.method !== "POST")
       return new Response(null, { status: 405, headers });
     const raw = await request.text();
-    if (raw.length > 2000) return new Response(null, { status: 413, headers });
+    if (raw.length > 65000) return new Response(null, { status: 413, headers });
     const body = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof body.action === "string" && body.action.startsWith("draft_")) {
+      tok = await lock(db);
+      const { newsletterDraftAction } =
+        await import("./newsletter-drafts.server");
+      return Response.json(
+        await newsletterDraftAction(db, auth.user.id, body),
+        { headers },
+      );
+    }
+    if (raw.length > 2000) return new Response(null, { status: 413, headers });
     tok = await lock(db);
     const s = await settings(db);
     if (body.action === "configure") {
@@ -650,8 +660,20 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
         (await newsletterHistory(db)).map((p) => p.payload.content),
         nextNumber,
       );
+      const draft = await must(
+        db
+          .from("newsletter_drafts")
+          .insert({
+            content: edition.content,
+            origin: "agent",
+            edited_by: auth.user.id,
+          })
+          .select("id,revision,origin,updated_at,content")
+          .single(),
+      );
       return Response.json(
         {
+          draft,
           content: edition.content,
           ...renderResendNewsletter(edition.content),
         },

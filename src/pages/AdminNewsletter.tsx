@@ -1,3 +1,4 @@
+import { NewsletterDraftEditor } from "@/components/admin/NewsletterDraftEditor";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -46,9 +47,12 @@ function NewsletterOperation() {
         name,
         payload,
       );
-      if (name === "preview" && result.html && result.text)
+      if (name === "preview" && result.html && result.text) {
         setPreview({ html: result.html, text: result.text });
-      else {
+        await qc.invalidateQueries({
+          queryKey: ["admin", "newsletter", "drafts"],
+        });
+      } else {
         await qc.invalidateQueries({
           queryKey: ["admin", "newsletter", "operation"],
         });
@@ -114,6 +118,7 @@ function NewsletterOperation() {
           às 10h de São Paulo.
         </p>
       </div>
+      <NewsletterDraftEditor />
       {query.isPending && <p role="status">Carregando a newsletter…</p>}
       {query.isError && (
         <div
