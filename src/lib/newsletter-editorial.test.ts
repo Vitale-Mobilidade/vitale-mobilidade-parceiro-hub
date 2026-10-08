@@ -383,7 +383,7 @@ it("keeps unflagged fields from the previous draft after a reviewer correction (
   const corrected = {
     ...first,
     preheader: "Bancos, bagageiros e uma GT2000 cruzando São Paulo inteira.",
-    opening: ["Uma ponte editorial nova e breve para os assuntos desta edição, sem gancho."],
+    opening: ["Uma ponte editorial nova e breve para os assuntos desta edição, sem gancho, passando por garupa, bagagem, negócios e uma dobrável no Radar, em leitura leve e direta para quem gosta de mobilidade elétrica."],
     sections: first.sections.map((s) =>
       s.id === "article-1"
         ? { ...s, paragraphs: [sentence.repeat(6) + "Sol forte e poça d’água fizeram crítica."] }
