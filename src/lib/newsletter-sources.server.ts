@@ -69,7 +69,7 @@ export async function automaticNewsletter(
   );
   const pickedArticles = curated.articles;
   let pickedVideos = curated.videos;
-  if (!pickedArticles.length || !pickedVideos.length)
+  if (pickedArticles.length !== 3 || !pickedVideos.length)
     throw new Error("newsletter_sources_insufficient_diversity");
   const drops = selectNewsletterDrops(
     radar.data.active as NewsletterDropBike[],
@@ -96,7 +96,8 @@ export async function automaticNewsletter(
       .map((p) => new URL(p.bike.url).pathname.split("/").pop() ?? ""),
   );
   if (!bike) throw new Error("newsletter_no_active_bike");
-  const details = catalog.find((c) => c.bikeId === bike.id)!;
+  const details = catalog.find((c) => c.bikeId === bike.id);
+  if (!details) throw new Error("newsletter_sources_unavailable");
   const fullArticles = await Promise.all(
     pickedArticles.map((a) => fetchPublishedArticle(a.slug)),
   );
@@ -108,7 +109,7 @@ export async function automaticNewsletter(
   if (!pickedVideos.length)
     throw new Error("newsletter_sources_insufficient_diversity");
   const transcripts = await newsletterTranscripts([
-    ...fullArticles.map((a) => a!.videoId),
+    ...fullArticles.flatMap((a) => (a ? [a.videoId] : [])),
     ...pickedVideos.map((v) => v.videoId),
   ]);
   const brl = (n: number) =>
@@ -116,35 +117,25 @@ export async function automaticNewsletter(
       style: "currency",
       currency: "BRL",
     }).format(n);
-  const dropText = drops
-    .map(
-      (d) =>
-        `${d.name}: de ${brl(d.previous)} (fechamento verificado de ${d.baselineDate}) para ${brl(d.current)}; queda de ${d.percent.toFixed(1).replace(".", ",")}%. Última verificação: ${d.verifiedAt}.`,
-    )
-    .join("\n");
   const sources: NewsletterEvidence[] = [
-    ...pickedArticles.map((a, i) => ({
-      id: `article-${i}`,
-      title: a.title,
-      text: [
-        a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
-        a.summary,
-        transcripts.get(fullArticles[i]!.videoId) ?? "",
-        ...fullArticles[i]!.blocks.filter((b) => !b.planned).map((b) =>
-          [b.heading, b.text].filter(Boolean).join("\n"),
-        ),
-      ]
-        .join("\n\n")
-        .slice(0, 12_000),
-    })),
-    {
-      id: "radar",
-      title: "Preço e histórico: consulte antes de escolher",
-      text:
-        "O Radar da Vitale reúne preço atual e histórico de bikes elétricas. Preços e disponibilidade podem mudar. Confira os dados vigentes na página de cada bike antes de decidir. Não existe desconto garantido nem promessa de menor preço. " +
-        (dropText ||
-          "Não foram confirmadas quedas com comparativo e verificação recentes neste período."),
-    },
+    ...pickedArticles.map((a, i) => {
+      const full = fullArticles[i];
+      if (!full) throw new Error("newsletter_sources_unavailable");
+      return {
+        id: `article-${i}`,
+        title: a.title,
+        text: [
+          a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
+          a.summary,
+          transcripts.get(full.videoId) ?? "",
+          ...full.blocks
+            .filter((b) => !b.planned)
+            .map((b) => [b.heading, b.text].filter(Boolean).join("\n")),
+        ]
+          .join("\n\n")
+          .slice(0, 12_000),
+      };
+    }),
     {
       id: "bike",
       title: bike.name,
@@ -176,10 +167,11 @@ export async function automaticNewsletter(
     sources,
     weekday,
     undefined,
-    previousEditions.map((p) => p.curiosity?.text ?? p.intro),
+    previousEditions.map((p) => p.intro),
   );
   const enrich = (id: string) => {
-    const s = draft.sections.find((s) => s.id === id)!;
+    const s = draft.sections.find((s) => s.id === id);
+    if (!s) throw new Error("newsletter_writer_source_mismatch");
     return { paragraphs: s.paragraphs, bullets: s.bullets };
   };
   const image = (url: string | null | undefined) =>
@@ -187,7 +179,6 @@ export async function automaticNewsletter(
   const content: NewsletterContent = {
     editionNumber,
     subject: numberNewsletterSubject(draft.subject, editionNumber),
-    curiosity: draft.curiosity,
     headline: draft.headline,
     preheader: draft.preheader,
     intro: draft.opening.join("\n\n"),
@@ -199,15 +190,14 @@ export async function automaticNewsletter(
       ...enrich(`article-${i}`),
     })),
     radar: {
-      title: sources.find((s) => s.id === "radar")!.title,
+      title: "Radar de preços",
       url: "https://vitalemobilidade.com/radar",
-      ...enrich("radar"),
     },
     drops: drops.map((d) => ({
-      title: d.name,
+      title: catalog.find((c) => c.bikeId === d.id)?.name ?? d.name,
       previousPrice: brl(d.previous),
       currentPrice: brl(d.current),
-      priceRatio: d.current / d.previous,
+      baselineDate: d.baselineDate,
       dropLabel: `−${d.percent.toFixed(1).replace(".", ",")}%`,
       checkedAt: new Date(d.verifiedAt).toLocaleString("pt-BR", {
         timeZone: "America/Sao_Paulo",
@@ -218,9 +208,6 @@ export async function automaticNewsletter(
           process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL,
         ) ?? undefined,
       url: `https://vitalemobilidade.com/radar/${d.id}`,
-      paragraphs: [
-        `De ${brl(d.previous)} (${d.baselineDate}) para ${brl(d.current)}: queda de ${d.percent.toFixed(1).replace(".", ",")}%. Verificação: ${new Date(d.verifiedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}. Confira o preço vigente no Radar.`,
-      ],
     })),
     bike: {
       title: bike.name,
