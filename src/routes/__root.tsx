@@ -16,6 +16,8 @@ import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attri
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { siteAnalytics } from "@/lib/site-analytics";
+import { safeVideos } from "@/lib/videos.functions";
+import { SOCIAL_LINKS } from "@/lib/social-links";
 import appCss from "../styles.css?url";
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
@@ -35,7 +37,7 @@ const ORG_JSONLD = {
     name: "Lucas Vitale",
     sameAs: "https://www.linkedin.com/in/lucasvitale1/",
   },
-  sameAs: ["https://www.linkedin.com/in/lucasvitale1/"],
+  sameAs: SOCIAL_LINKS.map((profile) => profile.url),
 };
 
 const SITE_JSONLD = {
@@ -49,6 +51,7 @@ const SITE_JSONLD = {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
+  loader: ({ location }) => location.pathname.startsWith("/admin") ? { footerVideos: [] } : safeVideos({ limit: 3 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
