@@ -15,6 +15,7 @@ import {
 import {
   writeNewsletter,
   type NewsletterEvidence,
+  type NewsletterWriterDiagnostic,
 } from "./newsletter-writer.server";
 import {
   selectNewsletterDrops,
@@ -32,6 +33,7 @@ export async function automaticNewsletter(
   since = new Date(Date.now() - (weekday === 4 ? 3 : 4) * 86_400_000),
   previousEditions: NewsletterContent[] = [],
   editionNumber = 1,
+  onDiagnostic?: (event: NewsletterWriterDiagnostic) => void,
 ): Promise<{ content: NewsletterContent; fingerprint: string }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -168,6 +170,7 @@ export async function automaticNewsletter(
     weekday,
     undefined,
     previousEditions.map((p) => p.intro),
+    onDiagnostic,
   );
   const enrich = (id: string) => {
     const s = draft.sections.find((s) => s.id === id);
