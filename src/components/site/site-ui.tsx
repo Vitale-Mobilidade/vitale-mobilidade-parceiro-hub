@@ -1,9 +1,10 @@
 import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
 import { bikeImageFallback } from "@/lib/bike-catalog";
-import { useLoaderData, Link } from "@tanstack/react-router";
+import { useLoaderData, useRouterState, Link } from "@tanstack/react-router";
 import { Bike, Menu, Youtube } from "lucide-react";
 import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
+import { OffersBanner } from "@/components/site/DecisionBanners";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
 import { SOCIAL_LINKS, YOUTUBE_SUBSCRIBE, YOUTUBE_CHANNEL } from "@/lib/social-links";
@@ -107,6 +108,7 @@ export function SiteHeader() {
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean }) {
   const { footerVideos } = useLoaderData({ from: "__root__" });
+  const showPromotions = useRouterState({ select: (state) => !state.location.pathname.startsWith("/quiz") });
   const cols: {
     title: string;
     items: {
@@ -155,21 +157,24 @@ export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean
   ];
   return (
     <>
-      {showNewsletter && <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
-        <div className="responsive-container">
-          <NewsletterSignup />
-        </div>
-      </aside>}
+      {showPromotions && <>
+      <div className="responsive-container py-10 sm:py-14"><OffersBanner source="footer" /></div>
       <section aria-labelledby="footer-youtube" className="bg-white py-10 sm:py-14">
         <div className="responsive-container">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="max-w-xl"><p className="flex items-center gap-2 text-sm font-bold text-red-700"><Youtube aria-hidden="true" /> VITALE NO YOUTUBE</p><h2 id="footer-youtube" className="mt-3 text-2xl font-bold text-ink">A conversa continua no canal</h2><p className="mt-2 text-muted-foreground">Testes na prática, comparativos e boas histórias sobre bikes elétricas. A Vitale Mobilidade é um canal no YouTube — e este é o nosso hub.</p></div>
             <a href={YOUTUBE_SUBSCRIBE} {...externalLinkProps(YOUTUBE_SUBSCRIBE)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-bold text-white hover:bg-red-800"><Youtube aria-hidden="true" /> Inscreva-se no YouTube</a>
           </div>
-          {footerVideos.length > 0 && <div className="mt-7 grid gap-5 sm:grid-cols-3">{footerVideos.map((video) => <a key={video.videoId} href={video.url} {...externalLinkProps(video.url)} className="rounded-xl border border-line overflow-hidden hover:border-action"><img src={video.thumbnail} alt="" width={320} height={180} loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><p className="p-4 text-sm font-semibold leading-relaxed text-ink">{video.title}</p></a>)}</div>}
+          {footerVideos.length > 0 && <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{footerVideos.map((video) => <a key={video.videoId} href={video.url} {...externalLinkProps(video.url)} className="rounded-xl border border-line overflow-hidden hover:border-action"><img src={video.thumbnail} alt="" width={320} height={180} loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><p className="p-4 text-sm font-semibold leading-relaxed text-ink">{video.title}</p></a>)}</div>}
           <a href="/videos" className="mt-5 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-4">Ver todos os vídeos →</a>
         </div>
       </section>
+      {showNewsletter && <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
+        <div className="responsive-container">
+          <NewsletterSignup />
+        </div>
+      </aside>}
+      </>}
       <footer className="bg-vt-dark text-ink-foreground/80">
         <div className="responsive-container grid gap-10 py-14 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           <div>

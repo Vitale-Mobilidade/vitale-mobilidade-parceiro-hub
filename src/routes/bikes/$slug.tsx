@@ -15,7 +15,7 @@ import { lastConfirmedDay } from "@/lib/radar-unavailable";
 import { canonicalUrl, pageHead, serializeJsonLd } from "@/lib/seo";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { trackAffiliateClick, type AffiliatePosition } from "@/lib/affiliate-analytics";
-import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 
 type RadarDetail = {
   id: string;
@@ -498,7 +498,6 @@ function BikeDetail() {
 
       {/* Grupo */}
       <div className="mt-14">
-        <OffersBanner />
       </div>
 
       {/* CTA final */}

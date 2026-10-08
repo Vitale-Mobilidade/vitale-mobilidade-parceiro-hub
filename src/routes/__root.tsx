@@ -51,7 +51,7 @@ const SITE_JSONLD = {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
-  loader: ({ location }) => location.pathname.startsWith("/admin") ? { footerVideos: [] } : safeVideos({ limit: 3 }).then((footerVideos) => ({ footerVideos })),
+  loader: ({ location }) => (location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz")) ? { footerVideos: [] } : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {

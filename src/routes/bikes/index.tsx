@@ -9,7 +9,6 @@ import { VideoCards } from "@/components/site/VideoCards";
 import { getBikesDiscovery, type DiscoveryBike } from "@/lib/bikes-discovery.functions";
 import { normalizeText } from "@/lib/price-daily";
 import { pageHead } from "@/lib/seo";
-import { OffersBanner } from "@/components/site/DecisionBanners";
 
 export const Route = createFileRoute("/bikes/")({
   // Comparação = estado funcional da página (bikeIds). Canonical permanece /bikes.
@@ -290,7 +289,7 @@ function BikesIndex() {
               </section>
             )}
 
-            <div className="mt-14"><OffersBanner /></div>
+            
           </>
         )}
       </main>

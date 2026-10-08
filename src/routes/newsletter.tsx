@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
-import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 
 const title = "Newsletter de bikes elétricas | Vitale Mobilidade";
@@ -27,7 +26,6 @@ export function NewsletterPage() {
           <p className="text-sm font-bold tracking-wide text-action">NEWSLETTER VITALE · GRATUITA</p>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Bikes elétricas e boas leituras no seu e-mail.</h1>
         </div>
-        <div className="mt-6 max-w-3xl"><NewsletterSignup compact /></div>
         <div className="mt-6 max-w-3xl">
           <p className="text-lg leading-relaxed text-muted-foreground">Receba artigos, vídeos e destaques de bikes elétricas e do Radar de preços no seu e-mail.</p>
           <p className="mt-2 text-sm text-muted-foreground">É gratuito. Cancele quando quiser pelo link nos e-mails.</p>
@@ -50,7 +48,7 @@ export function NewsletterPage() {
           </div>
         </section>
       </main>
-      <SiteFooter showNewsletter={false} />
+      <SiteFooter />
     </div>
   );
 }
