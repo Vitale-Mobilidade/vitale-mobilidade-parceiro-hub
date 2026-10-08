@@ -114,3 +114,14 @@ it("featured bike excludes every radar card and prefers a different subject", ()
     ),
   ).toBeUndefined();
 });
+
+it("selects three distinct readings including an older unused archive item", () => {
+  const selected = curateNewsletter([
+    { ...a("New guide", "guide"), primaryBikeId: "guide_bike" },
+    { ...a("New review", "review"), primaryBikeId: "review_bike" },
+    { ...a("Old comparison", "comparison"), publishedAt: "2025-01-01", primaryBikeId: "archive_bike" },
+  ], [{ ...v("Practical ride"), contentType: "real_world_test", bikeIds: ["video_bike"] }], since, now);
+  expect(selected.articles).toHaveLength(3);
+  expect(selected.articles[2].title).toBe("Old comparison");
+  expect(new Set(selected.articles.map((x) => x.primaryBikeId)).size).toBe(3);
+});

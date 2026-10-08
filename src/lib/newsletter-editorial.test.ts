@@ -3,6 +3,8 @@ import { renderResendNewsletter, newsletterImageSchema } from "./newsletter";
 import { selectNewsletterDrops } from "./newsletter-pauta";
 import {
   validateNewsletterEvidence,
+  validateNewsletterOpening,
+  newsletterDraftSchema,
   writeNewsletter,
   type NewsletterDraft,
 } from "./newsletter-writer.server";
@@ -14,11 +16,10 @@ const source = {
 const sentence =
   "A escolha começa pelas necessidades do trajeto e pelos dados da ficha publicada. ";
 const draft: NewsletterDraft = {
-  curiosity: { text: source.text, sourceId: source.id, evidence: source.text },
   subject: "O que observar antes da próxima escolha",
   preheader: "Leituras e modelos para entender melhor a sua escolha.",
   headline: "Escolher uma bike começa pelo trajeto",
-  opening: [sentence.repeat(10)],
+  opening: [sentence.repeat(2)],
   sections: [
     {
       id: source.id,
@@ -52,19 +53,16 @@ describe("newsletter editorial", () => {
       ),
     ).toThrow("source_mismatch");
   });
-  it("rejects a curiosity without literal evidence", () => {
-    expect(() =>
-      validateNewsletterEvidence(
-        {
-          ...draft,
-          curiosity: {
-            ...draft.curiosity,
-            evidence: "A curiosity absent from this source.",
-          },
-        },
-        [source],
-      ),
-    ).toThrow("curiosity_invalid");
+  it("rejects a surprise hook disguised as an intro", () => {
+    expect(() => validateNewsletterOpening(["Você sabia que " + sentence.repeat(2)])).toThrow("opening_invalid");
+  });
+  it("requires a single short independent opening", () => {
+    expect(() => validateNewsletterOpening([sentence.repeat(2)])).not.toThrow();
+    expect(() => validateNewsletterOpening([sentence.repeat(5)])).toThrow("opening_invalid");
+    expect(() => validateNewsletterOpening([sentence, sentence])).toThrow("opening_invalid");
+  });
+  it("accepts no extra opening feature in the strict draft contract", () => {
+    expect(newsletterDraftSchema.safeParse({...draft, surprise: { text: sentence }}).success).toBe(false);
   });
   it("never accepts a draft rejected by the independent reviewer", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "mock-key");
@@ -79,11 +77,10 @@ describe("newsletter editorial", () => {
     const sources = [0, 1, 2, 3].map((i) => ({ ...source, id: `source-${i}` }));
     const reviewedDraft = {
       ...draft,
-      curiosity: { ...draft.curiosity, sourceId: sources[0].id },
       sections: sources.map((s) => ({
         ...draft.sections[0],
         id: s.id,
-        paragraphs: [sentence.repeat(5)],
+        paragraphs: [sentence.repeat(6)],
         bullets: [sentence],
       })),
     };
@@ -215,10 +212,6 @@ it("accepts only typographic whitespace/case differences in a contiguous source 
     validateNewsletterEvidence(
       {
         ...draft,
-        curiosity: {
-          ...draft.curiosity,
-          evidence: source.text.toUpperCase().replace(/ /g, "\n"),
-        },
         sections: [
           {
             ...draft.sections[0],
@@ -233,15 +226,11 @@ it("accepts only typographic whitespace/case differences in a contiguous source 
     validateNewsletterEvidence(
       {
         ...draft,
-        curiosity: {
-          ...draft.curiosity,
-          evidence:
-            "A escolha começa com autonomia garantida em qualquer trajeto.",
-        },
+        sections: [{ ...draft.sections[0], evidence: ["A escolha começa com autonomia garantida em qualquer trajeto."] }],
       },
       [source],
     ),
-  ).toThrow("curiosity_invalid");
+  ).toThrow("evidence_invalid");
 });
 
 it("repairs invalid literal evidence once and requires final independent approval", async () => {
@@ -249,11 +238,10 @@ it("repairs invalid literal evidence once and requires final independent approva
   const sources = [0, 1, 2, 3].map((i) => ({ ...source, id: `source-${i}` }));
   const valid = {
     ...draft,
-    curiosity: { ...draft.curiosity, sourceId: sources[0].id },
     sections: sources.map((s) => ({
       ...draft.sections[0],
       id: s.id,
-      paragraphs: [sentence.repeat(5)],
+      paragraphs: [sentence.repeat(6)],
       bullets: [sentence],
     })),
   };
@@ -289,7 +277,6 @@ it("repairs invalid literal evidence once and requires final independent approva
 it("normalizes wrapping typographic quotes without accepting changed facts", () => {
   const valid = {
     ...draft,
-    curiosity: { ...draft.curiosity, evidence: `“${source.text}”` },
     sections: [{ ...draft.sections[0], evidence: [`“${source.text}”`] }],
   };
   expect(() => validateNewsletterEvidence(valid, [source])).not.toThrow();
@@ -297,12 +284,9 @@ it("normalizes wrapping typographic quotes without accepting changed facts", () 
     validateNewsletterEvidence(
       {
         ...valid,
-        curiosity: {
-          ...valid.curiosity,
-          evidence: `“${source.text.replace("necessidades", "garantias")}”`,
-        },
+        sections: [{ ...valid.sections[0], evidence: [`“${source.text.replace("necessidades", "garantias")}”`] }],
       },
       [source],
     ),
-  ).toThrow("curiosity_invalid");
+  ).toThrow("evidence_invalid");
 });
