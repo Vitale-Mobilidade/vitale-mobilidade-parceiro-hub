@@ -1,4 +1,5 @@
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
+import { siteAnalyticsStartDay } from "../_shared/site-analytics.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
@@ -2510,63 +2511,68 @@ Deno.serve(async (req) => {
       });
     }
     if (action === "growth") {
-      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler dados de Growth." }, 403);
+      if (actor.role !== "admin")
+        return json(
+          req,
+          { error: "Somente Admin pode ler dados de Growth." },
+          403,
+        );
       const requestedDays = Number(body.rangeDays);
-      const rangeDays = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
+      const rangeDays = [7, 30, 90].includes(requestedDays)
+        ? requestedDays
+        : 30;
       const since = new Date(Date.now() - rangeDays * 86_400_000).toISOString();
-      const [funnel, clickerRows, originRows] = await Promise.all([
+      const sinceDay = siteAnalyticsStartDay(new Date(), rangeDays);
+      const [funnel, quizBikeMetrics, siteMetrics] = await Promise.all([
         db.rpc("admin_quiz_funnel_metrics", { p_since: since }),
-        db
-          .from("quiz_leads")
-          .select("id, name, phone, clicked_bike_name, clicked_bike_position, clicked_at, buy_click_count")
-          .gte("clicked_at", since)
-          .order("clicked_at", { ascending: false })
-          .limit(2000),
-        db.from("quiz_leads").select("traffic_origin, utm_source, landing_path").gte("created_at", since).limit(2000),
+        db.rpc("admin_quiz_bike_metrics", { p_since: since }),
+        db.rpc("admin_site_analytics_metrics", { p_since: sinceDay }),
       ]);
-      const failed = [funnel, clickerRows, originRows].find((result) => result.error);
-      if (failed?.error) throw new Error(`growth_read_failed:${failed.error.code ?? "unknown"}`);
-      const bikeCounts = new Map<string, number>();
-      let purchaseClicks = 0;
-      for (const row of clickerRows.data ?? []) {
-        const clicks = Math.max(1, Number(row.buy_click_count) || 0);
-        const name = str(row.clicked_bike_name, 160) || "Bike não identificada";
-        purchaseClicks += clicks;
-        bikeCounts.set(name, (bikeCounts.get(name) ?? 0) + clicks);
-      }
-      const originCounts = new Map<string, number>();
-      for (const row of originRows.data ?? []) {
-        const name =
-          str(row.traffic_origin, 120) ||
-          str(row.utm_source, 120) ||
-          str(row.landing_path, 180) ||
-          "Direto / não identificado";
-        originCounts.set(name, (originCounts.get(name) ?? 0) + 1);
-      }
-      const top = (counts: Map<string, number>, key: "clicks" | "leads") =>
-        [...counts.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 8)
-          .map(([name, value]) => ({ name, [key]: value }));
+      if (funnel.error)
+        throw new Error(`growth_read_failed:${funnel.error.code ?? "unknown"}`);
+      const site =
+        !siteMetrics.error &&
+        siteMetrics.data &&
+        typeof siteMetrics.data === "object"
+          ? (siteMetrics.data as Body)
+          : null;
+      const siteStatus = siteMetrics.error
+        ? "unavailable"
+        : site?.coverageSince
+          ? "active"
+          : "no_coverage";
       return json(req, {
         rangeDays,
         generatedAt: new Date().toISOString(),
         funnel: funnel.data,
-        topBikes: top(bikeCounts, "clicks"),
-        origins: top(originCounts, "leads"),
-        recentClickers: (clickerRows.data ?? []).slice(0, 50).map((row) => ({
-          id: row.id,
-          name: row.name,
-          phone: row.phone,
-          bike: row.clicked_bike_name,
-          position: row.clicked_bike_position,
-          clickedAt: row.clicked_at,
+        quizBikesAvailable: !quizBikeMetrics.error,
+        quizBikesStatus: quizBikeMetrics.error ? "unavailable" : "active",
+        quizBikes: (quizBikeMetrics.data ?? []).map((row) => ({
+          bikeId: row.bike_id,
+          name: row.bike_name,
+          primaryRecommendations: Number(row.primary_recommendations) || 0,
+          secondaryRecommendations: Number(row.secondary_recommendations) || 0,
+          quizOfferClicks: Number(row.quiz_offer_clicks) || 0,
         })),
+        sitewide: {
+          available: Boolean(site?.coverageSince),
+          status: siteStatus,
+          coverageSince: site?.coverageSince ?? null,
+          pageViews: Number(site?.pageViews) || 0,
+          bikeClicks: Number(site?.bikeClicks) || 0,
+          affiliateClicks: Number(site?.affiliateClicks) || 0,
+          pages: Array.isArray(site?.pages) ? site.pages : [],
+          bikes: Array.isArray(site?.bikes) ? site.bikes : [],
+        },
         coverage: {
           quizFunnelSince: (funnel.data as Body | null)?.coverageSince ?? null,
-          sitewidePageViews: "ga4_not_connected",
-          sitewideAffiliateClicks: "gtm_only",
-          identifiedClicks: "quiz_supabase",
+          sitewidePageViews: site?.coverageSince
+            ? "first_party_daily"
+            : "not_activated",
+          sitewideAffiliateClicks: site?.coverageSince
+            ? "first_party_daily"
+            : "not_activated",
+          quizClicks: "quiz_events",
         },
       });
     }

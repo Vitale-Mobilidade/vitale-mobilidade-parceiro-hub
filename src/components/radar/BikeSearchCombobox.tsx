@@ -5,6 +5,7 @@ import { formatBRL } from "@/lib/price-tracker";
 import { normalizeText } from "@/lib/price-daily";
 import type { RadarEntry } from "@/lib/radar-rankings";
 import { trackRadar } from "@/lib/radar-analytics";
+import { siteAnalytics } from "@/lib/site-analytics";
 import { useRadarBase } from "@/lib/radar-base";
 
 interface Props {
@@ -40,6 +41,10 @@ export function BikeSearchCombobox({ entries, query, onQueryChange, onSeeAll, lo
 
   const select = (entry: RadarEntry) => {
     trackRadar("radar_search_selected", { bike_id: entry.id });
+    siteAnalytics.bikeClick(
+      window.location.href,
+      new URL(`${base}/${entry.id}`, window.location.origin).href,
+    );
     setOpen(false);
     navigate(`${base}/${entry.id}`);
   };

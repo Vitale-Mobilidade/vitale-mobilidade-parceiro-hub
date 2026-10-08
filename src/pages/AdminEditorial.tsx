@@ -7,7 +7,6 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
   adminStream,
-  funnelPct,
   type AdminBike,
   type AdminGrowth,
   type AdminOffer,
@@ -34,6 +33,7 @@ import {
 import { composeCover } from "@/lib/cover-compose";
 import { isEditorialCoverUrl } from "../../supabase/functions/_shared/editorial-cover";
 import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
+import { quizFunnelStages, safeRate } from "@/lib/admin-growth";
 
 const BTN =
   "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
@@ -199,8 +199,9 @@ export function AdminGrowthPage() {
   );
 }
 
-function Growth() {
+export function Growth() {
   const [rangeDays, setRangeDays] = useState(30);
+  const [expandedBikeId, setExpandedBikeId] = useState<string | null>(null);
   const growth = useQuery({
     queryKey: ["admin", "growth", rangeDays],
     queryFn: () => adminCall<AdminGrowth>("growth", { rangeDays }),
@@ -212,173 +213,80 @@ function Growth() {
   const data = growth.data ?? null;
   const error = growth.error ? queryError(growth.error, "Não foi possível carregar Growth.") : "";
   const f = data?.funnel ?? null;
+  const stages = f ? quizFunnelStages(f) : [];
+  const globalRate = f ? safeRate(f.completed, f.pageVisitors) : null;
+  const startedRate = f ? safeRate(f.completed, f.started) : null;
+  const quizOfferClicks = data?.quizBikesAvailable
+    ? data.quizBikes.reduce((sum, bike) => sum + bike.quizOfferClicks, 0)
+    : null;
+  const percent = (rate: number | null) => rate == null ? "—" : `${(rate * 100).toFixed(1)}%`;
+
   return (
     <>
-      <Heading title="Growth" detail="Funil real do Quiz, leads e cliques de compra comprovados pelos dados da Vitale.">
+      <Heading title="Growth" detail="Funil do Quiz, recomendações e cliques em ofertas comprovados pelos dados da Vitale.">
         <label className="text-sm font-semibold">
           Período
-          <select
-            className={`${INPUT} ml-2 w-auto`}
-            value={rangeDays}
-            onChange={(e) => setRangeDays(Number(e.target.value))}
-          >
-            <option value={7}>7 dias</option>
-            <option value={30}>30 dias</option>
-            <option value={90}>90 dias</option>
+          <select className={`${INPUT} ml-2 w-auto`} value={rangeDays} onChange={(e) => setRangeDays(Number(e.target.value))}>
+            <option value={7}>7 dias</option><option value={30}>30 dias</option><option value={90}>90 dias</option>
           </select>
         </label>
       </Heading>
       {error && <Notice danger>{error}</Notice>}
-      {growth.isFetching && data && (
-        <p role="status" className="mb-3 text-xs text-muted-foreground">
-          Atualizando indicadores…
+      {growth.isPlaceholderData && data && (
+        <p role="status" aria-live="polite" className="mb-3 text-xs text-muted-foreground">
+          Atualizando para {rangeDays} dias; os números ainda são do período de {data.rangeDays} dias.
         </p>
       )}
-      {!data || !f ? (
-        <p aria-busy="true">Carregando indicadores…</p>
-      ) : (
+      {!data || !f ? <p aria-busy="true">Carregando indicadores…</p> : (
         <>
-          <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-            <strong>Cobertura:</strong> o funil anônimo do Quiz é medido{" "}
-            {f.coverageSince ? (
-              <>desde {date(f.coverageSince)}</>
-            ) : (
-              "a partir da implantação (ainda sem sessões registradas)"
-            )}
-            . Visitas anteriores não têm dados e não são estimadas. O Admin não lê GA4: não há pageviews do site inteiro
-            aqui.
+          <p className="mb-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            <strong>Período:</strong> últimos {data.rangeDays} dias. Funil do Quiz {f.coverageSince ? `medido desde ${date(f.coverageSince)}` : "ainda sem sessões registradas"}. Analytics do site {data.sitewide.coverageSince ? `desde ${date(data.sitewide.coverageSince)}` : "ainda não ativado"}. Atualizado em {date(data.generatedAt)}. Não há reconstrução retroativa.
           </p>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Funil anônimo (sessões por primeira visita no período)
-          </h2>
+          <p className="mb-4 text-xs text-muted-foreground">Janela: funil por primeira entrada da sessão; recomendações e cliques pelo momento do evento; site por dias de calendário no fuso de São Paulo.</p>
+
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {(
-              [
-                ["Visitantes da página do Quiz", f.pageVisitors, null],
-                ["Iniciaram", f.started, funnelPct(f.started, f.pageVisitors)],
-                ["Formulário alcançado", f.leadFormReached, funnelPct(f.leadFormReached, f.started)],
-                ["Concluíram", f.completed, funnelPct(f.completed, f.started)],
-              ] as const
-            ).map(([label, value, rate]) => (
-              <div key={label} className={PANEL}>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-2 text-3xl font-bold">{value}</p>
-                {rate && <p className="mt-1 text-xs text-muted-foreground">{rate} da etapa anterior</p>}
-              </div>
-            ))}
-          </div>
-          <h2 className="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Leads e compra (cadastros identificados no período)
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
             {[
-              ["Leads únicos (por telefone)", f.uniqueLeads],
-              ["Cliques de compra", f.purchaseClicks],
-              ["Pessoas identificadas que clicaram", f.identifiedClickers],
-            ].map(([label, value]) => (
-              <div key={label} className={PANEL}>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-2 text-3xl font-bold">{value}</p>
-              </div>
-            ))}
+              ["Conversão global do Quiz", percent(globalRate), "Resultado exibido ÷ entradas na página"],
+              ["Início → resultado", percent(startedRate), "Resultado exibido ÷ sessões iniciadas"],
+              ["Cliques em oferta no Quiz", quizOfferClicks == null ? "—" : quizOfferClicks.toLocaleString("pt-BR"), quizOfferClicks == null ? "Fonte indisponível" : "Eventos de CTA; não são compras confirmadas"],
+              ["Leads identificados", f.uniqueLeads.toLocaleString("pt-BR"), "Deduplicados internamente por telefone"],
+            ].map(([label, value, detail]) => <div key={label} className={PANEL}><p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>)}
           </div>
+
           <section className={`${PANEL} mt-5`}>
-            <h2 className="text-lg font-semibold">Funil por pergunta</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Abandono conta somente sessões sem atividade há mais de {f.abandonAfterMinutes} min. Sessões ativas ficam
-              fora do abandono.
-            </p>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-line text-muted-foreground">
-                    <th className="pb-3">Etapa</th>
-                    <th>Alcance</th>
-                    <th>Avançaram</th>
-                    <th>Avanço</th>
-                    <th>Abandono</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-line/70">
-                    <td className="py-2 font-medium">Página (antes de iniciar)</td>
-                    <td>{f.pageVisitors}</td>
-                    <td>{f.started}</td>
-                    <td>{funnelPct(f.started, f.pageVisitors)}</td>
-                    <td>{f.introAbandoned}</td>
-                  </tr>
-                  {f.steps.map((s) => (
-                    <tr key={s.step} className="border-b border-line/70">
-                      <td className="py-2 font-medium">Pergunta {s.step}</td>
-                      <td>{s.reached}</td>
-                      <td>{s.advanced}</td>
-                      <td>{funnelPct(s.advanced, s.reached)}</td>
-                      <td>{s.abandoned}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td className="py-2 font-medium">Formulário de contato</td>
-                    <td>{f.leadFormReached}</td>
-                    <td>{f.completed}</td>
-                    <td>{funnelPct(f.completed, f.leadFormReached)}</td>
-                    <td>{f.leadFormAbandoned}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              “Concluíram” exige recomendação final exibida. Leads identificados não são usados como conclusão do funil.
-            </p>
+            <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-lg font-semibold">Funil do Quiz por etapa</h2><p className="mt-1 text-xs text-muted-foreground">Cada percentual compara com a etapa imediatamente anterior. A barra usa a entrada na página como base.</p></div><div><p className="text-xs uppercase text-muted-foreground">Conversão global</p><p className="text-2xl font-bold text-emerald-800">{percent(globalRate)}</p></div></div>
+            <ol className="mt-5 space-y-4">
+              {stages.map((stage) => {
+                const priorRate = stage.previousCount == null ? null : safeRate(stage.count, stage.previousCount);
+                const width = f.pageVisitors > 0 ? Math.max(stage.count > 0 ? 2 : 0, Math.min(100, (stage.count / f.pageVisitors) * 100)) : 0;
+                return <li key={stage.key}><div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm"><span className="font-medium">{stage.label}</span><span><strong>{stage.count.toLocaleString("pt-BR")}</strong>{stage.previousCount != null && <span className="ml-2 text-muted-foreground">{percent(priorRate)} avançaram · {stage.lost?.toLocaleString("pt-BR")} não avançaram</span>}</span></div><div className="mt-1 h-2 overflow-hidden rounded-full bg-emerald-100"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${width}%` }} /></div></li>;
+              })}
+            </ol>
+            <p className="mt-3 text-xs text-muted-foreground">Abandono conta somente sessões sem atividade há mais de {f.abandonAfterMinutes} min. Sessões ativas ficam fora do abandono. “Resultado exibido” exige a recomendação final na tela.</p>
           </section>
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
-            <RankedList
-              title="Bikes mais clicadas no Quiz"
-              rows={data.topBikes.map((row) => ({
-                label: row.name,
-                value: row.clicks,
-              }))}
-              empty="Nenhuma bike clicada no período."
-            />
-            <RankedList
-              title="Origens dos leads do Quiz"
-              rows={data.origins.map((row) => ({
-                label: row.name,
-                value: row.leads,
-              }))}
-              empty="Nenhuma origem registrada no período."
-            />
-          </div>
+
           <section className={`${PANEL} mt-5`}>
-            <h2 className="text-lg font-semibold">Pessoas que clicaram para comprar</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Somente leads que se identificaram no Quiz. Dados pessoais restritos ao perfil Admin.
-            </p>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[680px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-line text-muted-foreground">
-                    <th className="pb-3">Pessoa</th>
-                    <th>Contato</th>
-                    <th>Bike</th>
-                    <th>Posição</th>
-                    <th>Quando</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recentClickers.map((person) => (
-                    <tr key={person.id} className="border-b border-line/70 last:border-0">
-                      <td className="py-3 font-medium">{person.name || "Não informado"}</td>
-                      <td>{person.phone || "—"}</td>
-                      <td>{person.bike || "—"}</td>
-                      <td>{person.position || "—"}</td>
-                      <td>{date(person.clickedAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {data.recentClickers.length === 0 && (
-              <p className="py-4 text-sm text-muted-foreground">Nenhum clique identificado no período.</p>
+            <h2 className="text-lg font-semibold">Bikes recomendadas pelo Quiz</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Frequência de recomendação não é venda nem popularidade. Cliques são eventos individuais nos CTAs do resultado.</p>
+            {!data.quizBikesAvailable ? <Notice danger>A fonte agregada de recomendações está indisponível. O funil do Quiz continua funcionando.</Notice> : data.quizBikes.length ? (
+              <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><caption className="sr-only">Recomendações principais, alternativas e cliques em oferta por bike</caption><thead><tr className="border-b border-line text-muted-foreground"><th className="pb-3">Bike</th><th>Principal</th><th>Alternativa</th><th>Total recomendado</th><th>Cliques em oferta</th></tr></thead><tbody>{data.quizBikes.map((bike) => <tr key={bike.bikeId} className="border-b border-line/70 last:border-0"><th scope="row" className="py-3 font-medium">{bike.name}</th><td>{bike.primaryRecommendations}</td><td>{bike.secondaryRecommendations}</td><td>{bike.primaryRecommendations + bike.secondaryRecommendations}</td><td>{bike.quizOfferClicks}</td></tr>)}</tbody></table></div>
+            ) : <p className="mt-4 text-sm text-muted-foreground">Ainda sem recomendações no período.</p>}
+          </section>
+
+          <section className={`${PANEL} mt-5`}>
+            <h2 className="text-lg font-semibold">Interesse nas bikes em todo o site</h2>
+            <p className="mt-1 text-sm text-muted-foreground">“Abrir detalhe” é um clique para o Radar. “Clique em oferta” abre o destino afiliado; não confirma compra. Contagens públicas são direcionais e podem variar por bloqueadores, robôs ou falhas de rede.</p>
+            {!data.sitewide.available ? <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-muted-foreground">{data.sitewide.status === "unavailable" ? "As métricas sitewide estão temporariamente indisponíveis. O Quiz continua funcionando." : "A coleta sitewide ainda não possui cobertura. Os números começarão após a ativação, sem histórico retroativo."}</p> : (
+              <>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">{[["Páginas visualizadas", data.sitewide.pageViews], ["Aberturas de detalhes", data.sitewide.bikeClicks], ["Cliques em ofertas", data.sitewide.affiliateClicks]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-50 p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>)}</div>
+                <div className="mt-5 grid gap-6 lg:grid-cols-2">
+                  <div><h3 className="font-semibold">Páginas mais acessadas</h3>{data.sitewide.pages.length ? <ol className="mt-3 divide-y divide-line">{data.sitewide.pages.map((page) => <li key={page.path} className="flex justify-between gap-4 py-2 text-sm"><span className="break-all">{page.path}</span><strong>{page.views}</strong></li>)}</ol> : <p className="mt-3 text-sm text-muted-foreground">Ainda sem páginas registradas.</p>}</div>
+                  <div><h3 className="font-semibold">Bikes mais clicadas</h3>{data.sitewide.bikes.length ? <ol className="mt-3 space-y-2">{data.sitewide.bikes.map((bike) => {
+                    const expanded = expandedBikeId === bike.bikeId;
+                    return <li key={bike.bikeId} className="rounded-xl border border-line"><button type="button" aria-expanded={expanded} className="flex min-h-12 w-full items-center justify-between gap-4 rounded-xl p-3 text-left hover:bg-emerald-50" onClick={() => setExpandedBikeId(expanded ? null : bike.bikeId)}><span className="font-medium">{bike.name}</span><span className="text-right"><strong>{bike.detailClicks + bike.offerClicks}</strong><span className="block text-xs text-muted-foreground">{bike.detailClicks} detalhe · {bike.offerClicks} oferta</span></span></button>{expanded && <div className="border-t border-line px-3 pb-3"><p className="pt-3 text-xs font-semibold uppercase text-muted-foreground">Origem dos cliques</p>{bike.origins.length ? <ol className="mt-1 divide-y divide-line">{bike.origins.map((origin) => <li key={origin.path} className="flex justify-between gap-3 py-2 text-sm"><span className="break-all">{origin.path}</span><span className="shrink-0">{origin.detailClicks} detalhe · {origin.offerClicks} oferta</span></li>)}</ol> : <p className="mt-2 text-sm text-muted-foreground">Sem origem registrada.</p>}</div>}</li>;
+                  })}</ol> : <p className="mt-3 text-sm text-muted-foreground">Ainda sem cliques em bikes no período.</p>}</div>
+                </div>
+              </>
             )}
           </section>
         </>
