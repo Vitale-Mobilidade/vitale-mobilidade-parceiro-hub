@@ -13,7 +13,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { canonicalUrl, pageHead } from "@/lib/seo";
 import {
@@ -222,7 +222,6 @@ function FerramentasPage() {
             em mente? Veja o preço no Radar{" "}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <OffersBanner />
         </div>
       </main>
       <SiteFooter />
