@@ -1,3 +1,4 @@
+import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
 import { bikeImageFallback } from "@/lib/bike-catalog";
 import { useLoaderData, Link } from "@tanstack/react-router";
@@ -47,7 +48,7 @@ function NavLink({ item, className }: { item: NavItem; className: string }) {
     );
   }
   return (
-    <a href={item.href} className={className}>
+    <a href={item.href} {...externalLinkProps(item.href)} className={className}>
       {item.label}
     </a>
   );
@@ -163,9 +164,9 @@ export function SiteFooter() {
         <div className="responsive-container">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="max-w-xl"><p className="flex items-center gap-2 text-sm font-bold text-red-700"><Youtube aria-hidden="true" /> VITALE NO YOUTUBE</p><h2 id="footer-youtube" className="mt-3 text-2xl font-bold text-ink">A conversa continua no canal</h2><p className="mt-2 text-muted-foreground">Testes na prática, comparativos e boas histórias sobre bikes elétricas. A Vitale Mobilidade é um canal no YouTube — e este é o nosso hub.</p></div>
-            <a href={YOUTUBE_SUBSCRIBE} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-bold text-white hover:bg-red-800"><Youtube aria-hidden="true" /> Inscreva-se no YouTube</a>
+            <a href={YOUTUBE_SUBSCRIBE} {...externalLinkProps(YOUTUBE_SUBSCRIBE)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-bold text-white hover:bg-red-800"><Youtube aria-hidden="true" /> Inscreva-se no YouTube</a>
           </div>
-          {footerVideos.length > 0 && <div className="mt-7 grid gap-5 sm:grid-cols-3">{footerVideos.map((video) => <a key={video.videoId} href={video.url} className="rounded-xl border border-line overflow-hidden hover:border-action"><img src={video.thumbnail} alt="" width={320} height={180} loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><p className="p-4 text-sm font-semibold leading-relaxed text-ink">{video.title}</p></a>)}</div>}
+          {footerVideos.length > 0 && <div className="mt-7 grid gap-5 sm:grid-cols-3">{footerVideos.map((video) => <a key={video.videoId} href={video.url} {...externalLinkProps(video.url)} className="rounded-xl border border-line overflow-hidden hover:border-action"><img src={video.thumbnail} alt="" width={320} height={180} loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><p className="p-4 text-sm font-semibold leading-relaxed text-ink">{video.title}</p></a>)}</div>}
           <a href="/videos" className="mt-5 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-4">Ver todos os vídeos →</a>
         </div>
       </section>
@@ -176,7 +177,7 @@ export function SiteFooter() {
             <p className="mt-4 max-w-xs leading-relaxed">
               Nosso canal no YouTube e nosso hub de conteúdo, ferramentas e preços para explorar a mobilidade elétrica.
             </p>
-          <nav aria-label="Redes sociais" className="flex gap-4 mt-4 flex-wrap">{SOCIAL_LINKS.map((profile) => <a key={profile.label} href={profile.url} className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4 hover:text-mint">{profile.label}</a>)}</nav>
+          <nav aria-label="Redes sociais" className="flex gap-4 mt-4 flex-wrap">{SOCIAL_LINKS.map((profile) => <a key={profile.label} href={profile.url} {...externalLinkProps(profile.url)} className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4 hover:text-mint">{profile.label}</a>)}</nav>
             <Link
               to="/quiz"
               reloadDocument
@@ -196,7 +197,7 @@ export function SiteFooter() {
                         {i.label}
                       </Link>
                     ) : (
-                      <a href={i.href} className="hover:text-mint">
+                      <a href={i.href} {...externalLinkProps(i.href)} className="hover:text-mint">
                         {i.label}
                       </a>
                     )}

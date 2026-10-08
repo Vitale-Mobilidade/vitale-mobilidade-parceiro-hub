@@ -1,3 +1,4 @@
+import { externalLinkProps } from "@/lib/external-link";
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -40,7 +41,7 @@ const Header = () => {
             {menuItems.map((item) => (
               <a
                 key={item.label}
-                href={item.href}
+                href={item.href} {...externalLinkProps(item.href)}
                 className="text-sm lg:text-base font-medium text-muted-foreground hover:text-primary transition-colors px-2 py-1 whitespace-nowrap"
               >
                 {item.label}
@@ -61,7 +62,7 @@ const Header = () => {
                   {menuItems.map((item) => (
                     <a
                       key={item.label}
-                      href={item.href}
+                      href={item.href} {...externalLinkProps(item.href)}
                       className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors py-2"
                       onClick={() => setIsOpen(false)}
                     >

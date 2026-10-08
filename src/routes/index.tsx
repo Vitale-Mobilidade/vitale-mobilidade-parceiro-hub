@@ -2,19 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
-import { safeVideos } from "@/lib/videos.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 
 // Etapa 5 (rascunho): Home B2C. A Home legada de consultoria segue em src/pages/Index.tsx.
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
-    const [cards, articles, videos] = await Promise.all([
+    const [cards, articles] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
       getPublishedArticles().catch(() => null),
-      safeVideos({ limit: 4 }),
     ]);
-    return { ...cards, articles: articles ?? [], videos };
+    return { ...cards, articles: articles ?? [] };
   },
   head: () =>
     pageHead({
