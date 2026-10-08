@@ -48,3 +48,25 @@ Decisão pós-revisão: GO para código preparado; geração real e inbox ainda 
 4. Só então testar uma vez para o destinatário autorizado, preservando Ask each time e sem lista/campanha. Nenhum envio feito agora. Não publicar/ativar a rotina automaticamente.
 
 Rollback de código: reverter apenas ajuste da abertura/Radar/admin/testes; preservar ledger, fontes, cron e segredos. Não apagar edições ou reaplicar migration.
+## Prova real pós-correção (08/10/2026)
+
+### Diagnóstico anterior (request 10276)
+- Duas revisões rejeitaram: dia de preparação (quinta) ausente no input do revisor; ampliações factuais não sustentadas (unidade da bateria, trajeto/alcance, garagem, boleto).
+- Correção mínima em `b9235c9`: revisor recebe `weekday`, distingue preparação de envio, proíbe ampliar fatos; orçamento de palavras proporcional ao número de fontes. Grounding não foi afrouxado.
+- Geração após a correção: 2 chamadas, `approved:true`, 684 palavras, 25 UTMs. Prova perdida com o `/tmp` antes de ser copiada ao Git.
+
+### Oito revisões pós-correção
+1. Produto: abertura breve sem curiosidade; três leituras, Radar e agenda preservados.
+2. CTO: mudança restrita a prompts/orçamento; máx. 4 chamadas e 120 s por edição.
+3. IA: revisor independente com contexto temporal; autocorreção única, sem loops.
+4. Segurança: fontes tratadas como dados não confiáveis; nenhum segredo/contato no prompt ou na saída.
+5. UX: cartões Radar email-safe; sem prosa longa.
+6. CX: sem pressão de compra nem promessas de desconto.
+7. Growth: UTMs e links ao Radar/Quiz preservados.
+8. PMO: envio e ativação continuam dependentes de aprovação humana; cron/newsletter OFF.
+
+### Nova geração autorizada (08/10/2026, 12:05 UTC)
+- Runtime `b9235c9`, edição #1 do ledger (histórico enviado vazio), weekday 4.
+- 4 chamadas gateway HTTP 200 (~21 s, ~13 s, ~22 s, ~17 s): redator → revisor reprovou → autocorreção → revisor reprovou.
+- Resultado: `newsletter_writer_review_failed`. Nenhum HTML/JSON aprovado; nada salvo em `artifacts/`. Os apontamentos do revisor não foram capturados (o script não registrava as razões) e não houve nova tentativa, conforme instrução.
+- Limitação: o revisor reprova de forma não determinística (aprovou na rodada anterior com o mesmo código). Próximo passo exige decisão humana: nova tentativa com captura das razões ou ajuste de prompt.
