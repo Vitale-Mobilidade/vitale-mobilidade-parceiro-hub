@@ -1,3 +1,4 @@
+import { getQuizCatalog } from "@/lib/quiz-catalog.functions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,7 +20,9 @@ interface CatalogState {
   loading: boolean;
 }
 
-const STATIC_CATALOG = [...BIKES].sort((a, b) => a.internalPrice - b.internalPrice);
+const STATIC_CATALOG = [...BIKES].sort(
+  (a, b) => a.internalPrice - b.internalPrice,
+);
 
 /**
  * Catálogo do quiz:
@@ -31,7 +34,9 @@ const STATIC_CATALOG = [...BIKES].sort((a, b) => a.internalPrice - b.internalPri
 function fromInitial(initialBikes: unknown[]): CatalogState | null {
   if (!Array.isArray(initialBikes) || initialBikes.length === 0) return null;
   const ids = new Set(initialBikes.map((b) => (b as { id?: string })?.id));
-  const merged = mergeCatalog(STATIC_CATALOG, initialBikes).filter((b) => ids.has(b.id));
+  const merged = mergeCatalog(STATIC_CATALOG, initialBikes).filter((b) =>
+    ids.has(b.id),
+  );
   if (merged.length === 0) return null;
   return {
     catalog: merged,
@@ -48,7 +53,9 @@ function fromInitial(initialBikes: unknown[]): CatalogState | null {
  * (RPC + snapshot + estático).
  */
 export function useBikeCatalog(initialBikes?: unknown[] | null): CatalogState {
-  const [hydrated] = useState(() => (initialBikes ? fromInitial(initialBikes) : null));
+  const [hydrated] = useState(() =>
+    initialBikes ? fromInitial(initialBikes) : null,
+  );
   const [state, setState] = useState<CatalogState>(
     () =>
       hydrated ?? {
@@ -66,18 +73,26 @@ export function useBikeCatalog(initialBikes?: unknown[] | null): CatalogState {
     (async () => {
       try {
         const [rpcRes, snapRes] = await Promise.all([
-          supabase.rpc("get_quiz_catalog"),
-          supabase.from("bike_catalog_snapshot").select("data, updated_at").eq("id", "current").maybeSingle(),
+          getQuizCatalog(),
+          supabase
+            .from("bike_catalog_snapshot")
+            .select("data, updated_at")
+            .eq("id", "current")
+            .maybeSingle(),
         ]);
         if (cancelled) return;
 
-        const rpcBikes = Array.isArray(rpcRes.data) ? (rpcRes.data as unknown[]) : [];
+        const rpcBikes: unknown[] = rpcRes.ok ? rpcRes.bikes : [];
         const snapshot = (snapRes.data?.data ?? null) as CatalogSnapshot | null;
         const rowsSource = Array.isArray(snapshot?.bikes) ? snapshot.bikes : [];
 
-        if (!rpcRes.error && rpcBikes.length > 0) {
-          const rpcIds = new Set(rpcBikes.map((b) => (b as { id?: string }).id));
-          const merged = mergeCatalog(STATIC_CATALOG, rpcBikes).filter((b) => rpcIds.has(b.id));
+        if (rpcRes.ok && rpcBikes.length > 0) {
+          const rpcIds = new Set(
+            rpcBikes.map((b) => (b as { id?: string }).id),
+          );
+          const merged = mergeCatalog(STATIC_CATALOG, rpcBikes).filter((b) =>
+            rpcIds.has(b.id),
+          );
           setState({
             catalog: merged,
             rows: buildCatalogRows(STATIC_CATALOG, rowsSource),

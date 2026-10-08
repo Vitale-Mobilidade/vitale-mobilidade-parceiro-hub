@@ -25,6 +25,8 @@ export interface SnapshotBike {
   autonomyKm: number;
   capacity: 1 | 2;
   description: string;
+  /** Distinct videos explicitly associated in the official video catalog. */
+  videoCount?: number;
   shortDescription: string;
   isNew?: boolean;
   status?: SnapshotBikeStatus;
@@ -146,6 +148,7 @@ function bikeFromSnapshot(s: SnapshotBike): Bike | null {
     name: s.name,
     shortDescription: s.shortDescription || s.description.slice(0, 200),
     fullDescription: s.description,
+    videoCount: s.videoCount ?? 0,
     image: s.image,
     affiliateLink: s.linkVitale,
     linkVitale: s.linkVitale,
@@ -186,6 +189,7 @@ export function mergeCatalog(base: Bike[], snapshotBikes: unknown): Bike[] {
       name: s.name?.trim() || bike.name,
       shortDescription: s.shortDescription?.trim() || bike.shortDescription,
       fullDescription: s.description,
+      videoCount: s.videoCount ?? 0,
       internalPrice: s.price,
       autonomyKm: s.autonomyKm,
       capacity: s.capacity,

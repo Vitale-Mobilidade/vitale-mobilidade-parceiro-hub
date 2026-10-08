@@ -1,6 +1,9 @@
 // Server-only: leitura pública do catálogo do Quiz via RPC `get_quiz_catalog`
 // (chave publicável/anon). Nunca usa service role nem lê tabelas diretamente.
 
+import { fetchVideoCatalog } from "./video-catalog.server";
+import { countBikeVideos } from "./quiz-video-counts";
+
 import { BIKE_ID_RE } from "./bike-identity";
 
 const TIMEOUT_MS = 5000;
@@ -16,7 +19,9 @@ function isValidItem(item: unknown): boolean {
 
 export async function fetchQuizCatalog(): Promise<QuizCatalogResult> {
   const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) return { ok: false };
 
   const controller = new AbortController();
@@ -24,16 +29,28 @@ export async function fetchQuizCatalog(): Promise<QuizCatalogResult> {
   try {
     const res = await fetch(`${url}/rest/v1/rpc/get_quiz_catalog`, {
       method: "POST",
-      headers: { apikey: key, "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        apikey: key,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: "{}",
       signal: controller.signal,
     });
     if (!res.ok) return { ok: false };
     const data: unknown = await res.json();
     // Formato: lista não vazia de objetos com id válido (mesma condição do cliente: length > 0).
-    if (!Array.isArray(data) || data.length === 0 || data.length > MAX_ITEMS) return { ok: false };
+    if (!Array.isArray(data) || data.length === 0 || data.length > MAX_ITEMS)
+      return { ok: false };
     if (!data.every(isValidItem)) return { ok: false };
-    return { ok: true, bikes: JSON.parse(JSON.stringify(data)) as unknown[] };
+    const counts = countBikeVideos(await fetchVideoCatalog().catch(() => []));
+    return {
+      ok: true,
+      bikes: data.map((item) => {
+        const bike = item as { id: string };
+        return { ...bike, videoCount: counts[bike.id] ?? 0 };
+      }),
+    };
   } catch {
     return { ok: false };
   } finally {
