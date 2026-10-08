@@ -70,3 +70,19 @@ Rollback de código: reverter apenas ajuste da abertura/Radar/admin/testes; pres
 - 4 chamadas gateway HTTP 200 (~21 s, ~13 s, ~22 s, ~17 s): redator → revisor reprovou → autocorreção → revisor reprovou.
 - Resultado: `newsletter_writer_review_failed`. Nenhum HTML/JSON aprovado; nada salvo em `artifacts/`. Os apontamentos do revisor não foram capturados (o script não registrava as razões) e não houve nova tentativa, conforme instrução.
 - Limitação: o revisor reprova de forma não determinística (aprovou na rodada anterior com o mesmo código). Próximo passo exige decisão humana: nova tentativa com captura das razões ou ajuste de prompt.
+
+### Causa comprovada da reprovação de 12:06 UTC (sem nova geração)
+Fonte: logs do AI Gateway (somente leitura), salvos em `artifacts/newsletter-diagnostics/2026-10-08-review-failed.json`.
+- Revisão 1 (`01a11b68-0832…`): (a) abertura usava o para-lama como gancho "para puxar conversa" — violação real da regra; (b) "manutenção" listada como custo, mas a fonte a trata como receita — erro real do redator.
+- Revisão 2 (`01a11b68-9210…`): a autocorreção resolveu (a) e (b), mas **reescreveu partes não apontadas** e criou dois erros novos: "Sol forte e poça d'água" em article-1 (piada com cenário ausente) e "GT2000 cruzando São Paulo" no preheader (fonte: 6–7 km Faria Lima → Alto de Pinheiros).
+- Descartado: proibição de interjeição/"Ah" e `weekday` não aparecem em nenhuma issue; não causaram falso negativo. As quatro issues são procedentes; o revisor não errou.
+- Causa: a correção regenerava o rascunho inteiro, então cada ciclo podia introduzir novas afirmações sem suporte.
+
+### Correção
+- `mergeNewsletterCorrection`: após reprovação, campos/seções não citados nas issues voltam exatamente ao rascunho anterior (issue genérica mantém a versão corrigida). O revisor continua checando o texto inteiro; grounding inalterado.
+- Prompt: piada comenta fato da fonte sem acrescentar clima/lugar/escala/custo; regras valem para assunto/preheader/headline; correção copia literalmente o que não foi apontado.
+- `writeNewsletter`/`automaticNewsletter` aceitam `onDiagnostic` (rascunhos, issues, códigos; sem segredos). `scripts/newsletter-proof.ts` sempre grava em `artifacts/newsletter-diagnostics/`.
+- Testes: regressão reproduzindo o caso (preheader e article-1 preservados, abertura/article-2 corrigidos) + issue genérica. 47 testes de newsletter passaram.
+
+### Oito revisões da correção
+Produto: voz divertida mantida; humor só sobre fatos. CTO: mudança local, mesmo limite de 4 chamadas. IA: elimina regressão na autocorreção sem afrouxar o revisor. Segurança: diagnóstico sem env/headers/contatos. UX/CX: sem mudança visual. Growth: UTMs/Radar intactos. PMO: sem geração, envio ou ativação nesta etapa; próxima execução usa o script com logging.
