@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-10-08T12:13:00.715Z",
+  "editionNumber": 1,
+  "reviewerApproved": true,
+  "aiCalls": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 22996
+    },
+    {
+      "status": 200,
+      "ms": 13746
+    }
+  ],
+  "fingerprint": "d97442b549484bf27ee0f704e55567267b7ef37fceb8909996ac501fe6cc879b",
+  "subject": "#1 — Banco, bateria e planilha: cada pedal com seu problema",
+  "content": {
+    "editionNumber": 1,
+    "subject": "#1 — Banco, bateria e planilha: cada pedal com seu problema",
+    "headline": "Garupa, bagageiro e lucro: a bike ganhou planilha",
+    "preheader": "Duas comparações, sete negócios, uma dobrável e um Radar novo.",
+    "intro": "Nem toda conversa sobre bike elétrica termina em potência. Às vezes, o assunto desvia para o banco da garupa, um para-lama curto ou uma planilha que insiste em lembrar dos custos. Nesta edição, a rua encontra a calculadora — sem perder a graça.",
+    "articles": [
+      {
+        "title": "Zurbe S20 Pro ou V9 Max: bateria, banco e bagageiros mudam a escolha",
+        "category": "Comparativo",
+        "url": "https://vitalemobilidade.com/conteudos/zurbe-s20-pro-ou-v9-max-bateria-banco-e-bagageiros-mudam-a-escolha",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=89c1b8c3-11dc-4c09-a3c6-737b3c23a31e&file=120b5e82-a3a1-446f-aba0-8d0d499c0b80",
+        "paragraphs": [
+          "S20 Pro ou V9 Max? No papel, parece duelo de gêmeas: motor de 1.000 W, aro 20 com pneus largos, freios hidráulicos e suspensão dupla traseira. O desempate aparece nos detalhes da rotina. A S20 Pro traz bateria de 48 V e 18,2 Ah e dois bagageiros. A V9 Max fica em 48 V e 15,6 Ah, mas o banco mais reto foi considerado mais favorável para garupa frequente."
+        ],
+        "bullets": [
+          "Nas duas, o limite declarado é de 150 kg somando condutor e passageiro.",
+          "As autonomias estimadas em condução moderada são 50–60 km na S20 Pro e 40–50 km na V9 Max."
+        ]
+      },
+      {
+        "title": "UFOFAST VL20 vale a pena? Para quem a bicicleta elétrica faz sentido",
+        "category": "Conheça a bike",
+        "url": "https://vitalemobilidade.com/conteudos/ufofast-vl20-vale-a-pena-para-quem-a-bicicleta-eletrica-faz-sentido",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=53d6210a-5152-4fe4-b129-5f3eb61be995&file=080adfcb-9bf6-475b-af14-0be698e32fae",
+        "paragraphs": [
+          "A UFOFAST VL20 também entra na turma dos 1.000 W, com bateria de 48 V e 15,6 Ah, banco para duas pessoas e bagageiro dianteiro. No relato do Vitale, o conjunto entrega muitos acessórios, mas a unidade avaliada deixou dois recados da vida real: o painel ficou difícil de enxergar durante o dia e o para-lama traseiro não cobriu completamente o pneu. A água, aparentemente, encontrou a brecha."
+        ],
+        "bullets": [
+          "A capacidade informada é de 150 kg, incluindo ocupantes e objetos transportados.",
+          "Freios hidráulicos Logan e suspensão dupla traseira foram descritos como componentes de entrada."
+        ]
+      },
+      {
+        "title": "Como ganhar dinheiro com bicicletas elétricas: 7 modelos de negócio",
+        "category": "Guia e dicas",
+        "url": "https://vitalemobilidade.com/conteudos/como-ganhar-dinheiro-com-bicicletas-eletricas-7-modelos-de-negocio",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=e338cd52-4262-46f2-aa0d-a98ed629ea5e&file=aa49fd37-dc47-4963-b8a5-edd020473fab",
+        "paragraphs": [
+          "Dá para ganhar dinheiro com bicicletas elétricas sem necessariamente vender uma bicicleta. O conteúdo reúne sete caminhos, passando por loja física, site próprio, marketplace, vendas para empresas, locação, oficina e peças. A parte menos cinematográfica — e mais importante — é separar faturamento, lucro bruto e resultado líquido. A diferença entre comprar e vender ainda precisa bancar impostos, comissões, estrutura e demais despesas. A planilha não pedala, mas acompanha o trajeto inteiro."
+        ],
+        "bullets": [
+          "Na locação, preço por período e frequência de uso precisam ser analisados juntos.",
+          "Marketplace oferece fluxo de clientes, mas cobra comissão do vendedor."
+        ]
+      }
+    ],
+    "radar": {
+      "title": "Radar de preços",
+      "url": "https://vitalemobilidade.com/radar"
+    },
+    "drops": [
+      {
+        "title": "V9 Max Ufofast Duas Baterias",
+        "previousPrice": "R$ 8.041,00",
+        "currentPrice": "R$ 7.433,00",
+        "baselineDate": "2026-10-04",
+        "dropLabel": "−7,6%",
+        "checkedAt": "08/10/2026, 09:07:02",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v9_max_ufofast_duas_baterias",
+        "url": "https://vitalemobilidade.com/radar/v9_max_ufofast_duas_baterias"
+      },
+      {
+        "title": "V9 Max",
+        "previousPrice": "R$ 6.273,00",
+        "currentPrice": "R$ 5.889,00",
+        "baselineDate": "2026-10-04",
+        "dropLabel": "−6,1%",
+        "checkedAt": "08/10/2026, 09:07:02",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v9_max",
+        "url": "https://vitalemobilidade.com/radar/v9_max"
+      },
+      {
+        "title": "S8",
+        "previousPrice": "R$ 4.599,00",
+        "currentPrice": "R$ 4.327,00",
+        "baselineDate": "2026-10-04",
+        "dropLabel": "−5,9%",
+        "checkedAt": "08/10/2026, 09:07:02",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=s8",
+        "url": "https://vitalemobilidade.com/radar/s8"
+      }
+    ],
+    "bike": {
+      "title": "BW02",
+      "url": "https://vitalemobilidade.com/radar/bw02",
+      "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=bw02",
+      "paragraphs": [
+        "No Radar, a Honeywhale BW02 aparece com oferta ativa na preparação desta edição. É uma dobrável de aço, com motor nominal de 500 W, pico informado de 790 W e bateria removível de 48 V e 10,4 Ah. Seus pneus 20 x 3.0 e a suspensão dianteira compõem a proposta urbana. Dobrar ajuda no armazenamento, claro, mas os aproximadamente 30 kg continuam participando da conversa — dobradiça nenhuma apaga a balança."
+      ],
+      "bullets": [
+        "A ficha informa capacidade para uma pessoa e autonomia de até 40 km, sem garantia para todo trajeto.",
+        "Preço vigente e histórico ficam no Radar; oferta ativa não significa valor permanente."
+      ]
+    },
+    "videos": [
+      {
+        "title": "GT2000 Ouxi por MENOS de R$9.400: NÃO TEM NEM O QUE PENSAR?",
+        "category": "Preços e mercado",
+        "url": "https://www.youtube.com/watch?v=Kb8TdEnyhSA",
+        "image": "https://i.ytimg.com/vi/Kb8TdEnyhSA/mqdefault.jpg",
+        "paragraphs": [
+          "No trajeto relatado entre a região da Faria Lima e Alto de Pinheiros, perto do Parque Villa-Lobos, a Ouxi GT2000 mostrou sua proposta robusta: motor nominal de 1.000 W, pico de 2.000 W e bateria descrita como 48 V, 30 A. O trecho previsto era de 6–7 km. Entre os detalhes observados, a seta dianteira agradou, enquanto a traseira teve visibilidade limitada; o painel também foi considerado difícil de ler durante o dia."
+        ],
+        "bullets": [
+          "O alarme é apenas sonoro e não trava a roda.",
+          "O preço citado era de setembro de 2026 e não comprova o valor atual."
+        ]
+      },
+      {
+        "title": "QUAL BIKE ELÉTRICA COMPRAR? Descubra a CERTA para Você!",
+        "category": "Variedades",
+        "url": "https://www.youtube.com/watch?v=ns32w3z0MLc",
+        "image": "https://i.ytimg.com/vi/ns32w3z0MLc/mqdefault.jpg",
+        "paragraphs": [
+          "O site da Vitale reuniu o conteúdo do canal com ferramentas para quem prefere explorar o próprio perfil. Há Radar com histórico de 7, 14 e 30 dias, alertas de preço, artigos derivados dos vídeos e calculadoras que comparam custos de carro, moto, transporte público, aplicativos e locação. Também existe um quiz opcional: ele faz perguntas sobre uso e orçamento e envia duas sugestões pelo WhatsApp. É um atalho para navegar, não uma prova de múltipla escolha com fiscal na porta."
+        ],
+        "bullets": [
+          "As calculadoras usam os dados inseridos pelo próprio visitante para montar comparações.",
+          "O Radar acompanha histórico; ele não transforma preço passado em oferta vigente."
+        ]
+      }
+    ]
+  },
+  "text": "Olá, {{{contact.first_name|amigo(a)}}}!\n\nGarupa, bagageiro e lucro: a bike ganhou planilha\n\nNem toda conversa sobre bike elétrica termina em potência. Às vezes, o assunto desvia para o banco da garupa, um para-lama curto ou uma planilha que insiste em lembrar dos custos. Nesta edição, a rua encontra a calculadora — sem perder a graça.\n\nZurbe S20 Pro ou V9 Max: bateria, banco e bagageiros mudam a escolha\n\nS20 Pro ou V9 Max? No papel, parece duelo de gêmeas: motor de 1.000 W, aro 20 com pneus largos, freios hidráulicos e suspensão dupla traseira. O desempate aparece nos detalhes da rotina. A S20 Pro traz bateria de 48 V e 18,2 Ah e dois bagageiros. A V9 Max fica em 48 V e 15,6 Ah, mas o banco mais reto foi considerado mais favorável para garupa frequente.\n\n• Nas duas, o limite declarado é de 150 kg somando condutor e passageiro.\n\n• As autonomias estimadas em condução moderada são 50–60 km na S20 Pro e 40–50 km na V9 Max.\n\nhttps://vitalemobilidade.com/conteudos/zurbe-s20-pro-ou-v9-max-bateria-banco-e-bagageiros-mudam-a-escolha?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_article_1\n\n---\n\nUFOFAST VL20 vale a pena? Para quem a bicicleta elétrica faz sentido\n\nA UFOFAST VL20 também entra na turma dos 1.000 W, com bateria de 48 V e 15,6 Ah, banco para duas pessoas e bagageiro dianteiro. No relato do Vitale, o conjunto entrega muitos acessórios, mas a unidade avaliada deixou dois recados da vida real: o painel ficou difícil de enxergar durante o dia e o para-lama traseiro não cobriu completamente o pneu. A água, aparentemente, encontrou a brecha.\n\n• A capacidade informada é de 150 kg, incluindo ocupantes e objetos transportados.\n\n• Freios hidráulicos Logan e suspensão dupla traseira foram descritos como componentes de entrada.\n\nhttps://vitalemobilidade.com/conteudos/ufofast-vl20-vale-a-pena-para-quem-a-bicicleta-eletrica-faz-sentido?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_article_2\n\n---\n\nComo ganhar dinheiro com bicicletas elétricas: 7 modelos de negócio\n\nDá para ganhar dinheiro com bicicletas elétricas sem necessariamente vender uma bicicleta. O conteúdo reúne sete caminhos, passando por loja física, site próprio, marketplace, vendas para empresas, locação, oficina e peças. A parte menos cinematográfica — e mais importante — é separar faturamento, lucro bruto e resultado líquido. A diferença entre comprar e vender ainda precisa bancar impostos, comissões, estrutura e demais despesas. A planilha não pedala, mas acompanha o trajeto inteiro.\n\n• Na locação, preço por período e frequência de uso precisam ser analisados juntos.\n\n• Marketplace oferece fluxo de clientes, mas cobra comissão do vendedor.\n\nhttps://vitalemobilidade.com/conteudos/como-ganhar-dinheiro-com-bicicletas-eletricas-7-modelos-de-negocio?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_article_3\n\n---\n\nRadar de preços\n\nhttps://vitalemobilidade.com/radar?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_radar\n\n---\n\nBW02\n\nNo Radar, a Honeywhale BW02 aparece com oferta ativa na preparação desta edição. É uma dobrável de aço, com motor nominal de 500 W, pico informado de 790 W e bateria removível de 48 V e 10,4 Ah. Seus pneus 20 x 3.0 e a suspensão dianteira compõem a proposta urbana. Dobrar ajuda no armazenamento, claro, mas os aproximadamente 30 kg continuam participando da conversa — dobradiça nenhuma apaga a balança.\n\n• A ficha informa capacidade para uma pessoa e autonomia de até 40 km, sem garantia para todo trajeto.\n\n• Preço vigente e histórico ficam no Radar; oferta ativa não significa valor permanente.\n\nhttps://vitalemobilidade.com/radar/bw02?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_bike\n\n---\n\nGT2000 Ouxi por MENOS de R$9.400: NÃO TEM NEM O QUE PENSAR?\n\nNo trajeto relatado entre a região da Faria Lima e Alto de Pinheiros, perto do Parque Villa-Lobos, a Ouxi GT2000 mostrou sua proposta robusta: motor nominal de 1.000 W, pico de 2.000 W e bateria descrita como 48 V, 30 A. O trecho previsto era de 6–7 km. Entre os detalhes observados, a seta dianteira agradou, enquanto a traseira teve visibilidade limitada; o painel também foi considerado difícil de ler durante o dia.\n\n• O alarme é apenas sonoro e não trava a roda.\n\n• O preço citado era de setembro de 2026 e não comprova o valor atual.\n\nhttps://www.youtube.com/watch?v=Kb8TdEnyhSA&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_video_1\n\n---\n\nQUAL BIKE ELÉTRICA COMPRAR? Descubra a CERTA para Você!\n\nO site da Vitale reuniu o conteúdo do canal com ferramentas para quem prefere explorar o próprio perfil. Há Radar com histórico de 7, 14 e 30 dias, alertas de preço, artigos derivados dos vídeos e calculadoras que comparam custos de carro, moto, transporte público, aplicativos e locação. Também existe um quiz opcional: ele faz perguntas sobre uso e orçamento e envia duas sugestões pelo WhatsApp. É um atalho para navegar, não uma prova de múltipla escolha com fiscal na porta.\n\n• As calculadoras usam os dados inseridos pelo próprio visitante para montar comparações.\n\n• O Radar acompanha histórico; ele não transforma preço passado em oferta vigente.\n\nhttps://www.youtube.com/watch?v=ns32w3z0MLc&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_video_2\n\nRADAR — QUEDAS\nV9 Max Ufofast Duas Baterias\n−7,6%\nAnterior: R$ 8.041,00\nAtual: R$ 7.433,00\nhttps://vitalemobilidade.com/radar/v9_max_ufofast_duas_baterias?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_radar_drop_1\n\nV9 Max\n−6,1%\nAnterior: R$ 6.273,00\nAtual: R$ 5.889,00\nhttps://vitalemobilidade.com/radar/v9_max?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_radar_drop_2\n\nS8\n−5,9%\nAnterior: R$ 4.599,00\nAtual: R$ 4.327,00\nhttps://vitalemobilidade.com/radar/s8?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_radar_drop_3\nFechamentos anteriores: 2026-10-04. Verificação: 08/10/2026, 09:07:02. Preços e disponibilidade podem mudar.\n\nQUIZ — Qual bike combina com a sua rotina? https://vitalemobilidade.com/quiz?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_1&utm_content=general_quiz\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}"
+}

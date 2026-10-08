@@ -1,0 +1,113 @@
+{
+  "editionNumber": 1,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 22996
+    },
+    {
+      "status": 200,
+      "ms": 13746
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "Banco, bateria e planilha: cada pedal com seu problema",
+        "preheader": "Duas comparações, sete negócios, uma dobrável e um Radar novo.",
+        "headline": "Garupa, bagageiro e lucro: a bike ganhou planilha",
+        "opening": [
+          "Nem toda conversa sobre bike elétrica termina em potência. Às vezes, o assunto desvia para o banco da garupa, um para-lama curto ou uma planilha que insiste em lembrar dos custos. Nesta edição, a rua encontra a calculadora — sem perder a graça."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "S20 Pro ou V9 Max? No papel, parece duelo de gêmeas: motor de 1.000 W, aro 20 com pneus largos, freios hidráulicos e suspensão dupla traseira. O desempate aparece nos detalhes da rotina. A S20 Pro traz bateria de 48 V e 18,2 Ah e dois bagageiros. A V9 Max fica em 48 V e 15,6 Ah, mas o banco mais reto foi considerado mais favorável para garupa frequente."
+            ],
+            "bullets": [
+              "Nas duas, o limite declarado é de 150 kg somando condutor e passageiro.",
+              "As autonomias estimadas em condução moderada são 50–60 km na S20 Pro e 40–50 km na V9 Max."
+            ],
+            "evidence": [
+              "A S20 Pro se destaca pela bateria de 48 V e 18,2 Ah, pelos bagageiros e pela marca Zurbe."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "A UFOFAST VL20 também entra na turma dos 1.000 W, com bateria de 48 V e 15,6 Ah, banco para duas pessoas e bagageiro dianteiro. No relato do Vitale, o conjunto entrega muitos acessórios, mas a unidade avaliada deixou dois recados da vida real: o painel ficou difícil de enxergar durante o dia e o para-lama traseiro não cobriu completamente o pneu. A água, aparentemente, encontrou a brecha."
+            ],
+            "bullets": [
+              "A capacidade informada é de 150 kg, incluindo ocupantes e objetos transportados.",
+              "Freios hidráulicos Logan e suspensão dupla traseira foram descritos como componentes de entrada."
+            ],
+            "evidence": [
+              "Antes da escolha, porém, é importante considerar o limite informado de 150 kg, a suspensão e os freios de entrada, a leitura do painel durante o dia e a cobertura insuficiente do para-lama traseiro nesta unidade."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "Dá para ganhar dinheiro com bicicletas elétricas sem necessariamente vender uma bicicleta. O conteúdo reúne sete caminhos, passando por loja física, site próprio, marketplace, vendas para empresas, locação, oficina e peças. A parte menos cinematográfica — e mais importante — é separar faturamento, lucro bruto e resultado líquido. A diferença entre comprar e vender ainda precisa bancar impostos, comissões, estrutura e demais despesas. A planilha não pedala, mas acompanha o trajeto inteiro."
+            ],
+            "bullets": [
+              "Na locação, preço por período e frequência de uso precisam ser analisados juntos.",
+              "Marketplace oferece fluxo de clientes, mas cobra comissão do vendedor."
+            ],
+            "evidence": [
+              "Para comparar as possibilidades, é preciso separar faturamento, lucro bruto e resultado líquido: a diferença entre compra e venda ainda precisa pagar as despesas da operação."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a Honeywhale BW02 aparece com oferta ativa na preparação desta edição. É uma dobrável de aço, com motor nominal de 500 W, pico informado de 790 W e bateria removível de 48 V e 10,4 Ah. Seus pneus 20 x 3.0 e a suspensão dianteira compõem a proposta urbana. Dobrar ajuda no armazenamento, claro, mas os aproximadamente 30 kg continuam participando da conversa — dobradiça nenhuma apaga a balança."
+            ],
+            "bullets": [
+              "A ficha informa capacidade para uma pessoa e autonomia de até 40 km, sem garantia para todo trajeto.",
+              "Preço vigente e histórico ficam no Radar; oferta ativa não significa valor permanente."
+            ],
+            "evidence": [
+              "A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "No trajeto relatado entre a região da Faria Lima e Alto de Pinheiros, perto do Parque Villa-Lobos, a Ouxi GT2000 mostrou sua proposta robusta: motor nominal de 1.000 W, pico de 2.000 W e bateria descrita como 48 V, 30 A. O trecho previsto era de 6–7 km. Entre os detalhes observados, a seta dianteira agradou, enquanto a traseira teve visibilidade limitada; o painel também foi considerado difícil de ler durante o dia."
+            ],
+            "bullets": [
+              "O alarme é apenas sonoro e não trava a roda.",
+              "O preço citado era de setembro de 2026 e não comprova o valor atual."
+            ],
+            "evidence": [
+              "Eu acho que esse trecho vai\nter uns\n6, 7 km."
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "O site da Vitale reuniu o conteúdo do canal com ferramentas para quem prefere explorar o próprio perfil. Há Radar com histórico de 7, 14 e 30 dias, alertas de preço, artigos derivados dos vídeos e calculadoras que comparam custos de carro, moto, transporte público, aplicativos e locação. Também existe um quiz opcional: ele faz perguntas sobre uso e orçamento e envia duas sugestões pelo WhatsApp. É um atalho para navegar, não uma prova de múltipla escolha com fiscal na porta."
+            ],
+            "bullets": [
+              "As calculadoras usam os dados inseridos pelo próprio visitante para montar comparações.",
+              "O Radar acompanha histórico; ele não transforma preço passado em oferta vigente."
+            ],
+            "evidence": [
+              "uma outra novidade é o radar de preços você vai conseguir acompanhar o histórico de preço de vários modelos dos últimos 7 14 e 30 dias"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 0,
+      "approved": true,
+      "issues": []
+    }
+  ]
+}
