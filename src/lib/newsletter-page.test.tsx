@@ -14,6 +14,9 @@ describe("newsletter public landing", () => {
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('href="/privacidade"');
     expect(html).toContain("descadastro");
+    expect(html).not.toContain("<select");
+    expect(html).not.toContain("O que mais te interessa");
+    expect(html.indexOf("</form>")).toBeLessThan(html.indexOf("Receba artigos, vídeos e destaques"));
   });
   it("has an indexable canonical and subject-specific social card", () => {
     const head = (Route as any).options.head();

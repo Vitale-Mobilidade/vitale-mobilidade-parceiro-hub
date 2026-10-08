@@ -26,10 +26,12 @@ export function NewsletterPage() {
         <div className="max-w-3xl">
           <p className="text-sm font-bold tracking-wide text-action">NEWSLETTER VITALE · GRATUITA</p>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Bikes elétricas e boas leituras no seu e-mail.</h1>
-          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">A newsletter da Vitale Mobilidade reúne artigos, vídeos do canal, bikes em destaque e novidades do Radar de preços. Cadastre seu e-mail para acompanhar a mobilidade elétrica com informação para sua rotina.</p>
-          <p className="mt-3 text-sm text-muted-foreground">Inscrição gratuita. Você pode sair a qualquer momento pelo link de descadastro nos e-mails.</p>
         </div>
-        <div className="mt-8"><NewsletterSignup /></div>
+        <div className="mt-6 max-w-3xl"><NewsletterSignup compact /></div>
+        <div className="mt-6 max-w-3xl">
+          <p className="text-lg leading-relaxed text-muted-foreground">Receba artigos, vídeos e destaques de bikes elétricas e do Radar de preços no seu e-mail.</p>
+          <p className="mt-2 text-sm text-muted-foreground">É gratuito. Cancele quando quiser pelo link nos e-mails.</p>
+        </div>
         <section aria-labelledby="newsletter-benefits" className="mt-12">
           <h2 id="newsletter-benefits" className="text-2xl font-bold text-ink">O que você vai receber?</h2>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
@@ -41,7 +43,7 @@ export function NewsletterPage() {
         <section aria-labelledby="newsletter-questions" className="mt-12 max-w-3xl">
           <h2 id="newsletter-questions" className="text-2xl font-bold text-ink">Dúvidas sobre a inscrição</h2>
           <div className="mt-5 space-y-6 leading-relaxed">
-            <div><h3 className="font-bold text-ink">A newsletter é gratuita?</h3><p className="mt-1 text-muted-foreground">Sim. Você informa seu nome e e-mail, escolhe seu interesse e autoriza o cadastro para receber a newsletter da Vitale.</p></div>
+            <div><h3 className="font-bold text-ink">A newsletter é gratuita?</h3><p className="mt-1 text-muted-foreground">Sim. Você informa seu nome e e-mail e autoriza o cadastro para receber a newsletter da Vitale.</p></div>
             <div><h3 className="font-bold text-ink">Preciso participar do grupo ou me inscrever no YouTube?</h3><p className="mt-1 text-muted-foreground">Não. O cadastro por e-mail é independente do canal no YouTube e do grupo de ofertas.</p></div>
             <div><h3 className="font-bold text-ink">Como cancelo a inscrição?</h3><p className="mt-1 text-muted-foreground">Use o link de descadastro presente nos e-mails. Saiba mais sobre o tratamento de seus dados na <a href="/privacidade" className="font-semibold text-action underline underline-offset-4">política de privacidade</a>.</p></div>
             <div><h3 className="font-bold text-ink">Os preços enviados continuam válidos?</h3><p className="mt-1 text-muted-foreground">Preços e disponibilidade podem mudar. Consulte o Radar e a oferta no destino antes de comprar.</p></div>
