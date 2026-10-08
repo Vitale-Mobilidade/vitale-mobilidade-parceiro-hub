@@ -1,6 +1,6 @@
 # Recalibração do Quiz — 08/10/2026
 
-Estado: preparação local no repositório operacional, base `50c7a29`; sem publicação.
+Estado: PUBLICADO em 08/10/2026 no projeto Lovable ativo e em https://vitalemobilidade.com/quiz. Base de rollback `50c7a29`.
 Classificação: estrutural (Quiz e leitura de Sheets). Evidência: RPC pública consultada, 20 bikes elegíveis com descrições atualizadas.
 
 ## Revisão pré-implementação
@@ -54,3 +54,13 @@ Resultado: GO para preparação local; release condicionado à autorização esp
 ## Autorização de release
 
 O responsável autorizou explicitamente integrar, validar no preview e publicar nesta conversa em 08/10/2026 (“pode publicar!”). Base anterior confirmada no GitHub e no projeto Lovable: `50c7a29b4389a5e5c02ffaabd6f022c6de5bb583`. Escopo exclusivo dos dez arquivos desta mudança; nenhum schema, writer, dado ou configuração de produção.
+
+## Publicação concluída
+
+- PR #23 integrada: https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/23. Commit do código `2f116978b62a97d515dd5d481abdcfec32f482dd`; merge `b283ebcd3d3bc1abeba46894a6189326c184461d`, confirmado no projeto Lovable.
+- Deployment `4320a7f5-75b1-4c5c-a025-be04168ac4b9`. A API inicialmente retornou pending; a conclusão foi verificada diretamente no domínio, não inferida desse retorno.
+- Bundle público passou de `quiz-CobH78Vm.js` para `quiz-Sm5ikzxH.js`; inspeção confirmou score por descrição, videoCount e margem de 5 pontos.
+- SSR público contém os 20 modelos elegíveis e contagens esperadas (V9 Max 25, GT2000 21, FT03 14, V8 Pro 13). Canonical https://vitalemobilidade.com/quiz preservado.
+- Preview e domínio: quiz abre e avança para primeira pergunta; sem erro de console no smoke. Nenhum lead de teste concluído, envio de mensagem ou clique afiliado. Evidência visual local: artifacts/quiz-weights-published-2026-10-08.jpg, no workspace de referência.
+- Check Vercel falhou tanto na base anterior quanto nesta branch; não é o hosting operacional. O release foi validado no Lovable e domínio real. Não alterar outros provedores nesta task.
+- Oito perspectivas: Pass no escopo entregue, com os limites já documentados. Estado final GO / publicado. Rollback: reverter os arquivos de código introduzidos pela PR #23 e republicar a versão baseada em 50c7a29; nenhum rollback de banco necessário.
