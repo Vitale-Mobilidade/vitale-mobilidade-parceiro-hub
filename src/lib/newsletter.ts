@@ -182,7 +182,7 @@ export function renderResendNewsletter(
     .replace(marker, "{{{RESEND_UNSUBSCRIBE_URL}}}")
     .replace(
       "<h1 style=",
-      "<p>Salve {{{contact.first_name|}}}</p><h1 style=",
+      "<p>Salve {{{FIRST_NAME|}}}</p><h1 style=",
     );
   if (segment === "radar") {
     const start = html.indexOf('<h2 style="font-size:20px">Radar de preços');
@@ -197,7 +197,7 @@ export function renderResendNewsletter(
   return {
     html,
     text:
-      "Salve {{{contact.first_name|}}}\n\n" +
+      "Salve {{{FIRST_NAME|}}}\n\n" +
       rendered.text.replace(marker, "{{{RESEND_UNSUBSCRIBE_URL}}}"),
   };
 }
@@ -326,7 +326,7 @@ export function renderEditorialNewsletter(
       )
       .join(""),
   );
-  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><img src="https://vitalemobilidade.com/vitale-logo-email.png" alt="Vitale Mobilidade" width="232" height="76" style="display:block;width:232px;max-width:100%;height:auto;background:#ffffff;border-radius:6px;margin:0 0 18px"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Salve {{{contact.first_name|}}}</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.intro
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(data.subject)}</title></head><body style="margin:0;background:#f1f4ef;color:#243c30;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(data.preheader ?? data.subject)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0"><table role="presentation" width="616" cellspacing="0" cellpadding="0" style="width:100%;max-width:616px;background:white"><tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#ffffff"><img src="https://vitalemobilidade.com/vitale-logo-email.png" alt="Vitale Mobilidade" width="232" height="76" style="display:block;width:232px;max-width:100%;height:auto;background:#ffffff;border-radius:6px;margin:0 0 18px"><p style="font-weight:bold;letter-spacing:3px;font-size:15px;margin:0">VITALE MOBILIDADE</p><p style="font-size:12px;letter-spacing:2px;margin:9px 0 0;color:#c4d9bc">UM GIRO PELA MOBILIDADE ELÉTRICA</p></td></tr><tr><td style="padding:32px 24px"><p style="font-size:14px;color:#476756">Salve {{{FIRST_NAME|}}}</p><h1 style="font-size:32px;line-height:1.18;margin:18px 0">${e(data.editionNumber ? numberNewsletterSubject(data.headline ?? data.subject, data.editionNumber) : (data.headline ?? data.subject))}</h1>${data.intro
     .split(/\n\n/)
     .map(
       (p) =>
@@ -341,7 +341,7 @@ export function renderEditorialNewsletter(
       : [...data.articles, radar, data.bike, ...data.videos];
 
   const text =
-    `Salve {{{contact.first_name|}}}\n\n${data.headline ?? data.subject}\n\n${data.intro}\n\n` +
+    `Salve {{{FIRST_NAME|}}}\n\n${data.headline ?? data.subject}\n\n${data.intro}\n\n` +
     items
       .map((x) =>
         [
