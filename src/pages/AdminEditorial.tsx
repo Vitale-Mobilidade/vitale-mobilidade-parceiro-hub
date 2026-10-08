@@ -317,18 +317,20 @@ function PageAnalyticsPanel({ pages, totalViews }: { pages: PageMetric[]; totalV
             Ranking de pageviews, não de pessoas ou sessões. A participação compara cada rota com todos os pageviews do período.
           </p>
         </div>
-        <label className="w-full text-sm font-medium sm:w-72">
-          Buscar entre as rotas exibidas
-          <input
-            type="search"
-            className={`${INPUT} mt-1`}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Ex.: radar, quiz ou conteúdo"
-          />
-          <span className="mt-1 block text-xs font-normal text-muted-foreground">A busca filtra somente o top 20 carregado.</span>
+        <div className="w-full sm:w-72">
+          <label className="block text-sm font-medium">
+            Buscar entre as rotas exibidas
+            <input
+              type="search"
+              className={`${INPUT} mt-1`}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Ex.: radar, quiz ou conteúdo"
+            />
+            <span className="mt-1 block text-xs font-normal text-muted-foreground">A busca filtra somente o top 20 carregado.</span>
+          </label>
           {query && <button type="button" className="mt-2 min-h-10 text-sm font-semibold text-emerald-800 underline" onClick={() => setQuery("")}>Limpar busca</button>}
-        </label>
+        </div>
       </div>
 
       {fullRanking.length ? (
