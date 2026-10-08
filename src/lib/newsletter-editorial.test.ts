@@ -6,6 +6,7 @@ import {
   validateNewsletterOpening,
   newsletterDraftSchema,
   writeNewsletter,
+  mergeNewsletterCorrection,
   type NewsletterDraft,
 } from "./newsletter-writer.server";
 const source = {
@@ -369,4 +370,51 @@ it("normalizes wrapping typographic quotes without accepting changed facts", () 
       [source],
     ),
   ).toThrow("evidence_invalid");
+});
+
+it("keeps unflagged fields from the previous draft after a reviewer correction (2026-10-08 regression)", async () => {
+  vi.stubEnv("LOVABLE_API_KEY", "mock-key");
+  const sources = ["article-0", "article-1", "article-2", "bike"].map((id) => ({ ...source, id }));
+  const first = {
+    ...draft,
+    sections: sources.map((s) => ({ ...draft.sections[0], id: s.id, paragraphs: [sentence.repeat(6)], bullets: [sentence] })),
+  };
+  // Correction fixes the flagged opening/article-2 but invents a joke in article-1 and the preheader.
+  const corrected = {
+    ...first,
+    preheader: "Bancos, bagageiros e uma GT2000 cruzando São Paulo inteira.",
+    opening: ["Uma ponte editorial nova e breve para os assuntos desta edição, sem gancho."],
+    sections: first.sections.map((s) =>
+      s.id === "article-1"
+        ? { ...s, paragraphs: [sentence.repeat(6) + "Sol forte e poça d’água fizeram crítica."] }
+        : s.id === "article-2"
+          ? { ...s, bullets: ["Corrigido: tributos e comissões entram na conta."] }
+          : s,
+    ),
+  };
+  const response = (value: unknown) =>
+    new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: JSON.stringify(value) }] }] }));
+  const issues = [
+    "A abertura usa um detalhe técnico como gancho.",
+    "Na seção article-2, “manutenção” não é sustentada como custo.",
+  ];
+  const events: unknown[] = [];
+  const request = vi
+    .fn()
+    .mockResolvedValueOnce(response(first))
+    .mockResolvedValueOnce(response({ approved: false, issues }))
+    .mockResolvedValueOnce(response(corrected))
+    .mockResolvedValueOnce(response({ approved: true, issues: [] }));
+  const result = await writeNewsletter(sources, 4, request, [], (e) => events.push(e));
+  expect(result.preheader).toBe(first.preheader);
+  expect(result.sections[1]).toEqual(first.sections[1]);
+  expect(result.opening).toEqual(corrected.opening);
+  expect(result.sections[2]).toEqual(corrected.sections[2]);
+  expect(JSON.parse(JSON.parse(request.mock.calls[3][1].body).input).draft.sections[1]).toEqual(first.sections[1]);
+  expect(events).toContainEqual({ stage: "review", attempt: 0, approved: false, issues });
+  expect(request).toHaveBeenCalledTimes(4);
+});
+it("leaves a correction untouched when the reviewer issue names no field", () => {
+  const changed = { ...draft, headline: "Outro título para o mesmo assunto" };
+  expect(mergeNewsletterCorrection(draft, changed, ["Confirme cada afirmação."])).toBe(changed);
 });
