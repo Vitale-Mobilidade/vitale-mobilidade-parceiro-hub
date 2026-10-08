@@ -113,3 +113,17 @@ O aceite de produção foi concluído às 16:24 BRT:
 - em 30 dias, o KPI passou a mostrar 438 cliques de oferta e BW1 reconciliou 106 recomendações principais, 141 alternativas, 247 totais e 88 cliques;
 - funil, analytics sitewide, Quiz, CRM, sync, Radar, IA/Lucas e links afiliados não foram alterados;
 - não foi necessário novo deploy de Edge ou frontend depois da indexação, nem consumo adicional de créditos do agente Lovable.
+
+## Painel de páginas mais acessadas
+
+O ranking simples foi substituído localmente por uma visualização analítica no próprio Admin. A mudança é exclusivamente de apresentação e reutiliza `sitewide.pages` (até 20 rotas) e `sitewide.pageViews`; não cria coleta, RPC, migration, cookie, identificador ou dependência do painel do Lovable.
+
+- três resumos mostram pageviews no período, rota líder e cobertura do top 20;
+- a tabela preserva posição, pathname exato, tipo determinístico da rota, contagem, participação no total e uma barra relativa à líder;
+- a busca é local, tolera maiúsculas/acentos, filtra somente as rotas carregadas e preserva o ranking original;
+- participação usa todos os pageviews do período, não a soma do top 20 nem o resultado filtrado;
+- a interface distingue ausência de cobertura, ranking vazio e busca sem resultado, além de explicar que pageviews não são pessoas ou sessões;
+- rotas são validadas como pathnames internos canônicos antes da apresentação; busca e filtros não entram em URL, analytics, storage ou logs;
+- não há ação “Abrir”: isso evita que a própria equipe contamine as métricas ao visitar uma página pública a partir do painel.
+
+Rollback: reverter apenas o componente, helper e testes desta seção. Banco, Edge Function, coleta e dados permanecem inalterados.

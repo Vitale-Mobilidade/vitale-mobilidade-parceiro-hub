@@ -34,6 +34,7 @@ import { composeCover } from "@/lib/cover-compose";
 import { isEditorialCoverUrl } from "../../supabase/functions/_shared/editorial-cover";
 import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 import { quizFunnelStages, safeRate } from "@/lib/admin-growth";
+import { buildPageRanking, type PageMetric } from "@/lib/admin-page-analytics";
 
 const BTN =
   "rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50";
@@ -279,8 +280,8 @@ export function Growth() {
             {!data.sitewide.available ? <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-muted-foreground">{data.sitewide.status === "unavailable" ? "As métricas sitewide estão temporariamente indisponíveis. O Quiz continua funcionando." : "A coleta sitewide ainda não possui cobertura. Os números começarão após a ativação, sem histórico retroativo."}</p> : (
               <>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">{[["Páginas visualizadas", data.sitewide.pageViews], ["Aberturas de detalhes", data.sitewide.bikeClicks], ["Cliques em ofertas", data.sitewide.affiliateClicks]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-50 p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>)}</div>
-                <div className="mt-5 grid gap-6 lg:grid-cols-2">
-                  <div><h3 className="font-semibold">Páginas mais acessadas</h3>{data.sitewide.pages.length ? <ol className="mt-3 divide-y divide-line">{data.sitewide.pages.map((page) => <li key={page.path} className="flex justify-between gap-4 py-2 text-sm"><span className="break-all">{page.path}</span><strong>{page.views}</strong></li>)}</ol> : <p className="mt-3 text-sm text-muted-foreground">Ainda sem páginas registradas.</p>}</div>
+                <PageAnalyticsPanel pages={data.sitewide.pages} totalViews={data.sitewide.pageViews} />
+                <div className="mt-6">
                   <div><h3 className="font-semibold">Bikes mais clicadas</h3>{data.sitewide.bikes.length ? <ol className="mt-3 space-y-2">{data.sitewide.bikes.map((bike) => {
                     const expanded = expandedBikeId === bike.bikeId;
                     return <li key={bike.bikeId} className="rounded-xl border border-line"><button type="button" aria-expanded={expanded} className="flex min-h-12 w-full items-center justify-between gap-4 rounded-xl p-3 text-left hover:bg-emerald-50" onClick={() => setExpandedBikeId(expanded ? null : bike.bikeId)}><span className="font-medium">{bike.name}</span><span className="text-right"><strong>{bike.detailClicks + bike.offerClicks}</strong><span className="block text-xs text-muted-foreground">{bike.detailClicks} detalhe · {bike.offerClicks} oferta</span></span></button>{expanded && <div className="border-t border-line px-3 pb-3"><p className="pt-3 text-xs font-semibold uppercase text-muted-foreground">Origem dos cliques</p>{bike.origins.length ? <ol className="mt-1 divide-y divide-line">{bike.origins.map((origin) => <li key={origin.path} className="flex justify-between gap-3 py-2 text-sm"><span className="break-all">{origin.path}</span><span className="shrink-0">{origin.detailClicks} detalhe · {origin.offerClicks} oferta</span></li>)}</ol> : <p className="mt-2 text-sm text-muted-foreground">Sem origem registrada.</p>}</div>}</li>;
@@ -292,6 +293,75 @@ export function Growth() {
         </>
       )}
     </>
+  );
+}
+
+function PageAnalyticsPanel({ pages, totalViews }: { pages: PageMetric[]; totalViews: number }) {
+  const [query, setQuery] = useState("");
+  const rows = useMemo(() => buildPageRanking(pages, totalViews, query), [pages, totalViews, query]);
+  const fullRanking = useMemo(() => buildPageRanking(pages, totalViews), [pages, totalViews]);
+  const leader = fullRanking[0] ?? null;
+  const rankedViews = fullRanking.reduce((sum, page) => sum + page.views, 0);
+  const hasTotal = Number.isFinite(totalViews) && totalViews > 0;
+  const safeTotal = hasTotal ? totalViews : 0;
+  const coverage = hasTotal ? Math.min(1, rankedViews / safeTotal) : 0;
+  const topViews = Math.max(1, leader?.views ?? 0);
+  const pct = (value: number) => `${(value * 100).toFixed(1)}%`;
+
+  return (
+    <section className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 sm:p-5" aria-labelledby="top-pages-title">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 id="top-pages-title" className="text-lg font-semibold">Rotas públicas com mais visualizações</h3>
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            Ranking de pageviews, não de pessoas ou sessões. A participação compara cada rota com todos os pageviews do período.
+          </p>
+        </div>
+        <label className="w-full text-sm font-medium sm:w-72">
+          Buscar entre as rotas exibidas
+          <input
+            type="search"
+            className={`${INPUT} mt-1`}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Ex.: radar, quiz ou conteúdo"
+          />
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">A busca filtra somente o top 20 carregado.</span>
+          {query && <button type="button" className="mt-2 min-h-10 text-sm font-semibold text-emerald-800 underline" onClick={() => setQuery("")}>Limpar busca</button>}
+        </label>
+      </div>
+
+      {fullRanking.length ? (
+        <>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-white p-4"><p className="text-xs uppercase text-muted-foreground">Pageviews no período</p><p className="mt-1 text-2xl font-bold">{safeTotal.toLocaleString("pt-BR")}</p></div>
+            <div className="rounded-xl bg-white p-4"><p className="text-xs uppercase text-muted-foreground">Rota líder</p><p className="mt-1 truncate text-base font-bold" title={leader?.path}>{leader?.label ?? "—"}</p><p className="text-xs text-muted-foreground">{leader ? `${leader.views.toLocaleString("pt-BR")} pageviews · ${hasTotal ? pct(leader.share) : "—"}` : "Sem dados"}</p></div>
+            <div className="rounded-xl bg-white p-4"><p className="text-xs uppercase text-muted-foreground">Cobertura do top 20</p><p className="mt-1 text-2xl font-bold">{hasTotal ? pct(coverage) : "—"}</p><p className="text-xs text-muted-foreground">{fullRanking.length} de até 20 rotas exibidas</p></div>
+          </div>
+
+          {rows.length ? (
+            <div className="mt-5 overflow-x-auto rounded-xl border border-line bg-white">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <caption className="sr-only">Ranking de rotas públicas, tipo, pageviews e participação no período</caption>
+                <thead><tr className="border-b border-line bg-slate-50 text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="px-3 py-3">#</th><th scope="col">Rota</th><th scope="col">Tipo de rota</th><th scope="col" className="text-right">Pageviews</th><th scope="col" className="px-3 text-right">Participação</th></tr></thead>
+                <tbody>{rows.map((page) => {
+                  const rank = fullRanking.findIndex((item) => item.path === page.path) + 1;
+                  const width = Math.max(page.views > 0 ? 3 : 0, (page.views / topViews) * 100);
+                  return <tr key={page.path} className="border-b border-line/70 align-top last:border-0">
+                    <td className="px-3 py-3 font-semibold text-emerald-800">{rank}</td>
+                    <th scope="row" className="min-w-80 py-3 pr-5 font-medium"><span className="block">{page.label}</span><span className="mt-0.5 block break-all text-xs font-normal text-muted-foreground">{page.path}</span><div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-100"><div className="h-full rounded-full bg-emerald-700" style={{ width: `${width}%` }} /></div></th>
+                    <td className="py-3 pr-5"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs">{page.area}</span></td>
+                    <td className="py-3 pr-5 text-right font-semibold">{page.views.toLocaleString("pt-BR")}</td>
+                    <td className="px-3 py-3 text-right font-semibold">{hasTotal ? pct(page.share) : "—"}</td>
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+          ) : <div role="status" aria-live="polite" className="mt-5 rounded-xl bg-white p-4 text-sm text-muted-foreground"><p>Nenhuma rota exibida corresponde à busca.</p><button type="button" className="mt-2 min-h-10 font-semibold text-emerald-800 underline" onClick={() => setQuery("")}>Limpar busca</button></div>}
+          <p className="mt-3 text-xs text-muted-foreground">Exibindo {rows.length} de até 20 rotas carregadas. As participações visíveis podem somar menos de 100%. Recarregamentos, operação interna, bloqueadores e robôs podem alterar as contagens; nenhuma linha representa uma pessoa identificada.</p>
+        </>
+      ) : <p className="mt-4 text-sm text-muted-foreground">Ainda sem rotas públicas válidas registradas.</p>}
+    </section>
   );
 }
 
