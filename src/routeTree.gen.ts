@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
+import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as QuizRouteImport } from './routes/quiz'
@@ -71,6 +72,11 @@ const EscolherbikeRoute = EscolherbikeRouteImport.update({
 const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
   id: '/grupodeofertas',
   path: '/grupodeofertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsletterRoute = NewsletterRouteImport.update({
+  id: '/newsletter',
+  path: '/newsletter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PainelBikesRoute = PainelBikesRouteImport.update({
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
@@ -364,6 +371,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
@@ -415,6 +423,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
@@ -467,6 +476,7 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
@@ -517,6 +527,7 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
@@ -567,6 +578,7 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
@@ -618,6 +630,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
+  NewsletterRoute: typeof NewsletterRoute
   PainelBikesRoute: typeof PainelBikesRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   QuizRoute: typeof QuizRoute
@@ -685,6 +698,13 @@ declare module '@tanstack/react-router' {
       path: '/grupodeofertas'
       fullPath: '/grupodeofertas'
       preLoaderRoute: typeof GrupodeofertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/newsletter': {
+      id: '/newsletter'
+      path: '/newsletter'
+      fullPath: '/newsletter'
+      preLoaderRoute: typeof NewsletterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel-bikes': {
@@ -1020,6 +1040,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EscolherbikeRoute: EscolherbikeRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
+  NewsletterRoute: NewsletterRoute,
   PainelBikesRoute: PainelBikesRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   QuizRoute: QuizRoute,

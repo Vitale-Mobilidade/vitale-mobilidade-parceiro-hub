@@ -105,14 +105,14 @@ export function SiteHeader() {
 }
 
 /** Footer B2C único (sem copy de consultoria). */
-export function SiteFooter() {
+export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean }) {
   const { footerVideos } = useLoaderData({ from: "__root__" });
   const cols: {
     title: string;
     items: {
       label: string;
       href?: string;
-      to?: "/quiz" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos" | "/videos";
+      to?: "/quiz" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos" | "/videos" | "/newsletter";
     }[];
   }[] = [
     { title: "Conteúdos e vídeos", items: [
@@ -147,7 +147,7 @@ export function SiteFooter() {
       { label: "Inscreva-se no YouTube", href: YOUTUBE_SUBSCRIBE },
       { label: "Instagram", href: SOCIAL_LINKS[1].url },
       { label: "TikTok", href: SOCIAL_LINKS[2].url },
-      { label: "Receba a newsletter", href: "#newsletter" },
+      { label: "Receba a newsletter", to: "/newsletter" },
       { label: "Grupo de ofertas", to: "/grupodeofertas" },
       { label: "Quiz: encontre sua bike", to: "/quiz" },
       { label: "Cookies e privacidade", href: "/privacidade" },
@@ -155,11 +155,11 @@ export function SiteFooter() {
   ];
   return (
     <>
-      <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
+      {showNewsletter && <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
         <div className="responsive-container">
           <NewsletterSignup />
         </div>
-      </aside>
+      </aside>}
       <section aria-labelledby="footer-youtube" className="bg-white py-10 sm:py-14">
         <div className="responsive-container">
           <div className="flex flex-wrap items-center justify-between gap-5">
