@@ -97,3 +97,19 @@ O aceite autenticado posterior mostrou que apenas “Bikes recomendadas pelo Qui
 A correção aprovada localmente é aditiva: `admin_quiz_bike_metrics_json` encapsula a mesma agregação em `{ "bikes": [...] }`, continua `security invoker` e executável somente por `service_role`. A RPC tabular original permanece intacta como rollback. `editorial-admin` passa a validar rigorosamente o JSON; array vazio é um resultado válido, enquanto erro ou formato inválido mantém a fonte indisponível. O log contém apenas o evento fixo e um código sanitizado, sem payload, lead, telefone ou respostas.
 
 Rollback: reimplantar a versão anterior de `editorial-admin`; a RPC JSON pode permanecer privada e dormente. Não há alteração em Quiz, scoring, CRM, sync, IA, Radar, afiliados, dados existentes ou frontend público. A aplicação da migration corretiva e o deploy da Edge exigem a sequência migration → smoke RPC via PostgREST/service-role → deploy da Edge → smoke autenticado do Admin.
+
+### Otimização após o smoke de produção
+
+O primeiro smoke após o deploy isolou `57014` na RPC de recomendações: a fonte existia e o contrato estava correto, mas a agregação ultrapassava o limite de execução do PostgREST. A correção mantém a função e o resultado sem alterações e adiciona dois índices parciais de cobertura: um único índice temporal para as duas posições de recomendação e outro para os dois eventos de clique válidos. O executor do Lovable confirmou que envolve DDL em transação e, por isso, rejeitou `CREATE INDEX CONCURRENTLY` antes de qualquer criação. Com volume real de 7.255 leads/28 MB e 99.302 eventos/164 MB, foi adotada a alternativa controlada: migration transacional com `lock_timeout = 2s` e `statement_timeout = 60s`, que falha e reverte em vez de aguardar bloqueando o Quiz. Nenhuma linha de Quiz é regravada e nenhum fluxo operacional muda.
+
+Aceite adicional: a RPC JSON deve responder pelo PostgREST com `service_role` sem `57014`, preservar a reconciliação das 28 bikes e renderizar a tabela no Admin autenticado. Rollback de banco: restaurar a definição anterior da RPC; os índices podem permanecer sem efeito funcional ou ser removidos em uma janela posterior, evitando DDL destrutivo durante o incidente.
+
+O aceite de produção foi concluído às 16:24 BRT:
+
+- os dois índices foram criados na mesma transação protegida; ambos ficaram com `indisvalid = true`;
+- as janelas de 7, 30 e 90 dias retornaram, respectivamente, 16, 28 e 29 bikes, sem timeout;
+- o plano real de 90 dias concluiu em **50,414 ms** (`EXPLAIN ANALYZE`, 29 linhas), com ampla margem contra o timeout que antes gerava `57014`;
+- o Admin autenticado renderizou a tabela nos três períodos e voltou à visão padrão de 30 dias;
+- em 30 dias, o KPI passou a mostrar 438 cliques de oferta e BW1 reconciliou 106 recomendações principais, 141 alternativas, 247 totais e 88 cliques;
+- funil, analytics sitewide, Quiz, CRM, sync, Radar, IA/Lucas e links afiliados não foram alterados;
+- não foi necessário novo deploy de Edge ou frontend depois da indexação, nem consumo adicional de créditos do agente Lovable.
