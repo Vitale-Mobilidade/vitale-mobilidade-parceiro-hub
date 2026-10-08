@@ -131,6 +131,10 @@ describe("newsletter editorial", () => {
         .issues,
     ).toContain("unsupported claim");
     expect(JSON.parse(request.mock.calls[0][1].body).store).toBe(false);
+    expect(JSON.parse(JSON.parse(request.mock.calls[1][1].body).input).weekday).toBe(5);
+    const instructions = JSON.parse(request.mock.calls[0][1].body).instructions;
+    expect(instructions).toContain("dividido pelo número de fontes");
+    expect(instructions).toContain("A nao vira Ah");
     expect(request.mock.calls[0][1].headers["Lovable-API-Key"]).toBe(
       "mock-key",
     );
@@ -174,6 +178,18 @@ describe("newsletter editorial", () => {
       newsletterImageSchema.safeParse("https://evil.example/track").success,
     ).toBe(false);
   });
+});
+it("provides the preparation weekday to the reviewer without treating article dates as the send date", async () => {
+  vi.stubEnv("LOVABLE_API_KEY", "mock-key");
+  const sources = [0, 1, 2, 3].map((i) => ({ ...source, id: `source-${i}` }));
+  const valid = { ...draft, sections: sources.map((s) => ({ ...draft.sections[0], id: s.id, paragraphs: [sentence.repeat(6)], bullets: [sentence] })) };
+  const response = (value: unknown) => new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: JSON.stringify(value) }] }] }));
+  const request = vi.fn().mockResolvedValueOnce(response(valid)).mockResolvedValueOnce(response({ approved: true, issues: [] }));
+  await expect(writeNewsletter(sources, 4, request)).resolves.toMatchObject({ subject: valid.subject });
+  const review = JSON.parse(request.mock.calls[1][1].body);
+  expect(JSON.parse(review.input).weekday).toBe(4);
+  expect(review.instructions).toContain("datas dos artigos nao determinam esse dia");
+  expect(request).toHaveBeenCalledTimes(2);
 });
 describe("newsletter price pauta", () => {
   const now = new Date("2026-10-09T13:00:00Z"),
