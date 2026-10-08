@@ -31,7 +31,7 @@ O histórico de recomendações pode ser consultado imediatamente porque os camp
 
 ## Dados e privacidade
 
-A tabela agregada diária guarda somente `day`, `event_name`, `source_path`, `target_path`, `bike_id`, `position` e `event_count`. Não há linha por visitante. A Edge Function pública aceita apenas payload fechado, origem de produção, rotas canônicas, até 512 bytes e rate limit por chave HMAC transitória; o IP bruto não é colocado no mapa, log ou banco. Flags `VITE_SITE_ANALYTICS_ENABLED` e `SITE_ANALYTICS_ENABLED` precisam estar ativas; se qualquer uma estiver desligada, nada é gravado.
+A tabela agregada diária guarda somente `day`, `event_name`, `source_path`, `target_path`, `bike_id`, `position` e `event_count`. Não há linha por visitante. A Edge Function pública aceita apenas payload fechado, origem de produção, rotas canônicas, até 512 bytes e rate limit por chave HMAC transitória; o IP bruto não é colocado no mapa, log ou banco. O cliente fica ativo por padrão apenas em build de produção e pode ser explicitamente desligado com `VITE_SITE_ANALYTICS_ENABLED=false`; preview e desenvolvimento não gravam porque o cliente aceita somente o domínio público. A gravação continua condicionada a `SITE_ANALYTICS_ENABLED=true` no servidor, que é o kill switch operacional imediato.
 
 Trade-off aceito: sem identificador não há usuários únicos, deduplicação entre recargas nem jornada individual. O endpoint público também está sujeito a bloqueadores, bots e requisições forjadas; portanto os totais são direcionais, não prova de pessoa ou venda. Isso reduz precisão de atribuição, mas atende às perguntas pedidas sem criar perfil de visitante.
 
@@ -43,19 +43,19 @@ Trade-off aceito: sem identificador não há usuários únicos, deduplicação e
 4. Pageviews têm ranking próprio e cobertura explícita a partir da ativação.
 5. Nenhum payload ou retorno novo contém PII, URL completa, query, hash ou identificador de visitante.
 6. Links afiliados mantêm `href` direto e a coleta é fire-and-forget.
-7. Coleta desligada por padrão, Admin indisponível de forma parcial quando a migration ainda não existe, sem derrubar métricas do Quiz.
+7. Cliente inerte fora dos hosts públicos e servidor fail-closed enquanto `SITE_ANALYTICS_ENABLED` não for exatamente `true`; Admin indisponível de forma parcial quando a migration ainda não existe, sem derrubar métricas do Quiz.
 8. Testes direcionados e `pnpm validate` aprovados.
 
 ## Release e rollback
 
-Nenhuma ação externa faz parte desta etapa. Para ativar, depois de autorização: aplicar migration aditiva, implantar `site-analytics`, implantar `editorial-admin`, configurar a flag server-side, publicar o cliente com a flag pública e executar smoke test. Rollback: desligar qualquer uma das flags e reverter o cliente; preservar a tabela privada para não destruir histórico. Não é necessário alterar Quiz, CRM, sync, Radar, links afiliados ou dados existentes.
+Ordem de ativação: aplicar a migration aditiva, implantar `site-analytics` e `editorial-admin` com o servidor desligado, publicar o cliente e só então configurar `SITE_ANALYTICS_ENABLED=true`. O cliente em build de produção emite apenas nos hosts canônicos; o servidor desligado responde `204` antes de HMAC, rate limit ou RPC. Rollback imediato: desligar `SITE_ANALYTICS_ENABLED`; para também remover os POSTs no-op, publicar o cliente com `VITE_SITE_ANALYTICS_ENABLED=false` quando o ambiente suportar essa variável ou reverter o cliente. A tabela privada deve ser preservada para não destruir histórico. Não é necessário alterar Quiz, CRM, sync, Radar, links afiliados ou dados existentes.
 
 ## Revisão posterior
 
 | Perspectiva | Veredito | Evidência e risco residual |
 | ----------- | -------- | ------------------------- |
 | Produto | **Pass** | As três perguntas de negócio estão separadas e nenhuma funcionalidade existente de Quiz, CRM ou sync foi reaberta. |
-| CTO | **Pass** | Mudança aditiva, writer único, leitura agregada, falha parcial e dupla flag desligada por padrão. O rate limit continua local por instância e a allowlist deve acompanhar novas rotas. |
+| CTO | **Pass** | Mudança aditiva, writer único, leitura agregada, falha parcial e kill switch autoritativo no servidor. O cliente só emite nos hosts canônicos; desligá-lo também exige novo build quando o ambiente não fornece a variável pública. O rate limit continua local por instância e a allowlist deve acompanhar novas rotas. |
 | IA | **Pass** (não regressão); modelos/prompts/grounding **N/A** | A tela lê recomendações persistidas; não recalcula nem altera IA, Lucas SDR ou automações. |
 | Segurança | **Pass** | Allowlist canônica, payload fechado, RLS/grants privados, HMAC efêmero e ausência de PII. Como todo endpoint público, eventos forjados ainda podem gerar ruído direcional. |
 | UX | **Pass** | Smoke em desktop e 390×844; funil legível, troca de período anunciada, tabela com caption e drill-down por botão com `aria-expanded`. |
