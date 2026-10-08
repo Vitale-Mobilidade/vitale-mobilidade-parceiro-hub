@@ -60,6 +60,18 @@ function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="text-xl font-bold">Métricas agregadas do site</h2>
+            <p>
+              Podemos contar páginas visualizadas, aberturas de detalhes de bikes e cliques em ofertas para entender o
+              que é útil no site. Essa medição não usa cookies, armazenamento no navegador ou identificadores de
+              visitantes. Guardamos apenas totais por dia, página pública, bike e posição do botão. Não guardamos query
+              string, endereço IP, user-agent ou referrer nessas métricas. Para proteção contra abuso, o endereço IP
+              recebido pela infraestrutura é transformado imediatamente em uma chave não reversível, mantida em memória
+              por até um minuto e nunca gravada nos totais. Os totais antigos são removidos na próxima gravação após 365
+              dias. Registros técnicos da infraestrutura seguem as políticas dos provedores.
+            </p>
+          </section>
+          <section>
             <h2 className="text-xl font-bold">Funcionamento e solicitações</h2>
             <p>
               Usamos armazenamento necessário às funções que você utiliza, como sessão administrativa e continuidade do
