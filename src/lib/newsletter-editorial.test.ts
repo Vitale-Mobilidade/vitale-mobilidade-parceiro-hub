@@ -23,7 +23,7 @@ const draft: NewsletterDraft = {
   sections: [
     {
       id: source.id,
-      paragraphs: [sentence.repeat(11), sentence.repeat(11)],
+      paragraphs: [sentence.repeat(12), sentence.repeat(12)],
       bullets: [sentence.repeat(2)],
       evidence: [source.text],
     },
