@@ -16,7 +16,7 @@
 
 # Agente newsletter — 08/10/2026
 - [x] Revisar oito perspectivas e registrar decisão/modelos sem alterar provedor.
-- [ ] Remover curiosidade de contrato, abertura, validação, renderer, admin e testes ativos.
-- [ ] Simplificar Radar em cartões email-safe com contexto de datas global.
-- [ ] Validar preservação da diversidade/agenda/UTMs, testes e visual; registrar oito pós-revisões.
-- [ ] Geração real e teste único posterior: aguarda validação do código e etapa posterior indicada pelo responsável; sem publicação/ativação agora.
+- [x] Remover curiosidade de contrato, abertura, validação, renderer, admin e testes ativos.
+- [x] Simplificar Radar em cartões email-safe com contexto de datas global.
+- [x] Validar preservação da diversidade/agenda/UTMs, testes e visual; registrar oito pós-revisões.
+- [ ] Geração real e teste único posterior: aguardam a etapa posterior determinada pelo responsável; sem publicação/ativação agora.

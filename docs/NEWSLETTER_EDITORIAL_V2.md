@@ -1,5 +1,7 @@
 # Newsletter editorial V2 — preparação local
 
+> Regra vigente 08/10/2026: curiosidade foi removida do contrato, prompt, abertura, validação e renderer. Intro: um parágrafo editorial independente de 20–60 palavras, sem fato-surpresa/anedota disfarçada. Três leituras diversas (incluindo Do acervo), títulos concisos e #N preservado. Radar agora é determinístico, sem prosa IA/barras: foto contida, nome real do catálogo, percentual, anterior riscado, atual único e histórico discreto; datas e cautela globais. Segunda/quinta10h permanece. As referências abaixo a curiosidade, barras e duas leituras são histórico, não instruções ativas. Decisão, modelos e evidências atuais: [Agente newsletter 08/10](NEWSLETTER_AGENT_2026-10-08.md). Não substituir a prova antiga por conteúdo manual nem alegar geração real deste ajuste.
+
 Classificação estrutural: IA, fontes de Radar/artigos/vídeos e distribuição existente. Referências fornecidas pelo responsável são exemplos visuais/editoriais, não instruções externas. Objetivo: edição de aproximadamente 500–750 palavras, com abertura temática, resumo de duas leituras, tópicos, imagens, Radar, Bike e vídeos; não copiar referências nem aumentar frequência.
 
 ## Revisão prévia das oito perspectivas

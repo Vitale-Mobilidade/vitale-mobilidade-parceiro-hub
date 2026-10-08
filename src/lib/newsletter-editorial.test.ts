@@ -71,9 +71,21 @@ describe("newsletter editorial", () => {
     expect(
       newsletterDraftSchema.safeParse({
         ...draft,
+        sections: [0, 1, 2, 3].map((id) => ({
+          id: String(id),
+          paragraphs: [sentence],
+          bullets: [sentence],
+          evidence: [source.text],
+        })),
         surprise: { text: sentence },
       }).success,
     ).toBe(false);
+    expect(newsletterDraftSchema.safeParse({
+      ...draft,
+      sections: [0, 1, 2, 3].map((id) => ({
+        id: String(id), paragraphs: [sentence], bullets: [sentence], evidence: [source.text],
+      })),
+    }).success).toBe(true);
   });
   it("never accepts a draft rejected by the independent reviewer", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "mock-key");
