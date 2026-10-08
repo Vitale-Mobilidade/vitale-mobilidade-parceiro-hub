@@ -54,15 +54,26 @@ describe("newsletter editorial", () => {
     ).toThrow("source_mismatch");
   });
   it("rejects a surprise hook disguised as an intro", () => {
-    expect(() => validateNewsletterOpening(["Você sabia que " + sentence.repeat(2)])).toThrow("opening_invalid");
+    expect(() =>
+      validateNewsletterOpening(["Você sabia que " + sentence.repeat(2)]),
+    ).toThrow("opening_invalid");
   });
   it("requires a single short independent opening", () => {
     expect(() => validateNewsletterOpening([sentence.repeat(2)])).not.toThrow();
-    expect(() => validateNewsletterOpening([sentence.repeat(5)])).toThrow("opening_invalid");
-    expect(() => validateNewsletterOpening([sentence, sentence])).toThrow("opening_invalid");
+    expect(() => validateNewsletterOpening([sentence.repeat(5)])).toThrow(
+      "opening_invalid",
+    );
+    expect(() => validateNewsletterOpening([sentence, sentence])).toThrow(
+      "opening_invalid",
+    );
   });
   it("accepts no extra opening feature in the strict draft contract", () => {
-    expect(newsletterDraftSchema.safeParse({...draft, surprise: { text: sentence }}).success).toBe(false);
+    expect(
+      newsletterDraftSchema.safeParse({
+        ...draft,
+        surprise: { text: sentence },
+      }).success,
+    ).toBe(false);
   });
   it("never accepts a draft rejected by the independent reviewer", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "mock-key");
@@ -226,7 +237,14 @@ it("accepts only typographic whitespace/case differences in a contiguous source 
     validateNewsletterEvidence(
       {
         ...draft,
-        sections: [{ ...draft.sections[0], evidence: ["A escolha começa com autonomia garantida em qualquer trajeto."] }],
+        sections: [
+          {
+            ...draft.sections[0],
+            evidence: [
+              "A escolha começa com autonomia garantida em qualquer trajeto.",
+            ],
+          },
+        ],
       },
       [source],
     ),
@@ -284,7 +302,12 @@ it("normalizes wrapping typographic quotes without accepting changed facts", () 
     validateNewsletterEvidence(
       {
         ...valid,
-        sections: [{ ...valid.sections[0], evidence: [`“${source.text.replace("necessidades", "garantias")}”`] }],
+        sections: [
+          {
+            ...valid.sections[0],
+            evidence: [`“${source.text.replace("necessidades", "garantias")}”`],
+          },
+        ],
       },
       [source],
     ),

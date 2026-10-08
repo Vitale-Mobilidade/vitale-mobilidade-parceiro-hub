@@ -27,13 +27,7 @@ const stringArray = { type: "array", items: { type: "string" } };
 const draftJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "subject",
-    "preheader",
-    "headline",
-    "opening",
-    "sections",
-  ],
+  required: ["subject", "preheader", "headline", "opening", "sections"],
   properties: {
     subject: { type: "string" },
     preheader: { type: "string" },
@@ -156,8 +150,14 @@ const includesQuote = (source: string, quote: string) =>
 export function validateNewsletterOpening(opening: string[]) {
   const text = opening.join(" ").trim();
   const words = text.split(/\s+/).length;
-  if (opening.length !== 1 || words < 20 || words > 60 ||
-      /\bcuriosidade\b|voc[eê] sabia|sabia que|fato (?:surpreendente|curioso)/i.test(text))
+  if (
+    opening.length !== 1 ||
+    words < 20 ||
+    words > 60 ||
+    /\bcuriosidade\b|voc[eê] sabia|sabia que|fato (?:surpreendente|curioso)/i.test(
+      text,
+    )
+  )
     throw new Error("newsletter_writer_opening_invalid");
 }
 export function validateNewsletterEvidence(
@@ -237,7 +237,9 @@ export async function writeNewsletter(
       );
       validateNewsletterEvidence(draft, sources);
       const currentOpening = normalizeQuote(draft.opening.join("\n\n"));
-      if (openings.some((opening) => normalizeQuote(opening) === currentOpening))
+      if (
+        openings.some((opening) => normalizeQuote(opening) === currentOpening)
+      )
         throw new Error("newsletter_writer_repeated_opening");
       const reviewed = (await structured(
         REVIEW_SYSTEM,

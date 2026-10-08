@@ -52,7 +52,10 @@ const item = z.object({
   currentPrice: z.string().max(40).optional(),
   dropLabel: z.string().max(30).optional(),
   checkedAt: z.string().max(60).optional(),
-  baselineDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  baselineDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   paragraphs: z.array(z.string().trim().min(20).max(900)).max(2).optional(),
   bullets: z.array(z.string().trim().min(10).max(180)).max(3).optional(),
 });
@@ -282,7 +285,8 @@ export function renderEditorialNewsletter(
     .join("");
   const radar: NewsletterContent["bike"] = {
     title: "Radar de preços",
-    url: data.radar?.url ?? tracked("https://vitalemobilidade.com/radar", "radar"),
+    url:
+      data.radar?.url ?? tracked("https://vitalemobilidade.com/radar", "radar"),
   };
   const drops = data.drops ?? [];
   const context = (key: "baselineDate" | "checkedAt", label: string) => {
@@ -294,10 +298,15 @@ export function renderEditorialNewsletter(
     context("baselineDate", "Fechamentos anteriores"),
     context("checkedAt", "Verificação"),
     "Preços e disponibilidade podem mudar.",
-  ].filter(Boolean).join(" ");
-  const dropCards = drops.map((d) =>
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #e0e8e2;border-radius:8px"><tr><td align="center" bgcolor="#f5f7f4" style="padding:12px">${d.image ? `<a href="${e(d.url)}"><img src="${e(d.image)}" alt="${e(d.title)}" width="280" height="190" style="display:block;width:100%;max-width:280px;height:190px;object-fit:contain;border:0"></a>` : ""}</td></tr><tr><td style="padding:16px"><h3 style="font-size:18px;line-height:1.35;margin:0 0 10px;color:#173d2a">${e(d.title)}</h3>${d.dropLabel ? `<span style="display:inline-block;background:#e6f0e8;color:#165b42;border-radius:4px;padding:4px 8px;font-size:13px;font-weight:bold">${e(d.dropLabel)}</span>` : ""}${d.previousPrice ? `<p style="margin:12px 0 3px;color:#526658;font-size:14px"><s>${e(d.previousPrice)}</s></p>` : ""}${d.currentPrice ? `<p style="margin:0 0 12px;font-size:26px;font-weight:bold;color:#173d2a">${e(d.currentPrice)}</p>` : ""}<a href="${e(d.url)}" style="color:#476756;font-size:13px;text-decoration:underline">Ver histórico →</a></td></tr></table>`
-  ).join("");
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const dropCards = drops
+    .map(
+      (d) =>
+        `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #e0e8e2;border-radius:8px"><tr><td align="center" bgcolor="#f5f7f4" style="padding:12px">${d.image ? `<a href="${e(d.url)}"><img src="${e(d.image)}" alt="${e(d.title)}" width="280" height="190" style="display:block;width:100%;max-width:280px;height:190px;object-fit:contain;border:0"></a>` : ""}</td></tr><tr><td style="padding:16px"><h3 style="font-size:18px;line-height:1.35;margin:0 0 10px;color:#173d2a">${e(d.title)}</h3>${d.dropLabel ? `<span style="display:inline-block;background:#e6f0e8;color:#165b42;border-radius:4px;padding:4px 8px;font-size:13px;font-weight:bold">${e(d.dropLabel)}</span>` : ""}${d.previousPrice ? `<p style="margin:12px 0 3px;color:#526658;font-size:14px"><s>${e(d.previousPrice)}</s></p>` : ""}${d.currentPrice ? `<p style="margin:0 0 12px;font-size:26px;font-weight:bold;color:#173d2a">${e(d.currentPrice)}</p>` : ""}<a href="${e(d.url)}" style="color:#476756;font-size:13px;text-decoration:underline">Ver histórico →</a></td></tr></table>`,
+    )
+    .join("");
   const radarRow = section(
     "Radar de preços",
     `${dropCards || '<p style="font-size:15px;line-height:1.6">Nenhuma queda recente confirmada nesta edição.</p>'}<p style="font-size:12px;line-height:1.6;color:#526658;margin:12px 0">${e(radarNote)}</p><a href="${e(radar.url)}" style="color:#476756;font-size:14px;text-decoration:underline">Explorar o Radar →</a>`,
@@ -341,7 +350,20 @@ export function renderEditorialNewsletter(
         ].join("\n\n"),
       )
       .join("\n\n---\n\n") +
-    "\n\nRADAR — QUEDAS\n" + drops.map((d) => [d.title, d.dropLabel, d.previousPrice ? `Anterior: ${d.previousPrice}` : "", d.currentPrice ? `Atual: ${d.currentPrice}` : "", d.url].filter(Boolean).join("\n")).join("\n\n") +
+    "\n\nRADAR — QUEDAS\n" +
+    drops
+      .map((d) =>
+        [
+          d.title,
+          d.dropLabel,
+          d.previousPrice ? `Anterior: ${d.previousPrice}` : "",
+          d.currentPrice ? `Atual: ${d.currentPrice}` : "",
+          d.url,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      )
+      .join("\n\n") +
     `\n${radarNote}\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}`;
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");

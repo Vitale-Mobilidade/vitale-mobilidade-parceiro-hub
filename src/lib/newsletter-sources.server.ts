@@ -109,7 +109,7 @@ export async function automaticNewsletter(
   if (!pickedVideos.length)
     throw new Error("newsletter_sources_insufficient_diversity");
   const transcripts = await newsletterTranscripts([
-    ...fullArticles.flatMap((a) => a ? [a.videoId] : []),
+    ...fullArticles.flatMap((a) => (a ? [a.videoId] : [])),
     ...pickedVideos.map((v) => v.videoId),
   ]);
   const brl = (n: number) =>
@@ -121,20 +121,21 @@ export async function automaticNewsletter(
     ...pickedArticles.map((a, i) => {
       const full = fullArticles[i];
       if (!full) throw new Error("newsletter_sources_unavailable");
-      return ({
-      id: `article-${i}`,
-      title: a.title,
-      text: [
-        a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
-        a.summary,
-        transcripts.get(full.videoId) ?? "",
-        ...full.blocks.filter((b) => !b.planned).map((b) =>
-          [b.heading, b.text].filter(Boolean).join("\n"),
-        ),
-      ]
-        .join("\n\n")
-        .slice(0, 12_000),
-    }); }),
+      return {
+        id: `article-${i}`,
+        title: a.title,
+        text: [
+          a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
+          a.summary,
+          transcripts.get(full.videoId) ?? "",
+          ...full.blocks
+            .filter((b) => !b.planned)
+            .map((b) => [b.heading, b.text].filter(Boolean).join("\n")),
+        ]
+          .join("\n\n")
+          .slice(0, 12_000),
+      };
+    }),
     {
       id: "bike",
       title: bike.name,
