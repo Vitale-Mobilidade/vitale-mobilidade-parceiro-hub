@@ -20,3 +20,4 @@
 - [x] Simplificar Radar em cartões email-safe com contexto de datas global.
 - [x] Validar preservação da diversidade/agenda/UTMs, testes e visual; registrar oito pós-revisões.
 - [ ] Geração real e teste único posterior: aguardam a etapa posterior determinada pelo responsável; sem publicação/ativação agora.
+- [ ] Investigar request10276 pelas razões seguras do revisor; corrigir apenas inconsistência confirmada e validar uma geração, sem envio ou ativação.
