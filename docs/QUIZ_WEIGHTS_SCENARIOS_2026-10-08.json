@@ -1,0 +1,92 @@
+{
+  "observedAt": "2026-10-08",
+  "videoCounts": {
+    "vl20": 6,
+    "v9_max": 25,
+    "gt2000": 21,
+    "v8_pro": 13,
+    "v9_pro": 2,
+    "ft03": 14,
+    "v9_max_s": 5,
+    "v9_max_ufofast_duas_baterias": 3,
+    "v9_max_20ah": 3,
+    "v20_pro": 4,
+    "v8_ultra": 1,
+    "bw1": 2,
+    "v8_pro_s": 2,
+    "ouxi_gt20": 3,
+    "ouxi_gt20_pro": 4,
+    "l20_cross": 1,
+    "d50_cross": 2,
+    "x50_action_pro": 1,
+    "v35": 11,
+    "s12": 1,
+    "s14": 1,
+    "v40_pro": 8,
+    "v29_pro": 3,
+    "v20_mini": 1,
+    "coswheel_gt20": 4
+  },
+  "results": [
+    {
+      "answers": {
+        "main_use": "locomocao_diaria",
+        "daily_km_range": "10_25_km",
+        "route_type": "plano",
+        "rider_capacity_need": "apenas_1_pessoa",
+        "weight_range": "ate_80kg",
+        "budget_range": "ate_7000",
+        "had_ebike_before": "nao"
+      },
+      "primary": "ft03",
+      "primaryScore": 118,
+      "secondary": "v9_max",
+      "secondaryScore": 110
+    },
+    {
+      "answers": {
+        "main_use": "trabalho_delivery_renda",
+        "daily_km_range": "mais_40_km",
+        "route_type": "misto",
+        "rider_capacity_need": "apenas_1_pessoa",
+        "weight_range": "80_100kg",
+        "budget_range": "acima_10000",
+        "had_ebike_before": "sim"
+      },
+      "primary": "v9_max_s",
+      "primaryScore": 80,
+      "secondary": "v9_max_ufofast_duas_baterias",
+      "secondaryScore": 75
+    },
+    {
+      "answers": {
+        "main_use": "locomocao_diaria",
+        "daily_km_range": "10_25_km",
+        "route_type": "muitas_subidas",
+        "rider_capacity_need": "garupa_frequente",
+        "weight_range": "100_120kg",
+        "budget_range": "8000_10000",
+        "had_ebike_before": "sim"
+      },
+      "primary": "v9_max_s",
+      "primaryScore": 168,
+      "secondary": "v8_pro_s",
+      "secondaryScore": 168
+    },
+    {
+      "answers": {
+        "main_use": "lazer_passeio",
+        "daily_km_range": "25_40_km",
+        "route_type": "misto",
+        "rider_capacity_need": "apenas_1_pessoa",
+        "weight_range": "ate_80kg",
+        "budget_range": "acima_10000",
+        "had_ebike_before": "nao"
+      },
+      "primary": "coswheel_gt20",
+      "primaryScore": 83,
+      "secondary": "gt2000",
+      "secondaryScore": 53
+    }
+  ]
+}

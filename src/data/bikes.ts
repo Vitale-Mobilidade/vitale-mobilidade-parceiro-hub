@@ -26,6 +26,8 @@ export interface Bike {
   shortDescription: string;
   /** Descrição completa do produto (usada para conteúdo extenso/SEO). */
   fullDescription?: string;
+  /** Distinct videos explicitly associated in the official video catalog. */
+  videoCount?: number;
   image: string;
   /**
    * Link de afiliado padrão (Vitale) — mantido como alias de linkVitale
