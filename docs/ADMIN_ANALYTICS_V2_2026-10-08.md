@@ -70,4 +70,22 @@ Evidências de validação:
 - migration verificada em PostgreSQL isolado, incluindo schema, agregações, validações, RLS e grants;
 - endpoint coberto para flag desligada, sucesso, origem/método/content-type, JSON e campos inválidos, limites de corpo, rate limit e falha do RPC;
 - smoke visual local em desktop e viewport 390×844, incluindo expansão de uma bike e leitura das páginas de origem;
-- nenhuma migration, função, flag, publicação ou deploy executado em produção; nenhum crédito do Lovable foi consumido.
+- na etapa de validação local, nenhuma migration, função, flag, publicação ou deploy havia sido executado em produção e nenhum crédito do Lovable havia sido consumido.
+
+## Liberação em produção — 08/10/2026
+
+Publicação autorizada e concluída no mesmo projeto Lovable e no domínio `vitalemobilidade.com`, a partir do merge `4217d9e93feee01e9d941fb7aad050542703d9a9`. O backup diário restaurável mais recente antes da mudança era de 08/10/2026 às 04:52:07 UTC.
+
+- aplicada somente a migration `20261008160000_admin_analytics_v2.sql`; o ledger Cloud correspondente ficou em `drizzle/migrations/0005_admin_analytics_v2.sql`;
+- confirmados RLS ativo, ausência de policies públicas e grants das tabela/RPCs apenas para `service_role`;
+- implantadas somente as funções `site-analytics` e `editorial-admin`;
+- com `SITE_ANALYTICS_ENABLED` desligada, quatro requests de smoke retornaram `204` e a tabela permaneceu com zero linhas;
+- as rotas `/`, `/radar`, `/quiz`, `/privacidade` e `/admin/growth` responderam `200` no domínio publicado;
+- `SITE_ANALYTICS_ENABLED=true` foi configurada somente depois desses controles;
+- o smoke ativo gerou exatamente duas linhas agregadas em 08/10/2026: uma `page_view` de `/` e um `bike_click` interno de `/` para `/radar/v9_pro`, ambas com `event_count = 1`; nenhum link afiliado foi acionado;
+- inspeção confirmou ausência de IP, e-mail, identificador de visitante, query, hash ou referrer nas linhas agregadas;
+- a atualização automática e fora de escopo das dependências TanStack feita durante a operação foi revertida antes da publicação pela PR #16; a versão publicada preserva as dependências anteriores;
+- a matriz da ativação cliente, 12 testes direcionados, 59 testes do gate, typecheck e build passaram antes do merge final;
+- não houve sync, lead, CRM, e-mail, WhatsApp ou geração de conteúdo/IA.
+
+O Lovable confirmou a publicação, mas não expôs identificador do deployment. O smoke autenticado visual do conteúdo de `/admin/growth` permanece como aceite operacional do responsável, porque a sessão disponível para automação não tinha credenciais da equipe. A rota respondeu `200`, o backend agregado está ativo e o build contém os três blocos novos. Rollback imediato continua sendo `SITE_ANALYTICS_ENABLED=false`; a tabela deve ser preservada.
