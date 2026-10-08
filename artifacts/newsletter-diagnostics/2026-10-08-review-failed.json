@@ -1,0 +1,214 @@
+{
+  "generatedAt": "2026-10-08T12:06Z",
+  "runtime": "b9235c9",
+  "model": "openai/gpt-5.6-sol",
+  "source": "AI Gateway request logs (payload redacted, response output text intact), read-only",
+  "calls": [
+    {
+      "log_id": "01a11b67-b537-79ee-a621-ca59745b2422",
+      "role": "writer attempt 0",
+      "output": {
+        "subject": "Banco reto, conta fechada e um para-lama atrevido",
+        "preheader": "Garupa, bagagem, negócios e uma GT2000 cruzando São Paulo.",
+        "headline": "Duas rodas, sete caminhos e água nas costas",
+        "opening": [
+          "Nesta edição, a bicicleta elétrica sai do estacionamento e assume vários papéis: leva garupa, carrega tralha, vira ferramenta de trabalho e até tenta caber no porta-malas. No caminho, sempre aparece um detalhe para puxar conversa — às vezes é o banco; às vezes, o para-lama curto demais."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "S20 Pro e V9 Max empatam em motor de 1.000 W, pneus largos aro 20, freios hidráulicos e suspensão dupla traseira. A conversa muda quando chegam bateria, bagagem e passageiro. A S20 Pro traz 48 V e 18,2 Ah, além dos bagageiros dianteiro e traseiro. A V9 Max tem 48 V e 15,6 Ah e banco mais reto, considerado mais favorável ao uso frequente com garupa."
+            ],
+            "bullets": [
+              "As duas têm capacidade declarada para duas pessoas e limite total de 150 kg.",
+              "O alarme é sonoro e não trava a roda — barulho não é cadeado."
+            ],
+            "evidence": [
+              "A S20 Pro se destaca pela bateria de 48 V e 18,2 Ah, pelos bagageiros e pela marca Zurbe."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "No relato do Vitale, a UFOFAST VL20 reuniu motor de 1.000 W, bateria de 48 V e 15,6 Ah, banco para duas pessoas e bagageiro dianteiro. Mas a chuva entregou um detalhe bem concreto: nesta unidade, o para-lama traseiro não cobriu completamente o pneu. Resultado relatado no vídeo? Água nas costas e na mochila. O painel também ficou difícil de enxergar durante o dia."
+            ],
+            "bullets": [
+              "O limite informado é de 150 kg, somando ocupantes e carga.",
+              "Freios hidráulicos Logan e suspensão dupla traseira são conjuntos de entrada."
+            ],
+            "evidence": [
+              "Antes da escolha, porém, é importante considerar o limite informado de 150 kg, a suspensão e os freios de entrada, a leitura do painel durante o dia e a cobertura insuficiente do para-lama traseiro nesta unidade."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "Bike elétrica também pode virar negócio, mas a planilha não aceita empolgação como pagamento. A fonte percorre sete modelos, incluindo loja física, comércio eletrônico, marketplace, vendas para empresas, locação, oficina e peças. O ponto comum é separar faturamento, lucro bruto e resultado líquido. A diferença entre comprar e vender ainda precisa encarar tributos, estrutura, manutenção e comissões."
+            ],
+            "bullets": [
+              "Marketplace oferece circulação de clientes, mas cobra pelo caminho.",
+              "Na locação, preço por período e frequência de uso fazem a conta andar."
+            ],
+            "evidence": [
+              "Para comparar as possibilidades, é preciso separar faturamento, lucro bruto e resultado líquido: a diferença entre compra e venda ainda precisa pagar as despesas da operação."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a Honeywhale BW02 aparece com oferta ativa no momento da preparação. Ela é dobrável, pesa aproximadamente 30 kg e usa motor traseiro de 500 W nominais, com pico informado de 790 W. A bateria removível tem 48 V e 10,4 Ah. Como preço muda, o número que interessa é o vigente no Radar — junto do histórico, sem sirene de liquidação ao fundo."
+            ],
+            "bullets": [
+              "A ficha informa capacidade para uma pessoa e autonomia de até 40 km.",
+              "Pneus 20 x 3.0, suspensão dianteira e freios a disco compõem o conjunto."
+            ],
+            "evidence": [
+              "Consulte a ficha, o preço vigente e o histórico no Radar. A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "A GT2000 Ouxi foi conduzida no vídeo entre a região da Faria Lima e Alto de Pinheiros, perto do Parque Villa-Lobos, num trecho estimado em 6–7 km. O relato destaca motor de 1.000 W nominais, pico de 2.000 W e bateria descrita como 48 V e 30 A. O preço citado era daquele momento e não deve ser tratado como valor vigente."
+            ],
+            "bullets": [
+              "O painel foi considerado difícil de enxergar durante o dia.",
+              "A seta dianteira agradou; a traseira não inspirou a mesma confiança."
+            ],
+            "evidence": [
+              "Eu acho que esse trecho vai ter uns\n6, 7 km."
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "O site apresentado no vídeo organiza ferramentas que já rondavam o conteúdo do canal: quiz, Radar de preços, artigos e calculadoras. O quiz faz perguntas sobre perfil de uso e orçamento e envia duas sugestões pelo WhatsApp. É um convite opcional para explorar o perfil — não um oráculo de guidão capaz de conhecer cada buraco da sua rua."
+            ],
+            "bullets": [
+              "O Radar mostra histórico de 7, 14 e 30 dias e permite configurar alerta.",
+              "Há calculadoras para comparar custos, renda com entregas e tempo de trajeto."
+            ],
+            "evidence": [
+              "esse quiz ele sempre existiu ele continua o mesmo"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "log_id": "01a11b68-0832-7982-b40b-58fed8d54146",
+      "role": "reviewer attempt 0",
+      "output": {
+        "approved": false,
+        "issues": [
+          "A abertura usa um detalhe técnico — o para-lama curto — como gancho para “puxar conversa”, formato expressamente vedado. Ela deve funcionar apenas como ponte editorial breve, sem curiosidade ou ressalva técnica disfarçada de chamada.",
+          "Na seção article-2, “manutenção” é incluída entre as despesas que consomem a diferença entre compra e venda, mas as fontes fornecidas sustentam tributos, estrutura, comissões e despesas operacionais de modo geral; não identificam especificamente manutenção como custo dessa conta."
+        ]
+      }
+    },
+    {
+      "log_id": "01a11b68-3a35-743f-b78a-f3ff974d8b5b",
+      "role": "writer correction",
+      "output": {
+        "subject": "Garupa, planilha e água nas costas",
+        "preheader": "Bancos, bagageiros, negócios e uma GT2000 cruzando São Paulo.",
+        "headline": "Quando a bike leva garupa — e a conta pede carona",
+        "opening": [
+          "Duas rodas podem carregar passageiro, compras, planos de negócio e uma boa conversa. Nesta edição, o passeio passa por modelos parecidos que escondem diferenças importantes, uma dobrável no Radar, ferramentas do canal e contas que precisam chegar ao destino sem furar o pneu da realidade."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "S20 Pro e V9 Max dividem motor de 1.000 W, pneus largos aro 20, freios hidráulicos e suspensão dupla traseira. O desempate começa longe do motor: a S20 Pro tem bateria de 48 V e 18,2 Ah, além de bagageiros dianteiro e traseiro. A V9 Max usa 48 V e 15,6 Ah e traz banco mais reto, formato considerado mais favorável para levar garupa com frequência. Às vezes, a ficha empata e o banco resolve a conversa."
+            ],
+            "bullets": [
+              "As duas têm capacidade declarada para duas pessoas, com limite total de 150 kg.",
+              "O alarme compartilhado é apenas sonoro: faz barulho, mas não trava a roda."
+            ],
+            "evidence": [
+              "A S20 Pro se destaca pela bateria de 48 V e 18,2 Ah, pelos bagageiros e pela marca Zurbe."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "No relato do Vitale, a UFOFAST VL20 reuniu motor de 1.000 W, bateria de 48 V e 15,6 Ah, banco para duas pessoas e bagageiro dianteiro. Durante o vídeo, a chuva mostrou uma limitação desta unidade: o para-lama traseiro não cobriu completamente o pneu, e houve respingos nas costas e na mochila. O painel também apresentou leitura difícil durante o dia. Sol forte e poça d’água, cada um fazendo sua crítica especializada."
+            ],
+            "bullets": [
+              "O limite informado é de 150 kg, somando ocupantes e carga transportada.",
+              "Os freios hidráulicos Logan e a suspensão dupla traseira foram descritos como conjuntos de entrada."
+            ],
+            "evidence": [
+              "Antes da escolha, porém, é importante considerar o limite informado de 150 kg, a suspensão e os freios de entrada, a leitura do painel durante o dia e a cobertura insuficiente do para-lama traseiro nesta unidade."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "Bicicleta elétrica também pode virar negócio, mas faturamento e lucro não são irmãos gêmeos. A fonte percorre sete caminhos, entre loja física, comércio eletrônico, marketplace, vendas para empresas, locação, oficina e peças. Em todos, a diferença entre custo e preço ainda precisa pagar as despesas da operação. Entram nessa conta itens como estrutura, emissão de nota, tributos e, conforme o canal, comissões de plataforma."
+            ],
+            "bullets": [
+              "Marketplace entrega circulação de potenciais clientes, mas cobra comissão do vendedor.",
+              "Na locação, o resultado depende do preço por período e da frequência real de uso."
+            ],
+            "evidence": [
+              "Para comparar as possibilidades, é preciso separar faturamento, lucro bruto e resultado líquido: a diferença entre compra e venda ainda precisa pagar as despesas da operação."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a Honeywhale BW02 estava com oferta ativa durante a preparação. A dobrável pesa aproximadamente 30 kg e usa motor traseiro de 500 W nominais, com pico informado de 790 W. A bateria removível tem 48 V e 10,4 Ah. A proposta inclui três modos de condução, pneus largos e estrutura que pode ser dobrada para armazenamento. O preço vigente e seu histórico ficam no Radar, sem contagem regressiva dramática."
+            ],
+            "bullets": [
+              "A ficha do Radar informa autonomia de até 40 km, sem garantia para todo trajeto.",
+              "A capacidade indicada é para uma pessoa; o modelo também traz suspensão dianteira e freios a disco."
+            ],
+            "evidence": [
+              "Consulte a ficha, o preço vigente e o histórico no Radar. A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "A GT2000 Ouxi foi conduzida no vídeo da região da Faria Lima até Alto de Pinheiros, perto do Parque Villa-Lobos. O trecho foi estimado em 6–7 km — não uma travessia inteira de São Paulo. O relato cita motor de 1.000 W nominais, pico de 2.000 W e bateria descrita como 48 V e 30 A. Já o preço falado correspondia àquele momento de 2026, não ao valor atual."
+            ],
+            "bullets": [
+              "O painel foi considerado difícil de enxergar durante o dia.",
+              "A seta dianteira agradou; para a traseira, o relato recomenda também sinalizar com a mão."
+            ],
+            "evidence": [
+              "Eu acho que esse trecho vai ter uns\n6, 7 km."
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "O vídeo também apresenta o site do canal, reunindo quiz, Radar de preços, artigos e calculadoras. O quiz faz perguntas objetivas sobre perfil de uso e orçamento e envia duas sugestões pelo WhatsApp. É um convite opcional para organizar preferências, não um vidente capaz de adivinhar o relevo da rua, o peso da mochila e aquele buraco que reaparece todo verão."
+            ],
+            "bullets": [
+              "O Radar acompanha históricos de 7, 14 e 30 dias e permite configurar alertas.",
+              "As calculadoras abordam transporte, entregas, locação e tempo de trajeto."
+            ],
+            "evidence": [
+              "esse quiz ele sempre existiu ele continua o mesmo"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "log_id": "01a11b68-9210-761a-bcf0-15e85df01b2b",
+      "role": "reviewer attempt 1",
+      "output": {
+        "approved": false,
+        "issues": [
+          "Na seção article-1, “Sol forte e poça d’água” acrescenta condições não sustentadas pela fonte da VL20. A fonte relata chuva, respingos e dificuldade de leitura do painel durante o dia, mas não menciona sol forte nem passagem por uma poça.",
+          "O preheader afirma que a GT2000 estava “cruzando São Paulo”, formulação que pode sugerir uma travessia ampla da cidade. A fonte sustenta apenas um trajeto estimado de 6–7 km entre a região da Faria Lima e Alto de Pinheiros, perto do Parque Villa-Lobos."
+        ]
+      }
+    }
+  ]
+}
