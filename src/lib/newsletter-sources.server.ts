@@ -193,7 +193,7 @@ export async function automaticNewsletter(
       url: "https://vitalemobilidade.com/radar",
     },
     drops: drops.map((d) => ({
-      title: d.name,
+      title: catalog.find((c) => c.bikeId === d.id)?.name ?? d.name,
       previousPrice: brl(d.previous),
       currentPrice: brl(d.current),
       baselineDate: d.baselineDate,

@@ -280,7 +280,7 @@ export function renderEditorialNewsletter(
       ),
     )
     .join("");
-  const radar = {
+  const radar: NewsletterContent["bike"] = {
     title: "Radar de preços",
     url: data.radar?.url ?? tracked("https://vitalemobilidade.com/radar", "radar"),
   };

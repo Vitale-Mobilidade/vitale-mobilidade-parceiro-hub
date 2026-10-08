@@ -236,7 +236,8 @@ export async function writeNewsletter(
         ),
       );
       validateNewsletterEvidence(draft, sources);
-      if (openings.some((opening) => normalizeQuote(opening) === normalizeQuote(draft.opening.join("\n\n"))))
+      const currentOpening = normalizeQuote(draft.opening.join("\n\n"));
+      if (openings.some((opening) => normalizeQuote(opening) === currentOpening))
         throw new Error("newsletter_writer_repeated_opening");
       const reviewed = (await structured(
         REVIEW_SYSTEM,
