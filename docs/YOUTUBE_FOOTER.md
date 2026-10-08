@@ -18,3 +18,6 @@ O responsável rejeitou a primeira prévia e pediu nomes de bikes e mais opçõe
 Ajuste solicitado: retirada a frase sobre links afiliados do rodapé global. Link de privacidade preservado. Sem alteração nos links de ofertas ou nos demais avisos das páginas.
 
 Autorização: responsável pediu publicação direta deste conjunto em 08/10/2026. Preferência operacional registrada: pedidos explícitos de publicação devem ser executados sem reconfirmação; alterações rotineiras autorizadas devem progredir autonomamente. Manter gates de validação e informar bloqueios reais, custos novos ou ações destrutivas fora do escopo.
+
+## Publicação concluída
+PR22 integrada em main 50c7a29b4389a5e5c02ffaabd6f022c6de5bb583. Lovable sincronizou SHA; publicação 003cc747-f1e3-4f0e-a8c7-994213020f36. Página pública /privacidade recarregada confirmou seção YouTube com 3 vídeos, redes oficiais, 8 bikes, ferramentas, grupos recolhíveis e ausência da frase de afiliados. Evidência footer-published.png no checkout de referência. Newsletter renderer e logo PNG incluídos no mesmo build; nenhum email enviado ou automação ativada. Gate passou antes da publicação. Revisão posterior oito perspectivas Pass conforme escopo. Rollback: revert PR22 e publicar versão anterior. Estado concluído.
