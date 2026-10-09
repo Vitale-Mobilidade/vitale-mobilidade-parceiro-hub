@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import {
   newsletterCall,
   type NewsletterAdminState,
+  type NewsletterPeople,
 } from "@/lib/newsletter-api";
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
@@ -37,6 +38,40 @@ function NewsletterOperation() {
     staleTime: 15_000,
     refetchInterval: (q) => (q.state.data?.settings.enabled ? 30_000 : false),
   });
+  const [selection, setSelection] = useState({
+    filter: "all",
+    campaign: null as string | null,
+    page: 0,
+    label: "Todos os cadastrados",
+  });
+  const people = useQuery({
+    queryKey: ["admin", "newsletter", "people", selection],
+    queryFn: () =>
+      newsletterCall<NewsletterPeople>("people", {
+        filter: selection.filter,
+        campaign: selection.campaign,
+        page: selection.page,
+      }),
+    staleTime: 15_000,
+  });
+  function showPeople(
+    filter: string,
+    label: string,
+    campaign: string | null = null,
+  ) {
+    setSelection({ filter, label, campaign, page: 0 });
+    document
+      .getElementById("newsletter-people")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  const personStatus: Record<string, string> = {
+    eligible: "Elegível",
+    legacy: "Aguarda novo aceite",
+    suppressed: "Descadastrado",
+    delivered: "Entrega confirmada",
+    failed: "Falha / reclamação",
+    unknown: "Sem confirmação individual",
+  };
   const data = query.data;
   async function action(name: string, payload: Record<string, unknown> = {}) {
     setBusy(true);
@@ -138,18 +173,111 @@ function NewsletterOperation() {
       )}
       {data && (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             {[
-              ["Inscritos elegíveis", data.audience.eligible],
-              ["Aguardam novo aceite", data.audience.legacy],
-              ["Descadastrados", data.audience.suppressed],
-            ].map(([label, count]) => (
-              <div className="rounded-xl border bg-white p-4" key={label}>
+              ["Todos os cadastrados", data.audience.total, "all"],
+              ["Inscritos elegíveis", data.audience.eligible, "eligible"],
+              ["Aguardam novo aceite", data.audience.legacy, "legacy"],
+              ["Descadastrados", data.audience.suppressed, "suppressed"],
+            ].map(([label, count, filter]) => (
+              <button
+                type="button"
+                className="rounded-xl border bg-white p-4 text-left focus-visible:outline focus-visible:outline-2"
+                key={label}
+                onClick={() => showPeople(String(filter), String(label))}
+              >
                 <p className="text-sm text-muted-foreground">{label}</p>
                 <p className="mt-1 text-2xl font-bold">{count}</p>
-              </div>
+                <span className="text-xs underline">Ver pessoas</span>
+              </button>
             ))}
           </div>
+          <section
+            id="newsletter-people"
+            className="rounded-xl border bg-white p-5"
+            aria-label="Pessoas da newsletter"
+          >
+            <h2 className="font-bold">{selection.label}</h2>
+            {selection.campaign && (
+              <p className="mt-2 text-sm">
+                Eventos antigos podem ter apenas contagem agregada. Sem
+                confirmação individual não significa que a pessoa não recebeu.
+              </p>
+            )}
+            <button
+              className={button + " mt-3"}
+              onClick={() => showPeople("all", "Todos os cadastrados")}
+            >
+              Ver todos os cadastros
+            </button>
+            {people.isPending && <p role="status">Carregando pessoas…</p>}
+            {people.isError && (
+              <div role="alert">
+                <p>{people.error.message}</p>
+                <button
+                  className={button}
+                  onClick={() => {
+                    void people.refetch();
+                  }}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+            {people.data && (
+              <>
+                <p className="my-3" role="status">
+                  {people.data.total} pessoas neste filtro
+                </p>
+                {!people.data.rows.length ? (
+                  <p>Nenhuma pessoa neste filtro.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {people.data.rows.map((person) => (
+                      <li key={person.id} className="py-3 break-words">
+                        <p className="font-medium">{person.person_name}</p>
+                        <p>{person.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Cadastro:{" "}
+                          {new Date(person.created_at).toLocaleDateString(
+                            "pt-BR",
+                            { timeZone: "America/Sao_Paulo" },
+                          )}{" "}
+                          · {personStatus[person.subscription_status]}
+                        </p>
+                        {person.delivery_status && (
+                          <p className="text-sm">
+                            {personStatus[person.delivery_status]}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    className={button}
+                    disabled={!selection.page}
+                    onClick={() =>
+                      setSelection((v) => ({ ...v, page: v.page - 1 }))
+                    }
+                  >
+                    Anterior
+                  </button>
+                  <span>Página {selection.page + 1}</span>
+                  <button
+                    className={button}
+                    disabled={(selection.page + 1) * 25 >= people.data.total}
+                    onClick={() =>
+                      setSelection((v) => ({ ...v, page: v.page + 1 }))
+                    }
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
           <div className="rounded-xl border bg-white p-5">
             <h2 className="font-bold">Entrega pelo Resend</h2>
             <p className="mt-2">
@@ -289,6 +417,28 @@ function NewsletterOperation() {
                       {c.recipients} destinatários · {c.delivered} entregas
                       confirmadas · {c.failed} falhas
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {[
+                        ["recipients", "Destinatários"],
+                        ["delivered", "Entregues"],
+                        ["failed", "Falhas"],
+                        ["unknown", "Sem confirmação"],
+                      ].map(([filter, label]) => (
+                        <button
+                          key={filter}
+                          className={button}
+                          onClick={() =>
+                            showPeople(
+                              filter,
+                              `${label} · ${c.edition_day} · ${c.segment}`,
+                              c.id,
+                            )
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     {c.resend_id && (
                       <a
                         className="text-sm underline"

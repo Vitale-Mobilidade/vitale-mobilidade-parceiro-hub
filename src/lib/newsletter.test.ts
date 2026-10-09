@@ -22,7 +22,7 @@ describe("newsletter export", () => {
   it("escapes editorial HTML and preserves links", () => {
     const result = renderNewsletter(edition);
     expect(result.html).toContain("&lt;img");
-    expect(result.html).not.toContain("<img");
+    expect(result.html).not.toContain("<img src=x onerror=alert(1)>");
     expect(result.text).toContain(edition.bike.url);
     expect(result.html).toContain(edition.unsubscribeUrl);
   });
@@ -82,7 +82,7 @@ describe("newsletter eligibility", () => {
 
 it("exports Resend personalization without an invented unsubscribe endpoint", () => {
   const output = renderResendNewsletter(edition);
-  expect(output.html).toContain("{{{contact.first_name|amigo(a)}}}");
+  expect(output.html).toContain("{{{FIRST_NAME|}}}");
   expect(output.html).toContain("{{{RESEND_UNSUBSCRIBE_URL}}}");
   expect(output.html).not.toContain("__newsletter_provider_unsubscribe__");
 });

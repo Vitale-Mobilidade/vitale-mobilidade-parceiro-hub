@@ -136,12 +136,54 @@ describe("newsletter authorization and dispatch recovery", () => {
     );
     expect(response.status).toBe(403);
   });
+  it("returns paginated people only after admin authorization, without dispatching", async () => {
+    const chain = {
+      select: () => chain,
+      eq: () => chain,
+      maybeSingle: async () => ({
+        data: { role: "admin", active: true },
+        error: null,
+      }),
+    };
+    const rpc = vi.fn().mockResolvedValue({
+      data: { rows: [], total: 0, page: 0 },
+      error: null,
+    });
+    createClient.mockReturnValue({
+      auth: { getUser: async () => ({ data: { user: { id } }, error: null }) },
+      from: () => chain,
+      rpc,
+    });
+    const response = await newsletterAdmin(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { Authorization: "Bearer synthetic" },
+        body: JSON.stringify({ action: "people", filter: "all", page: 0 }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("newsletter_people", {
+      p_filter: "all",
+      p_campaign: null,
+      p_page: 0,
+    });
+    const bad = await newsletterAdmin(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { Authorization: "Bearer synthetic" },
+        body: JSON.stringify({ action: "people", filter: "all", page: -1 }),
+      }),
+    );
+    expect(bad.status).toBe(400);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
   it("reconciles an already submitted campaign without another send", async () => {
     const { db, updates } = fakeDb();
     const request = vi
       .fn()
       .mockResolvedValue(
-        json({ status: "sent", sent_at: "2026-10-08T13:05:00Z" }),
+        json({ status: "sent", sent_at: "2026-10-08T09:35:00Z" }),
       );
     await processNewsletterCampaign(
       db,
@@ -212,7 +254,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     "submits the %s cohort once using the same dedicated provider segment",
     async (segment) => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+      vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
       const { db, updates } = fakeDb(true);
       const contact = {
         id,
@@ -247,7 +289,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   );
   it("pauses after an uncertain send acknowledgement without retrying", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     const { db, updates } = fakeDb(true);
     const contact = {
       id,
@@ -282,7 +324,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   });
   it("does not reset to ready when the database loses an acknowledged send", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     const { db, updates } = fakeDb(true);
     const original = db.from.bind(db);
     db.from = ((table: string) => {
@@ -394,7 +436,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   });
   it("does not regenerate a paid edition on later ticks after all cohorts exist", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     vi.stubEnv("RESEND_API_KEY", "synthetic-only");
     vi.stubEnv("LOVABLE_API_KEY", "");
     const db = {

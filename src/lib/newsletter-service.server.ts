@@ -540,24 +540,28 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
   try {
     if (request.method === "GET") {
       const s = await settings(db);
-      const [eligible, legacy, suppressed, campaigns] = await Promise.all([
-        db
-          .from("newsletter_subscriptions")
-          .select("id", { head: true, count: "exact" })
-          .eq("status", "interested")
-          .eq("consent_version", "v2")
-          .is("suppressed_at", null),
-        db
-          .from("newsletter_subscriptions")
-          .select("id", { head: true, count: "exact" })
-          .neq("consent_version", "v2"),
-        db
-          .from("newsletter_subscriptions")
-          .select("id", { head: true, count: "exact" })
-          .eq("status", "unsubscribed"),
-        db.rpc("newsletter_campaign_report"),
-      ]);
-      if ([eligible, legacy, suppressed, campaigns].some((r) => r.error))
+      const [total, eligible, legacy, suppressed, campaigns] =
+        await Promise.all([
+          db
+            .from("newsletter_subscriptions")
+            .select("id", { head: true, count: "exact" }),
+          db
+            .from("newsletter_subscriptions")
+            .select("id", { head: true, count: "exact" })
+            .eq("status", "interested")
+            .eq("consent_version", "v2")
+            .is("suppressed_at", null),
+          db
+            .from("newsletter_subscriptions")
+            .select("id", { head: true, count: "exact" })
+            .neq("consent_version", "v2"),
+          db
+            .from("newsletter_subscriptions")
+            .select("id", { head: true, count: "exact" })
+            .eq("status", "unsubscribed"),
+          db.rpc("newsletter_campaign_report"),
+        ]);
+      if ([total, eligible, legacy, suppressed, campaigns].some((r) => r.error))
         throw new Error("newsletter_database_failed");
       return Response.json(
         {
@@ -565,6 +569,7 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
           configured: !!process.env.RESEND_API_KEY,
           webhookConfigured: !!process.env.RESEND_WEBHOOK_SECRET,
           audience: {
+            total: total.count,
             eligible: eligible.count,
             legacy: legacy.count,
             suppressed: suppressed.count,
@@ -579,6 +584,34 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     const raw = await request.text();
     if (raw.length > 65000) return new Response(null, { status: 413, headers });
     const body = JSON.parse(raw) as Record<string, unknown>;
+    if (body.action === "people") {
+      const input = z
+        .object({
+          action: z.literal("people"),
+          filter: z.enum([
+            "all",
+            "eligible",
+            "legacy",
+            "suppressed",
+            "recipients",
+            "delivered",
+            "failed",
+            "unknown",
+          ]),
+          campaign: z.string().uuid().nullable().default(null),
+          page: z.number().int().min(0).max(100000).default(0),
+        })
+        .strict()
+        .parse(body);
+      const result = await must(
+        db.rpc("newsletter_people", {
+          p_filter: input.filter,
+          p_campaign: input.campaign,
+          p_page: input.page,
+        }),
+      );
+      return Response.json(result, { headers });
+    }
     if (typeof body.action === "string" && body.action.startsWith("draft_")) {
       tok = await lock(db);
       const { newsletterDraftAction } =
