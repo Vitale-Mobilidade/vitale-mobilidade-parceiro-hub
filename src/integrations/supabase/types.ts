@@ -1245,6 +1245,36 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_drafts: {
+        Row: {
+          content: Json
+          created_at: string
+          edited_by: string
+          id: string
+          origin: string
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          edited_by: string
+          id?: string
+          origin: string
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          edited_by?: string
+          id?: string
+          origin?: string
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_recipients: {
         Row: {
           campaign_id: string
@@ -1964,6 +1994,36 @@ export type Database = {
         }
         Relationships: []
       }
+      site_analytics_daily: {
+        Row: {
+          bike_id: string
+          day: string
+          event_count: number
+          event_name: string
+          position: string
+          source_path: string
+          target_path: string
+        }
+        Insert: {
+          bike_id?: string
+          day: string
+          event_count?: number
+          event_name: string
+          position?: string
+          source_path: string
+          target_path?: string
+        }
+        Update: {
+          bike_id?: string
+          day?: string
+          event_count?: number
+          event_name?: string
+          position?: string
+          source_path?: string
+          target_path?: string
+        }
+        Relationships: []
+      }
       worker_events: {
         Row: {
           bike_id: string | null
@@ -2157,7 +2217,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_quiz_bike_metrics: {
+        Args: { p_since: string }
+        Returns: {
+          bike_id: string
+          bike_name: string
+          primary_recommendations: number
+          quiz_offer_clicks: number
+          secondary_recommendations: number
+        }[]
+      }
+      admin_quiz_bike_metrics_json: { Args: { p_since: string }; Returns: Json }
       admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
+      admin_site_analytics_metrics: { Args: { p_since: string }; Returns: Json }
       authorize_price_alert_hotpipe: {
         Args: { issued_at: string; signature: string }
         Returns: boolean
@@ -2267,6 +2339,17 @@ export type Database = {
         Returns: Json
       }
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
+      public_video_catalog: { Args: never; Returns: Json }
+      record_site_analytics: {
+        Args: {
+          p_bike_id: string
+          p_event_name: string
+          p_position: string
+          p_source_path: string
+          p_target_path: string
+        }
+        Returns: undefined
+      }
       track_quiz_funnel_session: {
         Args: {
           p_device?: string

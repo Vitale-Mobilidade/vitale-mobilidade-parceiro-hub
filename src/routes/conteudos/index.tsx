@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, ArrowRight, BookOpen, LineChart, Wrench } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
-import { QuizBanner, OffersBanner } from "@/components/site/DecisionBanners";
+import { QuizBanner } from "@/components/site/DecisionBanners";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { formatDateBR } from "@/lib/price-tracker";
@@ -281,7 +281,6 @@ function ContentIndex() {
             </div>
           </section>
           <QuizBanner />
-          <OffersBanner />
         </div>
       </main>
       <SiteFooter />

@@ -18,6 +18,7 @@ import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData, useRouter } from "@tanstack/react-router";
 import { OFFERS_GROUP_URL } from "@/lib/offers-group";
+import { siteAnalytics } from "@/lib/site-analytics";
 
 // ---------- Quiz config ----------
 type StepKey =
@@ -953,6 +954,13 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
     } catch (err) {
       console.error("[GTM] event_click_buy push failed", err);
     }
+
+    // Agregado first-party sem PII; fire-and-forget, sem atrasar a abertura direta.
+    siteAnalytics.affiliateClick(
+      window.location.href,
+      bike.id,
+      position === "principal" ? "quiz_primary" : "quiz_secondary",
+    );
 
     // Abertura imediata do link de compra — tracking já foi enviado de forma não bloqueante.
     if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");

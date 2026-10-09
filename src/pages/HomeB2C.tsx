@@ -18,7 +18,6 @@ import { SiteHeader, SiteFooter, BikeMedia, SectionHeading } from "@/components/
 import { HOME_PRODUCTS, ProductLink } from "@/components/home/home-products";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
-import { OffersBanner } from "@/components/site/DecisionBanners";
 import { editorialImageProps } from "@/lib/editorial-images";
 
 /*
@@ -510,7 +509,7 @@ const HomeB2C = () => {
             <CalculatorPanel />
           </div>
           <ArticlesBlock articles={data?.articles ?? []} />
-          <OffersBanner source="home" />
+
         </div>
       </main>
       <SiteFooter />

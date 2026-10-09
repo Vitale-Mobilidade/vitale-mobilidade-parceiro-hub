@@ -15,6 +15,9 @@ import NotFound from "@/pages/NotFound";
 import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
+import { siteAnalytics } from "@/lib/site-analytics";
+import { safeVideos } from "@/lib/videos.functions";
+import { SOCIAL_LINKS } from "@/lib/social-links";
 import appCss from "../styles.css?url";
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
@@ -34,7 +37,7 @@ const ORG_JSONLD = {
     name: "Lucas Vitale",
     sameAs: "https://www.linkedin.com/in/lucasvitale1/",
   },
-  sameAs: ["https://www.linkedin.com/in/lucasvitale1/"],
+  sameAs: SOCIAL_LINKS.map((profile) => profile.url),
 };
 
 const SITE_JSONLD = {
@@ -48,6 +51,7 @@ const SITE_JSONLD = {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
+  loader: ({ location }) => (location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz")) ? { footerVideos: [] } : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
@@ -124,7 +128,17 @@ function RootComponent() {
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
     if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
+    siteAnalytics.pageView(window.location.href);
   }, [href]);
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!(target instanceof HTMLAnchorElement)) return;
+      siteAnalytics.bikeClick(window.location.href, target.href);
+    };
+    document.addEventListener("click", onClick, { capture: true });
+    return () => document.removeEventListener("click", onClick, { capture: true });
+  }, []);
   return (
     <QueryClientProvider client={router.options.context.queryClient}>
       <a

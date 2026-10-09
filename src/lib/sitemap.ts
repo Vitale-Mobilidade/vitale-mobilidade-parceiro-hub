@@ -12,6 +12,7 @@ export const STATIC_SITEMAP_PATHS = [
   "/quiz",
   "/ferramentas",
   "/conteudos",
+  "/newsletter",
   ...TOOL_PATHS,
 ] as const;
 

@@ -41,3 +41,14 @@ describe("complete model video associations", () => {
     expect(videos).toHaveLength(28);
   });
 });
+
+
+describe("public video chronology", () => {
+  it("previews the four newest dates and keeps the full catalog including undated videos", () => {
+    const dates = ["01/01/2025", "08/10/2026", "", "30/09/2026", "07/10/2026", "02/10/2026"];
+    const items = buildVideoCatalog("Data,Titulo,Link Youtube,Bikes\n" + dates.map((date, i) => `${date},Video ${i},https://youtu.be/vid${String(i).padStart(8, "0")},`).join("\n"));
+    expect(selectCatalogVideos(items, null, 4).map(v => v.date)).toEqual(["2026-10-08", "2026-10-07", "2026-10-02", "2026-09-30"]);
+    expect(selectCatalogVideos(items, null, null)).toHaveLength(6);
+    expect(items.at(-1)?.date).toBeNull();
+  });
+});

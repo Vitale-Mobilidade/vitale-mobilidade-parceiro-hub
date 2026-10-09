@@ -3,10 +3,9 @@ import { useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function NewsletterSignup() {
+export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [interest, setInterest] = useState("general");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
@@ -16,7 +15,7 @@ export function NewsletterSignup() {
     event.preventDefault();
     setError("");
     if (!consent) {
-      setError("Autorize o registro do seu interesse para continuar.");
+      setError("Autorize o cadastro para continuar.");
       return;
     }
     setStatus("sending");
@@ -29,7 +28,7 @@ export function NewsletterSignup() {
             name,
             email,
             consent,
-            interest,
+            interest: "general",
             website,
             sourceUrl:
               captureQuizAttribution().source_url ?? window.location.href,
@@ -49,10 +48,11 @@ export function NewsletterSignup() {
 
   return (
     <section
-      aria-labelledby="newsletter"
-      className="grid gap-6 rounded-lg border border-line bg-card p-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-center sm:p-8"
+      aria-labelledby={compact ? undefined : "newsletter"}
+      aria-label={compact ? "Inscrição na newsletter" : undefined}
+      className={`grid gap-6 rounded-lg border border-line bg-card p-6 sm:p-8 ${compact ? "" : "md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-center"}`}
     >
-      <div className="flex items-start gap-4">
+      {!compact && <div className="flex items-start gap-4">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-mint/25 text-action">
           <Mail className="h-6 w-6" aria-hidden="true" />
         </span>
@@ -68,7 +68,7 @@ export function NewsletterSignup() {
             ferramentas.
           </p>
         </div>
-      </div>
+      </div>}
       {status === "done" ? (
         <p role="status" className="rounded-lg bg-mint/20 p-4 text-sm text-ink">
           Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da
@@ -124,22 +124,6 @@ export function NewsletterSignup() {
               />
             </div>
           </div>
-          <label
-            htmlFor="nl-interest"
-            className="block text-sm font-medium text-ink"
-          >
-            O que mais te interessa? (opcional)
-            <select
-              id="nl-interest"
-              value={interest}
-              onChange={(event) => setInterest(event.target.value)}
-              className="mt-1 h-12 w-full rounded-lg border border-input bg-card px-4 text-sm"
-            >
-              <option value="general">Todos os destaques</option>
-              <option value="radar">Radar e bikes em destaque</option>
-              <option value="content">Artigos e vídeos</option>
-            </select>
-          </label>
           <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
             <input
               type="checkbox"

@@ -23,6 +23,7 @@ CARDS = {
     "vitale-conteudos": ("Conteúdos e testes de bikes", "Guias, comparativos e análises para escolher melhor", "vitale-conteudos"),
     "vitale-ferramentas": ("Calcule sua mobilidade", "Compare custo, tempo e renda com uma bike elétrica", "vitale-ferramentas"),
     "grupo-de-ofertas": ("Ofertas de bikes elétricas", "Entre no grupo da Vitale e acompanhe oportunidades", "vitale-home"),
+    "newsletter": ("Newsletter Vitale", "Bikes elétricas, vídeos e Radar no seu e-mail. Inscreva-se!", "vitale-home"),
     "privacidade": ("Privacidade na Vitale", "Saiba como tratamos seus dados e preferências", "vitale-home"),
     "carro-vs-bike": ("Carro ou bike elétrica?", "Compare gastos e descubra o impacto na sua rotina", "vitale-ferramentas"),
     "moto-vs-bike": ("Moto ou bike elétrica?", "Veja o custo de cada opção no seu trajeto", "vitale-ferramentas"),

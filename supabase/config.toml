@@ -3,3 +3,7 @@ project_id = "ipectfejftfcikvozoyu"
 # Each Admin request validates its user JWT and membership in actorFor.
 # Scheduled requests validate a database-signed expiring request and active Admin owner.
 verify_jwt = false
+
+[functions.site-analytics]
+# Public write-only collector. Validation and the server-side kill switch live in the function.
+verify_jwt = false

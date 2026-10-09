@@ -13,6 +13,7 @@
  */
 
 import { BIKE_ID_RE } from "./bike-identity";
+import { siteAnalytics } from "./site-analytics";
 
 export const AFFILIATE_CLICK_EVENT = "affiliate_click";
 
@@ -89,6 +90,8 @@ export function trackAffiliateClick(input: AffiliateClickInput) {
     const w = window as unknown as { dataLayer?: Record<string, unknown>[] };
     w.dataLayer = w.dataLayer || [];
     w.dataLayer.push(safe);
+    // First-party aggregate is also fire-and-forget and never changes the direct href.
+    siteAnalytics.affiliateClick(window.location.href, bikeId, position);
   } catch {
     /* analytics nunca quebra a página */
   }

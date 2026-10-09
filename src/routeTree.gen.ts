@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
+import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as VideosRouteImport } from './routes/videos'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -72,6 +74,11 @@ const GrupodeofertasRoute = GrupodeofertasRouteImport.update({
   path: '/grupodeofertas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsletterRoute = NewsletterRouteImport.update({
+  id: '/newsletter',
+  path: '/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PainelBikesRoute = PainelBikesRouteImport.update({
   id: '/painel-bikes',
   path: '/painel-bikes',
@@ -90,6 +97,11 @@ const QuizRoute = QuizRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VideosRoute = VideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcompanhamentoIndexRoute = AcompanhamentoIndexRouteImport.update({
@@ -308,10 +320,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -357,10 +371,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -407,10 +423,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
+  '/newsletter': typeof NewsletterRoute
   '/painel-bikes': typeof PainelBikesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -458,10 +476,12 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
@@ -507,10 +527,12 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
@@ -556,10 +578,12 @@ export interface FileRouteTypes {
     | '/'
     | '/escolherbike'
     | '/grupodeofertas'
+    | '/newsletter'
     | '/painel-bikes'
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
@@ -606,10 +630,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
+  NewsletterRoute: typeof NewsletterRoute
   PainelBikesRoute: typeof PainelBikesRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   QuizRoute: typeof QuizRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VideosRoute: typeof VideosRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
@@ -674,6 +700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrupodeofertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/newsletter': {
+      id: '/newsletter'
+      path: '/newsletter'
+      fullPath: '/newsletter'
+      preLoaderRoute: typeof NewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/painel-bikes': {
       id: '/painel-bikes'
       path: '/painel-bikes'
@@ -700,6 +733,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/videos': {
+      id: '/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof VideosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/acompanhamento/': {
@@ -1000,10 +1040,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EscolherbikeRoute: EscolherbikeRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
+  NewsletterRoute: NewsletterRoute,
   PainelBikesRoute: PainelBikesRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   QuizRoute: QuizRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VideosRoute: VideosRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
   AdminGrowthRoute: AdminGrowthRoute,

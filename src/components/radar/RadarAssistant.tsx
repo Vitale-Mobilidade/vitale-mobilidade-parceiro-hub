@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LucasSDRWidget } from "@/components/LucasSDR/LucasSDRWidget";
 import { LucasSDRErrorBoundary } from "@/components/LucasSDR/LucasSDRErrorBoundary";
 import { trackRadar } from "@/lib/radar-analytics";
+import { siteAnalytics } from "@/lib/site-analytics";
 import { radarBaseFromPath } from "@/lib/radar-base";
 import type { SDRContext } from "@/components/LucasSDR/types";
 
@@ -98,6 +99,10 @@ export function RadarAssistant({ initialOpen = false }: { initialOpen?: boolean 
             trackRadar("radar_assistant_navigation", { route: base, reason: "unknown_bike" });
             return;
           }
+          siteAnalytics.bikeClick(
+            window.location.href,
+            new URL(`${base}/${bike.id}`, window.location.origin).href,
+          );
           navigate(`${base}/${bike.id}`);
           trackRadar("radar_assistant_navigation", { route: `${base}/:bikeId`, bike_id: bike.id });
         }}

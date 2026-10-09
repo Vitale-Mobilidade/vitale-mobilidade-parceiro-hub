@@ -36,6 +36,27 @@
       "when": 1791332198745,
       "tag": "0004_youtube_automatic_publication",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791485013157,
+      "tag": "0005_admin_analytics_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791486807000,
+      "tag": "0006_admin_quiz_bike_metrics_json",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791488400000,
+      "tag": "0007_optimize_admin_quiz_bike_metrics",
+      "breakpoints": true
     }
   ]
 }

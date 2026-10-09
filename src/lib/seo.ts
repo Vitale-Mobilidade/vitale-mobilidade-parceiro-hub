@@ -14,6 +14,7 @@ export function socialImageForPath(path: string): string {
     "/ferramentas": "vitale-ferramentas",
     "/grupodeofertas": "grupo-de-ofertas",
     "/privacidade": "privacidade",
+    "/newsletter": "newsletter",
   };
   const direct = sections[clean];
   if (direct) return `${SITE_URL}/og/${direct}${direct.startsWith("vitale-") ? "-20260930" : ""}-1200x630.jpg`;
