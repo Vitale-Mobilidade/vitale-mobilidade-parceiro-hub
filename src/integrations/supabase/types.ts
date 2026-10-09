@@ -1435,6 +1435,7 @@ export type Database = {
           event_id: string
           event_type: string
           received_at: string
+          recipient_emails: string[]
         }
         Insert: {
           campaign_id?: string | null
@@ -1442,6 +1443,7 @@ export type Database = {
           event_id: string
           event_type: string
           received_at?: string
+          recipient_emails?: string[]
         }
         Update: {
           campaign_id?: string | null
@@ -1449,6 +1451,7 @@ export type Database = {
           event_id?: string
           event_type?: string
           received_at?: string
+          recipient_emails?: string[]
         }
         Relationships: [
           {
@@ -2316,6 +2319,10 @@ export type Database = {
         }[]
       }
       newsletter_next_edition_number: { Args: never; Returns: number }
+      newsletter_people: {
+        Args: { p_campaign?: string; p_filter?: string; p_page?: number }
+        Returns: Json
+      }
       newsletter_record_event: {
         Args: {
           p_broadcast?: string
