@@ -10,6 +10,9 @@ import * as backlog from "../../supabase/functions/_shared/youtube-backlog";
 import * as videoCatalog from "../../supabase/functions/_shared/video-catalog";
 import * as transcriptAdapter from "../../supabase/functions/_shared/youtube-transcript";
 import * as oauthAdapter from "../../supabase/functions/_shared/youtube-oauth";
+import * as siteAnalytics from "../../supabase/functions/_shared/site-analytics";
+import * as adminGrowth from "../../supabase/functions/_shared/admin-growth";
+import * as reviewCost from "../../supabase/functions/_shared/editorial-review-cost";
 import * as input from "../../supabase/functions/_shared/editorial-create-input";
 
 // Execute the real Edge Function in an isolated VM with offline dependencies.
@@ -52,6 +55,9 @@ runInNewContext(code, {
       "npm:@supabase/supabase-js@2": {
         createClient: vi.fn(() => requestDatabase),
       },
+      "../_shared/site-analytics.ts": siteAnalytics,
+      "../_shared/admin-growth.ts": adminGrowth,
+      "../_shared/editorial-review-cost.ts": reviewCost,
       "../_shared/editorial-contract.ts": contract,
       "../_shared/editorial-foundation.ts": foundation,
       "../_shared/editorial-automation.ts": automation,
@@ -946,6 +952,52 @@ describe("automatic publication uses the leased daily pipeline", () => {
       expect(filters).toContainEqual(["editorial_articles", "status", "draft"]);
       expect(reviewer).toHaveBeenCalledOnce();
       expect(reviewer.mock.calls[0][1]).toContain('"bikes":[]');
+    } finally { restore(); }
+  });
+  it("reuses only an exact approved checkpoint and reruns all local checks", async () => {
+    const first = publicationDb(undefined, true); const restore = mockChecks();
+    const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
+    try {
+      await exports.finishQueuedPublication!(req, first.db, { id: "owner" }, lease);
+      const capture = first.writes[0].patch.capture as Parameters<typeof publicationDb>[0];
+      const retry = publicationDb(capture);
+      expect(await (await exports.finishQueuedPublication!(req, retry.db, { id: "owner" }, lease)).json()).toMatchObject({ status: "published" });
+      expect(reviewer).toHaveBeenCalledOnce();
+      expect(retry.writes[0].patch.capture).toMatchObject({ publicationQa: { reviewReused: true } });
+      const stale = publicationDb({ ...capture!, publicationQa: { ...(capture as unknown as { publicationQa: object }).publicationQa, inputKey: "stale" } } as Parameters<typeof publicationDb>[0]);
+      await exports.finishQueuedPublication!(req, stale.db, { id: "owner" }, lease);
+      expect(reviewer).toHaveBeenCalledTimes(2);
+    } finally { restore(); }
+  });
+  it("invalidates an approval when the corpus changes and never bypasses failed local checks", async () => {
+    const first = publicationDb(undefined, true); let restore = mockChecks();
+    const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
+    await exports.finishQueuedPublication!(req, first.db, { id: "owner" }, lease);
+    const capture = first.writes[0].patch.capture as Parameters<typeof publicationDb>[0];
+    restore();
+    restore = exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [{ id: "other", title: "Receita", summary: "Bolo", headings: [], body: "Farinha açúcar" }], counts: {} }));
+    try {
+      await exports.finishQueuedPublication!(req, publicationDb(capture).db, { id: "owner" }, lease);
+      expect(reviewer).toHaveBeenCalledTimes(2);
+      expect(reviewer.mock.calls[1]?.[1]).toContain("Farinha açúcar");
+    } finally { restore(); }
+    restore = exports.injectPublicationChecks!(async () => ["Link inválido"], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
+    try {
+      const { db, writes } = publicationDb(capture);
+      expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
+      expect(reviewer).toHaveBeenCalledTimes(2);
+      expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
+    } finally { restore(); }
+  });
+  it("stops automatic rewrites when the correction leaves identical issues", async () => {
+    const failure = "Remover a característica não sustentada";
+    const { db, writes } = publicationDb({ videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationRepairCount: 1,
+      publicationQa: { pass: false, articleRevision: 6, sourceKey: foundation.sourceFingerprint(transcript), issues: [failure] } } as Parameters<typeof publicationDb>[0]);
+    const restore = mockChecks(); exports.injectOfflineAI!(vi.fn(async () => ({ pass: false, issues: [failure], cautionViolations: [], qualityScore: 50 })));
+    try {
+      expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
+      expect(writes.at(-1)?.patch.state).toBe("needs_review");
+      expect(writes.some(write => write.patch.state === "rewrite_pending")).toBe(false);
     } finally { restore(); }
   });
   it("queues a bounded correction after a completed factual rejection", async () => {
