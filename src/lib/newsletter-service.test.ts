@@ -183,7 +183,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     const request = vi
       .fn()
       .mockResolvedValue(
-        json({ status: "sent", sent_at: "2026-10-08T13:05:00Z" }),
+        json({ status: "sent", sent_at: "2026-10-08T09:35:00Z" }),
       );
     await processNewsletterCampaign(
       db,
@@ -254,7 +254,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     "submits the %s cohort once using the same dedicated provider segment",
     async (segment) => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+      vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
       const { db, updates } = fakeDb(true);
       const contact = {
         id,
@@ -289,7 +289,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   );
   it("pauses after an uncertain send acknowledgement without retrying", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     const { db, updates } = fakeDb(true);
     const contact = {
       id,
@@ -324,7 +324,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   });
   it("does not reset to ready when the database loses an acknowledged send", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     const { db, updates } = fakeDb(true);
     const original = db.from.bind(db);
     db.from = ((table: string) => {
@@ -436,7 +436,7 @@ describe("newsletter authorization and dispatch recovery", () => {
   });
   it("does not regenerate a paid edition on later ticks after all cohorts exist", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-10-08T13:10:00Z"));
+    vi.setSystemTime(new Date("2026-10-08T09:40:00Z"));
     vi.stubEnv("RESEND_API_KEY", "synthetic-only");
     vi.stubEnv("LOVABLE_API_KEY", "");
     const db = {
