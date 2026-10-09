@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import PainelBikes from "@/pages/PainelBikes";
 import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
+import { VideoRelatedArticle } from "@/components/admin/VideoRelatedArticle";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
@@ -692,6 +693,7 @@ function Videos() {
                       {saved?.transcript ? "Transcrição cadastrada" : "Sem transcrição"} ·{" "}
                       {article ? `Artigo ${article.status}` : "Sem artigo"}
                       {!(saved?.primary_bike_id || v.bikeIds.length) ? " · Sem bike" : ""}
+                      {article && <span className="mt-1 block">Artigo: {article.title}</span>}
                     </span>
                   </span>
                 </button>
@@ -704,6 +706,7 @@ function Videos() {
             <form onSubmit={save} className="space-y-4">
               <h2 className="text-lg font-semibold">Editar vídeo</h2>
               <p className="text-xs text-muted-foreground">YouTube ID: {selected.videoId}</p>
+              <VideoRelatedArticle key={selected.videoId} article={articleMap.get(selected.videoId)} />
               <label className="block text-sm font-medium">
                 Título
                 <input className={`${INPUT} mt-1`} value={title} onChange={(e) => setTitle(e.target.value)} required />
