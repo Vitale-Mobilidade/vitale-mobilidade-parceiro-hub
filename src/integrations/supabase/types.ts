@@ -2339,6 +2339,7 @@ export type Database = {
         Returns: Json
       }
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
+      public_video_catalog: { Args: never; Returns: Json }
       record_site_analytics: {
         Args: {
           p_bike_id: string
