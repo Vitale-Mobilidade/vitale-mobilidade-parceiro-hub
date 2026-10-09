@@ -9,7 +9,12 @@ export type NewsletterAdminState = {
   };
   configured: boolean;
   webhookConfigured: boolean;
-  audience: { eligible: number; legacy: number; suppressed: number };
+  audience: {
+    total: number;
+    eligible: number;
+    legacy: number;
+    suppressed: number;
+  };
   campaigns: {
     id: string;
     recipients: number;
@@ -110,3 +115,16 @@ export async function newsletterCall<T>(
   }
   return result as T;
 }
+
+export type NewsletterPeople = {
+  total: number;
+  page: number;
+  rows: {
+    id: string;
+    person_name: string;
+    email: string;
+    created_at: string;
+    subscription_status: string;
+    delivery_status: string | null;
+  }[];
+};

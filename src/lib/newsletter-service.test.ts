@@ -136,6 +136,48 @@ describe("newsletter authorization and dispatch recovery", () => {
     );
     expect(response.status).toBe(403);
   });
+  it("returns paginated people only after admin authorization, without dispatching", async () => {
+    const chain = {
+      select: () => chain,
+      eq: () => chain,
+      maybeSingle: async () => ({
+        data: { role: "admin", active: true },
+        error: null,
+      }),
+    };
+    const rpc = vi.fn().mockResolvedValue({
+      data: { rows: [], total: 0, page: 0 },
+      error: null,
+    });
+    createClient.mockReturnValue({
+      auth: { getUser: async () => ({ data: { user: { id } }, error: null }) },
+      from: () => chain,
+      rpc,
+    });
+    const response = await newsletterAdmin(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { Authorization: "Bearer synthetic" },
+        body: JSON.stringify({ action: "people", filter: "all", page: 0 }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("newsletter_people", {
+      p_filter: "all",
+      p_campaign: null,
+      p_page: 0,
+    });
+    const bad = await newsletterAdmin(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { Authorization: "Bearer synthetic" },
+        body: JSON.stringify({ action: "people", filter: "all", page: -1 }),
+      }),
+    );
+    expect(bad.status).toBe(400);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
   it("reconciles an already submitted campaign without another send", async () => {
     const { db, updates } = fakeDb();
     const request = vi
