@@ -1,5 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { prepareNewsletterDraft } from "./newsletter-preparation.server";
+import { newsletterPreparation } from "./newsletter-preparation";
+import { newsletterDraftContentSchema } from "./newsletter-drafts";
 import {
   newsletterWindow,
   renderResendNewsletter,
@@ -419,6 +422,33 @@ export async function newsletterTick(request: Request): Promise<Response> {
       await processNewsletterCampaign(db, resend, s, unfinished[0], tok);
       return Response.json({ ok: true });
     }
+    const preparation = newsletterPreparation(new Date());
+    if (preparation.due && !newsletterWindow(new Date()).due) {
+      const draft = await must(
+        db
+          .from("newsletter_drafts")
+          .select("id")
+          .eq("edition_day", preparation.day)
+          .maybeSingle(),
+      );
+      if (!draft) {
+        const history = await newsletterHistory(db, preparation.day);
+        const number = await must(db.rpc("newsletter_next_edition_number"));
+        const prepared = await prepareNewsletterDraft(
+          db,
+          preparation.day,
+          preparation.weekday,
+          tok,
+          history,
+          number,
+          newsletterWindow(new Date()).due,
+        );
+        // Preparation never sends. A later scheduler tick can use the persisted snapshot.
+        return Response.json(prepared);
+      }
+      if (!newsletterWindow(new Date()).due)
+        return Response.json({ ok: true, draftPrepared: false });
+    }
     const window = newsletterWindow(new Date());
     if (!window.due) return Response.json({ ok: true, due: false });
     // Once all cohorts exist for the day, never pay to rewrite the same edition on every cron tick.
@@ -433,26 +463,38 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const saved = existing?.find(
       (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
     );
-    const previous = saved ? [] : await newsletterHistory(db, window.day);
-    const since = previous?.[0]?.created_at
-      ? new Date(previous[0].created_at)
-      : undefined;
-    const nextNumber = saved
+    const draft = saved
       ? null
-      : await must(db.rpc("newsletter_next_edition_number"));
+      : await must(
+          db
+            .from("newsletter_drafts")
+            .select("content,fingerprint")
+            .eq("edition_day", window.day)
+            .maybeSingle(),
+        );
+    if (!saved && !draft) {
+      const history = await newsletterHistory(db, window.day);
+      const number = await must(db.rpc("newsletter_next_edition_number"));
+      return Response.json(
+        await prepareNewsletterDraft(
+          db,
+          window.day,
+          window.weekday,
+          tok,
+          history,
+          number,
+          true,
+        ),
+      );
+    }
+    if (!saved && !draft?.fingerprint)
+      throw new Error("newsletter_scheduled_draft_invalid");
     const edition = saved
       ? { content: saved.payload.content, fingerprint: saved.fingerprint }
-      : await automaticNewsletter(
-          window.weekday,
-          since,
-          (previous ?? [])
-            .map(
-              (p: { payload: { content: NewsletterContent } }) =>
-                p.payload.content,
-            )
-            .filter(Boolean),
-          nextNumber,
-        );
+      : {
+          content: newsletterDraftContentSchema.parse(draft!.content),
+          fingerprint: draft!.fingerprint,
+        };
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {

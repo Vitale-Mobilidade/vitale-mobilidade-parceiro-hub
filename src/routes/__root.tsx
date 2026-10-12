@@ -14,6 +14,7 @@ import {
 import NotFound from "@/pages/NotFound";
 import { captureQuizAttribution, preserveCampaignSearch } from "@/lib/quiz-attribution";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { NewsletterExitPopup } from "@/components/site/NewsletterExitPopup";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { siteAnalytics } from "@/lib/site-analytics";
 import { safeVideos } from "@/lib/videos.functions";
@@ -152,6 +153,7 @@ function RootComponent() {
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
       {!excluded && <HotPipeWidget />}
+      <NewsletterExitPopup path={path} />
     </QueryClientProvider>
   );
 }
