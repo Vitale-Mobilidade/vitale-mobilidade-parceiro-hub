@@ -31,7 +31,7 @@ Uma secao por fonte, nenhuma omitida. Cada secao deve ter paragrafo que desenvol
 const stringArray = { type: "array", items: { type: "string" } };
 // A new catalog selection is not a new editorial angle. Make the composition
 // decision explicit inside the existing writer call, without another paid call.
-const EDITORIAL_COMPOSITION = `PLANO EDITORIAL OBRIGATORIO ANTES DA REDACAO: examine previousOpenings e identifique a ideia central, a sequencia e a forma das aberturas antigas. Escolha UM foco editorial presente em UMA fonte atual, diferente dos eixos anteriores; as demais fontes serao desenvolvidas nas secoes, nao precisam caber na abertura. Construa assunto, headline e abertura em torno desse foco. Nao enumere componentes, especificacoes ou assuntos para costurar a edicao. Nao use a formula 'lista de componentes + boas ideias', 'numeros/ficha tecnica versus vida real', 'detalhes que importam na rotina' ou um resumo de compra/uso cotidiano quando ja presente no historico. Nao troque apenas os substantivos ou sinonimos da abertura anterior. Varie tambem a composicao: uma pergunta editorial ou convite de leitura pode funcionar, sem criar fatos, cenario, curiosidade ou experiencia pessoal. A ponte para a edicao pode ser uma unica frase breve, sem listar as secoes. O plano e raciocinio interno, nao um campo do JSON nem texto para o leitor. Se correction rejeita opening por repeticao, ABANDONE por completo o foco e a estrutura dessa abertura; escolha outro foco confirmado em outra fonte atual e reescreva o alvo do zero. Nao tente salvar o mesmo eixo com sinonimos. Campos e secoes nao apontados continuam preservados.`;
+const EDITORIAL_COMPOSITION = `PLANO EDITORIAL OBRIGATORIO ANTES DA REDACAO: examine previousOpenings e identifique a ideia central, a sequencia e a forma das aberturas antigas. Escolha UM foco editorial presente em UMA fonte atual, diferente dos eixos anteriores; as demais fontes serao desenvolvidas nas secoes, nao precisam caber na abertura. Construa assunto, headline e abertura em torno desse foco. Nao enumere componentes, especificacoes ou assuntos para costurar a edicao. Nao use a formula 'lista de componentes + boas ideias', 'numeros/ficha tecnica versus vida real', 'detalhes que importam na rotina' ou um resumo de compra/uso cotidiano quando ja presente no historico. Nao troque apenas os substantivos ou sinonimos da abertura anterior. Varie tambem a composicao: uma pergunta editorial ou convite de leitura pode funcionar, sem criar fatos, cenario, curiosidade ou experiencia pessoal. A ponte para a edicao pode ser uma unica frase breve, sem listar as secoes. Foco editorial nao e resumo de um fato, especificacao ou curiosidade na abertura: a abertura continua uma ponte tematica, sem curiosidade ou fato-surpresa, conforme as regras principais. O plano e raciocinio interno, nao um campo do JSON nem texto para o leitor. Se correction rejeita opening por repeticao, ABANDONE por completo o foco e a estrutura dessa abertura; escolha outro foco confirmado em outra fonte atual e reescreva o alvo do zero. Nao tente salvar o mesmo eixo com sinonimos. Campos e secoes nao apontados continuam preservados.`;
 const draftJsonSchema = {
   type: "object",
   additionalProperties: false,
@@ -147,6 +147,7 @@ async function structured(
 const normalizeQuote = (text: string) =>
   text
     .normalize("NFC")
+    .replace(/\*\*/g, "")
     .replace(/^[“”"'‘’]+|[“”"'‘’]+$/g, "")
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
@@ -186,6 +187,7 @@ export function validateNewsletterEvidence(
     sources.some((s) => !ids.includes(s.id))
   )
     throw new Error("newsletter_writer_source_mismatch");
+  const evidenceIssues: string[] = [];
   for (const section of draft.sections) {
     const source = sources.find((s) => s.id === section.id);
     if (!source) throw new Error("newsletter_writer_source_mismatch");
@@ -195,8 +197,22 @@ export function validateNewsletterEvidence(
           !includesQuote(source.text, q) && !includesQuote(source.title, q),
       )
     )
-      throw new Error("newsletter_writer_evidence_invalid");
+      evidenceIssues.push(
+        ...section.evidence
+          .filter(
+            (q) =>
+              !includesQuote(source.text, q) && !includesQuote(source.title, q),
+          )
+          .map(
+            (q) =>
+              `${section.id}: evidence invalida: ${JSON.stringify(q)}. Substitua por copia literal de text ou quoteExamples dessa fonte, preservando palavras, numeros e condicoes.`,
+          ),
+      );
   }
+  if (evidenceIssues.length)
+    throw Object.assign(new Error("newsletter_writer_evidence_invalid"), {
+      issues: evidenceIssues,
+    });
   const words = [
     draft.headline,
     ...draft.opening,
@@ -370,6 +386,13 @@ export async function writeNewsletter(
       correction = {
         issues: [
           code,
+          ...(error instanceof Error &&
+          "issues" in error &&
+          Array.isArray(error.issues)
+            ? error.issues.filter(
+                (issue): issue is string => typeof issue === "string",
+              )
+            : []),
           "Copie evidence diretamente de text ou quoteExamples, sem parafrasear. Corrija fatos e tamanho mantendo os IDs e o tom editorial.",
         ],
         previousDraft: draft,
