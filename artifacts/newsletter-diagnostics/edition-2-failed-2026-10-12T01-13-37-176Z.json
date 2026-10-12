@@ -1,0 +1,230 @@
+{
+  "editionNumber": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 20215
+    },
+    {
+      "status": 200,
+      "ms": 10726
+    },
+    {
+      "status": 200,
+      "ms": 15398
+    },
+    {
+      "status": 200,
+      "ms": 9304
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "Dois bancos, duas baterias e uma tomada no caminho",
+        "preheader": "Garupa, recarga e detalhes urbanos entram na conversa.",
+        "headline": "Quando a rotina pede banco extra e bateria removível",
+        "opening": [
+          "A bike elétrica ganha outra personalidade quando entra na rotina: leva companhia, visita a tomada, encara a manutenção e até abre espaço para um baú. Nesta edição, potência divide o guidão com detalhes menos barulhentos — e bem mais próximos da vida real."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** reúne dois jeitos de chamar o motor: acelerador de dedo e pedal assistido por sensor de giro. No segundo, basta movimentar o pedivela; a assistência não varia de acordo com a força aplicada. No relato do vídeo, a unidade tinha 2.000 km e havia recebido suspensão e pneu de moto. O banco alongado e os apoios para os pés fazem parte da proposta para garupa."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas foi descrito como difícil de enxergar durante o dia e sem regulagem de luminosidade.",
+              "O NFC liga e desliga o sistema. Já o alarme é sonoro e **não trava a roda** — cada recurso no seu quadrado."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na família StreetGo, a diferença mais clara não está no motor: **S12 e S14 declaram 750 W** no cubo traseiro. A separação aparece na bateria removível. A S12 traz 48 V e 15 Ah; a S14, 48 V e 20 Ah. É mais reserva de energia, sem virar promessa de distância fixa — peso, relevo, velocidade e assistência continuam participando da conversa."
+            ],
+            "bullets": [
+              "As estimativas citadas são de 40 a 50 km para a S12 e 50 a 60 km para a S14, sempre sujeitas às condições de uso.",
+              "As duas são destinadas a **uma pessoa**, apesar do banco alongado, e usam suspensão apenas na dianteira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa que começa com a bike parada: onde a bateria será carregada? O modelo tem duas baterias removíveis, segundo o cadastro. Isso permite levá-las até uma tomada, mas também envolve retirar, transportar e guardar duas peças. E conectar o carregador depois de um trajeto curto não significa gastar automaticamente um ciclo completo."
+            ],
+            "bullets": [
+              "A faixa de 500 a 1.000 ciclos citada é uma referência geral, não uma especificação confirmada da V35.",
+              "Parte da manutenção passa por componentes comuns de bicicleta; bateria, motor e sistema elétrico podem exigir suporte específico."
+            ],
+            "evidence": [
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. A ficha informa motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade para duas pessoas. O banco traseiro tem apoio para os pés, enquanto o conjunto inclui suspensão dianteira e dupla traseira, freios hidráulicos a disco e câmbio Shimano de sete velocidades."
+            ],
+            "bullets": [
+              "A autonomia informada é de até 60 km, sem garantia de repetir esse alcance em todo trajeto.",
+              "A ficha também registra NFC, senha no painel, alarme sonoro e aproximadamente 44 kg. Preço vigente e histórico ficam no Radar."
+            ],
+            "evidence": [
+              "A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "Nem toda boa história elétrica começa com 1.000 W. No relato, Vitale lembra que usava uma bicicleta de 350 W, sem marchas e sem acelerador, e conseguia atender à rotina da época. O ponto do vídeo não é transformar uma ficha antiga em recomendação atual, mas aliviar a corrida pelo número mais vistoso: orçamento e uso real também seguram o guidão."
+            ],
+            "bullets": [
+              "Mais potência, capacidade de bateria e acessórios ampliam as opções, mas não tornam automaticamente inútil uma configuração mais simples.",
+              "O quiz aparece como convite opcional para explorar o perfil de uso e o orçamento, sem substituir pesquisa e planejamento financeiro."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "No teste em vídeo, a **Inow V20 Pro** percorreu um trajeto previsto de cerca de 9 km, sem sair com carga completa. A unidade declarava motor de 1.000 W no cubo traseiro e bateria de 48 V e 15.6 A. O banco bipartido é o detalhe mais versátil: a parte traseira pode ser retirada para abrir espaço a uma cadeirinha ou baú."
+            ],
+            "bullets": [
+              "O painel foi considerado difícil de ver durante o dia e não exibe a indicação das setas.",
+              "O piloto automático foi ativado mantendo a velocidade por cerca de 5 a 7 segundos e desativado ao frear, conforme o teste."
+            ],
+            "evidence": [
+              "esse banco bipartido você pode simplesmente tirar o banco se quiser deixar ela mais estreitinha"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 0,
+      "approved": false,
+      "issues": [
+        "A abertura repete a ideia e a estrutura da edição anterior: contrapõe potência a detalhes da rotina e encerra com “Nesta edição...”, reformulando o mesmo gancho já usado em “Nem toda conversa sobre bike elétrica termina em potência... Nesta edição...”.",
+        "No trecho da Inow V20 Pro, “percorreu um trajeto previsto de cerca de 9 km” não é comprovado pela transcrição. A fonte apenas anuncia que o trajeto provavelmente teria cerca de 9 km; não confirma a distância efetivamente percorrida."
+      ]
+    },
+    {
+      "stage": "draft",
+      "attempt": 1,
+      "draft": {
+        "subject": "Dois bancos, duas baterias e uma tomada no caminho",
+        "preheader": "Garupa, recarga e detalhes urbanos entram na conversa.",
+        "headline": "Quando a rotina pede banco extra e bateria removível",
+        "opening": [
+          "Banco que vira espaço para baú, bateria que passeia até a tomada e garupa com lugar próprio: boas ideias aparecem quando o desenho da bicicleta acompanha usos diferentes. A graça está justamente nessas pequenas soluções — cada uma puxando a conversa para um caminho."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** reúne dois jeitos de chamar o motor: acelerador de dedo e pedal assistido por sensor de giro. No segundo, basta movimentar o pedivela; a assistência não varia de acordo com a força aplicada. No relato do vídeo, a unidade tinha 2.000 km e havia recebido suspensão e pneu de moto. O banco alongado e os apoios para os pés fazem parte da proposta para garupa."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas foi descrito como difícil de enxergar durante o dia e sem regulagem de luminosidade.",
+              "O NFC liga e desliga o sistema. Já o alarme é sonoro e **não trava a roda** — cada recurso no seu quadrado."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na família StreetGo, a diferença mais clara não está no motor: **S12 e S14 declaram 750 W** no cubo traseiro. A separação aparece na bateria removível. A S12 traz 48 V e 15 Ah; a S14, 48 V e 20 Ah. É mais reserva de energia, sem virar promessa de distância fixa — peso, relevo, velocidade e assistência continuam participando da conversa."
+            ],
+            "bullets": [
+              "As estimativas citadas são de 40 a 50 km para a S12 e 50 a 60 km para a S14, sempre sujeitas às condições de uso.",
+              "As duas são destinadas a **uma pessoa**, apesar do banco alongado, e usam suspensão apenas na dianteira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa que começa com a bike parada: onde a bateria será carregada? O modelo tem duas baterias removíveis, segundo o cadastro. Isso permite levá-las até uma tomada, mas também envolve retirar, transportar e guardar duas peças. E conectar o carregador depois de um trajeto curto não significa gastar automaticamente um ciclo completo."
+            ],
+            "bullets": [
+              "A faixa de 500 a 1.000 ciclos citada é uma referência geral, não uma especificação confirmada da V35.",
+              "Parte da manutenção passa por componentes comuns de bicicleta; bateria, motor e sistema elétrico podem exigir suporte específico."
+            ],
+            "evidence": [
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. A ficha informa motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade para duas pessoas. O banco traseiro tem apoio para os pés, enquanto o conjunto inclui suspensão dianteira e dupla traseira, freios hidráulicos a disco e câmbio Shimano de sete velocidades."
+            ],
+            "bullets": [
+              "A autonomia informada é de até 60 km, sem garantia de repetir esse alcance em todo trajeto.",
+              "A ficha também registra NFC, senha no painel, alarme sonoro e aproximadamente 44 kg. Preço vigente e histórico ficam no Radar."
+            ],
+            "evidence": [
+              "A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "Nem toda boa história elétrica começa com 1.000 W. No relato, Vitale lembra que usava uma bicicleta de 350 W, sem marchas e sem acelerador, e conseguia atender à rotina da época. O ponto do vídeo não é transformar uma ficha antiga em recomendação atual, mas aliviar a corrida pelo número mais vistoso: orçamento e uso real também seguram o guidão."
+            ],
+            "bullets": [
+              "Mais potência, capacidade de bateria e acessórios ampliam as opções, mas não tornam automaticamente inútil uma configuração mais simples.",
+              "O quiz aparece como convite opcional para explorar o perfil de uso e o orçamento, sem substituir pesquisa e planejamento financeiro."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "No teste em vídeo, a **Inow V20 Pro** percorreu um trajeto previsto de cerca de 9 km, sem sair com carga completa. A unidade declarava motor de 1.000 W no cubo traseiro e bateria de 48 V e 15.6 A. O banco bipartido é o detalhe mais versátil: a parte traseira pode ser retirada para abrir espaço a uma cadeirinha ou baú."
+            ],
+            "bullets": [
+              "O painel foi considerado difícil de ver durante o dia e não exibe a indicação das setas.",
+              "O piloto automático foi ativado mantendo a velocidade por cerca de 5 a 7 segundos e desativado ao frear, conforme o teste."
+            ],
+            "evidence": [
+              "esse banco bipartido você pode simplesmente tirar o banco se quiser deixar ela mais estreitinha"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 1,
+      "approved": false,
+      "issues": [
+        "A abertura e o assunto repetem de forma muito próxima a edição anterior: voltam à combinação “banco, bateria e boas ideias”, com a mesma estrutura editorial baseada em detalhes da rotina. Isso viola a exigência de independência em relação a previousOpenings.",
+        "No trecho sobre a Inow V20 Pro, “percorreu um trajeto previsto de cerca de 9 km” não é comprovado pela transcrição. A fonte apenas anuncia que o trajeto seria provavelmente de cerca de 9 km; não confirma que ele foi concluído."
+      ]
+    },
+    {
+      "stage": "error",
+      "attempt": 1,
+      "code": "newsletter_writer_review_failed"
+    }
+  ]
+}
