@@ -32,6 +32,55 @@ const draft: NewsletterDraft = {
 };
 afterEach(() => vi.unstubAllEnvs());
 describe("newsletter editorial", () => {
+  it("compares literal words across bold formatting without accepting changed facts", () => {
+    const marked = {
+      ...source,
+      text: "A escolha começa pelas **necessidades do trajeto** e pelos dados da ficha publicada.",
+    };
+    expect(() => validateNewsletterEvidence(draft, [marked])).not.toThrow();
+    expect(() =>
+      validateNewsletterEvidence(
+        {
+          ...draft,
+          sections: [
+            {
+              ...draft.sections[0],
+              evidence: [
+                "A escolha começa pelas necessidades do motor e pelos dados da ficha publicada.",
+              ],
+            },
+          ],
+        },
+        [marked],
+      ),
+    ).toThrow("evidence_invalid");
+  });
+  it("identifies every invalid quote and its section for the bounded repair", () => {
+    const sources = [source, { ...source, id: "other" }];
+    const invalid = "Uma autonomia garantida de 200 quilômetros.";
+    try {
+      validateNewsletterEvidence(
+        {
+          ...draft,
+          sections: sources.map((s) => ({
+            ...draft.sections[0],
+            id: s.id,
+            evidence: [invalid],
+          })),
+        },
+        sources,
+      );
+      expect.fail("invented evidence must be rejected");
+    } catch (error) {
+      expect(error).toMatchObject({
+        message: "newsletter_writer_evidence_invalid",
+        issues: [
+          expect.stringContaining("article: evidence invalida"),
+          expect.stringContaining("other: evidence invalida"),
+        ],
+      });
+    }
+  });
   it("rejects a literal quote that is not in the given source", () => {
     expect(() =>
       validateNewsletterEvidence(
