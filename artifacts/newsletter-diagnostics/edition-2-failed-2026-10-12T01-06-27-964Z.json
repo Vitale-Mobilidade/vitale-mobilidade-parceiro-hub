@@ -1,0 +1,229 @@
+{
+  "editionNumber": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 19309
+    },
+    {
+      "status": 200,
+      "ms": 10371
+    },
+    {
+      "status": 200,
+      "ms": 15108
+    },
+    {
+      "status": 200,
+      "ms": 13546
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "Garupa, bateria e planilha: cada pedal pede uma coisa",
+        "preheader": "V8 Pro, StreetGo, BW1 e V35 mostram rotinas bem diferentes.",
+        "headline": "Dois no banco, duas baterias e muitas contas no caminho",
+        "opening": [
+          "A bicicleta elétrica da vez pode carregar garupa, esticar o caminho ou simplesmente caber na vida sem malabarismo financeiro. Nesta edição, banco, bateria e orçamento dividem o guidão — e ainda sobra espaço para uma boa história de trânsito."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** junta duas maneiras de chamar o motor: acelerador de dedo e pedal assistido com sensor de giro. Nesse segundo caso, basta movimentar o pedivela; a assistência não varia conforme a força aplicada. O banco alongado e os apoios para os pés fazem do garupa parte do projeto, não um passageiro espremido por criatividade."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não oferece ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é sonoro e **não trava a roda**."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "O site da Vitale começa pelo quiz, que cruza perfil de uso e orçamento e envia duas sugestões pelo WhatsApp. É um convite opcional para organizar as ideias, não um oráculo de guidão. Depois entram as calculadoras, nas quais os números mais úteis são justamente os menos glamourosos: seus gastos e trajetos reais."
+            ],
+            "bullets": [
+              "O Radar mostra o histórico de preços dos últimos **7, 14 ou 30 dias** e permite criar um alerta pelo WhatsApp.",
+              "Há simulações envolvendo carro, moto, aplicativo, transporte público, locação, entregas e tempo de deslocamento."
+            ],
+            "evidence": [
+              "O site da Vitale reúne um quiz, histórico de preços e calculadoras para ajudar nessas etapas — sem substituir as contas feitas com os seus próprios dados."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "Na família StreetGo, o sobrenome maior não traz motor mais potente: **S12 e S14 têm 750 W** declarados no cubo traseiro. A separação prática está na bateria removível. São 48 V e 15 Ah na S12 contra 48 V e 20 Ah na S14. Mais reserva de energia, sim; quilometragem gravada em pedra, nunca."
+            ],
+            "bullets": [
+              "As estimativas citadas são de **40 a 50 km** para a S12 e **50 a 60 km** para a S14, sujeitas às condições de uso.",
+              "Ambas são destinadas a uma pessoa e têm suspensão dianteira, sem suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** estava com oferta ativa durante a preparação desta edição. A ficha combina motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. O banco traseiro tem apoio para os pés, embora seja descrito como mais curto que o da V9 Max."
+            ],
+            "bullets": [
+              "A autonomia informada chega a **60 km**, sem garantia de repetir esse alcance em qualquer trajeto.",
+              "O conjunto inclui freios hidráulicos, suspensão dianteira e dupla traseira, além de câmbio Shimano de sete velocidades."
+            ],
+            "evidence": [
+              "Consulte a ficha, o preço vigente e o histórico no Radar. A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "Nem toda boa história começa com 1.000 W. No relato do Vitale, uma bicicleta antiga de 350 W, sem marcha nem acelerador, já atendia à rotina dele anos atrás. O vídeo usa essa lembrança para tirar a ficha técnica do pedestal: a bicicleta possível pode fazer mais sentido que uma busca interminável pelo modelo máximo."
+            ],
+            "bullets": [
+              "O ponto central é alinhar a bicicleta ao **uso e ao orçamento**, sem loucura financeira.",
+              "O quiz aparece como caminho opcional para explorar duas sugestões de modelos pelo WhatsApp."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "O teste da **V35** saiu da região da Vila Mariana em direção à Consolação e Higienópolis, em São Paulo. O título registra 11 km em 24 minutos. A bicicleta usada tinha duas baterias de 48 V e 15.6 cada, motor de 1.000 W no cubo traseiro e piloto automático acionado após manter a velocidade por alguns segundos."
+            ],
+            "bullets": [
+              "A estimativa relatada com as duas baterias foi de **80 a 100 km**, andando de maneira tranquila; não é autonomia garantida.",
+              "O piloto automático é desativado com um toque no freio. A V35 também tem acelerador de meio punho e pedal assistido por sensor de giro."
+            ],
+            "evidence": [
+              "Título do vídeo: BIKE ELÉTRICA V35 no TRÂNSITO de SP: 11km em 24min (TESTE REAL)."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 0,
+      "approved": false,
+      "issues": [
+        "Assunto, título e abertura repetem a ideia e a estrutura da edição anterior: a combinação de banco/garupa, bateria e contas/planilha retoma diretamente “Banco, bateria e boas ideias”, “planilha” e “a rua encontra a calculadora”, ainda que reformulada."
+      ]
+    },
+    {
+      "stage": "draft",
+      "attempt": 1,
+      "draft": {
+        "subject": "Polegar, pedal e piloto: o motor atende por vários nomes",
+        "preheader": "V8 Pro, StreetGo, BW1 e V35 mostram rotinas bem diferentes.",
+        "headline": "Tem motor no pé, na mão e até mantendo o ritmo",
+        "opening": [
+          "O giro desta edição passa pelos diferentes jeitos de colocar uma elétrica em movimento. Tem comando no polegar, assistência ao pedalar, piloto automático e aquela velha habilidade de fazer as contas sem deixar a diversão estacionada."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** junta duas maneiras de chamar o motor: acelerador de dedo e pedal assistido com sensor de giro. Nesse segundo caso, basta movimentar o pedivela; a assistência não varia conforme a força aplicada. O banco alongado e os apoios para os pés fazem do garupa parte do projeto, não um passageiro espremido por criatividade."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não oferece ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é sonoro e **não trava a roda**."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "O site da Vitale começa pelo quiz, que cruza perfil de uso e orçamento e envia duas sugestões pelo WhatsApp. É um convite opcional para organizar as ideias, não um oráculo de guidão. Depois entram as calculadoras, nas quais os números mais úteis são justamente os menos glamourosos: seus gastos e trajetos reais."
+            ],
+            "bullets": [
+              "O Radar mostra o histórico de preços dos últimos **7, 14 ou 30 dias** e permite criar um alerta pelo WhatsApp.",
+              "Há simulações envolvendo carro, moto, aplicativo, transporte público, locação, entregas e tempo de deslocamento."
+            ],
+            "evidence": [
+              "O site da Vitale reúne um quiz, histórico de preços e calculadoras para ajudar nessas etapas — sem substituir as contas feitas com os seus próprios dados."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "Na família StreetGo, o sobrenome maior não traz motor mais potente: **S12 e S14 têm 750 W** declarados no cubo traseiro. A separação prática está na bateria removível. São 48 V e 15 Ah na S12 contra 48 V e 20 Ah na S14. Mais reserva de energia, sim; quilometragem gravada em pedra, nunca."
+            ],
+            "bullets": [
+              "As estimativas citadas são de **40 a 50 km** para a S12 e **50 a 60 km** para a S14, sujeitas às condições de uso.",
+              "Ambas são destinadas a uma pessoa e têm suspensão dianteira, sem suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** estava com oferta ativa durante a preparação desta edição. A ficha combina motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. O banco traseiro tem apoio para os pés, embora seja descrito como mais curto que o da V9 Max."
+            ],
+            "bullets": [
+              "A autonomia informada chega a **60 km**, sem garantia de repetir esse alcance em qualquer trajeto.",
+              "O conjunto inclui freios hidráulicos, suspensão dianteira e dupla traseira, além de câmbio Shimano de sete velocidades."
+            ],
+            "evidence": [
+              "Consulte a ficha, o preço vigente e o histórico no Radar. A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "Nem toda boa história começa com 1.000 W. No relato do Vitale, uma bicicleta antiga de 350 W, sem marcha nem acelerador, já atendia à rotina dele anos atrás. O vídeo usa essa lembrança para tirar a ficha técnica do pedestal: a bicicleta possível pode fazer mais sentido que uma busca interminável pelo modelo máximo."
+            ],
+            "bullets": [
+              "O ponto central é alinhar a bicicleta ao **uso e ao orçamento**, sem loucura financeira.",
+              "O quiz aparece como caminho opcional para explorar duas sugestões de modelos pelo WhatsApp."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "O teste da **V35** saiu da região da Vila Mariana em direção à Consolação e Higienópolis, em São Paulo. O título registra 11 km em 24 minutos. A bicicleta usada tinha duas baterias de 48 V e 15.6 cada, motor de 1.000 W no cubo traseiro e piloto automático acionado após manter a velocidade por alguns segundos."
+            ],
+            "bullets": [
+              "A estimativa relatada com as duas baterias foi de **80 a 100 km**, andando de maneira tranquila; não é autonomia garantida.",
+              "O piloto automático é desativado com um toque no freio. A V35 também tem acelerador de meio punho e pedal assistido por sensor de giro."
+            ],
+            "evidence": [
+              "Título do vídeo: BIKE ELÉTRICA V35 no TRÂNSITO de SP: 11km em 24min (TESTE REAL)."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 1,
+      "approved": false,
+      "issues": [
+        "A abertura repete a ideia e a fórmula da edição anterior: volta a combinar bicicletas, contas e diversão, com uma metáfora final equivalente a “a rua encontra a calculadora — sem perder a graça”.",
+        "A seção de ferramentas da Vitale repete conteúdo já presente em previousOpenings, incluindo quiz com sugestões pelo WhatsApp, Radar com histórico de 7, 14 e 30 dias, alertas e calculadoras de transporte."
+      ]
+    },
+    {
+      "stage": "error",
+      "attempt": 1,
+      "code": "newsletter_writer_review_failed"
+    }
+  ]
+}
