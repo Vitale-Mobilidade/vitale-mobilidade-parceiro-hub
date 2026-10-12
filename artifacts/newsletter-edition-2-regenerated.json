@@ -1,0 +1,159 @@
+{
+  "generatedAt": "2026-10-12T02:28:22.705Z",
+  "draftId": "a9eb0c61-c41f-4129-ba6f-e018d3c2d5f1",
+  "editionNumber": 2,
+  "fingerprint": "33cbdd7d5464e2bd5b467877a8e37af1a9c481acc927d7c277f71350bdd84d6e",
+  "aiCalls": [
+    {
+      "status": 200,
+      "ms": 17838
+    },
+    {
+      "status": 200,
+      "ms": 8571
+    }
+  ],
+  "subject": "#2 — V20 Pro: o segundo banco ganhou outro emprego",
+  "content": {
+    "editionNumber": 2,
+    "sourceVideoIds": [
+      "TfymDlE-a7w",
+      "PFX5iky9U48",
+      "1E4ZIHNtssg",
+      "mN3vEmdRE6c",
+      "FvQu1X-cR7Y"
+    ],
+    "mentionedBikeIds": [
+      "bw1",
+      "s14",
+      "v9_max_s",
+      "v8_pro_s",
+      "v20_pro",
+      "v8_pro",
+      "s12",
+      "v35"
+    ],
+    "subject": "#2 — V20 Pro: o segundo banco ganhou outro emprego",
+    "headline": "Sai o banco, entra o plano B na V20 Pro",
+    "preheader": "Um assento removível abre espaço para cadeirinha ou baú — e a edição ainda passa por garupa, baterias e manutenção.",
+    "intro": "Uma bicicleta não precisa fazer sempre o mesmo papel. A graça desta edição está justamente na possibilidade de reorganizar o espaço conforme o dia pede. O pedal continua sendo pedal, mas o segundo banco pode ter outros planos.",
+    "articles": [
+      {
+        "title": "OUXI V8 Pro no uso urbano: pedal assistido, painel e espaço para garupa",
+        "category": "Conheça a bike",
+        "url": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-no-uso-urbano-pedal-assistido-painel-e-espaco-para-garupa",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=8a727574-0b7f-447e-bcaf-4050e416c8c5&file=1692b521-128d-499a-9e29-f1fc027e822b",
+        "paragraphs": [
+          "A **OUXI V8 Pro** oferece duas formas de chamar o motor para a conversa: acelerador de dedo ou pedal assistido por sensor de giro. Nesse sensor, basta movimentar o pedivela; a resposta não varia conforme a força aplicada. O modelo também foi concebido para duas pessoas, com banco alongado e apoio para os pés da garupa."
+        ],
+        "bullets": [
+          "O painel confirma o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não possui ajuste de luminosidade.",
+          "O NFC liga e desliga o sistema; o alarme é sonoro e **não trava a roda**."
+        ]
+      },
+      {
+        "title": "StreetGo S12 ou S14: o que muda na escolha?",
+        "category": "Comparativo",
+        "url": "https://vitalemobilidade.com/conteudos/streetgo-s12-ou-s14-o-que-muda-na-escolha",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=7ed65f37-f929-40fc-93ed-2ff548553f23&file=34391862-6acd-4943-b321-eaaf59f90884",
+        "paragraphs": [
+          "**StreetGo S12** e **StreetGo S14** declaram o mesmo motor de 750 W no cubo traseiro. A separação mais clara está na bateria removível: 48 V e 15 Ah na S12, contra 48 V e 20 Ah na S14. As estimativas citadas são de 40 a 50 km e 50 a 60 km, respectivamente, sempre sujeitas a peso, relevo, velocidade e assistência."
+        ],
+        "bullets": [
+          "As duas têm aro 20, pneus de 4 polegadas, suspensão dianteira e nenhuma suspensão traseira.",
+          "Apesar do formato alongado dos bancos, ambas são indicadas para **uma pessoa**."
+        ]
+      },
+      {
+        "title": "Bicicleta elétrica: o que saber sobre bateria, recarga e manutenção antes de comprar",
+        "category": "Guia e dicas",
+        "url": "https://vitalemobilidade.com/conteudos/bicicleta-eletrica-o-que-saber-sobre-bateria-recarga-e-manutencao-antes-de-comprar",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=6669e52d-2f51-45ad-bb4a-c63b0b10620e&file=f4f2627e-6a77-4d58-9847-6b987d000667",
+        "paragraphs": [
+          "A **Inow V35** ajuda a puxar uma conversa que começa quando a bike para: onde carregar? Segundo o cadastro, ela possui duas baterias removíveis. Isso permite levá-las até uma tomada, mas também significa retirar, transportar e guardar duas peças. Já as pequenas recargas não devem ser confundidas, cada uma, com um ciclo completo."
+        ],
+        "bullets": [
+          "A referência de 500 a 1.000 ciclos é geral, não uma especificação confirmada para a V35.",
+          "Bicicletarias podem cuidar de componentes mecânicos; bateria e motor podem exigir suporte elétrico específico."
+        ]
+      }
+    ],
+    "radar": {
+      "title": "Radar de preços",
+      "url": "https://vitalemobilidade.com/radar"
+    },
+    "drops": [
+      {
+        "title": "S14",
+        "previousPrice": "R$ 9.999,00",
+        "currentPrice": "R$ 9.490,00",
+        "baselineDate": "2026-10-06",
+        "dropLabel": "−5,1%",
+        "checkedAt": "11/10/2026, 23:07:03",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=s14",
+        "url": "https://vitalemobilidade.com/radar/s14"
+      },
+      {
+        "title": "V9 Max S",
+        "previousPrice": "R$ 8.402,00",
+        "currentPrice": "R$ 8.147,00",
+        "baselineDate": "2026-10-06",
+        "dropLabel": "−3,0%",
+        "checkedAt": "11/10/2026, 23:07:03",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v9_max_s",
+        "url": "https://vitalemobilidade.com/radar/v9_max_s"
+      },
+      {
+        "title": "V8 Pro S",
+        "previousPrice": "R$ 8.467,00",
+        "currentPrice": "R$ 8.292,00",
+        "baselineDate": "2026-10-06",
+        "dropLabel": "−2,1%",
+        "checkedAt": "11/10/2026, 23:07:03",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v8_pro_s",
+        "url": "https://vitalemobilidade.com/radar/v8_pro_s"
+      }
+    ],
+    "bike": {
+      "title": "BW1",
+      "url": "https://vitalemobilidade.com/radar/bw1",
+      "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=bw1",
+      "paragraphs": [
+        "No Radar, a **BW1** está com oferta ativa no momento da preparação. Sem marca identificada, ela reúne motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. A autonomia da ficha chega a 60 km, mas não garante esse alcance em qualquer trajeto."
+      ],
+      "bullets": [
+        "O conjunto inclui suspensões dianteira e dupla traseira, pneus 20 x 4.0 e freios hidráulicos a disco.",
+        "O Radar reúne **preço vigente, ficha e histórico** para acompanhar a oferta sem corrida até o caixa."
+      ]
+    },
+    "videos": [
+      {
+        "title": "A MELHOR BIKE ELÉTRICA é a que você CONSEGUE COMPRAR!",
+        "category": "Variedades",
+        "url": "https://www.youtube.com/watch?v=mN3vEmdRE6c",
+        "image": "https://i.ytimg.com/vi/mN3vEmdRE6c/mqdefault.jpg",
+        "paragraphs": [
+          "Nem toda evolução precisa começar no topo da prateleira. No vídeo, Vitale recorda que usava diariamente uma bicicleta de 350 W, sem marcha nem acelerador, e relata autonomia entre 20 e 25 km. A mensagem é menos sobre caçar um número campeão e mais sobre respeitar o orçamento — sem inventar uma manobra financeira digna de circo."
+        ],
+        "bullets": [
+          "O relato contrapõe aquela configuração antiga aos modelos atuais de 1.000 W e baterias maiores.",
+          "O quiz é um convite opcional para explorar opções conforme perfil de uso e orçamento."
+        ]
+      },
+      {
+        "title": "Inow V20 Pro 1000W Teste Completo NA PRÁTICA",
+        "category": "Teste na prática",
+        "url": "https://www.youtube.com/watch?v=FvQu1X-cR7Y",
+        "image": "https://i.ytimg.com/vi/FvQu1X-cR7Y/mqdefault.jpg",
+        "paragraphs": [
+          "Na **Inow V20 Pro**, o banco bipartido abre uma possibilidade interessante: a almofada traseira pode ser retirada para prender uma cadeirinha infantil ou um baú de trabalho. No teste relatado, a unidade tinha motor de 1.000 W, bateria descrita como 48 V e 15.6 A, freios hidráulicos, NFC e alarme sonoro."
+        ],
+        "bullets": [
+          "O painel não mostra as setas e foi considerado um pouco difícil de enxergar durante o dia.",
+          "O piloto automático é ativado mantendo a velocidade por cerca de 5 a 7 segundos e desativado ao frear."
+        ]
+      }
+    ]
+  },
+  "text": "Salve {{{FIRST_NAME|}}}\n\nSai o banco, entra o plano B na V20 Pro\n\nUma bicicleta não precisa fazer sempre o mesmo papel. A graça desta edição está justamente na possibilidade de reorganizar o espaço conforme o dia pede. O pedal continua sendo pedal, mas o segundo banco pode ter outros planos.\n\nOUXI V8 Pro no uso urbano: pedal assistido, painel e espaço para garupa\n\nA OUXI V8 Pro oferece duas formas de chamar o motor para a conversa: acelerador de dedo ou pedal assistido por sensor de giro. Nesse sensor, basta movimentar o pedivela; a resposta não varia conforme a força aplicada. O modelo também foi concebido para duas pessoas, com banco alongado e apoio para os pés da garupa.\n\n• O painel confirma o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não possui ajuste de luminosidade.\n\n• O NFC liga e desliga o sistema; o alarme é sonoro e não trava a roda.\n\nhttps://vitalemobilidade.com/conteudos/ouxi-v8-pro-no-uso-urbano-pedal-assistido-painel-e-espaco-para-garupa?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_article_1\n\n---\n\nStreetGo S12 ou S14: o que muda na escolha?\n\nStreetGo S12 e StreetGo S14 declaram o mesmo motor de 750 W no cubo traseiro. A separação mais clara está na bateria removível: 48 V e 15 Ah na S12, contra 48 V e 20 Ah na S14. As estimativas citadas são de 40 a 50 km e 50 a 60 km, respectivamente, sempre sujeitas a peso, relevo, velocidade e assistência.\n\n• As duas têm aro 20, pneus de 4 polegadas, suspensão dianteira e nenhuma suspensão traseira.\n\n• Apesar do formato alongado dos bancos, ambas são indicadas para uma pessoa.\n\nhttps://vitalemobilidade.com/conteudos/streetgo-s12-ou-s14-o-que-muda-na-escolha?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_article_2\n\n---\n\nBicicleta elétrica: o que saber sobre bateria, recarga e manutenção antes de comprar\n\nA Inow V35 ajuda a puxar uma conversa que começa quando a bike para: onde carregar? Segundo o cadastro, ela possui duas baterias removíveis. Isso permite levá-las até uma tomada, mas também significa retirar, transportar e guardar duas peças. Já as pequenas recargas não devem ser confundidas, cada uma, com um ciclo completo.\n\n• A referência de 500 a 1.000 ciclos é geral, não uma especificação confirmada para a V35.\n\n• Bicicletarias podem cuidar de componentes mecânicos; bateria e motor podem exigir suporte elétrico específico.\n\nhttps://vitalemobilidade.com/conteudos/bicicleta-eletrica-o-que-saber-sobre-bateria-recarga-e-manutencao-antes-de-comprar?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_article_3\n\n---\n\nRadar de preços\n\nhttps://vitalemobilidade.com/radar?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_radar\n\n---\n\nBW1\n\nNo Radar, a BW1 está com oferta ativa no momento da preparação. Sem marca identificada, ela reúne motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. A autonomia da ficha chega a 60 km, mas não garante esse alcance em qualquer trajeto.\n\n• O conjunto inclui suspensões dianteira e dupla traseira, pneus 20 x 4.0 e freios hidráulicos a disco.\n\n• O Radar reúne preço vigente, ficha e histórico para acompanhar a oferta sem corrida até o caixa.\n\nhttps://vitalemobilidade.com/radar/bw1?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_bike\n\n---\n\nA MELHOR BIKE ELÉTRICA é a que você CONSEGUE COMPRAR!\n\nNem toda evolução precisa começar no topo da prateleira. No vídeo, Vitale recorda que usava diariamente uma bicicleta de 350 W, sem marcha nem acelerador, e relata autonomia entre 20 e 25 km. A mensagem é menos sobre caçar um número campeão e mais sobre respeitar o orçamento — sem inventar uma manobra financeira digna de circo.\n\n• O relato contrapõe aquela configuração antiga aos modelos atuais de 1.000 W e baterias maiores.\n\n• O quiz é um convite opcional para explorar opções conforme perfil de uso e orçamento.\n\nhttps://www.youtube.com/watch?v=mN3vEmdRE6c&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_video_1\n\n---\n\nInow V20 Pro 1000W Teste Completo NA PRÁTICA\n\nNa Inow V20 Pro, o banco bipartido abre uma possibilidade interessante: a almofada traseira pode ser retirada para prender uma cadeirinha infantil ou um baú de trabalho. No teste relatado, a unidade tinha motor de 1.000 W, bateria descrita como 48 V e 15.6 A, freios hidráulicos, NFC e alarme sonoro.\n\n• O painel não mostra as setas e foi considerado um pouco difícil de enxergar durante o dia.\n\n• O piloto automático é ativado mantendo a velocidade por cerca de 5 a 7 segundos e desativado ao frear.\n\nhttps://www.youtube.com/watch?v=FvQu1X-cR7Y&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_video_2\n\nRADAR — QUEDAS\nS14\n−5,1%\nAnterior: R$ 9.999,00\nAtual: R$ 9.490,00\nhttps://vitalemobilidade.com/radar/s14?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_radar_drop_1\n\nV9 Max S\n−3,0%\nAnterior: R$ 8.402,00\nAtual: R$ 8.147,00\nhttps://vitalemobilidade.com/radar/v9_max_s?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_radar_drop_2\n\nV8 Pro S\n−2,1%\nAnterior: R$ 8.467,00\nAtual: R$ 8.292,00\nhttps://vitalemobilidade.com/radar/v8_pro_s?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_radar_drop_3\nFechamentos anteriores: 2026-10-06. Verificação: 11/10/2026, 23:07:03. Preços e disponibilidade podem mudar.\n\nQUIZ — Qual bike combina com a sua rotina? https://vitalemobilidade.com/quiz?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_2&utm_content=general_quiz\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}"
+}
