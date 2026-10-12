@@ -1249,7 +1249,10 @@ export type Database = {
         Row: {
           content: Json
           created_at: string
-          edited_by: string
+          edited_by: string | null
+          edition_day: string | null
+          fingerprint: string | null
+          generation_mode: string
           id: string
           origin: string
           revision: number
@@ -1258,7 +1261,10 @@ export type Database = {
         Insert: {
           content: Json
           created_at?: string
-          edited_by: string
+          edited_by?: string | null
+          edition_day?: string | null
+          fingerprint?: string | null
+          generation_mode?: string
           id?: string
           origin: string
           revision?: number
@@ -1267,11 +1273,35 @@ export type Database = {
         Update: {
           content?: Json
           created_at?: string
-          edited_by?: string
+          edited_by?: string | null
+          edition_day?: string | null
+          fingerprint?: string | null
+          generation_mode?: string
           id?: string
           origin?: string
           revision?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      newsletter_preparations: {
+        Row: {
+          attempts: number
+          edition_day: string
+          last_error: string | null
+          next_attempt_at: string | null
+        }
+        Insert: {
+          attempts: number
+          edition_day: string
+          last_error?: string | null
+          next_attempt_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          edition_day?: string
+          last_error?: string | null
+          next_attempt_at?: string | null
         }
         Relationships: []
       }
@@ -2220,6 +2250,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_quiz_bike_counts_range: {
+        Args: { p_since: string; p_until: string }
+        Returns: {
+          bike_id: string
+          bike_name: string
+          primary_recommendations: number
+          quiz_offer_clicks: number
+          secondary_recommendations: number
+        }[]
+      }
       admin_quiz_bike_metrics: {
         Args: { p_since: string }
         Returns: {
@@ -2231,8 +2271,20 @@ export type Database = {
         }[]
       }
       admin_quiz_bike_metrics_json: { Args: { p_since: string }; Returns: Json }
+      admin_quiz_bikes_range: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
       admin_quiz_funnel_metrics: { Args: { p_since: string }; Returns: Json }
+      admin_quiz_funnel_range: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
       admin_site_analytics_metrics: { Args: { p_since: string }; Returns: Json }
+      admin_site_analytics_range: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
       authorize_price_alert_hotpipe: {
         Args: { issued_at: string; signature: string }
         Returns: boolean
