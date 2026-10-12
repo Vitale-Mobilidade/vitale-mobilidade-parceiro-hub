@@ -69,6 +69,10 @@ export const newsletterSchema = z.object({
     .refine((s) => !/[\r\n]/.test(s)),
   intro: z.string().trim().min(1).max(1800),
   editionNumber: z.number().int().min(1).optional(),
+  mentionedBikeIds: z
+    .array(z.string().regex(/^[a-z0-9_]+$/))
+    .max(100)
+    .optional(),
   headline: z.string().trim().min(10).max(100).optional(),
   preheader: z.string().trim().min(20).max(150).optional(),
   radar: item.optional(),
@@ -99,11 +103,14 @@ export const NEWSLETTER_OPENINGS = {
 };
 export function newsletterEmphasis(text: string): string {
   let count = 0;
-  return escapeNewsletter(text).replace(/\*\*([^*\n]{1,120})\*\*/g, (_match, value: string) =>
-    count++ < 3 ? `<strong>${value}</strong>` : value,
+  return escapeNewsletter(text).replace(
+    /\*\*([^*\n]{1,120})\*\*/g,
+    (_match, value: string) =>
+      count++ < 3 ? `<strong>${value}</strong>` : value,
   );
 }
-const plainNewsletter = (text: string) => text.replace(/\*\*([^*\n]+)\*\*/g, "$1");
+const plainNewsletter = (text: string) =>
+  text.replace(/\*\*([^*\n]+)\*\*/g, "$1");
 
 export function escapeNewsletter(value: string) {
   return value.replace(
@@ -188,10 +195,7 @@ export function renderResendNewsletter(
   const rendered = renderNewsletter({ ...input, unsubscribeUrl: marker });
   let html = rendered.html
     .replace(marker, "{{{RESEND_UNSUBSCRIBE_URL}}}")
-    .replace(
-      "<h1 style=",
-      "<p>Salve {{{FIRST_NAME|}}}</p><h1 style=",
-    );
+    .replace("<h1 style=", "<p>Salve {{{FIRST_NAME|}}}</p><h1 style=");
   if (segment === "radar") {
     const start = html.indexOf('<h2 style="font-size:20px">Radar de preços');
     const end = html.indexOf('<h2 style="font-size:20px">Vídeos recentes');
@@ -342,7 +346,7 @@ export function renderEditorialNewsletter(
     )
     .join(
       "",
-    )}<p style="font-size:12px;color:#476756;margin:24px 0 0">NESTA EDIÇÃO · LEITURAS · RADAR · BIKE · VÍDEOS</p></td></tr>${segment === "radar" ? radarRow + bikeRow + articleRows : articleRows + radarRow + bikeRow}${videosRow}${section("Encontre a bike para o seu perfil", `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:22px"><a href="${e(quizUrl)}"><img src="https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg" alt="Quiz Vitale: encontre a bike para seu perfil" width="568" style="width:100%;height:auto;display:block;border:0"></a><h2 style="font-size:24px">Qual bike combina com a sua rotina?</h2><p style="font-size:16px;line-height:1.65">Responda sobre seu uso, trajeto e orçamento. O Quiz da Vitale ajuda a conectar seu perfil às bikes compatíveis; depois, confira os detalhes e os preços no Radar.</p>${button(quizUrl, "Fazer o Quiz")}</td></tr></table>`)}${section("Siga a gente no YouTube", `<h2 style="font-size:24px">A conversa continua no canal</h2><p style="font-size:16px;line-height:1.65">A Vitale Mobilidade é um canal no YouTube. Tem teste na prática, comparativo e muita conversa sobre mobilidade elétrica. Inscreva-se para acompanhar os próximos vídeos!</p>${button(tracked(YOUTUBE_SUBSCRIBE, "youtube_subscribe"), "Inscreva-se no YouTube") }<p style="font-size:14px;line-height:1.8">${SOCIAL_LINKS.map((profile) => `<a href="${e(tracked(profile.url, `social_${profile.label.toLowerCase()}`))}" style="color:#165b42;font-weight:bold">${e(profile.label)}</a>`).join(" · ")}</p>`)}<tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#d9e6d5;font-size:12px;line-height:1.7"><p style="font-size:16px;color:white;font-weight:bold">Vamos conversar sobre mobilidade?</p><p>Responda este e-mail para falar com a equipe Vitale Mobilidade.</p><p>Você recebeu esta edição porque se inscreveu na newsletter. Preços e disponibilidade podem mudar; confira os dados atuais no Radar.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#ffffff">Cancelar inscrição</a> · <a href="${e(tracked("https://vitalemobilidade.com/privacidade", "privacy"))}" style="color:#ffffff">Privacidade</a></p></td></tr></table></td></tr></table></body></html>`;
+    )}<p style="font-size:12px;color:#476756;margin:24px 0 0">NESTA EDIÇÃO · LEITURAS · RADAR · BIKE · VÍDEOS</p></td></tr>${segment === "radar" ? radarRow + bikeRow + articleRows : articleRows + radarRow + bikeRow}${videosRow}${section("Encontre a bike para o seu perfil", `<table role="presentation" width="100%" bgcolor="#edf4ee"><tr><td style="padding:22px"><a href="${e(quizUrl)}"><img src="https://vitalemobilidade.com/og/vitale-quiz-20260930-1200x630.jpg" alt="Quiz Vitale: encontre a bike para seu perfil" width="568" style="width:100%;height:auto;display:block;border:0"></a><h2 style="font-size:24px">Qual bike combina com a sua rotina?</h2><p style="font-size:16px;line-height:1.65">Responda sobre seu uso, trajeto e orçamento. O Quiz da Vitale ajuda a conectar seu perfil às bikes compatíveis; depois, confira os detalhes e os preços no Radar.</p>${button(quizUrl, "Fazer o Quiz")}</td></tr></table>`)}${section("Siga a gente no YouTube", `<h2 style="font-size:24px">A conversa continua no canal</h2><p style="font-size:16px;line-height:1.65">A Vitale Mobilidade é um canal no YouTube. Tem teste na prática, comparativo e muita conversa sobre mobilidade elétrica. Inscreva-se para acompanhar os próximos vídeos!</p>${button(tracked(YOUTUBE_SUBSCRIBE, "youtube_subscribe"), "Inscreva-se no YouTube")}<p style="font-size:14px;line-height:1.8">${SOCIAL_LINKS.map((profile) => `<a href="${e(tracked(profile.url, `social_${profile.label.toLowerCase()}`))}" style="color:#165b42;font-weight:bold">${e(profile.label)}</a>`).join(" · ")}</p>`)}<tr><td bgcolor="#173d2a" style="padding:28px 24px;color:#d9e6d5;font-size:12px;line-height:1.7"><p style="font-size:16px;color:white;font-weight:bold">Vamos conversar sobre mobilidade?</p><p>Responda este e-mail para falar com a equipe Vitale Mobilidade.</p><p>Você recebeu esta edição porque se inscreveu na newsletter. Preços e disponibilidade podem mudar; confira os dados atuais no Radar.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#ffffff">Cancelar inscrição</a> · <a href="${e(tracked("https://vitalemobilidade.com/privacidade", "privacy"))}" style="color:#ffffff">Privacidade</a></p></td></tr></table></td></tr></table></body></html>`;
   const items =
     segment === "radar"
       ? [radar, data.bike, ...data.articles, ...data.videos]

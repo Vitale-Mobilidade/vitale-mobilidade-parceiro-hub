@@ -1,3 +1,7 @@
+import {
+  newsletterCandidateModels,
+  newsletterModelFamily,
+} from "./newsletter-models";
 export type NewsletterCategory =
   "comparison" | "practical" | "review" | "guide" | "price" | "variety";
 export const NEWSLETTER_CATEGORY_LABELS = {
@@ -79,6 +83,7 @@ export function curateNewsletter<
   since: Date,
   now = new Date(),
   excludedTitles: string[] = [],
+  recentBikeIds: string[] = [],
 ) {
   // Entire published archive is eligible; newest unseen content first.
   void since;
@@ -98,26 +103,15 @@ export function curateNewsletter<
   const videoIds = new Set<string>();
   const titles = new Set<string>();
   const bikeIds = new Set<string>();
-  const modelKeys = (x: NewsletterCandidate) => {
-    const explicit = [
-      x.primaryBikeId,
-      ...(x.relatedBikeIds ?? []),
-      ...(x.bikeIds ?? []),
-    ].filter((id): id is string => Boolean(id));
-    const named =
-      x.title
-        .toLowerCase()
-        .match(/\b(?:s20\s*pro|v9\s*max|v20\s*max|vl20|gt2000|bw02)\b/g) ?? [];
-    return [...explicit, ...named].map((v) =>
-      v.replace(/[^a-z0-9]/gi, "").toLowerCase(),
-    );
-  };
+  const modelKeys = newsletterCandidateModels;
+  const recentModels = new Set(recentBikeIds.map(newsletterModelFamily));
   const chosenA: A[] = [],
     chosenV: V[] = [];
   const take = <T extends NewsletterCandidate>(item: T, target: T[]) => {
     const category = newsletterCategory(item.title, item.contentType);
     const title = item.title.trim().toLowerCase();
     if (
+      modelKeys(item).some((id) => recentModels.has(id)) ||
       used.has(category) ||
       modelKeys(item).some((id) => bikeIds.has(id)) ||
       titles.has(title) ||
@@ -133,7 +127,10 @@ export function curateNewsletter<
   const aa = order(articles),
     vv = order(videos);
   // One fresh reading and one different video first; then fill distinct categories.
-  if (aa[0]) take(aa[0], chosenA);
+  for (const a of aa) {
+    take(a, chosenA);
+    if (chosenA.length) break;
+  }
   for (const v of vv) {
     take(v, chosenV);
     if (chosenV.length) break;
@@ -159,8 +156,10 @@ export function selectFeaturedNewsletterBike<T extends { id: string }>(
   relatedIds: string[],
   recentIds: string[] = [],
 ): T | undefined {
-  const eligible = bikes.filter((b) => !radarIds.includes(b.id));
-  const fresh = eligible.filter((b) => !recentIds.includes(b.id));
-  const pool = fresh.length ? fresh : eligible;
-  return pool.find((b) => !relatedIds.includes(b.id)) ?? pool[0];
+  return bikes.find(
+    (b) =>
+      ![...radarIds, ...recentIds, ...relatedIds].some(
+        (id) => newsletterModelFamily(id) === newsletterModelFamily(b.id),
+      ),
+  );
 }

@@ -1,3 +1,9 @@
+import { validateNewsletterNovelty } from "./newsletter-novelty";
+import { newsletterCandidateBikeIds } from "./newsletter-models";
+import {
+  newsletterMemory,
+  validateNewsletterSelection,
+} from "./newsletter-memory";
 import {
   fetchPublishedIndex,
   fetchPublishedArticle,
@@ -45,31 +51,30 @@ export async function automaticNewsletter(
   ]);
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
+  const memory = newsletterMemory(previousEditions, articles, videos, catalog);
   const curated = curateNewsletter(
-    articles.filter(
-      (a) =>
-        !previousEditions.some((p) =>
-          p.articles.some(
-            (x) => new URL(x.url).pathname === `/conteudos/${a.slug}`,
+    memory.articles
+      .filter((a) => !a.newsletterUsed)
+      .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
+    videos
+      .map((v) => ({ ...v, bikeIds: newsletterCandidateBikeIds(v, catalog) }))
+      .filter(
+        (v) =>
+          !previousEditions.some((p) =>
+            p.videos.some(
+              (x) =>
+                new URL(x.url).pathname === new URL(v.url).pathname &&
+                new URL(x.url).searchParams.get("v") ===
+                  new URL(v.url).searchParams.get("v"),
+            ),
           ),
-        ),
-    ),
-    videos.filter(
-      (v) =>
-        !previousEditions.some((p) =>
-          p.videos.some(
-            (x) =>
-              new URL(x.url).pathname === new URL(v.url).pathname &&
-              new URL(x.url).searchParams.get("v") ===
-                new URL(v.url).searchParams.get("v"),
-          ),
-        ),
-    ),
+      ),
     since,
     new Date(),
     previousEditions.flatMap((p) =>
       [...p.articles, ...p.videos].map((x) => x.title),
     ),
+    memory.recentBikeIds,
   );
   const pickedArticles = curated.articles;
   let pickedVideos = curated.videos;
@@ -85,7 +90,7 @@ export async function automaticNewsletter(
   );
   const related = [
     ...pickedVideos.flatMap((v) => v.bikeIds),
-    ...pickedArticles.flatMap((a) => [a.primaryBikeId, ...a.relatedBikeIds]),
+    ...pickedArticles.flatMap((a) => a.bikeIds),
   ];
   const bikes = (radar.data.active as { id: string; name: string }[]).filter(
     (b) =>
@@ -98,9 +103,7 @@ export async function automaticNewsletter(
     bikes,
     drops.map((d) => d.id),
     related.filter((id): id is string => Boolean(id)),
-    previousEditions
-      .slice(0, 6)
-      .map((p) => new URL(p.bike.url).pathname.split("/").pop() ?? ""),
+    memory.recentBikeIds,
   );
   if (!bike) throw new Error("newsletter_no_active_bike");
   const details = catalog.find((c) => c.bikeId === bike.id);
@@ -134,6 +137,7 @@ export async function automaticNewsletter(
       return {
         id: `article-${i}`,
         title: a.title,
+        publishedSummary: a.summary,
         text: [
           a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
           a.summary,
@@ -149,6 +153,7 @@ export async function automaticNewsletter(
     {
       id: "bike",
       title: bike.name,
+      publishedSummary: details.description ?? undefined,
       text: [
         bike.name,
         details.description,
@@ -180,7 +185,7 @@ export async function automaticNewsletter(
           sources,
           weekday,
           undefined,
-          previousEditions.map((p) => p.intro),
+          memory.previousEditorial,
           onDiagnostic,
         );
   const enrich = (id: string) => {
@@ -192,6 +197,13 @@ export async function automaticNewsletter(
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
   const content: NewsletterContent = {
     editionNumber,
+    mentionedBikeIds: [
+      ...new Set([
+        bike.id,
+        ...drops.map((d) => d.id),
+        ...related.filter((id): id is string => Boolean(id)),
+      ]),
+    ],
     subject: numberNewsletterSubject(draft.subject, editionNumber),
     headline: draft.headline,
     preheader: draft.preheader,
@@ -242,6 +254,39 @@ export async function automaticNewsletter(
       ...enrich(`video-${i}`),
     })),
   };
+  validateNewsletterSelection(
+    content,
+    previousEditions,
+    articles,
+    videos,
+    catalog,
+  );
+  validateNewsletterNovelty(content, previousEditions);
   renderResendNewsletter(content);
   return { content, fingerprint };
+}
+
+export async function validateScheduledNewsletter(
+  content: NewsletterContent,
+  history: NewsletterContent[],
+) {
+  const [articles, videos, catalog] = await Promise.all([
+    fetchPublishedIndex(),
+    fetchVideoCatalog(),
+    fetchBikeCatalogFromDb(),
+  ]);
+  if (!articles?.length || !videos.length || !catalog?.length)
+    throw new Error("newsletter_sources_unavailable");
+  validateNewsletterSelection(content, history, articles, videos, catalog);
+  validateNewsletterNovelty(content, history);
+  if (
+    content.articles.some((a) =>
+      a.paragraphs?.some(
+        (p) =>
+          p ===
+          "Leia o artigo completo publicado pela Vitale para acompanhar o assunto apresentado no título.",
+      ),
+    )
+  )
+    throw new Error("newsletter_generic_fallback_review_required");
 }
