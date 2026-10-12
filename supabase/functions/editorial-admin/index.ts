@@ -2324,7 +2324,7 @@ async function finishQueuedPublication(req: Request, db: SupabaseClient, actor: 
     const inputKey = await reviewInputKey({ policy: report.version, model: ARTICLE_MODEL, schema: QUALITY_SCHEMA,
       system: reviewSystem, payload: reviewPayload, revision: article.revision, corpus: corpus.items });
     const previousQa = capture.publicationQa as Body | undefined;
-    const cached = previousQa?.version === report.version && previousQa.inputKey === inputKey &&
+    const cached = !!previousQa && previousQa.version === report.version && previousQa.inputKey === inputKey &&
       previousQa.articleRevision === article.revision && previousQa.pass === true && approvedAssessment(previousQa.assessment);
     const assessment = cached ? previousQa!.assessment as Body : await aiStructured(
       reviewSystem, `<untrusted_review_json>${JSON.stringify(reviewPayload)}</untrusted_review_json>`,
