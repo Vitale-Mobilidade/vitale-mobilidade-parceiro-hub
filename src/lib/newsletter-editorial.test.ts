@@ -123,7 +123,8 @@ describe("newsletter editorial", () => {
       .mockResolvedValueOnce(
         response({ approved: false, issues: ["unsupported claim"] }),
       );
-    await expect(writeNewsletter(sources, 5, request)).rejects.toThrow(
+    const history = ["Banco, bateria e boas ideias. Os detalhes da rotina."];
+    await expect(writeNewsletter(sources, 5, request, history)).rejects.toThrow(
       "review_failed",
     );
     expect(request).toHaveBeenCalledTimes(4);
@@ -138,6 +139,17 @@ describe("newsletter editorial", () => {
     const instructions = JSON.parse(request.mock.calls[0][1].body).instructions;
     expect(instructions).toContain("dividido pelo número de fontes");
     expect(instructions).toContain("A nao vira Ah");
+    // The writer and repair receive composition guidance AND the actual history;
+    // the independent reviewer retains the same history and rejection authority.
+    expect(instructions).toContain("Escolha UM foco editorial");
+    expect(JSON.parse(request.mock.calls[2][1].body).instructions).toContain(
+      "ABANDONE por completo",
+    );
+    for (const call of request.mock.calls) {
+      expect(
+        JSON.parse(JSON.parse(call[1].body).input).previousOpenings,
+      ).toEqual(history);
+    }
     expect(request.mock.calls[0][1].headers["Lovable-API-Key"]).toBe(
       "mock-key",
     );
