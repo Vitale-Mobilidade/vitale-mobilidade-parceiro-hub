@@ -28,4 +28,4 @@ Trade-off: performance favorecia facade, mas preferência explícita do usuário
 | Growth | Pass | SSR/metadata intactos, lazy mitiga carga adicional do embed. |
 | PMO | Pass | 4 testes direcionados; pnpm validate exit 0, 61 regressões/typecheck/build; diff check limpo. |
 
-Estado: implementado e validado localmente; aguardando autorização específica para publicação. Arquivos: ArticleView.tsx, article-independent.test.tsx, este registro. Custo externo: nenhum crédito de IA previsto. Risco residual: embed carrega recursos do YouTube antes do clique quando se aproxima da viewport.
+Estado: publicado após autorização explícita nesta thread. Commit 3d90e31 sincronizado com Lovable; UI confirmou “Seu site foi atualizado”. HTTP público confirmou iframe youtube-nocookie/PMxuUNfd8TM com loading=lazy, sem Reproduzir customizado ou bg-ink/35. Chrome após atualização sem cache confirmou Player de vídeo do YouTube e controles Assistir vídeo/Assistir no YouTube. Arquivos: ArticleView.tsx, article-independent.test.tsx, este registro. Custo externo: nenhum crédito de IA previsto. Risco residual: embed carrega recursos do YouTube antes do clique quando se aproxima da viewport.
