@@ -162,3 +162,54 @@ it("recovers a source outage later without returning to paid AI calls", async ()
   );
   expect(writes[0].value).toEqual(expect.objectContaining({ attempts: 3 }));
 });
+
+it("allows authorized immediate fallback during retry cooldown, without overwriting drafts", async () => {
+  const { db, writes } = fixture({
+    attempts: 1,
+    next_attempt_at: "2026-10-11T13:30:00Z",
+  });
+  writer.mockResolvedValueOnce({
+    content: proof.content,
+    fingerprint: "sources",
+  });
+  expect(
+    await prepareNewsletterDraft(
+      db,
+      "2026-10-12",
+      1,
+      "tok",
+      [],
+      2,
+      false,
+      now,
+      true,
+    ),
+  ).toEqual({ ok: true, draftPrepared: true, fallback: true });
+  expect(writer).toHaveBeenCalledWith(
+    1,
+    undefined,
+    [],
+    2,
+    undefined,
+    "fallback",
+  );
+  expect(writes).toContainEqual({
+    table: "newsletter_drafts",
+    value: expect.objectContaining({ generation_mode: "fallback" }),
+  });
+  const existing = fixture(null, { id: "edited" });
+  writer.mockClear();
+  await prepareNewsletterDraft(
+    existing.db,
+    "2026-10-12",
+    1,
+    "tok",
+    [],
+    2,
+    false,
+    now,
+    true,
+  );
+  expect(writer).not.toHaveBeenCalled();
+  expect(existing.writes).toHaveLength(0);
+});
