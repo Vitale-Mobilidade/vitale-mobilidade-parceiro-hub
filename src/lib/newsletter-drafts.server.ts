@@ -24,10 +24,19 @@ export async function newsletterDraftAction(
 ) {
   if (body.action === "draft_list")
     return {
+      preparations: await required(
+        db
+          .from("newsletter_preparations")
+          .select("edition_day,attempts,next_attempt_at,last_error")
+          .order("edition_day", { ascending: false })
+          .limit(2),
+      ),
       drafts: await required(
         db
           .from("newsletter_drafts")
-          .select("id,revision,origin,updated_at,content")
+          .select(
+            "id,revision,origin,edition_day,generation_mode,updated_at,content",
+          )
           .order("updated_at", { ascending: false })
           .limit(20),
       ),
@@ -49,7 +58,9 @@ export async function newsletterDraftAction(
         db
           .from("newsletter_drafts")
           .insert({ content, origin: "test_import", edited_by: userId })
-          .select("id,revision,origin,updated_at,content")
+          .select(
+            "id,revision,origin,edition_day,generation_mode,updated_at,content",
+          )
           .single(),
       ),
     };
@@ -58,7 +69,9 @@ export async function newsletterDraftAction(
   const draft = await required(
     db
       .from("newsletter_drafts")
-      .select("id,revision,origin,updated_at,content")
+      .select(
+        "id,revision,origin,edition_day,generation_mode,updated_at,content",
+      )
       .eq("id", key.id)
       .single(),
   );
@@ -81,7 +94,9 @@ export async function newsletterDraftAction(
       })
       .eq("id", key.id)
       .eq("revision", key.revision)
-      .select("id,revision,origin,updated_at,content")
+      .select(
+        "id,revision,origin,edition_day,generation_mode,updated_at,content",
+      )
       .maybeSingle(),
   );
   if (!saved) throw new Error("newsletter_draft_conflict");

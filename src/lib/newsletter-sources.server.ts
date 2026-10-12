@@ -27,6 +27,7 @@ import {
   newsletterCategoryLabel,
 } from "./newsletter-curation";
 import { newsletterTranscripts } from "./newsletter-transcripts.server";
+import { sourceNewsletterFallback } from "./newsletter-fallback";
 import { createHash } from "node:crypto";
 export async function automaticNewsletter(
   weekday: number,
@@ -34,6 +35,7 @@ export async function automaticNewsletter(
   previousEditions: NewsletterContent[] = [],
   editionNumber = 1,
   onDiagnostic?: (event: NewsletterWriterDiagnostic) => void,
+  mode: "agent" | "fallback" = "agent",
 ): Promise<{ content: NewsletterContent; fingerprint: string }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -71,7 +73,10 @@ export async function automaticNewsletter(
   );
   const pickedArticles = curated.articles;
   let pickedVideos = curated.videos;
-  if (pickedArticles.length !== 3 || !pickedVideos.length)
+  if (
+    (mode === "agent" ? pickedArticles.length !== 3 : !pickedArticles.length) ||
+    !pickedVideos.length
+  )
     throw new Error("newsletter_sources_insufficient_diversity");
   const drops = selectNewsletterDrops(
     radar.data.active as NewsletterDropBike[],
@@ -110,10 +115,13 @@ export async function automaticNewsletter(
   );
   if (!pickedVideos.length)
     throw new Error("newsletter_sources_insufficient_diversity");
-  const transcripts = await newsletterTranscripts([
-    ...fullArticles.flatMap((a) => (a ? [a.videoId] : [])),
-    ...pickedVideos.map((v) => v.videoId),
-  ]);
+  const transcripts =
+    mode === "fallback"
+      ? new Map<string, string>()
+      : await newsletterTranscripts([
+          ...fullArticles.flatMap((a) => (a ? [a.videoId] : [])),
+          ...pickedVideos.map((v) => v.videoId),
+        ]);
   const brl = (n: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -165,13 +173,16 @@ export async function automaticNewsletter(
   const fingerprint = createHash("sha256")
     .update(JSON.stringify([sources, drops]))
     .digest("hex");
-  const draft = await writeNewsletter(
-    sources,
-    weekday,
-    undefined,
-    previousEditions.map((p) => p.intro),
-    onDiagnostic,
-  );
+  const draft =
+    mode === "fallback"
+      ? sourceNewsletterFallback(sources)
+      : await writeNewsletter(
+          sources,
+          weekday,
+          undefined,
+          previousEditions.map((p) => p.intro),
+          onDiagnostic,
+        );
   const enrich = (id: string) => {
     const s = draft.sections.find((s) => s.id === id);
     if (!s) throw new Error("newsletter_writer_source_mismatch");

@@ -30,6 +30,8 @@ export type NewsletterDraft = {
   id: string;
   revision: number;
   origin: string;
+  edition_day?: string | null;
+  generation_mode?: "agent" | "fallback";
   updated_at: string;
   content: NewsletterContent;
 };

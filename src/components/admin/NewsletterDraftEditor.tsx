@@ -19,8 +19,18 @@ export function NewsletterDraftEditor() {
     [error, setError] = useState("");
   const drafts = useQuery({
     queryKey: ["admin", "newsletter", "drafts"],
-    queryFn: () => newsletterCall<{ drafts: NewsletterDraft[] }>("draft_list"),
+    queryFn: () =>
+      newsletterCall<{
+        drafts: NewsletterDraft[];
+        preparations?: {
+          edition_day: string;
+          attempts: number;
+          next_attempt_at: string | null;
+          last_error: string | null;
+        }[];
+      }>("draft_list"),
     staleTime: 15000,
+    refetchInterval: 30_000,
   });
   function open(d: NewsletterDraft) {
     setDraft(d);
@@ -106,8 +116,22 @@ export function NewsletterDraftEditor() {
       <p className="text-sm text-ink-muted">
         Abra uma edição para ajustar assunto e textos sem gerar tudo novamente.
         Salvar não envia e não altera campanhas já enviadas. Os links, imagens e
-        preços continuam ligados às fontes.
+        preços continuam ligados às fontes. Rascunhos com data de envio são
+        usados pela automação; salve os ajustes antes das 06h30. Ao começar a
+        preparar as campanhas, o conteúdo daquela edição fica congelado.
       </p>
+      {drafts.data?.preparations
+        ?.filter((p) => p.last_error)
+        .map((p) => (
+          <p key={p.edition_day} role="status" className="text-sm">
+            Preparação de {p.edition_day.split("-").reverse().join("/")}:
+            tentativa {p.attempts}/3.{" "}
+            {p.attempts >= 3
+              ? "A geração simplificada será tentada novamente em até 30 minutos; confira as fontes."
+              : "Nova tentativa automática em até 30 minutos."}{" "}
+            ({p.last_error})
+          </p>
+        ))}
       {drafts.isPending && <p role="status">Carregando rascunhos…</p>}
       {drafts.isError && <p role="alert">{drafts.error.message}</p>}
       {drafts.data &&
@@ -129,6 +153,17 @@ export function NewsletterDraftEditor() {
               onClick={() => open(d)}
             >
               {d.content.subject}
+              {d.edition_day && (
+                <span className="block text-xs">
+                  Envio previsto: {d.edition_day.split("-").reverse().join("/")}{" "}
+                  às 06h30 (São Paulo)
+                </span>
+              )}
+              {d.generation_mode === "fallback" && (
+                <span className="block text-xs">
+                  Edição simples: recuperação da geração
+                </span>
+              )}
               <span className="ml-2 text-xs">· Revisão {d.revision}</span>
             </button>
           </li>

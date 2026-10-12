@@ -89,6 +89,8 @@ export async function newsletterCall<T>(
       prepare_segments_first: "Prepare os segmentos antes de ativar.",
       manual_reconciliation_required:
         "Há uma campanha que precisa de conferência antes de retomar.",
+      newsletter_scheduled_draft_missing:
+        "Não há rascunho preparado para esta edição. O envio foi pausado.",
       newsletter_busy:
         "Há uma operação em andamento. Tente novamente em alguns instantes.",
       pause_before_configuring:
