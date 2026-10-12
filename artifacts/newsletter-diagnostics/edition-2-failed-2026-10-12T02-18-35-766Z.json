@@ -1,0 +1,221 @@
+{
+  "editionNumber": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 17113
+    },
+    {
+      "status": 200,
+      "ms": 12473
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "Tira o banco, entra a ideia",
+        "preheader": "V20 Pro muda de função; garupa, baterias e recarga entram no giro.",
+        "headline": "Um banco a menos, várias funções a mais",
+        "opening": [
+          "O segundo banco precisa ser sempre um banco? Na **Inow V20 Pro**, a peça removível abre espaço para cadeirinha infantil ou baú de trabalho. Uma solução simples, daquelas que mudam a conversa sem pedir discurso de quinze marchas."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** segue outro caminho: banco alongado e apoios para os pés fazem parte da proposta para duas pessoas. O motor pode ser acionado pelo acelerador de dedo ou pelo pedal assistido com sensor de giro. Nesse sistema, basta movimentar o pedivela levemente; a assistência não varia de acordo com a força aplicada, como ocorreria com um sensor de torque."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não oferece ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é apenas sonoro e **não trava a roda**."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa.",
+              "O sistema não trava a roda"
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na dupla **StreetGo S12 e S14**, o motor declarado é o mesmo: 750 W no cubo traseiro. A separação mais clara está na bateria removível. São 48 V e 15 Ah na S12, contra 48 V e 20 Ah na S14. A reserva maior não transforma autonomia em número carimbado: peso, relevo, velocidade e assistência continuam participando da conta."
+            ],
+            "bullets": [
+              "A estimativa citada é de **40 a 50 km** para a S12 e de **50 a 60 km** para a S14.",
+              "Apesar do banco alongado, os dois modelos são indicados para uma pessoa e não possuem suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14.",
+              "Nenhuma das duas tem suspensão traseira."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa que começa quando a bike para: onde recarregar? Segundo o cadastro, ela usa duas baterias removíveis. Isso permite levá-las até uma tomada, mas também significa retirar, transportar e guardar duas peças. A fonte recomenda ainda confirmar a tensão aceita pelo carregador da unidade, sem presumir que todo modelo seja bivolt."
+            ],
+            "bullets": [
+              "Conectar a bateria após um uso curto não equivale, por si só, a consumir um ciclo completo.",
+              "Para pausas longas, a orientação apresentada é guardar a bateria com carga parcial, entre **30% e 80%**, respeitando o manual específico."
+            ],
+            "evidence": [
+              "A V35 da Inow tem duas baterias removíveis, segundo o cadastro do modelo.",
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. É um modelo sem marca identificada, com bateria removível de lítio de 48 V e 20 Ah, motor de 1.000 W no cubo traseiro e capacidade informada para duas pessoas. O banco da garupa tem apoio para os pés, embora seja descrito como mais curto que o da V9 Max."
+            ],
+            "bullets": [
+              "A ficha informa autonomia de até **60 km**, sem garantia de alcance em qualquer trajeto.",
+              "O conjunto inclui freios hidráulicos, suspensão dianteira e dupla traseira, NFC, senha no painel e alarme sonoro. Preço vigente e histórico ficam no Radar."
+            ],
+            "evidence": [
+              "A BW1 também pode transportar duas pessoas.",
+              "Autonomia informada na ficha: Até 60km. Não é garantia de alcance em todo trajeto."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "O vídeo defende uma ideia tranquila em meio à corrida por números: a bicicleta possível não precisa ter todas as especificações do topo da prateleira. O relato volta 12 anos, quando Vitale usava uma bike de 350 W, bateria de 36 V e 10 A, sem marchas nem acelerador, e diz que ela já atendia ao que precisava naquele período."
+            ],
+            "bullets": [
+              "O ponto não é ignorar qualidade, e sim evitar **loucuras financeiras** para perseguir potência ou capacidade maiores.",
+              "Quem quiser explorar modelos compatíveis com perfil de uso e orçamento pode usar o quiz do canal, de forma opcional."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso",
+              "não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "Na **Inow V20 Pro**, o banco bipartido é mais que desenho. Conforme o teste, a almofada traseira pode ser retirada para instalar uma cadeirinha infantil ou um baú de trabalho. O modelo apresentado tem motor de 1.000 W no cubo traseiro, bateria de 48 V e 15.6 A, freios hidráulicos, NFC e alarme sonoro."
+            ],
+            "bullets": [
+              "O teste relata painel difícil de enxergar durante o dia e sem indicação das setas.",
+              "O piloto automático é ativado mantendo a velocidade por cerca de **5 a 7 segundos** e desativado ao frear."
+            ],
+            "evidence": [
+              "você pode simplesmente tirar a almofada do segundo banco e prender uma cadeirinha de criança eh prender um baú de trabalho",
+              "alarme apenas sonoro não bloqueia de fato a bicicleta"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "error",
+      "attempt": 0,
+      "code": "newsletter_writer_evidence_invalid"
+    },
+    {
+      "stage": "draft",
+      "attempt": 1,
+      "draft": {
+        "subject": "Tira o banco, entra a ideia",
+        "preheader": "V20 Pro muda de função; garupa, baterias e recarga entram no giro.",
+        "headline": "Um banco a menos, várias funções a mais",
+        "opening": [
+          "O segundo banco precisa ser sempre um banco? Na **Inow V20 Pro**, a peça removível abre espaço para cadeirinha infantil ou baú de trabalho. Uma solução simples, daquelas que mudam a conversa sem pedir discurso de quinze marchas."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** segue outro caminho: banco alongado e apoios para os pés fazem parte da proposta para duas pessoas. O motor pode ser acionado pelo acelerador de dedo ou pelo pedal assistido com sensor de giro. Nesse sistema, basta movimentar o pedivela levemente; a assistência não varia de acordo com a força aplicada, como ocorreria com um sensor de torque."
+            ],
+            "bullets": [
+              "O painel mostra o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não oferece ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é apenas sonoro e **não trava a roda**."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa.",
+              "**O sistema não trava a roda**"
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na dupla **StreetGo S12 e S14**, o motor declarado é o mesmo: 750 W no cubo traseiro. A separação mais clara está na bateria removível. São 48 V e 15 Ah na S12, contra 48 V e 20 Ah na S14. A reserva maior não transforma autonomia em número carimbado: peso, relevo, velocidade e assistência continuam participando da conta."
+            ],
+            "bullets": [
+              "A estimativa citada é de **40 a 50 km** para a S12 e de **50 a 60 km** para a S14.",
+              "Apesar do banco alongado, os dois modelos são indicados para uma pessoa e não possuem suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14.",
+              "**Nenhuma das duas tem suspensão traseira.**"
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa que começa quando a bike para: onde recarregar? Segundo o cadastro, ela usa duas baterias removíveis. Isso permite levá-las até uma tomada, mas também significa retirar, transportar e guardar duas peças. A fonte recomenda ainda confirmar a tensão aceita pelo carregador da unidade, sem presumir que todo modelo seja bivolt."
+            ],
+            "bullets": [
+              "Conectar a bateria após um uso curto não equivale, por si só, a consumir um ciclo completo.",
+              "Para pausas longas, a orientação apresentada é guardar a bateria com carga parcial, entre **30% e 80%**, respeitando o manual específico."
+            ],
+            "evidence": [
+              "A V35 da Inow tem duas baterias removíveis, segundo o cadastro do modelo.",
+              "**Ciclo de carga não é o número de vezes que o plugue foi conectado.**"
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. É um modelo sem marca identificada, com bateria removível de lítio de 48 V e 20 Ah, motor de 1.000 W no cubo traseiro e capacidade informada para duas pessoas. O banco da garupa tem apoio para os pés, embora seja descrito como mais curto que o da V9 Max."
+            ],
+            "bullets": [
+              "A ficha informa autonomia de até **60 km**, sem garantia de alcance em qualquer trajeto.",
+              "O conjunto inclui freios hidráulicos, suspensão dianteira e dupla traseira, NFC, senha no painel e alarme sonoro. Preço vigente e histórico ficam no Radar."
+            ],
+            "evidence": [
+              "A BW1 também pode transportar duas pessoas.",
+              "Autonomia informada na ficha: Até 60km. Não é garantia de alcance em todo trajeto."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "O vídeo defende uma ideia tranquila em meio à corrida por números: a bicicleta possível não precisa ter todas as especificações do topo da prateleira. O relato volta 12 anos, quando Vitale usava uma bike de 350 W, bateria de 36 V e 10 A, sem marchas nem acelerador, e diz que ela já atendia ao que precisava naquele período."
+            ],
+            "bullets": [
+              "O ponto não é ignorar qualidade, e sim evitar **loucuras financeiras** para perseguir potência ou capacidade maiores.",
+              "Quem quiser explorar modelos compatíveis com perfil de uso e orçamento pode usar o quiz do canal, de forma opcional."
+            ],
+            "evidence": [
+              "a melhor bicicleta ela é a sua é a que cabe no seu perfil e no seu bolso",
+              "não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "Na **Inow V20 Pro**, o banco bipartido é mais que desenho. Conforme o teste, a almofada traseira pode ser retirada para instalar uma cadeirinha infantil ou um baú de trabalho. O modelo apresentado tem motor de 1.000 W no cubo traseiro, bateria de 48 V e 15.6 A, freios hidráulicos, NFC e alarme sonoro."
+            ],
+            "bullets": [
+              "O teste relata painel difícil de enxergar durante o dia e sem indicação das setas.",
+              "O piloto automático é ativado mantendo a velocidade por cerca de **5 a 7 segundos** e desativado ao frear."
+            ],
+            "evidence": [
+              "você pode simplesmente tirar a almofada do segundo banco e prender uma cadeirinha de criança eh prender um baú de trabalho",
+              "alarme apenas sonoro não bloqueia de fato a bicicleta"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "error",
+      "attempt": 1,
+      "code": "newsletter_writer_evidence_invalid"
+    }
+  ]
+}
