@@ -9,5 +9,8 @@ it("renderiza artigo independente sem aviso fixo, preservando vídeo complementa
   const html = renderToStaticMarkup(<ArticleView article={article} bikes={[]} />);
   expect(html).toContain("Banco alongado e bateria removível.");
   expect(html).toContain("Reproduzir");
+  expect(html).toContain("https://i.ytimg.com/vi/abcDEFG1234/maxresdefault.jpg");
+  expect(html).toContain('width="1280" height="720"');
+  expect(html).not.toContain("youtube-nocookie.com/embed/");
   expect(html).not.toMatch(/Baseado no|vídeo de origem|Os relatos se referem|não garantem o mesmo resultado/);
 });

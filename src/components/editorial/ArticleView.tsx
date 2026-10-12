@@ -9,7 +9,7 @@ import { composeArticleFlow } from "@/lib/article-flow";
 import { articleSubjectBikes, comparedBikesInTitle } from "@/lib/editorial-discovery";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
-import { youtubeThumbnailUrl } from "@/lib/video-catalog";
+import { youtubeThumbnailUrl, type YoutubeThumbnailVariant } from "@/lib/video-catalog";
 import { editorialImageProps } from "@/lib/editorial-images";
 
 export type PublishedArticle = {
@@ -272,6 +272,8 @@ function FaqList({ faq }: { faq: ArticleFaq[] }) {
 
 function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
   const [active, setActive] = useState(false);
+  const [variant, setVariant] = useState<YoutubeThumbnailVariant>("maxresdefault");
+  const fallback = () => setVariant((current) => current === "maxresdefault" ? "sddefault" : "hqdefault");
   if (active)
     return (
       <iframe
@@ -282,7 +284,7 @@ function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
         className="h-full w-full"
       />
     );
-  const thumbnail = youtubeThumbnailUrl(videoId);
+  const thumbnail = youtubeThumbnailUrl(videoId, variant);
   return (
     <button
       type="button"
@@ -294,8 +296,13 @@ function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
         <img
           src={thumbnail}
           alt=""
-          width={320}
-          height={180}
+          width={1280}
+          height={720}
+          onError={variant === "hqdefault" ? undefined : fallback}
+          onLoad={(event) => {
+            // YouTube sometimes returns a 120px placeholder with HTTP 200 for missing variants.
+            if (variant !== "hqdefault" && event.currentTarget.naturalWidth <= 120) fallback();
+          }}
           loading="lazy"
           decoding="async"
           className="h-full w-full object-cover"
