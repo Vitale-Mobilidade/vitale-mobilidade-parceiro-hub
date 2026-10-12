@@ -1,0 +1,113 @@
+{
+  "editionNumber": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 17838
+    },
+    {
+      "status": 200,
+      "ms": 8571
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "V20 Pro: o segundo banco ganhou outro emprego",
+        "preheader": "Um assento removível abre espaço para cadeirinha ou baú — e a edição ainda passa por garupa, baterias e manutenção.",
+        "headline": "Sai o banco, entra o plano B na V20 Pro",
+        "opening": [
+          "Uma bicicleta não precisa fazer sempre o mesmo papel. A graça desta edição está justamente na possibilidade de reorganizar o espaço conforme o dia pede. O pedal continua sendo pedal, mas o segundo banco pode ter outros planos."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** oferece duas formas de chamar o motor para a conversa: acelerador de dedo ou pedal assistido por sensor de giro. Nesse sensor, basta movimentar o pedivela; a resposta não varia conforme a força aplicada. O modelo também foi concebido para duas pessoas, com banco alongado e apoio para os pés da garupa."
+            ],
+            "bullets": [
+              "O painel confirma o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não possui ajuste de luminosidade.",
+              "O NFC liga e desliga o sistema; o alarme é sonoro e **não trava a roda**."
+            ],
+            "evidence": [
+              "O pedal assistido da OUXI V8 Pro usa **sensor de giro**."
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "**StreetGo S12** e **StreetGo S14** declaram o mesmo motor de 750 W no cubo traseiro. A separação mais clara está na bateria removível: 48 V e 15 Ah na S12, contra 48 V e 20 Ah na S14. As estimativas citadas são de 40 a 50 km e 50 a 60 km, respectivamente, sempre sujeitas a peso, relevo, velocidade e assistência."
+            ],
+            "bullets": [
+              "As duas têm aro 20, pneus de 4 polegadas, suspensão dianteira e nenhuma suspensão traseira.",
+              "Apesar do formato alongado dos bancos, ambas são indicadas para **uma pessoa**."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14."
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa que começa quando a bike para: onde carregar? Segundo o cadastro, ela possui duas baterias removíveis. Isso permite levá-las até uma tomada, mas também significa retirar, transportar e guardar duas peças. Já as pequenas recargas não devem ser confundidas, cada uma, com um ciclo completo."
+            ],
+            "bullets": [
+              "A referência de 500 a 1.000 ciclos é geral, não uma especificação confirmada para a V35.",
+              "Bicicletarias podem cuidar de componentes mecânicos; bateria e motor podem exigir suporte elétrico específico."
+            ],
+            "evidence": [
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** está com oferta ativa no momento da preparação. Sem marca identificada, ela reúne motor de 1.000 W, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. A autonomia da ficha chega a 60 km, mas não garante esse alcance em qualquer trajeto."
+            ],
+            "bullets": [
+              "O conjunto inclui suspensões dianteira e dupla traseira, pneus 20 x 4.0 e freios hidráulicos a disco.",
+              "O Radar reúne **preço vigente, ficha e histórico** para acompanhar a oferta sem corrida até o caixa."
+            ],
+            "evidence": [
+              "Autonomia informada na ficha: Até 60km. Não é garantia de alcance em todo trajeto."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "Nem toda evolução precisa começar no topo da prateleira. No vídeo, Vitale recorda que usava diariamente uma bicicleta de 350 W, sem marcha nem acelerador, e relata autonomia entre 20 e 25 km. A mensagem é menos sobre caçar um número campeão e mais sobre respeitar o orçamento — sem inventar uma manobra financeira digna de circo."
+            ],
+            "bullets": [
+              "O relato contrapõe aquela configuração antiga aos modelos atuais de 1.000 W e baterias maiores.",
+              "O quiz é um convite opcional para explorar opções conforme perfil de uso e orçamento."
+            ],
+            "evidence": [
+              "a melhor bicicleta é a sua é a que você pode comprar"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "Na **Inow V20 Pro**, o banco bipartido abre uma possibilidade interessante: a almofada traseira pode ser retirada para prender uma cadeirinha infantil ou um baú de trabalho. No teste relatado, a unidade tinha motor de 1.000 W, bateria descrita como 48 V e 15.6 A, freios hidráulicos, NFC e alarme sonoro."
+            ],
+            "bullets": [
+              "O painel não mostra as setas e foi considerado um pouco difícil de enxergar durante o dia.",
+              "O piloto automático é ativado mantendo a velocidade por cerca de 5 a 7 segundos e desativado ao frear."
+            ],
+            "evidence": [
+              "você pode simplesmente tirar a almofada do segundo banco e prender uma cadeirinha de criança eh prender um baú de trabalho"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 0,
+      "approved": true,
+      "issues": []
+    }
+  ]
+}
