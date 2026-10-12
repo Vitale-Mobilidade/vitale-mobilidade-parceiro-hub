@@ -79,6 +79,7 @@ export function curateNewsletter<
   since: Date,
   now = new Date(),
   excludedTitles: string[] = [],
+  recentBikeIds: string[] = [],
 ) {
   // Entire published archive is eligible; newest unseen content first.
   void since;
@@ -118,6 +119,11 @@ export function curateNewsletter<
     const category = newsletterCategory(item.title, item.contentType);
     const title = item.title.trim().toLowerCase();
     if (
+      modelKeys(item).some((id) =>
+        recentBikeIds.some(
+          (recent) => recent.replace(/[^a-z0-9]/gi, "").toLowerCase() === id,
+        ),
+      ) ||
       used.has(category) ||
       modelKeys(item).some((id) => bikeIds.has(id)) ||
       titles.has(title) ||
@@ -159,8 +165,10 @@ export function selectFeaturedNewsletterBike<T extends { id: string }>(
   relatedIds: string[],
   recentIds: string[] = [],
 ): T | undefined {
-  const eligible = bikes.filter((b) => !radarIds.includes(b.id));
-  const fresh = eligible.filter((b) => !recentIds.includes(b.id));
-  const pool = fresh.length ? fresh : eligible;
-  return pool.find((b) => !relatedIds.includes(b.id)) ?? pool[0];
+  return bikes.find(
+    (b) =>
+      !radarIds.includes(b.id) &&
+      !recentIds.includes(b.id) &&
+      !relatedIds.includes(b.id),
+  );
 }

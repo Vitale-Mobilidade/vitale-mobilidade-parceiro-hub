@@ -1,3 +1,4 @@
+import { newsletterMemory } from "./newsletter-memory";
 import {
   fetchPublishedIndex,
   fetchPublishedArticle,
@@ -45,15 +46,9 @@ export async function automaticNewsletter(
   ]);
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
+  const memory = newsletterMemory(previousEditions, articles, videos);
   const curated = curateNewsletter(
-    articles.filter(
-      (a) =>
-        !previousEditions.some((p) =>
-          p.articles.some(
-            (x) => new URL(x.url).pathname === `/conteudos/${a.slug}`,
-          ),
-        ),
-    ),
+    memory.articles.filter((a) => !a.newsletterUsed),
     videos.filter(
       (v) =>
         !previousEditions.some((p) =>
@@ -70,6 +65,7 @@ export async function automaticNewsletter(
     previousEditions.flatMap((p) =>
       [...p.articles, ...p.videos].map((x) => x.title),
     ),
+    memory.recentBikeIds,
   );
   const pickedArticles = curated.articles;
   let pickedVideos = curated.videos;
@@ -98,9 +94,7 @@ export async function automaticNewsletter(
     bikes,
     drops.map((d) => d.id),
     related.filter((id): id is string => Boolean(id)),
-    previousEditions
-      .slice(0, 6)
-      .map((p) => new URL(p.bike.url).pathname.split("/").pop() ?? ""),
+    memory.recentBikeIds,
   );
   if (!bike) throw new Error("newsletter_no_active_bike");
   const details = catalog.find((c) => c.bikeId === bike.id);
@@ -180,7 +174,7 @@ export async function automaticNewsletter(
           sources,
           weekday,
           undefined,
-          previousEditions.map((p) => p.intro),
+          memory.previousEditorial,
           onDiagnostic,
         );
   const enrich = (id: string) => {
@@ -192,6 +186,13 @@ export async function automaticNewsletter(
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
   const content: NewsletterContent = {
     editionNumber,
+    mentionedBikeIds: [
+      ...new Set([
+        bike.id,
+        ...drops.map((d) => d.id),
+        ...related.filter((id): id is string => Boolean(id)),
+      ]),
+    ],
     subject: numberNewsletterSubject(draft.subject, editionNumber),
     headline: draft.headline,
     preheader: draft.preheader,
