@@ -423,6 +423,28 @@ export async function newsletterTick(request: Request): Promise<Response> {
       return Response.json({ ok: true });
     }
     const preparation = newsletterPreparation(new Date());
+    if (request.headers.get("x-newsletter-mode") === "prepare-fallback") {
+      if (!preparation.due)
+        return Response.json(
+          { ok: false, error: "newsletter_preparation_outside_window" },
+          { status: 400 },
+        );
+      const history = await newsletterHistory(db, preparation.day);
+      const number = await must(db.rpc("newsletter_next_edition_number"));
+      return Response.json(
+        await prepareNewsletterDraft(
+          db,
+          preparation.day,
+          preparation.weekday,
+          tok,
+          history,
+          number,
+          false,
+          new Date(),
+          true,
+        ),
+      );
+    }
     if (preparation.due && !newsletterWindow(new Date()).due) {
       const draft = await must(
         db
@@ -656,6 +678,35 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     }
     if (typeof body.action === "string" && body.action.startsWith("draft_")) {
       tok = await lock(db);
+      if (body.action === "draft_prepare_fallback") {
+        const preparation = newsletterPreparation(new Date());
+        if (!preparation.due)
+          throw new Error("newsletter_preparation_outside_window");
+        const history = await newsletterHistory(db, preparation.day);
+        const number = await must(db.rpc("newsletter_next_edition_number"));
+        const prepared = await prepareNewsletterDraft(
+          db,
+          preparation.day,
+          preparation.weekday,
+          tok,
+          history,
+          number,
+          false,
+          new Date(),
+          true,
+        );
+        if (!prepared.ok) throw new Error(prepared.error);
+        const draft = await must(
+          db
+            .from("newsletter_drafts")
+            .select(
+              "id,revision,origin,edition_day,generation_mode,updated_at,content",
+            )
+            .eq("edition_day", preparation.day)
+            .single(),
+        );
+        return Response.json({ draft }, { headers });
+      }
       const { newsletterDraftAction } =
         await import("./newsletter-drafts.server");
       return Response.json(

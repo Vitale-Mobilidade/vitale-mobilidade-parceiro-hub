@@ -89,6 +89,8 @@ export async function newsletterCall<T>(
       prepare_segments_first: "Prepare os segmentos antes de ativar.",
       manual_reconciliation_required:
         "Há uma campanha que precisa de conferência antes de retomar.",
+      newsletter_preparation_outside_window:
+        "A recuperação está disponível no dia anterior ao envio ou no dia do envio até 08h30 (São Paulo).",
       newsletter_scheduled_draft_missing:
         "Não há rascunho preparado para esta edição. O envio foi pausado.",
       newsletter_busy:

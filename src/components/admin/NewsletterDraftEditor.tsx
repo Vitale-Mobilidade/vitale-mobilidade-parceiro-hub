@@ -66,7 +66,9 @@ export function NewsletterDraftEditor() {
           ? "Ajustes salvos. Nenhum e-mail enviado."
           : action === "draft_import_test"
             ? "Teste recuperado como rascunho com título positivo."
-            : "Prévia atualizada sem usar IA.",
+            : action === "draft_prepare_fallback"
+              ? "Edição simples preparada sem IA. Nenhum e-mail enviado."
+              : "Prévia atualizada sem usar IA.",
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível salvar.");
@@ -132,6 +134,15 @@ export function NewsletterDraftEditor() {
             ({p.last_error})
           </p>
         ))}
+      {drafts.data?.preparations?.some((p) => p.last_error) && (
+        <button
+          className={button}
+          disabled={busy}
+          onClick={() => void run("draft_prepare_fallback")}
+        >
+          Preparar edição simples sem IA
+        </button>
+      )}
       {drafts.isPending && <p role="status">Carregando rascunhos…</p>}
       {drafts.isError && <p role="alert">{drafts.error.message}</p>}
       {drafts.data &&

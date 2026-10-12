@@ -21,7 +21,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
-async function run(clock: string, draft: unknown) {
+async function run(clock: string, draft: unknown, mode?: string) {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(clock));
   vi.stubEnv("SUPABASE_URL", "https://synthetic.invalid");
@@ -67,7 +67,11 @@ async function run(clock: string, draft: unknown) {
   const response = await newsletterTick(
     new Request("https://synthetic.invalid", {
       method: "POST",
-      headers: { "x-worker-signature": "mock", "x-worker-issued-at": "mock" },
+      headers: {
+        "x-worker-signature": "mock",
+        "x-worker-issued-at": "mock",
+        ...(mode ? { "x-newsletter-mode": mode } : {}),
+      },
     }),
   );
   return { response, rpc, inserts };
@@ -144,6 +148,34 @@ it("prepares exactly the next dated draft without creating or sending campaigns"
     generation_mode: "agent",
     edited_by: null,
   });
+  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
+    false,
+  );
+});
+
+it("uses authenticated operational recovery without creating campaigns", async () => {
+  mock.writer.mockResolvedValueOnce({
+    content: proof.content,
+    fingerprint: "sources",
+  });
+  const { response, rpc } = await run(
+    "2026-10-11T13:00:00Z",
+    null,
+    "prepare-fallback",
+  );
+  expect(await response.json()).toEqual({
+    ok: true,
+    draftPrepared: true,
+    fallback: true,
+  });
+  expect(mock.writer).toHaveBeenCalledWith(
+    1,
+    undefined,
+    [],
+    "token",
+    undefined,
+    "fallback",
+  );
   expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
     false,
   );

@@ -18,6 +18,7 @@ export async function prepareNewsletterDraft(
   number: number,
   sendingWindow: boolean,
   now = new Date(),
+  forceFallback = false,
 ) {
   const draft = await required(
     db
@@ -35,12 +36,13 @@ export async function prepareNewsletterDraft(
       .maybeSingle(),
   );
   if (
+    !forceFallback &&
     state?.next_attempt_at &&
     Date.parse(state.next_attempt_at) > now.getTime()
   )
     return { ok: true, preparationWaiting: true };
   const attempts = Math.min(3, (state?.attempts ?? 0) + 1);
-  const fallback = sendingWindow || attempts >= 3;
+  const fallback = forceFallback || sendingWindow || attempts >= 3;
   // Persist before invoking any model: a crash must not reset the paid retry budget.
   await required(
     db.from("newsletter_preparations").upsert(
