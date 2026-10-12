@@ -1,6 +1,6 @@
+import { growthRange } from "../_shared/growth-range.ts";
 import { reviewPeers, reviewInputKey, approvedAssessment, repeatedReviewIssues } from "../_shared/editorial-review-cost.ts";
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
-import { siteAnalyticsStartDay } from "../_shared/site-analytics.ts";
 import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -2527,16 +2527,14 @@ Deno.serve(async (req) => {
           { error: "Somente Admin pode ler dados de Growth." },
           403,
         );
-      const requestedDays = Number(body.rangeDays);
-      const rangeDays = [7, 30, 90].includes(requestedDays)
-        ? requestedDays
-        : 30;
-      const since = new Date(Date.now() - rangeDays * 86_400_000).toISOString();
-      const sinceDay = siteAnalyticsStartDay(new Date(), rangeDays);
+      let range;
+      try { range = growthRange(body); }
+      catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
+      const { rangeDays, startDate, endDate, since, until, untilDay } = range;
       const [funnel, quizBikeMetrics, siteMetrics] = await Promise.all([
-        db.rpc("admin_quiz_funnel_metrics", { p_since: since }),
-        db.rpc("admin_quiz_bike_metrics_json", { p_since: since }),
-        db.rpc("admin_site_analytics_metrics", { p_since: sinceDay }),
+        db.rpc("admin_quiz_funnel_range", { p_since: since, p_until: until }),
+        db.rpc("admin_quiz_bikes_range", { p_since: since, p_until: until }),
+        db.rpc("admin_site_analytics_range", { p_since: startDate, p_until: untilDay }),
       ]);
       if (funnel.error)
         throw new Error(`growth_read_failed:${funnel.error.code ?? "unknown"}`);
@@ -2567,6 +2565,7 @@ Deno.serve(async (req) => {
       }
       return json(req, {
         rangeDays,
+        startDate, endDate,
         generatedAt: new Date().toISOString(),
         funnel: funnel.data,
         quizBikesAvailable,
@@ -2580,6 +2579,7 @@ Deno.serve(async (req) => {
           bikeClicks: Number(site?.bikeClicks) || 0,
           affiliateClicks: Number(site?.affiliateClicks) || 0,
           pages: Array.isArray(site?.pages) ? site.pages : [],
+          pageClicks: Array.isArray(site?.pageClicks) ? site.pageClicks : [],
           bikes: Array.isArray(site?.bikes) ? site.bikes : [],
         },
         coverage: {

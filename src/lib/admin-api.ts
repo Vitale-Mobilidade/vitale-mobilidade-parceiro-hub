@@ -48,6 +48,8 @@ export type QuizFunnelMetrics = {
   identifiedClickers: number;
 };
 export type AdminGrowth = {
+  startDate?: string;
+  endDate?: string;
   rangeDays: number;
   generatedAt: string;
   funnel: QuizFunnelMetrics;
@@ -68,6 +70,7 @@ export type AdminGrowth = {
     bikeClicks: number;
     affiliateClicks: number;
     pages: { path: string; views: number }[];
+    pageClicks?: { path: string; views: number; detailClicks: number; offerClicks: number }[];
     bikes: {
       bikeId: string;
       name: string;

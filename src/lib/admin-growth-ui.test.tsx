@@ -51,6 +51,9 @@ const data: AdminGrowth = {
     pageViews: 300,
     bikeClicks: 20,
     affiliateClicks: 8,
+    pageClicks: [
+      { path: "/conteudos/guia", views: 50, detailClicks: 6, offerClicks: 2 },
+    ],
     pages: [
       { path: "/", views: 120 },
       { path: "/radar", views: 90 },
@@ -91,10 +94,16 @@ describe("Admin Growth v2 UI", () => {
     expect(html).toContain("Bikes recomendadas pelo Quiz");
     expect(html).toContain("Interesse nas bikes em todo o site");
     expect(html).toContain("Rotas públicas com mais visualizações");
-    expect(html).toContain("Cobertura do top 20");
+    expect(html).toContain("Quais páginas geram cliques em ofertas?");
+    expect(html).toContain("/conteudos/guia");
+    expect(html).toContain("4.0 cliques em oferta a cada 100 visualizações");
+    expect(html).toContain("Hoje");
+    expect(html).toContain("Ontem");
+    expect(html).toContain("Personalizado");
+    expect(html).not.toContain("<table");
     expect(html).toContain("Página inicial");
     expect(html).toContain("40.0%");
-    expect(html).toContain("3 de até 20 rotas exibidas");
+    expect(html).toContain("Não é conversão");
     expect(html).not.toContain('href="/radar"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toMatch(/private@example|Guilherme|\+55\s?11/i);
@@ -117,5 +126,20 @@ describe("Admin Growth v2 UI", () => {
     );
     expect(html).toContain("Fonte indisponível");
     expect(html).toContain("fonte agregada de recomendações está indisponível");
+  });
+  it("does not infer missing page origins from traffic or show unavailable as zero", () => {
+    const client = new QueryClient();
+    client.setQueryData(["admin", "growth", 30], {
+      ...data,
+      sitewide: { ...data.sitewide, pageClicks: undefined },
+    });
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={client}>
+        <Growth />
+      </QueryClientProvider>,
+    );
+    expect(html).toContain("Origem por página indisponível");
+    expect(html).toContain("Abandono confirmado");
+    expect(html).toContain("progresso observado até esta consulta");
   });
 });

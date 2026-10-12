@@ -1,0 +1,21 @@
+insert into bikes values ('bw1', 'BW1');
+insert into site_analytics_daily (day,event_name,source_path,event_count) values ('2026-10-10','page_view','/conteudos/guia',10),('2026-10-11','page_view','/conteudos/guia',100);
+insert into site_analytics_daily (day,event_name,source_path,bike_id,position,event_count) values ('2026-10-10','affiliate_click','/conteudos/guia','bw1','article',2),('2026-10-11','affiliate_click','/conteudos/guia','bw1','article',50);
+insert into quiz_leads (created_at,completed_at,status,recommended_bike_1) values ('2026-10-10T03:00:00Z','2026-10-10T04:00:00Z','completo','bw1'),('2026-10-11T03:00:00Z','2026-10-11T04:00:00Z','completo','bw1');
+insert into quiz_events values ('2026-10-10T03:00:00Z','buy_button_clicked','bw1'),('2026-10-11T03:00:00Z','buy_button_clicked','bw1');
+insert into quiz_funnel_sessions (first_seen_at,page_viewed_at,highest_answered_step) values ('2026-10-10T03:00:00Z','2026-10-10T03:00:00Z',0),('2026-10-11T03:00:00Z','2026-10-11T03:00:00Z',0);
+do $$ declare site jsonb; quiz jsonb; funnel jsonb; begin
+site := public.admin_site_analytics_range('2026-10-10','2026-10-11');
+quiz := public.admin_quiz_bikes_range('2026-10-10T00:00:00-03:00','2026-10-11T00:00:00-03:00');
+funnel := public.admin_quiz_funnel_range('2026-10-10T00:00:00-03:00','2026-10-11T00:00:00-03:00');
+assert (site->>'pageViews')::int = 10, 'yesterday page views';
+assert (site->>'affiliateClicks')::int = 2, 'yesterday offer clicks';
+assert (site->'pageClicks'->0->>'offerClicks')::int = 2, 'origin count';
+assert site->'pageClicks'->0->>'path' = '/conteudos/guia', 'origin path';
+assert (quiz->'bikes'->0->>'primaryRecommendations')::int = 1, 'recommendation cutoff';
+assert (quiz->'bikes'->0->>'quizOfferClicks')::int = 1, 'quiz clicks cutoff';
+assert (funnel->>'pageVisitors')::int = 1, 'cohort cutoff';
+assert not has_function_privilege('anon','public.admin_site_analytics_range(date,date)','EXECUTE'), 'anon permission';
+assert not has_function_privilege('authenticated','public.admin_quiz_funnel_range(timestamptz,timestamptz)','EXECUTE'), 'authenticated permission';
+raise notice 'Growth SQL boundaries, page origins, recommendations, cohort and permissions passed';
+end $$;
