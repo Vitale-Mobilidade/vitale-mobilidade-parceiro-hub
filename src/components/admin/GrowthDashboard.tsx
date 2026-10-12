@@ -283,44 +283,74 @@ export function Growth() {
                   </strong>
                 </span>
               </div>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Avançaram = sessões desta etapa ÷ etapa anterior. Perda =
+                sessões que ainda não avançaram.
+              </p>
+              <div
+                aria-hidden="true"
+                className="mb-2 grid grid-cols-[minmax(0,1fr)_2.5rem_3.5rem_2.5rem] items-center gap-2 text-[11px] font-semibold text-muted-foreground"
+              >
+                <span>Etapa</span>
+                <span className="text-right">Sessões</span>
+                <span className="text-right">Avançaram</span>
+                <span className="text-right">Perda</span>
+              </div>
               <ol className="space-y-2">
                 {stages.map((stage, index) => (
                   <li
                     key={stage.key}
                     title={`${stage.label}: ${number(stage.count)} sessões; ${pct(safeRate(stage.count, f.pageVisitors))} das entradas${stage.previousCount != null ? `; ${pct(safeRate(stage.count, stage.previousCount))} avançaram; ${number(stage.lost ?? 0)} não avançaram` : ""}`}
                   >
-                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs">
-                      <span className="truncate" title={stage.label}>
-                        {stage.key === "page"
-                          ? "Entradas"
-                          : stage.key === "started"
-                            ? "Iniciaram"
-                            : stage.key === "lead-form"
-                              ? "Formulário"
-                              : stage.key === "completed"
-                                ? "Resultado"
-                                : stage.label
-                                    .replace("Pergunta ", "")
-                                    .replace(
-                                      "Experiência com bike elétrica",
-                                      "Experiência",
-                                    )}
-                      </span>
-                      <div
-                        aria-hidden="true"
-                        className="flex h-4 justify-center rounded bg-slate-50"
-                      >
+                    <div className="grid grid-cols-[minmax(0,1fr)_2.5rem_3.5rem_2.5rem] items-center gap-2 text-xs tabular-nums">
+                      <div className="min-w-0">
+                        <span className="block truncate" title={stage.label}>
+                          {stage.key === "page"
+                            ? "Entradas"
+                            : stage.key === "started"
+                              ? "Iniciaram"
+                              : stage.key === "lead-form"
+                                ? "Formulário"
+                                : stage.key === "completed"
+                                  ? "Resultado"
+                                  : stage.label
+                                      .replace("Pergunta ", "")
+                                      .replace(
+                                        "Experiência com bike elétrica",
+                                        "Experiência",
+                                      )}
+                        </span>
                         <div
-                          className="h-full rounded-sm"
-                          style={{
-                            width: `${f.pageVisitors > 0 ? Math.min(100, (stage.count / f.pageVisitors) * 100) : 0}%`,
-                            backgroundColor: `hsl(160 70% ${29 + index * 2}%)`,
-                          }}
-                        />
+                          aria-hidden="true"
+                          className="mt-1 flex h-1.5 justify-center rounded bg-slate-50"
+                        >
+                          <div
+                            className="h-full rounded-sm"
+                            style={{
+                              width: `${f.pageVisitors > 0 ? Math.min(100, (stage.count / f.pageVisitors) * 100) : 0}%`,
+                              backgroundColor: `hsl(160 70% ${29 + index * 2}%)`,
+                            }}
+                          />
+                        </div>
                       </div>
                       <strong className="text-right">
+                        <span className="sr-only">Sessões: </span>
                         {number(stage.count)}
                       </strong>
+                      <strong className="text-right text-emerald-800">
+                        <span className="sr-only">
+                          Avançaram da etapa anterior:{" "}
+                        </span>
+                        {stage.previousCount == null
+                          ? "—"
+                          : pct(safeRate(stage.count, stage.previousCount))}
+                      </strong>
+                      <span
+                        className={`text-right ${stage.lost ? "font-semibold text-amber-800" : "text-muted-foreground"}`}
+                      >
+                        <span className="sr-only">Não avançaram: </span>
+                        {stage.lost == null ? "—" : number(stage.lost)}
+                      </span>
                     </div>
                     <span className="sr-only">
                       {stage.label} ·{" "}

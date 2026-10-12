@@ -142,4 +142,37 @@ describe("Admin Growth v2 UI", () => {
     expect(html).toContain("Abandono confirmado");
     expect(html).toContain("progresso observado até esta consulta");
   });
+  it("keeps every stage conversion and loss visible without hover or disclosure", () => {
+    const client = new QueryClient();
+    client.setQueryData(["admin", "growth", 30], data);
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={client}>
+        <Growth />
+      </QueryClientProvider>,
+    );
+    const funnel = html
+      .slice(
+        html.indexOf("Funil do Quiz por etapa"),
+        html.indexOf("Como ler o funil e a cobertura"),
+      )
+      .replace(/ title="[^"]*"/g, "")
+      .replace(/<span class="sr-only">[\s\S]*?<\/span>/g, "");
+    expect(funnel).toContain("Avançaram");
+    expect(funnel).toContain("Perda");
+    // These rates must come from the previous stage, not the page entry base.
+    for (const rate of [
+      "80.0%",
+      "93.8%",
+      "93.3%",
+      "92.9%",
+      "92.3%",
+      "91.7%",
+      "90.9%",
+      "100.0%",
+    ]) {
+      expect(funnel).toContain(`>${rate}</strong>`);
+    }
+    expect(funnel).toContain(">20</span>");
+    expect(funnel).toContain(">10</span>");
+  });
 });
