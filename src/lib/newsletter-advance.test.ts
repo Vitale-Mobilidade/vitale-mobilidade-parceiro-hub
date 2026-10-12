@@ -67,7 +67,11 @@ async function run(clock: string, draft: unknown, mode?: string) {
   const response = await newsletterTick(
     new Request("https://synthetic.invalid", {
       method: "POST",
-      headers: { "x-worker-signature": "mock", "x-worker-issued-at": "mock" },
+      headers: {
+        "x-worker-signature": "mock",
+        "x-worker-issued-at": "mock",
+        ...(mode ? { "x-newsletter-mode": mode } : {}),
+      },
     }),
   );
   return { response, rpc, inserts };
