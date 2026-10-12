@@ -1,0 +1,243 @@
+{
+  "editionNumber": 2,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 19357
+    },
+    {
+      "status": 200,
+      "ms": 12524
+    },
+    {
+      "status": 200,
+      "ms": 17123
+    },
+    {
+      "status": 200,
+      "ms": 10041
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "draft",
+      "attempt": 0,
+      "draft": {
+        "subject": "Banco extra, bateria maior e a tomada no fim do caminho",
+        "preheader": "Garupa, recarga, painel e orçamento entram na mesma conversa.",
+        "headline": "A cidade cabe no banco — e a bateria vai junto",
+        "opening": [
+          "Mobilidade elétrica fica mais interessante quando a conversa sai da corrida por números e entra na rotina. Nesta edição, banco para garupa, bateria removível, recarga e orçamento mostram que cada bike organiza a cidade de um jeito — algumas até reservam lugar para companhia."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** reúne dois jeitos de chamar o motor: acelerador de dedo e pedal assistido por sensor de giro. Nesse segundo modo, basta girar o pedivela; o sistema não mede a força aplicada como faria um sensor de torque. O banco alongado e os apoios para os pés, por sua vez, fazem da garupa parte do projeto, não uma invenção de domingo."
+            ],
+            "bullets": [
+              "O painel confirma o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não possui ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é sonoro e **não trava a roda**. São funções diferentes, apesar da dupla tecnológica."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa.",
+              "O sistema não trava a roda"
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na comparação entre **StreetGo S12 e S14**, o motor não desempata nada: ambas declaram 750 W no cubo traseiro. A diferença central está na reserva de energia. A S12 traz bateria de 48 V e 15 Ah; a S14, 48 V e 20 Ah. Mais capacidade pode ampliar a margem entre recargas, mas não transforma autonomia estimada em distância garantida."
+            ],
+            "bullets": [
+              "As duas têm bateria removível, carregador bivolt descrito para tomada residencial e células declaradas Samsung ou LG.",
+              "Apesar do banco alongado, **S12 e S14 são para uma pessoa**. Também compartilham pneus 20 x 4 e ausência de suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14.",
+              "S12 e S14 são modelos para uma pessoa"
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa menos vistosa, porém muito útil: o que acontece quando a bike para perto da tomada? Segundo o cadastro, ela possui duas baterias removíveis. Isso permite carregá-las separadamente, mas também significa transportar e guardar duas peças. A praticidade mora nesse detalhe — e, às vezes, pega escada."
+            ],
+            "bullets": [
+              "Conectar a bateria após usos curtos não significa consumir um ciclo completo a cada recarga; ciclos consideram carga acumulada.",
+              "Freios, corrente e câmbio podem passar por uma bicicletaria, conforme a oficina. Bateria, motor e eletrônica pedem suporte compatível."
+            ],
+            "evidence": [
+              "A V35 da Inow tem duas baterias removíveis, segundo o cadastro do modelo.",
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. Ela combina motor de 1.000 W no cubo traseiro, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. A autonomia da ficha vai até 60 km, mas peso, trajeto, velocidade e condições de uso continuam participando dessa conta sem pedir licença."
+            ],
+            "bullets": [
+              "O conjunto inclui freios hidráulicos a disco, câmbio Shimano de sete velocidades e suspensões dianteira e dupla traseira.",
+              "O Radar reúne **preço vigente e histórico**. A ficha informa aproximadamente 44 kg e capacidade máxima de até 150 kg."
+            ],
+            "evidence": [
+              "Autonomia informada na ficha: Até 60km. Não é garantia de alcance em todo trajeto.",
+              "A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "O vídeo propõe uma pausa na caça à ficha técnica perfeita. O relato lembra uma bicicleta usada pelo Vitale há 12 anos: motor de 350 W, bateria de 36 V e 10 A, sem marchas nem acelerador. A ideia não é congelar o mercado no passado, e sim mostrar que orçamento e uso real também pedalam — potência não precisa monopolizar o guidão."
+            ],
+            "bullets": [
+              "O ponto central é evitar loucuras financeiras e buscar um produto coerente com o perfil e o dinheiro disponível.",
+              "O quiz aparece como convite opcional para explorar alternativas a partir de uso e orçamento, sem obrigação de avançar na compra."
+            ],
+            "evidence": [
+              "a melhor bicicleta é a sua é a que você pode comprar",
+              "não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "No teste da **Inow V20 Pro**, a unidade emprestada tinha motor de 1.000 W no cubo traseiro, bateria descrita como 48 V e 15.6 A e banco bipartido. A almofada traseira pode ser retirada, abrindo espaço para outra configuração. O vídeo anunciava um trajeto de aproximadamente 9 km, mas esse planejamento, sozinho, não comprova a distância realizada."
+            ],
+            "bullets": [
+              "O painel foi relatado como difícil de enxergar durante o dia e não mostra a indicação das setas.",
+              "Há NFC, alarme apenas sonoro, freios hidráulicos e suspensão traseira única. O piloto automático é desativado ao frear."
+            ],
+            "evidence": [
+              "Vai ser provavelmente aí um trajeto de uns 9 km",
+              "tem alarme alarme apenas sonoro"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 0,
+      "approved": false,
+      "issues": [
+        "subject: “Banco extra, bateria maior e a tomada no fim do caminho” repete a combinação temática e a estrutura da edição anterior, “Banco, bateria e boas ideias para o próximo pedal”; a pauta atual sustenta esses elementos, mas não permite repetir fórmula de outra edição.",
+        "opening: “a conversa sai da corrida por números e entra na rotina” e a enumeração de “banco para garupa, bateria removível, recarga e orçamento” retomam a mesma oposição e sequência temática da abertura anterior, que também afastava o foco da potência para banco, acessórios e custos; a abertura precisa ser independente de previousOpenings.",
+        "article-2: “A praticidade mora nesse detalhe — e, às vezes, pega escada” introduz escada, ausente da fonte. A fonte sustenta apenas que as duas baterias removíveis precisam ser retiradas, transportadas e guardadas e que seu peso deve ser avaliado no caminho até a tomada.",
+        "video-0: “sem obrigação de avançar na compra” não é afirmado na transcrição. A fonte sustenta que o quiz é gratuito, faz perguntas sobre uso e orçamento, sugere opções e encaminha o usuário para contato por WhatsApp."
+      ]
+    },
+    {
+      "stage": "draft",
+      "attempt": 1,
+      "draft": {
+        "subject": "Do polegar à tomada: a rotina entra em ação",
+        "preheader": "Garupa, recarga, painel e orçamento entram na mesma conversa.",
+        "headline": "A cidade cabe no banco — e a bateria vai junto",
+        "opening": [
+          "Cada comando muda um pedacinho da experiência: girar o pedal, apertar o acelerador, retirar a bateria ou abrir o quiz. As bikes desta edição mostram uma mobilidade feita de gestos simples — e de detalhes que ganham importância quando entram na rotina."
+        ],
+        "sections": [
+          {
+            "id": "article-0",
+            "paragraphs": [
+              "A **OUXI V8 Pro** reúne dois jeitos de chamar o motor: acelerador de dedo e pedal assistido por sensor de giro. Nesse segundo modo, basta girar o pedivela; o sistema não mede a força aplicada como faria um sensor de torque. O banco alongado e os apoios para os pés, por sua vez, fazem da garupa parte do projeto, não uma invenção de domingo."
+            ],
+            "bullets": [
+              "O painel confirma o acionamento das setas, mas fica difícil de ler sob luz solar intensa e não possui ajuste de luminosidade.",
+              "NFC liga e desliga o sistema elétrico; o alarme é sonoro e **não trava a roda**. São funções diferentes, apesar da dupla tecnológica."
+            ],
+            "evidence": [
+              "A OUXI V8 Pro combina acelerador de dedo, pedal assistido por sensor de giro, banco alongado e apoio para garupa.",
+              "O sistema não trava a roda"
+            ]
+          },
+          {
+            "id": "article-1",
+            "paragraphs": [
+              "Na comparação entre **StreetGo S12 e S14**, o motor não desempata nada: ambas declaram 750 W no cubo traseiro. A diferença central está na reserva de energia. A S12 traz bateria de 48 V e 15 Ah; a S14, 48 V e 20 Ah. Mais capacidade pode ampliar a margem entre recargas, mas não transforma autonomia estimada em distância garantida."
+            ],
+            "bullets": [
+              "As duas têm bateria removível, carregador bivolt descrito para tomada residencial e células declaradas Samsung ou LG.",
+              "Apesar do banco alongado, **S12 e S14 são para uma pessoa**. Também compartilham pneus 20 x 4 e ausência de suspensão traseira."
+            ],
+            "evidence": [
+              "A diferença que mais pesa na escolha é a capacidade da bateria: 15 Ah na S12 e 20 Ah na S14.",
+              "S12 e S14 são modelos para uma pessoa"
+            ]
+          },
+          {
+            "id": "article-2",
+            "paragraphs": [
+              "A **Inow V35** ajuda a puxar uma conversa menos vistosa, porém muito útil: o que acontece quando a bike para perto da tomada? Segundo o cadastro, ela possui duas baterias removíveis. Isso permite carregá-las separadamente, mas também significa transportar e guardar duas peças. A praticidade mora nesse detalhe — e pede atenção ao peso no caminho até a tomada."
+            ],
+            "bullets": [
+              "Conectar a bateria após usos curtos não significa consumir um ciclo completo a cada recarga; ciclos consideram carga acumulada.",
+              "Freios, corrente e câmbio podem passar por uma bicicletaria, conforme a oficina. Bateria, motor e eletrônica pedem suporte compatível."
+            ],
+            "evidence": [
+              "A V35 da Inow tem duas baterias removíveis, segundo o cadastro do modelo.",
+              "Ciclo de carga não é o número de vezes que o plugue foi conectado."
+            ]
+          },
+          {
+            "id": "bike",
+            "paragraphs": [
+              "No Radar, a **BW1** aparece com oferta ativa no momento da preparação. Ela combina motor de 1.000 W no cubo traseiro, bateria removível de 48 V e 20 Ah e capacidade informada para duas pessoas. A autonomia da ficha vai até 60 km, mas peso, trajeto, velocidade e condições de uso continuam participando dessa conta sem pedir licença."
+            ],
+            "bullets": [
+              "O conjunto inclui freios hidráulicos a disco, câmbio Shimano de sete velocidades e suspensões dianteira e dupla traseira.",
+              "O Radar reúne **preço vigente e histórico**. A ficha informa aproximadamente 44 kg e capacidade máxima de até 150 kg."
+            ],
+            "evidence": [
+              "Autonomia informada na ficha: Até 60km. Não é garantia de alcance em todo trajeto.",
+              "A bike tem oferta ativa no momento da preparação."
+            ]
+          },
+          {
+            "id": "video-0",
+            "paragraphs": [
+              "O vídeo propõe uma pausa na caça à ficha técnica perfeita. O relato lembra uma bicicleta usada pelo Vitale há 12 anos: motor de 350 W, bateria de 36 V e 10 A, sem marchas nem acelerador. A ideia não é congelar o mercado no passado, e sim mostrar que orçamento e uso real também pedalam — potência não precisa monopolizar o guidão."
+            ],
+            "bullets": [
+              "O ponto central é evitar loucuras financeiras e buscar um produto coerente com o perfil e o dinheiro disponível.",
+              "O quiz é gratuito, pergunta sobre uso e orçamento, sugere duas opções e encaminha a conversa para o WhatsApp."
+            ],
+            "evidence": [
+              "a melhor bicicleta é a sua é a que você pode comprar",
+              "não faça loucuras financeiras"
+            ]
+          },
+          {
+            "id": "video-1",
+            "paragraphs": [
+              "No teste da **Inow V20 Pro**, a unidade emprestada tinha motor de 1.000 W no cubo traseiro, bateria descrita como 48 V e 15.6 A e banco bipartido. A almofada traseira pode ser retirada, abrindo espaço para outra configuração. O vídeo anunciava um trajeto de aproximadamente 9 km, mas esse planejamento, sozinho, não comprova a distância realizada."
+            ],
+            "bullets": [
+              "O painel foi relatado como difícil de enxergar durante o dia e não mostra a indicação das setas.",
+              "Há NFC, alarme apenas sonoro, freios hidráulicos e suspensão traseira única. O piloto automático é desativado ao frear."
+            ],
+            "evidence": [
+              "Vai ser provavelmente aí um trajeto de uns 9 km",
+              "tem alarme alarme apenas sonoro"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "review",
+      "attempt": 1,
+      "approved": false,
+      "issues": [
+        "opening: “detalhes que ganham importância quando entram na rotina” repete a ideia e a estrutura da edição anterior, que já apresentou “detalhes da rotina” como eixo editorial. A abertura precisa ser independente de previousOpenings e não reutilizar essa fórmula, ainda que reformulada."
+      ]
+    },
+    {
+      "stage": "error",
+      "attempt": 1,
+      "code": "newsletter_writer_review_failed"
+    }
+  ]
+}
