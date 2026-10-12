@@ -1,15 +1,14 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { BikeMedia } from "@/components/site/site-ui";
 import { persistentBikeImage } from "@/lib/bike-catalog";
 import { QuizBanner } from "@/components/site/DecisionBanners";
-import { ArrowRight, BookOpen, Calculator, LineChart, Play } from "lucide-react";
+import { ArrowRight, BookOpen, Calculator, LineChart } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import { composeArticleFlow } from "@/lib/article-flow";
 import { articleSubjectBikes, comparedBikesInTitle } from "@/lib/editorial-discovery";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
-import { youtubeThumbnailUrl, type YoutubeThumbnailVariant } from "@/lib/video-catalog";
 import { editorialImageProps } from "@/lib/editorial-images";
 
 export type PublishedArticle = {
@@ -270,53 +269,16 @@ function FaqList({ faq }: { faq: ArticleFaq[] }) {
   );
 }
 
-function VideoFacade({ videoId, title }: { videoId: string; title: string }) {
-  const [active, setActive] = useState(false);
-  const [variant, setVariant] = useState<YoutubeThumbnailVariant>("maxresdefault");
-  const fallback = () => setVariant((current) => current === "maxresdefault" ? "sddefault" : "hqdefault");
-  if (active)
-    return (
-      <iframe
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
-        title={title}
-        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="h-full w-full"
-      />
-    );
-  const thumbnail = youtubeThumbnailUrl(videoId, variant);
+function YouTubePlayer({ videoId, title }: { videoId: string; title: string }) {
   return (
-    <button
-      type="button"
-      onClick={() => setActive(true)}
-      className="group relative h-full w-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-mint"
-      aria-label={`Reproduzir: ${title}`}
-    >
-      {thumbnail && (
-        <img
-          src={thumbnail}
-          alt=""
-          width={1280}
-          height={720}
-          onError={variant === "hqdefault" ? undefined : fallback}
-          onLoad={(event) => {
-            // YouTube sometimes returns a 120px placeholder with HTTP 200 for missing variants.
-            if (variant !== "hqdefault" && event.currentTarget.naturalWidth <= 120) fallback();
-          }}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
-        />
-      )}
-      <span
-        className="absolute inset-0 grid place-items-center bg-ink/35 transition group-hover:bg-ink/25"
-        aria-hidden="true"
-      >
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-mint text-mint-foreground shadow-xl">
-          <Play className="ml-1 h-7 w-7 fill-current" />
-        </span>
-      </span>
-    </button>
+    <iframe
+      src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+      title={title}
+      loading="lazy"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      className="h-full w-full border-0"
+    />
   );
 }
 
@@ -350,7 +312,7 @@ function Block({
       <section className="my-8">
         <h2 className="mb-3 text-2xl font-bold">{block.heading || "Teste em vídeo"}</h2>
         <div className="aspect-video overflow-hidden rounded-xl bg-emerald-950">
-          <VideoFacade videoId={article.videoId} title={block.heading || "Vídeo da Vitale"} />
+          <YouTubePlayer videoId={article.videoId} title={block.heading || "Vídeo da Vitale"} />
         </div>
       </section>
     );
