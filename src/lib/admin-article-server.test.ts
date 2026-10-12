@@ -13,6 +13,7 @@ import * as oauthAdapter from "../../supabase/functions/_shared/youtube-oauth";
 import * as siteAnalytics from "../../supabase/functions/_shared/site-analytics";
 import * as adminGrowth from "../../supabase/functions/_shared/admin-growth";
 import * as reviewCost from "../../supabase/functions/_shared/editorial-review-cost";
+import * as growthRangeModule from "../../supabase/functions/_shared/growth-range";
 import * as input from "../../supabase/functions/_shared/editorial-create-input";
 
 // Execute the real Edge Function in an isolated VM with offline dependencies.
@@ -31,7 +32,7 @@ const integrationEnv: Record<string, string> = {};
 const offlineCapture = vi.fn();
 const offlineCompose = vi.fn();
 const exports: {
-  rejectedDraftCanResume?: (article: unknown, source: unknown, runs: unknown[]) => boolean;
+  rejectedDraftCanResume?: (article: unknown, source: unknown, runs: unknown[], manualBikesConfirmed?: boolean) => boolean;
   generateStream?: (req: Request, db: unknown, actor: unknown, body: unknown) => Response;
   generateInto?: (...args: unknown[]) => Promise<unknown>;
   stageStream?: (...args: unknown[]) => Response;
@@ -55,6 +56,8 @@ runInNewContext(code, {
       "npm:@supabase/supabase-js@2": {
         createClient: vi.fn(() => requestDatabase),
       },
+      "../_shared/growth-range.ts": growthRangeModule,
+      "../_shared/editorial-alert.ts": { EDITORIAL_ALERT_RECIPIENT: "guilherme@hotpipe.com.br", sendEditorialAlert: vi.fn().mockResolvedValue(undefined) },
       "../_shared/site-analytics.ts": siteAnalytics,
       "../_shared/admin-growth.ts": adminGrowth,
       "../_shared/editorial-review-cost.ts": reviewCost,
@@ -544,11 +547,11 @@ describe("capa — referências reais sem chamadas pagas", () => {
 
 describe("piloto integrado — planilha e captura no servidor", () => {
   const csv = 'Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max';
-  async function integrated(db: unknown) {
+  async function integrated(db: unknown, bikeIds: unknown = []) {
     integrationEnv.YOUTUBE_EDITORIAL_ENABLED = "true";
     try {
       return await exports.generateStream!(new Request("http://localhost"), db, { id: "actor", role: "content" }, {
-        action: "generate-from-sheet", youtubeId: "abcDEFG1234", transcript: "Resumo forjado", title: "Título forjado", bikeIds: [],
+        action: "generate-from-sheet", youtubeId: "abcDEFG1234", transcript: "Resumo forjado", title: "Título forjado", bikeIds,
       }).text();
     } finally {
       delete integrationEnv.YOUTUBE_EDITORIAL_ENABLED;
@@ -576,13 +579,21 @@ describe("piloto integrado — planilha e captura no servidor", () => {
     expect(await integrated(db)).toContain("Vídeo não encontrado na planilha");
     expect(db.from).not.toHaveBeenCalled();
   });
-  it("bikes desconhecidas bloqueiam antes de captura ou gasto", async () => {
+  it("bikes desconhecidas não bloqueiam reutilização de artigo existente", async () => {
     offlineFetch = vi.fn(async () => new Response(csv.replace("V9 Max", "modelo inexistente")));
-    const original = database();
+    const original = database({ id: "existing", status: "published" });
     const db = { ...original, from: vi.fn((table: string) => table === "bikes"
       ? { select: async () => ({ data: [{ bike_id: "s20_pro", name: "S20 Pro" }], error: null }) }
       : original.from(table)) };
-    expect(await integrated(db)).toContain("bikes da planilha precisam de conferência");
+    expect(await integrated(db)).toContain("reused");
+    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes", "editorial_articles"]);
+  });
+  it("seleção manual inválida bloqueia antes de capturar a transcrição", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    offlineCapture.mockClear();
+    const db = database();
+    expect(await integrated(db, ["inventada"])).toContain("bikes válidas");
+    expect(offlineCapture).not.toHaveBeenCalled();
     expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes"]);
   });
   it("geração integrada aceita modelo novo do catálogo antes de reutilizar artigo", async () => {
@@ -732,6 +743,8 @@ describe("retomada restrita de rejeição sem saída", () => {
   const rejected = [{ status: "failed", error_code: "ai_http_400" }];
   it("permite retomar rejeição 402 explícita após recarga, sem saída nem custo incerto", () => {
     expect(exports.rejectedDraftCanResume!(article, source, [{ status: "failed", error_code: "ai_http_402" }])).toBe(true);
+    expect(exports.rejectedDraftCanResume!(article, source, [{ status: "failed", error_code: "article_bike_ambiguous" }], true)).toBe(true);
+    expect(exports.rejectedDraftCanResume!(article, source, [{ status: "failed", error_code: "article_bike_ambiguous" }])).toBe(false);
   });
   it("permite somente fonte oficial íntegra e rejeição conhecida", () => {
     expect(exports.rejectedDraftCanResume!(article, source, rejected)).toBe(true);

@@ -1,10 +1,11 @@
+import { EDITORIAL_ALERT_RECIPIENT, sendEditorialAlert } from "../_shared/editorial-alert.ts";
 import { growthRange } from "../_shared/growth-range.ts";
 import { reviewPeers, reviewInputKey, approvedAssessment, repeatedReviewIssues } from "../_shared/editorial-review-cost.ts";
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
+import { automaticCreationBikeIds, parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
 import {
   autoRepairArticle,
   EDITORIAL_READER_VOICE,
@@ -1533,6 +1534,7 @@ function stageStream(
   const stream = new ReadableStream({
     async start(controller) {
       const send = (v: Body) => controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));
+      let generationVideoId: string | null = null;
       try {
         if (!uuid(body.id) || !Number.isInteger(body.revision)) throw new Error("invalid_id");
         let article = await articleById(db, body.id as string);
@@ -1541,6 +1543,7 @@ function stageStream(
         if (article.revision !== body.revision) throw new Error("revision_conflict");
         const video = await videoById(db, article.video_id);
         if (!video) throw new Error("video_not_found");
+        generationVideoId = video.youtube_id;
         const progress = (step: string) => send({ type: "progress", step });
         if (stage === "article") {
           if ((video.transcript ?? "").trim().length < 200) throw new Error("transcript_required");
@@ -1586,6 +1589,7 @@ function stageStream(
         }
       } catch (e) {
         console.error("[editorial-admin] stage", stage, errorMessage(e));
+        if (generationVideoId) await notifyEditorialReview(db, actor, generationVideoId, stageError(errorMessage(e)));
         send({ type: "error", message: stageError(errorMessage(e)) });
       }
       controller.close();
@@ -1621,17 +1625,32 @@ export function stageError(code: string): string {
   return map[code] ?? "Não foi possível gerar o artigo. O que já foi salvo permanece disponível; tente novamente.";
 }
 
-function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]): boolean {
+function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[], manualBikesConfirmed = false): boolean {
   if (article.status !== "draft" || !Array.isArray(article.blocks) || article.blocks.length ||
       article.published_at || !source || source.state !== "needs_review" ||
       (source.article_id && source.article_id !== article.id) || !runs.length ||
-      runs.some(run => run.status !== "failed" || !(["ai_http_400", "ai_http_402"].includes(String(run.error_code))))) return false;
+      runs.some(run => run.status !== "failed" || !(["ai_http_400", "ai_http_402", ...(manualBikesConfirmed ? ["article_bike_ambiguous"] : [])].includes(String(run.error_code))))) return false;
   const capture = source.capture as Record<string, unknown> | null;
   if (!capture || capture.source !== "youtube_captions" || capture.videoId !== article.video_id ||
       capture.channelId !== VITALE_YOUTUBE_CHANNEL || typeof capture.originalVtt !== "string" ||
       typeof capture.transcript !== "string" || capture.transcript.length < 200) return false;
   try { return parseCaptionVtt(capture.originalVtt).transcript === capture.transcript; }
   catch { return false; }
+}
+
+async function notifyEditorialReview(db: SupabaseClient, actor: Actor, videoId: string, reason: string) {
+  try {
+    const recipient = EDITORIAL_ALERT_RECIPIENT;
+    const settings = await db.from("newsletter_settings").select("from_email").eq("singleton", true).maybeSingle();
+    await sendEditorialAlert({ videoId, recipient: recipient ?? "",
+      from: Deno.env.get("EDITORIAL_ALERT_FROM") || settings.data?.from_email || "",
+      key: Deno.env.get("RESEND_API_KEY") ?? "", gatewayKey: Deno.env.get("LOVABLE_API_KEY"), reason });
+    await log(db, actor, "editorial_alert_sent", "video", videoId, {});
+  } catch {
+    // No recipient, secret or provider response is written into the audit trail.
+    console.error("[editorial-admin] editorial_alert_failed", videoId);
+    try { await log(db, actor, "editorial_alert_failed", "video", videoId, {}); } catch { /* preserve generation result */ }
+  }
 }
 
 function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body): Response {
@@ -1658,8 +1677,17 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           const videos = await readAutomaticVideoCatalog(db, await snapshot.text());
           const selected = videos.find((video) => video.videoId === id);
           if (!selected) return fail("Vídeo não encontrado na planilha. Nenhum artigo foi gerado.");
-          if (selected.unmatched.length || selected.bikeIds.length > 7)
-            return fail("As bikes da planilha precisam de conferência antes de gerar este artigo.");
+          // Manual choices always win; an incomplete sheet falls back to grounded detection.
+          let explicitBikeIds: string[] | undefined;
+          try {
+            if (body.bikeIds !== undefined && !(Array.isArray(body.bikeIds) && body.bikeIds.length === 0)) {
+              const catalog = await bikeCandidates(db);
+              explicitBikeIds = parseCreationBikeIds(body.bikeIds, new Set(catalog.map(bike => bike.bike_id)));
+            }
+          } catch (e) {
+            return fail(e instanceof Error ? e.message : "Não foi possível validar as bikes.");
+          }
+          const effectiveBikeIds = automaticCreationBikeIds(explicitBikeIds, selected);
           const { data: existing, error: lookupError } = await db.from("editorial_articles")
             .select("*").eq("video_id", id).neq("status", "archived").limit(1).maybeSingle();
           if (lookupError) throw new Error("article_lookup_failed");
@@ -1670,7 +1698,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
             const { data: runs, error: runsError } = await db.from("editorial_compiler_runs")
               .select("status,error_code").eq("article_id", existing.id);
             if (sourceError || runsError) throw new Error("rejected_draft_lookup_failed");
-            if (rejectedDraftCanResume(existing, source, runs ?? [])) {
+            if (rejectedDraftCanResume(existing, source, runs ?? [], Boolean(explicitBikeIds?.length))) {
               const { data: claimed, error: claimError } = await db.from("youtube_editorial_sources")
                 .update({ state: "generating", article_id: existing.id }).eq("video_id", id)
                 .eq("state", "needs_review").select("video_id").maybeSingle();
@@ -1701,7 +1729,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
             if (captureError) throw new Error("source_save_failed");
           }
           body = { ...body, title: selected.title, articleTitle: selected.title,
-            bikeIds: selected.bikeIds, transcript: capture.transcript };
+            bikeIds: effectiveBikeIds, transcript: capture.transcript };
         }
         const title = str(body.title, 300);
         const articleTitle = str(body.articleTitle, 200) || title;
@@ -1831,6 +1859,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (reservedVideoId) {
           // Do not replay uncertain AI results or copy provider errors into persistent records.
           await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
+          await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)));
         }
         console.error("[editorial-admin] generate", errorMessage(e));
         if (errorMessage(e) === "ai_http_402") {
@@ -2157,6 +2186,7 @@ async function finishQueuedRewrite(req: Request, db: SupabaseClient, actor: Acto
       }
     }
     await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "generating");
+    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     if (errorMessage(e) === "ai_http_402") await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
     return json(req, { error: "automatic_rewrite_failed", articleId: lease.article_id }, 502);
   }
@@ -2188,6 +2218,7 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
   } catch (e) {
     await log(db, actor, "automatic_cover_failed", "article", lease.article_id, { code: errorMessage(e) });
     await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_generating");
+    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     return json(req, { error: "automatic_cover_failed", articleId: lease.article_id }, 502);
   }
 }
@@ -2212,6 +2243,7 @@ async function finishQueuedCoverRender(req: Request, db: SupabaseClient, actor: 
   } catch (e) {
     await log(db, actor, "automatic_cover_render_failed", "article", lease.article_id, { code: errorMessage(e) });
     await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_rendering");
+    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     return json(req, { error: "automatic_cover_render_failed", articleId: lease.article_id }, 502);
   }
 }
@@ -2324,6 +2356,7 @@ async function finishQueuedPublication(req: Request, db: SupabaseClient, actor: 
   } catch (error) {
     await log(db, actor, "automatic_publication_failed", "article", lease.article_id, { ...report, code: errorMessage(error) });
     await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "publishing");
+    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     if (errorMessage(error) === "ai_http_402") await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
     return json(req, { error: "automatic_publication_failed", articleId: lease.article_id }, 502);
   }

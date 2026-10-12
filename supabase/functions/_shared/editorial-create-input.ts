@@ -6,3 +6,10 @@ export function parseCreationBikeIds(input: unknown, known: Set<string>): string
   }
   return [...new Set(input)] as string[];
 }
+
+/** Incomplete Sheets associations defer to title/transcript detection; manual selection wins. */
+export function automaticCreationBikeIds(manual: string[] | undefined, sheet: { bikeIds: string[]; unmatched: string[] }): string[] | undefined {
+  if (manual?.length) return manual;
+  return !sheet.unmatched.length && sheet.bikeIds.length > 0 && sheet.bikeIds.length <= 7
+    ? sheet.bikeIds : undefined;
+}

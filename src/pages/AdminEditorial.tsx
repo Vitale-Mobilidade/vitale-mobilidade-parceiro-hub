@@ -777,7 +777,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
         reused?: boolean;
       }>(
         fromSheet ? "generate-from-sheet" : "generate",
-        fromSheet ? { youtubeId: selected.videoId } : {
+        fromSheet ? { youtubeId: selected.videoId, ...creationBikeSelection(bikeIds) } : {
           youtubeId: selected.videoId,
           title: selected.title,
           articleTitle: articleTitle.trim(),
@@ -842,7 +842,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
           <label className="flex items-start gap-3 rounded-xl border border-line p-4">
             <input type="checkbox" checked={fromSheet} onChange={(e) => setFromSheet(e.target.checked)} className="mt-1 h-4 w-4 accent-emerald-700" />
             <span><span className="block font-semibold">Usar os dados da planilha e a transcrição do YouTube</span>
-              <span className="text-sm text-muted-foreground">Título e bikes vêm da planilha. A transcrição original é capturada pelo servidor ao gerar.</span>
+              <span className="text-sm text-muted-foreground">O título vem da planilha e a transcrição é capturada do YouTube. Você também pode escolher as bikes abaixo.</span>
             </span>
           </label>
           {!fromSheet && <>
@@ -858,6 +858,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               maxLength={200}
             />
           </label>
+          </>}
           <div className="space-y-2">
             <label htmlFor="article-bike-search" className="block text-base font-semibold">
               Bikes <span className="font-normal text-muted-foreground">(opcional)</span>
@@ -873,7 +874,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               aria-controls="article-bike-results"
             />
             <p className="text-xs text-muted-foreground">
-              Selecione até 7 bikes. A primeira será a principal. Sem seleção, identificamos pela transcrição.
+              Selecione até 7 bikes. A primeira será a principal. Sem seleção, usamos a planilha e identificamos pelo título e pela transcrição.
             </p>
             {bikeIds.length > 0 && (
               <p role="status" className="text-sm text-emerald-900">
@@ -920,6 +921,7 @@ function NewArticle({ initialVideoId }: { initialVideoId?: string }) {
               )}
             </div>
           </div>
+          {!fromSheet && <>
           <label className="block text-base font-semibold">
             Transcrição
             <textarea
