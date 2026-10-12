@@ -374,26 +374,50 @@ it("normalizes wrapping typographic quotes without accepting changed facts", () 
 
 it("keeps unflagged fields from the previous draft after a reviewer correction (2026-10-08 regression)", async () => {
   vi.stubEnv("LOVABLE_API_KEY", "mock-key");
-  const sources = ["article-0", "article-1", "article-2", "bike"].map((id) => ({ ...source, id }));
+  const sources = ["article-0", "article-1", "article-2", "bike"].map((id) => ({
+    ...source,
+    id,
+  }));
   const first = {
     ...draft,
-    sections: sources.map((s) => ({ ...draft.sections[0], id: s.id, paragraphs: [sentence.repeat(6).trim()], bullets: [sentence.trim()] })),
+    sections: sources.map((s) => ({
+      ...draft.sections[0],
+      id: s.id,
+      paragraphs: [sentence.repeat(6).trim()],
+      bullets: [sentence.trim()],
+    })),
   };
   // Correction fixes the flagged opening/article-2 but invents a joke in article-1 and the preheader.
   const corrected = {
     ...first,
     preheader: "Bancos, bagageiros e uma GT2000 cruzando São Paulo inteira.",
-    opening: ["Uma ponte editorial nova e breve para os assuntos desta edição, sem gancho, passando por garupa, bagagem, negócios e uma dobrável no Radar, em leitura leve e direta para quem gosta de mobilidade elétrica."],
+    opening: [
+      "Uma ponte editorial nova e breve para os assuntos desta edição, sem gancho, passando por garupa, bagagem, negócios e uma dobrável no Radar, em leitura leve e direta para quem gosta de mobilidade elétrica.",
+    ],
     sections: first.sections.map((s) =>
       s.id === "article-1"
-        ? { ...s, paragraphs: [sentence.repeat(6) + "Sol forte e poça d’água fizeram crítica."] }
+        ? {
+            ...s,
+            paragraphs: [
+              sentence.repeat(6) + "Sol forte e poça d’água fizeram crítica.",
+            ],
+          }
         : s.id === "article-2"
-          ? { ...s, bullets: ["Corrigido: tributos e comissões entram na conta."] }
+          ? {
+              ...s,
+              bullets: ["Corrigido: tributos e comissões entram na conta."],
+            }
           : s,
     ),
   };
   const response = (value: unknown) =>
-    new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: JSON.stringify(value) }] }] }));
+    new Response(
+      JSON.stringify({
+        output: [
+          { content: [{ type: "output_text", text: JSON.stringify(value) }] },
+        ],
+      }),
+    );
   const issues = [
     "A abertura usa um detalhe técnico como gancho.",
     "Na seção article-2, “manutenção” não é sustentada como custo.",
@@ -405,16 +429,90 @@ it("keeps unflagged fields from the previous draft after a reviewer correction (
     .mockResolvedValueOnce(response({ approved: false, issues }))
     .mockResolvedValueOnce(response(corrected))
     .mockResolvedValueOnce(response({ approved: true, issues: [] }));
-  const result = await writeNewsletter(sources, 4, request, [], (e) => events.push(e));
+  const result = await writeNewsletter(sources, 4, request, [], (e) =>
+    events.push(e),
+  );
   expect(result.preheader).toBe(first.preheader);
   expect(result.sections[1]).toEqual(first.sections[1]);
   expect(result.opening).toEqual(corrected.opening);
   expect(result.sections[2]).toEqual(corrected.sections[2]);
-  expect(JSON.parse(JSON.parse(request.mock.calls[3][1].body).input).draft.sections[1]).toEqual(first.sections[1]);
-  expect(events).toContainEqual({ stage: "review", attempt: 0, approved: false, issues });
+  expect(
+    JSON.parse(JSON.parse(request.mock.calls[3][1].body).input).draft
+      .sections[1],
+  ).toEqual(first.sections[1]);
+  expect(events).toContainEqual({
+    stage: "review",
+    attempt: 0,
+    approved: false,
+    issues,
+  });
   expect(request).toHaveBeenCalledTimes(4);
 });
 it("leaves a correction untouched when the reviewer issue names no field", () => {
   const changed = { ...draft, headline: "Outro título para o mesmo assunto" };
-  expect(mergeNewsletterCorrection(draft, changed, ["Confirme cada afirmação."])).toBe(changed);
+  expect(
+    mergeNewsletterCorrection(draft, changed, ["Confirme cada afirmação."]),
+  ).toBe(changed);
+});
+
+it("repairs the named model's unique section even when another issue targets the opening", () => {
+  const previous = {
+    ...draft,
+    sections: [
+      { ...draft.sections[0], id: "video-1" },
+      { ...draft.sections[0], id: "article-0" },
+    ],
+  };
+  const corrected = {
+    ...previous,
+    opening: ["Abertura corrigida"],
+    sections: previous.sections.map((s) => ({
+      ...s,
+      paragraphs: [
+        "Parágrafo corrigido sem afirmar que o percurso anunciado foi realizado.",
+      ],
+    })),
+  };
+  const result = mergeNewsletterCorrection(
+    previous,
+    corrected,
+    [
+      "A abertura repete a estrutura anterior.",
+      "O trecho da Inow V20 Pro afirma que percorreu 9 km, mas a fonte só anuncia o trajeto.",
+    ],
+    [
+      { id: "video-1", title: "Inow V20 Pro 1000W Teste Completo", text: "" },
+      { id: "article-0", title: "OUXI V8 Pro", text: "" },
+    ],
+  );
+  expect(result.sections[0]).toEqual(corrected.sections[0]);
+  expect(result.sections[1]).toEqual(previous.sections[1]);
+  expect(result.opening).toEqual(corrected.opening);
+});
+it("does not guess a section when the named model appears in two sources", () => {
+  const previous = {
+    ...draft,
+    sections: [
+      { ...draft.sections[0], id: "video-0" },
+      { ...draft.sections[0], id: "article-0" },
+    ],
+  };
+  const corrected = {
+    ...previous,
+    opening: ["Corrigida"],
+    sections: previous.sections.map((s) => ({
+      ...s,
+      paragraphs: ["Outra seção"],
+    })),
+  };
+  const result = mergeNewsletterCorrection(
+    previous,
+    corrected,
+    ["opening: repetida", "No trecho da V20 Pro, confirme o percurso."],
+    [
+      { id: "video-0", title: "V20 Pro teste", text: "" },
+      { id: "article-0", title: "V20 Pro ficha", text: "" },
+    ],
+  );
+  expect(result.sections).toEqual(previous.sections);
 });
