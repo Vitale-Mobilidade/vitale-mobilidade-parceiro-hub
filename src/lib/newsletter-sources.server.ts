@@ -1,3 +1,7 @@
+import {
+  newsletterUsedSources,
+  curateNewsletterSources,
+} from "./newsletter-source-memory";
 import { validateNewsletterNovelty } from "./newsletter-novelty";
 import { newsletterCandidateBikeIds } from "./newsletter-models";
 import {
@@ -28,7 +32,6 @@ import {
   type NewsletterDropBike,
 } from "./newsletter-pauta";
 import {
-  curateNewsletter,
   selectFeaturedNewsletterBike,
   newsletterCategoryLabel,
 } from "./newsletter-curation";
@@ -52,7 +55,11 @@ export async function automaticNewsletter(
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
   const memory = newsletterMemory(previousEditions, articles, videos, catalog);
-  const curated = curateNewsletter(
+  const usedSources = await newsletterUsedSources(
+    previousEditions,
+    fetchPublishedArticle,
+  );
+  const curated = await curateNewsletterSources(
     memory.articles
       .filter((a) => !a.newsletterUsed)
       .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
@@ -69,6 +76,8 @@ export async function automaticNewsletter(
             ),
           ),
       ),
+    fetchPublishedArticle,
+    usedSources,
     since,
     new Date(),
     previousEditions.flatMap((p) =>
@@ -77,7 +86,8 @@ export async function automaticNewsletter(
     memory.recentBikeIds,
   );
   const pickedArticles = curated.articles;
-  let pickedVideos = curated.videos;
+  const pickedVideos = curated.videos;
+  const fullArticles = curated.fullArticles;
   if (
     (mode === "agent" ? pickedArticles.length !== 3 : !pickedArticles.length) ||
     !pickedVideos.length
@@ -108,16 +118,6 @@ export async function automaticNewsletter(
   if (!bike) throw new Error("newsletter_no_active_bike");
   const details = catalog.find((c) => c.bikeId === bike.id);
   if (!details) throw new Error("newsletter_sources_unavailable");
-  const fullArticles = await Promise.all(
-    pickedArticles.map((a) => fetchPublishedArticle(a.slug)),
-  );
-  if (fullArticles.some((a) => !a))
-    throw new Error("newsletter_sources_unavailable");
-  pickedVideos = pickedVideos.filter(
-    (v) => !fullArticles.some((a) => a?.videoId === v.videoId),
-  );
-  if (!pickedVideos.length)
-    throw new Error("newsletter_sources_insufficient_diversity");
   const transcripts =
     mode === "fallback"
       ? new Map<string, string>()
@@ -197,6 +197,12 @@ export async function automaticNewsletter(
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
   const content: NewsletterContent = {
     editionNumber,
+    sourceVideoIds: [
+      ...new Set([
+        ...fullArticles.map((a) => a.videoId),
+        ...pickedVideos.map((v) => v.videoId),
+      ]),
+    ],
     mentionedBikeIds: [
       ...new Set([
         bike.id,
@@ -277,6 +283,29 @@ export async function validateScheduledNewsletter(
   ]);
   if (!articles?.length || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
+  const usedSources = await newsletterUsedSources(
+    history,
+    fetchPublishedArticle,
+  );
+  const currentSources = content.sourceVideoIds ?? [
+    ...(
+      await Promise.all(
+        content.articles.map((a) =>
+          fetchPublishedArticle(new URL(a.url).pathname.split("/").pop()!),
+        ),
+      )
+    ).map((a) => {
+      if (!a) throw new Error("newsletter_sources_unavailable");
+      return a.videoId;
+    }),
+    ...content.videos.map(
+      (v) =>
+        new URL(v.url).searchParams.get("v") ??
+        new URL(v.url).pathname.split("/").pop()!,
+    ),
+  ];
+  if (currentSources.some((id) => usedSources.has(id)))
+    throw new Error("newsletter_source_already_used");
   validateNewsletterSelection(content, history, articles, videos, catalog);
   validateNewsletterNovelty(content, history);
   if (

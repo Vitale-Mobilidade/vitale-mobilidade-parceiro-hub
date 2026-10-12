@@ -69,6 +69,7 @@ export const newsletterSchema = z.object({
     .refine((s) => !/[\r\n]/.test(s)),
   intro: z.string().trim().min(1).max(1800),
   editionNumber: z.number().int().min(1).optional(),
+  sourceVideoIds: z.array(z.string().min(1).max(64)).max(20).optional(),
   mentionedBikeIds: z
     .array(z.string().regex(/^[a-z0-9_]+$/))
     .max(100)
