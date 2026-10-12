@@ -1,0 +1,47 @@
+{
+  "recentBikeIds": [
+    "bw02",
+    "v9_max_ufofast_duas_baterias",
+    "v9_max",
+    "s8",
+    "s20_pro",
+    "s20",
+    "v9",
+    "vl20",
+    "gt2000"
+  ],
+  "articles": [
+    {
+      "title": "OUXI V8 Pro no uso urbano: pedal assistido, painel e espaço para garupa",
+      "slug": "ouxi-v8-pro-no-uso-urbano-pedal-assistido-painel-e-espaco-para-garupa",
+      "bikeIds": [
+        "v8_pro"
+      ]
+    },
+    {
+      "title": "Como usar as ferramentas da Vitale para escolher uma bicicleta elétrica",
+      "slug": "como-usar-as-ferramentas-da-vitale-para-escolher-uma-bicicleta-eletrica",
+      "bikeIds": []
+    },
+    {
+      "title": "StreetGo S12 ou S14: o que muda na escolha?",
+      "slug": "streetgo-s12-ou-s14-o-que-muda-na-escolha",
+      "bikeIds": [
+        "s12",
+        "s14"
+      ]
+    }
+  ],
+  "videos": [
+    {
+      "title": "A MELHOR BIKE ELÉTRICA é a que você CONSEGUE COMPRAR!",
+      "bikeIds": []
+    },
+    {
+      "title": "BIKE ELÉTRICA V35 no TRÂNSITO de SP: 11km em 24min (TESTE REAL)",
+      "bikeIds": [
+        "v35"
+      ]
+    }
+  ]
+}

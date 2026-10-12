@@ -9,7 +9,10 @@ import {
   type NewsletterContent,
   type NewsletterSegment,
 } from "./newsletter";
-import { automaticNewsletter } from "./newsletter-sources.server";
+import {
+  automaticNewsletter,
+  validateScheduledNewsletter,
+} from "./newsletter-sources.server";
 import {
   ResendNewsletter,
   ResendFault,
@@ -517,6 +520,14 @@ export async function newsletterTick(request: Request): Promise<Response> {
           content: newsletterDraftContentSchema.parse(draft!.content),
           fingerprint: draft!.fingerprint,
         };
+    // Revalidate old scheduled snapshots before claiming recipients or creating broadcasts.
+    if (!saved) {
+      const history = await newsletterHistory(db, window.day);
+      await validateScheduledNewsletter(
+        edition.content,
+        history.map((p) => p.payload.content),
+      );
+    }
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {

@@ -3,11 +3,13 @@ import proof from "../../artifacts/newsletter-agent-refined-proof.json";
 const mock = vi.hoisted(() => ({
   createClient: vi.fn(),
   writer: vi.fn(),
+  validate: vi.fn(),
   call: vi.fn(),
 }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: mock.createClient }));
 vi.mock("./newsletter-sources.server", () => ({
   automaticNewsletter: mock.writer,
+  validateScheduledNewsletter: mock.validate,
 }));
 vi.mock("./resend-newsletter.server", () => ({
   ResendNewsletter: class {
@@ -42,8 +44,8 @@ async function run(clock: string, draft: unknown, mode?: string) {
         : table === "newsletter_drafts"
           ? draft
           : [];
-    const q: any = {
-      then: (resolve: any) =>
+    const q: Record<string, unknown> = {
+      then: (resolve: (result: { data: unknown; error: null }) => unknown) =>
         Promise.resolve({ data, error: null }).then(resolve),
       single: async () => ({ data, error: null }),
       maybeSingle: async () => ({ data, error: null }),
@@ -179,4 +181,23 @@ it("uses authenticated operational recovery without creating campaigns", async (
   expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
     false,
   );
+});
+
+it("blocks an old scheduled draft before forming campaigns when diversity fails", async () => {
+  mock.validate.mockRejectedValueOnce(
+    new Error("newsletter_models_insufficient_diversity"),
+  );
+  const { response, rpc } = await run("2026-10-12T09:35:00Z", {
+    content: proof.content,
+    fingerprint: "old",
+  });
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({
+    ok: false,
+    error: "newsletter_models_insufficient_diversity",
+  });
+  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
+    false,
+  );
+  expect(mock.writer).not.toHaveBeenCalled();
 });

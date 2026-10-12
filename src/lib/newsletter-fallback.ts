@@ -2,27 +2,32 @@ import type {
   NewsletterEvidence,
   NewsletterDraft,
 } from "./newsletter-writer.server";
-/** No model output, rejected copy, inferred claims or stale editions enter this template. */
+/** Only already published summaries are copied. Rejected drafts/transcripts are never fallback copy. */
 export function sourceNewsletterFallback(
   sources: NewsletterEvidence[],
 ): NewsletterDraft {
-  const subject = "O Giro da Vitale: leituras e bikes para acompanhar";
+  const articles = sources.filter((s) => s.id.startsWith("article-"));
+  const lead = articles[0]?.title ?? sources[0]?.title ?? "Conteúdos da Vitale";
+  const subject = `O Giro da Vitale: ${lead}`.slice(0, 70);
+  const topics = articles
+    .slice(0, 2)
+    .map((s) => s.title)
+    .join("; ");
   return {
     subject,
-    headline: subject,
-    preheader:
-      "Artigos publicados, vídeos do canal e uma bike para conhecer no Radar.",
+    headline: `No Giro: ${lead}`.slice(0, 100),
+    preheader: `Nesta seleção: ${articles[1]?.title ?? lead}`.slice(0, 150),
     opening: [
-      "Tem leitura e vídeo para acompanhar o próximo pedal. Nesta edição, reunimos conteúdos publicados pela Vitale e uma bike para conhecer no Radar. Preços e disponibilidade podem mudar; consulte as páginas para ver os dados atuais.",
+      `No Giro de hoje: ${topics || lead}. No canal: ${sources.find((s) => s.id.startsWith("video-"))?.title ?? lead}. Os links de cada seção levam aos conteúdos completos.`,
     ],
     sections: sources.map((source) => ({
       id: source.id,
       paragraphs: [
-        source.id === "bike"
-          ? "Conheça a ficha deste modelo no Radar, com os dados disponíveis e o histórico de preços. Consulte a oferta vigente antes de comprar."
-          : source.id.startsWith("video-")
-            ? "Assista ao vídeo completo no canal da Vitale para acompanhar o assunto apresentado no título."
-            : "Leia o artigo completo publicado pela Vitale para acompanhar o assunto apresentado no título.",
+        (source.publishedSummary?.trim() &&
+        source.publishedSummary.trim().length <= 880
+          ? `Resumo publicado: ${source.publishedSummary.trim()}`
+          : undefined) ||
+          `No ${source.id.startsWith("video-") ? "canal" : "acervo"} da Vitale: ${source.title}. O conteúdo completo está no link desta seção.`,
       ],
       bullets: [],
       evidence: [],

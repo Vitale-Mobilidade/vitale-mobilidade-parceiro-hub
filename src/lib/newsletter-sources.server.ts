@@ -1,4 +1,9 @@
-import { newsletterMemory } from "./newsletter-memory";
+import { validateNewsletterNovelty } from "./newsletter-novelty";
+import { newsletterCandidateBikeIds } from "./newsletter-models";
+import {
+  newsletterMemory,
+  validateNewsletterSelection,
+} from "./newsletter-memory";
 import {
   fetchPublishedIndex,
   fetchPublishedArticle,
@@ -46,20 +51,24 @@ export async function automaticNewsletter(
   ]);
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
-  const memory = newsletterMemory(previousEditions, articles, videos);
+  const memory = newsletterMemory(previousEditions, articles, videos, catalog);
   const curated = curateNewsletter(
-    memory.articles.filter((a) => !a.newsletterUsed),
-    videos.filter(
-      (v) =>
-        !previousEditions.some((p) =>
-          p.videos.some(
-            (x) =>
-              new URL(x.url).pathname === new URL(v.url).pathname &&
-              new URL(x.url).searchParams.get("v") ===
-                new URL(v.url).searchParams.get("v"),
+    memory.articles
+      .filter((a) => !a.newsletterUsed)
+      .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
+    videos
+      .map((v) => ({ ...v, bikeIds: newsletterCandidateBikeIds(v, catalog) }))
+      .filter(
+        (v) =>
+          !previousEditions.some((p) =>
+            p.videos.some(
+              (x) =>
+                new URL(x.url).pathname === new URL(v.url).pathname &&
+                new URL(x.url).searchParams.get("v") ===
+                  new URL(v.url).searchParams.get("v"),
+            ),
           ),
-        ),
-    ),
+      ),
     since,
     new Date(),
     previousEditions.flatMap((p) =>
@@ -81,7 +90,7 @@ export async function automaticNewsletter(
   );
   const related = [
     ...pickedVideos.flatMap((v) => v.bikeIds),
-    ...pickedArticles.flatMap((a) => [a.primaryBikeId, ...a.relatedBikeIds]),
+    ...pickedArticles.flatMap((a) => a.bikeIds),
   ];
   const bikes = (radar.data.active as { id: string; name: string }[]).filter(
     (b) =>
@@ -128,6 +137,7 @@ export async function automaticNewsletter(
       return {
         id: `article-${i}`,
         title: a.title,
+        publishedSummary: a.summary,
         text: [
           a.publishedAt ? `Publicado em ${a.publishedAt}.` : "",
           a.summary,
@@ -143,6 +153,7 @@ export async function automaticNewsletter(
     {
       id: "bike",
       title: bike.name,
+      publishedSummary: details.description ?? undefined,
       text: [
         bike.name,
         details.description,
@@ -243,6 +254,39 @@ export async function automaticNewsletter(
       ...enrich(`video-${i}`),
     })),
   };
+  validateNewsletterSelection(
+    content,
+    previousEditions,
+    articles,
+    videos,
+    catalog,
+  );
+  validateNewsletterNovelty(content, previousEditions);
   renderResendNewsletter(content);
   return { content, fingerprint };
+}
+
+export async function validateScheduledNewsletter(
+  content: NewsletterContent,
+  history: NewsletterContent[],
+) {
+  const [articles, videos, catalog] = await Promise.all([
+    fetchPublishedIndex(),
+    fetchVideoCatalog(),
+    fetchBikeCatalogFromDb(),
+  ]);
+  if (!articles?.length || !videos.length || !catalog?.length)
+    throw new Error("newsletter_sources_unavailable");
+  validateNewsletterSelection(content, history, articles, videos, catalog);
+  validateNewsletterNovelty(content, history);
+  if (
+    content.articles.some((a) =>
+      a.paragraphs?.some(
+        (p) =>
+          p ===
+          "Leia o artigo completo publicado pela Vitale para acompanhar o assunto apresentado no título.",
+      ),
+    )
+  )
+    throw new Error("newsletter_generic_fallback_review_required");
 }
