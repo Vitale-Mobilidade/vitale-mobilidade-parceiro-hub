@@ -17,6 +17,23 @@ describe("editorial intervention email", () => {
     expect(body.text).toContain(input.reason);
     expect(body.text).not.toContain(input.key);
   });
+  it("keeps retries idempotent but permits a later stalled episode for the same video", async () => {
+    const request = vi.fn().mockResolvedValue(new Response("{}"));
+    const articleId = "de3fbf2a-7332-47ec-951d-44b0306afc5e";
+    await sendEditorialAlert({ ...input, request, articleId, eventId: "2026-10-13T16:16:01.446Z" });
+    await sendEditorialAlert({ ...input, request, articleId, eventId: "2026-10-13T16:16:01.446Z" });
+    await sendEditorialAlert({ ...input, request, articleId, eventId: "2026-10-14T16:16:01.446Z" });
+    expect(request.mock.calls[0][1].headers["Idempotency-Key"]).toBe(request.mock.calls[1][1].headers["Idempotency-Key"]);
+    expect(request.mock.calls[0][1].headers["Idempotency-Key"]).not.toBe(request.mock.calls[2][1].headers["Idempotency-Key"]);
+    expect(JSON.parse(request.mock.calls[0][1].body).text).toContain(`/admin/conteudos/${articleId}`);
+  });
+  it("rejects malformed episode and article IDs before any send", async () => {
+    const request = vi.fn();
+    for (const invalid of [{ eventId: "bad\r\nheader" }, { articleId: "../../outside" }]) {
+      await expect(sendEditorialAlert({ ...input, request, ...invalid })).rejects.toThrow("not_configured");
+    }
+    expect(request).not.toHaveBeenCalled();
+  });
   it("supports the configured Lovable connector", async () => {
     const request = vi.fn().mockResolvedValue(new Response("{}"));
     await sendEditorialAlert({ ...input, request, gatewayKey: "mock-gateway" });
