@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle, Users } from "lucide-react";
+import { ArrowLeft, Check, ShoppingCart, Loader2, Sparkles, Award, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recommend, computeClusters, buildPersonalizedCopy, buildSecondaryCopy, type Answers } from "@/lib/quiz-engine";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
@@ -18,6 +18,10 @@ import { formatBRL } from "@/lib/price-tracker";
 import { useBikeCatalog } from "@/hooks/useBikeCatalog";
 import { useLoaderData, useRouter } from "@tanstack/react-router";
 import { OFFERS_GROUP_URL } from "@/lib/offers-group";
+import { QuizPriceAlert } from "@/components/quiz/QuizPriceAlert";
+import { RadarPanel } from "@/components/home/RadarPanel";
+import { OffersBanner } from "@/components/site/DecisionBanners";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { siteAnalytics } from "@/lib/site-analytics";
 
 // ---------- Quiz config ----------
@@ -875,7 +879,7 @@ export default function EscolherBike() {
 }
 
 // ---------- Result component ----------
-function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
+export function ResultScreen({ answers, labels, recommendation, leadId, name, phone, baseLeadData }: any) {
   const basePrimaryCopy = buildPersonalizedCopy(answers, true, recommendation.budgetLimited);
   const reasonPrimary = basePrimaryCopy;
   const reasonSecondary = recommendation.secondary
@@ -1227,6 +1231,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 Você será direcionado para o Mercado Livre com o link oficial de compra.
               </p>
 
+              <QuizPriceAlert bikeId={recommendation.primary.id} bikeName={recommendation.primary.name}
+                  currentPrice={radarById.get(recommendation.primary.id)?.currentPrice} onOpen={markMainActionClicked} />
+
               {reasonPrimary && <ReasonBlock title="Por que recomendamos essa bike" text={reasonPrimary} />}
             </div>
           </div>
@@ -1280,6 +1287,9 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
                 <p className="text-[14px] text-center text-muted-foreground mt-2 leading-relaxed">
                   Você será direcionado para o Mercado Livre com o link oficial de compra.
                 </p>
+
+                <QuizPriceAlert bikeId={recommendation.secondary.id} bikeName={recommendation.secondary.name}
+                  currentPrice={radarById.get(recommendation.secondary.id)?.currentPrice} onOpen={markMainActionClicked} />
 
                 {reasonSecondary && <ReasonBlock title="Por que essa também faz sentido" text={reasonSecondary} />}
               </div>
@@ -1424,16 +1434,13 @@ function ResultScreen({ answers, labels, recommendation, leadId, name, phone, ba
           </div>
         )}
 
-        {/* Grupo de ofertas WhatsApp */}
-        <OffersGroupBlock leadId={leadId} name={name} phone={phone} baseLeadData={baseLeadData} />
-
-        {/* Bloco educativo */}
-        <div className="bg-muted rounded-[18px] p-5 mb-4">
-          <h3 className="font-bold text-foreground mb-2 text-base">Por que não recomendamos só pela ficha técnica?</h3>
-          <p className="text-[15px] sm:text-base text-muted-foreground leading-relaxed">
-            Porque autonomia, motor e preço não dizem tudo. A escolha certa depende do seu trajeto, da distância diária,
-            do orçamento e do tipo de uso.
-          </p>
+        <div className="mb-6 space-y-6">
+          <RadarPanel headingId="radar-quiz-result" total={radarById.size}
+            card={radarById.get(recommendation.primary.id) ? {
+              ...radarById.get(recommendation.primary.id)!, image: recommendation.primary.image,
+            } : undefined} />
+          <OffersGroupBlock leadId={leadId} name={name} phone={phone} baseLeadData={baseLeadData} />
+          <NewsletterSignup />
         </div>
 
         {/* Aviso ML */}
@@ -1708,30 +1715,9 @@ function OffersGroupBlock({ leadId, name, phone, baseLeadData }: any) {
         event: { event_name: "whatsapp_group_clicked", payload },
       }).catch((e) => console.error("[quiz] Erro ao salvar evento whatsapp_group_clicked", e));
     }
-    setTimeout(() => window.open(OFFERS_GROUP_WA_URL, "_blank", "noopener,noreferrer"), 200);
   };
 
-  return (
-    <section className="rounded-[18px] p-5 sm:p-6 mb-6 border-2 border-primary/30 bg-primary/5">
-      <h3 className="text-[20px] sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
-        Quer acompanhar novas ofertas?
-      </h3>
-      <p className="text-[15px] sm:text-base font-medium text-foreground/90 mb-3 leading-snug">
-        Entre no grupo de ofertas da Vitale Mobilidade e receba promoções, mudanças de preço e oportunidades de bikes
-        elétricas no Mercado Livre.
-      </p>
-      <Button
-        onClick={handleClick}
-        data-event="whatsapp_group_clicked"
-        className="w-full sm:w-auto min-h-[48px] text-[15px] font-bold py-3 px-6 rounded-xl"
-      >
-        <Users className="mr-2 h-5 w-5" /> Entrar no grupo de ofertas
-      </Button>
-      <p className="text-[13px] sm:text-[14px] text-foreground/60 mt-3 leading-relaxed">
-        Grupo focado em ofertas. Você pode sair quando quiser.
-      </p>
-    </section>
-  );
+  return <OffersBanner source="quiz_result" target="_blank" onClick={handleClick} />;
 }
 
 function SecondaryActions({ recommendation, leadId, name, phone, baseLeadData, onMainAction }: any) {

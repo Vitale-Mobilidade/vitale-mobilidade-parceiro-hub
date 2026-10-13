@@ -18,13 +18,13 @@ export function QuizBanner({ fullBleed = false }: { fullBleed?: boolean }) {
   </section>;
 }
 
-export function OffersBanner({ className = "", source }: { className?: string; source?: string }) {
+export function OffersBanner({ className = "", source, onClick, target }: { className?: string; source?: string; onClick?: () => void; target?: "_blank" }) {
   return <section aria-label="Grupo de ofertas no WhatsApp" className={`flex flex-col gap-5 rounded-3xl bg-vt-dark p-6 text-ink-foreground sm:flex-row sm:items-center sm:p-8 ${className}`}>
     <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-mint text-mint-foreground"><MessageCircle className="h-8 w-8" aria-hidden="true" /></span>
     <div className="min-w-0 flex-1">
       <h2 className="text-xl font-bold sm:text-2xl">Grupo de ofertas no WhatsApp</h2>
       <p className="mt-1 flex items-center gap-2 text-sm text-ink-foreground/80"><Megaphone className="h-4 w-4 shrink-0 text-mint" aria-hidden="true" /> Somente admins publicam ofertas de bikes elétricas.</p>
     </div>
-    <Link to="/grupodeofertas" onClick={() => { if (source) trackRadar("radar_group_click", { source }); }} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-mint px-5 font-bold hover:bg-mint hover:text-mint-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint">Entrar no grupo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+    <Link to="/grupodeofertas" target={target} rel={target ? "noopener noreferrer" : undefined} onClick={() => { if (source) trackRadar("radar_group_click", { source }); onClick?.(); }} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-mint px-5 font-bold hover:bg-mint hover:text-mint-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint">Entrar no grupo <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
   </section>;
 }
