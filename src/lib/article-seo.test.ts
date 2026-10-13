@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PublishedArticle } from "@/components/editorial/ArticleView";
-import { articleSchemas } from "./article-seo";
+import { articleSchemas, articleSourceUrl } from "./article-seo";
 import { editorialFormat } from "./editorial-taxonomy";
 
 const article = {
@@ -38,6 +38,47 @@ describe("article source and authorship", () => {
       url: video.url,
     });
     expect(schema).not.toHaveProperty("contentUrl");
+  });
+  it("rejects future upload dates without losing the article or its source", () => {
+    const now = new Date("2026-10-13T23:00:00Z");
+    const schemas = articleSchemas(
+      article,
+      { ...video, date: "2026-11-13" },
+      now,
+    );
+    expect(schemas.map((schema) => schema["@type"])).toEqual([
+      "Article",
+      "BreadcrumbList",
+    ]);
+    expect(schemas[0]).toHaveProperty("isBasedOn", video.url);
+    expect(schemas[0]).not.toHaveProperty("video");
+    const valid = articleSchemas(
+      article,
+      { ...video, date: "2026-10-13" },
+      now,
+    );
+    expect(valid[0].video).toEqual({
+      "@id": "https://vitalemobilidade.com/conteudos/teste#video",
+    });
+    expect(
+      valid.find((schema) => schema["@type"] === "VideoObject")?.uploadDate,
+    ).toBe("2026-10-13");
+  });
+  it("builds canonical source URLs and rejects invalid IDs without trusting catalog URLs", () => {
+    expect(articleSourceUrl(article.videoId)).toBe(video.url);
+    expect(articleSourceUrl('abcdefghijk" onclick="alert(1)')).toBeNull();
+    expect(articleSourceUrl("../evil")).toBeNull();
+    const invalid = articleSchemas(
+      { ...article, videoId: "../evil" },
+      { ...video, videoId: "../evil" },
+    );
+    expect(invalid.some((schema) => schema["@type"] === "VideoObject")).toBe(
+      false,
+    );
+    expect(JSON.stringify(invalid[0])).not.toContain("isBasedOn");
+    expect(
+      articleSchemas(article, { ...video, url: "https://example.com" })[1].url,
+    ).toBe(video.url);
   });
   it("omits incomplete video schema for missing, impossible or mismatched source dates", () => {
     for (const source of [

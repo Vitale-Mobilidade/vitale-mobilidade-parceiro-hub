@@ -1,0 +1,513 @@
+{
+  "observedAt": "2026-10-13",
+  "sitemapUrls": 170,
+  "articleUrls": 125,
+  "videosInSitemap": false,
+  "sample": [
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina",
+      "http": "200",
+      "h1": 1,
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina"
+      ],
+      "robots": [
+        "index, follow, max-image-preview:large"
+      ],
+      "schemas": [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://vitalemobilidade.com/#organization",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "logo": "https://vitalemobilidade.com/logo-192.webp",
+          "founder": {
+            "@type": "Person",
+            "name": "Lucas Vitale",
+            "sameAs": "https://www.linkedin.com/in/lucasvitale1/"
+          },
+          "sameAs": [
+            "https://www.youtube.com/@vitalemobilidade",
+            "https://www.instagram.com/vitalemobilidade/",
+            "https://www.tiktok.com/@vitalemobilidade"
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "inLanguage": "pt-BR",
+          "publisher": {
+            "@id": "https://vitalemobilidade.com/#organization"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "@id": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina#article",
+          "headline": "V8 Pro, V8 Ultra ou Ouxi GT20: qual atende melhor à sua rotina?",
+          "description": "Compare V8 Pro, V8 Ultra e Ouxi GT20 em espaço para garupa, banco, bateria, baú, cadeirinha, motor, freios e acessórios.",
+          "datePublished": "2026-10-13T22:28:17.168096+00:00",
+          "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=878819e4-7710-4662-8323-0419da69e3a4&file=78fe55aa-7241-49bb-ae0a-03e37fd4a526",
+          "inLanguage": "pt-BR",
+          "mainEntityOfPage": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina",
+          "author": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "isBasedOn": "https://www.youtube.com/watch?v=PqDo-8IdVlM"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "@id": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina#video",
+          "name": "V8 Pro, V8 Ultra ou GT20: QUAL É A MELHOR POR ATÉ R$7 MIL?",
+          "description": "Compare V8 Pro, V8 Ultra e Ouxi GT20 em espaço para garupa, banco, bateria, baú, cadeirinha, motor, freios e acessórios.",
+          "thumbnailUrl": "https://i.ytimg.com/vi/PqDo-8IdVlM/mqdefault.jpg",
+          "uploadDate": "2026-11-13",
+          "embedUrl": "https://www.youtube-nocookie.com/embed/PqDo-8IdVlM",
+          "url": "https://www.youtube.com/watch?v=PqDo-8IdVlM",
+          "inLanguage": "pt-BR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Início",
+              "item": "https://vitalemobilidade.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Conteúdos",
+              "item": "https://vitalemobilidade.com/conteudos"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "V8 Pro, V8 Ultra ou Ouxi GT20: qual atende melhor à sua rotina?",
+              "item": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano",
+      "http": "200",
+      "h1": 1,
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano"
+      ],
+      "robots": [
+        "index, follow, max-image-preview:large"
+      ],
+      "schemas": [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://vitalemobilidade.com/#organization",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "logo": "https://vitalemobilidade.com/logo-192.webp",
+          "founder": {
+            "@type": "Person",
+            "name": "Lucas Vitale",
+            "sameAs": "https://www.linkedin.com/in/lucasvitale1/"
+          },
+          "sameAs": [
+            "https://www.youtube.com/@vitalemobilidade",
+            "https://www.instagram.com/vitalemobilidade/",
+            "https://www.tiktok.com/@vitalemobilidade"
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "inLanguage": "pt-BR",
+          "publisher": {
+            "@id": "https://vitalemobilidade.com/#organization"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "@id": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano#article",
+          "headline": "OUXI V8 Pro: potência, garupa e iluminação no uso urbano",
+          "description": "Entenda como é a OUXI V8 Pro no uso urbano: motor de 1.000 W, bateria removível, espaço para garupa, pedal assistido, faróis, setas e limitações.",
+          "datePublished": "2026-10-13T17:59:13.455489+00:00",
+          "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=de3fbf2a-7332-47ec-951d-44b0306afc5e&file=0e177a3e-ac57-4600-908f-0c1e58de9538",
+          "inLanguage": "pt-BR",
+          "mainEntityOfPage": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano",
+          "author": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "isBasedOn": "https://www.youtube.com/watch?v=IJ8q69h59vo"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "@id": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano#video",
+          "name": "Ouxi V8 Pro: 12km em 19min a noite! (TESTE na PRÁTICA)",
+          "description": "Entenda como é a OUXI V8 Pro no uso urbano: motor de 1.000 W, bateria removível, espaço para garupa, pedal assistido, faróis, setas e limitações.",
+          "thumbnailUrl": "https://i.ytimg.com/vi/IJ8q69h59vo/mqdefault.jpg",
+          "uploadDate": "2026-11-13",
+          "embedUrl": "https://www.youtube-nocookie.com/embed/IJ8q69h59vo",
+          "url": "https://www.youtube.com/watch?v=IJ8q69h59vo",
+          "inLanguage": "pt-BR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Início",
+              "item": "https://vitalemobilidade.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Conteúdos",
+              "item": "https://vitalemobilidade.com/conteudos"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "OUXI V8 Pro: potência, garupa e iluminação no uso urbano",
+              "item": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso",
+      "http": "200",
+      "h1": 1,
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso"
+      ],
+      "robots": [
+        "index, follow, max-image-preview:large"
+      ],
+      "schemas": [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://vitalemobilidade.com/#organization",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "logo": "https://vitalemobilidade.com/logo-192.webp",
+          "founder": {
+            "@type": "Person",
+            "name": "Lucas Vitale",
+            "sameAs": "https://www.linkedin.com/in/lucasvitale1/"
+          },
+          "sameAs": [
+            "https://www.youtube.com/@vitalemobilidade",
+            "https://www.instagram.com/vitalemobilidade/",
+            "https://www.tiktok.com/@vitalemobilidade"
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "inLanguage": "pt-BR",
+          "publisher": {
+            "@id": "https://vitalemobilidade.com/#organization"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "@id": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso#article",
+          "headline": "V40 Pro, Mangosteen FT03 ou Ouxi GT20: qual combina mais com seu uso?",
+          "description": "Compare V40 Pro, Mangosteen FT03 e Ouxi GT20 em bateria, autonomia estimada, garupa, freios, suspensão, acessórios e painel.",
+          "datePublished": "2026-10-12T19:23:12.16884+00:00",
+          "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=f32286de-4d47-4280-9cc7-59a4719c027b&file=ed1cf4db-a7e6-428f-805b-6aa1fab9440d",
+          "inLanguage": "pt-BR",
+          "mainEntityOfPage": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso",
+          "author": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "isBasedOn": "https://www.youtube.com/watch?v=yrsgUwKBYk0"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "@id": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso#video",
+          "name": "V40 Pro, FT03 ou GT20? Qual vale mais a pena? (Até R$6.800)",
+          "description": "Compare V40 Pro, Mangosteen FT03 e Ouxi GT20 em bateria, autonomia estimada, garupa, freios, suspensão, acessórios e painel.",
+          "thumbnailUrl": "https://i.ytimg.com/vi/yrsgUwKBYk0/mqdefault.jpg",
+          "uploadDate": "2026-11-12",
+          "embedUrl": "https://www.youtube-nocookie.com/embed/yrsgUwKBYk0",
+          "url": "https://www.youtube.com/watch?v=yrsgUwKBYk0",
+          "inLanguage": "pt-BR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Início",
+              "item": "https://vitalemobilidade.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Conteúdos",
+              "item": "https://vitalemobilidade.com/conteudos"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "V40 Pro, Mangosteen FT03 ou Ouxi GT20: qual combina mais com seu uso?",
+              "item": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso",
+      "http": "200",
+      "h1": 1,
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso"
+      ],
+      "robots": [
+        "index, follow, max-image-preview:large"
+      ],
+      "schemas": [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://vitalemobilidade.com/#organization",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "logo": "https://vitalemobilidade.com/logo-192.webp",
+          "founder": {
+            "@type": "Person",
+            "name": "Lucas Vitale",
+            "sameAs": "https://www.linkedin.com/in/lucasvitale1/"
+          },
+          "sameAs": [
+            "https://www.youtube.com/@vitalemobilidade",
+            "https://www.instagram.com/vitalemobilidade/",
+            "https://www.tiktok.com/@vitalemobilidade"
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "inLanguage": "pt-BR",
+          "publisher": {
+            "@id": "https://vitalemobilidade.com/#organization"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "@id": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso#article",
+          "headline": "Ouxi GT2000: o que um trajeto de 12,3 km revela sobre seu uso",
+          "description": "Entenda o que um trajeto de 12,3 km indica sobre a Ouxi GT2000: subidas, pneus cravudos, autonomia estimada e limite de um ocupante.",
+          "datePublished": "2026-09-29T11:09:02.929225+00:00",
+          "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=659e59f9-33cd-4350-a458-62cd270f1766&file=2d1e1150-f7d3-4892-8fc9-dabef8f718e7",
+          "inLanguage": "pt-BR",
+          "mainEntityOfPage": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso",
+          "author": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "isBasedOn": "https://www.youtube.com/watch?v=0SiVtrJ9gLw"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "@id": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso#video",
+          "name": "BIKE ELÉTRICA GT2000: 12km em 20min! (TESTE REAL)",
+          "description": "Entenda o que um trajeto de 12,3 km indica sobre a Ouxi GT2000: subidas, pneus cravudos, autonomia estimada e limite de um ocupante.",
+          "thumbnailUrl": "https://i.ytimg.com/vi/0SiVtrJ9gLw/mqdefault.jpg",
+          "uploadDate": "2026-08-10",
+          "embedUrl": "https://www.youtube-nocookie.com/embed/0SiVtrJ9gLw",
+          "url": "https://www.youtube.com/watch?v=0SiVtrJ9gLw",
+          "inLanguage": "pt-BR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Início",
+              "item": "https://vitalemobilidade.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Conteúdos",
+              "item": "https://vitalemobilidade.com/conteudos"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Ouxi GT2000: o que um trajeto de 12,3 km revela sobre seu uso",
+              "item": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena",
+      "http": "200",
+      "h1": 1,
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena"
+      ],
+      "robots": [
+        "index, follow, max-image-preview:large"
+      ],
+      "schemas": [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://vitalemobilidade.com/#organization",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "logo": "https://vitalemobilidade.com/logo-192.webp",
+          "founder": {
+            "@type": "Person",
+            "name": "Lucas Vitale",
+            "sameAs": "https://www.linkedin.com/in/lucasvitale1/"
+          },
+          "sameAs": [
+            "https://www.youtube.com/@vitalemobilidade",
+            "https://www.instagram.com/vitalemobilidade/",
+            "https://www.tiktok.com/@vitalemobilidade"
+          ]
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vitale Mobilidade",
+          "url": "https://vitalemobilidade.com/",
+          "inLanguage": "pt-BR",
+          "publisher": {
+            "@id": "https://vitalemobilidade.com/#organization"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "@id": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena#article",
+          "headline": "VL20 ou V9 Pro: o que muda nas elétricas da família V9 Max",
+          "description": "Compare VL20 e V9 Pro da Ufofast: motor, bateria, autonomia, capacidade para garupa e acessórios. Entenda qual combina com sua rotina.",
+          "datePublished": "2026-09-26T16:42:32.322567+00:00",
+          "image": "https://i.ytimg.com/vi/KSp39qV5XOk/maxresdefault.jpg",
+          "inLanguage": "pt-BR",
+          "mainEntityOfPage": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena",
+          "author": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Vitale Mobilidade",
+            "url": "https://vitalemobilidade.com/",
+            "@id": "https://vitalemobilidade.com/#organization"
+          },
+          "isBasedOn": "https://www.youtube.com/watch?v=KSp39qV5XOk"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          "@id": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena#video",
+          "name": "V9 Max: VL20 vs V9 Pro da Ufofast - QUAL VALE MAIS A PENA?",
+          "description": "Compare VL20 e V9 Pro da Ufofast: motor, bateria, autonomia, capacidade para garupa e acessórios. Entenda qual combina com sua rotina.",
+          "thumbnailUrl": "https://i.ytimg.com/vi/KSp39qV5XOk/mqdefault.jpg",
+          "uploadDate": "2026-09-08",
+          "embedUrl": "https://www.youtube-nocookie.com/embed/KSp39qV5XOk",
+          "url": "https://www.youtube.com/watch?v=KSp39qV5XOk",
+          "inLanguage": "pt-BR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Início",
+              "item": "https://vitalemobilidade.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Conteúdos",
+              "item": "https://vitalemobilidade.com/conteudos"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "VL20 ou V9 Pro: o que muda nas elétricas da família V9 Max",
+              "item": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

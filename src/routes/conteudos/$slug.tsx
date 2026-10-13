@@ -208,6 +208,7 @@ function ContentDetail() {
           sidebarArticles={sidebarArticles}
           articlesShareContext={articlesShareContext}
           relatedVideos={relatedVideos}
+          sourceVideo={data.sourceVideo}
         />
       </main>
       <SiteFooter />

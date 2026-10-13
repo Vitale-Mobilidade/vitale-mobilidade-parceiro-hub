@@ -1,0 +1,65 @@
+[
+  {
+    "file": "src/components/editorial/ArticleView.tsx",
+    "base": {
+      "errors": 67,
+      "rules": [
+        "prettier/prettier"
+      ]
+    },
+    "current": {
+      "errors": 67,
+      "rules": [
+        "prettier/prettier"
+      ]
+    }
+  },
+  {
+    "file": "src/lib/article-independent.test.tsx",
+    "base": {
+      "errors": 5,
+      "rules": [
+        "prettier/prettier"
+      ]
+    },
+    "current": {
+      "errors": 5,
+      "rules": [
+        "prettier/prettier"
+      ]
+    }
+  },
+  {
+    "file": "src/lib/article-seo.ts",
+    "base": {
+      "errors": 0,
+      "rules": []
+    },
+    "current": {
+      "errors": 0,
+      "rules": []
+    }
+  },
+  {
+    "file": "src/lib/article-seo.test.ts",
+    "base": {
+      "errors": 0,
+      "rules": []
+    },
+    "current": {
+      "errors": 0,
+      "rules": []
+    }
+  },
+  {
+    "file": "src/routes/conteudos/$slug.tsx",
+    "base": {
+      "errors": 0,
+      "rules": []
+    },
+    "current": {
+      "errors": 0,
+      "rules": []
+    }
+  }
+]

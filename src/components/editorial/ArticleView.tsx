@@ -10,6 +10,7 @@ import { articleSubjectBikes, comparedBikesInTitle } from "@/lib/editorial-disco
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
 import { editorialImageProps } from "@/lib/editorial-images";
+import { articleSourceUrl } from "@/lib/article-seo";
 
 export type PublishedArticle = {
   id: string;
@@ -476,6 +477,7 @@ export function ArticleView({
   sidebarArticles = [],
   articlesShareContext = true,
   relatedVideos = [],
+  sourceVideo = null,
   preview = false,
 }: {
   article: PublishedArticle;
@@ -486,8 +488,10 @@ export function ArticleView({
   sidebarArticles?: RelatedArticle[];
   articlesShareContext?: boolean;
   relatedVideos?: VideoCard[];
+  sourceVideo?: VideoCard | null;
   preview?: boolean;
 }) {
+  const sourceUrl = articleSourceUrl(article.videoId);
   const planned = article.blocks.some((block) => block.planned);
   const connectedBikes = articleSubjectBikes(
     article.title,
@@ -541,6 +545,19 @@ export function ArticleView({
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
         </p>
+        {sourceUrl && (
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Fonte em vídeo:{" "}
+            <a
+              href={sourceUrl}
+              className="font-semibold text-action underline underline-offset-4"
+            >
+              {sourceVideo?.videoId === article.videoId
+                ? sourceVideo.title
+                : "Assista ao vídeo original da Vitale no YouTube"}
+            </a>
+          </p>
+        )}
         {planned
           ? article.blocks.map((block, index) => (
               <Block

@@ -9,12 +9,21 @@ export const EDITORIAL_AUTHOR = {
   "@id": `${SITE_URL}/#organization`,
 };
 
+/** Build the public source link from a validated ID, never an external catalog URL. */
+export function articleSourceUrl(videoId: string): string | null {
+  return /^[A-Za-z0-9_-]{11}$/.test(videoId)
+    ? `https://www.youtube.com/watch?v=${videoId}`
+    : null;
+}
+
 /** Article authorship is the editorial organization; no personal byline is inferred from a video. */
 export function articleSchemas(
   article: PublishedArticle,
   video?: VideoCard | null,
+  now: Date = new Date(),
 ) {
   const url = canonicalUrl(`/conteudos/${article.slug}`);
+  const sourceUrl = articleSourceUrl(article.videoId);
   const schemas: Record<string, unknown>[] = [
     {
       "@context": "https://schema.org",
@@ -28,18 +37,21 @@ export function articleSchemas(
       mainEntityOfPage: url,
       author: EDITORIAL_AUTHOR,
       publisher: EDITORIAL_AUTHOR,
-      isBasedOn: `https://www.youtube.com/watch?v=${article.videoId}`,
+      isBasedOn: sourceUrl || undefined,
     },
   ];
   // Google requires uploadDate. A missing source date never becomes the article's publication date.
   const date = video?.date;
   if (
+    sourceUrl &&
     video?.videoId === article.videoId &&
     date &&
     /^\d{4}-\d{2}-\d{2}$/.test(date) &&
     Number.isFinite(Date.parse(`${date}T00:00:00Z`)) &&
-    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date
+    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date &&
+    date <= now.toISOString().slice(0, 10)
   ) {
+    schemas[0].video = { "@id": `${url}#video` };
     schemas.push({
       "@context": "https://schema.org",
       "@type": "VideoObject",
@@ -49,7 +61,7 @@ export function articleSchemas(
       thumbnailUrl: video.thumbnail,
       uploadDate: date,
       embedUrl: `https://www.youtube-nocookie.com/embed/${article.videoId}`,
-      url: video.url,
+      url: sourceUrl,
       inLanguage: "pt-BR",
     });
   }
