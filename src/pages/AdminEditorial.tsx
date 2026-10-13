@@ -1192,7 +1192,10 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     setError("");
     setMessage("");
     try {
-      const result = await prepareArticle(article, brief, setBusy, restart);
+      const saved = draft ? await save() : article;
+      if (!saved) return;
+      setBusy("Gerando artigo…");
+      const result = await prepareArticle(saved, brief, setBusy, restart);
       setArticle(result.article);
       setBrief(result.brief);
       await queryClient.invalidateQueries({
@@ -1318,8 +1321,8 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     if (result?.article)
       setMessage(status === "published" ? "Publicado. A página já está no ar." : `Status: ${STATUS_LABEL[status]}.`);
   }
-  async function save() {
-    if (!draft) return;
+  async function save(): Promise<EditorialArticle | null> {
+    if (!draft) return article;
     const result = await run(
       "article-save",
       {
@@ -1347,6 +1350,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
         simpleStatus(result.article.status) === "published" ? "Salvo. A página pública foi atualizada." : "Salvo.",
       );
     }
+    return result?.article ?? null;
   }
   async function remove() {
     if (!article || !window.confirm("Excluir este artigo definitivamente?")) return;

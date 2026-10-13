@@ -152,3 +152,30 @@ it("a bike video CTA does not invent a practical test", () => {
   const blocks = layoutArticle({ sections: [{ type: "text", text: "Características da bike." }], videoId: "abcDEFG1234", bikeId: "v9-max", contentType: "test", offerBikeIds: new Set(), hasFaq: false });
   expect(blocks.find(block => block.type === "video")?.heading).toBe("Veja a bike em vídeo");
 });
+
+describe("marcas na transcrição e recuperação do título", () => {
+  const catalog = [
+    { bike_id: "v8_pro", name: "V8 Pro" },
+    { bike_id: "v8_ultra", name: "V8 Ultra" },
+    { bike_id: "ouxi_gt20", name: "Ouxi GT20", aliases: ["GT20"] },
+    { bike_id: "coswheel_gt20", name: "Coswheel GT20" },
+  ];
+  it.each(["A GT 20 da Ouxi tem bateria removível.", "Hoje comparo a Ouxi GT20."])("usa marca explícita em ambas as ordens: %s", (transcript) => {
+    expect(detectArticleBikes("V8 Pro, V8 Ultra ou GT20", transcript, catalog)).toEqual({
+      primaryBikeId: "v8_pro", relatedBikeIds: ["v8_ultra", "ouxi_gt20"], ambiguous: false,
+    });
+  });
+  it("não deixa alias sem marca vencer outra marca explícita", () => {
+    expect(detectArticleBikes("Teste GT20", "A GT20 da Coswheel", catalog)).toEqual({
+      primaryBikeId: "coswheel_gt20", relatedBikeIds: [], ambiguous: false,
+    });
+  });
+  it("resolve o título corrigido apesar da marca corrompida pelo ASR", () => {
+    expect(detectArticleBikes("V8 Pro, V8 Ultra ou Ouxi GT20", "V8 Pro versus V8 Ultra versus GT20, três bicicletas da OS. Marca Ost.", catalog)).toEqual({
+      primaryBikeId: "v8_pro", relatedBikeIds: ["v8_ultra", "ouxi_gt20"], ambiguous: false,
+    });
+  });
+  it("não inventa a marca com sílabas corrompidas", () => {
+    expect(detectArticleBikes("V8 Pro, V8 Ultra ou GT20", "Três bikes da OS. Marca Ost.", catalog).ambiguous).toBe(true);
+  });
+});

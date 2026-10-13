@@ -120,9 +120,13 @@ export function detectArticleBikes(title: string, transcript: string, bikes: Bik
     ),
   );
   const brandAt = (words: string, reference: (typeof references)[number]) => {
-    if (!reference.brand) return containsName(words, reference.model) ? words.indexOf(reference.model) : -1;
+    if (!reference.brand) return -1;
     const exact = ` ${words} `.indexOf(` ${reference.brand} ${reference.model} `);
     if (exact >= 0) return exact;
+    for (const connector of ["da", "de", "marca", "da marca"]) {
+      const reversed = ` ${words} `.indexOf(` ${reference.model} ${connector} ${reference.brand} `);
+      if (reversed >= 0) return reversed;
+    }
     // Multiword brands require their exact catalog spelling; fuzzy matching is token bounded.
     if (reference.brand.includes(" ")) return -1;
     const tokens = words.split(" ");

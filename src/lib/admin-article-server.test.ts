@@ -1131,3 +1131,40 @@ it("mantém a primeira bike da planilha quando mistura modelo novo e alias antig
   expect(videoCatalog.buildStrictVideoCatalog(csv, [{ bike_id: "s20_pro", name: "S20 Pro" }])[0].bikeIds)
     .toEqual(["s20_pro", "v9_max"]);
 });
+
+describe("salvar preparação editorial sem corpo", () => {
+  const article = { id:coverArticleId, revision:1, status:"draft", blocks:[], faq:[], title:"GT20", summary:"", primary_bike_id:null, related_bike_ids:[], validation_errors:["bike_ambiguous"], indexable:false, published_at:null };
+  async function saveCase(old = article, extra: Record<string, unknown> = {}, conflict = false) {
+    const writes: Record<string, unknown>[] = [];
+    requestDatabase = {
+      auth: { getUser: async () => ({ data:{user:{id:"actor"}},error:null }) },
+      from: (table: string) => {
+        let payload: Record<string, unknown> | null = null;
+        const q = {
+          select: () => q, eq: () => q,
+          update: (v: Record<string, unknown>) => { payload=v; writes.push(v); return q; },
+          insert: async () => ({error:null}),
+          maybeSingle: async () => ({data:table === "editorial_admin_memberships" ? {active:true,role:"content"} : payload ? conflict ? null : {...old,...payload,revision:2} : old,error:null}),
+          then: (resolve: (r: unknown) => unknown) => Promise.resolve(resolve({data:[{bike_id:"v8_pro"},{bike_id:"v8_ultra"},{bike_id:"ouxi_gt20"}],error:null})),
+        };
+        return q;
+      },
+    };
+    const response = await servedHandler(new Request("https://test.invalid", {method:"POST",headers:{Authorization:"Bearer offline-session","Content-Type":"application/json"},body:JSON.stringify({action:"article-save",id:coverArticleId,revision:1,title:"V8 Pro, V8 Ultra ou Ouxi GT20",summary:"",body:"",advanced:{primaryBikeId:"v8_pro",relatedBikeIds:["v8_ultra","ouxi_gt20"],indexable:true},...extra})}));
+    return {response,writes};
+  }
+  it("salva título e bikes sem fabricar texto, capa ou liberar QA", async () => {
+    const {response,writes}=await saveCase();
+    expect(response.status).toBe(200);
+    expect(writes[0]).toMatchObject({title:"V8 Pro, V8 Ultra ou Ouxi GT20",primary_bike_id:"v8_pro",related_bike_ids:["v8_ultra","ouxi_gt20"],blocks:[],indexable:false,validation_errors:["bike_ambiguous"]});
+  });
+  it("preserva lock de revisão", async () => { expect((await saveCase(article,{},true)).response.status).toBe(409); });
+  it("rejeita IDs inválidos sem escrever", async () => {
+    const {response,writes}=await saveCase(article,{advanced:{primaryBikeId:"inventada",relatedBikeIds:[]}});
+    expect(response.status).toBe(400); expect(writes).toHaveLength(0);
+  });
+  it("não deixa apagar corpo existente nem salvar publicação vazia", async () => {
+    expect((await saveCase({...article,blocks:[{type:"text",text:"Conteúdo"}]} as typeof article)).response.status).toBe(400);
+    expect((await saveCase({...article,status:"published"})).response.status).toBe(400);
+  });
+});

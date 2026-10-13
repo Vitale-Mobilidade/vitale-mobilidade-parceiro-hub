@@ -939,7 +939,7 @@ async function generateInto(
   try {
     progress("Identificando bikes…");
     const catalog = await bikeCandidates(db);
-    const detection = detectArticleBikes(video.title, video.transcript ?? "", catalog);
+    const detection = detectArticleBikes(article.title || video.title, video.transcript ?? "", catalog);
     if (selectedBikeIds === undefined && detection.ambiguous) throw new Error("article_bike_ambiguous");
     const primaryBikeId = selectedBikeIds !== undefined ? (selectedBikeIds[0] ?? null) : detection.primaryBikeId;
     const relatedBikeIds = [
@@ -1603,7 +1603,7 @@ function stageStream(
 export function stageError(code: string): string {
   const map: Record<string, string> = {
     article_bike_ambiguous:
-      "Há bikes de marcas diferentes com esse modelo. Inclua a marca correta no título e gere novamente. A transcrição foi preservada.",
+      "Há bikes de marcas diferentes com esse modelo. Selecione as bikes no editor ou inclua a marca correta no título, salve e gere novamente. A transcrição foi preservada.",
     bike_catalog_unavailable:
       "Não foi possível consultar o cadastro das bikes. A transcrição foi preservada; tente novamente.",
     article_editorial_voice_failed:
@@ -2878,7 +2878,9 @@ Deno.serve(async (req) => {
       if (old.foundation_required && old.status === "published")
         return json(req, { error: "Despublique antes de editar um artigo da fundação nova." }, 409);
       const sections = markdownToSections(str(body.body, 60000));
-      if (sections.length < 2)
+      const preparationOnly = old.status === "draft" && !old.published_at &&
+        old.blocks.length === 0 && sections.length === 0 && !str(body.body, 60000).trim();
+      if (sections.length < 2 && !preparationOnly)
         return json(req, { error: "O corpo do artigo precisa de pelo menos dois trechos." }, 400);
       const overrides: Partial<EditorialArticle> = {
         title: str(body.title, 200) || old.title,
@@ -2891,16 +2893,24 @@ Deno.serve(async (req) => {
         if (typeof a.metaDescription === "string") overrides.meta_description = str(a.metaDescription, 170);
         if (/^https:\/\//.test(str(a.ogImageUrl, 1000))) overrides.og_image_url = str(a.ogImageUrl, 1000);
         const known = await knownBikes(db);
-        if (a.primaryBikeId === "" || a.primaryBikeId === null) overrides.primary_bike_id = null;
-        else if (validBikeId(a.primaryBikeId) && known.has(a.primaryBikeId))
-          overrides.primary_bike_id = a.primaryBikeId;
-        if (Array.isArray(a.relatedBikeIds))
-          overrides.related_bike_ids = arr(a.relatedBikeIds).filter(
-            (id) => known.has(id) && id !== (overrides.primary_bike_id ?? old.primary_bike_id),
-          );
+        if (a.primaryBikeId !== undefined || a.relatedBikeIds !== undefined) {
+          const primary = a.primaryBikeId === "" || a.primaryBikeId === null ? null : a.primaryBikeId;
+          if (primary !== undefined && primary !== null && (!validBikeId(primary) || !known.has(primary)))
+            return json(req, { error: "Escolha bikes válidas do catálogo." }, 400);
+          if (a.relatedBikeIds !== undefined && (!Array.isArray(a.relatedBikeIds) ||
+            a.relatedBikeIds.some((id) => !validBikeId(id) || !known.has(id))))
+            return json(req, { error: "Escolha bikes válidas do catálogo." }, 400);
+          overrides.primary_bike_id = primary === undefined ? old.primary_bike_id : primary as string | null;
+          overrides.related_bike_ids = [...new Set((a.relatedBikeIds === undefined ? old.related_bike_ids : a.relatedBikeIds) as string[])]
+            .filter((id) => id !== overrides.primary_bike_id);
+          if (overrides.related_bike_ids.length + (overrides.primary_bike_id ? 1 : 0) > 7)
+            return json(req, { error: "Escolha até 7 bikes válidas do catálogo." }, 400);
+        }
         if (typeof a.indexable === "boolean") overrides.indexable = a.indexable;
       }
-      const next = await rebuildLayout(db, old, sections, overrides);
+      const next = preparationOnly
+        ? { ...old, ...overrides, indexable: false }
+        : await rebuildLayout(db, old, sections, overrides);
       const { data, error } = await db
         .from("editorial_articles")
         .update({
@@ -2917,7 +2927,7 @@ Deno.serve(async (req) => {
           primary_bike_id: next.primary_bike_id,
           related_bike_ids: next.related_bike_ids,
           indexable: next.indexable,
-          validation_errors: [],
+          validation_errors: preparationOnly ? old.validation_errors : [],
           updated_by: actor.id,
         })
         .eq("id", old.id)
