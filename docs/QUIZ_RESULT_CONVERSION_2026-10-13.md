@@ -32,3 +32,14 @@ Decisão: implementar localmente. Sem alteração de schema, motor de recomenda�
 Preview local isolado em /tmp/vitale-quiz-ui, usando componentes reais com roteador real e mocks de catálogo/backend/chat/analytics. Preços são simulados; assets da plataforma Lovable que não existem localmente mostram fallback (não substituir imagens produtivas). Imagens registradas em artifacts/quiz-result-20261013; nenhum novo recurso gráfico pago. A retirada do bloco educativo não altera os motivos da recomendação em cada bike.
 
 Estado: implementado e validado localmente; preparado para revisão e autorização do merge/publicação. Arquivos produtivos: HomeB2C.tsx, EscolherBike.tsx, DecisionBanners.tsx, novos RadarPanel.tsx e QuizPriceAlert.tsx. Rollback: reverter o commit e republicar versão anterior. Sem migration, alteração de dados ou disparo de newsletter. Custo externo de desenvolvimento: nenhum. Publicação: usar sincronização GitHub e hosting Lovable existente, sem novo serviço nem geração paga.
+
+## Publicado e verificado
+Autorização explícita do usuário: “pode publicar!” nesta conversa. PR #45 incorporada em c2fc9f11735fa33ff1df95afaea2958c265096c0; sincronização desse commit confirmada no Lovable antes da publicação. Deploy e8e09bbd-4c24-4291-bb63-4ae6cbdff0f6 solicitado pelo conector de publicação, sem agente pago ou mudança adicional.
+
+Evidências no domínio público:
+- Home HTTP 200 e conteúdo SSR com a copy desktop exata e classes de empilhamento; botão do Radar abaixo confirmado no navegador.
+- Quiz completo percorrido em navegador isolado, utilizando catálogo real de leitura e interceptando todas as escritas do cliente. 23 requisições de escrita respondidas por mocks; nenhum lead, webhook, contato ou newsletter real foi criado/disparado.
+- Resultado: 2 alertas presentes, formulário existente abre com referência do Radar e fecha por Escape; seção educativa ausente; Radar, banner do grupo e newsletter presentes.
+- Desktop e mobile verificados; nenhum erro de JavaScript e nenhum overflow horizontal no mobile. Capturas produtivas em artifacts/quiz-result-20261013/production-*.png.
+
+Gate final: Produto, CTO, Segurança, UX/UI, CX, Growth e PMO/QA = Pass; IA = N/A (nenhuma alteração de modelo/prompt). Estado: publicado e verificado. Risco residual normal: preço/catálogo podem mudar e o alerta só aparece com preço de referência válido. Backend, motor, consentimentos e fluxos de envio existentes não foram alterados. Rollback: reverter 4397bc1 e republicar o frontend. Publicação sem novo serviço e sem uso do agente Lovable.
