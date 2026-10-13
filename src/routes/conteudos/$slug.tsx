@@ -115,10 +115,9 @@ export const Route = createFileRoute("/conteudos/$slug")({
         })),
       sourceVideo: videos.find((video) => video.videoId === article.videoId)
         ? (() => {
-            const { videoId, title, date, url, thumbnail } = videos.find(
-              (video) => video.videoId === article.videoId,
-            )!;
-            return { videoId, title, date, url, thumbnail };
+            const { videoId, title, date, sourceDate, url, thumbnail } =
+              videos.find((video) => video.videoId === article.videoId)!;
+            return { videoId, title, date, sourceDate, url, thumbnail };
           })()
         : null,
     };

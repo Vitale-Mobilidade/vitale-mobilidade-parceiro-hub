@@ -3,7 +3,7 @@ import { fetchVideoCatalog } from "./video-catalog.server";
 import { BIKE_ID_RE } from "./bike-identity";
 import { selectCatalogVideos } from "./video-catalog";
 
-export type VideoCard = { videoId: string; title: string; date: string | null; url: string; thumbnail: string };
+export type VideoCard = { videoId: string; title: string; date: string | null; sourceDate?: string | null; url: string; thumbnail: string };
 
 /** Sem bikeId: vídeos mais recentes (qualquer). Com bikeId: só vídeos associados a esse modelo. */
 export const getVideos = createServerFn({ method: "GET" })

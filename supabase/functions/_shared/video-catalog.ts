@@ -23,6 +23,8 @@ export type VideoItem = {
   title: string;
   /** ISO yyyy-mm-dd, ou null se a data da planilha for inválida. */
   date: string | null;
+  /** Original date retained by public consumers when an operational fallback is used. */
+  sourceDate?: string | null;
   url: string;
   thumbnail: string;
   bikeIds: string[];

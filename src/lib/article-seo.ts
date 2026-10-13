@@ -41,7 +41,7 @@ export function articleSchemas(
     },
   ];
   // Google requires uploadDate. A missing source date never becomes the article's publication date.
-  const date = video?.date;
+  const date = video?.sourceDate !== undefined ? video.sourceDate : video?.date;
   if (
     sourceUrl &&
     video?.videoId === article.videoId &&

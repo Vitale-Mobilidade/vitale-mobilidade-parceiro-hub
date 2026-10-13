@@ -1,15 +1,16 @@
 // Public SSR metadata comes from the persistent catalog; a filtered sheet cannot shrink it.
 import type { VideoItem } from './video-catalog';
+import { normalizeVideoDate } from './video-date';
 
 const TTL_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 5000;
 let cache: { at: number; items: VideoItem[] } | null = null;
 
 export async function fetchVideoCatalog(): Promise<VideoItem[]> {
-  if (cache && Date.now() - cache.at < TTL_MS) return cache.items;
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.items.map((item) => normalizeVideoDate(item));
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return cache?.items ?? [];
+  if (!url || !key) return (cache?.items ?? []).map((item) => normalizeVideoDate(item));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -21,10 +22,10 @@ export async function fetchVideoCatalog(): Promise<VideoItem[]> {
     const items: VideoItem[] = await res.json();
     if (!Array.isArray(items)) throw new Error('invalid_video_catalog');
     if (items.length) cache = { at: Date.now(), items };
-    return items;
+    return items.map((item) => normalizeVideoDate(item));
   } catch (e) {
     console.error('[videos] persistent catalog unavailable',e);
-    return cache?.items ?? [];
+    return (cache?.items ?? []).map((item) => normalizeVideoDate(item));
   } finally {
     clearTimeout(timer);
   }
