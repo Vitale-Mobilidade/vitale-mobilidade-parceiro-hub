@@ -2194,6 +2194,7 @@ export type Database = {
           created_at: string
           created_by: string
           state: string
+          state_changed_at: string
           video_id: string
         }
         Insert: {
@@ -2203,6 +2204,7 @@ export type Database = {
           created_at?: string
           created_by: string
           state: string
+          state_changed_at?: string
           video_id: string
         }
         Update: {
@@ -2212,6 +2214,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           state?: string
+          state_changed_at?: string
           video_id?: string
         }
         Relationships: [
@@ -2399,6 +2402,7 @@ export type Database = {
       }
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
       public_video_catalog: { Args: never; Returns: Json }
+      reconcile_youtube_editorial_stalls: { Args: never; Returns: Json }
       record_site_analytics: {
         Args: {
           p_bike_id: string
