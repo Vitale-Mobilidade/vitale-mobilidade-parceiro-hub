@@ -49,3 +49,18 @@ O usuário autorizou seguir com correção e aplicação em produção nesta con
 | PMO/QA | Teste SQL local com estados ativos, recentes, concluídos, retries e timestamps; mocks de email; pnpm validate. Backup e rollback antes de produção. Prosseguir. |
 
 Risco/trade-off: não há resultado seguro de chamada interrompida; watchdog exige intervenção em vez de repetir o custo. Timeout de 15 minutos supera o orçamento normal da Edge Function. Escopo externo autorizado: migration aditiva, implantação de editorial-admin e recuperação/publicação do artigo; email operacional ao próprio usuário. Sem newsletter ou mensagens a terceiros. Lovable somente para implantação exclusiva do ambiente integrado, com consumo qualitativo pequeno/moderado; sem uso Max. Rollback: código anterior, restauração da função de dispatch e remoção do watchdog; timestamp aditivo pode permanecer inerte.
+
+## Gate final antes da aplicação
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Sem veto por sobreposição; recuperação específica autorizada. |
+| CTO | Pass | SQL executado em PostgreSQL 17 isolado: timestamp, dispatch e reconciliação verificados. |
+| IA | Pass | Sem repetição paga de execução incerta; revisão factual do artigo salvo. |
+| Segurança | Pass | RPC negada a anon/authenticated e permitida a service_role; mocks sem email real. |
+| UX/UI | Pass | Alerta aponta para o artigo salvo; frontend público intacto. |
+| CX | Pass | Cinco estados ativos cobertos, recentes/concluídos excluídos, backoff e idempotência por episódio. |
+| Growth | Pass | Diversidade segue em diagnóstico; risco de sobreposição aceito pelo usuário. |
+| PMO/QA | Pass | 22 testes dirigidos + 19 verificações SQL + pnpm validate (61 testes, typecheck, build); backup fora do Git. |
+
+Backup: /tmp/vitale-new-video-release-backup-20261013.json. Rollback: /tmp/vitale-new-video-release-rollback-20261013.sql (usar após restaurar Edge Function anterior). Base remota e projeto Lovable em 7a866b2. Produção tem 1 fonte em generating e 16 done. Aplicação autorizada: migration aditiva, Edge Function editorial-admin, reconciliação/alerta e recuperação do artigo em publish_pending, passando por revisão factual. Nenhum texto/capa será alterado por SQL. Lovable somente para implantação do ambiente integrado, custo esperado pequeno/moderado. Autorização: “pode seguir” após discussão explícita de corrigir e publicar. Sem newsletter ou mensagens a terceiros. Estado: validado localmente, aplicação em andamento.
