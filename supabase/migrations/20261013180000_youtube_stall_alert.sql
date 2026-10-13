@@ -67,6 +67,3 @@ begin
   );
 end $$;
 revoke all on function public.dispatch_youtube_editorial_tick(text) from public,anon,authenticated,service_role;
-
-
-
