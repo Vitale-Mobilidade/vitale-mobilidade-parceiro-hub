@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-13",
+  "commit": "85de9f7fcb461ab235e0e5ccaf0280b4fef5748b",
+  "deploymentId": "0e1e2aad-e3f3-48ec-83b2-0e0898bd9341",
+  "checks": [
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "Article",
+        "BreadcrumbList"
+      ],
+      "sourceInOriginalHtml": true,
+      "videoDates": [],
+      "articleVideoReference": [
+        null
+      ],
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v8-pro-v8-ultra-ou-ouxi-gt20-qual-atende-melhor-a-sua-rotina"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "Article",
+        "BreadcrumbList"
+      ],
+      "sourceInOriginalHtml": true,
+      "videoDates": [],
+      "articleVideoReference": [
+        null
+      ],
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/ouxi-v8-pro-potencia-garupa-e-iluminacao-no-uso-urbano"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "Article",
+        "BreadcrumbList"
+      ],
+      "sourceInOriginalHtml": true,
+      "videoDates": [],
+      "articleVideoReference": [
+        null
+      ],
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "Article",
+        "VideoObject",
+        "BreadcrumbList"
+      ],
+      "sourceInOriginalHtml": true,
+      "videoDates": [
+        "2026-08-10"
+      ],
+      "articleVideoReference": [
+        {
+          "@id": "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso#video"
+        }
+      ],
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/wanshida-gt2000-o-que-um-trajeto-de-12-3-km-revela-sobre-seu-uso"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "Article",
+        "VideoObject",
+        "BreadcrumbList"
+      ],
+      "sourceInOriginalHtml": true,
+      "videoDates": [
+        "2026-09-08"
+      ],
+      "articleVideoReference": [
+        {
+          "@id": "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena#video"
+        }
+      ],
+      "canonical": [
+        "https://vitalemobilidade.com/conteudos/v9-max-vl20-vs-v9-pro-da-ufofast-qual-vale-mais-a-pena"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/radar",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite"
+      ]
+    },
+    {
+      "url": "https://vitalemobilidade.com/quiz",
+      "http": 200,
+      "schemaTypes": [
+        "Organization",
+        "WebSite"
+      ]
+    }
+  ],
+  "allPassed": true
+}

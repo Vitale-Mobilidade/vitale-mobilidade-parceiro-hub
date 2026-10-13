@@ -67,3 +67,15 @@ O teste Frase fornecido registra zero citações para uma pergunta ampla, em uma
 - Risco residual: a fonte de dados ainda informa datas futuras; o lote impede a propagação para VideoObject, sem adivinhar ou reparar dados. O vídeo continua visível. Corrigir a data do catálogo requer confirmação da data real e ação separada.
 - Estado: implementação local pronta e revisada; nenhuma publicação, push, migration, escrita em produção ou consumo de créditos Lovable.
 - Condição de release: autorização específica para integrar este diff no projeto ativo e publicar; revalidar contra main mais recente, smoke de preview e rollback para versão imediatamente anterior. Este lote corrige integridade/rastreabilidade; não conclui a estratégia editorial nem garante indexação, ranking ou citações.
+
+## Release autorizado — 13/10/2026
+
+- Autorização do responsável nesta thread: “corrija e publique”.
+- Main remoto e Lovable estavam em `350ca63c82e5b99a694ebc78fcbf0f07f386d69e`; não havia delta concorrente. O commit `85de9f7fcb461ab235e0e5ccaf0280b4fef5748b` foi integrado via push fast-forward sem force.
+- `pnpm validate` repetido antes da publicação: aprovado, incluindo 61 testes e build. Nenhuma alteração funcional após esse gate.
+- Lovable confirmou sincronização no mesmo SHA. Preview HTTP externo exige autenticação (401); a sessão Chrome autenticada carregou o artigo da V8 Pro, com fonte visível, título correto e links públicos preservados.
+- Publicação pelo conector, sem geração de código paga: deployment `0e1e2aad-e3f3-48ec-83b2-0e0898bd9341`, projeto existente, domínio `https://vitalemobilidade.com` preservado.
+- Smoke em produção: oito URLs HTTP 200 (cinco artigos, home, Radar e Quiz). Os cinco artigos têm fonte no HTML original e canonical próprio. Os três vídeos com datas futuras não emitem VideoObject nem referência pendente; os outros dois preservam a data real e a relação Article.video. Evidência em `artifacts/seo-citations-2026-10-13/production-validation.json`.
+- Todas as oito perspectivas mantêm Pass para o lote entregue. Fonte explícita e integridade de schema verificadas em produção; nenhuma afirmação de melhora de ranking/citação foi feita. A data incorreta no catálogo continua pendência de origem, sem escrita em banco/Sheets nesta tarefa.
+- Rollback: restaurar a publicação correspondente ao commit anterior `350ca63c82e5b99a694ebc78fcbf0f07f386d69e`, ou reverter apenas `85de9f7` e republicar; sem rollback de dados. Nenhuma mudança de DNS, hosting, integração ou migration.
+- Estado: lote publicado e verificado. Estratégia editorial/Search Console permanece nos próximos lotes acima. Atualização posterior deste relatório é somente documentação e não exige nova publicação de aplicativo.
