@@ -1,0 +1,45 @@
+{
+  "observedAt": "2026-10-13",
+  "aggregateUpdatedAt": "2026-10-08",
+  "individualInspections": [
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ufofast-vl20-vale-a-pena-para-quem-a-bicicleta-eletrica-faz-sentido",
+      "status": "URL está no Google",
+      "pageIndexed": true,
+      "breadcrumbValid": true,
+      "videoSchemaValid": true,
+      "videoIndexed": false
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ufofast-vl20-sobe-ladeira-desempenho-autonomia-e-pontos-de-atencao",
+      "status": "URL está no Google",
+      "pageIndexed": true,
+      "breadcrumbValid": true,
+      "videoSchemaValid": true,
+      "videoIndexed": false
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ouxi-gt2000-para-quem-fazem-sentido-o-motor-forte-e-a-bateria-de-30-ah",
+      "status": "URL está no Google",
+      "pageIndexed": true,
+      "breadcrumbValid": true,
+      "videoSchemaValid": true,
+      "videoIndexed": false
+    },
+    {
+      "url": "https://vitalemobilidade.com/conteudos/ufofast-vl20-o-que-muda-alem-dos-50-km-h-no-painel",
+      "status": "URL está no Google",
+      "pageIndexed": true,
+      "breadcrumbValid": true,
+      "videoSchemaValid": true,
+      "videoIndexed": false
+    }
+  ],
+  "discoveredSample": {
+    "url": "https://vitalemobilidade.com/conteudos/bike-eletrica-v8-pro-1000w-sobe-ladeira",
+    "status": "O Google não reconhece o URL",
+    "pageIndexed": false,
+    "lastCrawl": null
+  },
+  "note": "No indexing requests or production changes performed."
+}

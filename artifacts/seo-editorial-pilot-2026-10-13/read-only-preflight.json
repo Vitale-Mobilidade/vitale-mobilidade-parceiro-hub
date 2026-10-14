@@ -1,0 +1,84 @@
+{
+  "rows": [
+    {
+      "editable_published": true,
+      "expectedRevision": 7,
+      "revision": 7,
+      "revision_match": true,
+      "slug": "bicicleta-eletrica-para-duas-pessoas-v8-pro-v40-pro-ou-v9-max",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 5,
+      "revision": 5,
+      "revision_match": true,
+      "slug": "cinco-bikes-eletricas-para-delivery-como-escolher-pela-bateria-e-pela-carga",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 5,
+      "revision": 5,
+      "revision_match": true,
+      "slug": "inow-v20-pro-ou-ouxi-v8-ultra-o-que-muda-na-escolha",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 4,
+      "revision": 4,
+      "revision_match": true,
+      "slug": "inow-v40-pro-ou-v9-max-o-que-muda-na-escolha",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 4,
+      "revision": 4,
+      "revision_match": true,
+      "slug": "mangosteen-ft03-o-que-muda-no-uso-urbano-e-para-quem-ela-faz-sentido",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 8,
+      "revision": 8,
+      "revision_match": true,
+      "slug": "ouxi-gt20-pro-ou-wanshida-gt2000-qual-faz-mais-sentido-para-voce",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 6,
+      "revision": 6,
+      "revision_match": true,
+      "slug": "ufofast-vl20-vale-a-pena-para-quem-a-bicicleta-eletrica-faz-sentido",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 4,
+      "revision": 4,
+      "revision_match": true,
+      "slug": "v9-max-em-um-deslocamento-de-19-km-o-que-o-uso-intenso-indica-sobre-a-autonomia",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 5,
+      "revision": 5,
+      "revision_match": true,
+      "slug": "v9-max-qual-versao-escolher-entre-uma-ou-duas-baterias",
+      "source_match": true
+    },
+    {
+      "editable_published": true,
+      "expectedRevision": 7,
+      "revision": 7,
+      "revision_match": true,
+      "slug": "wanshida-gt2000-para-que-tipo-de-trajeto-ela-faz-sentido",
+      "source_match": true
+    }
+  ]
+}
