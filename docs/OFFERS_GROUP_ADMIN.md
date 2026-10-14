@@ -47,3 +47,17 @@ Ensaio reproduzível: instalar `@electric-sql/pglite` em diretório temporário 
 Ordem de release: registrar convite anterior, aplicar migration, integrar branch, publicar app no Lovable, conferir 302/Location e salvar/reabrir configuração com conta admin.
 Risco residual: indisponibilidade do banco usa o convite padrão solicitado nesta task; se esse convite for revogado no futuro, publicar novo fallback. Não há cache do destino nesta implementação.
 Rollback: trocar convite no admin; se houver falha no app, reverter commit e republicar versão anterior, mantendo tabela e auditoria.
+
+## Publicação autorizada — 14/10/2026
+
+Usuário autorizou integrar PR #46, aplicar migration e publicar no Lovable nesta conversa.
+- Migration aplicada com transação no banco integrado e registrada em `supabase_migrations.schema_migrations` como `20261014190000`.
+- Destino conferido no banco: `https://chat.whatsapp.com/B69yQkILBc63Nq3x62iQjH?mode=gi_t`, revisão 1.
+- Permissões conferidas em produção: anon SELECT permitido; authenticated UPDATE direto negado; anon EXECUTE da RPC negado.
+- PR #46 integrada pelo merge `2af50915f0a11fabd953f356ac17c9889f096a15`; preview atualizado e publicação solicitada pela ferramenta Lovable, deployment `774b313d-85bc-48b1-bd2d-e93737b202ce`.
+- Smoke público às 15:59 (America/Sao_Paulo): GET e HEAD `/grupodeofertas` e variante com barra/query retornam 302, Location exato e Cache-Control no-store.
+- `/admin/grupo-de-ofertas` responde com metadata correta e tela de login. Sessão autenticada real indisponível no navegador usado: edição de ponta a ponta autenticada permanece sem teste produtivo; fluxo e autorização verificados localmente.
+- Nenhum crédito de agente Lovable utilizado. Não houve envio de mensagens WhatsApp, newsletter ou alteração em dados de clientes.
+- Rollback preservado: restaurar URL anterior no admin; reverter implementação se necessário. Convite anterior da rota no código: `https://chat.whatsapp.com/KwPwrNzMcEyB4uOKAVAWTJ?mode=gi_t`.
+
+Estado: publicado, redirecionamento verificado; smoke autenticado do formulário pendente de sessão admin.
