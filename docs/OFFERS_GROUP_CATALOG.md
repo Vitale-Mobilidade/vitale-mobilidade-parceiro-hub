@@ -45,3 +45,17 @@ Ordem: aplicar migration autorizada, integrar PR, sincronizar preview e publicar
 Ensaio: `node scripts/check-offers-group-catalog-sql.mjs /caminho/para/pglite/dist/index.js`; módulo instalado temporariamente, sem nova dependência do app.
 Rollback: reverter frontend; formulário antigo edita o grupo ativo através da RPC compatível. Manter catálogo e auditoria. URL e revisão pública permanecem no contrato original.
 Risco residual: formulário autenticado em produção depende de sessão admin para smoke. Não houve publicação, alteração produtiva nem créditos Lovable nesta preparação.
+
+## Publicação autorizada — 14/10/2026
+
+Usuário autorizou migration, merge e publicação da evolução nesta conversa.
+- Backup lógico prévio: URL do grupo #1, revisão 1. Migration aplicada em transação e registrada como `20261014210000` em `supabase_migrations.schema_migrations`.
+- Banco conferido após migration: grupos #1 e #2 com os convites informados; `active_group_id=1`, URL e revisão preservadas.
+- Permissões em produção: anon lê URL, não lê catálogo nem executa manage; authenticated não possui UPDATE direto.
+- PR #47 integrada pelo merge `c2f6ee2b5aa9953f987ad863f948c9e366f78957`, sincronizado no Lovable; preview atualizado e publicação solicitada com deployment `c0f2cb82-1bf8-401c-a058-40810d0a8579`.
+- Smoke público às 16:17 (America/Sao_Paulo): asset administrativo `/assets/grupo-de-ofertas-PafiyzKO.js` publicado contém Adicionar grupo, Usar no redirecionamento, Salvar grupo e chamada manage_offers_groups.
+- HEAD `/grupodeofertas` retorna 302 para grupo #1 com Cache-Control no-store.
+- Teste de cliques com sessão admin real permanece pendente: navegador usado não tem sessão autenticada de produção. Contratos, permissões e operações foram ensaiados localmente; não houve troca de destino para testes em produção.
+- Nenhum crédito de agente Lovable consumido, nenhuma mensagem ou envio WhatsApp, nenhuma alteração em dados de clientes.
+
+Estado: catálogo publicado, dois grupos cadastrados, grupo #1 ativo, disponibilidade do frontend e redirecionamento verificados.
