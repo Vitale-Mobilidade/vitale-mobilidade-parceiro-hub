@@ -1493,6 +1493,30 @@ export type Database = {
           },
         ]
       }
+      offers_group_settings: {
+        Row: {
+          active_group_id: number
+          groups: Json
+          id: boolean
+          revision: number
+          url: string
+        }
+        Insert: {
+          active_group_id?: number
+          groups?: Json
+          id?: boolean
+          revision?: number
+          url: string
+        }
+        Update: {
+          active_group_id?: number
+          groups?: Json
+          id?: boolean
+          revision?: number
+          url?: string
+        }
+        Relationships: []
+      }
       price_alert_hotpipe_outbox: {
         Row: {
           alert_id: string
@@ -2344,6 +2368,16 @@ export type Database = {
         Args: { video_ids: string[] }
         Returns: string
       }
+      manage_offers_groups: {
+        Args: {
+          p_action?: string
+          p_group_id?: number
+          p_name?: string
+          p_revision?: number
+          p_url?: string
+        }
+        Returns: Json
+      }
       newsletter_acquire: { Args: never; Returns: string }
       newsletter_authorize: {
         Args: { issued_at: string; signature: string }
@@ -2428,6 +2462,10 @@ export type Database = {
           p_utm_term?: string
         }
         Returns: undefined
+      }
+      update_offers_group_url: {
+        Args: { p_revision: number; p_url: string }
+        Returns: Json
       }
     }
     Enums: {

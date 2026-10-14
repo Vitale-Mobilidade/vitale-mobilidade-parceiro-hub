@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-10-14T20:38:32.035Z",
+  "draftId": "1f8fed03-d1a1-4e55-b297-0a09c5305710",
+  "editionNumber": 3,
+  "fingerprint": "80de30aa55c860d2c41e12bdc1adc414218bce608ea5f5442d0500a199f7ba8d",
+  "aiCalls": [
+    {
+      "status": 200,
+      "ms": 18311
+    },
+    {
+      "status": 200,
+      "ms": 18908
+    },
+    {
+      "status": 200,
+      "ms": 16200
+    }
+  ],
+  "subject": "#3 — Cadeado em U: menos abraço, mais firmeza",
+  "content": {
+    "subject": "#3 — Cadeado em U: menos abraço, mais firmeza",
+    "intro": "Prender bem uma bicicleta é um pequeno exercício de estratégia: menos improviso, mais atenção ao ponto fixo. Nesta edição, o cadeado em U puxa a conversa — e abre caminho para outras histórias em que formato, espaço e uso mudam bastante o resultado.",
+    "editionNumber": 3,
+    "sourceVideoIds": [
+      "yrsgUwKBYk0",
+      "_HWepYGwijI",
+      "-gatAksYzAA",
+      "EpVrlPc5FbI",
+      "Rd6SQFXvfJU"
+    ],
+    "mentionedBikeIds": [
+      "coswheel_gt20",
+      "v35",
+      "s12",
+      "v8_pro",
+      "d50_cross",
+      "v40_pro",
+      "ft03",
+      "ouxi_gt20"
+    ],
+    "headline": "O cadeado não precisa abraçar o poste inteiro",
+    "preheader": "Como prender a bike, três modelos frente a frente e dois testes.",
+    "radar": {
+      "title": "Radar de preços",
+      "url": "https://vitalemobilidade.com/radar"
+    },
+    "drops": [
+      {
+        "title": "V35",
+        "url": "https://vitalemobilidade.com/radar/v35",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v35",
+        "previousPrice": "R$ 11.500,00",
+        "currentPrice": "R$ 9.000,00",
+        "dropLabel": "−21,7%",
+        "checkedAt": "14/10/2026, 17:07:03",
+        "baselineDate": "2026-09-22"
+      },
+      {
+        "title": "S12",
+        "url": "https://vitalemobilidade.com/radar/s12",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=s12",
+        "previousPrice": "R$ 7.590,00",
+        "currentPrice": "R$ 7.119,00",
+        "dropLabel": "−6,2%",
+        "checkedAt": "14/10/2026, 17:07:03",
+        "baselineDate": "2026-10-11"
+      },
+      {
+        "title": "V8 Pro",
+        "url": "https://vitalemobilidade.com/radar/v8_pro",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=v8_pro",
+        "previousPrice": "R$ 7.031,00",
+        "currentPrice": "R$ 6.982,00",
+        "dropLabel": "−0,7%",
+        "checkedAt": "14/10/2026, 17:07:03",
+        "baselineDate": "2026-10-11"
+      }
+    ],
+    "articles": [
+      {
+        "title": "V40 Pro, Mangosteen FT03 ou Ouxi GT20: qual combina mais com seu uso?",
+        "url": "https://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=f32286de-4d47-4280-9cc7-59a4719c027b&file=ed1cf4db-a7e6-428f-805b-6aa1fab9440d",
+        "category": "Comparativo",
+        "paragraphs": [
+          "**V40 Pro**, **Mangosteen FT03** e **Ouxi GT20** partem de uma base parecida: motor declarado de 1.000 W, bateria removível e freios hidráulicos a disco. A diferença aparece no papel que cada uma assume. A FT03 leva uma pessoa e teve a frenagem mais elogiada; V40 Pro e GT20 acomodam garupa. Entre estas, o relato aponta assento mais confortável e bateria maior na V40 Pro."
+        ],
+        "bullets": [
+          "V40 Pro e FT03: baterias declaradas de **48 V e 18 Ah**; GT20: 48 V e 15 Ah.",
+          "As autonomias citadas são estimativas para condução moderada, não distâncias garantidas."
+        ]
+      },
+      {
+        "title": "T2 800 W: o que observar antes de escolher essa scooter elétrica",
+        "url": "https://vitalemobilidade.com/conteudos/t2-800-w-o-que-observar-antes-de-escolher-essa-scooter-eletrica",
+        "image": "https://i.ytimg.com/vi/_HWepYGwijI/maxresdefault.jpg",
+        "category": "Conheça a bike",
+        "paragraphs": [
+          "A **T2 800 W** tem jeitão de scooter e condução principalmente pelo acelerador; aquele pedal pequeno não assume papel relevante no deslocamento. No relato, ela venceu com facilidade uma subida longa, mas não íngreme, levando um condutor de 1,84 m e 76 kg. A condição importa: o resultado não comprova o mesmo comportamento com passageiro, mais carga ou numa rampa mais forte."
+        ],
+        "bullets": [
+          "As rodas **aro 10** fizeram irregularidades e buracos aparecerem mais na condução.",
+          "A estimativa de 40 a 50 km de autonomia não foi confirmada por um percurso completo."
+        ]
+      },
+      {
+        "title": "Bicicleta elétrica no dia a dia: quando ela pode valer a pena?",
+        "url": "https://vitalemobilidade.com/conteudos/bicicleta-eletrica-no-dia-a-dia-quando-ela-pode-valer-a-pena",
+        "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=e00bee27-1d17-4c2e-9698-61908313e4f4&file=0b1a99e6-0c20-4d3c-9b43-2d33f22cd118",
+        "category": "Guia e dicas",
+        "paragraphs": [
+          "Quando o ônibus exige espera e conexões, controlar o horário de saída pode ser tão importante quanto a velocidade. Vitale relata uma antiga rotina com três ônibus por sentido e cerca de quatro horas diárias de deslocamento. Isso mostra o tamanho que o trajeto pode ocupar, mas não transforma a bicicleta elétrica em atalho universal: cada origem, destino e integração conta uma história diferente."
+        ],
+        "bullets": [
+          "Tempo de viagem precisa incluir espera, conexões e o percurso completo de bicicleta.",
+          "Compra, energia, manutenção e futura substituição da bateria entram na mesma conta."
+        ]
+      }
+    ],
+    "bike": {
+      "title": "Coswheel GT20",
+      "url": "https://vitalemobilidade.com/radar/coswheel_gt20",
+      "image": "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?id=coswheel_gt20",
+      "paragraphs": [
+        "No Radar, a **Coswheel GT20** aparece com oferta ativa no momento da preparação. Ela traz motor de 1.000 W e bateria removível de 48 V e 20 Ah. No teste, o painel marcou aproximadamente 60 km/h, enquanto os freios chamaram atenção pela força. É um conjunto de categoria superior, próximo da experiência de uma pequena motocicleta elétrica — portanto, desempenho e responsabilidade pedalam juntos."
+      ],
+      "bullets": [
+        "A ficha informa até **60 km de autonomia**, sem garantir esse alcance em todo trajeto.",
+        "A capacidade informada é para **uma pessoa**; preço vigente e histórico ficam no Radar."
+      ]
+    },
+    "videos": [
+      {
+        "title": "O Jeito CERTO de Trancar sua BIKE ELÉTRICA (Para NÃO Roubarem!)",
+        "url": "https://www.youtube.com/watch?v=EpVrlPc5FbI",
+        "image": "https://i.ytimg.com/vi/EpVrlPc5FbI/mqdefault.jpg",
+        "category": "Variedades",
+        "paragraphs": [
+          "O cadeado em U tem menos jogo de cintura, mas essa é justamente parte da proposta. No vídeo, Vitale recomenda prender sempre o **quadro** a um ponto fixo e priorizar locais mais seguros, como bicicletários, paraciclos ou áreas aceitas por estabelecimentos. O U-lock pode não envolver árvores ou postes grossos; em compensação, foi apresentado como muito mais difícil de romper que cabos maleáveis."
+        ],
+        "bullets": [
+          "Se o espaço permitir, passe o U-lock pelo quadro e pela roda traseira.",
+          "Bicicletário não dispensa cadeado; também vale perguntar se a bike pode ficar dentro do comércio."
+        ]
+      },
+      {
+        "title": "INOW D50 CROSS 1000W: A BIKE ELÉTRICA MAIS BRUTA QUE JÁ TESTEI?",
+        "url": "https://www.youtube.com/watch?v=Rd6SQFXvfJU",
+        "image": "https://i.ytimg.com/vi/Rd6SQFXvfJU/mqdefault.jpg",
+        "category": "Teste na prática",
+        "paragraphs": [
+          "A **Inow D50 Cross** foi testada com aro 22, pneus com cravos, motor de 1.000 W e bateria descrita como 48 V e 15.6. Vitale destacou o conforto do conjunto, com suspensão dupla dianteira e uma traseira. Os pneus reforçam a proposta para terra batida, cascalho e irregularidades leves; o próprio relato não coloca a bicicleta como ferramenta para trilha extremamente pesada."
+        ],
+        "bullets": [
+          "O painel marcou **48 km/h** no teste, sem transformar a leitura em resultado garantido.",
+          "Setas dianteiras e traseiras são separadas dos faróis, mas não aparecem no painel."
+        ]
+      }
+    ]
+  },
+  "text": "Salve {{{FIRST_NAME|}}}\n\nO cadeado não precisa abraçar o poste inteiro\n\nPrender bem uma bicicleta é um pequeno exercício de estratégia: menos improviso, mais atenção ao ponto fixo. Nesta edição, o cadeado em U puxa a conversa — e abre caminho para outras histórias em que formato, espaço e uso mudam bastante o resultado.\n\nV40 Pro, Mangosteen FT03 ou Ouxi GT20: qual combina mais com seu uso?\n\nV40 Pro, Mangosteen FT03 e Ouxi GT20 partem de uma base parecida: motor declarado de 1.000 W, bateria removível e freios hidráulicos a disco. A diferença aparece no papel que cada uma assume. A FT03 leva uma pessoa e teve a frenagem mais elogiada; V40 Pro e GT20 acomodam garupa. Entre estas, o relato aponta assento mais confortável e bateria maior na V40 Pro.\n\n• V40 Pro e FT03: baterias declaradas de 48 V e 18 Ah; GT20: 48 V e 15 Ah.\n\n• As autonomias citadas são estimativas para condução moderada, não distâncias garantidas.\n\nhttps://vitalemobilidade.com/conteudos/v40-pro-mangosteen-ft03-ou-ouxi-gt20-qual-combina-mais-com-seu-uso?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_article_1\n\n---\n\nT2 800 W: o que observar antes de escolher essa scooter elétrica\n\nA T2 800 W tem jeitão de scooter e condução principalmente pelo acelerador; aquele pedal pequeno não assume papel relevante no deslocamento. No relato, ela venceu com facilidade uma subida longa, mas não íngreme, levando um condutor de 1,84 m e 76 kg. A condição importa: o resultado não comprova o mesmo comportamento com passageiro, mais carga ou numa rampa mais forte.\n\n• As rodas aro 10 fizeram irregularidades e buracos aparecerem mais na condução.\n\n• A estimativa de 40 a 50 km de autonomia não foi confirmada por um percurso completo.\n\nhttps://vitalemobilidade.com/conteudos/t2-800-w-o-que-observar-antes-de-escolher-essa-scooter-eletrica?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_article_2\n\n---\n\nBicicleta elétrica no dia a dia: quando ela pode valer a pena?\n\nQuando o ônibus exige espera e conexões, controlar o horário de saída pode ser tão importante quanto a velocidade. Vitale relata uma antiga rotina com três ônibus por sentido e cerca de quatro horas diárias de deslocamento. Isso mostra o tamanho que o trajeto pode ocupar, mas não transforma a bicicleta elétrica em atalho universal: cada origem, destino e integração conta uma história diferente.\n\n• Tempo de viagem precisa incluir espera, conexões e o percurso completo de bicicleta.\n\n• Compra, energia, manutenção e futura substituição da bateria entram na mesma conta.\n\nhttps://vitalemobilidade.com/conteudos/bicicleta-eletrica-no-dia-a-dia-quando-ela-pode-valer-a-pena?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_article_3\n\n---\n\nRadar de preços\n\nhttps://vitalemobilidade.com/radar?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_radar\n\n---\n\nCoswheel GT20\n\nNo Radar, a Coswheel GT20 aparece com oferta ativa no momento da preparação. Ela traz motor de 1.000 W e bateria removível de 48 V e 20 Ah. No teste, o painel marcou aproximadamente 60 km/h, enquanto os freios chamaram atenção pela força. É um conjunto de categoria superior, próximo da experiência de uma pequena motocicleta elétrica — portanto, desempenho e responsabilidade pedalam juntos.\n\n• A ficha informa até 60 km de autonomia, sem garantir esse alcance em todo trajeto.\n\n• A capacidade informada é para uma pessoa; preço vigente e histórico ficam no Radar.\n\nhttps://vitalemobilidade.com/radar/coswheel_gt20?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_bike\n\n---\n\nO Jeito CERTO de Trancar sua BIKE ELÉTRICA (Para NÃO Roubarem!)\n\nO cadeado em U tem menos jogo de cintura, mas essa é justamente parte da proposta. No vídeo, Vitale recomenda prender sempre o quadro a um ponto fixo e priorizar locais mais seguros, como bicicletários, paraciclos ou áreas aceitas por estabelecimentos. O U-lock pode não envolver árvores ou postes grossos; em compensação, foi apresentado como muito mais difícil de romper que cabos maleáveis.\n\n• Se o espaço permitir, passe o U-lock pelo quadro e pela roda traseira.\n\n• Bicicletário não dispensa cadeado; também vale perguntar se a bike pode ficar dentro do comércio.\n\nhttps://www.youtube.com/watch?v=EpVrlPc5FbI&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_video_1\n\n---\n\nINOW D50 CROSS 1000W: A BIKE ELÉTRICA MAIS BRUTA QUE JÁ TESTEI?\n\nA Inow D50 Cross foi testada com aro 22, pneus com cravos, motor de 1.000 W e bateria descrita como 48 V e 15.6. Vitale destacou o conforto do conjunto, com suspensão dupla dianteira e uma traseira. Os pneus reforçam a proposta para terra batida, cascalho e irregularidades leves; o próprio relato não coloca a bicicleta como ferramenta para trilha extremamente pesada.\n\n• O painel marcou 48 km/h no teste, sem transformar a leitura em resultado garantido.\n\n• Setas dianteiras e traseiras são separadas dos faróis, mas não aparecem no painel.\n\nhttps://www.youtube.com/watch?v=Rd6SQFXvfJU&utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_video_2\n\nRADAR — QUEDAS\nV35\n−21,7%\nAnterior: R$ 11.500,00\nAtual: R$ 9.000,00\nhttps://vitalemobilidade.com/radar/v35?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_radar_drop_1\n\nS12\n−6,2%\nAnterior: R$ 7.590,00\nAtual: R$ 7.119,00\nhttps://vitalemobilidade.com/radar/s12?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_radar_drop_2\n\nV8 Pro\n−0,7%\nAnterior: R$ 7.031,00\nAtual: R$ 6.982,00\nhttps://vitalemobilidade.com/radar/v8_pro?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_radar_drop_3\nFechamentos anteriores: V35: 2026-09-22; S12: 2026-10-11; V8 Pro: 2026-10-11. Verificação: 14/10/2026, 17:07:03. Preços e disponibilidade podem mudar.\n\nQUIZ — Qual bike combina com a sua rotina? https://vitalemobilidade.com/quiz?utm_source=vitale_newsletter&utm_medium=email&utm_campaign=giro_3&utm_content=general_quiz\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}"
+}
