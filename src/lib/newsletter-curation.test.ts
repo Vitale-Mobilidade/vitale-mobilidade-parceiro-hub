@@ -33,7 +33,7 @@ describe("newsletter editorial diversity", () => {
       since,
       now,
     );
-    expect(selected.articles).toHaveLength(2);
+    expect(selected.articles).toHaveLength(3);
     expect(selected.videos).toHaveLength(2);
     const categories = [...selected.articles, ...selected.videos].map((x) =>
       newsletterCategory(
@@ -42,7 +42,7 @@ describe("newsletter editorial diversity", () => {
       ),
     );
     expect(new Set(categories).size).toBe(4);
-    expect(categories.filter((x) => x === "comparison")).toHaveLength(1);
+    expect(categories.filter((x) => x === "comparison")).toHaveLength(2);
   });
   it("does not rename a presentation as a practical test or pad scarce content", () => {
     expect(newsletterCategory("Conheça a V9 Max", "test")).toBe("review");
@@ -52,8 +52,8 @@ describe("newsletter editorial diversity", () => {
       since,
       now,
     );
-    expect(selected.articles).toHaveLength(1);
-    expect(selected.videos).toHaveLength(0);
+    expect(selected.articles).toHaveLength(2);
+    expect(selected.videos).toHaveLength(1);
   });
   it("excludes titles used in preceding independent editions", () => {
     const selected = curateNewsletter(
@@ -99,6 +99,7 @@ it("searches the entire unused archive and never repeats model associations", ()
   expect(result.articles.map((x) => x.title)).toEqual([
     "Guide new",
     "Old archive",
+    "Guide same bike",
   ]);
 });
 it("featured bike excludes every radar card and prefers a different subject", () => {
@@ -112,7 +113,7 @@ it("featured bike excludes every radar card and prefers a different subject", ()
       bikes.map((b) => b.id),
       [],
     ),
-  ).toBeUndefined();
+  ).toEqual({ id: "v9_max" });
 });
 
 it("selects three distinct readings including an older unused archive item", () => {

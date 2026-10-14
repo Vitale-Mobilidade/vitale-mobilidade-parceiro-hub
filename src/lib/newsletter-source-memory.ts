@@ -50,7 +50,9 @@ export async function curateNewsletterSources<
 ) {
   const cache = new Map<string, T>();
   let candidates = articles;
-  for (let round = 0; round < 10; round++) {
+  // Each rejected round removes a used article or annotates its source. Bound
+  // work by the finite catalog rather than an arbitrary ten-round dead end.
+  for (let round = 0; round <= articles.length; round++) {
     const curated = curateNewsletter(
       candidates,
       videos.filter((v) => !used.has(v.videoId)),

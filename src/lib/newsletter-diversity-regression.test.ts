@@ -78,7 +78,7 @@ const articles = [
     publishedAt: "2026-09-19",
   },
 ];
-it("blocks the three different URLs from #2 because every article revisits #1 models", () => {
+it("allows new articles about previously mentioned models without copying articles", () => {
   const second = {
     ...first,
     editionNumber: 2,
@@ -90,7 +90,7 @@ it("blocks the three different URLs from #2 because every article revisits #1 mo
   };
   expect(() =>
     validateNewsletterSelection(second, [first], articles, []),
-  ).toThrow("newsletter_models_insufficient_diversity");
+  ).not.toThrow();
 });
 it("recovers model mentions from old titles without metadata and excludes close variants", () => {
   const memory = newsletterMemory([first], articles, []);

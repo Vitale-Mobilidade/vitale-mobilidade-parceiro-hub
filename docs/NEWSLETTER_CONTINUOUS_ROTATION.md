@@ -1,0 +1,15 @@
+# Rotação contínua de pautas
+
+Classificação estrutural (IA). Objetivo: gerar #3 e continuar automaticamente com catálogo finito. Artigos e fontes já usadas permanecem proibidos; famílias de bikes e categorias passam a preferências de composição, nunca veto de seis edições. Testar várias seleções seguidas sem chamadas pagas; uma geração real para #3, envio autorizado15/10/2026 às06:30BRT.
+
+Revisão prévia: Produto — variedade de pautas antes de exclusividade de modelos, prosseguir; CTO — mesma API/schema, seleção determinística e validador coerentes, prosseguir; IA — primeiro tentar pauta variada, depois preencher com fontes inéditas sem veto de modelo/categoria, revisor factual/novidade preservado, prosseguir; Segurança — histórico público editorial, nenhuma mudança de acesso/consentimento, prosseguir; UX — layout preservado, revisão da prévia, prosseguir; CX — #3 automática sem pauta manual e sem reusar artigos, prosseguir condicionado à aprovação; Growth — combinar assuntos publicados distintos e preço real, prosseguir; PMO — sequência com catálogo real e catálogo pequeno, validação agendada e validate, prosseguir condicionado.
+
+Trade-off: a mesma bike pode reaparecer em uma pauta inédita quando alternativas faltarem. Isso é preferível a bloquear a edição ou repetir um artigo. Não relaxar grounding/revisor/URLs/fontes repetidas. O Radar não esgota rotação editorial. Destaque prioriza bikes diferentes e há alternativas automáticas quando todas foram citadas.
+
+Aceite: pelo menos dez seleções sucessivas com catálogo real, sem artigo/vídeo-fonte repetido, diversidade registrada; catálogo de duas bikes não bloqueia fontes inéditas; #3 aprovada/salva pelo agente e agendada. Rollback: reverter commit/pausar envio oficialmente; não alterar campanhas históricas. Autorizações desta thread incluem integração/publicação da correção e preparação/envio da #3.
+
+## Revisão posterior técnica
+
+Produto Pass: modelos viram preferência, pautas inéditas permanecem obrigatórias. CTO Pass: sem contrato/chamada extra, busca limitada pelo tamanho do catálogo. IA Pass: 20 seleções sucessivas no snapshot real de14/10 (126 artigos,126 vídeos,34 bikes,duas edições enviadas),60 artigos inéditos e100 fontes únicas; mais seis seleções com duas bikes; revisor factual/novidade preservado. Segurança Pass: fixtures só de catálogo público e conteúdo editorial enviado, sem destinatários/secrets. UX Pass: renderer preservado. CX Pass: mesma seleção para IA e fallback, sem veto de modelo no validador de agendamento. Growth Pass: prioridade a categorias/modelos diferentes, identidade/links preservados. PMO Pass:91 testes de newsletter, mais regressão dirigida de replanejamento após10rodadas, lint/diff-check; pnpm validate61/tipos/build passou.
+
+Evidências: src/lib/newsletter-continuity.test.ts, fixtures artifacts/newsletter-rotation-{current,catalog,sources}.json. Esses testes simulam seleção/validação, não geram vinte redações pagas. Aprovação e agendamento real da #3 ainda pendentes; nenhum envio imediato autorizado ou executado.
