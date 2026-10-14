@@ -23,6 +23,7 @@ import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhament
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
+import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de-ofertas'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
@@ -127,6 +128,11 @@ const AdminBikesRoute = AdminBikesRouteImport.update({
 const AdminGrowthRoute = AdminGrowthRouteImport.update({
   id: '/admin/growth',
   path: '/admin/growth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGrupoDeOfertasRoute = AdminGrupoDeOfertasRouteImport.update({
+  id: '/admin/grupo-de-ofertas',
+  path: '/admin/grupo-de-ofertas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIaRoute = AdminIaRouteImport.update({
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -380,6 +387,7 @@ export interface FileRoutesByTo {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -432,6 +440,7 @@ export interface FileRoutesById {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -485,6 +494,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
+    | '/admin/grupo-de-ofertas'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
@@ -536,6 +546,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
+    | '/admin/grupo-de-ofertas'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
@@ -587,6 +598,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/growth'
+    | '/admin/grupo-de-ofertas'
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
@@ -639,6 +651,7 @@ export interface RootRouteChildren {
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
+  AdminGrupoDeOfertasRoute: typeof AdminGrupoDeOfertasRoute
   AdminIaRoute: typeof AdminIaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminNewsletterRoute: typeof AdminNewsletterRoute
@@ -775,6 +788,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/growth'
       fullPath: '/admin/growth'
       preLoaderRoute: typeof AdminGrowthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/grupo-de-ofertas': {
+      id: '/admin/grupo-de-ofertas'
+      path: '/admin/grupo-de-ofertas'
+      fullPath: '/admin/grupo-de-ofertas'
+      preLoaderRoute: typeof AdminGrupoDeOfertasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/ia': {
@@ -1049,6 +1069,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
   AdminGrowthRoute: AdminGrowthRoute,
+  AdminGrupoDeOfertasRoute: AdminGrupoDeOfertasRoute,
   AdminIaRoute: AdminIaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminNewsletterRoute: AdminNewsletterRoute,
