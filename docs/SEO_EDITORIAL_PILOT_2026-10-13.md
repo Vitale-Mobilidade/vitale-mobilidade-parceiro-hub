@@ -90,3 +90,16 @@ Outlines de cinco intenções distintas avaliados antes da edição: uso individ
 ### Fechamento
 
 Lote local pronto para revisão. Nenhuma melhoria foi aplicada aos dez artigos em produção. QA local valida contrato, identidade, metadata, fontes literais e HTML SSR; não é teste de ranking/citação nem execução SQL em sandbox. Scripts de atualização/rollback foram preparados e pré-condições consultadas, mas não executados. Após aprovação: atualizar as dez linhas, verificar revisões e HTML público após cache, medir desempenho/indexação por URL e cesta fixa de perguntas. Não é necessário deploy de frontend para a atualização dos dados editoriais.
+
+## Publicação autorizada — 13/10/2026
+
+- Autorização nesta thread: **“pode publicar”**, referente às dez versões e ao escopo apresentados acima.
+- Antes da aplicação, os onze testes do piloto e `pnpm validate` (61 testes do gate, typecheck e build) passaram novamente. A consulta read-only repetida confirmou 10/10 revisões, status e hashes de transcrição esperados.
+- Atualização aplicada no Supabase integrado ao projeto Lovable existente, em uma transação com dez locks, sem alterar schema, RLS, trigger, status, slugs ou fontes. SHA-256 do SQL aprovado: `6e01a2d3362d8bbfd3bab17a5b8155b138f0bac096c7050503f2ad2a3eca3054`.
+- Leitura posterior confirmou **10/10 conteúdos correspondentes ao lote**, revisões incrementadas em um, status publicado/indexável e published_at inalterado. Evidência: `artifacts/seo-editorial-pilot-2026-10-13/production-database-verification.json`.
+- Inspeção HTTP pública confirmou **10/10 páginas** com HTTP 200, nova abertura, título SEO, meta description, heading editado e descrição Article corretos; canonical próprio, um H1 e link de fonte preservados. Datas comparadas como instantes com timezone e precisão normalizados, não pela representação textual do timestamp.
+- Projeção pública continua sem valores privados de sourceExcerpt/transcrição. As chaves de sourceExcerpt vazias do FAQ são parte do contrato existente, não evidência exposta. Evidência: `production-http-verification.json`; snapshots locais em `preview/release/` (ignorados no Git).
+- Não houve deploy de frontend nem gasto de créditos de geração: os artigos leem o conteúdo do banco. Não foram reenviados sitemap nem pedidos de indexação em massa.
+- As oito perspectivas mantêm **Pass** para o lote agora publicado: Produto (intenções/URLs preservadas), CTO (SSR verificado), IA (evidência original intacta), Segurança (projeção sem excerpts e proteção transacional), UX (conteúdo/landmarks/link de fonte), CX (publicação diária e catálogo preservados), Growth (metadata/condições/preço atual via Radar), PMO (testes, provas e rollback).
+- Rollback privado preservado em `rollback.sql.local`; exige as revisões pós-release e os mesmos valores de conteúdo antes de restaurar os campos originais. Aborta em qualquer alteração posterior e mantém revision monotônica. Não foi necessário executá-lo.
+- Estado: **dez artigos publicados e verificados**. Indexação/ranking/citações após o lote ainda precisam de nova medição; os estados encontrados antes da aplicação não são atribuídos a estas mudanças.

@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-13",
+  "sqlSha256": "6e01a2d3362d8bbfd3bab17a5b8155b138f0bac096c7050503f2ad2a3eca3054",
+  "rows": [
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 10:44:11.282408+00",
+      "remains_public": true,
+      "revision": 8,
+      "revision_incremented": true,
+      "slug": "bicicleta-eletrica-para-duas-pessoas-v8-pro-v40-pro-ou-v9-max"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 11:05:31.12519+00",
+      "remains_public": true,
+      "revision": 6,
+      "revision_incremented": true,
+      "slug": "cinco-bikes-eletricas-para-delivery-como-escolher-pela-bateria-e-pela-carga"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 12:08:59.516575+00",
+      "remains_public": true,
+      "revision": 6,
+      "revision_incremented": true,
+      "slug": "inow-v20-pro-ou-ouxi-v8-ultra-o-que-muda-na-escolha"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 10:54:48.164181+00",
+      "remains_public": true,
+      "revision": 5,
+      "revision_incremented": true,
+      "slug": "inow-v40-pro-ou-v9-max-o-que-muda-na-escolha"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-28 23:58:12.278446+00",
+      "remains_public": true,
+      "revision": 5,
+      "revision_incremented": true,
+      "slug": "mangosteen-ft03-o-que-muda-no-uso-urbano-e-para-quem-ela-faz-sentido"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 11:11:34.344086+00",
+      "remains_public": true,
+      "revision": 9,
+      "revision_incremented": true,
+      "slug": "ouxi-gt20-pro-ou-wanshida-gt2000-qual-faz-mais-sentido-para-voce"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-10-07 01:01:09.654448+00",
+      "remains_public": true,
+      "revision": 7,
+      "revision_incremented": true,
+      "slug": "ufofast-vl20-vale-a-pena-para-quem-a-bicicleta-eletrica-faz-sentido"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 10:32:42.274852+00",
+      "remains_public": true,
+      "revision": 5,
+      "revision_incremented": true,
+      "slug": "v9-max-em-um-deslocamento-de-19-km-o-que-o-uso-intenso-indica-sobre-a-autonomia"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 11:36:31.184066+00",
+      "remains_public": true,
+      "revision": 6,
+      "revision_incremented": true,
+      "slug": "v9-max-qual-versao-escolher-entre-uma-ou-duas-baterias"
+    },
+    {
+      "content_matches": true,
+      "published_at": "2026-09-29 11:07:26.154228+00",
+      "remains_public": true,
+      "revision": 8,
+      "revision_incremented": true,
+      "slug": "wanshida-gt2000-para-que-tipo-de-trajeto-ela-faz-sentido"
+    }
+  ]
+}
