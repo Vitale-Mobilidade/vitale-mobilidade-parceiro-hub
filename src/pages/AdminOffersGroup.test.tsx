@@ -14,6 +14,19 @@ vi.mock("@tanstack/react-query", () => ({
       : {
           url: "https://chat.whatsapp.com/B69yQkILBc63Nq3x62iQjH?mode=gi_t",
           revision: 1,
+          activeGroupId: 1,
+          groups: [
+            {
+              id: 1,
+              name: "Grupo #1",
+              url: "https://chat.whatsapp.com/B69yQkILBc63Nq3x62iQjH?mode=gi_t",
+            },
+            {
+              id: 2,
+              name: "Grupo #2",
+              url: "https://chat.whatsapp.com/KwPwrNzMcEyB4uOKAVAWTJ?mode=gi_t",
+            },
+          ],
         },
     isError: state.failed,
     isPending: false,
@@ -25,12 +38,16 @@ beforeEach(() => {
   state.failed = false;
 });
 describe("offers admin", () => {
-  it("shows the saved destination and labelled field", () => {
+  it("shows both groups, active badge and labelled actions", () => {
     const html = renderToStaticMarkup(<AdminOffersGroup />);
-    expect(html).toContain('for="offers-group-url"');
-    expect(html).toContain("Destino salvo:");
+    expect(html).toContain("Adicionar grupo");
+    expect(html).toContain("Grupo #2");
+    expect(html).toContain("KwPwrNzMcEyB4uOKAVAWTJ");
+    expect(html).toContain('aria-label="Editar Grupo #1"');
+    expect(html).toContain('aria-label="Usar Grupo #2 no redirecionamento"');
+    expect(html).toContain("Ativo no redirecionamento");
     expect(html).toContain("B69yQkILBc63Nq3x62iQjH");
-    expect(html).toContain("Salvar convite");
+    expect(html).toContain("Usar no redirecionamento");
   });
   it.each(["content", "operation"])("does not expose form to %s", (role) => {
     state.role = role;
@@ -42,7 +59,7 @@ describe("offers admin", () => {
     state.failed = true;
     const html = renderToStaticMarkup(<AdminOffersGroup />);
     expect(html).toContain("Não foi possível carregar");
-    expect(html).not.toContain("Destino salvo:");
+    expect(html).not.toContain("Ativo no redirecionamento");
     expect(html).not.toContain("B69yQkILBc63Nq3x62iQjH");
     expect(html).toContain('disabled=""');
   });
