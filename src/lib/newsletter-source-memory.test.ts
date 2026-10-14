@@ -11,6 +11,28 @@ const article = (slug: string, type: string) => ({
   publishedAt: "2026-10-10",
 });
 const date = new Date("2026-10-12");
+it("replans past ten rounds without reusing any historical source", async () => {
+  const articles = Array.from({ length: 36 }, (_, i) =>
+    article(`topic-${i}`, "education"),
+  );
+  const used = new Set(articles.slice(0, 33).map((a) => a.slug));
+  const selected = await curateNewsletterSources(
+    articles,
+    [],
+    async (slug) => ({ videoId: slug }),
+    used,
+    date,
+    date,
+    [],
+    [],
+  );
+  expect(selected.articles.map((a) => a.slug)).toEqual([
+    "topic-33",
+    "topic-34",
+    "topic-35",
+  ]);
+  selected.fullArticles.forEach((a) => expect(used.has(a.videoId)).toBe(false));
+});
 it("excludes an article from the video already used by an earlier edition and replans automatically", async () => {
   const articles = [
     article("tools", "education"),

@@ -1,7 +1,6 @@
 import {
   newsletterCandidateBikeIds,
   newsletterCandidateModels,
-  newsletterModelFamily,
   type NewsletterBikeIdentity,
 } from "./newsletter-models";
 import type { NewsletterContent } from "./newsletter";
@@ -84,9 +83,10 @@ export function validateNewsletterSelection<
   videos: V[],
   catalog: NewsletterBikeIdentity[] = [],
 ) {
-  const memory = newsletterMemory(history, articles, videos, catalog);
-  const recent = new Set(memory.recentBikeIds.map(newsletterModelFamily));
-  const used = new Set<string>();
+  void articles;
+  void videos;
+  void catalog;
+  const selectedPaths = new Set<string>();
   const articlePaths = new Set(
     history.flatMap((p) => p.articles.map((a) => new URL(a.url).pathname)),
   );
@@ -102,35 +102,13 @@ export function validateNewsletterSelection<
       (content.videos.includes(item) && videoKeys.has(videoKey(item.url)))
     )
       throw new Error("newsletter_content_already_used");
-    const article = articles.find((a) => `/conteudos/${a.slug}` === pathname);
-    const video = content.videos.includes(item)
-      ? videos.find((v) => videoKey(v.url) === videoKey(item.url))
-      : undefined;
-    const bikeId =
-      item === content.bike ? pathname.split("/").pop() : undefined;
-    const models = new Set([
-      ...newsletterCandidateModels(item, catalog),
-      ...newsletterCandidateModels(
-        article ??
-          video ?? { title: item.title, bikeIds: bikeId ? [bikeId] : [] },
-        catalog,
-      ),
-    ]);
-    if ([...models].some((m) => recent.has(m) || used.has(m)))
-      throw new Error("newsletter_models_insufficient_diversity");
-    models.forEach((m) => used.add(m));
+    const key = content.videos.includes(item)
+      ? `video:${videoKey(item.url)}`
+      : pathname;
+    if (selectedPaths.has(key))
+      throw new Error("newsletter_content_already_used");
+    selectedPaths.add(key);
   }
-  if (
-    content.bike.url &&
-    (content.drops ?? []).some(
-      (d) =>
-        newsletterModelFamily(
-          new URL(d.url).pathname.split("/").pop() ?? "",
-        ) ===
-        newsletterModelFamily(
-          new URL(content.bike.url).pathname.split("/").pop() ?? "",
-        ),
-    )
-  )
-    throw new Error("newsletter_models_insufficient_diversity");
+  // Bikes may recur in genuinely new articles. Source identity remains the
+  // hard gate; model/category rotation is a ranking preference in curation.
 }

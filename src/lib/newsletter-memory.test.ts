@@ -63,8 +63,8 @@ it("remembers article, video, price cards and persisted bike mentions", () => {
     "video",
   ]);
 });
-it("does not fall back to repeating a recent or related featured bike", () => {
+it("prefers rotation but keeps a featured bike available in a finite catalog", () => {
   expect(
     selectFeaturedNewsletterBike([{ id: "a" }, { id: "b" }], [], ["b"], ["a"]),
-  ).toBeUndefined();
+  ).toEqual({ id: "a" });
 });
