@@ -1,0 +1,30 @@
+{
+  "editionNumber": 3,
+  "calls": [
+    {
+      "status": 200,
+      "ms": 18311
+    },
+    {
+      "status": 200,
+      "ms": 18908
+    },
+    {
+      "status": 200,
+      "ms": 16200
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "error",
+      "attempt": 0,
+      "code": "newsletter_writer_invalid_output"
+    },
+    {
+      "stage": "review",
+      "attempt": 1,
+      "approved": true,
+      "issues": []
+    }
+  ]
+}
