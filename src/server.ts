@@ -99,6 +99,14 @@ export default {
       // Cutover Etapa 9: redirect permanente real antes do SSR (rollback = remover este bloco).
       if (request.method === "GET" || request.method === "HEAD") {
         const url = new URL(request.url);
+        if (/^\/grupodeofertas\/?$/.test(url.pathname)) {
+          const { fetchOffersGroupDestination } = await import("./lib/offers-group-repository.server");
+          return new Response(null, { status: 302, headers: {
+            location: await fetchOffersGroupDestination(),
+            "cache-control": "no-store",
+            "x-robots-tag": "noindex, follow",
+          } });
+        }
         const target = legacyRedirect(url.pathname, url.search);
         if (target) {
           return new Response(null, {

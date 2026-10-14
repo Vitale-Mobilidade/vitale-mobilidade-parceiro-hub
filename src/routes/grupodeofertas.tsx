@@ -1,9 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import GrupoDeOfertas from "@/pages/GrupoDeOfertas";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getOffersGroupDestination } from "@/lib/offers-group.functions";
 import { pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/grupodeofertas")({
-  component: GrupoDeOfertas,
+  beforeLoad: async () => {
+    throw redirect({
+      href: await getOffersGroupDestination(),
+      statusCode: 302,
+    });
+  },
   head: () =>
     pageHead({
       path: "/grupodeofertas",

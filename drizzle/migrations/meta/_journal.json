@@ -64,6 +64,13 @@
       "when": 1791765387636,
       "tag": "0008_admin_growth_range",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792004400000,
+      "tag": "0009_offers_group_settings",
+      "breakpoints": true
     }
   ]
 }

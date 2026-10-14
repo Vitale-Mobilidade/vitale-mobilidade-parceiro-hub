@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const GROUP_URL = "https://chat.whatsapp.com/KwPwrNzMcEyB4uOKAVAWTJ?mode=gi_t";
+import { DEFAULT_OFFERS_GROUP_DESTINATION as GROUP_URL } from "@/lib/offers-group";
 
 const GrupoDeOfertas = () => {
   useEffect(() => {
