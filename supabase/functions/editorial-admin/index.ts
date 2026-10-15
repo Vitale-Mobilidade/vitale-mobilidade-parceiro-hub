@@ -1601,6 +1601,12 @@ function stageStream(
 }
 
 export function stageError(code: string): string {
+  if (/^youtube_http_(429|5\d{2})$/.test(code))
+    return "O YouTube limitou ou interrompeu a captura da legenda. Aguarde alguns minutos e clique em Gerar artigo novamente; nenhum artigo foi criado nesta etapa.";
+  if (/^youtube_http_(401|403)$/.test(code))
+    return "O YouTube recusou o acesso à legenda. Confira a conexão e as permissões do canal; depois tente Gerar artigo novamente ou informe a transcrição completa no modo manual.";
+  if (["captions_empty", "captions_insufficient", "invalid_caption_format", "invalid_caption_cue", "invalid_caption_order", "invalid_caption_timestamp", "unsupported_caption_markup", "invalid_caption_list"].includes(code))
+    return "A legenda recebida do YouTube está vazia, incompleta ou inválida. Tente capturar novamente em Gerar artigo ou informe a transcrição completa no modo manual.";
   const map: Record<string, string> = {
     article_bike_ambiguous:
       "Há bikes de marcas diferentes com esse modelo. Selecione as bikes no editor ou inclua a marca correta no título, salve e gere novamente. A transcrição foi preservada.",
@@ -1618,6 +1624,13 @@ export function stageError(code: string): string {
     ready_brief_required: "Não foi possível preparar este artigo. Tente gerar novamente.",
     editorial_brief_not_ready: "Não foi possível preparar este artigo. Tente gerar novamente.",
     transcript_required: "Cadastre a transcrição completa do vídeo.",
+    portuguese_captions_pending: "O YouTube ainda não disponibilizou a legenda em português. Aguarde a legenda ficar pronta e clique em Gerar artigo novamente; suas bikes podem ser selecionadas no formulário.",
+    portuguese_captions_unavailable: "A legenda em português não pôde ser capturada. Tente Gerar artigo novamente ou informe a transcrição completa no modo manual.",
+    youtube_authorization_required: "A conexão do YouTube precisa ser renovada para capturar a legenda. Após reconectar, clique em Gerar artigo novamente.",
+    video_not_available: "O vídeo ainda não está disponível para captura. Confira sua disponibilidade e tente Gerar artigo novamente.",
+    source_retry_lookup_failed: "Não foi possível consultar a tentativa anterior. Nenhuma geração foi iniciada; tente novamente.",
+    source_retry_claim_failed: "Não foi possível retomar a captura. Nenhuma geração foi iniciada; tente novamente.",
+    source_reservation_failed: "Não foi possível reservar a geração. Nenhuma chamada de IA foi iniciada; tente novamente.",
     insufficient_grounded_claims: "A transcrição não traz informação suficiente para criar um artigo confiável.",
     article_does_not_follow_grounded_outline: "A versão gerada precisa de ajustes. Gere o artigo novamente.",
     article_not_reliable: "Não foi possível confirmar os fatos do artigo. Gere outra versão.",
@@ -1636,6 +1649,21 @@ function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]
       typeof capture.transcript !== "string" || capture.transcript.length < 200) return false;
   try { return parseCaptionVtt(capture.originalVtt).transcript === capture.transcript; }
   catch { return false; }
+}
+
+/** Only a failed capture with no persisted output is safe to claim again. */
+async function reclaimFailedCapture(db: SupabaseClient, videoId: string, state: "capturing" | "generating"): Promise<boolean> {
+  const { data: source, error } = await db.from("youtube_editorial_sources")
+    .select("state,article_id,capture,state_changed_at").eq("video_id", videoId).maybeSingle();
+  if (error) throw new Error("source_retry_lookup_failed");
+  if (!source || source.state !== "needs_review" || source.article_id !== null || source.capture !== null || !source.state_changed_at)
+    return false;
+  const { data: claimed, error: claimError } = await db.from("youtube_editorial_sources")
+    .update({ state }).eq("video_id", videoId).eq("state", "needs_review")
+    .eq("state_changed_at", source.state_changed_at).is("article_id", null).is("capture", null)
+    .select("video_id").maybeSingle();
+  if (claimError) throw new Error("source_retry_claim_failed");
+  return Boolean(claimed);
 }
 
 async function notifyEditorialReview(db: SupabaseClient, actor: Actor, videoId: string, reason: string, eventId?: string, articleId?: string) {
@@ -1719,7 +1747,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
             // Durable, exclusive reservation: uncertain results are never replayed.
             const { error: reserveError } = await db.from("youtube_editorial_sources")
               .insert({ video_id: id, state: "capturing", created_by: actor.id });
-            if (reserveError) return fail("Este vídeo já está em processamento ou aguarda conferência. Consulte os registros antes de repetir.");
+            if (reserveError) {
+              if (reserveError.code !== "23505") throw new Error("source_reservation_failed");
+              if (!(await reclaimFailedCapture(db, id, "capturing")))
+                return fail("Este vídeo tem uma etapa em andamento ou conteúdo salvo. Abra o artigo existente para continuar; se está em processamento, aguarde sua conclusão.");
+            }
             reservedVideoId = id;
             send({ type: "progress", step: "Capturando transcrição original do YouTube…" });
             capture = await captureYoutubeTranscript({ videoId: id, accessToken: await youtubeAccessToken() });
@@ -1762,7 +1794,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (!article && !reservedVideoId && Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true") {
           const { error: reservationError } = await db.from("youtube_editorial_sources")
             .insert({ video_id: id, state: "generating", created_by: actor.id });
-          if (reservationError) return fail("Este vídeo já está em processamento ou aguarda conferência.");
+          if (reservationError) {
+            if (reservationError.code !== "23505") throw new Error("source_reservation_failed");
+            if (!(await reclaimFailedCapture(db, id, "generating")))
+              return fail("Este vídeo tem uma etapa em andamento ou conteúdo salvo. Abra o artigo existente para continuar; se está em processamento, aguarde sua conclusão.");
+          }
           reservedVideoId = id;
         }
         if (body.action === "generate-from-sheet" && article && !resumingRejectedDraft) {
@@ -1861,6 +1897,13 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
           await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)));
         }
+        const code = errorMessage(e);
+        try {
+          await log(db, actor, "editorial_generation_failed", "video", String(body.youtubeId ?? "unknown"), {
+            code: /^[a-z][a-z0-9_]{2,80}$/.test(code) ? code : "generation_failed",
+            articleId: savedAutomaticArticleId,
+          });
+        } catch { /* Audit failure must not hide the recoverable generation error. */ }
         console.error("[editorial-admin] generate", errorMessage(e));
         if (errorMessage(e) === "ai_http_402") {
           await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
@@ -2520,7 +2563,7 @@ Deno.serve(async (req) => {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler a fila automática." }, 403);
       const [inventory, sources, articles] = await Promise.all([
         db.from("youtube_editorial_inventory").select("video_id").eq("historical", false),
-        db.from("youtube_editorial_sources").select("video_id,state,article_id"),
+        db.from("youtube_editorial_sources").select("video_id,state,article_id,captured_at"),
         db.from("editorial_articles").select("video_id").neq("status", "archived"),
       ]);
       const settings = await db.from("youtube_editorial_worker_settings").select("enabled").eq("singleton", true).maybeSingle();
@@ -2531,6 +2574,10 @@ Deno.serve(async (req) => {
         queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length + (sources.data ?? []).filter(row => ["rewrite_pending", "cover_pending", "cover_render_pending", "publish_pending"].includes(row.state)).length,
         running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating", "cover_rendering", "publishing"].includes(row.state)).length,
         review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
+        reviewItems: (sources.data ?? []).filter(row => row.state === "needs_review").map(row => ({
+          videoId: row.video_id, articleId: row.article_id,
+          retryCapture: !row.article_id && !row.captured_at,
+        })),
         done: (sources.data ?? []).filter(row => row.state === "done").length,
       });
     }

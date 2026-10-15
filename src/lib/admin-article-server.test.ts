@@ -20,7 +20,7 @@ import * as input from "../../supabase/functions/_shared/editorial-create-input"
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineWriter(mock) { const previous = generateInto; generateInto = mock; return () => { generateInto = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { reclaimFailedCapture, rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineWriter(mock) { const previous = generateInto; generateInto = mock; return () => { generateInto = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -32,6 +32,7 @@ const integrationEnv: Record<string, string> = {};
 const offlineCapture = vi.fn();
 const offlineCompose = vi.fn();
 const exports: {
+  reclaimFailedCapture?: (db: unknown, videoId: string, state: string) => Promise<boolean>;
   rejectedDraftCanResume?: (article: unknown, source: unknown, runs: unknown[], manualBikesConfirmed?: boolean) => boolean;
   generateStream?: (req: Request, db: unknown, actor: unknown, body: unknown) => Response;
   generateInto?: (...args: unknown[]) => Promise<unknown>;
@@ -156,7 +157,7 @@ describe("servidor de criação — validação antes de efeitos", () => {
   it("erro de consulta não é tratado como ausência do artigo", async () => {
     const db = database(null, { message: "Offline" });
     expect(await request(db)).toContain('"type":"error"');
-    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes", "editorial_articles"]);
+    expect(db.from.mock.calls.map(([table]) => table)).toEqual(["bikes", "editorial_articles", "editorial_audit_logs"]);
   });
 });
 
@@ -612,9 +613,29 @@ describe("piloto integrado — planilha e captura no servidor", () => {
     const db = database();
     const original = db.from;
     const wrapped = { from: (table: string) => table === "youtube_editorial_sources"
-      ? { insert: async () => ({ error: { code: "23505" } }) } : original(table) };
-    expect(await integrated(wrapped)).toContain("já está em processamento");
+      ? { insert: async () => ({ error: { code: "23505" } }), select: () => ({ eq: () => ({ maybeSingle: async () => ({data:{state:"capturing"},error:null}) }) }) } : original(table) };
+    expect(await integrated(wrapped)).toContain("etapa em andamento");
     expect(offlineCapture).not.toHaveBeenCalled();
+  });
+  it("retoma falha sem captura pelo formulário com bikes e persiste a nova fonte", async () => {
+    offlineFetch = vi.fn(async () => new Response(csv));
+    offlineCapture.mockClear();
+    const capture = { videoId:"abcDEFG1234", capturedAt:"2026-10-15T21:00:00Z", transcript:"Transcrição original ".repeat(30), source:"youtube_captions" };
+    offlineCapture.mockResolvedValueOnce(capture);
+    const base=database(); const updates: Record<string,unknown>[]=[]; let catalogReads=0;
+    const db={from:(table:string)=>{
+      if(table==="bikes") return {select:async()=> ++catalogReads===1 ? {data:[{bike_id:"v29_pro",name:"V29 Pro"}],error:null} : {error:{code:"offline"}}};
+      if(table!=="youtube_editorial_sources") return base.from(table);
+      let patch:Record<string,unknown>|null=null;
+      const q={insert:async()=>({error:{code:"23505"}}),select:()=>q,eq:()=>q,is:()=>q,
+        update:(p:Record<string,unknown>)=>{patch=p;updates.push(p);return q;},
+        maybeSingle:async()=>({data:patch?{video_id:"abcDEFG1234"}:{state:"needs_review",article_id:null,capture:null,state_changed_at:"2026-10-15T20:00:00Z"},error:null}),
+        then:(resolve:(r:unknown)=>unknown)=>Promise.resolve(resolve({error:null}))};return q;
+    }};
+    await integrated(db,["v29_pro"]);
+    expect(offlineCapture).toHaveBeenCalledTimes(1);
+    expect(updates[0]).toEqual({state:"capturing"});
+    expect(updates[1]).toMatchObject({state:"generating",capture});
   });
   it("falha de legenda preserva reserva para conferência e não usa resumo", async () => {
     offlineFetch = vi.fn(async () => new Response(csv));
@@ -982,7 +1003,7 @@ describe("automatic publication uses the leased daily pipeline", () => {
       expect(reviewer).toHaveBeenCalledTimes(2);
     } finally { restore(); }
   });
-  it("invalidates an approval when the corpus changes and never bypasses failed local checks", async () => {
+  it("preserves approval when only the excluded corpus changes and never bypasses failed local checks", async () => {
     const first = publicationDb(undefined, true); let restore = mockChecks();
     const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
     await exports.finishQueuedPublication!(req, first.db, { id: "owner" }, lease);
@@ -991,14 +1012,15 @@ describe("automatic publication uses the leased daily pipeline", () => {
     restore = exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [{ id: "other", title: "Receita", summary: "Bolo", headings: [], body: "Farinha açúcar" }], counts: {} }));
     try {
       await exports.finishQueuedPublication!(req, publicationDb(capture).db, { id: "owner" }, lease);
-      expect(reviewer).toHaveBeenCalledTimes(2);
-      expect(reviewer.mock.calls[1]?.[1]).toContain("Farinha açúcar");
+      // Current production policy excludes corpus from the factual approval key.
+      expect(reviewer).toHaveBeenCalledTimes(1);
+      expect(reviewer.mock.calls[0]?.[1]).not.toContain("Farinha açúcar");
     } finally { restore(); }
     restore = exports.injectPublicationChecks!(async () => ["Link inválido"], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
     try {
       const { db, writes } = publicationDb(capture);
       expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
-      expect(reviewer).toHaveBeenCalledTimes(2);
+      expect(reviewer).toHaveBeenCalledTimes(1);
       expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
     } finally { restore(); }
   });
@@ -1167,4 +1189,27 @@ describe("salvar preparação editorial sem corpo", () => {
     expect((await saveCase({...article,blocks:[{type:"text",text:"Conteúdo"}]} as typeof article)).response.status).toBe(400);
     expect((await saveCase({...article,status:"published"})).response.status).toBe(400);
   });
+});
+
+describe("retomada atômica de captura sem saída", () => {
+  const failed = {state:"needs_review",article_id:null,capture:null,state_changed_at:"2026-10-15T21:07:04Z"};
+  function retryDb(source: unknown = failed, conflict = false, readError = false) {
+    const writes = vi.fn(); const filters: unknown[][]=[];
+    return {writes,filters,from:()=>{
+      let updating=false;
+      const q={ select:()=>q,eq:(...args:unknown[])=>{filters.push(args);return q;},is:(...args:unknown[])=>{filters.push(args);return q;},
+        update:(patch:unknown)=>{updating=true;writes(patch);return q;},
+        maybeSingle:async()=>({data:updating ? conflict?null:{video_id:"abcDEFG1234"}:source,error:readError?{code:"offline"}:null})};return q;
+    }};
+  }
+  it("retoma somente needs_review sem captura/artigo e verifica versão",async()=>{
+    const db=retryDb();expect(await exports.reclaimFailedCapture!(db,"abcDEFG1234","capturing")).toBe(true);
+    expect(db.writes).toHaveBeenCalledWith({state:"capturing"});
+    expect(db.filters).toEqual(expect.arrayContaining([["state","needs_review"],["state_changed_at",failed.state_changed_at],["article_id",null],["capture",null]]));
+  });
+  it.each([null,{...failed,state:"capturing"},{...failed,state:"generating"},{...failed,state:"done"},{...failed,article_id:"article"},{...failed,capture:{transcript:"saved"}},{...failed,state_changed_at:null}])("não repete saída existente ou estado incerto %j",async(source)=>{
+    const db=retryDb(source);expect(await exports.reclaimFailedCapture!(db,"abcDEFG1234","capturing")).toBe(false);expect(db.writes).not.toHaveBeenCalled();
+  });
+  it("perde disputa sem iniciar segunda captura",async()=>{expect(await exports.reclaimFailedCapture!(retryDb(failed,true),"abcDEFG1234","capturing")).toBe(false);});
+  it("erro de consulta não vira autorização para repetir",async()=>{const db=retryDb(failed,false,true);await expect(exports.reclaimFailedCapture!(db,"abcDEFG1234","capturing")).rejects.toThrow("source_retry_lookup_failed");expect(db.writes).not.toHaveBeenCalled();});
 });

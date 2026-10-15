@@ -96,7 +96,7 @@ export function AdminOverviewPage() {
 function Overview({ role }: { role: AdminRole }) {
   const youtube = useQuery({
     queryKey: ["admin", "youtube-status"],
-    queryFn: () => adminCall<{ enabled: boolean; queued: number; running: number; review: number; done: number }>("youtube-status"),
+    queryFn: () => adminCall<{ enabled: boolean; queued: number; running: number; review: number; done: number; reviewItems?: { videoId: string; articleId: string | null; retryCapture: boolean }[] }>("youtube-status"),
     enabled: role === "admin", refetchInterval: 30_000, retry: false,
   });
   const overview = useQuery({
@@ -125,7 +125,17 @@ function Overview({ role }: { role: AdminRole }) {
         {youtube.data ? <>
           <p className="mt-2 text-sm">{youtube.data.enabled ? "Busca horária ativada" : "Busca horária desativada"} · Pendentes na fila: <strong>{youtube.data.queued}</strong> · Em processamento: <strong>{youtube.data.running}</strong> · Concluídos: <strong>{youtube.data.done}</strong></p>
           <p className="mt-2 text-sm text-muted-foreground">A fila gera artigo e capa, valida o conteúdo e publica automaticamente. Os resultados aparecem em Artigos.</p>
-          {youtube.data.review > 0 && <Notice danger>{youtube.data.review} execução(ões) precisam de conferência. Consulte Artigos e Logs; a IA não será repetida automaticamente.</Notice>}
+          {youtube.data.review > 0 && <Notice danger>
+            <p>{youtube.data.review} geração(ões) precisam de ação para continuar.</p>
+            <ul className="mt-2 space-y-2">
+              {youtube.data.reviewItems?.map(item => <li key={item.videoId}>
+                {item.articleId
+                  ? <Link to="/admin/conteudos/$id" params={{ id: item.articleId }} className="font-semibold underline">Abrir artigo do vídeo {item.videoId}</Link>
+                  : <Link to="/admin/conteudos/novo" search={{ video: item.videoId }} className="font-semibold underline">Retomar geração do vídeo {item.videoId}</Link>}
+                <p className="text-sm">{item.retryCapture ? "A transcrição não foi salva. Abra o formulário, escolha as bikes se desejar e clique em Gerar artigo para tentar a captura novamente." : "O conteúdo salvo foi preservado. Abra o artigo para continuar da etapa disponível."}</p>
+              </li>)}
+            </ul>
+          </Notice>}
         </> : <p className="mt-2 text-sm" role={youtube.error ? "alert" : "status"}>{youtube.error ? "Não foi possível consultar a fila automática." : "Consultando fila…"}</p>}
       </section>}
       {!data ? (
