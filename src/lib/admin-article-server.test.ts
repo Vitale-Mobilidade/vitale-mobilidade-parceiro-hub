@@ -639,13 +639,16 @@ describe("piloto integrado — planilha e captura no servidor", () => {
   });
   it("falha de legenda preserva reserva para conferência e não usa resumo", async () => {
     offlineFetch = vi.fn(async () => new Response(csv));
-    offlineCapture.mockRejectedValueOnce(new transcriptAdapter.TranscriptError("portuguese_captions_unavailable", true));
+    offlineCapture.mockRejectedValueOnce(new transcriptAdapter.TranscriptError("portuguese_captions_pending", true));
     const db = database();
     const original = db.from;
     const updates: unknown[] = [];
     const wrapped = { from: (table: string) => table === "youtube_editorial_sources"
       ? { insert: async () => ({ error: null }), update: (value: unknown) => { updates.push(value); return { eq: async () => ({ error: null }) }; } } : original(table) };
-    expect(await integrated(wrapped)).toContain('"type":"error"');
+    const result = await integrated(wrapped);
+    expect(result).toContain('"type":"error"');
+    expect(result).toContain("O YouTube ainda não disponibilizou a legenda em português");
+    expect(result).not.toContain("O processo automático foi interrompido");
     expect(updates).toEqual([{ state: "needs_review" }]);
   });
   it("persiste VTT e transcrição oficiais antes de entrar no gerador", async () => {

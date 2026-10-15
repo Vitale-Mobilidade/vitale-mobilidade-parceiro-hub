@@ -1895,7 +1895,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (reservedVideoId) {
           // Do not replay uncertain AI results or copy provider errors into persistent records.
           await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
-          await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)));
+          await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)), new Date().toISOString(), savedAutomaticArticleId ?? undefined);
         }
         const code = errorMessage(e);
         try {
@@ -1909,11 +1909,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
           return fail("A transcrição original foi salva, mas o saldo de IA do Lovable acabou. Recarregue Cloud/AI para retomar a geração. Nenhum artigo ou capa foi concluído.");
         }
-        fail(body.action === "generate-from-sheet"
-          ? savedAutomaticArticleId
-            ? `O artigo foi salvo (${savedAutomaticArticleId}), mas a geração automática não foi concluída. Confira o artigo antes de repetir; a geração não será repetida automaticamente.`
-            : "O processo automático foi interrompido. Nenhum resumo foi usado. Confira a fonte e o artigo salvo antes de repetir."
-          : stageError(errorMessage(e)));
+        fail(`${stageError(code)}${savedAutomaticArticleId ? ` Artigo salvo: ${savedAutomaticArticleId}. Abra o artigo para continuar sem repetir etapas concluídas.` : ""}`);
       }
     },
   });
