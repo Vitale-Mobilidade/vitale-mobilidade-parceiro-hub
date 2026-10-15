@@ -1624,7 +1624,7 @@ export function stageError(code: string): string {
     ready_brief_required: "Não foi possível preparar este artigo. Tente gerar novamente.",
     editorial_brief_not_ready: "Não foi possível preparar este artigo. Tente gerar novamente.",
     transcript_required: "Cadastre a transcrição completa do vídeo.",
-    portuguese_captions_pending: "O YouTube ainda não disponibilizou a legenda em português. Aguarde a legenda ficar pronta e clique em Gerar artigo novamente; suas bikes podem ser selecionadas no formulário.",
+    portuguese_captions_pending: "O YouTube ainda não disponibilizou a legenda em português. Vamos verificar novamente em uma hora e gerar o artigo automaticamente quando a legenda estiver disponível. Você também pode tentar pelo formulário.",
     portuguese_captions_unavailable: "A legenda em português não pôde ser capturada. Tente Gerar artigo novamente ou informe a transcrição completa no modo manual.",
     youtube_authorization_required: "A conexão do YouTube precisa ser renovada para capturar a legenda. Após reconectar, clique em Gerar artigo novamente.",
     video_not_available: "O vídeo ainda não está disponível para captura. Confira sua disponibilidade e tente Gerar artigo novamente.",
@@ -1649,6 +1649,16 @@ function rejectedDraftCanResume(article: Body, source: Body | null, runs: Body[]
       typeof capture.transcript !== "string" || capture.transcript.length < 200) return false;
   try { return parseCaptionVtt(capture.originalVtt).transcript === capture.transcript; }
   catch { return false; }
+}
+
+/** Read only due, output-free waits. Atomic reservation remains in generateStream. */
+async function dueCaptionRetry(db: SupabaseClient) {
+  const result = await db.from("youtube_editorial_sources")
+    .select("video_id,caption_retry_bike_ids").eq("state", "needs_review")
+    .is("capture", null).is("article_id", null).lte("caption_retry_at", new Date().toISOString())
+    .order("caption_retry_at").limit(1).maybeSingle();
+  if (result.error) throw new Error("caption_retry_queue_failed");
+  return result;
 }
 
 /** Only a failed capture with no persisted output is safe to claim again. */
@@ -1756,7 +1766,7 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
             send({ type: "progress", step: "Capturando transcrição original do YouTube…" });
             capture = await captureYoutubeTranscript({ videoId: id, accessToken: await youtubeAccessToken() });
             const { error: captureError } = await db.from("youtube_editorial_sources").update({
-              state: "generating", capture, captured_at: capture.capturedAt,
+              state: "generating", capture, captured_at: capture.capturedAt, caption_retry_at: null,
             }).eq("video_id", id);
             if (captureError) throw new Error("source_save_failed");
           }
@@ -1893,9 +1903,20 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         controller.close();
       } catch (e) {
         if (reservedVideoId) {
-          // Do not replay uncertain AI results or copy provider errors into persistent records.
-          await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", reservedVideoId);
-          await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)), new Date().toISOString(), savedAutomaticArticleId ?? undefined);
+          const waitingForCaptions = errorMessage(e) === "portuguese_captions_pending";
+          const patch = waitingForCaptions ? {
+            state: "needs_review",
+            caption_retry_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            caption_retry_bike_ids: Array.isArray(body.bikeIds) && body.bikeIds.length ? body.bikeIds : null,
+          } : { state: "needs_review", caption_retry_at: null };
+          const update = db.from("youtube_editorial_sources").update(patch).eq("video_id", reservedVideoId);
+          const result = waitingForCaptions
+            ? await update.is("capture", null).is("article_id", null)
+            : await update;
+          if (result.error) console.error("[editorial-admin] caption_retry_schedule_failed");
+          // Waiting for a source is expected, and never emits repeated error emails.
+          if (!waitingForCaptions)
+            await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)), new Date().toISOString(), savedAutomaticArticleId ?? undefined);
         }
         const code = errorMessage(e);
         try {
@@ -2530,15 +2551,20 @@ Deno.serve(async (req) => {
       if (body.action === "youtube-drain") {
         const inventory = await db.from("youtube_editorial_inventory").select("video_id").eq("historical", false);
         if (inventory.error) throw new Error("queue_read_failed");
-        if (!(inventory.data ?? []).length) return json(req, { status: "idle" });
-        const next = await db.rpc("ingest_youtube_editorial_snapshot", { video_ids: (inventory.data ?? []).map(row => row.video_id) });
-        if (next.error) throw new Error("queue_read_failed");
-        candidate = next.data;
+        if ((inventory.data ?? []).length) {
+          const next = await db.rpc("ingest_youtube_editorial_snapshot", { video_ids: (inventory.data ?? []).map(row => row.video_id) });
+          if (next.error) throw new Error("queue_read_failed");
+          candidate = next.data;
+        }
       }
+      const retry = await dueCaptionRetry(db);
+      // A due caption capture has no paid output; the generator claims it atomically.
+      if (retry.data) candidate = retry.data.video_id;
       if (!candidate) return json(req, { status: "idle" });
       // The same authenticated server generator is used by the Admin pilot and hourly job.
       return generateStream(req, db, { id: ownerId, role: "admin", email: null }, {
         action: "generate-from-sheet", youtubeId: candidate,
+        ...(retry.data?.caption_retry_bike_ids?.length ? { bikeIds: retry.data.caption_retry_bike_ids } : {}),
       });
     } catch {
       return json(req, { error: "youtube_hourly_failed" }, 503);
@@ -2559,7 +2585,7 @@ Deno.serve(async (req) => {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler a fila automática." }, 403);
       const [inventory, sources, articles] = await Promise.all([
         db.from("youtube_editorial_inventory").select("video_id").eq("historical", false),
-        db.from("youtube_editorial_sources").select("video_id,state,article_id,captured_at"),
+        db.from("youtube_editorial_sources").select("video_id,state,article_id,captured_at,caption_retry_at"),
         db.from("editorial_articles").select("video_id").neq("status", "archived"),
       ]);
       const settings = await db.from("youtube_editorial_worker_settings").select("enabled").eq("singleton", true).maybeSingle();
@@ -2569,8 +2595,9 @@ Deno.serve(async (req) => {
         enabled: settings.data?.enabled === true,
         queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length + (sources.data ?? []).filter(row => ["rewrite_pending", "cover_pending", "cover_render_pending", "publish_pending"].includes(row.state)).length,
         running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating", "cover_rendering", "publishing"].includes(row.state)).length,
-        review: (sources.data ?? []).filter(row => row.state === "needs_review").length,
-        reviewItems: (sources.data ?? []).filter(row => row.state === "needs_review").map(row => ({
+        waitingCaptions: (sources.data ?? []).filter(row => row.state === "needs_review" && row.caption_retry_at).length,
+        review: (sources.data ?? []).filter(row => row.state === "needs_review" && !row.caption_retry_at).length,
+        reviewItems: (sources.data ?? []).filter(row => row.state === "needs_review" && !row.caption_retry_at).map(row => ({
           videoId: row.video_id, articleId: row.article_id,
           retryCapture: !row.article_id && !row.captured_at,
         })),
