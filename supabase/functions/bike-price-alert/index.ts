@@ -1,3 +1,4 @@
+import { registerAlertNewsletter, COMBINED_CONSENT_TEXT } from "../_shared/alert-newsletter.ts";
 // Alerta de queda de preço do Radar Vitale.
 // Grava a preferência do usuário. NÃO envia nada nesta fase (delivery_enabled=false).
 // Nunca registra nome ou telefone em log.
@@ -11,9 +12,8 @@ const MAX_BODY_BYTES = 4000;
 const RATE_LIMIT = 8;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
-const CONSENT_TEXT =
-  "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
-const CONSENT_VERSION = "v3";
+const LEGACY_CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
+const CONSENT_VERSION = "v4";
 
 const GENERIC_OK = { ok: true, message: "Alerta registrado." };
 
@@ -159,8 +159,8 @@ Deno.serve(async (req) => {
       status: "active",
       delivery_enabled: false,
       consent: true,
-      consent_text: CONSENT_TEXT,
-      consent_version: CONSENT_VERSION,
+      consent_text: body.newsletterConsent === true ? COMBINED_CONSENT_TEXT : LEGACY_CONSENT_TEXT,
+      consent_version: body.newsletterConsent === true ? CONSENT_VERSION : "v3",
       consent_at: now.toISOString(),
       source_url: str("source_url"),
       traffic_origin: str("traffic_origin"),
@@ -181,15 +181,19 @@ Deno.serve(async (req) => {
       .eq("status", "active")
       .maybeSingle();
 
+    const registerNewsletter = () => registerAlertNewsletter(body.newsletterConsent, {
+      name, email, sourceUrl: str("source_url"), now: now.toISOString(),
+    }, (row, options) => supabase.from("newsletter_subscriptions").upsert(row, options));
+
     if (existing?.id) {
       const { error } = await supabase.from("bike_price_alerts").update(payload).eq("id", existing.id);
       if (error) throw error;
-      return json({ ...GENERIC_OK, updated: true });
+      return json({ ...GENERIC_OK, updated: true, newsletter: await registerNewsletter() });
     }
 
     const { error } = await supabase.from("bike_price_alerts").insert(payload);
     if (error) throw error;
-    return json({ ...GENERIC_OK, updated: false });
+    return json({ ...GENERIC_OK, updated: false, newsletter: await registerNewsletter() });
   } catch (e) {
     console.error("[bike-price-alert] falha:", e instanceof Error ? e.message : "erro");
     return json({ ok: false, error: "Não foi possível registrar agora." }, 500);

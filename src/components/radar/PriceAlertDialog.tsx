@@ -1,3 +1,4 @@
+import { COMBINED_CONSENT_TEXT } from "../../../supabase/functions/_shared/alert-newsletter";
 import { minimumAlertPrice, minimumAlertMessage } from "../../../supabase/functions/_shared/price-alert-policy";
 import { useState } from "react";
 import { BellRing, Loader2 } from "lucide-react";
@@ -25,8 +26,7 @@ interface Props {
   currentPrice: number;
 }
 
-const CONSENT_LABEL =
-  "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
+const CONSENT_LABEL = COMBINED_CONSENT_TEXT;
 
 const DROP_OPTIONS = Array.from({ length: 10 }, (_, index) => (index + 1) * 100);
 
@@ -38,6 +38,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
   const [drop, setDrop] = useState(100);
   const [target, setTarget] = useState("");
   const [consent, setConsent] = useState(false);
+  const [newsletterFailed, setNewsletterFailed] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
           phone,
           email,
           consent,
+          newsletterConsent: consent,
           condition,
           targetPrice,
           website,
@@ -92,6 +94,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
         trackRadar("radar_alert_error", { bike_id: bikeId });
         return;
       }
+      setNewsletterFailed((data as { newsletter?: string }).newsletter === "failed");
       setStatus("done");
       trackRadar("radar_alert_success", { bike_id: bikeId, condition });
     } catch {
@@ -118,6 +121,7 @@ export function PriceAlertDialog({ open, onOpenChange, bikeId, bikeName, current
             <p className="rounded-xl bg-green-50 p-4 text-foreground">
               Alerta cadastrado. Sua preferência de preço e seus dados de contato foram salvos.
             </p>
+            {newsletterFailed && <p role="status">Seu alerta está salvo, mas a inscrição na newsletter não foi concluída. Você pode tentar pelo formulário de newsletter do site.</p>}
             <Button className="w-full" onClick={() => onOpenChange(false)}>
               Fechar
             </Button>
