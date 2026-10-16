@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSitemapXml,
-  bikeSlugPaths,
   radarIdPaths,
   articleSlugPaths,
   STATIC_SITEMAP_PATHS,
@@ -20,6 +19,7 @@ describe("sitemap builder", () => {
     ]) {
       expect(STATIC_SITEMAP_PATHS as readonly string[]).not.toContain(p);
     }
+    expect(STATIC_SITEMAP_PATHS as readonly string[]).not.toContain("/bikes");
     expect(STATIC_SITEMAP_PATHS).toContain("/conteudos");
     expect(STATIC_SITEMAP_PATHS).toContain("/quiz");
     expect(
@@ -40,14 +40,6 @@ describe("sitemap builder", () => {
 
   it("filtra slugs e ids inválidos e deduplica", () => {
     expect(
-      bikeSlugPaths([
-        { slug: "v8-ultra" },
-        { slug: "v8-ultra" },
-        { slug: "../x" },
-        { slug: null },
-      ]),
-    ).toEqual(["/bikes/v8-ultra"]);
-    expect(
       radarIdPaths([
         { id: "vl20" },
         { id: "<script>" },
@@ -66,11 +58,11 @@ describe("sitemap builder", () => {
 
   it("gera XML sem lastmod e escapado", () => {
     const xml = buildSitemapXml(
-      ["/", "/bikes", "/bikes", "//evil.com", "/a&b"],
+      ["/", "/radar", "/radar", "//evil.com", "/a&b"],
       "https://x.com",
     );
     expect(xml).toContain("<loc>https://x.com/</loc>");
-    expect(xml.match(/<loc>https:\/\/x\.com\/bikes<\/loc>/g)).toHaveLength(1);
+    expect(xml.match(/<loc>https:\/\/x\.com\/radar<\/loc>/g)).toHaveLength(1);
     expect(xml).toContain("https://x.com/a&amp;b");
     expect(xml).not.toContain("evil.com");
     expect(xml).not.toContain("lastmod");

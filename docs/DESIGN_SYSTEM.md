@@ -1,5 +1,12 @@
 # Vitale Design System
 
+> **Atualização vigente de 15/10/2026:** as páginas públicas `/bikes` e
+> `/bikes/{slug}` foram substituídas pela experiência canônica do Radar. Seus
+> componentes, helpers e imagens exclusivas foram removidos; os endereços antigos
+> existem somente como redirects 301. As seções abaixo que descrevem hero, card,
+> selo comercial ou comparação em `/bikes` são histórico visual e não definem o
+> sistema atual.
+
 > Contrato de intenção de página e sinergia: ver [docs/PAGE_INTENT_AND_SYNERGY.md](./PAGE_INTENT_AND_SYNERGY.md) (governança; não autoriza implementação nem publicação).
 
 ## Tokens (src/styles.css)

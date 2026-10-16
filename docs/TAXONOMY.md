@@ -22,7 +22,11 @@ Comparação entre Bikes integra o Radar. Não existe página pública independe
 
 A entidade central é `Bike`. `bikeId` é o identificador persistido e literal, incluindo underscores, como `v9_max`. A URL oficial vigente é `/radar/v9_max`. `articleSlug` tem identidade própria e não deriva do ID de Bike.
 
-O mapa explícito dos 30 IDs, nomes, slugs legados e URLs está em [`bike-identity-map.json`](../artifacts/seo-final-2026-09-29/bike-identity-map.json). É um inventário do contrato publicado, sem renomear modelos. Uma futura mudança para slugs no Radar exige mapa e decisão específicos.
+O mapa operacional de IDs, nomes e slugs legados é o catálogo público read-only
+consumido por `src/lib/bikes-repository.server.ts`. O redirect resolve o slug nesse
+catálogo e valida o `bikeId`; nunca transforma hífen em underscore por suposição.
+Não existe inventário estático versionado neste checkout. Uma futura mudança para
+slugs no Radar exige mapa e decisão específicos.
 
 | Alias legado | Destino | HTTP |
 | --- | --- | --- |
@@ -79,7 +83,13 @@ Documento válido: 200, conteúdo principal SSR, uma canonical e um H1. Document
 
 ## 7. Regra para acrescentar conteúdo
 
-1. Escolher a intenção e `content_type` no CMS antes da publicação. Usar a taxonomia existente.
+Todo artigo publicado referencia exatamente um vídeo fonte real por
+`editorial_articles.video_id`. A transcrição/evidência capturada desse vídeo
+fundamenta o texto; Bike é relação e contexto, não fonte editorial. Preço,
+oferta e histórico continuam vindo dos repositórios do Radar. Analytics mede
+desempenho e não seleciona fonte, pauta ou evidência factual.
+
+1. Escolher um vídeo publicado e elegível como fonte e então definir intenção e `content_type` no CMS. Usar a taxonomia existente.
 2. Vincular fonte/transcrição, Bike principal e relacionadas reais, artigos e ferramenta úteis.
 3. Revisar título/H1, resumo que responde à pergunta, condições das observações, limites, autoria organizacional, SEO title e descrição específicos, OG e slug único.
 4. Conferir fonte de números/afirmações. Distinguir teste, cadastro, opinião e estimativa. Nunca fabricar data, medição ou experiência.

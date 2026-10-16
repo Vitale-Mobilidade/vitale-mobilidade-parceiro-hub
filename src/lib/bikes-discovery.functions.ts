@@ -8,9 +8,8 @@ import type { CatalogBike } from "./editorial-bikes";
 import type { VideoCard } from "./videos.functions";
 
 /**
- * Leitura read-only para a página /bikes: catálogo editorial (aba de bikes, 30 linhas)
- * + junção por bikeId com o catálogo público do Radar (preço atual e classificação
- * já calculados por buildRadarEntries) + contagem real de vídeos associados.
+ * Leitura read-only compartilhada pelo Admin editorial: catálogo de Bikes
+ * + junção por bikeId com o Radar e contagem real de vídeos associados.
  * Nada é escrito; nada é inventado — campos ausentes ficam null.
  */
 export type DiscoveryBike = CatalogBike & {

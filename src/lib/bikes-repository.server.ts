@@ -1,6 +1,6 @@
 // Server-only: catálogo editorial lido do Supabase (public.bikes + oferta atual),
 // via RPC pública read-only. Nunca usa service role nem lê tabelas diretamente.
-// Substitui a leitura direta do CSV da planilha nas páginas /bikes e /bikes/$slug.
+// Fonte server-side do catálogo usada por integrações internas e redirects legados.
 import { SLUG_RE, type CatalogBike } from "./editorial-bikes";
 import { resolveBikeImage } from "./bike-catalog";
 

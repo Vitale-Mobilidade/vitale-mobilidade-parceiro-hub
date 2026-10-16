@@ -1,7 +1,15 @@
 # Content Graph mínimo — Etapa 12
 
-Estado: **primeiro corte publicado; migration aplicada em 25/09/2026**
+Estado: **concluído no escopo atual**
 Data: 25/09/2026
+
+> Decisão de produto de 15/10/2026: o Content Graph necessário hoje está
+> entregue. Novos artigos sempre partem de um vídeo publicado, usando as relações
+> Bike ↔ Vídeo ↔ Artigo já existentes. Analytics mede alcance, leitura e clique,
+> mas não escolhe a fonte, não gera pauta automaticamente e não abre uma nova
+> pendência de grafo. Bikes ainda sem artigo receberão conteúdo conforme novos
+> vídeos forem publicados; não há backfill prioritário. `toolSlug` não é requisito
+> para publicar artigos neste momento.
 
 ## Objetivo deste corte
 
@@ -37,6 +45,8 @@ O corte local:
 ## Limite semântico atual
 
 Os arrays existentes representam relação editorial aprovada, mas não distinguem papéis como `comparada`, `alternativa` ou `citada`. Esse refinamento fica para um gate futuro, caso a operação editorial realmente precise dele. A ausência desses papéis não justifica uma nova tabela agora.
+
+Esse refinamento é possibilidade futura, não pendência do plano atual.
 
 ## Gate de publicação
 

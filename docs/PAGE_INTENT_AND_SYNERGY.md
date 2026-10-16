@@ -1,5 +1,15 @@
 # Contrato de intenção de página e sinergia — Vitale Mobilidade
 
+> **Decisão vigente de 15/10/2026:** a experiência pública de Bike foi
+> consolidada no Radar. As únicas rotas canônicas são `/radar` e
+> `/radar/{bikeId}`; `/bikes` e `/bikes/{slug}` são aliases legados com 301 e não
+> possuem mais página própria. A comparação acontece dentro do detalhe do Radar.
+> Novos conteúdos sempre têm um vídeo publicado como fonte; analytics mede o
+> desempenho do conteúdo, mas não define sua fonte nem gera pauta. Bikes sem
+> artigo e relações com ferramentas não são pendências prioritárias. As menções
+> abaixo a páginas próprias `/bikes`, `/bikes?compare` ou pauta orientada por
+> analytics são registro histórico e estão superseded por esta decisão.
+
 
 > Atualização de rotas em 28/09/2026, preparada localmente: Quiz em `/quiz`; `/escolherbike` redireciona com 301 para `/` preservando query/UTM. Substitui as referências anteriores ao endereço do Quiz; demais estados históricos deste documento permanecem. Ver [decisão e validação](QUIZ_ROUTE_2026-09-28.md).
 > Documento de governança. **Não autoriza implementação nem publicação.** Cada mudança continua exigindo tarefa própria, escopo aprovado e decisão explícita do responsável para publicar.
@@ -9,7 +19,7 @@
 ## 1. Modelo central
 
 - A Vitale é um **hub B2C de decisão de compra** de bikes elétricas.
-- **Bike é a entidade central**, identificada por `bikeId` estável (`BIKE_ID_RE`, `src/lib/bike-identity.ts`). Ela liga Oferta, Observação de Preço/Radar, Vídeo, Artigo (futuro), Comparação (futura) e ferramentas. O **slug editorial** (`/bikes/{slug}`) é distinto do `bikeId` e nunca o substitui em relações.
+- **Bike é a entidade central**, identificada por `bikeId` estável (`BIKE_ID_RE`, `src/lib/bike-identity.ts`). Ela liga Oferta, Observação de Preço/Radar, Vídeo, Artigo, Comparação e ferramentas. A URL pública canônica usa o ID em `/radar/{bikeId}`; slugs antigos existem somente para resolver redirects.
 - Papéis no funil:
 
 | Camada                                         | Papel                                    |
@@ -20,7 +30,7 @@
 | Quiz `/quiz`                           | Conversão terminal de compra             |
 | Mercado Livre                                  | Destino da compra (link afiliado direto) |
 | Grupo de ofertas WhatsApp (só admins publicam) | Retenção                                 |
-| Dados e analytics                              | Alimentam o futuro loop editorial        |
+| Dados e analytics                              | Medem desempenho e conversão             |
 
 - Podcast, newsletter, calculadora e Hotpipe são **consumidores futuros** deste grafo. Hoje não são links funcionais e não devem aparecer como tal.
 
@@ -30,19 +40,17 @@ Estados: **Publicada**, **Prévia** (rascunho, não publicada), **Futura** (não
 
 | Página                                          | Pergunta única do usuário                    | Papel no funil         | Intenção de entrada            | Resposta acima da dobra (mobile)                  | CTA primário                                                                 | Até 2 próximos passos contextuais                                                        | Evidência / fonte                                                                           | Estado              |
 | ----------------------------------------------- | -------------------------------------------- | ---------------------- | ------------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------- |
-| Home `/`                                        | "Por onde começo a escolher minha bike?"     | Orientação             | Marca, direto, social          | Headline + escolha entre Quiz e Radar             | Quiz (`/quiz`) — Radar (`/radar`) é secundário por intenção | Bike em destaque (`/bikes/{slug}`); catálogo `/bikes`                                    | Catálogo Radar read-only (até 5 cards), vídeos reais                                        | Publicada           |
-| `/bikes`                                        | "Quais modelos devo considerar?"             | Descoberta/avaliação   | Busca genérica, Home           | Busca + atalhos só com dados reais                | "Conhecer a bike" → `/bikes/{slug}`                                          | Análise no Radar (só se monitorada); Quiz                                                | `public.bikes` + `bike_offers` via RPC (Etapa 10) + Radar por `bikeId` + vídeos           | Publicada           |
-| `/bikes/{slug}`                                 | "Esta bike é para mim e vale comprar agora?" | Avaliação → compra     | Busca por modelo, YouTube      | Foto, nome, specs, preço com fonte, CTA de oferta | "Ver oferta no Mercado Livre" (só com link válido)                           | Análise de preço (`/radar/{bikeId}`, se monitorada); Quiz ou alternativas reais | `get_bikes_public_catalog` (preço/link atômicos da oferta atual), `getRadarBike`, vídeos por `bikeId` | Publicada           |
-| Radar lista `/radar` (alias 301: `/acompanhamento`) | "Qual bike está com preço bom hoje?"         | Evidência de preço     | Busca "preço", Home, grupo     | Busca + rankings factuais                         | Detalhe de preço da bike                                                     | Página da bike (`/bikes/{slug}`); grupo de ofertas      | RPC `get_price_tracker_catalog` (SSR)                                                       | Publicada           |
-| Radar detalhe `/radar/{bikeId}` (alias 301)    | "O preço atual desta bike está bom?"         | Decisão de preço       | Busca por modelo+preço, alerta | Preço atual vs. histórico, status                 | Oferta afiliada direta                                                       | Página da bike (`/bikes/{slug}`); grupo de ofertas      | RPC de histórico (SSR); 404 validado; 503 em falha controlada ainda pendente de comprovação | Publicada           |
-| `/conteudos/{slug}`                             | Uma pergunta real por conteúdo               | Evidência editorial    | Busca informacional, IA        | Resposta direta à pergunta                        | Bike ou Radar relacionados por `bikeId`                                      | Quiz; grupo                                                                              | Nenhuma fonte de artigo existe                                                              | Futura              |
-| `/ferramentas`                                  | "Que ferramenta me ajuda a decidir?"         | Orientação             | Busca por ferramenta, menu     | Lista das ferramentas que funcionam hoje          | Quiz (`/quiz`)                                                       | Radar (`/radar`); catálogo (`/bikes`)                                                    | Sem dados próprios: apenas rotas funcionais                                                 | Publicada           |
-| `/comparar`                                     | "A ou B?"                                    | Avaliação              | Busca comparativa              | —                                                 | — (não citada em `/ferramentas`: sem promessa pública)                       | —                                                                                        | Sem contrato de specs                                                                       | Futura              |
+| Home `/`                                        | "Por onde começo a escolher minha bike?"     | Orientação             | Marca, direto, social          | Headline + escolha entre Quiz e Radar             | Quiz (`/quiz`) — Radar (`/radar`) é secundário por intenção | Bikes no Radar; conteúdos reais                                    | Catálogo Radar read-only (até 5 cards), vídeos reais                                        | Publicada           |
+| Radar lista `/radar` (aliases 301: `/acompanhamento`, `/bikes`) | "Quais modelos devo considerar e qual preço está bom?" | Descoberta e evidência | Busca, Home, grupo | Busca, rankings e catálogo factuais | Detalhe oficial da Bike | Quiz; grupo de ofertas | RPC `get_price_tracker_catalog` (SSR) | Publicada |
+| Radar detalhe `/radar/{bikeId}` (aliases 301) | "Esta Bike é para mim e o preço atual está bom?" | Avaliação → compra | Busca por modelo/preço, alerta, URL antiga | Foto, ficha, preço, histórico e comparação | Oferta afiliada direta quando válida | Outra Bike comparada; conteúdo real | Radar + catálogo público + relações de vídeo/artigo por `bikeId` | Publicada |
+| `/conteudos/{slug}`                             | Uma pergunta real por conteúdo               | Evidência editorial    | Busca informacional, IA        | Resposta direta à pergunta                        | Bike ou Radar relacionados por `bikeId`                                      | Quiz; grupo                                                                              | Vídeo publicado identificado por `video_id` e sua transcrição/evidência | Publicada |
+| `/ferramentas`                                  | "Que ferramenta me ajuda a decidir?"         | Orientação             | Busca por ferramenta, menu     | Lista das sete ferramentas oficiais               | Ferramenta escolhida ou Quiz | Radar; conteúdo contextual | Cálculos determinísticos e catálogo real, conforme cada ferramenta | Publicada |
+| Comparação dentro de `/radar/{bikeId}` | "A ou B?" | Avaliação | Detalhe da Bike | Tabela com dados reais e ausências rotuladas | Abrir o detalhe da Bike comparada | Oferta e conteúdo contextual | Catálogo público por `bikeId` | Publicada |
 | `/calculadoras/*` (9 rotas)                     | "Quanto economizo?" / "Compensa?"            | Avaliação              | Busca por ferramenta           | Resultado imediato na própria tela                | Bikes reais compatíveis (máx. 2) e Quiz contextual                           | Radar (quando a bike é monitorada); `/ferramentas`                                       | Sem dados próprios: cálculo determinístico + catálogo Supabase                              | Publicadas          |
 | `/grupodeofertas`                               | "Como recebo ofertas sem procurar?"          | Retenção               | Radar, bike, social            | Explicação curta + entrada no grupo               | Entrar no grupo WhatsApp                                                     | —                                                                                        | URL externa fixa                                                                            | Publicada (noindex) |
 | Quiz `/quiz`                            | "Qual bike eu compro?"                       | **Conversão terminal** | Anúncio, Home, conteúdo        | Início do quiz                                    | Resultado → "Comprar aqui" (Mercado Livre)                                   | Nenhum exploratório (ver §3)                                                             | Catálogo elegível + motor de scoring                                                        | Publicada           |
 
-Regras de papel: Home permite escolher a jornada; página de Bike equilibra CTA de compra com evidência contextual; Radar prioriza a decisão de preço; conteúdo responde uma pergunta real e só então conecta bike/Radar/Quiz/grupo relevantes.
+Regras de papel: Home permite escolher a jornada; o detalhe oficial da Bike vive no Radar e equilibra compra com evidência contextual; conteúdo responde uma pergunta real e só então conecta Bike/Radar/Quiz/grupo relevantes.
 
 ## 3. Exceção do Quiz
 
@@ -53,7 +61,7 @@ Regras de papel: Home permite escolher a jornada; página de Bike equilibra CTA 
 
 ## 4. Contratos de dados
 
-- **Fonte:** Supabase é a fonte central de leitura pública (etapas 6–10): `public.bikes` + `bike_offers` alimentam `/bikes` e `/bikes/{slug}` via RPC read-only. A leitura direta da planilha foi **ponte editorial temporária** (histórico): permanece apenas no writer Sheets→Supabase (interface operacional) e em leitores internos como o Quiz, que não lê `bikes`/`bike_offers`.
+- **Fonte:** Supabase é a fonte central de leitura pública: `public.bikes` + `bike_offers` alimentam o Radar e integrações via RPC read-only. A planilha permanece interface operacional do writer e de leitores internos já existentes.
 - **Relações:** Vídeo e Artigo se relacionam à Bike por `bikeId` exato (tokens normalizados, aliases explícitos, nunca substring), com fonte/evidência registrada por item. Sem associação válida = conteúdo geral, nunca atribuído silenciosamente.
 - **Preço, status e URL afiliada** vêm do contrato confiável em tempo de render (RPC do Radar / fonte validada), com fonte e data visíveis. **Nunca** copiar esses valores para texto editorial ou saída de IA. Preço de planilha é "referência cadastrada", nunca "hoje".
 - **Estados indisponíveis:** sem link válido, texto exato `Link indisponível no momento`; Radar ausente, estado "não monitorado"; falha de leitura, 503 honesto/omissão, nunca valor falso.
@@ -66,7 +74,7 @@ Regras de papel: Home permite escolher a jornada; página de Bike equilibra CTA 
 1. O destino precisa responder a uma **pergunta adjacente genuína** do usuário naquela página.
 2. O CTA primário segue a intenção da página (§2).
 3. Links secundários são **condicionais**: só com rota funcional **e** dado existente. Nunca um menu universal de tudo.
-4. Proibido linkar `/comparar` e `/conteudos` antes de funcionarem. `/radar` e `/ferramentas` são rotas reais; `/acompanhamento` e `/calc` são apenas aliases 301 e não devem ser usados em links internos novos.
+4. Não existe rota pública `/comparar`; comparação integra o Radar. `/radar`, `/conteudos` e `/ferramentas` são rotas reais. `/bikes`, `/acompanhamento` e `/calc` são apenas aliases 301 e não devem ser usados em links internos novos.
 5. Restrições: SSR com metadata própria por rota (`head()`, canonical, noindex onde cabível), HTML acessível e navegável por teclado, JS cliente mínimo, imagens otimizadas com lazy abaixo da dobra.
 
 ## 6. Brief pré-build e gate pós-build (obrigatórios)
@@ -91,7 +99,10 @@ Rollback:
 Estado de release (prévia / publicado por decisão explícita):
 ```
 
-## 7. Estado atual e lacunas (23/09/2026)
+## 7. Snapshot histórico — estado e lacunas em 23/09/2026
+
+> Esta seção não representa o produto atual. Foi preservada apenas como registro
+> da sequência de decisões e não deve ser usada para planejar trabalho novo.
 
 - `/bikes` e `/bikes/{slug}` estão **publicados** e leem o catálogo do Supabase.
 - `/comparar` e `/conteudos` **não são rotas funcionais**. `/radar` e `/ferramentas` são rotas reais.
@@ -101,7 +112,7 @@ Estado de release (prévia / publicado por decisão explícita):
 - Trabalho pré-publicação: performance de imagem e payload (sem PageSpeed/CWV medido), `/bikes` e páginas de bike fora do sitemap, ausência de mapeamento explícito entre `/radar/{bikeId}` e `/bikes/{slug}`; páginas de detalhe fora do sitemap (dependem de geração dinâmica).
 
 
-## Atualização — taxonomia vigente (23/09/2026)
+## Snapshot histórico — taxonomia de 23/09/2026
 
 - Radar vigente: `/radar` e `/radar/{bikeId}` (publicados e verificados no domínio). `/acompanhamento` e `/acompanhamento/{bikeId}` respondem **301** para o equivalente em `/radar` (ID literal e query/UTM preservados).
 - Ferramentas: `/ferramentas` é rota real **publicada** (deployment `7faa0513-44fa-4055-99c2-6b2966e6417d`; 200 com H1, canonical, seção "Um caminho para decidir" e links reais verificados no HTML SSR). `/calc` e `/calc/` respondem **301** para `/ferramentas` preservando query/UTM (verificado no domínio). Na Home, o bloco da calculadora tem ID canônico `#ferramentas` e mantém `#calc` como âncora alias para backlinks antigos.
@@ -126,6 +137,8 @@ Estado de release (prévia / publicado por decisão explícita):
 - **Privacidade:** nenhum nome, e-mail ou telefone é pedido ou enviado.
 - **Sinergia:** `/ferramentas` é a porta de entrada; `/radar` responde "este preço está bom hoje?"; `/quiz` continua sendo a conversão terminal e não é alterado por esta página.
 
-## Decisão 23/09/2026 — comparação passa a ser feature de /bikes (substitui /comparar)
+## Decisão histórica de 23/09/2026 — comparação em `/bikes` (superseded)
 
-`/comparar` deixa de ser rota alvo. Menções anteriores a `/comparar` neste documento são históricas. Comparação agora é estado funcional de `/bikes?compare=bikeIdA,bikeIdB` (bikeId canônico, até 2 modelos): reload/back/compartilhamento preservam a seleção; canonical continua `/bikes`; nenhuma combinação entra no sitemap. Pontos de entrada: botão "Comparar" nos cards de `/bikes`, "Comparar com outra bike" em `/bikes/$slug` e `/radar/$bikeId`, "Comparar essas bikes" nas calculadoras com 2 recomendações, "Compare as especificações destes modelos" no bloco comparativo dos artigos e card "Comparar bikes" da Home. Header/footer sem link independente "Comparar". Eventos: `bike_compare_added`, `bike_compare_removed`, `bike_comparison_opened`, `comparison_bike_clicked`, `affiliate_click` (position `bikes_comparison`). Pendente: motor/bateria/peso não aparecem porque ainda não constam da leitura pública do catálogo; artigos "que comparam os dois" dependem de vídeos associados às duas bikes.
+Esta decisão descreve a implementação removida em 15/10/2026. A comparação vigente
+integra o detalhe `/radar/{bikeId}`; `/bikes?compare=...` é apenas URL legada e
+redireciona para o Radar sem reconstruir o estado antigo.

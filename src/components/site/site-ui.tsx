@@ -11,7 +11,7 @@ import { SOCIAL_LINKS, YOUTUBE_SUBSCRIBE, YOUTUBE_CHANNEL } from "@/lib/social-l
 
 /*
  * Vitale Design System — peças compartilhadas por Home, Radar e detalhe.
- * Navegação só aponta para rotas reais. Comparação é um estado de /bikes (não há rota /comparar).
+ * Navegação só aponta para rotas reais. Comparação integra o detalhe do Radar.
  */
 
 export function Brand({ large = false }: { large?: boolean }) {

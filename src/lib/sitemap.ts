@@ -24,18 +24,6 @@ const xmlEscape = (s: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-/** Slugs válidos e únicos (padrão editorial). */
-export function bikeSlugPaths(
-  bikes: ReadonlyArray<{ slug?: unknown }>,
-): string[] {
-  const out = new Set<string>();
-  for (const b of bikes) {
-    if (typeof b?.slug === "string" && SLUG_RE.test(b.slug))
-      out.add(`/bikes/${encodeURIComponent(b.slug)}`);
-  }
-  return [...out];
-}
-
 /** IDs do Radar vindos do campo `id` da RPC; nunca derivados de slug. */
 export function radarIdPaths(items: ReadonlyArray<unknown>): string[] {
   const out = new Set<string>();

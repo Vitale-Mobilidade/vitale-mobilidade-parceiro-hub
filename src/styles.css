@@ -301,7 +301,7 @@
   --color-logo-surface: var(--logo-surface);
 }
 
-/* Design System — heróis das páginas de entrada (Home, /bikes, /acompanhamento).
+/* Design System — heróis das páginas de entrada (Home e Radar legado/canônico).
    Baseline = hero da Home v2.1. */
 @utility entry-hero {
   position: relative;

@@ -13,20 +13,20 @@ function layer() {
 
 describe("affiliate analytics", () => {
   beforeEach(() => {
-    setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
+    setWindow({ dataLayer: [], location: { pathname: "/radar/v8_ultra" } });
   });
 
   it("emite payload mínimo permitido, com rota e destino gerados no helper", () => {
-    trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero" });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail" });
     expect(layer()).toEqual([
-      { event: AFFILIATE_CLICK_EVENT, destination: "mercado_livre", bike_id: "v8_ultra", position: "bike_detail_hero", route: "/bikes/v8-ultra" },
+      { event: AFFILIATE_CLICK_EVENT, destination: "mercado_livre", bike_id: "v8_ultra", position: "radar_detail", route: "/radar/v8_ultra" },
     ]);
   });
 
   it("rejeita bike_id fora da regex canônica e position fora da allowlist", () => {
-    trackAffiliateClick({ bike_id: "../admin", position: "bike_detail_hero" });
-    trackAffiliateClick({ bike_id: "v8 ultra", position: "bike_detail_hero" });
-    trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero " as never });
+    trackAffiliateClick({ bike_id: "../admin", position: "radar_detail" });
+    trackAffiliateClick({ bike_id: "v8 ultra", position: "radar_detail" });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail " as never });
     trackAffiliateClick({ bike_id: "v8_ultra", position: "cta_top" as never });
     expect(layer()).toHaveLength(0);
   });
@@ -48,13 +48,13 @@ describe("affiliate analytics", () => {
     const evt = layer()[0] as Record<string, unknown>;
     expect(Object.keys(evt).sort()).toEqual(["bike_id", "destination", "event", "position", "route"]);
     expect(evt.destination).toBe("mercado_livre");
-    expect(evt.route).toBe("/bikes/v8-ultra"); // pathname real, não o valor forjado
+    expect(evt.route).toBe("/radar/v8_ultra"); // pathname real, não o valor forjado
     expect(JSON.stringify(evt)).not.toMatch(/meli\.la|@|Guilherme|outro/);
   });
 
   it("omite route fora das rotas permitidas (sem texto livre)", () => {
     setWindow({ dataLayer: [], location: { pathname: "/quiz" } });
-    trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_final" });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail" });
     const evt = layer()[0] as Record<string, unknown>;
     expect(evt).not.toHaveProperty("route");
     expect(evt.destination).toBe("mercado_livre");
@@ -68,14 +68,20 @@ describe("affiliate analytics", () => {
     expect(layer().map((e) => e.route)).toEqual(["/radar", "/radar/v8_ultra"]);
   });
 
+  it("não classifica mais /bikes como rota emissora pública", () => {
+    setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
+    trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail" });
+    expect(layer()[0]).not.toHaveProperty("route");
+  });
+
   it("não emite sem bike_id", () => {
-    trackAffiliateClick({ bike_id: "  ", position: "bike_detail_final" });
+    trackAffiliateClick({ bike_id: "  ", position: "radar_detail" });
     expect(layer()).toHaveLength(0);
   });
 
   it("nunca lança quando o dataLayer falha (não bloqueante)", () => {
     setWindow({
-      location: { pathname: "/bikes" },
+      location: { pathname: "/radar" },
       get dataLayer(): never {
         throw new Error("bloqueado");
       },
@@ -93,9 +99,9 @@ describe("affiliate analytics", () => {
 
 describe("CTA de compra preserva href exato e não bloqueia", () => {
   it("o handler não chama preventDefault nem retorna promise", () => {
-    setWindow({ dataLayer: [], location: { pathname: "/bikes/v8-ultra" } });
+    setWindow({ dataLayer: [], location: { pathname: "/radar/v8_ultra" } });
     const preventDefault = vi.fn();
-    const handler = () => trackAffiliateClick({ bike_id: "v8_ultra", position: "bike_detail_hero" });
+    const handler = () => trackAffiliateClick({ bike_id: "v8_ultra", position: "radar_detail" });
     const result = handler() as unknown;
     expect(result).toBeUndefined();
     expect(preventDefault).not.toHaveBeenCalled();

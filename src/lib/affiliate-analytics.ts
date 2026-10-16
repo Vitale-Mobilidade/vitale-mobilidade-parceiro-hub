@@ -5,7 +5,7 @@
  *
  * Entrada pública aceita APENAS bike_id e position:
  * - route vem exclusivamente de window.location.pathname (sem query/hash),
- *   restrito às rotas que emitem o evento (/bikes/{slug}, /radar, /radar/{bikeId});
+ *   restrito às rotas que emitem o evento (/radar, /radar/{bikeId}, conteúdo e ferramentas);
  * - destination é constante "mercado_livre";
  * - bike_id validado com a regex canônica do projeto (BIKE_ID_RE);
  * - position validado com allowlist em runtime.
@@ -19,8 +19,6 @@ export const AFFILIATE_CLICK_EVENT = "affiliate_click";
 
 /** Posições permitidas — enum fechado, sem texto livre. */
 export const AFFILIATE_POSITIONS = [
-  "bike_detail_hero",
-  "bike_detail_final",
   "radar_detail",
   "radar_highlight",
   "radar_catalog",
@@ -40,7 +38,6 @@ export const AFFILIATE_POSITIONS = [
   "ferramenta_meta_entregas",
   "ferramenta_economia_de_tempo",
   "content_article",
-  "bikes_comparison",
 ] as const;
 
 export type AffiliatePosition = (typeof AFFILIATE_POSITIONS)[number];
@@ -53,8 +50,8 @@ export type AffiliateClickInput = {
 
 const POSITIONS = new Set<string>(AFFILIATE_POSITIONS);
 
-/** Rotas que podem emitir o evento: /bikes/{slug}, /radar, /radar/{bikeId}, /calculadoras/economia, /calculadoras/payback, /calculadoras/uber-vs-bike, /calculadoras/carro-vs-bike, /calculadoras/transporte-publico-vs-bike, /calculadoras/moto-vs-bike, /calculadoras/tempo-no-transito, /calculadoras/tempo-recuperado (legado) e as sete /ferramentas/*. */
-const ALLOWED_ROUTE_RE = /^\/bikes(\/[a-z0-9-]+)?$|^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$|^\/ferramentas\/(carro-vs-bike|moto-vs-bike|aplicativos-vs-bike|transporte-publico-vs-bike|veiculo-alugado-vs-bike-propria|meta-entregas|economia-de-tempo)$/;
+/** Rotas que podem emitir o evento: Radar, artigos, calculadoras legadas e as sete ferramentas oficiais. */
+const ALLOWED_ROUTE_RE = /^\/radar(\/[a-z0-9_]+)?$|^\/conteudos\/[a-z0-9-]+$|^\/calculadoras\/(economia|payback|uber-vs-bike|carro-vs-bike|moto-vs-bike|transporte-publico-vs-bike|tempo-no-transito|tempo-recuperado)$|^\/ferramentas\/(carro-vs-bike|moto-vs-bike|aplicativos-vs-bike|transporte-publico-vs-bike|veiculo-alugado-vs-bike-propria|meta-entregas|economia-de-tempo)$/;
 
 function currentRoute(): string | undefined {
   if (typeof window === "undefined") return undefined;

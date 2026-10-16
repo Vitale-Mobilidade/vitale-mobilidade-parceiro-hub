@@ -11,7 +11,7 @@ export function radarBaseFromPath(pathname: string): RadarBase {
   return pathname === "/radar" || pathname.startsWith("/radar/") ? "/radar" : pathname === "/acompanhamento" || pathname.startsWith("/acompanhamento/") ? LEGACY_RADAR_BASE : RADAR_PATH;
 }
 
-/** Fora das páginas do Radar (Home, /bikes…) usa /radar (cutover). */
+/** Fora das páginas do Radar (ex.: Home) usa /radar (cutover). */
 export function useRadarBase(): RadarBase {
   return radarBaseFromPath(useLocation().pathname);
 }

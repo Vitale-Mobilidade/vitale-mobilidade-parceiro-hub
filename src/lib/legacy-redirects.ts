@@ -16,6 +16,9 @@ export function legacyRedirect(
 ): string | null {
   // QR Codes antigos abrem a Home, sem carregar Quiz ou consultar catálogo.
   if (/^\/escolherbike\/?$/.test(pathname)) return `/${search}`;
+  // O catálogo público foi consolidado no Radar. Detalhes /bikes/{slug}
+  // continuam sendo resolvidos pelo catálogo no servidor para preservar o bikeId.
+  if (/^\/bikes\/?$/.test(pathname)) return `/radar${search}`;
   return (
     legacyRadarRedirect(pathname, search) ??
     legacyToolsRedirect(pathname, search)

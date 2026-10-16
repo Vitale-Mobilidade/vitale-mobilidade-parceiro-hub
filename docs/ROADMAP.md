@@ -1,5 +1,13 @@
 # Roadmap Vitale Mobilidade
 
+> **Decisão vigente de 15/10/2026:** `/radar` e `/radar/{bikeId}` são a
+> experiência canônica de Bike. A implementação pública duplicada de `/bikes`
+> foi removida localmente; os endereços antigos permanecem somente como 301 para
+> preservar acessos e SEO. A etapa 18, Content Graph, está concluída no escopo
+> atual: novos conteúdos sempre partem do vídeo publicado; analytics mede
+> desempenho, mas não cria pauta. Bikes sem artigo e `toolSlug` editorial ficam
+> fora da prioridade atual. Seções históricas abaixo não reabrem esses itens.
+
 > **Operação editorial verificada em 06/10/2026:** captura oficial de legendas do próprio canal, escrita independente, capa, QA e publicação automática exercitados pelo cron no Lovable integrado. Oito pendentes publicados, total 115 publicados + 1 piloto histórico em draft; fila zerada e agendamento ativo. Sincronizar tudo e painel de bikes permanecem no Admin. Veja [YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md](./YOUTUBE_AUTOMATIC_PUBLICATION_2026-10-06.md). Estados editoriais anteriores abaixo são históricos; esta evidência não conclui as demais frentes do roadmap.
 
 
@@ -22,15 +30,17 @@ Uma única aplicação neste projeto Lovable, em TanStack Start + React 19 + Typ
 
 ## 2. Mapa de fases (25 etapas agrupadas)
 
-As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem marcar nenhuma como concluída**.
+As 25 etapas abaixo mantêm a ordem original e estão agrupadas em cinco fases.
+O status pode ser atualizado quando houver evidência; itens históricos não reabrem
+uma etapa já encerrada por decisão vigente.
 
 - **Fase A — Fundação (etapas 1–5):** base TanStack Start, SEO/GEO, performance, taxonomia de rotas/slugs e Home B2C.
-- **Fase B — Entidade Bike e operações (etapas 6–11):** modelagem central da bike no Supabase, sincronização Sheets → Supabase, oferta/preço/link afiliado, novo Radar, página `/bikes/{slug}` e analytics de clique.
+- **Fase B — Entidade Bike e operações (etapas 6–11):** modelagem central da bike no Supabase, sincronização Sheets → Supabase, oferta/preço/link afiliado, Radar canônico em `/radar/{bikeId}` e analytics de clique.
 - **Fase C — Conteúdo e publicação piloto (etapas 12–18):** vídeos, artigos, CMS, Article Compiler IA, primeiros artigos, escala para 98 artigos e Content Graph.
 - **Fase D — Ferramentas e engajamento (etapas 19–23):** comparador, newsletter, alertas de preço, podcast e calculadora de economia.
 - **Fase E — Inteligência e automação (etapas 24–25):** Hotpipe IA e loop de inteligência de conteúdo.
 
-**Dependências-chave:** o `bike_id` estável conecta preço, oferta, quiz, vídeo, artigo e comparação; as planilhas continuam como interface humana; o Supabase é a fonte central; conteúdo e comportamento dos usuários retroalimentam a pauta. Links do Mercado Livre continuam **diretos** e analytics **não bloqueantes**. A menção a “redirect intermediário” em qualquer briefing não autoriza alterar links nesta task.
+**Dependências-chave:** o `bike_id` estável conecta preço, oferta, quiz, vídeo, artigo e comparação; as planilhas continuam como interface humana; o Supabase é a fonte central; cada novo conteúdo nasce de um vídeo publicado e analytics mede seu desempenho. Links do Mercado Livre continuam **diretos** e analytics **não bloqueantes**. A menção a “redirect intermediário” em qualquer briefing não autoriza alterar links nesta task.
 
 ### Revisão compacta squad (atualização documental)
 
@@ -53,7 +63,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 7. Sheets → Supabase
 8. Oferta, preço e link afiliado
 9. Novo Radar em `/radar` e `/radar/{bikeId}`
-10. `/bikes/{slug}`
+10. Página oficial da Bike em `/radar/{bikeId}`; `/bikes/{slug}` é somente alias 301
 11. Analytics de clique afiliado
 12. Conteúdo: Video, Article, Relations
 13. CMS
@@ -61,7 +71,7 @@ As 25 etapas abaixo estão agrupadas em cinco fases, **sem mudar sua ordem nem m
 15. Primeiro artigo real
 16. Dez artigos
 17. Escalar para 98 artigos
-18. Content Graph
+18. Content Graph — concluído no escopo atual
 19. Comparador
 20. Newsletter
 21. Alertas de preço
@@ -90,9 +100,11 @@ Status da Etapa 12: **parcial**. Base relacional, CMS P0, leitura pública de ar
 
 O detalhe canônico `/radar/$bikeId` agora integra a ficha e descrição da Bike, a comparação em tabela com outra Bike do catálogo público, vídeos e artigos ligados pelo `bike_id`. O topo mantém preço/oferta e histórico na primeira dobra; o preço de hoje é marcado na escala pela bicicleta verde fornecida pelo responsável, na posição proporcional ao valor. Metadata SSR e JSON-LD `Product` + `BreadcrumbList` descrevem apenas dados reais; `Offer` só existe quando a oferta atual tem preço e link válidos. O sitemap dinâmico já inclui as URLs do Radar e `/bikes/$slug` continua 301 para a URL canônica. Nenhum ganho de ranking foi afirmado. **Publicado em 25/09/2026**, com evidências e rollback em [RADAR_BIKE_HUB.md](./RADAR_BIKE_HUB.md).
 
-## 3. Estado atual — 23/09/2026
+## 3. Snapshot histórico — 23/09/2026
 
-> Esta seção reflete o status vigente. As seções 4 e 5 são **fotografias históricas** e não devem ser lidas como status atual.
+> Esta seção e seus quadros preservam a auditoria de 23/09/2026 e **não refletem
+> o status vigente**. O estado atual está nas decisões datadas do topo e nos
+> documentos específicos de cada entrega.
 
 - **Mesmo projeto Lovable agora serve TanStack Start no domínio público.** A conversão nativa não criou um projeto separado: o código TanStack foi publicado no domínio existente por decisão explícita do responsável.
 - **Home v2.1 foi publicada em 23/09/2026.** A revisão inclui painel Radar multi-bike (até 3 bikes reais), calculadora e comparador mais visuais, e Assistente Vitale configurado com `manualOnly` (não abre sozinho).
@@ -460,9 +472,10 @@ continuam não implementadas e sem links públicos.
 - As sete rotas adicionais com bikes exibem até duas ofertas reais somente quando a segunda tem ganho verificável de autonomia, com comparação factual, vídeos associados quando disponíveis e caminhos para ficha, Radar, Quiz e grupo. Custo Anual não força recomendações sem distância diária.
 - Fórmulas, fontes de ofertas, links afiliados, elegibilidade, Supabase, Sheets e Quiz permanecem intactos. Typecheck, testes direcionados e build concluídos localmente. O resultado de UX não substitui validação de conversão real nem fecha outras etapas do roadmap.
 
-## Decisão 23/09/2026 — comparação passa a ser feature de /bikes (substitui /comparar)
+## Decisão histórica de 23/09/2026 — comparação em `/bikes` (superseded)
 
-`/comparar` deixa de ser rota alvo. Menções anteriores a `/comparar` neste documento são históricas. Comparação agora é estado funcional de `/bikes?compare=bikeIdA,bikeIdB` (bikeId canônico, até 2 modelos): reload/back/compartilhamento preservam a seleção; canonical continua `/bikes`; nenhuma combinação entra no sitemap. Pontos de entrada: botão "Comparar" nos cards de `/bikes`, "Comparar com outra bike" em `/bikes/$slug` e `/radar/$bikeId`, "Comparar essas bikes" nas calculadoras com 2 recomendações, "Compare as especificações destes modelos" no bloco comparativo dos artigos e card "Comparar bikes" da Home. Header/footer sem link independente "Comparar". Eventos: `bike_compare_added`, `bike_compare_removed`, `bike_comparison_opened`, `comparison_bike_clicked`, `affiliate_click` (position `bikes_comparison`). Pendente: motor/bateria/peso não aparecem porque ainda não constam da leitura pública do catálogo; artigos "que comparam os dois" dependem de vídeos associados às duas bikes.
+Esta decisão descreve a implementação removida em 15/10/2026. A comparação
+vigente integra `/radar/{bikeId}` e não existe rota pública `/comparar`.
 
 ## Ferramentas de Mobilidade — sete oficiais (26/09/2026, PUBLICADO)
 

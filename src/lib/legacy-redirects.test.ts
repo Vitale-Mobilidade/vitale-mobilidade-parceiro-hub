@@ -36,6 +36,11 @@ describe("redirects legados", () => {
     );
     expect(legacyRedirect("/acompanhamento", "")).toBe("/radar");
     expect(legacyRedirect("/calc", "?a=1")).toBe("/ferramentas?a=1");
-    expect(legacyRedirect("/bikes", "")).toBeNull();
+    expect(legacyRedirect("/bikes", "")).toBe("/radar");
+    expect(legacyRedirect("/bikes/", "?utm_source=yt&x=1")).toBe(
+      "/radar?utm_source=yt&x=1",
+    );
+    expect(legacyRedirect("/bikes-extra", "")).toBeNull();
+    expect(legacyRedirect("/bikes/v8-ultra", "")).toBeNull();
   });
 });

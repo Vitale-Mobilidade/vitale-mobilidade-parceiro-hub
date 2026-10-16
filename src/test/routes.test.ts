@@ -108,6 +108,15 @@ describe("fundação TanStack Start — rotas", () => {
     expect(root.options.notFoundComponent).toBeTypeOf("function");
   });
 
+  it("não registra mais páginas públicas /bikes na árvore TanStack", () => {
+    const router = makeRouter();
+    expect(router.routesById).not.toHaveProperty("/bikes/");
+    expect(router.routesById).not.toHaveProperty("/bikes/$slug");
+    expect(leafId("/bikes")).toBe("__root__");
+    expect(leafId("/bikes/v8-ultra")).toBe("__root__");
+    expect(leafId("/admin/bikes")).toBe("/admin/bikes");
+  });
+
   it("toda rota declarada tem componente", () => {
     const router = makeRouter();
     for (const id of [
