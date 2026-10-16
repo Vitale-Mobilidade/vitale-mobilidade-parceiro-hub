@@ -2213,6 +2213,8 @@ export type Database = {
       youtube_editorial_sources: {
         Row: {
           article_id: string | null
+          caption_retry_at: string | null
+          caption_retry_bike_ids: string[] | null
           capture: Json | null
           captured_at: string | null
           created_at: string
@@ -2223,6 +2225,8 @@ export type Database = {
         }
         Insert: {
           article_id?: string | null
+          caption_retry_at?: string | null
+          caption_retry_bike_ids?: string[] | null
           capture?: Json | null
           captured_at?: string | null
           created_at?: string
@@ -2233,6 +2237,8 @@ export type Database = {
         }
         Update: {
           article_id?: string | null
+          caption_retry_at?: string | null
+          caption_retry_bike_ids?: string[] | null
           capture?: Json | null
           captured_at?: string | null
           created_at?: string
