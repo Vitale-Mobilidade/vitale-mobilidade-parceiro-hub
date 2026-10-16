@@ -13,7 +13,7 @@ describe("newsletter theme", () => {
     expect(output.html).toContain("@media (prefers-color-scheme: dark)");
     expect(output.html).toContain("color:#e4eee7!important");
     expect(output.html).toContain(
-      '[style*="background:#e6f0e8"]{background:#173d2a!important;color:#d1f5df!important}',
+      '[style*="background:#e6f0e8"]{background:#e6f0e8!important;color:#165b42!important}',
     );
     expect(output.html).toContain("background:#ffffff");
     expect(output.html).toContain("{{{RESEND_UNSUBSCRIBE_URL}}}");

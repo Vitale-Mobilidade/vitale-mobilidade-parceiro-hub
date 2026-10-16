@@ -38,3 +38,6 @@ Prévia local renderizada em navegador, larguras 360 e 390: scrollWidth igual a 
 | PMO/QA | Pass | 51 testes direcionados, lint do escopo e pnpm validate (62 regressões, tipos e build) aprovados. |
 
 GO para correção da newsletter/admin, continuidade do escopo já autorizado para implementação e publicação nesta conversa. Ativação de tracking é decisão separada: requer autorização específica, afeta somente eventos futuros e a medição de links. Para retornar ao estado anterior: reverter o diff desta revisão e republicar; banco e histórico não são alterados. Teste em aplicativos nativos é limitação declarada, não alegado como realizado.
+
+## Correção de interpretação do selo
+Usuário esclareceu: preservar caixa clara e usar texto verde escuro no tema dark. Regra final das categorias: fundo #e6f0e8 e texto #165b42, ambos explícitos para não herdar texto claro do tema. A passagem anterior que descreve selo escuro fica superada por esta decisão.

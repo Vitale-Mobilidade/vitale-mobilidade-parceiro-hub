@@ -11,7 +11,7 @@ a{color:#8cdbb8!important}
 [style*="color:#476756"],[style*="color:#526658"]{color:#bfd0c4!important}
 [style*="color:#173d2a"]{color:#edf5ef!important}
 [style*="color:#165b42"]{color:#8cdbb8!important}
-[style*="background:#e6f0e8"]{background:#173d2a!important;color:#d1f5df!important}
+[style*="background:#e6f0e8"]{background:#e6f0e8!important;color:#165b42!important}
 [style*="background:#d6f5e6"]{background:#284f3b!important;color:#d1f5df!important}
 [bgcolor="#165b42"]{background:#216b4f!important}
 [bgcolor="#165b42"] a,[bgcolor="#173d2a"] a{color:#ffffff!important}
