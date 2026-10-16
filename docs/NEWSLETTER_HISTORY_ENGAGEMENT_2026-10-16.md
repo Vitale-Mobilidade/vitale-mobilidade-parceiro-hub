@@ -41,3 +41,12 @@ GO para correção da newsletter/admin, continuidade do escopo já autorizado pa
 
 ## Correção de interpretação do selo
 Usuário esclareceu: preservar caixa clara e usar texto verde escuro no tema dark. Regra final das categorias: fundo #e6f0e8 e texto #165b42, ambos explícitos para não herdar texto claro do tema. A passagem anterior que descreve selo escuro fica superada por esta decisão.
+
+## Release e validação produtiva
+PR #50 integrado como `8754874`, publicação `5154068e-048e-437d-a003-b560ddc1e73e`. Correção final do selo em `94834f2c8a55f7d3eb015f399cbcd44b6a767df1`, publicação `13e96a8d-63b7-4930-9647-0b9a11adbaff`. Lovable confirmou sincronização desse SHA e a UI confirmou “Seu site foi atualizado”.
+
+Smoke autenticado produtivo: histórico mostra assunto e as quatro colunas; consulta Resend funcionou e retornou enviados/entregues 25/25 (#3), 23/23 (#2), 21/19 (#1), com aberturas/cliques indisponíveis e tracking desligado indicado. Botão da #3 abriu “HTML original salvo no Resend · somente leitura”. Próximas edições têm seção própria e estado vazio correto, sem executar geração real. Teste de renderização adicional confirmou conteúdo futuro visível e rascunho antigo excluído. API sem sessão permanece HTTP 401.
+
+Requisitos atuais do próprio Resend para ativar tracking: criar subdomínio de rastreamento (`links.news.vitalemobilidade.com` é a sugestão do formulário), configurar DNS e habilitar opções de abertura/clique; o formulário explica redirecionamento dos links de email. Não houve submissão de configuração ou alteração de DNS nesta task. É um escopo externo separado da leitura de métricas já existentes. Os três envios históricos não podem ganhar dados retroativos. Não usar esse fluxo para redirecionar links afiliados públicos.
+
+Estado final: correções de interface e HTML publicadas; rastreamento futuro permanece desativado aguardando decisão específica. Último `pnpm validate` passou com 62 regressões, tipos e build após correção definitiva do selo; 51 testes focados aprovados, teste de conteúdo futuro reforçado e reaprovado, lint do escopo sem avisos. Rollback de toda revisão: reverter #50 e 94834f2 e republicar; nenhum dado precisa ser desfeito. A validação de tema é de navegador, não de aplicativo nativo.

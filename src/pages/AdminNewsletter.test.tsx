@@ -14,7 +14,24 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: ({ queryKey }: { queryKey: string[] }) => ({
     data:
       queryKey[2] === "drafts"
-        ? { drafts: [] }
+        ? {
+            drafts: [
+              {
+                id: "00000000-0000-4000-8000-000000000001",
+                edition_day: "2099-10-19",
+                content: {
+                  subject: "Próxima edição preparada para visualizar",
+                },
+              },
+              {
+                id: "00000000-0000-4000-8000-000000000002",
+                edition_day: "2020-10-19",
+                content: {
+                  subject: "Rascunho antigo não deve virar próxima edição",
+                },
+              },
+            ],
+          }
         : queryKey[2] === "campaign-reports"
           ? {
               "1": {
@@ -94,6 +111,9 @@ describe("newsletter people view", () => {
     expect(html).toContain("Abertos");
     expect(html).toContain("Com clique");
     expect(html).toContain("Visualizar edição enviada");
+    expect(html).toContain("Próxima edição preparada para visualizar");
+    expect(html).toContain("Visualizar conteúdo e HTML");
+    expect(html).not.toContain("Rascunho antigo não deve virar próxima edição");
     expect(html).not.toContain("Abrir provedor de envio");
     expect(html).toContain("Passe o mouse");
     const table = html.split("<tbody>")[1].split("</tbody>")[0];
