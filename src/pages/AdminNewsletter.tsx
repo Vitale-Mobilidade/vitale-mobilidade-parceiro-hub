@@ -1,3 +1,6 @@
+import { NewsletterPreviewPanel } from "@/components/admin/NewsletterPreviewPanel";
+import { NewsletterCampaignResults } from "@/components/admin/NewsletterCampaignResults";
+import type { NewsletterDraft } from "@/lib/newsletter-drafts";
 import { NewsletterDraftEditor } from "@/components/admin/NewsletterDraftEditor";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +10,7 @@ import {
   type NewsletterAdminState,
   type NewsletterPeople,
   type NewsletterMetrics,
+  type NewsletterPreview,
 } from "@/lib/newsletter-api";
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
@@ -25,6 +29,44 @@ const statuses: Record<string, string> = {
 };
 function NewsletterOperation() {
   const qc = useQueryClient();
+  const [editionPreview, setEditionPreview] =
+    useState<NewsletterPreview | null>(null);
+  const [activeDay, setActiveDay] = useState<string | null>(null);
+  const drafts = useQuery({
+    queryKey: ["admin", "newsletter", "drafts"],
+    queryFn: () => newsletterCall<{ drafts: NewsletterDraft[] }>("draft_list"),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  async function viewEdition(
+    action: "campaign_preview" | "edition_preview",
+    id: string,
+  ) {
+    setBusy(true);
+    setError("");
+    try {
+      setEditionPreview(
+        await newsletterCall<NewsletterPreview>(action, { id }),
+      );
+      requestAnimationFrame(() =>
+        document
+          .getElementById("newsletter-edition-preview")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Não foi possível abrir a edição.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const [from, setFrom] = useState<string | null>(null),
     [reply, setReply] = useState<string | null>(null);
   const [busy, setBusy] = useState(false),
@@ -211,21 +253,46 @@ function NewsletterOperation() {
                   <strong>{metrics.data.radarPeople}</strong> pessoas com
                   alertas ativos no Radar
                 </p>
-                <div className="flex h-36 items-end gap-1" aria-hidden="true">
-                  {metrics.data.days.map((d) => (
-                    <div
-                      key={d.day}
-                      title={`${d.day}: ${d.count}`}
-                      className="flex flex-1 items-end h-full"
-                    >
-                      <div
-                        className="w-full rounded-t bg-emerald-700"
-                        style={{
-                          height: `${(d.count / Math.max(1, ...metrics.data.days.map((v) => v.count))) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  ))}
+                <div className="relative">
+                  <p
+                    className="mb-2 min-h-5 text-sm font-medium"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {activeDay
+                      ? `${activeDay.split("-").reverse().join("/")}: ${metrics.data.days.find((d) => d.day === activeDay)?.count ?? 0} cadastros`
+                      : "Passe o mouse, toque ou use o teclado para ver cada dia."}
+                  </p>
+                  <div
+                    className="flex h-36 items-end gap-1"
+                    aria-label="Gráfico de inscrições diárias"
+                  >
+                    {metrics.data.days.map((d) => (
+                      <button
+                        key={d.day}
+                        type="button"
+                        aria-label={`${d.day.split("-").reverse().join("/")}: ${d.count} cadastros`}
+                        onMouseEnter={() => setActiveDay(d.day)}
+                        onFocus={() => setActiveDay(d.day)}
+                        onClick={() => setActiveDay(d.day)}
+                        className="group relative flex h-full min-w-0 flex-1 items-end rounded-t focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-800"
+                        title={`${d.day.split("-").reverse().join("/")}: ${d.count} cadastros`}
+                      >
+                        <span
+                          className="w-full rounded-t bg-emerald-700 group-hover:bg-emerald-900"
+                          style={{
+                            height: `${(d.count / Math.max(1, ...metrics.data.days.map((v) => v.count))) * 100}%`,
+                          }}
+                        />
+                        <span
+                          className="absolute bottom-full left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-emerald-950 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+                          aria-hidden="true"
+                        >
+                          {d.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <p className="mt-2 flex justify-between text-xs">
                   <span>
@@ -246,7 +313,7 @@ function NewsletterOperation() {
                         </tr>
                       </thead>
                       <tbody>
-                        {metrics.data.days.map((d) => (
+                        {[...metrics.data.days].reverse().map((d) => (
                           <tr key={d.day}>
                             <td>{d.day.split("-").reverse().join("/")}</td>
                             <td>{d.count}</td>
@@ -357,13 +424,92 @@ function NewsletterOperation() {
               )}
             </section>
           </details>
+          <section
+            className="rounded-xl border bg-white p-5"
+            aria-label="Próximas edições preparadas"
+          >
+            <h2 className="font-bold">Próximas edições</h2>
+            {drafts.isPending && <p role="status">Carregando edições…</p>}
+            {drafts.isError && (
+              <p role="alert">
+                Não foi possível carregar as edições.{" "}
+                <button
+                  className="underline"
+                  onClick={() => void drafts.refetch()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            )}
+            {drafts.data && (
+              <>
+                {!drafts.data.drafts.some(
+                  (d) =>
+                    d.edition_day &&
+                    d.edition_day >= today &&
+                    !data.campaigns.some(
+                      (c) => c.edition_day === d.edition_day,
+                    ),
+                ) && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Nenhuma próxima edição preparada ainda. Ela aparecerá aqui
+                    assim que o conteúdo for criado.
+                  </p>
+                )}
+                {drafts.data.drafts
+                  .filter(
+                    (d) =>
+                      d.edition_day &&
+                      d.edition_day >= today &&
+                      !data.campaigns.some(
+                        (c) => c.edition_day === d.edition_day,
+                      ),
+                  )
+                  .sort((a, b) => a.edition_day!.localeCompare(b.edition_day!))
+                  .map((d) => (
+                    <div key={d.id} className="mt-3 border-t pt-3">
+                      <p className="font-medium">{d.content.subject}</p>
+                      <p className="text-sm">
+                        Envio previsto:{" "}
+                        {d.edition_day!.split("-").reverse().join("/")} às 06h30
+                        · São Paulo
+                      </p>
+                      <button
+                        className={button + " mt-2"}
+                        disabled={busy}
+                        onClick={() =>
+                          void viewEdition("edition_preview", d.id)
+                        }
+                      >
+                        Visualizar conteúdo e HTML
+                      </button>
+                    </div>
+                  ))}
+              </>
+            )}
+            <details className="mt-3">
+              <summary className="cursor-pointer text-sm underline">
+                Ajustar textos de próximas edições
+              </summary>
+              <div className="mt-3">
+                <NewsletterDraftEditor
+                  lockedDays={data.campaigns.map((c) => c.edition_day)}
+                />
+              </div>
+            </details>
+          </section>
+          {editionPreview && (
+            <NewsletterPreviewPanel
+              key={editionPreview.html}
+              preview={editionPreview}
+              onClose={() => setEditionPreview(null)}
+            />
+          )}
           <details className="rounded-xl border bg-white p-5">
             <summary className="cursor-pointer font-bold">
               Configurações e preparação de edições
             </summary>
-            <div className="mt-5">
-              <NewsletterDraftEditor />
-            </div>
+
             <div className="rounded-xl border bg-white p-5">
               <h2 className="font-bold">Entrega pelo Resend</h2>
               <p className="mt-2">
@@ -482,7 +628,7 @@ function NewsletterOperation() {
             </p>
           </details>
           <div className="rounded-xl border bg-white p-5">
-            <h2 className="font-bold">Últimas edições</h2>
+            <h2 className="font-bold">Histórico de edições enviadas</h2>
             {!data.campaigns.length ? (
               <p className="mt-3 text-muted-foreground">
                 Nenhuma edição preparada ainda.
@@ -491,6 +637,9 @@ function NewsletterOperation() {
               <ul className="mt-3 space-y-3">
                 {data.campaigns.map((c) => (
                   <li key={c.id} className="border-t pt-3">
+                    <h3 className="font-semibold">
+                      {c.subject ?? "Edição da newsletter"}
+                    </h3>
                     <p className="font-medium">
                       {c.edition_day.split("-").reverse().join("/")} ·{" "}
                       {c.segment === "general"
@@ -506,6 +655,18 @@ function NewsletterOperation() {
                       {c.recipients} destinatários · {c.delivered} entregas
                       confirmadas · {c.failed} falhas
                     </p>
+                    <NewsletterCampaignResults
+                      id={c.id}
+                      delivered={c.delivered}
+                      failed={c.failed}
+                    />
+                    <button
+                      className={button + " mt-2"}
+                      disabled={busy}
+                      onClick={() => void viewEdition("campaign_preview", c.id)}
+                    >
+                      Visualizar edição enviada
+                    </button>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {[
                         ["recipients", "Destinatários"],
@@ -528,16 +689,6 @@ function NewsletterOperation() {
                         </button>
                       ))}
                     </div>
-                    {c.resend_id && (
-                      <a
-                        className="text-sm underline"
-                        href="https://resend.com/broadcasts"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Abrir provedor de envio
-                      </a>
-                    )}
                   </li>
                 ))}
               </ul>

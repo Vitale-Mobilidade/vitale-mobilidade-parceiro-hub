@@ -17,6 +17,7 @@ export type NewsletterAdminState = {
   };
   campaigns: {
     id: string;
+    subject?: string | null;
     recipients: number;
     delivered: number;
     failed: number;
@@ -47,6 +48,8 @@ export async function newsletterCall<T>(
     .catch(() => ({ error: "newsletter_unavailable" }));
   if (!response.ok) {
     const messages: Record<string, string> = {
+      newsletter_campaign_unavailable:
+        "Não foi possível encontrar esta edição no histórico.",
       newsletter_writer_auth_failed:
         "O gateway de IA rejeitou a autenticação do servidor.",
       newsletter_writer_budget_limit:
@@ -138,4 +141,22 @@ export type NewsletterMetrics = {
   radarPeople: number;
   radarAlerts: number;
   updatedAt: string;
+};
+
+export type NewsletterCampaignStats = {
+  available: boolean;
+  reason?: string;
+  sent?: number;
+  delivered?: number;
+  opened?: number | null;
+  clicked?: number | null;
+  openTracking?: boolean | null;
+  clickTracking?: boolean | null;
+  updatedAt?: string;
+};
+export type NewsletterPreview = {
+  html: string;
+  text?: string;
+  subject?: string;
+  source?: "provider" | "snapshot" | "draft";
 };

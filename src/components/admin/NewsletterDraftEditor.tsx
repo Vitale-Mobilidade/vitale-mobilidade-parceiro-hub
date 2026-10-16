@@ -9,7 +9,9 @@ import {
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
   "rounded-lg border border-line px-4 py-2 font-medium disabled:opacity-50";
-export function NewsletterDraftEditor() {
+export function NewsletterDraftEditor({
+  lockedDays = [],
+}: { lockedDays?: string[] } = {}) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
@@ -153,7 +155,10 @@ export function NewsletterDraftEditor() {
       {drafts.isError && <p role="alert">{drafts.error.message}</p>}
       {drafts.data &&
         !drafts.data.drafts.some(
-          (d) => d.edition_day && d.edition_day > today,
+          (d) =>
+            d.edition_day &&
+            d.edition_day >= today &&
+            !lockedDays.includes(d.edition_day),
         ) && (
           <p className="text-sm text-muted-foreground">
             Nenhuma edição futura disponível para ajuste. Edições enviadas ficam
@@ -162,7 +167,12 @@ export function NewsletterDraftEditor() {
         )}
       <ul className="space-y-2">
         {drafts.data?.drafts
-          .filter((d) => d.edition_day && d.edition_day > today)
+          .filter(
+            (d) =>
+              d.edition_day &&
+              d.edition_day >= today &&
+              !lockedDays.includes(d.edition_day),
+          )
           .map((d) => (
             <li key={d.id}>
               <button
@@ -188,7 +198,7 @@ export function NewsletterDraftEditor() {
             </li>
           ))}
       </ul>
-      {draft && edit && (
+      {draft && edit && !lockedDays.includes(draft.edition_day ?? "") && (
         <fieldset disabled={busy} className="space-y-4 border-t pt-4">
           <label className="block">
             Assunto do e-mail

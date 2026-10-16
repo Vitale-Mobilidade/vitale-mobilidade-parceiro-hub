@@ -1,3 +1,7 @@
+import {
+  newsletterCampaignPreview,
+  newsletterCampaignReports,
+} from "./newsletter-history.server";
 import { newsletterMetrics } from "./newsletter-metrics.server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -639,6 +643,14 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
         ]);
       if ([total, eligible, legacy, suppressed, campaigns].some((r) => r.error))
         throw new Error("newsletter_database_failed");
+      const campaignSubjects =
+        (await must(
+          db
+            .from("newsletter_campaigns")
+            .select("id,payload")
+            .order("edition_day", { ascending: false })
+            .limit(20),
+        )) ?? [];
       return Response.json(
         {
           settings: s,
@@ -650,7 +662,12 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
             legacy: legacy.count,
             suppressed: suppressed.count,
           },
-          campaigns: campaigns.data,
+          campaigns: (campaigns.data ?? []).map((campaign: { id: string }) => ({
+            ...campaign,
+            subject:
+              campaignSubjects.find((d) => d.id === campaign.id)?.payload
+                ?.content?.subject ?? null,
+          })),
         },
         { headers },
       );
@@ -660,6 +677,42 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     const raw = await request.text();
     if (raw.length > 65000) return new Response(null, { status: 413, headers });
     const body = JSON.parse(raw) as Record<string, unknown>;
+    if (body.action === "edition_preview") {
+      const input = z
+        .object({ action: z.literal("edition_preview"), id: z.string().uuid() })
+        .strict()
+        .parse(body);
+      const draft = await must(
+        db
+          .from("newsletter_drafts")
+          .select("content")
+          .eq("id", input.id)
+          .single(),
+      );
+      if (!draft) throw new Error("newsletter_drafts_unavailable");
+      return Response.json(
+        {
+          ...renderResendNewsletter(draft.content),
+          subject: draft.content.subject,
+          source: "draft",
+        },
+        { headers },
+      );
+    }
+    if (body.action === "campaign_reports") {
+      z.object({ action: z.literal("campaign_reports") })
+        .strict()
+        .parse(body);
+      return Response.json(await newsletterCampaignReports(db, provider), {
+        headers,
+      });
+    }
+    if (body.action === "campaign_preview") {
+      return Response.json(
+        await newsletterCampaignPreview(db, provider, body),
+        { headers },
+      );
+    }
     if (body.action === "metrics") {
       z.object({ action: z.literal("metrics") })
         .strict()
