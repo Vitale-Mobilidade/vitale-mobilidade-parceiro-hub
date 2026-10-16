@@ -13,41 +13,47 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useQuery: ({ queryKey }: { queryKey: string[] }) => ({
     data:
-      queryKey[2] === "people"
+      queryKey[2] === "metrics"
         ? {
-            total: 30,
-            page: 0,
-            rows: [
-              {
-                id: "1",
-                person_name: "Pessoa de teste",
-                email: "teste@example.test",
-                created_at: "2026-10-08T12:00:00Z",
-                subscription_status: "eligible",
-                delivery_status: null,
-              },
-            ],
+            days: [{ day: "2026-10-16", count: 2 }],
+            radarPeople: 3,
+            radarAlerts: 4,
           }
-        : {
-            settings: {
-              enabled: false,
-              from_email: "",
-              reply_to: "",
-              segments: {},
-            },
-            audience: { total: 30, eligible: 28, legacy: 1, suppressed: 1 },
-            campaigns: [
-              {
-                id: "1",
-                edition_day: "2026-10-08",
-                segment: "general",
-                status: "sent",
-                recipients: 29,
-                delivered: 1,
-                failed: 1,
+        : queryKey[2] === "people"
+          ? {
+              total: 30,
+              page: 0,
+              rows: [
+                {
+                  id: "1",
+                  person_name: "Pessoa de teste",
+                  email: "teste@example.test",
+                  created_at: "2026-10-08T12:00:00Z",
+                  subscription_status: "eligible",
+                  delivery_status: null,
+                },
+              ],
+            }
+          : {
+              settings: {
+                enabled: false,
+                from_email: "",
+                reply_to: "",
+                segments: {},
               },
-            ],
-          },
+              audience: { total: 30, eligible: 28, legacy: 1, suppressed: 1 },
+              campaigns: [
+                {
+                  id: "1",
+                  edition_day: "2026-10-08",
+                  segment: "general",
+                  status: "sent",
+                  recipients: 29,
+                  delivered: 1,
+                  failed: 1,
+                },
+              ],
+            },
   }),
 }));
 import AdminNewsletter from "./AdminNewsletter";
@@ -62,5 +68,9 @@ describe("newsletter people view", () => {
     expect(html).toContain("Entregues</button>");
     expect(html).toContain("Página 1");
     expect(html).toContain("Ver pessoas");
+    expect(html).toContain("08/10/2026, 09:00");
+    expect(html).toContain("Novas inscrições");
+    expect(html).not.toContain("Aguardam novo aceite");
+    expect(html).toContain("Configurações e preparação de edições");
   });
 });

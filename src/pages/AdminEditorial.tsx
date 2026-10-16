@@ -1,3 +1,4 @@
+import { newsletterCall, type NewsletterAdminState, type NewsletterMetrics } from "@/lib/newsletter-api";
 import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -113,6 +114,8 @@ function Overview({ role }: { role: AdminRole }) {
     refetchOnWindowFocus: false,
     retry: false,
   });
+  const audience = useQuery({ queryKey: ["admin", "newsletter", "operation"], queryFn: () => newsletterCall<NewsletterAdminState>(), enabled: role === "admin", staleTime: 60_000, retry: false });
+  const metrics = useQuery({ queryKey: ["admin", "newsletter", "metrics"], queryFn: () => newsletterCall<NewsletterMetrics>("metrics"), enabled: role === "admin", staleTime: 60_000, retry: false });
   const data = overview.data ?? null;
   const error = overview.error ? queryError(overview.error, "Não foi possível carregar a operação.") : "";
   const videoCatalogCount = videoCatalog.data?.length ?? null;
@@ -146,13 +149,13 @@ function Overview({ role }: { role: AdminRole }) {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {[
               ["Vídeos na planilha", videoCatalogCount ?? "—"],
-              ["Vídeos importados", data.videos],
-              ["Com transcrição", data.videosWithTranscript ?? "—"],
               ["Com artigo", data.videosWithArticle ?? "—"],
               ["Artigos publicados", data.articles.published ?? 0],
-              ["Rascunhos", data.articles.draft ?? 0],
               ["Bikes no catálogo", data.bikes],
-              ["Falhas no histórico", data.generationErrors],
+              ...(role === "admin" ? [
+                ["Newsletter · total de cadastros", audience.data?.audience.total ?? "—"],
+                ["Radar · pessoas com alertas ativos", metrics.data?.radarPeople ?? "—"],
+              ] : []),
             ].map(([label, value]) => (
               <div key={label} className={PANEL}>
                 <p className="text-sm text-muted-foreground">{label}</p>
@@ -161,8 +164,9 @@ function Overview({ role }: { role: AdminRole }) {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            “Na planilha” é o acervo disponível. “Importados” são vídeos que já receberam dados editoriais no Admin.
+            Newsletter: total histórico de cadastros; ativos e descadastrados no painel Newsletter. Radar: pessoas distintas por telefone com alerta ativo e consentimento; não representa mensagens entregues.
           </p>
+          {role === "admin" && (audience.isError || metrics.isError) && <Notice danger>Não foi possível carregar parte das métricas de audiência. <button className="underline" onClick={() => { void audience.refetch(); void metrics.refetch(); }}>Tentar novamente</button></Notice>}
           <div className={`${PANEL} mt-5`}>
             <h2 className="text-lg font-semibold">Sincronização da planilha</h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">

@@ -10,6 +10,12 @@ const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
   "rounded-lg border border-line px-4 py-2 font-medium disabled:opacity-50";
 export function NewsletterDraftEditor() {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
   const qc = useQueryClient();
   const [draft, setDraft] = useState<NewsletterDraft | null>(null),
     [edit, setEdit] = useState<NewsletterEdit | null>(null);
@@ -113,7 +119,7 @@ export function NewsletterDraftEditor() {
       aria-labelledby="newsletter-drafts-title"
     >
       <h2 id="newsletter-drafts-title" className="text-xl font-bold">
-        Rascunhos e edição
+        Próximas edições
       </h2>
       <p className="text-sm text-ink-muted">
         Abra uma edição para ajustar assunto e textos sem gerar tudo novamente.
@@ -146,39 +152,41 @@ export function NewsletterDraftEditor() {
       {drafts.isPending && <p role="status">Carregando rascunhos…</p>}
       {drafts.isError && <p role="alert">{drafts.error.message}</p>}
       {drafts.data &&
-        !drafts.data.drafts.some((d) => d.origin === "test_import") && (
-          <button
-            className={button}
-            disabled={busy}
-            onClick={() => void run("draft_import_test")}
-          >
-            Recuperar edição do teste
-          </button>
+        !drafts.data.drafts.some(
+          (d) => d.edition_day && d.edition_day > today,
+        ) && (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma edição futura disponível para ajuste. Edições enviadas ficam
+            no histórico de entregas.
+          </p>
         )}
       <ul className="space-y-2">
-        {drafts.data?.drafts.map((d) => (
-          <li key={d.id}>
-            <button
-              className={button + " w-full text-left"}
-              disabled={busy}
-              onClick={() => open(d)}
-            >
-              {d.content.subject}
-              {d.edition_day && (
-                <span className="block text-xs">
-                  Envio previsto: {d.edition_day.split("-").reverse().join("/")}{" "}
-                  às 06h30 (São Paulo)
-                </span>
-              )}
-              {d.generation_mode === "fallback" && (
-                <span className="block text-xs">
-                  Edição simples: recuperação da geração
-                </span>
-              )}
-              <span className="ml-2 text-xs">· Revisão {d.revision}</span>
-            </button>
-          </li>
-        ))}
+        {drafts.data?.drafts
+          .filter((d) => d.edition_day && d.edition_day > today)
+          .map((d) => (
+            <li key={d.id}>
+              <button
+                className={button + " w-full text-left"}
+                disabled={busy}
+                onClick={() => open(d)}
+              >
+                {d.content.subject}
+                {d.edition_day && (
+                  <span className="block text-xs">
+                    Envio previsto:{" "}
+                    {d.edition_day.split("-").reverse().join("/")} às 06h30 (São
+                    Paulo)
+                  </span>
+                )}
+                {d.generation_mode === "fallback" && (
+                  <span className="block text-xs">
+                    Edição simples: recuperação da geração
+                  </span>
+                )}
+                <span className="ml-2 text-xs">· Revisão {d.revision}</span>
+              </button>
+            </li>
+          ))}
       </ul>
       {draft && edit && (
         <fieldset disabled={busy} className="space-y-4 border-t pt-4">

@@ -6,6 +6,7 @@ import {
   newsletterCall,
   type NewsletterAdminState,
   type NewsletterPeople,
+  type NewsletterMetrics,
 } from "@/lib/newsletter-api";
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
@@ -16,7 +17,7 @@ const statuses: Record<string, string> = {
   ready: "Pronta para enviar",
   submitting: "Enviando ao Resend",
   submitted: "Aceita pelo Resend",
-  sent: "Processamento concluído",
+  sent: "Enviada · processamento concluído",
   uncertain: "Resultado incerto · conferir",
   failed: "Falhou",
   paused: "Pausada · conferir",
@@ -60,6 +61,8 @@ function NewsletterOperation() {
     campaign: string | null = null,
   ) {
     setSelection({ filter, label, campaign, page: 0 });
+    const panel = document.getElementById("newsletter-people")?.parentElement;
+    if (panel instanceof HTMLDetailsElement) panel.open = true;
     document
       .getElementById("newsletter-people")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -72,6 +75,11 @@ function NewsletterOperation() {
     failed: "Falha / reclamação",
     unknown: "Sem confirmação individual",
   };
+  const metrics = useQuery({
+    queryKey: ["admin", "newsletter", "metrics"],
+    queryFn: () => newsletterCall<NewsletterMetrics>("metrics"),
+    staleTime: 60_000,
+  });
   const data = query.data;
   async function action(name: string, payload: Record<string, unknown> = {}) {
     setBusy(true);
@@ -127,25 +135,6 @@ function NewsletterOperation() {
   }
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-line bg-white p-5">
-        <h2 className="font-semibold">Redator da newsletter</h2>
-        <p className="mt-2 text-sm text-ink-muted">
-          Cada edição recebe uma abertura curta e editorial, sem curiosidade,
-          três leituras (incluindo Do acervo), resumos com tópicos e imagens dos
-          artigos, bike e vídeos. O redator usa artigos e transcrições do canal,
-          consulta o acervo ainda não enviado e passa por uma revisão factual
-          automática antes do envio. As pautas exploram bikes diferentes; a bike
-          em destaque não repete as quedas do Radar.
-        </p>
-        <p className="mt-2 text-sm text-ink-muted">
-          Gerar prévia usa IA: uma chamada para redação e outra para revisão. Se
-          houver rejeição editorial, o agente faz no máximo uma autocorreção;
-          até quatro chamadas e dois minutos no total. Os envios da mesma edição
-          reutilizam o texto preparado. Links levam UTMs por edição, seção e
-          segmento. No GA4, filtre origem vitale_newsletter e mídia email; o
-          Quiz também preserva essa atribuição.
-        </p>
-      </div>
       <div>
         <h1 className="text-2xl font-bold">Newsletter</h1>
         <p className="mt-2 text-muted-foreground">
@@ -153,7 +142,6 @@ function NewsletterOperation() {
           às 6h30 de São Paulo.
         </p>
       </div>
-      <NewsletterDraftEditor />
       {query.isPending && <p role="status">Carregando a newsletter…</p>}
       {query.isError && (
         <div
@@ -173,11 +161,10 @@ function NewsletterOperation() {
       )}
       {data && (
         <>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             {[
               ["Todos os cadastrados", data.audience.total, "all"],
-              ["Inscritos elegíveis", data.audience.eligible, "eligible"],
-              ["Aguardam novo aceite", data.audience.legacy, "legacy"],
+              ["Inscritos ativos", data.audience.eligible, "eligible"],
               ["Descadastrados", data.audience.suppressed, "suppressed"],
             ].map(([label, count, filter]) => (
               <button
@@ -193,205 +180,307 @@ function NewsletterOperation() {
             ))}
           </div>
           <section
-            id="newsletter-people"
             className="rounded-xl border bg-white p-5"
-            aria-label="Pessoas da newsletter"
+            aria-label="Novas inscrições por dia"
           >
-            <h2 className="font-bold">{selection.label}</h2>
-            {selection.campaign && (
-              <p className="mt-2 text-sm">
-                Eventos antigos podem ter apenas contagem agregada. Sem
-                confirmação individual não significa que a pessoa não recebeu.
-              </p>
-            )}
-            <button
-              className={button + " mt-3"}
-              onClick={() => showPeople("all", "Todos os cadastrados")}
-            >
-              Ver todos os cadastros
-            </button>
-            {people.isPending && <p role="status">Carregando pessoas…</p>}
-            {people.isError && (
-              <div role="alert">
-                <p>{people.error.message}</p>
+            <h2 className="font-bold">Novas inscrições · últimos 30 dias</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cadastros por dia, no horário de São Paulo. Inclui quem se
+              descadastrou depois.
+            </p>
+            {metrics.isPending && <p role="status">Carregando evolução…</p>}
+            {metrics.isError && (
+              <p role="alert">
+                Não foi possível carregar a evolução.{" "}
                 <button
-                  className={button}
-                  onClick={() => {
-                    void people.refetch();
-                  }}
+                  className="underline"
+                  onClick={() => void metrics.refetch()}
                 >
                   Tentar novamente
                 </button>
-              </div>
+              </p>
             )}
-            {people.data && (
+            {metrics.data && (
               <>
-                <p className="my-3" role="status">
-                  {people.data.total} pessoas neste filtro
+                <p className="my-3">
+                  <strong>
+                    {metrics.data.days.reduce((sum, d) => sum + d.count, 0)}
+                  </strong>{" "}
+                  cadastros no período ·{" "}
+                  <strong>{metrics.data.days.at(-1)?.count ?? 0}</strong> hoje ·{" "}
+                  <strong>{metrics.data.radarPeople}</strong> pessoas com
+                  alertas ativos no Radar
                 </p>
-                {!people.data.rows.length ? (
-                  <p>Nenhuma pessoa neste filtro.</p>
-                ) : (
-                  <ul className="divide-y">
-                    {people.data.rows.map((person) => (
-                      <li key={person.id} className="py-3 break-words">
-                        <p className="font-medium">{person.person_name}</p>
-                        <p>{person.email}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Cadastro:{" "}
-                          {new Date(person.created_at).toLocaleDateString(
-                            "pt-BR",
-                            { timeZone: "America/Sao_Paulo" },
-                          )}{" "}
-                          · {personStatus[person.subscription_status]}
-                        </p>
-                        {person.delivery_status && (
-                          <p className="text-sm">
-                            {personStatus[person.delivery_status]}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    className={button}
-                    disabled={!selection.page}
-                    onClick={() =>
-                      setSelection((v) => ({ ...v, page: v.page - 1 }))
-                    }
-                  >
-                    Anterior
-                  </button>
-                  <span>Página {selection.page + 1}</span>
-                  <button
-                    className={button}
-                    disabled={(selection.page + 1) * 25 >= people.data.total}
-                    onClick={() =>
-                      setSelection((v) => ({ ...v, page: v.page + 1 }))
-                    }
-                  >
-                    Próxima
-                  </button>
+                <div className="flex h-36 items-end gap-1" aria-hidden="true">
+                  {metrics.data.days.map((d) => (
+                    <div
+                      key={d.day}
+                      title={`${d.day}: ${d.count}`}
+                      className="flex flex-1 items-end h-full"
+                    >
+                      <div
+                        className="w-full rounded-t bg-emerald-700"
+                        style={{
+                          height: `${(d.count / Math.max(1, ...metrics.data.days.map((v) => v.count))) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
+                <p className="mt-2 flex justify-between text-xs">
+                  <span>
+                    {metrics.data.days[0]?.day.split("-").reverse().join("/")}
+                  </span>
+                  <span>Hoje</span>
+                </p>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm underline">
+                    Ver valores por dia
+                  </summary>
+                  <div className="max-h-48 overflow-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr>
+                          <th>Dia</th>
+                          <th>Cadastros</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {metrics.data.days.map((d) => (
+                          <tr key={d.day}>
+                            <td>{d.day.split("-").reverse().join("/")}</td>
+                            <td>{d.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
               </>
             )}
           </section>
-          <div className="rounded-xl border bg-white p-5">
-            <h2 className="font-bold">Entrega pelo Resend</h2>
-            <p className="mt-2">
-              {data.settings.enabled ? "Automação ativa" : "Automação pausada"}{" "}
-              ·{" "}
-              {data.configured
-                ? "Conexão disponível no servidor"
-                : "Conexão do servidor pendente"}{" "}
-              ·{" "}
-              {data.webhookConfigured
-                ? "Webhook configurado"
-                : "Webhook pendente"}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Broadcasts no plano gratuito: até mil contatos na conta e envios
-              ilimitados. Segmentação por interesse declarado; quem não escolheu
-              recebe a edição geral. Nenhum contato do Quiz é incluído
-              automaticamente.
-            </p>
-            {data.settings.last_error && (
-              <p role="alert" className="mt-3 text-sm text-red-800">
-                A operação precisa de conferência: {data.settings.last_error}.
-                Nenhuma campanha incerta será reenviada automaticamente.
+          <details
+            className="rounded-xl border bg-white p-5"
+            open={!!selection.campaign}
+          >
+            <summary className="cursor-pointer font-bold">
+              Cadastros e destinatários
+            </summary>
+            <section
+              id="newsletter-people"
+              className="rounded-xl border bg-white p-5"
+              aria-label="Pessoas da newsletter"
+            >
+              <h2 className="font-bold">{selection.label}</h2>
+              {selection.campaign && (
+                <p className="mt-2 text-sm">
+                  Eventos antigos podem ter apenas contagem agregada. Sem
+                  confirmação individual não significa que a pessoa não recebeu.
+                </p>
+              )}
+              <button
+                className={button + " mt-3"}
+                onClick={() => showPeople("all", "Todos os cadastrados")}
+              >
+                Ver todos os cadastros
+              </button>
+              {people.isPending && <p role="status">Carregando pessoas…</p>}
+              {people.isError && (
+                <div role="alert">
+                  <p>{people.error.message}</p>
+                  <button
+                    className={button}
+                    onClick={() => {
+                      void people.refetch();
+                    }}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
+              {people.data && (
+                <>
+                  <p className="my-3" role="status">
+                    {people.data.total} pessoas neste filtro
+                  </p>
+                  {!people.data.rows.length ? (
+                    <p>Nenhuma pessoa neste filtro.</p>
+                  ) : (
+                    <ul className="divide-y">
+                      {people.data.rows.map((person) => (
+                        <li key={person.id} className="py-3 break-words">
+                          <p className="font-medium">{person.person_name}</p>
+                          <p>{person.email}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Cadastro:{" "}
+                            {new Date(person.created_at).toLocaleString(
+                              "pt-BR",
+                              {
+                                timeZone: "America/Sao_Paulo",
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              },
+                            )}{" "}
+                            · {personStatus[person.subscription_status]}
+                          </p>
+                          {person.delivery_status && (
+                            <p className="text-sm">
+                              {personStatus[person.delivery_status]}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      className={button}
+                      disabled={!selection.page}
+                      onClick={() =>
+                        setSelection((v) => ({ ...v, page: v.page - 1 }))
+                      }
+                    >
+                      Anterior
+                    </button>
+                    <span>Página {selection.page + 1}</span>
+                    <button
+                      className={button}
+                      disabled={(selection.page + 1) * 25 >= people.data.total}
+                      onClick={() =>
+                        setSelection((v) => ({ ...v, page: v.page + 1 }))
+                      }
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+          </details>
+          <details className="rounded-xl border bg-white p-5">
+            <summary className="cursor-pointer font-bold">
+              Configurações e preparação de edições
+            </summary>
+            <div className="mt-5">
+              <NewsletterDraftEditor />
+            </div>
+            <div className="rounded-xl border bg-white p-5">
+              <h2 className="font-bold">Entrega pelo Resend</h2>
+              <p className="mt-2">
+                {data.settings.enabled
+                  ? "Automação ativa"
+                  : "Automação pausada"}{" "}
+                ·{" "}
+                {data.configured
+                  ? "Conexão disponível no servidor"
+                  : "Conexão do servidor pendente"}{" "}
+                ·{" "}
+                {data.webhookConfigured
+                  ? "Webhook configurado"
+                  : "Webhook pendente"}
               </p>
-            )}
-          </div>
-          <div className="rounded-xl border bg-white p-5">
-            <h2 className="font-bold">Remetente e respostas</h2>
-            <label className="mt-4 block">
-              E-mail de envio no domínio verificado
-              <input
-                type="email"
-                className={field}
-                disabled={data.settings.enabled}
-                value={from ?? data.settings.from_email}
-                placeholder="newsletter@news.hotpipe.com.br"
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </label>
-            <label className="mt-4 block">
-              Receber respostas em
-              <input
-                type="email"
-                className={field}
-                disabled={data.settings.enabled}
-                value={reply ?? data.settings.reply_to}
-                onChange={(e) => setReply(e.target.value)}
-              />
-            </label>
-            <button
-              className={button + " mt-4"}
-              disabled={busy || data.settings.enabled}
-              onClick={() => {
-                void action("configure", {
-                  from_email: from ?? data.settings.from_email,
-                  reply_to: reply ?? data.settings.reply_to,
-                });
-              }}
-            >
-              Salvar configuração
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              className={button}
-              disabled={busy || data.settings.enabled || !data.configured}
-              onClick={() => {
-                void action("prepare");
-              }}
-            >
-              Verificar domínio e preparar segmentos
-            </button>
-            <button
-              className={button}
-              disabled={busy}
-              onClick={() => {
-                void action("preview");
-              }}
-            >
-              Gerar prévia com conteúdo publicado
-            </button>
-            {data.settings.enabled ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Broadcasts no plano gratuito: até mil contatos na conta e envios
+                ilimitados. Segmentação por interesse declarado; quem não
+                escolheu recebe a edição geral. Nenhum contato do Quiz é
+                incluído automaticamente.
+              </p>
+              {data.settings.last_error && (
+                <p role="alert" className="mt-3 text-sm text-red-800">
+                  A operação precisa de conferência: {data.settings.last_error}.
+                  Nenhuma campanha incerta será reenviada automaticamente.
+                </p>
+              )}
+            </div>
+            <div className="rounded-xl border bg-white p-5">
+              <h2 className="font-bold">Remetente e respostas</h2>
+              <label className="mt-4 block">
+                E-mail de envio no domínio verificado
+                <input
+                  type="email"
+                  className={field}
+                  disabled={data.settings.enabled}
+                  value={from ?? data.settings.from_email}
+                  placeholder="newsletter@news.hotpipe.com.br"
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </label>
+              <label className="mt-4 block">
+                Receber respostas em
+                <input
+                  type="email"
+                  className={field}
+                  disabled={data.settings.enabled}
+                  value={reply ?? data.settings.reply_to}
+                  onChange={(e) => setReply(e.target.value)}
+                />
+              </label>
+              <button
+                className={button + " mt-4"}
+                disabled={busy || data.settings.enabled}
+                onClick={() => {
+                  void action("configure", {
+                    from_email: from ?? data.settings.from_email,
+                    reply_to: reply ?? data.settings.reply_to,
+                  });
+                }}
+              >
+                Salvar configuração
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                className={button}
+                disabled={busy || data.settings.enabled || !data.configured}
+                onClick={() => {
+                  void action("prepare");
+                }}
+              >
+                Verificar domínio e preparar segmentos
+              </button>
               <button
                 className={button}
                 disabled={busy}
                 onClick={() => {
-                  void action("pause");
+                  void action("preview");
                 }}
               >
-                Pausar automação
+                Gerar prévia com conteúdo publicado
               </button>
-            ) : (
-              <button
-                className={button + " bg-emerald-800 text-white"}
-                disabled={
-                  busy ||
-                  !data.configured ||
-                  !data.webhookConfigured ||
-                  !data.settings.segments.general
-                }
-                onClick={() => {
-                  void action("enable");
-                }}
-              >
-                Ativar envios automáticos
-              </button>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            O nome é personalizado pelo Resend. Edições sem novidades são
-            puladas. A ativação inclui somente inscrições com autorização de
-            contato; a primeira entrega ocorre na próxima janela da agenda. As
-            respostas chegam ao e-mail acima.
-          </p>
+              {data.settings.enabled ? (
+                <button
+                  className={button}
+                  disabled={busy}
+                  onClick={() => {
+                    void action("pause");
+                  }}
+                >
+                  Pausar automação
+                </button>
+              ) : (
+                <button
+                  className={button + " bg-emerald-800 text-white"}
+                  disabled={
+                    busy ||
+                    !data.configured ||
+                    !data.webhookConfigured ||
+                    !data.settings.segments.general
+                  }
+                  onClick={() => {
+                    void action("enable");
+                  }}
+                >
+                  Ativar envios automáticos
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              O nome é personalizado pelo Resend. Edições sem novidades são
+              puladas. A ativação inclui somente inscrições com autorização de
+              contato; a primeira entrega ocorre na próxima janela da agenda. As
+              respostas chegam ao e-mail acima.
+            </p>
+          </details>
           <div className="rounded-xl border bg-white p-5">
             <h2 className="font-bold">Últimas edições</h2>
             {!data.campaigns.length ? (
@@ -446,7 +535,7 @@ function NewsletterOperation() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Conferir entrega no Resend
+                        Abrir provedor de envio
                       </a>
                     )}
                   </li>

@@ -1,3 +1,4 @@
+import { newsletterMetrics } from "./newsletter-metrics.server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { prepareNewsletterDraft } from "./newsletter-preparation.server";
@@ -659,6 +660,12 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     const raw = await request.text();
     if (raw.length > 65000) return new Response(null, { status: 413, headers });
     const body = JSON.parse(raw) as Record<string, unknown>;
+    if (body.action === "metrics") {
+      z.object({ action: z.literal("metrics") })
+        .strict()
+        .parse(body);
+      return Response.json(await newsletterMetrics(db), { headers });
+    }
     if (body.action === "people") {
       const input = z
         .object({
