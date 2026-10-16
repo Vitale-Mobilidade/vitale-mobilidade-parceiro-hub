@@ -1,3 +1,4 @@
+import { newsletterColorScheme } from "./newsletter-theme";
 import { SOCIAL_LINKS, YOUTUBE_SUBSCRIBE } from "./social-links";
 import { z } from "zod";
 
@@ -208,7 +209,7 @@ export function renderResendNewsletter(
     );
   }
   return {
-    html,
+    html: newsletterColorScheme(html),
     text:
       "Salve {{{FIRST_NAME|}}}\n\n" +
       rendered.text.replace(marker, "{{{RESEND_UNSUBSCRIBE_URL}}}"),
@@ -382,7 +383,7 @@ export function renderEditorialNewsletter(
     `\n${radarNote}\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}`;
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");
-  return { html, text: plainNewsletter(text) };
+  return { html: newsletterColorScheme(html), text: plainNewsletter(text) };
 }
 
 export function numberNewsletterSubject(title: string, editionNumber: number) {
