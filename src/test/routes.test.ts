@@ -40,6 +40,8 @@ describe("fundação TanStack Start — rotas", () => {
     ["/radar", "/radar/"],
     ["/admin", "/admin/"],
     ["/admin/growth", "/admin/growth"],
+    ["/admin/radar", "/admin/radar"],
+    ["/api/admin/radar-alerts", "/api/admin/radar-alerts"],
     ["/admin/videos", "/admin/videos"],
     ["/admin/conteudos", "/admin/conteudos/"],
     ["/conteudos", "/conteudos/"],

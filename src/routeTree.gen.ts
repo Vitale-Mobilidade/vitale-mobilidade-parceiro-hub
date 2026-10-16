@@ -27,6 +27,7 @@ import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
+import { Route as AdminRadarRouteImport } from './routes/admin/radar'
 import { Route as AdminVideosRouteImport } from './routes/admin/videos'
 import { Route as CalculadorasCarroVsBikeRouteImport } from './routes/calculadoras/carro-vs-bike'
 import { Route as CalculadorasCustoAnualMobilidadeRouteImport } from './routes/calculadoras/custo-anual-mobilidade'
@@ -53,6 +54,7 @@ import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudo
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
+import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
 import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
 import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
@@ -146,6 +148,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
 const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
   id: '/admin/newsletter',
   path: '/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRadarRoute = AdminRadarRouteImport.update({
+  id: '/admin/radar',
+  path: '/admin/radar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminVideosRoute = AdminVideosRouteImport.update({
@@ -286,6 +293,11 @@ const ApiAdminNewsletterRoute = ApiAdminNewsletterRouteImport.update({
   path: '/api/admin/newsletter',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminRadarAlertsRoute = ApiAdminRadarAlertsRouteImport.update({
+  id: '/api/admin/radar-alerts',
+  path: '/api/admin/radar-alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNewsletterWebhookRoute =
   ApiPublicNewsletterWebhookRouteImport.update({
     id: '/api/public/newsletter-webhook',
@@ -327,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -354,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -377,6 +391,7 @@ export interface FileRoutesByTo {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -404,6 +419,7 @@ export interface FileRoutesByTo {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -428,6 +444,7 @@ export interface FileRoutesById {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
   '/calculadoras/custo-anual-mobilidade': typeof CalculadorasCustoAnualMobilidadeRoute
@@ -455,6 +472,7 @@ export interface FileRoutesById {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
+  '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -480,6 +498,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -507,6 +526,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
+    | '/api/admin/radar-alerts'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -530,6 +550,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -557,6 +578,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
+    | '/api/admin/radar-alerts'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -580,6 +602,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
     | '/calculadoras/custo-anual-mobilidade'
@@ -607,6 +630,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
+    | '/api/admin/radar-alerts'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -631,6 +655,7 @@ export interface RootRouteChildren {
   AdminIaRoute: typeof AdminIaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminNewsletterRoute: typeof AdminNewsletterRoute
+  AdminRadarRoute: typeof AdminRadarRoute
   AdminVideosRoute: typeof AdminVideosRoute
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
   CalculadorasCustoAnualMobilidadeRoute: typeof CalculadorasCustoAnualMobilidadeRoute
@@ -658,6 +683,7 @@ export interface RootRouteChildren {
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
+  ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
   ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
   ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
@@ -790,6 +816,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/newsletter'
       fullPath: '/admin/newsletter'
       preLoaderRoute: typeof AdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/radar': {
+      id: '/admin/radar'
+      path: '/admin/radar'
+      fullPath: '/admin/radar'
+      preLoaderRoute: typeof AdminRadarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/videos': {
@@ -974,6 +1007,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminNewsletterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/radar-alerts': {
+      id: '/api/admin/radar-alerts'
+      path: '/api/admin/radar-alerts'
+      fullPath: '/api/admin/radar-alerts'
+      preLoaderRoute: typeof ApiAdminRadarAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/newsletter-webhook': {
       id: '/api/public/newsletter-webhook'
       path: '/api/public/newsletter-webhook'
@@ -1033,6 +1073,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIaRoute: AdminIaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminNewsletterRoute: AdminNewsletterRoute,
+  AdminRadarRoute: AdminRadarRoute,
   AdminVideosRoute: AdminVideosRoute,
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,
   CalculadorasCustoAnualMobilidadeRoute: CalculadorasCustoAnualMobilidadeRoute,
@@ -1063,6 +1104,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
+  ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
   ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,
   ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,

@@ -1,3 +1,4 @@
+import { RadarAudienceCard } from "@/components/admin/RadarAudienceCard";
 import { newsletterCall, type NewsletterAdminState, type NewsletterMetrics } from "@/lib/newsletter-api";
 import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -157,10 +158,12 @@ function Overview({ role }: { role: AdminRole }) {
                 ["Radar · pessoas com alertas ativos", metrics.data?.radarPeople ?? "—"],
               ] : []),
             ].map(([label, value]) => (
-              <div key={label} className={PANEL}>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-2 text-3xl font-bold">{value}</p>
-              </div>
+              label === "Radar · pessoas com alertas ativos"
+                ? <RadarAudienceCard key={label} count={value} />
+                : <div key={label} className={PANEL}>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="mt-2 text-3xl font-bold">{value}</p>
+                </div>
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
