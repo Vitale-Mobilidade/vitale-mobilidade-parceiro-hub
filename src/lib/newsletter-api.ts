@@ -132,3 +132,10 @@ export type NewsletterPeople = {
     delivery_status: string | null;
   }[];
 };
+
+export type NewsletterMetrics = {
+  days: { day: string; count: number }[];
+  radarPeople: number;
+  radarAlerts: number;
+  updatedAt: string;
+};
