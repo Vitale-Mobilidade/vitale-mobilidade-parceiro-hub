@@ -5,6 +5,7 @@ import {
   editableNewsletter,
   type NewsletterDraft,
   type NewsletterEdit,
+  type NewsletterRewrite,
 } from "@/lib/newsletter-drafts";
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3";
 const button =
@@ -25,11 +26,13 @@ export function NewsletterDraftEditor({
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
     [error, setError] = useState("");
+  const [prompt, setPrompt] = useState("");
   const drafts = useQuery({
     queryKey: ["admin", "newsletter", "drafts"],
     queryFn: () =>
       newsletterCall<{
         drafts: NewsletterDraft[];
+        rewrites?: NewsletterRewrite[];
         preparations?: {
           edition_day: string;
           attempts: number;
@@ -41,13 +44,14 @@ export function NewsletterDraftEditor({
     refetchInterval: 30_000,
   });
   function open(d: NewsletterDraft) {
+    setPrompt("");
     setDraft(d);
     setEdit(editableNewsletter(d.content));
     setHtml("");
     setNotice("");
     setError("");
   }
-  async function run(action: string) {
+  async function run(action: string, jobId?: string) {
     setBusy(true);
     setError("");
     setNotice("");
@@ -55,11 +59,16 @@ export function NewsletterDraftEditor({
       const r = await newsletterCall<{
         draft?: NewsletterDraft;
         html?: string;
+        job?: { id: string; status: string };
       }>(
         action,
-        action === "draft_import_test"
-          ? {}
-          : { id: draft?.id, revision: draft?.revision, edit },
+        action === "draft_prompt"
+          ? { id: draft?.id, revision: draft?.revision, prompt }
+          : action.startsWith("draft_prompt_")
+            ? { jobId }
+            : action === "draft_import_test"
+              ? {}
+              : { id: draft?.id, revision: draft?.revision, edit },
       );
       if (r.draft) {
         setDraft(r.draft);
@@ -69,14 +78,25 @@ export function NewsletterDraftEditor({
         });
       }
       if (r.html) setHtml(r.html);
+      await qc.invalidateQueries({
+        queryKey: ["admin", "newsletter", "drafts"],
+      });
       setNotice(
-        action === "draft_save"
-          ? "Ajustes salvos. Nenhum e-mail enviado."
-          : action === "draft_import_test"
-            ? "Teste recuperado como rascunho com título positivo."
-            : action === "draft_prepare_fallback"
-              ? "Edição simples preparada sem IA. Nenhum e-mail enviado."
-              : "Prévia atualizada sem usar IA.",
+        action === "draft_prompt"
+          ? "Pedido salvo. A IA vai refazer e revisar em segundo plano. Você pode fechar esta página; a edição atual está preservada."
+          : action === "draft_prompt_apply"
+            ? "Nova versão aplicada ao rascunho. Nenhum e-mail enviado."
+            : action === "draft_prompt_discard"
+              ? "Proposta descartada; rascunho preservado."
+              : action === "draft_prompt_preview"
+                ? "Prévia da proposta aprovada pela revisão."
+                : action === "draft_save"
+                  ? "Ajustes salvos. Nenhum e-mail enviado."
+                  : action === "draft_import_test"
+                    ? "Teste recuperado como rascunho com título positivo."
+                    : action === "draft_prepare_fallback"
+                      ? "Edição simples preparada sem IA. Nenhum e-mail enviado."
+                      : "Prévia atualizada sem usar IA.",
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível salvar.");
@@ -127,7 +147,7 @@ export function NewsletterDraftEditor({
         Abra uma edição para ajustar assunto e textos sem gerar tudo novamente.
         Salvar não envia e não altera campanhas já enviadas. Os links, imagens e
         preços continuam ligados às fontes. Rascunhos com data de envio são
-        usados pela automação; salve os ajustes antes das 06h30. Ao começar a
+        usados pela automação; salve os ajustes antes das 06h20. Ao começar a
         preparar as campanhas, o conteúdo daquela edição fica congelado.
       </p>
       {drafts.data?.preparations
@@ -136,9 +156,9 @@ export function NewsletterDraftEditor({
           <p key={p.edition_day} role="status" className="text-sm">
             Preparação de {p.edition_day.split("-").reverse().join("/")}:
             tentativa {p.attempts}/3.{" "}
-            {p.attempts >= 3
-              ? "A geração simplificada será tentada novamente em até 30 minutos; confira as fontes."
-              : "Nova tentativa automática em até 30 minutos."}{" "}
+            {p.next_attempt_at
+              ? "A recuperação continua automaticamente; a edição simples válida é preservada."
+              : "As tentativas editoriais terminaram; uma edição simples válida mantém a preparação quando disponível."}{" "}
             ({p.last_error})
           </p>
         ))}
@@ -200,6 +220,86 @@ export function NewsletterDraftEditor({
       </ul>
       {draft && edit && !lockedDays.includes(draft.edition_day ?? "") && (
         <fieldset disabled={busy} className="space-y-4 border-t pt-4">
+          <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
+            <label className="block">
+              Refazer com uma orientação para a IA
+              <textarea
+                className={field}
+                value={prompt}
+                rows={3}
+                maxLength={2000}
+                placeholder="Ex.: retire o destaque da Voltz EVS e priorize bikes ou temas de bike."
+                onChange={(e) => setPrompt(e.target.value)}
+              />
+            </label>
+            <p className="text-sm text-ink-muted">
+              O pedido usa a revisão salva e fontes verificadas. A IA gera uma
+              proposta e passa pelo revisor; você confere e aplica. Os ajustes
+              ainda não salvos abaixo não entram no pedido. Envie antes das
+              06h20 no dia da edição.
+            </p>
+            <button
+              className={button}
+              disabled={
+                busy ||
+                prompt.trim().length < 10 ||
+                drafts.data?.rewrites?.some(
+                  (j) =>
+                    j.draft_id === draft.id &&
+                    ["queued", "running", "ready"].includes(j.status),
+                )
+              }
+              onClick={() => void run("draft_prompt")}
+            >
+              Gerar proposta com IA
+            </button>
+            <div aria-live="polite">
+              {drafts.data?.rewrites
+                ?.filter((j) => j.draft_id === draft.id)
+                .slice(0, 1)
+                .map((job) => (
+                  <div key={job.id} className="space-y-2">
+                    <p role="status">
+                      {job.status === "ready"
+                        ? "Proposta revisada e pronta para conferir."
+                        : job.status === "queued" || job.status === "running"
+                          ? `Pedido em processamento automático · tentativa ${job.attempts}/2. A próxima verificação ocorre em até 5 minutos; uma nova tentativa aguarda 10 minutos.`
+                          : job.status === "applied"
+                            ? "Proposta aplicada."
+                            : job.status === "conflict"
+                              ? "A edição mudou ou entrou na preparação do envio. Reabra o rascunho; a proposta não foi aplicada."
+                              : "Não foi possível concluir uma proposta revisada após as tentativas automáticas. A edição anterior continua preservada; confira a orientação e tente novamente."}
+                    </p>
+                    {job.status === "ready" && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          className={button}
+                          onClick={() =>
+                            void run("draft_prompt_preview", job.id)
+                          }
+                        >
+                          Ver proposta
+                        </button>
+                        <button
+                          className={button}
+                          onClick={() => void run("draft_prompt_apply", job.id)}
+                        >
+                          Aplicar proposta ao rascunho
+                        </button>
+                      </div>
+                    )}
+                    {["queued", "running", "ready"].includes(job.status) && (
+                      <button
+                        className={button}
+                        onClick={() => void run("draft_prompt_discard", job.id)}
+                      >
+                        Descartar pedido
+                      </button>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
           <label className="block">
             Assunto do e-mail
             <input

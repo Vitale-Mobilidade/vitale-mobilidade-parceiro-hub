@@ -1,3 +1,8 @@
+import { newsletterHistory } from "./newsletter-edition-history.server";
+import {
+  newsletterRewriteAction,
+  processNewsletterRewrite,
+} from "./newsletter-rewrites.server";
 import {
   newsletterCampaignPreview,
   newsletterCampaignReports,
@@ -358,6 +363,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
   });
   if (error || authorized !== true) return new Response(null, { status: 403 });
   let tok: string | undefined;
+  let editorialPhase = false;
   try {
     const s = await settings(db);
     if (request.headers.get("x-newsletter-mode") === "preview") {
@@ -377,11 +383,36 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ...renderResendNewsletter(edition.content),
       });
     }
+    const clock = newsletterWindow(new Date());
+    const preparation = newsletterPreparation(new Date());
+    tok = await lock(db);
+    if (!clock.due || !s.enabled) {
+      editorialPhase = true;
+      if (await processNewsletterRewrite(db, tok))
+        return Response.json({ ok: true, rewriteProcessed: true });
+      if (s.enabled && preparation.due) {
+        const history = await newsletterHistory(db, preparation.day);
+        const number = await must(db.rpc("newsletter_next_edition_number"));
+        return Response.json(
+          await prepareNewsletterDraft(
+            db,
+            preparation.day,
+            preparation.weekday,
+            tok,
+            history,
+            number,
+            false,
+            new Date(),
+            request.headers.get("x-newsletter-mode") === "prepare-fallback",
+          ),
+        );
+      }
+      editorialPhase = false;
+    }
     if (!s.enabled) return Response.json({ ok: true, enabled: false });
     if (s.retry_until && Date.parse(s.retry_until) > Date.now())
       return Response.json({ ok: true, waiting: true });
     const resend = provider();
-    tok = await lock(db);
     // Requests from a disabled/misconfigured project cannot claim or send.
     await resend.verifySender(s.from_email);
     const submitted = ((await must(
@@ -430,7 +461,6 @@ export async function newsletterTick(request: Request): Promise<Response> {
       await processNewsletterCampaign(db, resend, s, unfinished[0], tok);
       return Response.json({ ok: true });
     }
-    const preparation = newsletterPreparation(new Date());
     if (request.headers.get("x-newsletter-mode") === "prepare-fallback") {
       if (!preparation.due)
         return Response.json(
@@ -452,32 +482,6 @@ export async function newsletterTick(request: Request): Promise<Response> {
           true,
         ),
       );
-    }
-    if (preparation.due && !newsletterWindow(new Date()).due) {
-      const draft = await must(
-        db
-          .from("newsletter_drafts")
-          .select("id")
-          .eq("edition_day", preparation.day)
-          .maybeSingle(),
-      );
-      if (!draft) {
-        const history = await newsletterHistory(db, preparation.day);
-        const number = await must(db.rpc("newsletter_next_edition_number"));
-        const prepared = await prepareNewsletterDraft(
-          db,
-          preparation.day,
-          preparation.weekday,
-          tok,
-          history,
-          number,
-          newsletterWindow(new Date()).due,
-        );
-        // Preparation never sends. A later scheduler tick can use the persisted snapshot.
-        return Response.json(prepared);
-      }
-      if (!newsletterWindow(new Date()).due)
-        return Response.json({ ok: true, draftPrepared: false });
     }
     const window = newsletterWindow(new Date());
     if (!window.due) return Response.json({ ok: true, due: false });
@@ -503,6 +507,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
             .maybeSingle(),
         );
     if (!saved && !draft) {
+      editorialPhase = true;
       const history = await newsletterHistory(db, window.day);
       const number = await must(db.rpc("newsletter_next_edition_number"));
       return Response.json(
@@ -517,21 +522,55 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ),
       );
     }
-    if (!saved && !draft?.fingerprint)
-      throw new Error("newsletter_scheduled_draft_invalid");
-    const edition = saved
-      ? { content: saved.payload.content, fingerprint: saved.fingerprint }
-      : {
+    let edition: { content: NewsletterContent; fingerprint: string };
+    if (saved)
+      edition = {
+        content: saved.payload.content,
+        fingerprint: saved.fingerprint,
+      };
+    else {
+      editorialPhase = true;
+      const history = await newsletterHistory(db, window.day);
+      try {
+        if (!draft?.fingerprint)
+          throw new Error("newsletter_scheduled_draft_invalid");
+        edition = {
           content: newsletterDraftContentSchema.parse(draft!.content),
           fingerprint: draft!.fingerprint,
         };
-    // Revalidate old scheduled snapshots before claiming recipients or creating broadcasts.
-    if (!saved) {
-      const history = await newsletterHistory(db, window.day);
-      await validateScheduledNewsletter(
-        edition.content,
-        history.map((p) => p.payload.content),
-      );
+        await validateScheduledNewsletter(
+          edition.content,
+          history.map((p) => p.payload.content),
+        );
+      } catch (error) {
+        // Preserve the rejected snapshot. The campaign freezes a newly verified simple edition.
+        const number = await must(db.rpc("newsletter_next_edition_number"));
+        edition = await automaticNewsletter(
+          window.weekday,
+          history[0]?.created_at ? new Date(history[0].created_at) : undefined,
+          history.map((p) => p.payload.content),
+          number,
+          undefined,
+          "fallback",
+        );
+        await validateScheduledNewsletter(
+          edition.content,
+          history.map((p) => p.payload.content),
+        );
+        await must(
+          db.from("newsletter_preparations").upsert(
+            {
+              edition_day: window.day,
+              attempts: 3,
+              next_attempt_at: null,
+              last_error: "newsletter_delivery_using_fallback",
+              feedback: [errorCode(error)],
+            },
+            { onConflict: "edition_day" },
+          ),
+        );
+      }
+      editorialPhase = false;
     }
     for (const group of GROUPS)
       await must(
@@ -548,6 +587,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const code = errorCode(e);
     if (
       tok &&
+      !editorialPhase &&
       !["newsletter_sources_unavailable", "newsletter_no_active_bike"].includes(
         code,
       ) &&
@@ -749,6 +789,19 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
     }
     if (typeof body.action === "string" && body.action.startsWith("draft_")) {
       tok = await lock(db);
+      if (
+        [
+          "draft_prompt",
+          "draft_prompt_preview",
+          "draft_prompt_apply",
+          "draft_prompt_discard",
+        ].includes(String(body.action))
+      ) {
+        return Response.json(
+          await newsletterRewriteAction(db, auth.user.id, body),
+          { headers },
+        );
+      }
       if (body.action === "draft_prepare_fallback") {
         const preparation = newsletterPreparation(new Date());
         if (!preparation.due)
@@ -883,25 +936,4 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
   } finally {
     if (tok) await db.rpc("newsletter_release", { tok });
   }
-}
-
-async function newsletterHistory(db: SupabaseClient, before?: string) {
-  const history: {
-    created_at: string;
-    payload: { content: NewsletterContent };
-  }[] = [];
-  for (let offset = 0; ; offset += 500) {
-    let query = db
-      .from("newsletter_campaigns")
-      .select("created_at,payload")
-      .in("status", ["sent", "submitted"])
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .range(offset, offset + 499);
-    if (before) query = query.lt("edition_day", before);
-    const rows = await must(query);
-    history.push(...(rows ?? []));
-    if ((rows?.length ?? 0) < 500) break;
-  }
-  return history;
 }

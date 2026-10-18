@@ -71,3 +71,12 @@ export function applyNewsletterEdit(
     videos: content.videos.map((item, i) => ({ ...item, ...edit.videos[i] })),
   });
 }
+export type NewsletterRewrite = {
+  id: string;
+  draft_id: string;
+  base_revision: number;
+  status: "queued" | "running" | "ready" | "failed" | "conflict" | "applied";
+  attempts: number;
+  next_attempt_at: string;
+  last_error: string | null;
+};

@@ -1,3 +1,5 @@
+import type { NewsletterEditorialDirection } from "./newsletter-writer.server";
+import { newsletterVideoImage } from "./newsletter-images.server";
 import { validateNewsletterBikeFocus } from "./newsletter-bike-policy";
 import {
   newsletterUsedSources,
@@ -46,6 +48,7 @@ export async function automaticNewsletter(
   editionNumber = 1,
   onDiagnostic?: (event: NewsletterWriterDiagnostic) => void,
   mode: "agent" | "fallback" = "agent",
+  direction?: NewsletterEditorialDirection,
 ): Promise<{ content: NewsletterContent; fingerprint: string }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -188,6 +191,7 @@ export async function automaticNewsletter(
           undefined,
           memory.previousEditorial,
           onDiagnostic,
+          direction,
         );
   const enrich = (id: string) => {
     const s = draft.sections.find((s) => s.id === id);
@@ -196,6 +200,9 @@ export async function automaticNewsletter(
   };
   const image = (url: string | null | undefined) =>
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
+  const videoImages = await Promise.all(
+    pickedVideos.map((v) => newsletterVideoImage(v.videoId, v.thumbnail)),
+  );
   const content: NewsletterContent = {
     editionNumber,
     sourceVideoIds: [
@@ -257,7 +264,7 @@ export async function automaticNewsletter(
       title: v.title,
       category: newsletterCategoryLabel(v.title),
       url: v.url,
-      ...image(v.thumbnail),
+      ...image(videoImages[i] ?? v.thumbnail),
       ...enrich(`video-${i}`),
     })),
   };

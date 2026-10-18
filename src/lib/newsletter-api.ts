@@ -107,6 +107,14 @@ export async function newsletterCall<T>(
       newsletter_test_already_imported: "O teste já está salvo nos rascunhos.",
       newsletter_edit_structure_changed:
         "Edite os textos mantendo as seções e suas fontes.",
+      newsletter_rewrite_pending:
+        "Já existe um pedido ou proposta para esta edição. Confira ou descarte antes de pedir outra.",
+      newsletter_rewrite_unavailable:
+        "A proposta ainda não está pronta ou não está mais disponível.",
+      newsletter_rewrite_too_late:
+        "Pedidos por IA e aplicação de proposta precisam ocorrer antes das 06h20 do dia do envio.",
+      newsletter_draft_frozen:
+        "As campanhas desta edição já começaram a ser preparadas. O conteúdo está congelado.",
       invalid_action: "Ação inválida.",
       newsletter_sources_unavailable:
         "Conteúdo indisponível. Nenhuma edição foi enviada.",

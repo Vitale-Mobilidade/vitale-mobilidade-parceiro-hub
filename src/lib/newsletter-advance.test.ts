@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Stateful database test doubles exercise persistence, filters and CAS. */
 import { afterEach, expect, it, vi } from "vitest";
 import proof from "../../artifacts/newsletter-agent-refined-proof.json";
+import { newsletterTestDb } from "@/test/helpers/newsletter-db";
 const mock = vi.hoisted(() => ({
   createClient: vi.fn(),
   writer: vi.fn(),
@@ -23,49 +25,28 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
-async function run(clock: string, draft: unknown, mode?: string) {
+async function run(clock: string, draft: any = null, mode?: string) {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(clock));
   vi.stubEnv("SUPABASE_URL", "https://synthetic.invalid");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock");
   vi.stubEnv("RESEND_API_KEY", "mock");
-  const inserts = vi.fn().mockResolvedValue({ data: null, error: null });
-  const rpc = vi.fn(async (name: string) => ({
+  const f = newsletterTestDb({
+    newsletter_settings: [
+      { singleton: true, enabled: true, from_email: "mock@example.com" },
+    ],
+    newsletter_drafts: draft ? [{ edition_day: "2026-10-19", ...draft }] : [],
+  });
+  f.db.rpc = vi.fn(async (name: string) => ({
     data:
-      name === "newsletter_authorize" || name === "newsletter_renew"
-        ? true
-        : "token",
+      name === "newsletter_acquire"
+        ? "token"
+        : name === "newsletter_next_edition_number"
+          ? 4
+          : true,
     error: null,
   }));
-  const from = vi.fn((table: string) => {
-    const data =
-      table === "newsletter_settings"
-        ? { enabled: true, from_email: "mock@example.com" }
-        : table === "newsletter_drafts"
-          ? draft
-          : [];
-    const q: Record<string, unknown> = {
-      then: (resolve: (result: { data: unknown; error: null }) => unknown) =>
-        Promise.resolve({ data, error: null }).then(resolve),
-      single: async () => ({ data, error: null }),
-      maybeSingle: async () => ({ data, error: null }),
-      insert: inserts,
-      upsert: () => q,
-    };
-    for (const method of [
-      "select",
-      "eq",
-      "in",
-      "order",
-      "limit",
-      "update",
-      "range",
-      "lt",
-    ])
-      q[method] = () => q;
-    return q;
-  });
-  mock.createClient.mockReturnValue({ from, rpc });
+  mock.createClient.mockReturnValue(f.db);
   const response = await newsletterTick(
     new Request("https://synthetic.invalid", {
       method: "POST",
@@ -76,92 +57,74 @@ async function run(clock: string, draft: unknown, mode?: string) {
       },
     }),
   );
-  return { response, rpc, inserts };
+  return { ...f, response, rpc: f.db.rpc };
 }
-it("reuses Sunday's saved draft without another generation", async () => {
-  const { response, inserts } = await run("2026-10-11T13:00:00Z", {
+it("does not overwrite an approved dated draft or call the model", async () => {
+  const { response } = await run("2026-10-18T13:00:00Z", {
     id: "draft",
+    generation_mode: "agent",
   });
   expect(await response.json()).toEqual({ ok: true, draftPrepared: false });
   expect(mock.writer).not.toHaveBeenCalled();
-  expect(inserts).not.toHaveBeenCalled();
+  expect(mock.call).not.toHaveBeenCalled();
 });
-it("sends the edited draft for the correct date without calling the writer", async () => {
-  const content = {
-    ...proof.content,
-    subject: "#2 — Minhas alterações para esta edição",
-  };
-  const { response, rpc } = await run("2026-10-12T09:35:00Z", {
-    content,
+it("forms campaigns from the correct edited draft without generation", async () => {
+  const { response, rpc } = await run("2026-10-19T09:35:00Z", {
+    content: proof.content,
     fingerprint: "sources",
   });
   expect(response.status).toBe(200);
   expect(rpc).toHaveBeenCalledWith(
     "newsletter_form_campaign",
-    expect.objectContaining({
-      p_day: "2026-10-12",
-      p_payload: { content },
-      p_fingerprint: "sources",
-    }),
+    expect.objectContaining({ p_day: "2026-10-19", p_fingerprint: "sources" }),
   );
   expect(mock.writer).not.toHaveBeenCalled();
 });
-it("recovers a missing draft during the sending window without sending that tick", async () => {
-  mock.writer.mockResolvedValueOnce({
+it("recovers a missing draft deterministically during the sending window without sending that tick", async () => {
+  mock.writer.mockResolvedValue({
     content: proof.content,
-    fingerprint: "sources",
+    fingerprint: "safe",
   });
-  const { response, rpc } = await run("2026-10-12T09:35:00Z", null);
+  const { response, rpc } = await run("2026-10-19T09:35:00Z");
   expect(await response.json()).toEqual({
     ok: true,
     draftPrepared: true,
     fallback: true,
   });
-  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
-    false,
-  );
-  expect(mock.writer).toHaveBeenCalledWith(
-    1,
-    undefined,
-    [],
-    "token",
-    undefined,
-    "fallback",
-  );
+  expect(mock.writer.mock.calls[0][5]).toBe("fallback");
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
 });
-
-it("prepares exactly the next dated draft without creating or sending campaigns", async () => {
-  mock.writer.mockResolvedValueOnce({
+it("persists safety before the editorial upgrade and needs no provider for D-1", async () => {
+  mock.writer.mockResolvedValue({
     content: proof.content,
     fingerprint: "sources",
   });
-  const { response, rpc, inserts } = await run("2026-10-11T13:00:00Z", null);
+  const { response, tables, rpc } = await run("2026-10-18T13:00:00Z");
   expect(await response.json()).toEqual({
     ok: true,
     draftPrepared: true,
     fallback: false,
   });
-  expect(mock.writer).toHaveBeenCalledTimes(1);
-  expect(inserts).toHaveBeenCalledWith({
-    content: proof.content,
-    fingerprint: "sources",
-    edition_day: "2026-10-12",
-    origin: "agent",
+  expect(tables.newsletter_drafts[0]).toMatchObject({
+    edition_day: "2026-10-19",
+    revision: 2,
     generation_mode: "agent",
-    edited_by: null,
   });
-  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
-    false,
-  );
+  expect(mock.writer).toHaveBeenCalledTimes(2);
+  expect(mock.call).not.toHaveBeenCalled();
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
 });
-
-it("uses authenticated operational recovery without creating campaigns", async () => {
-  mock.writer.mockResolvedValueOnce({
+it("keeps operational fallback recovery free of model calls", async () => {
+  mock.writer.mockResolvedValue({
     content: proof.content,
     fingerprint: "sources",
   });
-  const { response, rpc } = await run(
-    "2026-10-11T13:00:00Z",
+  const { response } = await run(
+    "2026-10-18T13:00:00Z",
     null,
     "prepare-fallback",
   );
@@ -170,34 +133,61 @@ it("uses authenticated operational recovery without creating campaigns", async (
     draftPrepared: true,
     fallback: true,
   });
-  expect(mock.writer).toHaveBeenCalledWith(
-    1,
-    undefined,
-    [],
-    "token",
-    undefined,
-    "fallback",
+  expect(mock.writer).toHaveBeenCalledTimes(1);
+  expect(mock.writer.mock.calls[0][5]).toBe("fallback");
+});
+it("replaces invalid scheduled content for delivery without disabling automation or overwriting the draft", async () => {
+  mock.validate.mockRejectedValueOnce(
+    new Error("newsletter_motorcycle_highlight_excluded"),
   );
-  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
-    false,
+  mock.writer.mockResolvedValue({
+    content: proof.content,
+    fingerprint: "safe",
+  });
+  const { response, rpc, tables } = await run("2026-10-19T09:35:00Z", {
+    content: proof.content,
+    fingerprint: "old",
+  });
+  expect(await response.json()).toEqual({ ok: true, prepared: true });
+  expect(mock.writer.mock.calls[0][5]).toBe("fallback");
+  expect(tables.newsletter_settings[0].enabled).toBe(true);
+  expect(tables.newsletter_drafts[0].fingerprint).toBe("old");
+  expect(rpc).toHaveBeenCalledWith(
+    "newsletter_form_campaign",
+    expect.objectContaining({ p_fingerprint: "safe" }),
   );
 });
-
-it("blocks an old scheduled draft before forming campaigns when diversity fails", async () => {
+it("keeps generation recovery retryable when source service is down instead of globally pausing delivery", async () => {
   mock.validate.mockRejectedValueOnce(
-    new Error("newsletter_models_insufficient_diversity"),
+    new Error("newsletter_sources_unavailable"),
   );
-  const { response, rpc } = await run("2026-10-12T09:35:00Z", {
+  mock.writer.mockRejectedValueOnce(
+    new Error("newsletter_sources_unavailable"),
+  );
+  const { response, tables, rpc } = await run("2026-10-19T09:35:00Z", {
     content: proof.content,
     fingerprint: "old",
   });
   expect(response.status).toBe(503);
-  expect(await response.json()).toEqual({
-    ok: false,
-    error: "newsletter_models_insufficient_diversity",
+  expect(tables.newsletter_settings[0].enabled).toBe(true);
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
+});
+
+it("recovers a malformed scheduled fingerprint without globally disabling automation", async () => {
+  mock.writer.mockResolvedValue({
+    content: proof.content,
+    fingerprint: "safe",
   });
-  expect(rpc.mock.calls.some((c) => c[0] === "newsletter_form_campaign")).toBe(
-    false,
+  const { response, tables, rpc } = await run("2026-10-19T09:35:00Z", {
+    content: proof.content,
+    fingerprint: "",
+  });
+  expect(await response.json()).toEqual({ ok: true, prepared: true });
+  expect(tables.newsletter_settings[0].enabled).toBe(true);
+  expect(rpc).toHaveBeenCalledWith(
+    "newsletter_form_campaign",
+    expect.objectContaining({ p_fingerprint: "safe" }),
   );
-  expect(mock.writer).not.toHaveBeenCalled();
 });

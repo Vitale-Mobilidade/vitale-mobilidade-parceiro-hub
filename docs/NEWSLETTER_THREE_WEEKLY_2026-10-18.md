@@ -38,3 +38,15 @@ Antes: confirmar draft edition_day=2026-10-19 e edição #4, preservar conteúdo
 Brief para regeneração: “Refaça a edição #4 de 19/10/2026 com um foco editorial sustentado por fontes sobre bikes ou temas de bike. Voltz EVS e EV1 são motos e devem ficar fora do destaque, assunto, preheader, título, abertura e bike destacada. Use outras fontes reais elegíveis, respeitando memória, diversidade e revisão factual. Preserve identidade visual, data, número, audiência e horário. Salve somente rascunho revisável, sem disparar emails.”
 
 Depois: confirmar persistência, preview e validação do rascunho, número #4/data correta e ausência das motos. Se já houver campanha congelada, interromper correção operacional e relatar estado antes de modificar. Rollback do rascunho: restaurar backup/revisão anterior sem reenviar email. O novo gate continuará impedindo destaque em motos.
+
+## Publicação e regeneração — 18/10/2026
+
+PR52 mergeada39a8fea6751c62b721e22fbbe33a3f5f9ea0bcea; deploya2753f7a-5e42-4f10-8a2a-6740adeec019 confirmado pela UI Lovable “Seu site foi atualizado” e bundle público newsletter-C4Euirdl.js com nova frequência. Painel autenticado mostra seg/qua/sex06h30; API anônima401. Cron ativo */5 e enabled=true confirmados.
+
+#4 de19/10 foi refeita pelo writer/reviewer existentes: primeira execução rejeitada por repetição da abertura; segunda recebeu feedback específico para escolher outro eixo, sem atenuar regras do revisor. Aprovada e salva como revisão2, subject “#4 — Na subida, motor e pedal fazem dupla”, headline “V8 Pro: quando a ladeira chama o pedal para a conversa”, bike F6ProS, reviewerApproved=true, schema/validação agendada/render aprovados. Zero campanhas para19/10 e lease solta. Diagnóstico/backup preservados no Lovable e backup local privado em /tmp/vitale-newsletter-edition4-approved-backup-2026-10-18.json. Comparação do readback usou igualdade semântica, pois JSONB reordena chaves.
+
+Imagens dos vídeos da #4 usavam mqdefault320x180 ampliadas a568px. Ambas maxresdefault1280x720 retornaram200 com dimensões verificadas. Atualização isolada das duas URLs em transação/lease/CAS revision2→3, sem mudar texto/fingerprint/fontes; backup de revision2 preservado e zero campanhas. Nenhum email enviado nesta operação.
+
+Custo reportado: turnos Lovable3,3 e2,0 créditos; gateway2,9404272 créditos nas duas execuções (8 chamadas HTTP200). Valores reportados separadamente, sem assumir se contabilização se sobrepõe.
+
+**Correção de evidência operacional:** revisão posterior identificou que newsletter_form_campaign no banco ainda aplicava dias(1,4) e piso70h. A publicação TS/UI sozinha não conclui a agenda nova. Migration20261018170000 corrige dias(1,3,5)/46h e foi ensaiada localmente; aplicação produtiva pendente de autorização específica. Ver NEWSLETTER_RECOVERY_PROMPT_2026-10-18.md. Não declarar quarta/sexta operacionais até essa aplicação.
