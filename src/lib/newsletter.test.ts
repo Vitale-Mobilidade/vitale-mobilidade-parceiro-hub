@@ -89,19 +89,19 @@ it("exports Resend personalization without an invented unsubscribe endpoint", ()
 
 import { newsletterWindow } from "./newsletter";
 it("uses São Paulo weekdays and sending window, independent of host timezone", () => {
-  expect(newsletterWindow(new Date("2026-10-08T09:30:00Z"))).toEqual({
-    day: "2026-10-08",
-    weekday: 4,
+  expect(newsletterWindow(new Date("2026-10-09T09:30:00Z"))).toEqual({
+    day: "2026-10-09",
+    weekday: 5,
     due: true,
   });
   expect(newsletterWindow(new Date("2026-10-12T09:30:00Z")).due).toBe(true);
-  expect(newsletterWindow(new Date("2026-10-08T09:29:59Z")).due).toBe(false);
-  expect(newsletterWindow(new Date("2026-10-08T11:30:00Z")).due).toBe(false);
-  expect(newsletterWindow(new Date("2026-10-07T09:30:00Z")).due).toBe(false);
+  expect(newsletterWindow(new Date("2026-10-09T09:29:59Z")).due).toBe(false);
+  expect(newsletterWindow(new Date("2026-10-09T11:30:00Z")).due).toBe(false);
+  expect(newsletterWindow(new Date("2026-10-08T09:30:00Z")).due).toBe(false);
 });
 
-it("does not send a third weekly edition on Friday", () => {
-  expect(newsletterWindow(new Date("2026-10-09T09:30:00Z")).due).toBe(false);
+it("sends a third weekly edition on Friday", () => {
+  expect(newsletterWindow(new Date("2026-10-09T09:30:00Z")).due).toBe(true);
 });
 
 import { numberNewsletterSubject } from "./newsletter";

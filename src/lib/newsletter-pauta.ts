@@ -1,3 +1,4 @@
+import { excludedNewsletterMotorcycle } from "./newsletter-bike-policy";
 /** Deterministic editorial selection. A large historic drop is not a fresh promotion. */
 export type NewsletterDropBike = {
   id: string;
@@ -22,6 +23,7 @@ export function selectNewsletterDrops(
     day: "2-digit",
   }).format(since);
   return bikes
+    .filter((b) => !excludedNewsletterMotorcycle(b.id, b.name))
     .flatMap((b) => {
       if (!Number.isFinite(b.currentPrice) || b.currentPrice <= 0) return [];
       const verified = (b.daily ?? [])
