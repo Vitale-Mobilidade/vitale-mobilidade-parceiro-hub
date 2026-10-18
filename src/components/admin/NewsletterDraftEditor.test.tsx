@@ -48,6 +48,9 @@ describe("newsletter editor form", () => {
     expect(html).toContain(content.subject);
     expect(html).toContain("Título dentro da newsletter");
     expect(html).toContain("Salvar ajustes");
+    expect(html).toContain("Refazer com uma orientação para a IA");
+    expect(html).toContain("Gerar proposta com IA");
+    expect(html).toContain("você confere e aplica");
     expect(html).toContain("Visualizar");
     expect(html).toContain("Os ajustes acima são edição humana");
     expect(html).not.toContain("Enviar campanha");

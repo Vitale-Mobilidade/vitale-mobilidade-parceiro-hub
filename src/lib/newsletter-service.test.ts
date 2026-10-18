@@ -374,6 +374,8 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect(updates.at(-1)?.change.status).toBe("submitting");
   });
   it("keeps the shared segment frozen while a prior broadcast is sending", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-09T09:40:00Z"));
     vi.stubEnv("RESEND_API_KEY", "synthetic-only");
     vi.stubEnv("LOVABLE_API_KEY", "");
     const nextCohort = vi.fn();

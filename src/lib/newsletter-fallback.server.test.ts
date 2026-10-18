@@ -1,3 +1,6 @@
+vi.mock("./newsletter-images.server", () => ({
+  newsletterVideoImage: async (_id: string, original: string) => original,
+}));
 import { afterEach, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   index: vi.fn(),

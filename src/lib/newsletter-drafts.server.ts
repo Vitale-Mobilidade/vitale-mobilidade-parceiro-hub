@@ -1,3 +1,4 @@
+import { assertRewriteTime } from "./newsletter-rewrites.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
@@ -24,6 +25,15 @@ export async function newsletterDraftAction(
 ) {
   if (body.action === "draft_list")
     return {
+      rewrites: await required(
+        db
+          .from("newsletter_rewrites")
+          .select(
+            "id,draft_id,base_revision,status,attempts,next_attempt_at,last_error,created_at",
+          )
+          .order("created_at", { ascending: false })
+          .limit(30),
+      ),
       preparations: await required(
         db
           .from("newsletter_preparations")
@@ -83,6 +93,17 @@ export async function newsletterDraftAction(
   );
   if (body.action === "draft_render") return renderResendNewsletter(content);
   if (body.action !== "draft_save") throw new Error("invalid_action");
+  if (draft.edition_day) {
+    assertRewriteTime(draft.edition_day);
+    const campaigns = await required(
+      db
+        .from("newsletter_campaigns")
+        .select("id")
+        .eq("edition_day", draft.edition_day)
+        .limit(1),
+    );
+    if (campaigns?.length) throw new Error("newsletter_draft_frozen");
+  }
   const saved = await required(
     db
       .from("newsletter_drafts")
