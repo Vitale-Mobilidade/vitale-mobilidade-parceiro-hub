@@ -1,3 +1,4 @@
+import { excludedNewsletterMotorcycle } from "./newsletter-bike-policy";
 import {
   newsletterCandidateModels,
   newsletterModelFamily,
@@ -129,8 +130,15 @@ export function curateNewsletter<
     if (item.videoId) videoIds.add(item.videoId);
     target.push(item);
   };
-  const aa = order(articles),
-    vv = order(videos);
+  const eligible = (x: NewsletterCandidate) =>
+    !excludedNewsletterMotorcycle(
+      x.title,
+      x.primaryBikeId,
+      ...(x.relatedBikeIds ?? []),
+      ...(x.bikeIds ?? []),
+    );
+  const aa = order(articles.filter(eligible)),
+    vv = order(videos.filter(eligible));
   // One fresh reading and one different video first; then fill distinct categories.
   for (const a of aa) {
     take(a, chosenA);
@@ -180,7 +188,9 @@ export function newsletterCategoryLabel(title: string, type?: string) {
     : NEWSLETTER_CATEGORY_LABELS[newsletterCategory(title, type)];
 }
 
-export function selectFeaturedNewsletterBike<T extends { id: string }>(
+export function selectFeaturedNewsletterBike<
+  T extends { id: string; name?: string },
+>(
   bikes: T[],
   radarIds: string[],
   relatedIds: string[],
@@ -199,5 +209,7 @@ export function selectFeaturedNewsletterBike<T extends { id: string }>(
           )) /
           recentIds.length
       : 0);
-  return [...bikes].sort((a, b) => score(a) - score(b))[0];
+  return bikes
+    .filter((b) => !excludedNewsletterMotorcycle(b.id, b.name))
+    .sort((a, b) => score(a) - score(b))[0];
 }

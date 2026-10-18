@@ -94,7 +94,7 @@ export function NewsletterExitPopup({ path }: { path: string }) {
           </DialogTitle>
           <DialogDescription>
             Receba novidades sobre bikes elétricas, preços e ferramentas.
-            Segunda e quinta, no seu e-mail.
+            Segunda, quarta e sexta, no seu e-mail.
           </DialogDescription>
           <NewsletterSignup compact />
           <button

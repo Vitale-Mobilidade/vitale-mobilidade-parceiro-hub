@@ -39,7 +39,7 @@ describe("newsletter exit and preparation policy", () => {
     ).toBe(true);
     expect(newsletterPopupAllowed("/", null, "1")).toBe(false);
   });
-  it("uses Sao Paulo dates for D-1 and permits catch-up on Sunday/Wednesday", () => {
+  it("uses Sao Paulo dates for D-1 and permits catch-up on Sunday/Tuesday/Thursday", () => {
     expect(newsletterPreparation(new Date("2026-10-11T09:29:00Z")).due).toBe(
       false,
     );
@@ -48,9 +48,9 @@ describe("newsletter exit and preparation policy", () => {
       weekday: 1,
       due: true,
     });
-    expect(newsletterPreparation(new Date("2026-10-15T02:59:00Z"))).toEqual({
-      day: "2026-10-15",
-      weekday: 4,
+    expect(newsletterPreparation(new Date("2026-10-14T02:59:00Z"))).toEqual({
+      day: "2026-10-14",
+      weekday: 3,
       due: true,
     });
     expect(newsletterPreparation(new Date("2026-10-12T09:30:00Z")).due).toBe(

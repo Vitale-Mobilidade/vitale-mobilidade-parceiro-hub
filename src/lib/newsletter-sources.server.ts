@@ -1,3 +1,4 @@
+import { validateNewsletterBikeFocus } from "./newsletter-bike-policy";
 import {
   newsletterUsedSources,
   curateNewsletterSources,
@@ -40,7 +41,7 @@ import { sourceNewsletterFallback } from "./newsletter-fallback";
 import { createHash } from "node:crypto";
 export async function automaticNewsletter(
   weekday: number,
-  since = new Date(Date.now() - (weekday === 4 ? 3 : 4) * 86_400_000),
+  since = new Date(Date.now() - (weekday === 1 ? 3 : 2) * 86_400_000),
   previousEditions: NewsletterContent[] = [],
   editionNumber = 1,
   onDiagnostic?: (event: NewsletterWriterDiagnostic) => void,
@@ -268,6 +269,7 @@ export async function automaticNewsletter(
     catalog,
   );
   validateNewsletterNovelty(content, previousEditions);
+  validateNewsletterBikeFocus(content);
   renderResendNewsletter(content);
   return { content, fingerprint };
 }
@@ -276,6 +278,7 @@ export async function validateScheduledNewsletter(
   content: NewsletterContent,
   history: NewsletterContent[],
 ) {
+  validateNewsletterBikeFocus(content);
   const [articles, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
     fetchVideoCatalog(),

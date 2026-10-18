@@ -237,7 +237,7 @@ export function newsletterWindow(now: Date): {
   return {
     day,
     weekday,
-    due: [1, 4].includes(weekday) && minuteOfDay >= 390 && minuteOfDay < 510,
+    due: [1, 3, 5].includes(weekday) && minuteOfDay >= 390 && minuteOfDay < 510,
   };
 }
 
