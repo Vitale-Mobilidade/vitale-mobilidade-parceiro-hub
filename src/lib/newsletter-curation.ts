@@ -1,4 +1,7 @@
-import { excludedNewsletterMotorcycle } from "./newsletter-bike-policy";
+import {
+  excludedNewsletterMotorcycle,
+  newsletterBikeTopic,
+} from "./newsletter-bike-policy";
 import {
   newsletterCandidateModels,
   newsletterModelFamily,
@@ -131,6 +134,7 @@ export function curateNewsletter<
     target.push(item);
   };
   const eligible = (x: NewsletterCandidate) =>
+    newsletterBikeTopic(x.title) &&
     !excludedNewsletterMotorcycle(
       x.title,
       x.primaryBikeId,
