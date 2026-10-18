@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   excludedNewsletterMotorcycle,
+  newsletterBikeTopic,
   validateNewsletterBikeFocus,
 } from "./newsletter-bike-policy";
 import {
@@ -99,4 +100,44 @@ it("blocks an old draft featuring a motorcycle before sending", () => {
       },
     }),
   ).toThrow();
+});
+
+it("rejects generic motorcycle leads but keeps bike comparison themes", () => {
+  expect(
+    newsletterBikeTopic(
+      "Moto elétrica vale a pena? O que avaliar antes de comprar",
+    ),
+  ).toBe(false);
+  expect(
+    newsletterBikeTopic("Bicicleta elétrica ou moto: compare seu trajeto"),
+  ).toBe(true);
+  expect(newsletterBikeTopic("Bike elétrica e ciclovias")).toBe(true);
+  const content = {
+    subject: "#4 — Bikes na subida",
+    intro: "Motor e pedal fazem dupla",
+    bike: { title: "V8 Pro", url: "https://vitalemobilidade.com/radar/v8_pro" },
+    articles: [{ title: "Moto elétrica vale a pena?" }],
+  };
+  expect(() => validateNewsletterBikeFocus(content)).toThrow(
+    "newsletter_motorcycle_highlight_excluded",
+  );
+  expect(() =>
+    validateNewsletterBikeFocus({
+      ...content,
+      articles: [{ title: "V8 Pro na subida" }],
+    }),
+  ).not.toThrow();
+});
+it("never fills a scarce slot with a generic motorcycle review", () => {
+  const article = {
+    title: "Moto elétrica vale a pena?",
+    publishedAt: "2026-10-17",
+  };
+  const selected = curateNewsletter(
+    [article],
+    [],
+    new Date("2026-10-01"),
+    new Date("2026-10-18"),
+  );
+  expect(selected.articles).toHaveLength(0);
 });
