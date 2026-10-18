@@ -522,8 +522,6 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ),
       );
     }
-    if (!saved && !draft?.fingerprint)
-      throw new Error("newsletter_scheduled_draft_invalid");
     let edition: { content: NewsletterContent; fingerprint: string };
     if (saved)
       edition = {
@@ -534,6 +532,8 @@ export async function newsletterTick(request: Request): Promise<Response> {
       editorialPhase = true;
       const history = await newsletterHistory(db, window.day);
       try {
+        if (!draft?.fingerprint)
+          throw new Error("newsletter_scheduled_draft_invalid");
         edition = {
           content: newsletterDraftContentSchema.parse(draft!.content),
           fingerprint: draft!.fingerprint,

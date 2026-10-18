@@ -41,6 +41,7 @@ export async function prepareNewsletterDraft(
     return { ok: true, draftPrepared: false };
   if (
     !forceFallback &&
+    !sendingWindow &&
     state?.next_attempt_at &&
     Date.parse(state.next_attempt_at) > now.getTime()
   )

@@ -174,3 +174,20 @@ it("keeps generation recovery retryable when source service is down instead of g
     rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
   ).toBe(false);
 });
+
+it("recovers a malformed scheduled fingerprint without globally disabling automation", async () => {
+  mock.writer.mockResolvedValue({
+    content: proof.content,
+    fingerprint: "safe",
+  });
+  const { response, tables, rpc } = await run("2026-10-19T09:35:00Z", {
+    content: proof.content,
+    fingerprint: "",
+  });
+  expect(await response.json()).toEqual({ ok: true, prepared: true });
+  expect(tables.newsletter_settings[0].enabled).toBe(true);
+  expect(rpc).toHaveBeenCalledWith(
+    "newsletter_form_campaign",
+    expect.objectContaining({ p_fingerprint: "safe" }),
+  );
+});

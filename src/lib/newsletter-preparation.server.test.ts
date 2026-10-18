@@ -106,3 +106,21 @@ it("source outages retry without any model and never create fake content", async
   expect(f.tables.newsletter_drafts).toHaveLength(0);
   expect(writer.mock.calls[0][5]).toBe("fallback");
 });
+
+it("does not let an earlier cooldown block deterministic recovery at the end of the sending window", async () => {
+  const f = newsletterTestDb({
+    newsletter_preparations: [
+      {
+        edition_day: day,
+        attempts: 3,
+        next_attempt_at: "2026-10-19T11:55:00Z",
+      },
+    ],
+  });
+  writer.mockResolvedValue(simple);
+  expect(await run(f.db, new Date("2026-10-19T11:25:00Z"), true)).toMatchObject(
+    { ok: true, fallback: true },
+  );
+  expect(writer).toHaveBeenCalledTimes(1);
+  expect(writer.mock.calls[0][5]).toBe("fallback");
+});
