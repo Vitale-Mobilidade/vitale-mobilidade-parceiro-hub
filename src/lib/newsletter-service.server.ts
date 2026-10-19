@@ -54,7 +54,7 @@ type Recipient = {
   consent_at: string;
   synced: boolean;
 };
-const GROUPS: NewsletterSegment[] = ["general", "radar", "content"];
+const GROUPS: NewsletterSegment[] = ["general"];
 const UUID = /^[0-9a-f-]{36}$/i;
 const errorCode = (error: unknown) =>
   error instanceof ResendFault
@@ -136,7 +136,7 @@ async function ensureSegment(
   _group: NewsletterSegment,
 ) {
   // One dedicated provider segment, reused only after the previous broadcast finishes.
-  // Declared-interest cohorts remain exclusive in the private ledger.
+  // All eligible subscribers receive the General edition.
   const segmentName = "Vitale newsletter";
   if (s.segments.general) {
     const found = await resend.call<{ id: string; name: string }>(
@@ -207,6 +207,7 @@ export async function processNewsletterCampaign(
     await pause(db, "manual_reconciliation_required");
     return;
   }
+  if (c.segment !== "general") throw new Error("legacy_segment_campaign");
   const segment = await ensureSegment(db, resend, s, c.segment);
   let live = await currentRecipients(db, c.id);
   if (live.length > 1000) throw new Error("free_contact_limit");
@@ -493,7 +494,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
         .select("segment,payload,fingerprint")
         .eq("edition_day", window.day),
     );
-    if ((existing?.length ?? 0) >= GROUPS.length)
+    if ((existing?.length ?? 0) > 0)
       return Response.json({ ok: true, prepared: false });
     const saved = existing?.find(
       (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
@@ -865,19 +866,7 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
       if (s.enabled) throw new Error("pause_before_configuring");
       const resend = provider();
       await resend.verifySender(s.from_email);
-      const interests = await must(
-        db
-          .from("newsletter_subscriptions")
-          .select("interest")
-          .eq("consent_version", "v2")
-          .eq("status", "interested")
-          .is("suppressed_at", null),
-      );
-      const groups = new Set<NewsletterSegment>([
-        "general",
-        ...(interests ?? []).map((x) => x.interest as NewsletterSegment),
-      ]);
-      for (const group of groups) await ensureSegment(db, resend, s, group);
+      await ensureSegment(db, resend, s, "general");
     } else if (body.action === "enable" || body.action === "pause") {
       if (body.action === "enable") {
         const resend = provider();

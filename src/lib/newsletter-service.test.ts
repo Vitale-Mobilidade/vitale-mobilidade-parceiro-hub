@@ -115,29 +115,36 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect((await newsletterTick(request)).status).toBe(403);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
-  it.each(["opened", "clicked"])("prevents a content editor from accessing %s recipients", async (event) => {
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: { role: "content", active: true },
-      error: null,
-    });
-    const chain = { select: () => chain, eq: () => chain, maybeSingle };
-    createClient.mockReturnValue({
-      auth: {
-        getUser: vi
-          .fn()
-          .mockResolvedValue({ data: { user: { id } }, error: null }),
-      },
-      from: vi.fn().mockReturnValue(chain),
-    });
-    const response = await newsletterAdmin(
-      new Request("https://example.invalid", {
-        headers: { Authorization: "Bearer synthetic" },
-        method: "POST",
-        body: JSON.stringify({action: "campaign_engagement", campaign: id, event}),
-      }),
-    );
-    expect(response.status).toBe(403);
-  });
+  it.each(["opened", "clicked"])(
+    "prevents a content editor from accessing %s recipients",
+    async (event) => {
+      const maybeSingle = vi.fn().mockResolvedValue({
+        data: { role: "content", active: true },
+        error: null,
+      });
+      const chain = { select: () => chain, eq: () => chain, maybeSingle };
+      createClient.mockReturnValue({
+        auth: {
+          getUser: vi
+            .fn()
+            .mockResolvedValue({ data: { user: { id } }, error: null }),
+        },
+        from: vi.fn().mockReturnValue(chain),
+      });
+      const response = await newsletterAdmin(
+        new Request("https://example.invalid", {
+          headers: { Authorization: "Bearer synthetic" },
+          method: "POST",
+          body: JSON.stringify({
+            action: "campaign_engagement",
+            campaign: id,
+            event,
+          }),
+        }),
+      );
+      expect(response.status).toBe(403);
+    },
+  );
   it("returns paginated people only after admin authorization, without dispatching", async () => {
     const chain = {
       select: () => chain,
@@ -252,7 +259,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect(updates.some((x) => x.change.status === "uncertain")).toBe(true);
     expect(updates.some((x) => x.change.enabled === false)).toBe(true);
   });
-  it.each(["general", "radar", "content"] as const)(
+  it.each(["general"] as const)(
     "submits the %s cohort once using the same dedicated provider segment",
     async (segment) => {
       vi.useFakeTimers();
@@ -287,6 +294,23 @@ describe("newsletter authorization and dispatch recovery", () => {
       ).toHaveLength(1);
       expect(updates.some((x) => x.change.status === "submitting")).toBe(true);
       expect(updates.some((x) => x.change.status === "submitted")).toBe(true);
+    },
+  );
+  it.each(["radar", "content"] as const)(
+    "blocks a new legacy %s campaign before provider calls",
+    async (segment) => {
+      const { db } = fakeDb(true);
+      const request = vi.fn();
+      await expect(
+        processNewsletterCampaign(
+          db,
+          new ResendNewsletter("test", request, 0),
+          config,
+          { ...campaign, segment },
+          "lease",
+        ),
+      ).rejects.toThrow("legacy_segment_campaign");
+      expect(request).not.toHaveBeenCalled();
     },
   );
   it("pauses after an uncertain send acknowledgement without retrying", async () => {
