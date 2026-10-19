@@ -1,0 +1,34 @@
+-- Roles already present in the isolated cluster used by the SQL harness.
+CREATE TABLE editorial_articles(id uuid primary key,video_id text,status text,published_at timestamptz,validation_errors jsonb default '[]');
+CREATE TABLE youtube_editorial_sources(video_id text primary key,article_id uuid,state text,state_changed_at timestamptz default now(),caption_retry_at timestamptz,capture jsonb);
+CREATE FUNCTION assert_true(v boolean,label text) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF v IS DISTINCT FROM true THEN RAISE EXCEPTION '%',label; END IF; END $$;
+INSERT INTO editorial_articles VALUES('00000000-0000-0000-0000-000000000001','video1','published',now()-interval '1 minute','[]');
+INSERT INTO youtube_editorial_sources VALUES('video1','00000000-0000-0000-0000-000000000001','needs_review',now()-interval '3 minutes',now(),'{}');
+\ir ../supabase/migrations/20261019210000_editorial_publication_lifecycle.sql
+SELECT assert_true((SELECT state='done' AND caption_retry_at IS NULL AND capture='{}' FROM youtube_editorial_sources WHERE video_id='video1'),'existing publication reconciled, original capture preserved');
+INSERT INTO editorial_articles VALUES('00000000-0000-0000-0000-000000000002','video2','draft',NULL,'[]');
+INSERT INTO youtube_editorial_sources VALUES('video2','00000000-0000-0000-0000-000000000002','needs_review',now()-interval '1 minute',now(),null);
+UPDATE editorial_articles SET status='draft' WHERE video_id='video2';
+SELECT assert_true((SELECT state='needs_review' FROM youtube_editorial_sources WHERE video_id='video2'),'draft cannot close');
+UPDATE editorial_articles SET status='published',published_at=now() WHERE video_id='video2';
+SELECT assert_true((SELECT state='done' AND caption_retry_at IS NULL FROM youtube_editorial_sources WHERE video_id='video2'),'manual or automatic publication closes atomically');
+UPDATE youtube_editorial_sources SET state='needs_review' WHERE video_id='video2';
+SELECT assert_true((SELECT state='done' FROM youtube_editorial_sources WHERE video_id='video2'),'late old failure cannot reopen completed source');
+UPDATE youtube_editorial_sources SET state='generating',state_changed_at=now()+interval '1 minute' WHERE video_id='video2';
+UPDATE youtube_editorial_sources SET state='needs_review' WHERE video_id='video2';
+SELECT assert_true((SELECT state='needs_review' FROM youtube_editorial_sources WHERE video_id='video2'),'failure from genuinely later explicit attempt remains visible');
+UPDATE editorial_articles SET status='published' WHERE video_id='video2';
+SELECT assert_true((SELECT state='needs_review' FROM youtube_editorial_sources WHERE video_id='video2'),'re-saving already published does not erase new error');
+UPDATE editorial_articles SET status='archived' WHERE video_id='video1';
+SELECT assert_true((SELECT state='done' FROM youtube_editorial_sources WHERE video_id='video1'),'archive does not regenerate or reopen');
+INSERT INTO editorial_articles VALUES('00000000-0000-0000-0000-000000000003','video3','draft',NULL,'["invalid"]');
+INSERT INTO youtube_editorial_sources VALUES('video3','00000000-0000-0000-0000-000000000003','needs_review',now()-interval '1 minute',NULL,NULL);
+UPDATE editorial_articles SET status='published',published_at=now() WHERE video_id='video3';
+SELECT assert_true((SELECT state='needs_review' FROM youtube_editorial_sources WHERE video_id='video3'),'invalid publication does not conceal issue');
+INSERT INTO editorial_articles VALUES('00000000-0000-0000-0000-000000000004','video4','draft',NULL,'[]');
+INSERT INTO youtube_editorial_sources VALUES('video4','00000000-0000-0000-0000-000000000003','needs_review',now()-interval '1 minute',NULL,NULL);
+UPDATE editorial_articles SET status='published',published_at=now() WHERE video_id='video4';
+SELECT assert_true((SELECT state='needs_review' FROM youtube_editorial_sources WHERE video_id='video4'),'different article link preserved');
+INSERT INTO youtube_editorial_sources VALUES('video5',NULL,'generating',now()-interval '1 minute',NULL,NULL);
+INSERT INTO editorial_articles VALUES('00000000-0000-0000-0000-000000000005','video5','published',now(),'[]');
+SELECT assert_true((SELECT state='done' AND article_id='00000000-0000-0000-0000-000000000005' FROM youtube_editorial_sources WHERE video_id='video5'),'published insertion closes matching unlinked source');
