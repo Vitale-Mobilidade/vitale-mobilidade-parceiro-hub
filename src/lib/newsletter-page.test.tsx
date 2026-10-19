@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("@/components/site/site-ui", async () => {
   const { NewsletterSignup } =
     await import("@/components/site/NewsletterSignup");
-  return { SiteHeader: () => null, SiteFooter: () => <NewsletterSignup /> };
+  return { SiteHeader: () => null, SiteFooter: ({ showNewsletter = true }: { showNewsletter?: boolean }) => showNewsletter ? <NewsletterSignup /> : null };
 });
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => ({ options }),
@@ -21,7 +21,12 @@ describe("newsletter public landing", () => {
     const html = renderToStaticMarkup(<NewsletterPage />);
     expect(html.match(/<h1[ >]/g)).toHaveLength(1);
     expect(html.match(/<form[ >]/g)).toHaveLength(1);
-    expect(html).toContain('type="email"');
+    const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
+    const formStart = main.indexOf("<form");
+    expect(formStart).toBeGreaterThan(main.indexOf("</h1>"));
+    expect(formStart).toBeLessThan(main.indexOf("Receba artigos, vídeos e destaques"));
+    expect(main.indexOf("</form>")).toBeLessThan(main.indexOf('id="newsletter-benefits"'));
+    expect(main).toContain('type="email"');
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('href="/privacidade"');
     expect(html).toContain("descadastro");
