@@ -27,4 +27,4 @@ Autorização na mesma conversa: implementar e publicar; direcionamento final pa
 
 Revisão posterior: Produto Pass (Geral única); Arquitetura Pass (worker/RPC e bloqueio transacional); IA Pass (conteúdo preservado); Segurança Pass (filtros preservados); UX Pass (histórico fiel); CX Pass (sem reenvio); Growth Pass (elegíveis reunidos); PMO/QA Pass (gates completos). Sem conflito material pendente. Produção não tem campanhas pendentes; os dois registros de 19/10 já estão enviados.
 
-Publicação operacional: em andamento, sem disparo de e-mail.
+Publicação concluída: commit `1965857`, migration `20261019160000` registrada e RPC conferida em produção (audiência unificada, bloqueio transacional, dois registros históricos e zero pendências). Deploy `3d860bb9-eb7a-45ef-a367-6a9cce8bd2ab` confirmado pelo cabeçalho HTTP `x-deployment-id` do domínio público às 15:46 de São Paulo; painel HTTP 200, API administrativa anônima 401. Nenhum e-mail disparado. Assets de cliente permaneceram estáveis, pois a alteração é no servidor.
