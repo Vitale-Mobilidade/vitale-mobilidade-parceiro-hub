@@ -115,6 +115,8 @@ export async function newsletterCall<T>(
         "Pedidos por IA e aplicação de proposta precisam ocorrer antes das 06h20 do dia do envio.",
       newsletter_draft_frozen:
         "As campanhas desta edição já começaram a ser preparadas. O conteúdo está congelado.",
+      newsletter_campaign_not_sent:
+        "Esta campanha ainda não foi enviada ao Resend.",
       invalid_action: "Ação inválida.",
       newsletter_sources_unavailable:
         "Conteúdo indisponível. Nenhuma edição foi enviada.",
@@ -167,4 +169,18 @@ export type NewsletterPreview = {
   text?: string;
   subject?: string;
   source?: "provider" | "snapshot" | "draft";
+};
+
+export type NewsletterEngagement = {
+  event: "opened" | "clicked";
+  rows: {
+    id: string;
+    email: string;
+    person_name: string | null;
+    count: number;
+    links: { url: string; clicks: number }[];
+  }[];
+  hasMore: boolean;
+  nextCursor: string | null;
+  updatedAt: string;
 };

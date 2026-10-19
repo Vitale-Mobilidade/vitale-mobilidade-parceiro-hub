@@ -1,3 +1,4 @@
+import { newsletterCampaignEngagement } from "./newsletter-engagement.server";
 import { newsletterHistory } from "./newsletter-edition-history.server";
 import {
   newsletterRewriteAction,
@@ -736,6 +737,12 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
           subject: draft.content.subject,
           source: "draft",
         },
+        { headers },
+      );
+    }
+    if (body.action === "campaign_engagement") {
+      return Response.json(
+        await newsletterCampaignEngagement(db, provider, body),
         { headers },
       );
     }

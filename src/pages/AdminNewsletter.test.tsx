@@ -110,6 +110,8 @@ describe("newsletter people view", () => {
     expect(html).toContain("Enviados");
     expect(html).toContain("Abertos");
     expect(html).toContain("Com clique");
+    expect(html).toContain("Quem abriu</button>");
+    expect(html).toContain("Quem clicou</button>");
     expect(html).toContain("Visualizar edição enviada");
     expect(html).toContain("Próxima edição preparada para visualizar");
     expect(html).toContain("Visualizar conteúdo e HTML");

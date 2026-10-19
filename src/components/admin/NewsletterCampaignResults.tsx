@@ -1,3 +1,4 @@
+import { NewsletterEngagementPeople } from "./NewsletterEngagementPeople";
 import { useQuery } from "@tanstack/react-query";
 import {
   newsletterCall,
@@ -61,6 +62,7 @@ export function NewsletterCampaignResults({
           {stats.clickTracking !== true &&
             " Rastreamento de clique desativado ou não confirmado."}{" "}
           Proteções de privacidade e robôs podem influenciar essas métricas.
+          Envios anteriores à ativação não ganham rastreamento retroativo.
         </p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">
@@ -69,6 +71,7 @@ export function NewsletterCampaignResults({
           ? ` · Consultado em ${new Date(stats.updatedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}`
           : ""}
       </p>
+      <NewsletterEngagementPeople campaign={id} />
     </div>
   );
 }

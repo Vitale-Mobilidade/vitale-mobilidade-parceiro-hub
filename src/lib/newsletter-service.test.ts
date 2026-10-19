@@ -115,7 +115,7 @@ describe("newsletter authorization and dispatch recovery", () => {
     expect((await newsletterTick(request)).status).toBe(403);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
-  it("prevents a content editor from accessing newsletter administration", async () => {
+  it.each(["opened", "clicked"])("prevents a content editor from accessing %s recipients", async (event) => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: { role: "content", active: true },
       error: null,
@@ -132,6 +132,8 @@ describe("newsletter authorization and dispatch recovery", () => {
     const response = await newsletterAdmin(
       new Request("https://example.invalid", {
         headers: { Authorization: "Bearer synthetic" },
+        method: "POST",
+        body: JSON.stringify({action: "campaign_engagement", campaign: id, event}),
       }),
     );
     expect(response.status).toBe(403);
