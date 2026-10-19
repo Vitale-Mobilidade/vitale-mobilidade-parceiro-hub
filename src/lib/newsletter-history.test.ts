@@ -130,3 +130,51 @@ describe("newsletter history", () => {
     expect(preview.html).toContain("color-scheme");
   });
 });
+
+it("keeps pre-activation Vitale metrics unknown rather than retroactively presenting zero", async () => {
+  const database = {
+    from: (table: string) => ({
+      select: () => ({
+        order: () => ({
+          limit: async () => ({ data: [campaign], error: null }),
+        }),
+        eq: () => ({
+          single: async () => ({
+            data: { from_email: "vitale@news.vitalemobilidade.com" },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  } as unknown as SupabaseClient;
+  const request = vi.fn(async (url: RequestInfo | URL) =>
+    Response.json(
+      String(url).includes("/emails/metrics?")
+        ? {
+            data: [
+              {
+                broadcast_id: "broadcast-1",
+                sent: 25,
+                delivered: 24,
+                unique_opened: 0,
+                unique_clicked: 0,
+              },
+            ],
+          }
+        : String(url).includes("/domains/domain-1")
+          ? { open_tracking: true, click_tracking: true }
+          : {
+              data: [{ id: "domain-1", name: "news.vitalemobilidade.com" }],
+              has_more: false,
+            },
+    ),
+  );
+  const resend = new ResendNewsletter("mock", request as typeof fetch, 0);
+  const result = await newsletterCampaignReports(database, () => resend);
+  expect(result[id]).toMatchObject({
+    opened: null,
+    clicked: null,
+    openTracking: true,
+    clickTracking: true,
+  });
+});

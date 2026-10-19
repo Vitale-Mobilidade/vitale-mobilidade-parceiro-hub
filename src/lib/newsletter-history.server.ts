@@ -8,6 +8,9 @@ import {
   type NewsletterSegment,
 } from "./newsletter";
 
+// Provisioning verified in Resend on 19/10/2026, 12:28 São Paulo.
+// Earlier Vitale broadcasts did not contain tracking pixels/links.
+const VITALE_TRACKING_SINCE = Date.parse("2026-10-19T15:28:00Z");
 type Reports = Record<string, NewsletterCampaignStats>;
 let cache: { key: string; expires: number; value: Reports } | null = null;
 let inFlight: { key: string; value: Promise<Reports> } | null = null;
@@ -21,7 +24,7 @@ export async function newsletterCampaignReports(
 ) {
   const { data, error } = await db
     .from("newsletter_campaigns")
-    .select("id,edition_day,resend_id")
+    .select("id,edition_day,resend_id,sent_at")
     .order("edition_day", { ascending: false })
     .limit(20);
   if (error) throw new Error("newsletter_database_failed");
@@ -29,6 +32,7 @@ export async function newsletterCampaignReports(
     id: string;
     edition_day: string;
     resend_id: string | null;
+    sent_at?: string | null;
   }[];
   const sent = campaigns.filter((c) => c.resend_id);
   if (!sent.length) return {};
@@ -65,6 +69,7 @@ export async function newsletterCampaignReports(
       }>(`/emails/metrics?${params}`);
       if (!Array.isArray(report.data))
         throw new Error("invalid_resend_metrics");
+      let isVitaleDomain = false;
       let openTracking: boolean | null = null,
         clickTracking: boolean | null = null;
       try {
@@ -77,6 +82,7 @@ export async function newsletterCampaignReports(
           ?.split("@")
           .at(-1)
           ?.toLowerCase();
+        isVitaleDomain = domainName === "news.vitalemobilidade.com";
         const domains = await resend.list<{ id: string; name: string }>(
           "/domains",
         );
@@ -112,16 +118,22 @@ export async function newsletterCampaignReports(
           ].every((n) => typeof n === "number" && Number.isInteger(n) && n >= 0)
         )
           continue;
+        const sentAt = Date.parse(
+          campaign.sent_at ?? `${campaign.edition_day}T00:00:00Z`,
+        );
+        const trackingAtSend =
+          !isVitaleDomain ||
+          (Number.isFinite(sentAt) && sentAt >= VITALE_TRACKING_SINCE);
         result[campaign.id] = {
           available: true,
           sent: row.sent,
           delivered: row.delivered,
           opened:
-            row.unique_opened > 0 || openTracking === true
+            row.unique_opened > 0 || (openTracking === true && trackingAtSend)
               ? row.unique_opened
               : null,
           clicked:
-            row.unique_clicked > 0 || clickTracking === true
+            row.unique_clicked > 0 || (clickTracking === true && trackingAtSend)
               ? row.unique_clicked
               : null,
           openTracking,
