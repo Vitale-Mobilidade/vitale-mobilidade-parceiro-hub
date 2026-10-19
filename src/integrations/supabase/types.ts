@@ -1288,18 +1288,21 @@ export type Database = {
         Row: {
           attempts: number
           edition_day: string
+          feedback: Json
           last_error: string | null
           next_attempt_at: string | null
         }
         Insert: {
           attempts: number
           edition_day: string
+          feedback?: Json
           last_error?: string | null
           next_attempt_at?: string | null
         }
         Update: {
           attempts?: number
           edition_day?: string
+          feedback?: Json
           last_error?: string | null
           next_attempt_at?: string | null
         }
@@ -1343,6 +1346,62 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "newsletter_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      newsletter_rewrites: {
+        Row: {
+          actor_id: string
+          attempts: number
+          base_revision: number
+          candidate: Json | null
+          created_at: string
+          draft_id: string
+          feedback: Json
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          prompt: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actor_id: string
+          attempts?: number
+          base_revision: number
+          candidate?: Json | null
+          created_at?: string
+          draft_id: string
+          feedback?: Json
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          prompt: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string
+          attempts?: number
+          base_revision?: number
+          candidate?: Json | null
+          created_at?: string
+          draft_id?: string
+          feedback?: Json
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          prompt?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_rewrites_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_drafts"
             referencedColumns: ["id"]
           },
         ]
