@@ -35,3 +35,7 @@ O commit 9c715f1 removeu NewsletterSignup compact da abertura e ativou o formul�
 | PMO/QA | Pass | Dois testes direcionados aprovados; pnpm validate aprovado (typecheck, regressão selecionada e build). |
 
 Fechamento: correção preparada localmente em codex/newsletter-top-form a partir de origin/main 9fdcbf1. Sem custo externo e sem envio de cadastros reais. Sem alteração de produção. Publicação depende de autorização específica nesta conversa conforme EXECUTION_GUARDRAILS.md, seção 1. Rollback limitado aos dois arquivos de código/teste e este registro. Risco residual baixo: posicionamento validado por SSR, sem smoke visual em navegador.
+
+## Publicação autorizada e verificada
+
+Usuário autorizou explicitamente a publicação nesta conversa. Commit 9526387 sincronizado com Lovable e publicado no deployment 16e667a2-60e0-45fc-b330-4bfb050287e7. Domínio público retornou HTTP 200 com esse deployment; HTML SSR contém um formulário em main entre h1 e descrição. Navegador produtivo confirmou campos, consentimento e botão logo após título. Evidência visual: artifacts/newsletter-top-form-published-2026-10-19.png no checkout de referência. Parecer UX/UI final Pass com inspeção visual produtiva; demais pareceres mantidos. Nenhum cadastro ou envio real efetuado. Task concluída.
