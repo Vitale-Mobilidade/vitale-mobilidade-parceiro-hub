@@ -77,11 +77,3 @@ it("composes the exact PNG RGB dimensions observed in the Cloud failure (1376×7
   expect(inspectJpeg(result.bytes)).toEqual({ width: 1280, height: 720 });
   expect(result.lines.join(" ")).toBe(title);
 });
-
-it("newsletter derivative contains only the brand and preserves the unshaded scene", async () => {
-  const clean = await render(background, "", { brandOnly: true });
-  expect(clean.title).toBe("");
-  expect(clean.lines).toEqual([]);
-  expect(inspectJpeg(clean.bytes)).toEqual({ width: 1280, height: 720 });
-  await writeFile("/tmp/vitale-newsletter-brand-only.jpg", clean.bytes);
-});

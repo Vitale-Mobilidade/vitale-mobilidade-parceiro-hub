@@ -29,3 +29,9 @@ Decisão: endpoint público restrito para derivado sem título, selecionado some
 | PMO/QA | Pass | Testes direcionados de composição/imagens/endpoint e pnpm validate passaram. Rollback por reversão deste commit e republicação. |
 
 Validação: 13 testes direcionados; `pnpm validate` (TypeScript, regressões de rotas/Quiz/Radar e build). Nenhuma migration ou chamada paga. Consulta somente leitura confirmou bases PNG existentes e a exceção de artigos antigos sem base. Risco residual: cache pode manter a imagem até 24h; indisponibilidade transitória na preparação omite imagem. Publicação autorizada, smoke em produção pendente no momento deste registro.
+
+## Correção de compatibilidade da hospedagem
+
+O primeiro smoke revelou erro HTTP 500 na nova rota: o compositor original compila WASM dinamicamente, operação incompatível com o worker de hospedagem. CTO e PMO bloquearam o fechamento até correção. Decisão revisada: manter o compositor de artigos intacto e usar codecs JavaScript `fast-png` e `jpeg-js` para o derivado do e-mail, com marca fixa rasterizada offline. Nenhuma alteração de modelo, schema ou dado. Segurança mantém validação de dimensões antes de decode, tamanho e propriedade do arquivo. UX mantém cena sem gradiente e marca superior. Produto/CX/Growth mantêm #6+, omissão quando base indisponível e preservação de #5/site. Rollback permanece reversão dos commits e republicação.
+
+Correção validada: 8 testes direcionados do compositor portátil, seleção segura de arquivo e imagens de vídeo; `pnpm validate` passou novamente (64 regressões, TypeScript e build). Inspeção do bundle da nova rota sem compilação de WASM; JPEG portátil inspecionado visualmente. Todas as oito perspectivas mantêm Pass para o código corrigido, com smoke produtivo obrigatório antes de declarar conclusão.

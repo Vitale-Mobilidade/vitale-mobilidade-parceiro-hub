@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { composeServerCover } from "../../supabase/functions/_shared/cover-renderer/index";
+import { composeNewsletterImage } from "./newsletter-compose.server";
 import {
   COVER_BUCKET,
   isCoverUuid,
@@ -49,12 +49,11 @@ export async function newsletterArticleImage(id: string): Promise<Response> {
       .download(background.path);
     if (!file || file.size > 12 * 1024 * 1024)
       return new Response(null, { status: 404 });
-    const result = await composeServerCover(
-      `data:${background.mime};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`,
-      "",
-      { brandOnly: true },
+    const result = composeNewsletterImage(
+      new Uint8Array(await file.arrayBuffer()),
+      background.mime,
     );
-    return new Response(Buffer.from(result.bytes), {
+    return new Response(Buffer.from(result), {
       headers: {
         "Content-Type": "image/jpeg",
         "Cache-Control": "public, max-age=3600, s-maxage=86400",
