@@ -1153,6 +1153,42 @@ export type Database = {
           },
         ]
       }
+      heatmap_daily: {
+        Row: {
+          action: string
+          count: number
+          day: string
+          kind: string
+          layout: string
+          path: string
+          screen: string
+          x: number
+          y: number
+        }
+        Insert: {
+          action: string
+          count: number
+          day: string
+          kind: string
+          layout: string
+          path: string
+          screen: string
+          x: number
+          y: number
+        }
+        Update: {
+          action?: string
+          count?: number
+          day?: string
+          kind?: string
+          layout?: string
+          path?: string
+          screen?: string
+          x?: number
+          y?: number
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
@@ -2342,6 +2378,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_heatmap: {
+        Args: {
+          p_days: number
+          p_layout: string
+          p_path: string
+          p_screen: string
+        }
+        Returns: Json
+      }
       admin_quiz_bike_counts_range: {
         Args: { p_since: string; p_until: string }
         Returns: {
@@ -2502,6 +2547,15 @@ export type Database = {
       project_bikes_from_snapshot: { Args: { p_rows: Json }; Returns: Json }
       public_video_catalog: { Args: never; Returns: Json }
       reconcile_youtube_editorial_stalls: { Args: never; Returns: Json }
+      record_heatmap_batch: {
+        Args: {
+          p_bins: Json
+          p_layout: string
+          p_path: string
+          p_screen: string
+        }
+        Returns: undefined
+      }
       record_site_analytics: {
         Args: {
           p_bike_id: string
