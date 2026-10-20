@@ -1,3 +1,4 @@
+import { validateHeatmapBatch } from "../_shared/heatmap.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import { validateSiteAnalyticsHit } from "../_shared/site-analytics.ts";
 
@@ -59,18 +60,28 @@ Deno.serve(async (req) => {
   if (!PRODUCTION_ORIGINS.has(origin)) return respond(403);
   if (!req.headers.get("content-type")?.startsWith("application/json"))
     return respond(415);
-  if (Number(req.headers.get("content-length") ?? 0) > 512) return respond(413);
+  if (Number(req.headers.get("content-length") ?? 0) > 4096)
+    return respond(413);
   if (!withinLimit(await anonymousRateKey(req))) return respond(429);
   const raw = await req.text();
-  if (raw.length > 512) return respond(413);
+  if (raw.length > 4096) return respond(413);
   let input: unknown;
   try {
     input = JSON.parse(raw);
   } catch {
     return respond(400);
   }
-  const hit = validateSiteAnalyticsHit(input);
-  if (!hit) return respond(400);
+  const heatmap = (input as { event?: unknown } | null)?.event === "heatmap";
+  if (
+    !heatmap &&
+    (raw.length > 512 || Number(req.headers.get("content-length") ?? 0) > 512)
+  )
+    return respond(413);
+  if (heatmap && Deno.env.get("HEATMAP_ENABLED") !== "true")
+    return respond(204);
+  const batch = heatmap ? validateHeatmapBatch(input) : null;
+  const hit = heatmap ? null : validateSiteAnalyticsHit(input);
+  if (!hit && !batch) return respond(400);
   try {
     const db = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -79,6 +90,16 @@ Deno.serve(async (req) => {
         auth: { persistSession: false },
       },
     );
+    if (batch) {
+      const { error } = await db.rpc("record_heatmap_batch", {
+        p_path: batch.path,
+        p_screen: batch.screen,
+        p_layout: batch.layout,
+        p_bins: batch.bins,
+      });
+      return respond(error ? 503 : 204);
+    }
+    if (!hit) return respond(400);
     const { error } = await db.rpc("record_site_analytics", {
       p_event_name: hit.event,
       p_source_path: hit.sourcePath,

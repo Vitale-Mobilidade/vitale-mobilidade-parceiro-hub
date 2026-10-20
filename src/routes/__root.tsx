@@ -1,3 +1,4 @@
+import { startHeatmap } from "@/lib/heatmap";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
@@ -126,6 +127,10 @@ function RootComponent() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const href = useRouterState({ select: (s) => s.location.href });
   const excluded = path.startsWith("/quiz");
+  useEffect(() => startHeatmap(window, document,
+    `${import.meta.env.VITE_SUPABASE_URL ?? ""}/functions/v1/site-analytics`,
+    import.meta.env.PROD && import.meta.env.VITE_HEATMAP_ENABLED !== "false",
+  ), [path]);
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
     if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();

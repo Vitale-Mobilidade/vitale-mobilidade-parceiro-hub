@@ -72,6 +72,17 @@ function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="text-xl font-bold">Mapa agregado de interação</h2>
+            <p>
+              Quando ativado, o mapa usa uma amostra aleatória de 25% das entradas em páginas da Home, Radar e conteúdos.
+              Contamos cliques em células de uma grade, categorias de links e alcance de rolagem, por dia, página,
+              faixa de tela e versão do layout. Não gravamos sessões, movimentos do cursor, textos, conteúdo da página,
+              valores de formulários, cookies ou identificadores de visitantes. Quiz, ferramentas interativas e áreas
+              privadas ficam fora dessa coleta. Os totais são privados e removidos na próxima gravação após a janela de
+              90 dias. A proteção contra abuso e os limites da infraestrutura são os mesmos das métricas agregadas.
+            </p>
+          </section>
+          <section>
             <h2 className="text-xl font-bold">Funcionamento e solicitações</h2>
             <p>
               Usamos armazenamento necessário às funções que você utiliza, como sessão administrativa e continuidade do

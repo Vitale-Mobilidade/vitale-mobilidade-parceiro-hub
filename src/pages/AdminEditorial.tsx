@@ -1,3 +1,4 @@
+import { AdminHeatmap } from "@/components/admin/AdminHeatmap";
 import { RadarAudienceCard } from "@/components/admin/RadarAudienceCard";
 import { newsletterCall, type NewsletterAdminState, type NewsletterMetrics } from "@/lib/newsletter-api";
 import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
@@ -213,7 +214,7 @@ function Overview({ role }: { role: AdminRole }) {
 export function AdminGrowthPage() {
   return (
     <AdminShell>
-      {(role) => (role === "admin" ? <Growth /> : <Notice danger>Somente Admin pode ver dados de Growth.</Notice>)}
+      {(role) => (role === "admin" ? <><Growth /><AdminHeatmap /></> : <Notice danger>Somente Admin pode ver dados de Growth.</Notice>)}
     </AdminShell>
   );
 }

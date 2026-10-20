@@ -1,3 +1,4 @@
+import { HEATMAP_LAYOUT, heatmapPath } from "../_shared/heatmap.ts";
 import { EDITORIAL_ALERT_RECIPIENT, sendEditorialAlert } from "../_shared/editorial-alert.ts";
 import { growthRange } from "../_shared/growth-range.ts";
 import { reviewPeers, reviewInputKey, approvedAssessment, repeatedReviewIssues } from "../_shared/editorial-review-cost.ts";
@@ -2629,6 +2630,15 @@ Deno.serve(async (req) => {
         }, {}),
         generationErrors: failures.count ?? 0,
       });
+    }
+    if (action === "heatmap") {
+      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler o mapa." }, 403);
+      const path = heatmapPath(body.path);
+      if (!path || !["mobile", "tablet", "desktop"].includes(String(body.screen)) || ![7, 30, 90].includes(Number(body.days)))
+        return json(req, { error: "Filtro inválido." }, 400);
+      const { data, error } = await db.rpc("admin_heatmap", { p_path: path, p_screen: body.screen, p_layout: HEATMAP_LAYOUT, p_days: Number(body.days) });
+      if (error) return json(req, { error: "Mapa indisponível; confira migration e ativação." }, 503);
+      return json(req, { bins: data ?? [], layout: HEATMAP_LAYOUT, sample: 0.25 });
     }
     if (action === "growth") {
       if (actor.role !== "admin")

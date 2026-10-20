@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as heatmapContract from "../../supabase/functions/_shared/heatmap";
 import * as contract from "../../supabase/functions/_shared/site-analytics";
 
-function harness(enabled = true, rpcError = false) {
+function harness(enabled = true, rpcError = false, heatmapEnabled = false) {
   let handler: (request: Request) => Promise<Response> = async () =>
     new Response(null, { status: 500 });
   const rpc = vi
@@ -28,11 +29,11 @@ function harness(enabled = true, rpcError = false) {
   runInNewContext(compiled, {
     exports: {},
     require: (name: string) =>
-      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : contract,
+      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : name.includes("heatmap") ? heatmapContract : contract,
     Deno: {
       env: {
         get: (name: string) =>
-          name === "SITE_ANALYTICS_ENABLED" ? String(enabled) : "server-only",
+          name === "SITE_ANALYTICS_ENABLED" ? String(enabled) : name === "HEATMAP_ENABLED" ? String(heatmapEnabled) : "server-only",
       },
       serve: (next: typeof handler) => {
         handler = next;
@@ -176,4 +177,18 @@ describe("site analytics collector", () => {
         .status,
     ).toBe(503);
   });
+});
+
+
+describe("heatmap collection gate", () => {
+ const batch = {event:"heatmap",path:"/radar",screen:"mobile",layout:heatmapContract.HEATMAP_LAYOUT,bins:[{kind:"view",x:0,y:0,action:"other",count:1}]};
+ it("does not write when the independent flag is off",async()=>{
+  const h=harness();expect((await h.handler(post(batch))).status).toBe(204);expect(h.rpc).not.toHaveBeenCalled();
+ });
+ it("writes only strict aggregates to a fixed RPC",async()=>{
+  const h=harness(true,false,true);expect((await h.handler(post(batch))).status).toBe(204);
+  expect(h.rpc).toHaveBeenCalledWith("record_heatmap_batch",{p_path:"/radar",p_screen:"mobile",p_layout:heatmapContract.HEATMAP_LAYOUT,p_bins:batch.bins});
+  expect((await h.handler(post({...batch,email:"secret"}))).status).toBe(400);
+  expect((await h.handler(post(batch,"https://attacker.test"))).status).toBe(403);
+ });
 });
