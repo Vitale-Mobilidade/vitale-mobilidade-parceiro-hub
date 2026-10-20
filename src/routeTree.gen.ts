@@ -55,6 +55,7 @@ import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
 import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
+import { Route as ApiPublicNewsletterImageRouteImport } from './routes/api/public/newsletter-image'
 import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
 import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
@@ -298,6 +299,12 @@ const ApiAdminRadarAlertsRoute = ApiAdminRadarAlertsRouteImport.update({
   path: '/api/admin/radar-alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNewsletterImageRoute =
+  ApiPublicNewsletterImageRouteImport.update({
+    id: '/api/public/newsletter-image',
+    path: '/api/public/newsletter-image',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicNewsletterWebhookRoute =
   ApiPublicNewsletterWebhookRouteImport.update({
     id: '/api/public/newsletter-webhook',
@@ -368,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -420,6 +428,7 @@ export interface FileRoutesByTo {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -473,6 +482,7 @@ export interface FileRoutesById {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -579,6 +590,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -631,6 +643,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
@@ -684,6 +697,7 @@ export interface RootRouteChildren {
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
   ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
+  ApiPublicNewsletterImageRoute: typeof ApiPublicNewsletterImageRoute
   ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
   ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
@@ -1014,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRadarAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/newsletter-image': {
+      id: '/api/public/newsletter-image'
+      path: '/api/public/newsletter-image'
+      fullPath: '/api/public/newsletter-image'
+      preLoaderRoute: typeof ApiPublicNewsletterImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/newsletter-webhook': {
       id: '/api/public/newsletter-webhook'
       path: '/api/public/newsletter-webhook'
@@ -1105,6 +1126,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
   ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
+  ApiPublicNewsletterImageRoute: ApiPublicNewsletterImageRoute,
   ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,
   ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,

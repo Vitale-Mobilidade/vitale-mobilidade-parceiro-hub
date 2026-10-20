@@ -67,7 +67,7 @@ function decode(background: string): Raster {
   }
   return { width: image.width, height: image.height, buffer };
 }
-function fitBackground(source: Raster): Uint8Array {
+function fitBackground(source: Raster, shade = true): Uint8Array {
   const out = new Uint8Array(W * H * 4);
   const scale = Math.max(W / source.width, H / source.height);
   const ox = (source.width - W / scale) / 2,
@@ -88,7 +88,7 @@ function fitBackground(source: Raster): Uint8Array {
         y1 = Math.min(source.height - 1, y0 + 1);
       const tx = sx - x0,
         ty = sy - y0;
-      const dark = Math.max(0, (y - H * 0.35) / (H * 0.65)) * 0.88;
+      const dark = shade ? Math.max(0, (y - H * 0.35) / (H * 0.65)) * 0.88 : 0;
       for (let c = 0; c < 3; c++) {
         const top =
           source.buffer[(y0 * source.width + x0) * 4 + c] * (1 - tx) +
@@ -145,8 +145,9 @@ function rasterText(
 export async function composeServerCover(
   background: string,
   title: string,
+  options: { brandOnly?: boolean } = {},
 ): Promise<{ bytes: Uint8Array; title: string; lines: string[] }> {
-  if (!title.trim() || title.length > 200)
+  if ((!options.brandOnly && !title.trim()) || title.length > 200)
     throw new Error("cover_title_invalid");
   fontBytes ??= Uint8Array.from(atob(interFontBase64), (char) =>
     char.charCodeAt(0),
@@ -178,8 +179,9 @@ export async function composeServerCover(
       if (rendered.every(line => line.width <= W - 128)) { fit = candidate; lines = rendered; break; }
       sizes = sizes.filter(size => size < candidate.size);
     }
-    if (!fit) throw new Error("cover_title_does_not_fit");
-    const out = fitBackground(decode(background));
+    if (!fit && !options.brandOnly) throw new Error("cover_title_does_not_fit");
+    fit ??= { size: 26, lines: [] };
+    const out = fitBackground(decode(background), !options.brandOnly);
     const brand = rasterText(font(26), "Vitale Mobilidade", 26);
     const pillWidth = brand.width + 44;
     for (let y = 0; y < 52; y++)
@@ -191,7 +193,7 @@ export async function composeServerCover(
       }
     composite(out, brand, 86, 56 + Math.floor((52 - brand.height) / 2));
     const lineHeight = Math.round(fit.size * 1.15);
-    for (let i = 0; i < fit.lines.length; i++) {
+    for (let i = 0; i < (options.brandOnly ? 0 : fit.lines.length); i++) {
       const line = lines[i];
       const y = H - 64 - lineHeight * (fit.lines.length - 1 - i) - line.height;
       composite(out, line, 66, y + 3, true);
@@ -200,7 +202,7 @@ export async function composeServerCover(
     for (const quality of [88, 80, 70, 60]) {
       const bytes = jpeg.encode(out, W, H, quality);
       if (bytes.length <= COVER_MAX_BYTES)
-        return { bytes, title, lines: fit.lines };
+        return { bytes, title, lines: options.brandOnly ? [] : fit.lines };
     }
     throw new Error("cover_output_too_large");
   } finally {

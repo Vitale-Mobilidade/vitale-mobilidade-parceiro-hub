@@ -203,6 +203,15 @@ export async function automaticNewsletter(
   const videoImages = await Promise.all(
     pickedVideos.map((v) => newsletterVideoImage(v.videoId, v.thumbnail)),
   );
+  const articleImages = new Map<string, string>();
+  if (editionNumber >= 6) {
+    const { newsletterArticleImage } = await import("./newsletter-article-image.server");
+    for (const a of pickedArticles) {
+      const result = await newsletterArticleImage(a.id);
+      await result.body?.cancel();
+      if (result.ok) articleImages.set(a.id, `https://vitalemobilidade.com/api/public/newsletter-image?id=${a.id}`);
+    }
+  }
   const content: NewsletterContent = {
     editionNumber,
     sourceVideoIds: [
@@ -226,7 +235,7 @@ export async function automaticNewsletter(
       title: a.title,
       category: newsletterCategoryLabel(a.title, a.contentType),
       url: `https://vitalemobilidade.com/conteudos/${a.slug}`,
-      ...image(a.ogImageUrl),
+      ...image(editionNumber >= 6 ? articleImages.get(a.id) : a.ogImageUrl),
       ...enrich(`article-${i}`),
     })),
     radar: {
