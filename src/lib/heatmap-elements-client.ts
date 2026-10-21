@@ -82,22 +82,31 @@ export function startHeatmap(
       flush();
     else if (!timer) timer = setTimeout(flush, 5000);
   };
-  let lastScroll = -Infinity;
-  const scroll = () => {
-    const now = Date.now();
-    if (now - lastScroll < 250 || depths.size === 4) return;
-    lastScroll = now;
-    if (!valid() || doc.visibilityState === "hidden") return;
+  let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+  const measureScroll = () => {
+    if (depths.size === 4) return;
+    if (!valid()) return;
     const height = Math.max(doc.documentElement.scrollHeight, win.innerHeight);
     const reached = Math.min(
       100,
-      ((win.scrollY + win.innerHeight) / height) * 100,
+      ((win.scrollY + win.innerHeight + 1) / height) * 100,
     );
     for (const y of [25, 50, 75, 100])
       if (reached >= y && !depths.has(y)) {
         depths.add(y);
         add({ kind: "scroll", x: 0, y, target: "", count: 1 });
       }
+  };
+  const scroll = () => {
+    if (scrollTimer || depths.size === 4) return;
+    scrollTimer = setTimeout(() => {
+      scrollTimer = undefined;
+      measureScroll();
+    }, 150);
+  };
+  const finish = () => {
+    measureScroll();
+    flush();
   };
   const click = (event: MouseEvent) => {
     if (
@@ -126,7 +135,10 @@ export function startHeatmap(
     });
   };
   const hidden = () => {
-    if (doc.visibilityState === "hidden") flush();
+    if (doc.visibilityState === "hidden") {
+      measureScroll();
+      flush();
+    }
   };
   const resize = () => {
     if (Math.round(win.innerWidth) !== viewport) {
@@ -135,20 +147,21 @@ export function startHeatmap(
     }
   };
   add({ kind: "view", x: 0, y: 0, target: "", count: 1 });
-  scroll();
+  measureScroll();
   doc.addEventListener("click", click, { capture: true, passive: true });
   win.addEventListener("scroll", scroll, { passive: true });
   win.addEventListener("resize", resize, { passive: true });
-  win.addEventListener("pagehide", flush);
+  win.addEventListener("pagehide", finish);
   doc.addEventListener("visibilitychange", hidden);
   return () => {
-    flush();
+    finish();
     stopped = true;
     if (timer) clearTimeout(timer);
+    if (scrollTimer) clearTimeout(scrollTimer);
     doc.removeEventListener("click", click, true);
     win.removeEventListener("scroll", scroll);
     win.removeEventListener("resize", resize);
-    win.removeEventListener("pagehide", flush);
+    win.removeEventListener("pagehide", finish);
     doc.removeEventListener("visibilitychange", hidden);
   };
 }

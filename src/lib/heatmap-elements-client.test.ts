@@ -63,3 +63,44 @@ it("anchors repeated public links independently, rejects private fields and coll
   expect(JSON.stringify(batch)).not.toMatch(/email|secret|href|textContent/);
   expect(callbacks.size).toBe(0);
 });
+
+it.each([false, true])(
+  "records rapid final scroll, including pagehide before the trailing check (%s)",
+  async (hideEarly) => {
+    vi.useFakeTimers();
+    try {
+      const doc = new EventTarget() as Document;
+      Object.assign(doc, {
+        visibilityState: "visible",
+        documentElement: { scrollHeight: 2000 },
+      });
+      const win = new EventTarget() as Window;
+      Object.assign(win, {
+        location: { pathname: "/", hostname: "vitalemobilidade.com" },
+        innerWidth: 390,
+        innerHeight: 500,
+        scrollY: 0,
+      });
+      const send = vi.fn().mockResolvedValue({});
+      const stop = startHeatmap(win, doc, "url", true, send, () => 0);
+      Object.assign(win, { scrollY: 100 });
+      win.dispatchEvent(new Event("scroll"));
+      Object.assign(win, { scrollY: 1499.5 });
+      win.dispatchEvent(new Event("scroll"));
+      if (hideEarly) win.dispatchEvent(new Event("pagehide"));
+      else await vi.advanceTimersByTimeAsync(150);
+      stop();
+      const all = send.mock.calls.flatMap(
+        (call) => JSON.parse(call[1].body).bins,
+      );
+      expect(
+        all
+          .filter((b: { kind: string }) => b.kind === "scroll")
+          .map((b: { y: number }) => b.y),
+      ).toEqual([25, 50, 75, 100]);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);

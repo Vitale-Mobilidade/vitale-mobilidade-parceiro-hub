@@ -1,3 +1,4 @@
+import { ScrollHeatmapBands } from "./ScrollHeatmapBands";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminCall } from "@/lib/admin-api";
@@ -32,6 +33,7 @@ export function ElementHeatmap() {
   const [availableWidth, setAvailableWidth] = useState(900);
   const [zoom, setZoom] = useState(1);
   const [spots, setSpots] = useState<Spot[]>([]);
+  const [showScroll, setShowScroll] = useState(true);
   const [missing, setMissing] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -257,6 +259,38 @@ export function ElementHeatmap() {
         captura histórica. Se a página mudou, posições podem variar; elementos
         ausentes não recebem marcações.
       </p>
+      <div className="my-3 flex flex-wrap items-center gap-3 text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showScroll}
+            onChange={(e) => setShowScroll(e.target.checked)}
+          />
+          Mostrar faixas de scroll
+        </label>
+        <span>Ir para:</span>
+        {[25, 50, 75, 100].map((depth) => (
+          <button
+            type="button"
+            key={depth}
+            className="rounded border bg-white px-3 py-1 font-semibold"
+            aria-label={`Ir para ${depth}% da página`}
+            onClick={() =>
+              host.current?.scrollTo({
+                top: Math.max(0, ((height * depth) / 100) * scale - 100),
+                behavior: "smooth",
+              })
+            }
+          >
+            {depth}%
+          </button>
+        ))}
+      </div>
+      <p className="mb-3 text-xs text-slate-600">
+        Faixas verdes indicam maior alcance; vermelhas, menor alcance. Os
+        números são entradas da amostra de 25%, incluindo possíveis repetições,
+        e não pessoas únicas.
+      </p>
       <div
         ref={host}
         className="max-h-[760px] overflow-auto rounded-xl border bg-slate-100"
@@ -299,6 +333,7 @@ export function ElementHeatmap() {
                 display: "block",
               }}
             />
+            {showScroll && <ScrollHeatmapBands bins={bins} scale={scale} />}
             <div
               style={{ position: "absolute", inset: 0 }}
               aria-label="Marcações de cliques"
