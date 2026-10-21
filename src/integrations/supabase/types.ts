@@ -1189,6 +1189,45 @@ export type Database = {
         }
         Relationships: []
       }
+      heatmap_elements_daily: {
+        Row: {
+          count: number
+          day: string
+          kind: string
+          layout: string
+          path: string
+          screen: string
+          target: string
+          viewport: number
+          x: number
+          y: number
+        }
+        Insert: {
+          count: number
+          day: string
+          kind: string
+          layout: string
+          path: string
+          screen: string
+          target: string
+          viewport: number
+          x: number
+          y: number
+        }
+        Update: {
+          count?: number
+          day?: string
+          kind?: string
+          layout?: string
+          path?: string
+          screen?: string
+          target?: string
+          viewport?: number
+          x?: number
+          y?: number
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
@@ -2387,6 +2426,16 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_heatmap_elements: {
+        Args: {
+          p_days: number
+          p_layout: string
+          p_path: string
+          p_screen: string
+          p_viewport: number
+        }
+        Returns: Json
+      }
       admin_quiz_bike_counts_range: {
         Args: { p_since: string; p_until: string }
         Returns: {
@@ -2553,6 +2602,16 @@ export type Database = {
           p_layout: string
           p_path: string
           p_screen: string
+        }
+        Returns: undefined
+      }
+      record_heatmap_elements: {
+        Args: {
+          p_bins: Json
+          p_layout: string
+          p_path: string
+          p_screen: string
+          p_viewport: number
         }
         Returns: undefined
       }
