@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AdminHeatmap } from "./AdminHeatmap";
+import { LegacyHeatmap as AdminHeatmap } from "./AdminHeatmap";
 import { HEATMAP_LAYOUT } from "../../../supabase/functions/_shared/heatmap";
 function render(bins: unknown[]) {
   const client = new QueryClient({

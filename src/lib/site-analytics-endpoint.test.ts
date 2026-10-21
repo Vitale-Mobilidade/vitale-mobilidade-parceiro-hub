@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as elementContract from "../../supabase/functions/_shared/heatmap-elements";
 import * as heatmapContract from "../../supabase/functions/_shared/heatmap";
 import * as contract from "../../supabase/functions/_shared/site-analytics";
 
@@ -29,7 +30,9 @@ function harness(enabled = true, rpcError = false, heatmapEnabled = false) {
   runInNewContext(compiled, {
     exports: {},
     require: (name: string) =>
-      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : name.includes("heatmap") ? heatmapContract : contract,
+      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : name.includes("heatmap-elements")
+          ? elementContract
+          : name.includes("heatmap") ? heatmapContract : contract,
     Deno: {
       env: {
         get: (name: string) =>
@@ -191,4 +194,11 @@ describe("heatmap collection gate", () => {
   expect((await h.handler(post({...batch,email:"secret"}))).status).toBe(400);
   expect((await h.handler(post(batch,"https://attacker.test"))).status).toBe(403);
  });
+});
+
+
+describe("element heatmap endpoint",()=>{
+ const batch={event:"heatmap_elements",path:"/radar",screen:"mobile",viewport:390,layout:elementContract.ELEMENT_LAYOUT,bins:[{kind:"click",target:"h:1234abcd:0",x:25,y:50,count:1}]};
+ it("keeps v2 disabled behind the existing server flag",async()=>{const h=harness();expect((await h.handler(post(batch))).status).toBe(204);expect(h.rpc).not.toHaveBeenCalled();});
+ it("sends exact validated element aggregates to the new private RPC",async()=>{const h=harness(true,false,true);expect((await h.handler(post(batch))).status).toBe(204);expect(h.rpc).toHaveBeenCalledWith("record_heatmap_elements",{p_path:"/radar",p_screen:"mobile",p_viewport:390,p_layout:elementContract.ELEMENT_LAYOUT,p_bins:batch.bins});expect((await h.handler(post({...batch,html:"private"}))).status).toBe(400);});
 });

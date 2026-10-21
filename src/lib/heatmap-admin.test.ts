@@ -1,3 +1,4 @@
+import { ELEMENT_LAYOUT } from "../../supabase/functions/_shared/heatmap-elements";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, it, expect, vi } from "vitest";
@@ -64,4 +65,12 @@ describe("heatmap Admin action", () => {
         .response.status,
     ).toBe(503);
   });
+});
+
+
+describe("element heatmap Admin gate",()=>{
+ const part=source.slice(source.indexOf('    if (action === "heatmap-elements") {'),source.indexOf('    if (action === "heatmap") {'));
+ const invoke=async(role:string,viewport:number)=>{const rpc=vi.fn().mockResolvedValue({data:{bins:[],viewport:390,viewports:[]},error:null});const fn=runInNewContext(`(async function(){${part}})`,{actor:{role},body:{path:"/",screen:"mobile",days:30,viewport},action:"heatmap-elements",req:{},db:{rpc},ELEMENT_LAYOUT,heatmapPath,json:(_r:unknown,data:unknown,status=200)=>({data,status})});return{response:await fn(),rpc};};
+ it("denies non-Admin and mismatched viewport without querying aggregates",async()=>{for(const [role,width,status] of [["content",390,403],["operation",390,403],["admin",1440,400]] as const){const h=await invoke(role,width);expect(h.response.status).toBe(status);expect(h.rpc).not.toHaveBeenCalled();}});
+ it("reads a fixed RPC scoped to exact page, version and viewport",async()=>{const h=await invoke("admin",390);expect(h.response.status).toBe(200);expect(h.rpc).toHaveBeenCalledWith("admin_heatmap_elements",{p_path:"/",p_screen:"mobile",p_layout:ELEMENT_LAYOUT,p_days:30,p_viewport:390});});
 });

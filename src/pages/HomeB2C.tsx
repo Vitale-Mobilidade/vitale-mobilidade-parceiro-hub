@@ -59,6 +59,7 @@ export function Hero() {
         <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row lg:flex-col lg:items-start">
           <Link
             to="/quiz"
+            data-heatmap-target="home-hero-quiz"
             reloadDocument
             className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-mint px-7 text-lg font-bold text-mint-foreground shadow-lg hover:opacity-90"
           >
@@ -69,6 +70,7 @@ export function Hero() {
           </Link>
           <Link
             to="/radar"
+            data-heatmap-target="home-hero-radar"
             className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-mint/70 bg-ink/40 px-7 text-lg font-bold backdrop-blur-sm hover:bg-ink-foreground/10"
           >
             <BarChart3 className="h-5 w-5" aria-hidden="true" /> Ver Radar de preços

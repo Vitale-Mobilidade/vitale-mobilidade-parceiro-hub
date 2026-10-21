@@ -1,3 +1,4 @@
+import { ELEMENT_LAYOUT } from "../_shared/heatmap-elements.ts";
 import { HEATMAP_LAYOUT, heatmapPath } from "../_shared/heatmap.ts";
 import { EDITORIAL_ALERT_RECIPIENT, sendEditorialAlert } from "../_shared/editorial-alert.ts";
 import { growthRange } from "../_shared/growth-range.ts";
@@ -2630,6 +2631,14 @@ Deno.serve(async (req) => {
         }, {}),
         generationErrors: failures.count ?? 0,
       });
+    }
+    if (action === "heatmap-elements") {
+      if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler o mapa." }, 403);
+      const path = heatmapPath(body.path);
+      const viewport = Number(body.viewport ?? 0);
+      if (!path || !["mobile", "tablet", "desktop"].includes(String(body.screen)) || ![7,30,90].includes(Number(body.days)) || !Number.isInteger(viewport) || (viewport !== 0 && (viewport < 240 || viewport > 3840 || (viewport<768?"mobile":viewport<1024?"tablet":"desktop")!==body.screen))) return json(req, { error: "Filtro inválido." }, 400);
+      const { data,error } = await db.rpc("admin_heatmap_elements", { p_path:path,p_screen:body.screen,p_layout:ELEMENT_LAYOUT,p_days:Number(body.days),p_viewport:viewport });
+      return error ? json(req,{error:"Mapa indisponível; confira a ativação da nova coleta."},503) : json(req,{...data,layout:ELEMENT_LAYOUT,sample:0.25});
     }
     if (action === "heatmap") {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode ler o mapa." }, 403);

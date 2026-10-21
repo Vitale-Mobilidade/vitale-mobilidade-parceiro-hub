@@ -1,3 +1,4 @@
+import { ElementHeatmap } from "./ElementHeatmap";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminCall } from "@/lib/admin-api";
@@ -16,7 +17,7 @@ const names = {
   tools: "Ferramentas",
   offer: "Oferta",
 };
-export function AdminHeatmap() {
+export function LegacyHeatmap() {
   const [draft, setDraft] = useState("/");
   const [path, setPath] = useState("/");
   const [screen, setScreen] = useState<HeatmapScreen>("mobile");
@@ -222,4 +223,9 @@ export function AdminHeatmap() {
       )}
     </section>
   );
+}
+
+export function AdminHeatmap() {
+ const [showLegacy,setShowLegacy]=useState(false);
+ return <><ElementHeatmap /><details className="mx-auto max-w-7xl px-5" onToggle={e=>setShowLegacy(e.currentTarget.open)}><summary>Consultar grade histórica v1 — posições aproximadas</summary>{showLegacy&&<LegacyHeatmap />}</details></>;
 }

@@ -1,4 +1,4 @@
-import { startHeatmap } from "@/lib/heatmap";
+import { startHeatmap } from "@/lib/heatmap-elements-client";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
@@ -157,7 +157,7 @@ function RootComponent() {
         <Outlet />
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
-      {!excluded && <HotPipeWidget />}
+      {!excluded && <div data-heatmap-private><HotPipeWidget /></div>}
       <NewsletterExitPopup path={path} />
     </QueryClientProvider>
   );
