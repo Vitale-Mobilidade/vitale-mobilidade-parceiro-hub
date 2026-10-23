@@ -4,6 +4,7 @@ const { createClient } = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient }));
 vi.mock("./newsletter-sources.server", () => ({
   automaticNewsletter: vi.fn(),
+  validateNewsletterCurrentOffers: vi.fn().mockResolvedValue(undefined),
 }));
 import {
   newsletterTick,
@@ -11,14 +12,21 @@ import {
   processNewsletterCampaign,
   type NewsletterSettings,
 } from "./newsletter-service.server";
-import { automaticNewsletter } from "./newsletter-sources.server";
+import {
+  automaticNewsletter,
+  validateNewsletterCurrentOffers,
+} from "./newsletter-sources.server";
 import { ResendNewsletter } from "./resend-newsletter.server";
 const id = "00000000-0000-0000-0000-000000000001";
 const content = {
   subject: "Vitale",
   intro: "Destaques",
   articles: [
-    { title: "Artigo", url: "https://vitalemobilidade.com/conteudos/mock" },
+    {
+      title: "Artigo",
+      url: "https://vitalemobilidade.com/conteudos/mock",
+      image: "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg",
+    },
   ],
   bike: { title: "V9", url: "https://vitalemobilidade.com/radar/v9_max" },
   videos: [{ title: "Vídeo", url: "https://www.youtube.com/watch?v=abc" }],
@@ -612,4 +620,67 @@ it("unsigned preview is rejected before writer or database access", async () => 
   expect(result.status).toBe(403);
   expect(createClient).not.toHaveBeenCalled();
   expect(automaticNewsletter).not.toHaveBeenCalled();
+});
+
+it("rejects a frozen campaign that lost its offer before any provider side effect", async () => {
+  const { db } = fakeDb(true);
+  vi.mocked(validateNewsletterCurrentOffers).mockRejectedValueOnce(
+    new Error("newsletter_offer_unavailable"),
+  );
+  const request = vi.fn();
+  await expect(
+    processNewsletterCampaign(
+      db,
+      new ResendNewsletter("synthetic", request),
+      config,
+      campaign,
+      "tok",
+    ),
+  ).rejects.toThrow("newsletter_offer_unavailable");
+  expect(request).not.toHaveBeenCalled();
+});
+it("rejects a frozen legacy fallback before touching the provider", async () => {
+  const { db } = fakeDb(true);
+  const request = vi.fn();
+  await expect(
+    processNewsletterCampaign(
+      db,
+      new ResendNewsletter("synthetic", request),
+      config,
+      {
+        ...campaign,
+        payload: {
+          content: {
+            ...content,
+            intro: "Os links de cada seção levam aos conteúdos completos.",
+          },
+        },
+      },
+      "tok",
+    ),
+  ).rejects.toThrow("newsletter_editorial_approval_required");
+  expect(request).not.toHaveBeenCalled();
+});
+
+it("blocks a campaign with a missing article photo before provider effects", async () => {
+  const { db } = fakeDb(true);
+  const request = vi.fn();
+  await expect(
+    processNewsletterCampaign(
+      db,
+      new ResendNewsletter("synthetic", request),
+      config,
+      {
+        ...campaign,
+        payload: {
+          content: {
+            ...content,
+            articles: [{ ...content.articles[0], image: undefined }],
+          },
+        },
+      },
+      "tok",
+    ),
+  ).rejects.toThrow("newsletter_article_image_required");
+  expect(request).not.toHaveBeenCalled();
 });

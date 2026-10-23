@@ -29,7 +29,7 @@ it("persists a safe edition BEFORE the writer, and keeps it when review rejects"
     throw new Error("newsletter_writer_review_failed");
   });
   expect(await run(f.db)).toMatchObject({
-    ok: true,
+    ok: false,
     fallback: true,
     preparationRetry: true,
   });
@@ -119,7 +119,7 @@ it("does not let an earlier cooldown block deterministic recovery at the end of 
   });
   writer.mockResolvedValue(simple);
   expect(await run(f.db, new Date("2026-10-19T11:25:00Z"), true)).toMatchObject(
-    { ok: true, fallback: true },
+    { ok: false, fallback: true },
   );
   expect(writer).toHaveBeenCalledTimes(1);
   expect(writer.mock.calls[0][5]).toBe("fallback");

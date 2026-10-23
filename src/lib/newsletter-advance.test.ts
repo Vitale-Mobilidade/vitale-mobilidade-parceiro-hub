@@ -87,9 +87,10 @@ it("recovers a missing draft deterministically during the sending window without
   });
   const { response, rpc } = await run("2026-10-19T09:35:00Z");
   expect(await response.json()).toEqual({
-    ok: true,
+    ok: false,
     draftPrepared: true,
     fallback: true,
+    error: "newsletter_editorial_approval_required",
   });
   expect(mock.writer.mock.calls[0][5]).toBe("fallback");
   expect(
@@ -129,33 +130,47 @@ it("keeps operational fallback recovery free of model calls", async () => {
     "prepare-fallback",
   );
   expect(await response.json()).toEqual({
-    ok: true,
+    ok: false,
     draftPrepared: true,
     fallback: true,
+    error: "newsletter_editorial_approval_required",
   });
   expect(mock.writer).toHaveBeenCalledTimes(1);
   expect(mock.writer.mock.calls[0][5]).toBe("fallback");
 });
-it("replaces invalid scheduled content for delivery without disabling automation or overwriting the draft", async () => {
+it("blocks an invalid scheduled draft without generating or forming a fallback campaign", async () => {
   mock.validate.mockRejectedValueOnce(
-    new Error("newsletter_motorcycle_highlight_excluded"),
+    new Error("newsletter_offer_unavailable"),
   );
-  mock.writer.mockResolvedValue({
-    content: proof.content,
-    fingerprint: "safe",
-  });
   const { response, rpc, tables } = await run("2026-10-19T09:35:00Z", {
     content: proof.content,
     fingerprint: "old",
+    generation_mode: "agent",
   });
-  expect(await response.json()).toEqual({ ok: true, prepared: true });
-  expect(mock.writer.mock.calls[0][5]).toBe("fallback");
-  expect(tables.newsletter_settings[0].enabled).toBe(true);
+  expect(await response.json()).toEqual({
+    ok: false,
+    error: "newsletter_offer_unavailable",
+  });
+  expect(mock.writer).not.toHaveBeenCalled();
   expect(tables.newsletter_drafts[0].fingerprint).toBe("old");
-  expect(rpc).toHaveBeenCalledWith(
-    "newsletter_form_campaign",
-    expect.objectContaining({ p_fingerprint: "safe" }),
-  );
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
+});
+it("blocks a persisted fallback even when its copy has no recognizable placeholder", async () => {
+  const { response, rpc } = await run("2026-10-19T09:35:00Z", {
+    content: proof.content,
+    fingerprint: "safe",
+    generation_mode: "fallback",
+  });
+  expect(await response.json()).toEqual({
+    ok: false,
+    error: "newsletter_editorial_approval_required",
+  });
+  expect(mock.writer).not.toHaveBeenCalled();
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
 });
 it("keeps generation recovery retryable when source service is down instead of globally pausing delivery", async () => {
   mock.validate.mockRejectedValueOnce(
@@ -184,10 +199,13 @@ it("recovers a malformed scheduled fingerprint without globally disabling automa
     content: proof.content,
     fingerprint: "",
   });
-  expect(await response.json()).toEqual({ ok: true, prepared: true });
+  expect(await response.json()).toEqual({
+    ok: false,
+    error: "newsletter_scheduled_draft_invalid",
+  });
+  expect(mock.writer).not.toHaveBeenCalled();
   expect(tables.newsletter_settings[0].enabled).toBe(true);
-  expect(rpc).toHaveBeenCalledWith(
-    "newsletter_form_campaign",
-    expect.objectContaining({ p_fingerprint: "safe" }),
-  );
+  expect(
+    rpc.mock.calls.some((c: any) => c[0] === "newsletter_form_campaign"),
+  ).toBe(false);
 });

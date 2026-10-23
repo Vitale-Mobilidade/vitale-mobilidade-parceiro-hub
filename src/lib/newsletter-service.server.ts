@@ -1,3 +1,7 @@
+import {
+  assertNewsletterEditorial,
+  assertNewsletterArticleImages,
+} from "./newsletter-delivery-policy";
 import { newsletterCampaignEngagement } from "./newsletter-engagement.server";
 import { newsletterHistory } from "./newsletter-edition-history.server";
 import {
@@ -23,6 +27,7 @@ import {
 import {
   automaticNewsletter,
   validateScheduledNewsletter,
+  validateNewsletterCurrentOffers,
 } from "./newsletter-sources.server";
 import {
   ResendNewsletter,
@@ -43,7 +48,7 @@ type Campaign = {
   edition_day: string;
   segment: NewsletterSegment;
   status: string;
-  payload: { content: NewsletterContent };
+  payload: { content: NewsletterContent; generationMode?: string };
   resend_id: string | null;
 };
 type Recipient = {
@@ -207,6 +212,9 @@ export async function processNewsletterCampaign(
     await pause(db, "manual_reconciliation_required");
     return;
   }
+  assertNewsletterEditorial(c.payload.content, c.payload.generationMode);
+  assertNewsletterArticleImages(c.payload.content);
+  await validateNewsletterCurrentOffers(c.payload.content);
   if (c.segment !== "general") throw new Error("legacy_segment_campaign");
   const segment = await ensureSegment(db, resend, s, c.segment);
   let live = await currentRecipients(db, c.id);
@@ -322,6 +330,7 @@ export async function processNewsletterCampaign(
     JSON.stringify(expected)
   )
     return;
+  await validateNewsletterCurrentOffers(c.payload.content);
   await renew(db, tok);
   await updateCampaign(db, c.id, {
     status: "submitting",
@@ -504,7 +513,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
       : await must(
           db
             .from("newsletter_drafts")
-            .select("content,fingerprint")
+            .select("content,fingerprint,generation_mode")
             .eq("edition_day", window.day)
             .maybeSingle(),
         );
@@ -533,45 +542,17 @@ export async function newsletterTick(request: Request): Promise<Response> {
     else {
       editorialPhase = true;
       const history = await newsletterHistory(db, window.day);
-      try {
-        if (!draft?.fingerprint)
-          throw new Error("newsletter_scheduled_draft_invalid");
-        edition = {
-          content: newsletterDraftContentSchema.parse(draft!.content),
-          fingerprint: draft!.fingerprint,
-        };
-        await validateScheduledNewsletter(
-          edition.content,
-          history.map((p) => p.payload.content),
-        );
-      } catch (error) {
-        // Preserve the rejected snapshot. The campaign freezes a newly verified simple edition.
-        const number = await must(db.rpc("newsletter_next_edition_number"));
-        edition = await automaticNewsletter(
-          window.weekday,
-          history[0]?.created_at ? new Date(history[0].created_at) : undefined,
-          history.map((p) => p.payload.content),
-          number,
-          undefined,
-          "fallback",
-        );
-        await validateScheduledNewsletter(
-          edition.content,
-          history.map((p) => p.payload.content),
-        );
-        await must(
-          db.from("newsletter_preparations").upsert(
-            {
-              edition_day: window.day,
-              attempts: 3,
-              next_attempt_at: null,
-              last_error: "newsletter_delivery_using_fallback",
-              feedback: [errorCode(error)],
-            },
-            { onConflict: "edition_day" },
-          ),
-        );
-      }
+      if (!draft?.fingerprint)
+        throw new Error("newsletter_scheduled_draft_invalid");
+      assertNewsletterEditorial(draft.content, draft.generation_mode);
+      edition = {
+        content: newsletterDraftContentSchema.parse(draft.content),
+        fingerprint: draft.fingerprint,
+      };
+      await validateScheduledNewsletter(
+        edition.content,
+        history.map((p) => p.payload.content),
+      );
       editorialPhase = false;
     }
     for (const group of GROUPS)
@@ -579,7 +560,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
         db.rpc("newsletter_form_campaign", {
           p_day: window.day,
           p_segment: group,
-          p_payload: { content: edition.content },
+          p_payload: { content: edition.content, generationMode: "agent" },
           p_fingerprint: edition.fingerprint,
           tok,
         }),
@@ -827,7 +808,11 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
           new Date(),
           true,
         );
-        if (!prepared.ok) throw new Error(prepared.error);
+        if (
+          !prepared.ok &&
+          prepared.error !== "newsletter_editorial_approval_required"
+        )
+          throw new Error(prepared.error);
         const draft = await must(
           db
             .from("newsletter_drafts")

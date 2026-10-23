@@ -48,12 +48,20 @@ export async function newsletterCall<T>(
     .catch(() => ({ error: "newsletter_unavailable" }));
   if (!response.ok) {
     const messages: Record<string, string> = {
+      newsletter_article_image_required:
+        "Envio bloqueado: um artigo está sem imagem válida. Corrija a capa antes de enviar.",
+      newsletter_editorial_approval_required:
+        "Envio bloqueado: a edição precisa de redação e aprovação editorial. Regere pelo agente.",
+      newsletter_offer_unavailable:
+        "Envio bloqueado: uma bike desta edição está sem oferta vigente. Regere a seleção.",
       newsletter_campaign_unavailable:
         "Não foi possível encontrar esta edição no histórico.",
       newsletter_writer_auth_failed:
         "O gateway de IA rejeitou a autenticação do servidor.",
       newsletter_writer_budget_limit:
-        "O gateway de IA informou limite de uso ou saldo. Nenhum e-mail foi enviado.",
+        "O gateway de IA recusou a geração com HTTP 402. Confira o limite financeiro do projeto. Nenhum e-mail foi enviado.",
+      newsletter_writer_rate_limited:
+        "O gateway de IA limitou temporariamente as requisições (HTTP 429). Isso não comprova falta de saldo. Nenhum e-mail foi enviado.",
       newsletter_writer_gateway_failed:
         "O gateway de IA retornou erro. Nenhum e-mail foi enviado.",
       newsletter_writer_network_failed:

@@ -95,7 +95,7 @@ export function NewsletterDraftEditor({
                   : action === "draft_import_test"
                     ? "Teste recuperado como rascunho com título positivo."
                     : action === "draft_prepare_fallback"
-                      ? "Edição simples preparada sem IA. Nenhum e-mail enviado."
+                      ? "Contingência interna preparada sem IA. O envio continua bloqueado até aprovação editorial."
                       : "Prévia atualizada sem usar IA.",
       );
     } catch (e) {
@@ -157,8 +157,8 @@ export function NewsletterDraftEditor({
             Preparação de {p.edition_day.split("-").reverse().join("/")}:
             tentativa {p.attempts}/3.{" "}
             {p.next_attempt_at
-              ? "A recuperação continua automaticamente; a edição simples válida é preservada."
-              : "As tentativas editoriais terminaram; uma edição simples válida mantém a preparação quando disponível."}{" "}
+              ? "A recuperação continua automaticamente; a contingência permanece bloqueada para envio."
+              : "As tentativas editoriais terminaram. O envio exige uma nova edição aprovada pelo revisor."}{" "}
             ({p.last_error})
           </p>
         ))}
@@ -168,7 +168,7 @@ export function NewsletterDraftEditor({
           disabled={busy}
           onClick={() => void run("draft_prepare_fallback")}
         >
-          Preparar edição simples sem IA
+          Preparar contingência interna (não envia)
         </button>
       )}
       {drafts.isPending && <p role="status">Carregando rascunhos…</p>}
@@ -210,7 +210,7 @@ export function NewsletterDraftEditor({
                 )}
                 {d.generation_mode === "fallback" && (
                   <span className="block text-xs">
-                    Edição simples: recuperação da geração
+                    Envio bloqueado: contingência sem aprovação editorial
                   </span>
                 )}
                 <span className="ml-2 text-xs">· Revisão {d.revision}</span>
