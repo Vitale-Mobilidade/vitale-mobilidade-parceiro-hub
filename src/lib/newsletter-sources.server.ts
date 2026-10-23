@@ -221,24 +221,10 @@ export async function automaticNewsletter(
     pickedVideos.map((v) => newsletterVideoImage(v.videoId, v.thumbnail)),
   );
   const articleImages = new Map<string, string>();
-  if (editionNumber >= 6) {
-    const { newsletterArticleImage } =
-      await import("./newsletter-article-image.server");
-    for (const a of pickedArticles) {
-      const result = await newsletterArticleImage(a.id);
-      await result.body?.cancel();
-      if (result.ok)
-        articleImages.set(
-          a.id,
-          `https://vitalemobilidade.com/api/public/newsletter-image?id=${a.id}`,
-        );
-    }
-  }
+  // Reuse the article's finished cover, including its existing text. Historical
+  // drafts keep their saved derivative URLs; new editions never compose one.
   for (const [i, article] of pickedArticles.entries()) {
-    let selected = selectNewsletterArticleImage(
-      articleImages.get(article.id),
-      article.ogImageUrl,
-    );
+    let selected = selectNewsletterArticleImage(article.ogImageUrl);
     if (!selected)
       selected = selectNewsletterArticleImage(
         await newsletterVideoImage(fullArticles[i].videoId),

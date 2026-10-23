@@ -1,5 +1,11 @@
 vi.mock("./newsletter-images.server", () => ({
-  newsletterVideoImage: async (_id: string, original: string) => original,
+  newsletterVideoImage: async (id: string, original: string) =>
+    original ?? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+}));
+vi.mock("./newsletter-article-image.server", () => ({
+  newsletterArticleImage: () => {
+    throw new Error("New editions must not compose another article image");
+  },
 }));
 import { afterEach, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
@@ -33,62 +39,82 @@ import {
   validateNewsletterCurrentOffers,
 } from "./newsletter-sources.server";
 afterEach(() => vi.resetAllMocks());
-it("renders a reduced edition using published sources without models or transcript calls", async () => {
-  mocked.index.mockResolvedValue([
-    {
-      slug: "cuidados",
-      title: "Como cuidar da bike",
-      contentType: "education",
-      publishedAt: "2026-10-09T12:00:00Z",
-      summary: "Cuidados publicados",
-      primaryBikeId: null,
-      relatedBikeIds: [],
-    },
-  ]);
-  mocked.article.mockResolvedValue({ videoId: "other", blocks: [] });
-  mocked.videos.mockResolvedValue([
-    {
-      videoId: "abc123",
-      title: "Conheça a bike elétrica",
-      url: "https://www.youtube.com/watch?v=abc123",
-      date: "2026-10-09",
-      bikeIds: [],
-      thumbnail: null,
-    },
-  ]);
-  mocked.radar.mockResolvedValue({
-    ok: true,
-    data: { active: [{ id: "mock_bike", name: "Bike publicada" }] },
-  });
-  mocked.bikes.mockResolvedValue([
-    {
-      bikeId: "mock_bike",
-      name: "Bike publicada",
-      description: "Ficha publicada",
-    },
-  ]);
-  const edition = await automaticNewsletter(
-    1,
-    undefined,
-    [],
-    2,
-    undefined,
-    "fallback",
-  );
-  expect(edition.content.articles).toHaveLength(1);
-  expect(edition.content.videos).toHaveLength(1);
-  expect(edition.content.subject).toContain("#2");
-  expect(edition.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-  expect(mocked.writer).not.toHaveBeenCalled();
-  expect(mocked.transcripts).not.toHaveBeenCalled();
-  expect(edition.content.articles[0].url).toBe(
-    "https://vitalemobilidade.com/conteudos/cuidados",
-  );
-  mocked.radar.mockResolvedValue({ ok: false });
-  await expect(
-    automaticNewsletter(1, undefined, [], 2, undefined, "fallback"),
-  ).rejects.toThrow("newsletter_sources_unavailable");
-});
+it.each([
+  {
+    cover:
+      "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=mock",
+    expected:
+      "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=mock",
+  },
+  {
+    cover: null,
+    expected: "https://i.ytimg.com/vi/abcdefghijk/maxresdefault.jpg",
+  },
+  {
+    cover: "https://private.invalid/cover.jpg",
+    expected: "https://i.ytimg.com/vi/abcdefghijk/maxresdefault.jpg",
+  },
+])(
+  "reuses the published cover or existing source thumbnail without composing another image ($cover)",
+  async ({ cover, expected }) => {
+    mocked.index.mockResolvedValue([
+      {
+        slug: "cuidados",
+        title: "Como cuidar da bike",
+        contentType: "education",
+        publishedAt: "2026-10-09T12:00:00Z",
+        summary: "Cuidados publicados",
+        primaryBikeId: null,
+        relatedBikeIds: [],
+        ogImageUrl: cover,
+      },
+    ]);
+    mocked.article.mockResolvedValue({ videoId: "abcdefghijk", blocks: [] });
+    mocked.videos.mockResolvedValue([
+      {
+        videoId: "abc123",
+        title: "Conheça a bike elétrica",
+        url: "https://www.youtube.com/watch?v=abc123",
+        date: "2026-10-09",
+        bikeIds: [],
+        thumbnail: null,
+      },
+    ]);
+    mocked.radar.mockResolvedValue({
+      ok: true,
+      data: { active: [{ id: "mock_bike", name: "Bike publicada" }] },
+    });
+    mocked.bikes.mockResolvedValue([
+      {
+        bikeId: "mock_bike",
+        name: "Bike publicada",
+        description: "Ficha publicada",
+      },
+    ]);
+    const edition = await automaticNewsletter(
+      1,
+      undefined,
+      [],
+      7,
+      undefined,
+      "fallback",
+    );
+    expect(edition.content.articles).toHaveLength(1);
+    expect(edition.content.videos).toHaveLength(1);
+    expect(edition.content.subject).toContain("#7");
+    expect(edition.content.articles[0].image).toBe(expected);
+    expect(edition.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+    expect(mocked.writer).not.toHaveBeenCalled();
+    expect(mocked.transcripts).not.toHaveBeenCalled();
+    expect(edition.content.articles[0].url).toBe(
+      "https://vitalemobilidade.com/conteudos/cuidados",
+    );
+    mocked.radar.mockResolvedValue({ ok: false });
+    await expect(
+      automaticNewsletter(1, undefined, [], 2, undefined, "fallback"),
+    ).rejects.toThrow("newsletter_sources_unavailable");
+  },
+);
 
 it("excludes an unavailable V35 video during selection and blocks a saved draft after offer loss", async () => {
   mocked.index.mockResolvedValue([
