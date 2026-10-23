@@ -192,7 +192,7 @@ describe("newsletter editorial", () => {
     // the independent reviewer retains the same history and rejection authority.
     expect(instructions).toContain("Escolha UM foco editorial");
     expect(JSON.parse(request.mock.calls[2][1].body).instructions).toContain(
-      "ABANDONE por completo",
+      "preserve esse foco e mude a abordagem",
     );
     for (const call of request.mock.calls) {
       expect(
@@ -653,4 +653,76 @@ it("keeps the editorial hook coherent when an opening changes to another support
   expect(preheaderOnly.subject).toBe(draft.subject);
   expect(preheaderOnly.opening).toEqual(draft.opening);
   expect(preheaderOnly.sections).toEqual(draft.sections);
+});
+
+it("rejects an exact published summary as editorial copy", () => {
+  expect(() =>
+    validateNewsletterEvidence(draft, [
+      { ...source, publishedSummary: draft.sections[0].paragraphs[0] },
+    ]),
+  ).toThrow("newsletter_writer_editorial_copy_required");
+});
+
+it.each([
+  [402, "newsletter_writer_budget_limit"],
+  [429, "newsletter_writer_rate_limited"],
+  [401, "newsletter_writer_auth_failed"],
+  [503, "newsletter_writer_gateway_failed"],
+])(
+  "preserves HTTP %s diagnostics without conflating throttling and balance",
+  async (status, code) => {
+    vi.stubEnv("LOVABLE_API_KEY", "synthetic-only");
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "provider_reason",
+            message: "Request refused by provider",
+          },
+        }),
+        {
+          status,
+          headers: { "retry-after": "30", "x-request-id": "test-request" },
+        },
+      ),
+    );
+    const events: unknown[] = [];
+    await expect(
+      writeNewsletter([source], 5, request, [], (event) => events.push(event)),
+    ).rejects.toThrow(code);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(events).toContainEqual({
+      stage: "error",
+      attempt: 0,
+      code,
+      gateway: {
+        status,
+        providerCode: "provider_reason",
+        providerMessage: "Request refused by provider",
+        retryAfter: "30",
+        requestId: "test-request",
+      },
+    });
+  },
+);
+
+it("redacts secrets and URLs echoed in gateway errors before persisting diagnostics", async () => {
+  vi.stubEnv("LOVABLE_API_KEY", "synthetic-only");
+  const request = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        message:
+          "Rejected Bearer must-not-appear and https://example.invalid/?signed=must-not-appear",
+      }),
+      { status: 429 },
+    ),
+  );
+  const events: unknown[] = [];
+  await expect(
+    writeNewsletter([source], 5, request, [], (event) => events.push(event)),
+  ).rejects.toThrow("newsletter_writer_rate_limited");
+  const saved = JSON.stringify(events);
+  expect(saved).not.toContain("must-not-appear");
+  expect(saved).toContain("[redacted]");
+  expect(saved).toContain("[url]");
 });

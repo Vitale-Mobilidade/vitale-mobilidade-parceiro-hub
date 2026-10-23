@@ -1,3 +1,9 @@
+import {
+  assertNewsletterEditorial,
+  assertNewsletterArticleImages,
+  selectNewsletterArticleImage,
+  newsletterCandidateHasOffers,
+} from "./newsletter-delivery-policy";
 import type { NewsletterEditorialDirection } from "./newsletter-writer.server";
 import { newsletterVideoImage } from "./newsletter-images.server";
 import { validateNewsletterBikeFocus } from "./newsletter-bike-policy";
@@ -58,6 +64,12 @@ export async function automaticNewsletter(
   ]);
   if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
+  const activeIds = new Set(
+    (radar.data.active as { id: string }[]).map((b) => b.id),
+  );
+  const eligible = (
+    candidate: Parameters<typeof newsletterCandidateHasOffers>[0],
+  ) => newsletterCandidateHasOffers(candidate, catalog, activeIds);
   const memory = newsletterMemory(previousEditions, articles, videos, catalog);
   const usedSources = await newsletterUsedSources(
     previousEditions,
@@ -65,9 +77,10 @@ export async function automaticNewsletter(
   );
   const curated = await curateNewsletterSources(
     memory.articles
-      .filter((a) => !a.newsletterUsed)
+      .filter((a) => !a.newsletterUsed && eligible(a))
       .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
     videos
+      .filter(eligible)
       .map((v) => ({ ...v, bikeIds: newsletterCandidateBikeIds(v, catalog) }))
       .filter(
         (v) =>
@@ -196,7 +209,11 @@ export async function automaticNewsletter(
   const enrich = (id: string) => {
     const s = draft.sections.find((s) => s.id === id);
     if (!s) throw new Error("newsletter_writer_source_mismatch");
-    return { paragraphs: s.paragraphs, bullets: s.bullets };
+    return {
+      ...(s.title ? { title: s.title } : {}),
+      paragraphs: s.paragraphs,
+      bullets: s.bullets,
+    };
   };
   const image = (url: string | null | undefined) =>
     url && newsletterImageSchema.safeParse(url).success ? { image: url } : {};
@@ -205,12 +222,28 @@ export async function automaticNewsletter(
   );
   const articleImages = new Map<string, string>();
   if (editionNumber >= 6) {
-    const { newsletterArticleImage } = await import("./newsletter-article-image.server");
+    const { newsletterArticleImage } =
+      await import("./newsletter-article-image.server");
     for (const a of pickedArticles) {
       const result = await newsletterArticleImage(a.id);
       await result.body?.cancel();
-      if (result.ok) articleImages.set(a.id, `https://vitalemobilidade.com/api/public/newsletter-image?id=${a.id}`);
+      if (result.ok)
+        articleImages.set(
+          a.id,
+          `https://vitalemobilidade.com/api/public/newsletter-image?id=${a.id}`,
+        );
     }
+  }
+  for (const [i, article] of pickedArticles.entries()) {
+    let selected = selectNewsletterArticleImage(
+      articleImages.get(article.id),
+      article.ogImageUrl,
+    );
+    if (!selected)
+      selected = selectNewsletterArticleImage(
+        await newsletterVideoImage(fullArticles[i].videoId),
+      );
+    if (selected) articleImages.set(article.id, selected);
   }
   const content: NewsletterContent = {
     editionNumber,
@@ -235,7 +268,7 @@ export async function automaticNewsletter(
       title: a.title,
       category: newsletterCategoryLabel(a.title, a.contentType),
       url: `https://vitalemobilidade.com/conteudos/${a.slug}`,
-      ...image(editionNumber >= 6 ? articleImages.get(a.id) : a.ogImageUrl),
+      ...image(articleImages.get(a.id)),
       ...enrich(`article-${i}`),
     })),
     radar: {
@@ -286,6 +319,10 @@ export async function automaticNewsletter(
   );
   validateNewsletterNovelty(content, previousEditions);
   validateNewsletterBikeFocus(content);
+  if (mode === "agent") {
+    assertNewsletterEditorial(content);
+    assertNewsletterArticleImages(content);
+  }
   renderResendNewsletter(content);
   return { content, fingerprint };
 }
@@ -294,6 +331,8 @@ export async function validateScheduledNewsletter(
   content: NewsletterContent,
   history: NewsletterContent[],
 ) {
+  assertNewsletterEditorial(content);
+  assertNewsletterArticleImages(content);
   validateNewsletterBikeFocus(content);
   const [articles, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
@@ -326,6 +365,7 @@ export async function validateScheduledNewsletter(
   if (currentSources.some((id) => usedSources.has(id)))
     throw new Error("newsletter_source_already_used");
   validateNewsletterSelection(content, history, articles, videos, catalog);
+  await validateNewsletterCurrentOffers(content);
   validateNewsletterNovelty(content, history);
   if (
     content.articles.some((a) =>
@@ -337,4 +377,62 @@ export async function validateScheduledNewsletter(
     )
   )
     throw new Error("newsletter_generic_fallback_review_required");
+}
+
+/** Re-read atomic current offers immediately before delivery, including frozen campaigns. */
+export async function validateNewsletterCurrentOffers(
+  content: NewsletterContent,
+) {
+  assertNewsletterEditorial(content);
+  const [radar, catalog, articles, videos] = await Promise.all([
+    fetchTrackerSplit(),
+    fetchBikeCatalogFromDb(),
+    fetchPublishedIndex(),
+    fetchVideoCatalog(),
+  ]);
+  if (!radar.ok || !catalog?.length || !articles || !videos?.length)
+    throw new Error("newsletter_sources_unavailable");
+  const activeIds = new Set(
+    (radar.data.active as { id: string }[]).map((b) => b.id),
+  );
+  const eligible = (x: Parameters<typeof newsletterCandidateHasOffers>[0]) =>
+    newsletterCandidateHasOffers(x, catalog, activeIds);
+  for (const item of [...content.articles, ...content.videos]) {
+    const source =
+      articles.find(
+        (a) => item.url === `https://vitalemobilidade.com/conteudos/${a.slug}`,
+      ) ?? videos.find((v) => v.url === item.url);
+    if (!source) throw new Error("newsletter_sources_unavailable");
+    if (!eligible(source)) throw new Error("newsletter_offer_unavailable");
+  }
+  for (const item of [content.bike, ...(content.drops ?? [])]) {
+    const id = new URL(item.url).pathname.split("/").pop()!;
+    if (!activeIds.has(id)) throw new Error("newsletter_offer_unavailable");
+  }
+  if (
+    !eligible({
+      title: [
+        content.subject,
+        content.headline,
+        content.preheader,
+        content.intro,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    })
+  )
+    throw new Error("newsletter_offer_unavailable");
+  // Display edits cannot introduce an unavailable model either.
+  for (const item of [...content.articles, ...content.videos, content.bike]) {
+    if (
+      !eligible({
+        title: [
+          item.title,
+          ...(item.paragraphs ?? []),
+          ...(item.bullets ?? []),
+        ].join(" "),
+      })
+    )
+      throw new Error("newsletter_offer_unavailable");
+  }
 }

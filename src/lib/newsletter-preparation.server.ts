@@ -9,7 +9,7 @@ async function required<T>(
   if (result.error) throw new Error("newsletter_database_failed");
   return result.data;
 }
-/** A valid simple edition is persisted before paying for prose. Crashes cannot consume the safety copy. */
+/** Persist contingency for internal recovery; it is never eligible for delivery. */
 export async function prepareNewsletterDraft(
   db: SupabaseClient,
   day: string,
@@ -38,7 +38,12 @@ export async function prepareNewsletterDraft(
       .maybeSingle(),
   );
   if (draft && (forceFallback || sendingWindow || (state?.attempts ?? 0) >= 2))
-    return { ok: true, draftPrepared: false };
+    return {
+      ok: false,
+      draftPrepared: false,
+      fallback: true,
+      error: "newsletter_editorial_approval_required",
+    };
   if (
     !forceFallback &&
     !sendingWindow &&
@@ -114,8 +119,16 @@ export async function prepareNewsletterDraft(
       created = true;
     }
     if (forceFallback || sendingWindow || attempts >= 3) {
-      await record({ next_attempt_at: null, last_error: null });
-      return { ok: true, draftPrepared: created, fallback: true };
+      await record({
+        next_attempt_at: null,
+        last_error: "newsletter_editorial_approval_required",
+      });
+      return {
+        ok: false,
+        draftPrepared: created,
+        fallback: true,
+        error: "newsletter_editorial_approval_required",
+      };
     }
     if (!draft) throw new Error("newsletter_database_failed");
     const edition = await generate("agent");
@@ -168,7 +181,7 @@ export async function prepareNewsletterDraft(
       feedback,
     });
     return {
-      ok: !!draft,
+      ok: false,
       draftPrepared: created,
       fallback: !!draft,
       preparationRetry: !draft || attempts < 2,

@@ -28,7 +28,10 @@ vi.mock("./newsletter-transcripts.server", () => ({
 vi.mock("./newsletter-writer.server", () => ({
   writeNewsletter: mocked.writer,
 }));
-import { automaticNewsletter } from "./newsletter-sources.server";
+import {
+  automaticNewsletter,
+  validateNewsletterCurrentOffers,
+} from "./newsletter-sources.server";
 afterEach(() => vi.resetAllMocks());
 it("renders a reduced edition using published sources without models or transcript calls", async () => {
   mocked.index.mockResolvedValue([
@@ -85,4 +88,84 @@ it("renders a reduced edition using published sources without models or transcri
   await expect(
     automaticNewsletter(1, undefined, [], 2, undefined, "fallback"),
   ).rejects.toThrow("newsletter_sources_unavailable");
+});
+
+it("excludes an unavailable V35 video during selection and blocks a saved draft after offer loss", async () => {
+  mocked.index.mockResolvedValue([
+    {
+      slug: "care",
+      title: "Como cuidar da corrente",
+      publishedAt: "2026-10-10",
+      contentType: "education",
+      summary: "Cuidados com a corrente.",
+    },
+  ]);
+  mocked.article.mockResolvedValue({ videoId: "article-source", blocks: [] });
+  const generic = {
+    videoId: "generic",
+    title: "Como ajustar o banco",
+    url: "https://www.youtube.com/watch?v=generic",
+    date: "2026-10-10",
+    bikeIds: [],
+    thumbnail: null,
+  };
+  const v35 = {
+    ...generic,
+    videoId: "v35-source",
+    title: "Inow V35 é a melhor bike hoje?",
+    url: "https://www.youtube.com/watch?v=v35-source",
+    date: "2026-10-11",
+  };
+  mocked.videos.mockResolvedValue([v35, generic]);
+  mocked.bikes.mockResolvedValue([
+    { bikeId: "v35", name: "V35" },
+    { bikeId: "v10_max", name: "V10 Max" },
+  ]);
+  mocked.radar.mockResolvedValue({
+    ok: true,
+    data: { active: [{ id: "v10_max", name: "V10 Max" }] },
+  });
+  const edition = await automaticNewsletter(
+    5,
+    undefined,
+    [],
+    2,
+    undefined,
+    "fallback",
+  );
+  expect(edition.content.videos.map((v) => v.url)).toEqual([generic.url]);
+  expect(edition.content.mentionedBikeIds).not.toContain("v35");
+  const copy = (item: typeof edition.content.bike) => ({
+    ...item,
+    paragraphs: ["Um texto editorial próprio para acompanhar este assunto."],
+    bullets: [],
+  });
+  const approved = {
+    ...edition.content,
+    intro: "Uma abertura editorial própria para acompanhar a edição.",
+    articles: edition.content.articles.map(copy),
+    videos: edition.content.videos.map(copy),
+    bike: copy(edition.content.bike),
+  };
+  await expect(
+    validateNewsletterCurrentOffers(approved),
+  ).resolves.toBeUndefined();
+  // A display title cannot conceal the original unavailable video model.
+  await expect(
+    validateNewsletterCurrentOffers({
+      ...approved,
+      videos: [{ ...copy(v35), title: "Duas baterias em pauta" }],
+    }),
+  ).rejects.toThrow("newsletter_offer_unavailable");
+  await expect(
+    validateNewsletterCurrentOffers({
+      ...approved,
+      intro: "Conheça também a Inow V35 nesta edição.",
+    }),
+  ).rejects.toThrow("newsletter_offer_unavailable");
+  mocked.radar.mockResolvedValue({ ok: true, data: { active: [] } });
+  await expect(validateNewsletterCurrentOffers(approved)).rejects.toThrow(
+    "newsletter_offer_unavailable",
+  );
+  expect(mocked.writer).not.toHaveBeenCalled();
 });
