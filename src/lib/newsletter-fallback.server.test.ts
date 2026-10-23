@@ -3,9 +3,7 @@ vi.mock("./newsletter-images.server", () => ({
     original ?? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
 }));
 vi.mock("./newsletter-article-image.server", () => ({
-  newsletterArticleImage: () => {
-    throw new Error("New editions must not compose another article image");
-  },
+  newsletterArticleImage: mocked.derivative,
 }));
 import { afterEach, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
@@ -16,6 +14,7 @@ const mocked = vi.hoisted(() => ({
   bikes: vi.fn(),
   writer: vi.fn(),
   transcripts: vi.fn(),
+  derivative: vi.fn(),
 }));
 vi.mock("./editorial-repository.server", () => ({
   fetchPublishedIndex: mocked.index,
@@ -45,20 +44,44 @@ it.each([
       "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=mock",
     expected:
       "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=editorial-cover&id=mock",
+    createCover: false,
+    derivativeStatus: 200,
+  },
+  {
+    cover: null,
+    expected:
+      "https://vitalemobilidade.com/api/public/newsletter-image?id=638f4032-8ff8-45dd-b03b-e69c0c064154",
+    createCover: true,
+    derivativeStatus: 200,
   },
   {
     cover: null,
     expected: "https://i.ytimg.com/vi/abcdefghijk/maxresdefault.jpg",
+    createCover: true,
+    derivativeStatus: 404,
+  },
+  {
+    cover: "https://private.invalid/cover.jpg",
+    expected:
+      "https://vitalemobilidade.com/api/public/newsletter-image?id=638f4032-8ff8-45dd-b03b-e69c0c064154",
+    createCover: true,
+    derivativeStatus: 200,
   },
   {
     cover: "https://private.invalid/cover.jpg",
     expected: "https://i.ytimg.com/vi/abcdefghijk/maxresdefault.jpg",
+    createCover: true,
+    derivativeStatus: 503,
   },
 ])(
-  "reuses the published cover or existing source thumbnail without composing another image ($cover)",
-  async ({ cover, expected }) => {
+  "prefers the published cover, then a composed cover, then the source thumbnail ($cover, $derivativeStatus)",
+  async ({ cover, expected, createCover, derivativeStatus }) => {
+    mocked.derivative.mockResolvedValue(
+      new Response(null, { status: derivativeStatus }),
+    );
     mocked.index.mockResolvedValue([
       {
+        id: "638f4032-8ff8-45dd-b03b-e69c0c064154",
         slug: "cuidados",
         title: "Como cuidar da bike",
         contentType: "education",
@@ -103,6 +126,7 @@ it.each([
     expect(edition.content.videos).toHaveLength(1);
     expect(edition.content.subject).toContain("#7");
     expect(edition.content.articles[0].image).toBe(expected);
+    expect(mocked.derivative).toHaveBeenCalledTimes(createCover ? 1 : 0);
     expect(edition.fingerprint).toMatch(/^[a-f0-9]{64}$/);
     expect(mocked.writer).not.toHaveBeenCalled();
     expect(mocked.transcripts).not.toHaveBeenCalled();
@@ -117,6 +141,7 @@ it.each([
 );
 
 it("excludes an unavailable V35 video during selection and blocks a saved draft after offer loss", async () => {
+  mocked.derivative.mockResolvedValue(new Response(null, { status: 404 }));
   mocked.index.mockResolvedValue([
     {
       slug: "care",
