@@ -35,3 +35,19 @@ Código/testes/release: pendentes nesta revisão prévia. O checkout local é re
 | PMO/QA | Pass | 10 testes direcionados incluindo geração da edição7 sem compositor, endpoint histórico, capa ausente/inválida; lint e pnpm validate (tipos,64 regressões,build) passaram. |
 
 Publicação do delta pendente; risco baixo e rollback restrito à seleção de imagem. Nenhum email ou nova imagem gerada na validação.
+
+## Release concluído
+
+Patch de três arquivos aplicado sem divergências; commit de código `c3b210b`, commit sincronizado `02b98ad`. `git diff HEAD origin/main` vazio confirmou árvore remota idêntica à testada. Runtime repetiu os10 testes direcionados e `pnpm validate`, todos aprovados. Execução Lovable reportou2,2 créditos, separadamente de zero chamadas ao gateway editorial/imagem.
+
+Deploy `f6f51db5-20e4-4b92-841a-16fe5a8e6662` confirmado na UI em23/10 às00h16 São Paulo com “Your website was updated”. Snapshot posterior à aplicação/deploy solicitado é idêntico ao anterior: revision4, updated_at02:56:56.79566Z e hash1125f1e736db45d7d4cf4f584b8140e5; enabled=true,last_error=null,cron ativo; nenhuma campanha de23/10 criada. Nenhum draft, setting, cron, imagem publicada ou envio foi modificado neste delta. Endpoint histórico preservado byte a byte.
+
+As oito perspectivas mantêm Pass para o release; a condição de preservação da edição de hoje foi comprovada por comparação integral dos snapshots sanitizados. Evidência de publicação em artifacts/newsletter-future-article-covers-published.png no workspace de referência. Estado: concluído e publicado para próximas composições. A edição de23/10 e o agendamento06h30 permanecem como aprovados.
+
+## Ajuste de direção: criar capa antes de recorrer à thumbnail
+
+O responsável corrigiu a ordem após o release: “se não estiver disponivel, ai sim a newsletter crie a capa em vez de usar a do thumbnail -que é so em ultimo caso”. Esta decisão substitui a alternativa direta descrita acima. Novo escopo: capa publicada válida → capa própria pelo compositor existente usando o fundo armazenado do artigo → thumbnail do vídeo-fonte somente se as duas primeiras opções forem inviáveis. Não muda o endpoint/compositor nem URLs já salvas; edição de hoje permanece intacta. Não se introduz serviço de geração por IA ou outro writer.
+
+Pré-revisão do delta (mesmas oito perspectivas): Produto prosseguir (respeitar a hierarquia solicitada); CTO prosseguir (chamar compositor apenas sem capa pronta, endpoint histórico intacto); IA prosseguir (composição gráfica existente sem chamada paga de imagem); Segurança prosseguir (mesma allowlist e arquivo pertencente ao artigo); UX prosseguir (capa própria tem prioridade sobre thumbnail); CX prosseguir (conferir mesmo hash e agendamento, sem regenerar hoje); Growth prosseguir (links e ofertas preservados); PMO/QA prosseguir com testes das três opções e validate. Risco: compositor pode não ter fundo utilizável; mitigação: thumbnail real só após falha retornada. Rollback: reverter este delta de ordem, sem tocar em dados. Autorização de publicação mantida para executar essa correção de direção.
+
+Revisão posterior local do delta: Produto Pass (hierarquia correta); CTO Pass (compositor só acionado após capa ausente/inválida); IA Pass (composição existente, sem modelo novo); Segurança Pass (allowlist preservada); UX Pass (thumbnail fica no terceiro nível); CX Pass (nenhuma mutação ou regeneração da edição de hoje); Growth Pass (links/ofertas inalterados); PMO/QA Pass (12 testes direcionados, lint e pnpm validate com tipos/64 regressões/build). Testes cobrem capa válida sem composição, capa ausente/inválida com composição bem-sucedida, e thumbnail somente após retorno404/503 do compositor. Aplicação/publicação do delta pendentes.
