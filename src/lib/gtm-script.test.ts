@@ -86,6 +86,21 @@ function views(layer: unknown[]) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("GA4 público sem publicidade", () => {
+  it("registra o destino antes do primeiro evento e apenas uma vez por documento", () => {
+    const { window, appendChild, view } = browser();
+    appendChild.mockImplementation(() => {
+      expect(commands(window.dataLayer)).toContainEqual([
+        "config",
+        GA4_ID,
+        expect.objectContaining({ send_page_view: false }),
+      ]);
+      expect(views(window.dataLayer)).toHaveLength(0);
+    });
+    view();
+    view("https://vitalemobilidade.com/radar");
+    expect(commands(window.dataLayer).filter((item) => item[0] === "config")).toHaveLength(1);
+    expect(views(window.dataLayer)).toHaveLength(2);
+  });
   it("configura privacidade antes do contêiner e envia somente um pageview inicial", () => {
     const { window, appendChild, view } = browser();
     view();
