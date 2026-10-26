@@ -18,6 +18,7 @@ import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { NewsletterExitPopup } from "@/components/site/NewsletterExitPopup";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { siteAnalytics } from "@/lib/site-analytics";
+import { trackGooglePageView } from "@/lib/gtm-script";
 import { safeVideos } from "@/lib/videos.functions";
 import { SOCIAL_LINKS } from "@/lib/social-links";
 import appCss from "../styles.css?url";
@@ -53,7 +54,10 @@ const SITE_JSONLD = {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
-  loader: ({ location }) => (location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz")) ? { footerVideos: [] } : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
+  loader: ({ location }) =>
+    location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz")
+      ? { footerVideos: [] }
+      : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
@@ -127,14 +131,21 @@ function RootComponent() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const href = useRouterState({ select: (s) => s.location.href });
   const excluded = path.startsWith("/quiz");
-  useEffect(() => startHeatmap(window, document,
-    `${import.meta.env.VITE_SUPABASE_URL ?? ""}/functions/v1/site-analytics`,
-    import.meta.env.PROD && import.meta.env.VITE_HEATMAP_ENABLED !== "false",
-  ), [path]);
+  useEffect(
+    () =>
+      startHeatmap(
+        window,
+        document,
+        `${import.meta.env.VITE_SUPABASE_URL ?? ""}/functions/v1/site-analytics`,
+        import.meta.env.PROD && import.meta.env.VITE_HEATMAP_ENABLED !== "false",
+      ),
+    [path],
+  );
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
     if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
     siteAnalytics.pageView(window.location.href);
+    trackGooglePageView(window.location.href);
   }, [href]);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -157,7 +168,11 @@ function RootComponent() {
         <Outlet />
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
-      {!excluded && <div data-heatmap-private><HotPipeWidget /></div>}
+      {!excluded && (
+        <div data-heatmap-private>
+          <HotPipeWidget />
+        </div>
+      )}
       <NewsletterExitPopup path={path} />
     </QueryClientProvider>
   );
