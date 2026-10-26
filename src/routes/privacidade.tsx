@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteFooter, SiteHeader } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
+import { useEffect, useState } from "react";
+import { googleAnalyticsDisabled, setGoogleAnalyticsDisabled } from "@/lib/gtm-script";
 
 export const Route = createFileRoute("/privacidade")({
   head: () =>
@@ -21,9 +23,35 @@ function PrivacyPage() {
         <h1 className="text-3xl font-bold">Privacidade e uso de dados</h1>
         <p className="mt-5 leading-relaxed">
           Você pode usar o site, consultar o Radar, fazer o Quiz e abrir links de ofertas sem um aviso de aceite de
-          cookies. Não carregamos Google Analytics, Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
+          cookies. Usamos Google Analytics para medir o uso das páginas, com cookies analíticos e sem publicidade ou
+          remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
         </p>
         <div className="mt-8 space-y-6 leading-relaxed">
+          <section>
+            <h2 className="text-xl font-bold">Google Analytics</h2>
+            <p>
+              O Google Analytics é carregado pelo Google Tag Manager nas páginas públicas para medir visualizações,
+              sessões e origens de acesso. Os cookies analíticos têm expiração configurada em até 90 dias, sem renovação
+              automática. Não ativamos Google Signals, personalização de anúncios ou remarketing. Não enviamos nomes,
+              e-mails, telefones ou respostas dos formulários por essa integração; removemos parâmetros arbitrários e
+              fragmentos dos endereços medidos. Códigos técnicos de campanha podem ser usados para atribuição.
+            </p>
+            <p className="mt-3">
+              Você pode desativar essas métricas neste navegador. A integração também respeita uma recusa analítica
+              anterior válida e os sinais de privacidade do navegador. O Google processa dados técnicos das requisições
+              conforme sua{" "}
+              <a
+                className="underline underline-offset-2"
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                política de privacidade
+              </a>
+              .
+            </p>
+            <GoogleAnalyticsPreference />
+          </section>
           <section>
             <h2 className="text-xl font-bold">Conteúdo do canal no YouTube</h2>
             <p>
@@ -74,12 +102,13 @@ function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold">Mapa agregado de interação</h2>
             <p>
-              Quando ativado, o mapa usa uma amostra aleatória de 25% das entradas em páginas da Home, Radar e conteúdos.
-              Contamos cliques em links e botões por identificadores técnicos, posição relativa dentro do elemento, largura da tela e alcance de rolagem, por dia, página,
-              faixa de tela e versão do layout. Não gravamos sessões, movimentos do cursor, textos, conteúdo da página,
-              valores de formulários, cookies ou identificadores de visitantes. Quiz, ferramentas interativas e áreas
-              privadas ficam fora dessa coleta. Os totais são privados e removidos na próxima gravação após a janela de
-              90 dias. A proteção contra abuso e os limites da infraestrutura são os mesmos das métricas agregadas.
+              Quando ativado, o mapa usa uma amostra aleatória de 25% das entradas em páginas da Home, Radar e
+              conteúdos. Contamos cliques em links e botões por identificadores técnicos, posição relativa dentro do
+              elemento, largura da tela e alcance de rolagem, por dia, página, faixa de tela e versão do layout. Não
+              gravamos sessões, movimentos do cursor, textos, conteúdo da página, valores de formulários, cookies ou
+              identificadores de visitantes. Quiz, ferramentas interativas e áreas privadas ficam fora dessa coleta. Os
+              totais são privados e removidos na próxima gravação após a janela de 90 dias. A proteção contra abuso e os
+              limites da infraestrutura são os mesmos das métricas agregadas.
             </p>
           </section>
           <section>
@@ -107,6 +136,36 @@ function PrivacyPage() {
         </div>
       </main>
       <SiteFooter />
+    </div>
+  );
+}
+
+function GoogleAnalyticsPreference() {
+  const [disabled, setDisabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    setDisabled(googleAnalyticsDisabled());
+  }, []);
+  return (
+    <div className="mt-3">
+      <p>
+        {disabled === null
+          ? ""
+          : disabled
+            ? "Métricas do Google desativadas neste navegador."
+            : "Métricas do Google ativadas neste navegador."}
+      </p>
+      <button
+        type="button"
+        disabled={disabled === null}
+        className="mt-2 rounded-md border border-border px-3 py-2 underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
+        onClick={() => setGoogleAnalyticsDisabled(!disabled)}
+      >
+        {disabled ? "Ativar métricas do Google" : "Desativar métricas do Google"}
+      </button>
+      <p className="mt-2 text-sm">
+        Sinais de privacidade do navegador, como Do Not Track e Global Privacy Control, têm prioridade sobre essa
+        preferência.
+      </p>
     </div>
   );
 }
