@@ -134,6 +134,9 @@ export function trackGooglePageView(href: string): void {
     }
     w.gtag("set", settings);
     if (!w.__vitaleGa4) {
+      // Register the destination before the first event, even while GTM loads.
+      // Both this config and the GTM base inherit send_page_view=false.
+      w.gtag("config", GA4_ID, settings);
       const script = document.createElement("script");
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
