@@ -1,3 +1,4 @@
+import { notifyNewsletterError } from "./newsletter-alert.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { automaticNewsletter } from "./newsletter-sources.server";
 import { newsletterDraftContentSchema } from "./newsletter-drafts";
@@ -37,13 +38,22 @@ export async function prepareNewsletterDraft(
       .eq("edition_day", day)
       .maybeSingle(),
   );
-  if (draft && (forceFallback || sendingWindow || (state?.attempts ?? 0) >= 2))
+  if (
+    draft &&
+    (forceFallback || sendingWindow || (state?.attempts ?? 0) >= 2)
+  ) {
+    await notifyNewsletterError(
+      db,
+      day,
+      "newsletter_editorial_approval_required",
+    );
     return {
       ok: false,
       draftPrepared: false,
       fallback: true,
       error: "newsletter_editorial_approval_required",
     };
+  }
   if (
     !forceFallback &&
     !sendingWindow &&
@@ -56,8 +66,8 @@ export async function prepareNewsletterDraft(
     ? state.feedback
     : [];
   const next = new Date(now.getTime() + 30 * 60_000).toISOString();
-  const record = (extra: Record<string, unknown>) =>
-    required(
+  const record = async (extra: Record<string, unknown>) => {
+    await required(
       db.from("newsletter_preparations").upsert(
         {
           edition_day: day,
@@ -70,6 +80,9 @@ export async function prepareNewsletterDraft(
         { onConflict: "edition_day" },
       ),
     );
+    if (typeof extra.last_error === "string")
+      await notifyNewsletterError(db, day, extra.last_error);
+  };
   const contentHistory = history.map((p) => p.payload.content).filter(Boolean);
   const generate = (mode: "agent" | "fallback") => {
     const args = [
@@ -132,6 +145,12 @@ export async function prepareNewsletterDraft(
     }
     if (!draft) throw new Error("newsletter_database_failed");
     const edition = await generate("agent");
+    if (edition.recovered)
+      await notifyNewsletterError(
+        db,
+        day,
+        "newsletter_optional_content_recovered",
+      );
     const content = newsletterDraftContentSchema.parse(edition.content);
     if ((await required(db.rpc("newsletter_renew", { tok: token }))) !== true)
       throw new Error("newsletter_lease_expired");
@@ -175,6 +194,7 @@ export async function prepareNewsletterDraft(
       ].includes(code)
     )
       throw error;
+    if (!feedback.length) feedback.push(code);
     await record({
       last_error: code,
       next_attempt_at: draft && attempts >= 2 ? null : next,

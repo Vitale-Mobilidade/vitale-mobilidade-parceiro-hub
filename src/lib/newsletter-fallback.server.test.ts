@@ -36,6 +36,7 @@ vi.mock("./newsletter-writer.server", () => ({
 import {
   automaticNewsletter,
   validateNewsletterCurrentOffers,
+  recoverNewsletterAvailability,
 } from "./newsletter-sources.server";
 afterEach(() => vi.resetAllMocks());
 it.each([
@@ -219,4 +220,66 @@ it("excludes an unavailable V35 video during selection and blocks a saved draft 
     "newsletter_offer_unavailable",
   );
   expect(mocked.writer).not.toHaveBeenCalled();
+});
+
+it("recovers an approved edition by removing only newly ineligible optional blocks", async () => {
+  const safe = { title: "V8 Pro", slug: "v8", primaryBikeId: "v8_pro" };
+  const changed = {
+    title: "Comparativo V8 Pro",
+    slug: "variants",
+    primaryBikeId: "v8_pro",
+  };
+  const video = {
+    title: "Mobilidade",
+    url: "https://www.youtube.com/watch?v=abcdefghijk",
+  };
+  mocked.index.mockResolvedValue([safe, changed]);
+  mocked.videos.mockResolvedValue([video]);
+  mocked.bikes.mockResolvedValue([
+    { bikeId: "v8_pro", name: "V8 Pro" },
+    { bikeId: "v9_max_s", name: "V9 Max S" },
+  ]);
+  mocked.radar.mockResolvedValue({
+    ok: true,
+    data: { active: [{ id: "v8_pro" }] },
+  });
+  const base = {
+    subject: "Uma edição para acompanhar",
+    intro: "Novas leituras para acompanhar a mobilidade.",
+    sourceVideoIds: ["old"],
+    articles: [
+      { title: "V8 Pro", url: "https://vitalemobilidade.com/conteudos/v8" },
+      {
+        title: "Comparativo",
+        url: "https://vitalemobilidade.com/conteudos/variants",
+        paragraphs: ["A V9 Max S também aparece nesta comparação de modelos."],
+      },
+    ],
+    bike: { title: "V8 Pro", url: "https://vitalemobilidade.com/radar/v8_pro" },
+    videos: [video],
+    drops: [
+      { title: "V9 Max S", url: "https://vitalemobilidade.com/radar/v9_max_s" },
+    ],
+  };
+  const result = await recoverNewsletterAvailability(base);
+  expect(result.changed).toBe(true);
+  expect(result.content.articles).toEqual([base.articles[0]]);
+  expect(result.content.drops).toEqual([]);
+  expect(result.content.sourceVideoIds).toBeUndefined();
+  expect(result.content.bike).toBe(base.bike);
+  expect(mocked.writer).not.toHaveBeenCalled();
+  await expect(
+    recoverNewsletterAvailability({ ...base, articles: [base.articles[1]] }),
+  ).rejects.toThrow("newsletter_recovery_insufficient_content");
+  await expect(
+    recoverNewsletterAvailability({
+      ...base,
+      intro: "Conheça a V9 Max S nesta edição.",
+    }),
+  ).rejects.toThrow("newsletter_offer_unavailable");
+  // A network outage must never be mistaken for a catalog disappearance.
+  mocked.radar.mockResolvedValue({ ok: false });
+  await expect(recoverNewsletterAvailability(base)).rejects.toThrow(
+    "newsletter_sources_unavailable",
+  );
 });

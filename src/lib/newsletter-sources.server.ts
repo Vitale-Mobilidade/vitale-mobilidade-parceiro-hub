@@ -6,7 +6,10 @@ import {
 } from "./newsletter-delivery-policy";
 import type { NewsletterEditorialDirection } from "./newsletter-writer.server";
 import { newsletterVideoImage } from "./newsletter-images.server";
-import { validateNewsletterBikeFocus } from "./newsletter-bike-policy";
+import {
+  newsletterReaderTopic,
+  validateNewsletterBikeFocus,
+} from "./newsletter-bike-policy";
 import {
   newsletterUsedSources,
   curateNewsletterSources,
@@ -55,7 +58,11 @@ export async function automaticNewsletter(
   onDiagnostic?: (event: NewsletterWriterDiagnostic) => void,
   mode: "agent" | "fallback" = "agent",
   direction?: NewsletterEditorialDirection,
-): Promise<{ content: NewsletterContent; fingerprint: string }> {
+): Promise<{
+  content: NewsletterContent;
+  fingerprint: string;
+  recovered?: boolean;
+}> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
     fetchTrackerSplit(),
@@ -77,10 +84,13 @@ export async function automaticNewsletter(
   );
   const curated = await curateNewsletterSources(
     memory.articles
-      .filter((a) => !a.newsletterUsed && eligible(a))
+      .filter(
+        (a) =>
+          !a.newsletterUsed && newsletterReaderTopic(a.title) && eligible(a),
+      )
       .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
     videos
-      .filter(eligible)
+      .filter((v) => newsletterReaderTopic(v.title) && eligible(v))
       .map((v) => ({ ...v, bikeIds: newsletterCandidateBikeIds(v, catalog) }))
       .filter(
         (v) =>
@@ -241,7 +251,7 @@ export async function automaticNewsletter(
       );
     if (selected) articleImages.set(article.id, selected);
   }
-  const content: NewsletterContent = {
+  let content: NewsletterContent = {
     editionNumber,
     sourceVideoIds: [
       ...new Set([
@@ -319,8 +329,20 @@ export async function automaticNewsletter(
     assertNewsletterEditorial(content);
     assertNewsletterArticleImages(content);
   }
+  let recovered = false;
+  if (mode === "agent") {
+    const result = await recoverNewsletterAvailability(content);
+    content = result.content;
+    recovered = result.changed;
+  }
   renderResendNewsletter(content);
-  return { content, fingerprint };
+  return {
+    content,
+    recovered,
+    fingerprint: createHash("sha256")
+      .update(fingerprint + JSON.stringify(content))
+      .digest("hex"),
+  };
 }
 
 export async function validateScheduledNewsletter(
@@ -431,4 +453,82 @@ export async function validateNewsletterCurrentOffers(
     )
       throw new Error("newsletter_offer_unavailable");
   }
+}
+
+/** Repair optional blocks before freezing a campaign; no model call or invented copy. */
+export async function recoverNewsletterAvailability(
+  content: NewsletterContent,
+) {
+  assertNewsletterEditorial(content);
+  const [radar, catalog, articles, videos] = await Promise.all([
+    fetchTrackerSplit(),
+    fetchBikeCatalogFromDb(),
+    fetchPublishedIndex(),
+    fetchVideoCatalog(),
+  ]);
+  if (!radar.ok || !catalog?.length || !articles || !videos?.length)
+    throw new Error("newsletter_sources_unavailable");
+  const active = new Set(
+    (radar.data.active as { id: string }[]).map((b) => b.id),
+  );
+  const eligible = (
+    candidate: Parameters<typeof newsletterCandidateHasOffers>[0],
+  ) => newsletterCandidateHasOffers(candidate, catalog, active);
+  const keep = (item: NewsletterContent["bike"]) => {
+    const source =
+      articles.find(
+        (a) => item.url === `https://vitalemobilidade.com/conteudos/${a.slug}`,
+      ) ?? videos.find((v) => v.url === item.url);
+    return (
+      !!source &&
+      newsletterReaderTopic(source.title) &&
+      newsletterReaderTopic(item.title) &&
+      eligible(source) &&
+      eligible({
+        title: [
+          item.title,
+          ...(item.paragraphs ?? []),
+          ...(item.bullets ?? []),
+        ].join(" "),
+      })
+    );
+  };
+  const recovered = {
+    ...content,
+    articles: content.articles.filter(keep),
+    videos: content.videos.filter(keep),
+    drops: content.drops?.filter((item) =>
+      active.has(new URL(item.url).pathname.split("/").pop()!),
+    ),
+  };
+  if (!recovered.articles.length || !recovered.videos.length)
+    throw new Error("newsletter_recovery_insufficient_content");
+  const changed =
+    recovered.articles.length !== content.articles.length ||
+    recovered.videos.length !== content.videos.length ||
+    recovered.drops?.length !== content.drops?.length;
+  if (!changed) return { content, changed: false };
+  // Recompute source identity from the retained articles during scheduled validation.
+  delete recovered.sourceVideoIds;
+  recovered.mentionedBikeIds = [
+    ...new Set([
+      ...[recovered.bike, ...(recovered.drops ?? [])].map((x) =>
+        new URL(x.url).pathname.split("/").pop()!,
+      ),
+      ...[...recovered.articles, ...recovered.videos].flatMap((x) =>
+        newsletterCandidateBikeIds(
+          {
+            title: [
+              x.title,
+              ...(x.paragraphs ?? []),
+              ...(x.bullets ?? []),
+            ].join(" "),
+          },
+          catalog,
+        ),
+      ),
+    ]),
+  ];
+  await validateNewsletterCurrentOffers(recovered);
+  return { content: recovered, changed: true };
 }

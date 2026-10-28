@@ -141,3 +141,14 @@ it("never fills a scarce slot with a generic motorcycle review", () => {
   );
   expect(selected.articles).toHaveLength(0);
 });
+
+it("excludes filming from both source selection and the delivery boundary", async () => {
+  const { newsletterReaderTopic } = await import("./newsletter-bike-policy");
+  expect(newsletterReaderTopic("Como gravar vídeos andando de bike")).toBe(
+    false,
+  );
+  expect(newsletterReaderTopic("Celular no peito e câmera no pedal")).toBe(
+    false,
+  );
+  expect(newsletterReaderTopic("Pneus e câmaras de ar da V8 Pro")).toBe(true);
+});

@@ -1,3 +1,4 @@
+import { newsletterReaderTopic } from "./newsletter-bike-policy";
 import { newsletterImageSchema, type NewsletterContent } from "./newsletter";
 import type { NewsletterCandidate } from "./newsletter-curation";
 import {
@@ -13,6 +14,7 @@ export function assertNewsletterEditorial(
   const text = [
     content.subject,
     content.headline,
+    content.preheader,
     content.intro,
     ...[...content.articles, content.bike, ...content.videos].flatMap((s) => [
       s.title,
@@ -20,6 +22,8 @@ export function assertNewsletterEditorial(
       ...(s.bullets ?? []),
     ]),
   ].join("\n");
+  if (!newsletterReaderTopic(text))
+    throw new Error("newsletter_filming_topic_excluded");
   if (
     mode === "fallback" ||
     /Resumo publicado:|O conteúdo completo está no link desta seção\.|Os links de cada seção levam aos conteúdos completos\./i.test(

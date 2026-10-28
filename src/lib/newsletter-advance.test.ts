@@ -12,6 +12,10 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: mock.createClient }));
 vi.mock("./newsletter-sources.server", () => ({
   automaticNewsletter: mock.writer,
   validateScheduledNewsletter: mock.validate,
+  recoverNewsletterAvailability: async (content: unknown) => ({
+    content,
+    changed: false,
+  }),
 }));
 vi.mock("./resend-newsletter.server", () => ({
   ResendNewsletter: class {

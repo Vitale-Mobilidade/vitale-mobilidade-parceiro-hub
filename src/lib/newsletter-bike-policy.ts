@@ -8,6 +8,16 @@ export function excludedNewsletterMotorcycle(
     ),
   );
 }
+/** Production/filming is outside the newsletter's reader-facing editorial scope. */
+export function newsletterReaderTopic(title: string) {
+  const text = title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return !/\b(filmagem|filmagens|filmar|gravacao|gravacoes|gravar|camera|cameras|enquadramento|bastidores)\b/.test(
+    text,
+  );
+}
 /** Bike/motorcycle comparisons are bike themes; a motorcycle-only review is not. */
 export function newsletterBikeTopic(title: string) {
   const text = title
