@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { notifyNewsletterError } from "./newsletter-alert.server";
 import {
   assertNewsletterEditorial,
   assertNewsletterArticleImages,
@@ -26,6 +28,7 @@ import {
 } from "./newsletter";
 import {
   automaticNewsletter,
+  recoverNewsletterAvailability,
   validateScheduledNewsletter,
   validateNewsletterCurrentOffers,
 } from "./newsletter-sources.server";
@@ -182,6 +185,7 @@ async function pause(db: SupabaseClient, code: string) {
       .update({ enabled: false, last_error: code })
       .eq("singleton", true),
   );
+  await notifyNewsletterError(db, newsletterWindow(new Date()).day, code);
 }
 export async function processNewsletterCampaign(
   db: SupabaseClient,
@@ -513,7 +517,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
       : await must(
           db
             .from("newsletter_drafts")
-            .select("content,fingerprint,generation_mode")
+            .select("id,revision,content,fingerprint,generation_mode")
             .eq("edition_day", window.day)
             .maybeSingle(),
         );
@@ -549,10 +553,41 @@ export async function newsletterTick(request: Request): Promise<Response> {
         content: newsletterDraftContentSchema.parse(draft.content),
         fingerprint: draft.fingerprint,
       };
+      const recovered = await recoverNewsletterAvailability(edition.content);
+      if (recovered.changed) {
+        await notifyNewsletterError(
+          db,
+          window.day,
+          "newsletter_optional_content_recovered",
+        );
+        edition = {
+          content: recovered.content,
+          fingerprint: createHash("sha256")
+            .update(JSON.stringify(recovered.content))
+            .digest("hex"),
+        };
+      }
       await validateScheduledNewsletter(
         edition.content,
         history.map((p) => p.payload.content),
       );
+      if (recovered.changed) {
+        const updated = await must(
+          db
+            .from("newsletter_drafts")
+            .update({
+              content: edition.content,
+              fingerprint: edition.fingerprint,
+              revision: draft.revision + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", draft.id)
+            .eq("revision", draft.revision)
+            .select("id")
+            .maybeSingle(),
+        );
+        if (!updated) throw new Error("newsletter_draft_conflict");
+      }
       editorialPhase = false;
     }
     for (const group of GROUPS)
@@ -568,6 +603,8 @@ export async function newsletterTick(request: Request): Promise<Response> {
     return Response.json({ ok: true, prepared: true });
   } catch (e) {
     const code = errorCode(e);
+    if (tok)
+      await notifyNewsletterError(db, newsletterWindow(new Date()).day, code);
     if (
       tok &&
       !editorialPhase &&
