@@ -1,5 +1,5 @@
 import { excludedNewsletterMotorcycle } from "./newsletter-bike-policy";
-/** Deterministic editorial selection. A large historic drop is not a fresh promotion. */
+/** Compare current offers with the most recent higher verified price, never a cherry-picked peak. */
 export type NewsletterDropBike = {
   id: string;
   name: string;
@@ -11,17 +11,13 @@ export type NewsletterDropBike = {
     lastVerifiedAt: string;
   }[];
 };
-export function selectNewsletterDrops(
-  bikes: NewsletterDropBike[],
-  since: Date,
-  now: Date,
-) {
-  const sinceDay = new Intl.DateTimeFormat("en-CA", {
+export function selectNewsletterDrops(bikes: NewsletterDropBike[], now: Date) {
+  const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(since);
+  }).format(now);
   return bikes
     .filter((b) => !excludedNewsletterMotorcycle(b.id, b.name))
     .flatMap((b) => {
@@ -30,6 +26,7 @@ export function selectNewsletterDrops(
         .filter(
           (p) =>
             /^\d{4}-\d{2}-\d{2}$/.test(p.date) &&
+            p.date <= today &&
             Number.isFinite(p.close) &&
             p.close > 0 &&
             p.verifiedRuns > 0 &&
@@ -37,8 +34,12 @@ export function selectNewsletterDrops(
             Date.parse(p.lastVerifiedAt) <= now.getTime(),
         )
         .sort((a, c) => a.date.localeCompare(c.date));
-      const baseline = verified.filter((p) => p.date < sinceDay).at(-1);
       const current = verified.at(-1);
+      const baseline = current
+        ? verified
+            .filter((p) => p.date < current.date && p.close > b.currentPrice)
+            .at(-1)
+        : undefined;
       if (
         !baseline ||
         !current ||

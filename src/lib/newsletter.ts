@@ -305,18 +305,6 @@ export function renderEditorialNewsletter(
       data.radar?.url ?? tracked("https://vitalemobilidade.com/radar", "radar"),
   };
   const drops = data.drops ?? [];
-  const context = (key: "baselineDate" | "checkedAt", label: string) => {
-    const values = [...new Set(drops.map((d) => d[key]).filter(Boolean))];
-    if (!values.length) return "";
-    return `${label}: ${values.length === 1 ? values[0] : drops.map((d) => `${d.title}: ${d[key] ?? "não informada"}`).join("; ")}.`;
-  };
-  const radarNote = [
-    context("baselineDate", "Fechamentos anteriores"),
-    context("checkedAt", "Verificação"),
-    "Preços e disponibilidade podem mudar.",
-  ]
-    .filter(Boolean)
-    .join(" ");
   const dropCards = drops
     .map(
       (d) =>
@@ -325,7 +313,7 @@ export function renderEditorialNewsletter(
     .join("");
   const radarRow = section(
     "Radar de preços",
-    `${dropCards || '<p style="font-size:15px;line-height:1.6">Nenhuma queda recente confirmada nesta edição.</p>'}<p style="font-size:12px;line-height:1.6;color:#526658;margin:12px 0">${e(radarNote)}</p><a href="${e(radar.url)}" style="color:#476756;font-size:14px;text-decoration:underline">Explorar o Radar →</a>`,
+    `${dropCards || '<p style="font-size:15px;line-height:1.6">Nenhuma queda confirmada nesta edição.</p>'}<a href="${e(radar.url)}" style="color:#476756;font-size:14px;text-decoration:underline">Explorar o Radar →</a>`,
   );
   const bikeRow = section(
     "Bike em destaque",
@@ -380,7 +368,7 @@ export function renderEditorialNewsletter(
           .join("\n"),
       )
       .join("\n\n") +
-    `\n${radarNote}\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}`;
+    `\n\nQUIZ — Qual bike combina com a sua rotina? ${quizUrl}\n\nVocê se inscreveu na newsletter Vitale Mobilidade. Responda para falar conosco.\nCancelar inscrição: {{{RESEND_UNSUBSCRIBE_URL}}}`;
   if (new TextEncoder().encode(html).length > 85_000)
     throw new Error("newsletter_html_too_large");
   return { html: newsletterColorScheme(html), text: plainNewsletter(text) };

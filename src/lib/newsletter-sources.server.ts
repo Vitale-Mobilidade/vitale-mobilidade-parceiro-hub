@@ -122,7 +122,6 @@ export async function automaticNewsletter(
     throw new Error("newsletter_sources_insufficient_diversity");
   const drops = selectNewsletterDrops(
     radar.data.active as NewsletterDropBike[],
-    since,
     new Date(),
   );
   const related = [

@@ -278,8 +278,7 @@ it("provides the preparation weekday to the reviewer without treating article da
   expect(request).toHaveBeenCalledTimes(2);
 });
 describe("newsletter price pauta", () => {
-  const now = new Date("2026-10-09T13:00:00Z"),
-    since = new Date("2026-10-05T13:00:00Z");
+  const now = new Date("2026-10-09T13:00:00Z");
   const bike = {
     id: "v9_max",
     name: "V9 Max",
@@ -299,8 +298,8 @@ describe("newsletter price pauta", () => {
       },
     ],
   };
-  it("ranks fresh verified period drops without labeling old drops as new", () => {
-    expect(selectNewsletterDrops([bike], since, now)[0].percent).toBe(20);
+  it("requires a fresh verified current offer even with a historical reference", () => {
+    expect(selectNewsletterDrops([bike], now)[0].percent).toBe(20);
     expect(
       selectNewsletterDrops(
         [
@@ -312,12 +311,11 @@ describe("newsletter price pauta", () => {
             })),
           },
         ],
-        since,
         now,
       ),
     ).toEqual([]);
     expect(
-      selectNewsletterDrops([{ ...bike, currentPrice: 4200 }], since, now),
+      selectNewsletterDrops([{ ...bike, currentPrice: 4200 }], now),
     ).toEqual([]);
     expect(
       selectNewsletterDrops(
@@ -327,12 +325,8 @@ describe("newsletter price pauta", () => {
             daily: bike.daily.map((p) => ({ ...p, verifiedRuns: 0 })),
           },
         ],
-        since,
         now,
       ),
-    ).toEqual([]);
-    expect(
-      selectNewsletterDrops([bike], new Date("2026-10-10T13:00:00Z"), now),
     ).toEqual([]);
   });
 });
