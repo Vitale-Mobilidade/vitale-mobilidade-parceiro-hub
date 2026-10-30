@@ -10,7 +10,7 @@ describe("new video automatic publication policy", () => {
     expect(payload).not.toContain("peerArticles");
     expect(payload).not.toContain("diversity");
     expect(payload).toContain("corpus: []");
-    expect(publication).toContain("automatic-publication-v7-new-video");
+    expect(publication).toContain("automatic-publication-v8-temporal-intent");
     expect(publication).toContain("não é motivo de reprovação nem de reescrita");
   });
   it("retains factual QA, source integrity, saved cover and revision lease", () => {

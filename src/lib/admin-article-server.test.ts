@@ -15,6 +15,8 @@ import * as adminGrowth from "../../supabase/functions/_shared/admin-growth";
 import * as reviewCost from "../../supabase/functions/_shared/editorial-review-cost";
 import * as growthRangeModule from "../../supabase/functions/_shared/growth-range";
 import * as input from "../../supabase/functions/_shared/editorial-create-input";
+import * as heatmapElements from "../../supabase/functions/_shared/heatmap-elements";
+import * as heatmap from "../../supabase/functions/_shared/heatmap";
 
 // Execute the real Edge Function in an isolated VM with offline dependencies.
 // Deno.serve is intercepted and neither credentials nor real connections exist.
@@ -69,6 +71,8 @@ runInNewContext(code, {
       "../_shared/editorial-automation.ts": automation,
       "../_shared/editorial-cover.ts": cover,
       "../_shared/editorial-create-input.ts": input,
+      "../_shared/heatmap-elements.ts": heatmapElements,
+      "../_shared/heatmap.ts": heatmap,
       "../_shared/video-catalog.ts": videoCatalog,
       "../_shared/youtube-backlog.ts": backlog,
       "../_shared/cover-renderer/index.ts": { composeServerCover: (...args: unknown[]) => offlineCompose(...args) },
@@ -199,7 +203,7 @@ function generationDatabase() {
     },
   };
 }
-async function inspectGeneration(mock: ReturnType<typeof vi.fn>) {
+async function inspectGeneration(mock: ReturnType<typeof vi.fn>, video: { title: string; transcript: string; published_on?: string } = { title: "5 motivos para comprar uma bike", transcript: businessTranscript }) {
   exports.injectOfflineAI!(mock);
   const db = generationDatabase();
   await expect(
@@ -207,7 +211,7 @@ async function inspectGeneration(mock: ReturnType<typeof vi.fn>) {
       db,
       { id: "actor" },
       { id: "draft", foundation_required: false },
-      { title: "5 motivos para comprar uma bike", transcript: businessTranscript },
+      video,
       vi.fn(),
       ["ft03"],
     ),
@@ -219,6 +223,17 @@ function sourcePayload(user: string) {
 }
 
 describe("geração real — assunto da fonte prevalece sobre bike associada", () => {
+  it.each([
+    { title: "V29 Pro na Black Friday", transcript: "Black Friday: a condição no Pix difere do cartão. Não sei quanto tempo a promoção vai durar. ".repeat(4), published_on: "2026-11-30" },
+    { title: "V29 Pro no menor preço: melhor compra hoje?", transcript: "A promoção desta semana tem condições no Pix e no cartão; o valor pode mudar. ".repeat(4), published_on: "2026-10-30" },
+  ])("campanha mantém fonte e data de catálogo no contexto, sem converter data em oferta atual: $title", async video => {
+    const mock = vi.fn().mockRejectedValue(new Error("offline_inspection_complete"));
+    await inspectGeneration(mock, video);
+    const [system, user] = mock.mock.calls[0];
+    expect(system.endsWith(contract.EDITORIAL_TEMPORAL_GUIDANCE)).toBe(true);
+    expect(sourcePayload(user)).toMatchObject({ videoTitle: video.title, videoPublishedOn: video.published_on, transcript: video.transcript });
+    expect(sourcePayload(user)).not.toHaveProperty("currentOffer");
+  });
   it("envia a transcrição como autoridade temática mesmo com FT03 e título divergente", async () => {
     const mock = vi.fn().mockRejectedValue(new Error("offline_inspection_complete"));
     await inspectGeneration(mock);
@@ -255,6 +270,7 @@ describe("geração real — assunto da fonte prevalece sobre bike associada", (
     expect(stage).toBe("vitale_rewrite");
     expect(system.endsWith(contract.EDITORIAL_SOURCE_PRIORITY)).toBe(true);
     expect(sourcePayload(user).transcript).toBe(businessTranscript);
+    expect(system).toContain(contract.EDITORIAL_TEMPORAL_GUIDANCE);
     expect(user).toContain("recupere pontos centrais omitidos");
     expect(user).toContain("<untrusted_draft_json>");
     expect(user).toContain("Guia da FT03");
@@ -510,6 +526,37 @@ function referenceDatabase(missing = false) {
   };
 }
 describe("capa — referências reais sem chamadas pagas", () => {
+  it.each(["404", "placeholder", "network", "mime", "oversize"])("thumbnail indisponível (%s) usa só fotos oficiais numa única geração", async failure => {
+    const first = failure === "network" ? Promise.reject(new Error("offline network")) : Promise.resolve(new Response(new Uint8Array(failure === "oversize" ? 2_000_001 : failure === "mime" ? 2100 : 1097), { status: failure === "404" ? 404 : 200, headers: { "Content-Type": failure === "mime" ? "text/html" : "image/jpeg" } }));
+    offlineFetch = vi.fn().mockImplementationOnce(() => first).mockResolvedValueOnce(Response.json({ data: [{ b64_json: "iVBORw0KGgo=" }] }));
+    const db = referenceDatabase();
+    const response = await exports.coverGenerate!(new Request("http://localhost"), db, { id: "actor" }, { ...regenerationArticle, primary_bike_id: "v9_max", title: "V9 Max na Black Friday" });
+    expect(response.status).toBe(200);
+    expect(offlineFetch).toHaveBeenCalledTimes(2);
+    const payload = JSON.parse(offlineFetch.mock.calls[1][1].body);
+    const content = payload.messages[0].content;
+    expect(content.filter((item: { type: string }) => item.type === "image_url")).toHaveLength(1);
+    expect(content[0].text).toContain("V9 Max na Black Friday");
+    expect(content[1].text).toContain('"bikeId":"v9_max"');
+    expect(content[2].image_url.url).toBe(`data:image/jpeg;base64,${btoa(String.fromCharCode(...jpegBytes))}`);
+    expect(db.download.mock.calls).toEqual([["v9_max/photo.jpg"]]);
+  });
+  it("sem thumbnail nem bike associada usa assunto editorial sem inventar referência de produto", async () => {
+    offlineFetch = vi.fn().mockResolvedValueOnce(new Response("unavailable", { status: 404 })).mockResolvedValueOnce(Response.json({ data: [{ b64_json: "iVBORw0KGgo=" }] }));
+    const db = referenceDatabase();
+    const response = await exports.coverGenerate!(new Request("http://localhost"), db, { id: "actor" }, { ...regenerationArticle, primary_bike_id: null, related_bike_ids: [], title: "Como planejar a mobilidade na Black Friday" });
+    expect(response.status).toBe(200);
+    const content = JSON.parse(offlineFetch.mock.calls[1][1].body).messages[0].content;
+    expect(content).toHaveLength(1);
+    expect(content[0].text).toContain("without inventing a specific bike model");
+    expect(db.download).not.toHaveBeenCalled();
+  });
+  it("ausência simultânea de thumbnail e foto da bike bloqueia sem chamada paga", async () => {
+    offlineFetch = vi.fn().mockResolvedValueOnce(new Response("unavailable", { status: 404 }));
+    const response = await exports.coverGenerate!(new Request("http://localhost"), referenceDatabase(true), { id: "actor" }, { ...regenerationArticle, primary_bike_id: "v9_max" });
+    expect(response.status).toBe(422);
+    expect(offlineFetch).toHaveBeenCalledTimes(1);
+  });
   it("envia thumbnail e fotos de todas as bikes, com nome e prioridade", async () => {
     offlineFetch = vi
       .fn()
@@ -966,7 +1013,7 @@ it("hourly refreshes the spreadsheet before serving a pending cover stage", asyn
 describe("automatic publication uses the leased daily pipeline", () => {
   const transcript = "Motor forte e autonomia dependem do percurso.";
   const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 7, title: "Motor e autonomia", slug: "motor-e-autonomia", summary: "Conheça o funcionamento.", seo_title: "Motor e autonomia no uso diário", meta_description: "Entenda a autonomia.", og_title: "Motor e autonomia", og_description: "Uso diário.", validation_errors: [], primary_bike_id: null, related_bike_ids: [], related_article_ids: [], faq: [], blocks: [{ type: "text", heading: "Autonomia", text: "A autonomia depende do percurso.", sourceExcerpt: transcript }] };
-  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationRepairCount: 2 }, conflict = false) {
+  function publicationDb(capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationRepairCount: 2 }, conflict = false, video = { title: article.title, published_on: null as string | null, transcript, status: "active" }) {
     const writes: { table: string; patch: Record<string, unknown> }[] = [];
     const filters: unknown[] = [];
     const db = { from: (table: string) => {
@@ -974,7 +1021,7 @@ describe("automatic publication uses the leased daily pipeline", () => {
       const chain = { select: () => chain, eq: (key: string, value: unknown) => { filters.push([table, key, value]); return chain; },
         update: (value: Record<string, unknown>) => { patch = value; writes.push({ table, patch: value }); return chain; },
         insert: async () => ({ error: null }),
-        maybeSingle: async () => ({ error: null, data: table === "editorial_articles" ? (patch ? (conflict ? null : { id: article.id }) : article) : table === "editorial_videos" ? { transcript, status: "active" } : { capture } }),
+        maybeSingle: async () => ({ error: null, data: table === "editorial_articles" ? (patch ? (conflict ? null : { id: article.id }) : article) : table === "editorial_videos" ? video : { capture } }),
         then: (resolve: (value: unknown) => unknown) => Promise.resolve({ error: null, data: [] }).then(resolve) };
       if (table === "bikes") return { select: async () => ({ data: [], error: null }) };
       return chain;
@@ -984,6 +1031,23 @@ describe("automatic publication uses the leased daily pipeline", () => {
   const req = new Request("http://localhost");
   const lease = { article_id: article.id, video_id: article.video_id };
   const mockChecks = () => exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
+  it("campanha perdida recebe rejeição do QA com fonte original e volta para correção limitada", async () => {
+    const campaignTranscript = `Black Friday: promoção no Pix e no cartão, sem prazo definido. ${transcript}`;
+    const video = { title: "V29 Pro na Black Friday", published_on: "2026-11-30", transcript: campaignTranscript, status: "active" };
+    const { db, writes } = publicationDb({ videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript: campaignTranscript, publicationRepairAttempted: false, publicationRepairCount: 0 }, false, video);
+    const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: false, issues: ["O artigo omitiu Black Friday e as condições da promoção, substituindo a decisão pontual por avaliação genérica."], cautionViolations: [] }));
+    exports.injectOfflineAI!(reviewer);
+    const restore = mockChecks();
+    try {
+      expect(await (await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).json()).toMatchObject({ status: "rewrite_pending" });
+      expect(reviewer.mock.calls[0][0]).toContain(contract.EDITORIAL_TEMPORAL_GUIDANCE);
+      const payload = JSON.parse(String(reviewer.mock.calls[0][1]).split("<untrusted_review_json>")[1].split("</untrusted_review_json>")[0]);
+      expect(payload).toMatchObject({ videoTitle: video.title, videoPublishedOn: video.published_on, transcript: campaignTranscript });
+      expect(writes[0].patch.capture).toMatchObject({ publicationQa: { pass: false, version: "automatic-publication-v8-temporal-intent" } });
+      expect(writes.at(-1)?.patch).toMatchObject({ state: "rewrite_pending", capture: { publicationRepairCount: 1 } });
+      expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
+    } finally { restore(); }
+  });
   it("publishes only after persisted QA and guards the exact draft revision", async () => {
     const { db, writes, filters } = publicationDb(); const restore = mockChecks();
     const reviewer = vi.fn(async (..._args: unknown[]) => ({ pass: true, issues: [], cautionViolations: [], qualityScore: 90 })); exports.injectOfflineAI!(reviewer);
