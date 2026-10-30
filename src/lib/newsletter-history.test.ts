@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ResendNewsletter } from "./resend-newsletter.server";
 import {
@@ -12,15 +12,16 @@ const campaign = {
   id,
   edition_day: "2026-10-08",
   resend_id: "broadcast-1",
+  sent_at: null as string | null,
   segment: "general",
   payload: { content: proof.content },
 };
-function db(owned = true) {
+function db(owned = true, campaigns = [campaign]) {
   return {
     from: (table: string) => ({
       select: () => ({
         order: () => ({
-          limit: async () => ({ data: [campaign], error: null }),
+          limit: async () => ({ data: campaigns, error: null }),
         }),
         eq: () => ({
           single: async () => ({
@@ -68,7 +69,45 @@ function provider(tracking = true, unavailable = false) {
   return { request, get: () => resend };
 }
 beforeEach(clearNewsletterStatsCache);
+afterEach(() => vi.useRealTimers());
 describe("newsletter history", () => {
+  it("reuses performance reports for six hours and refreshes at the boundary", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const start = Date.parse("2026-10-30T10:00:00-03:00");
+    vi.setSystemTime(start);
+    const p = provider();
+    const original = await newsletterCampaignReports(db(), p.get);
+    vi.setSystemTime(start + 6 * 60 * 60_000 - 1);
+    expect(await newsletterCampaignReports(db(), p.get)).toEqual(original);
+    expect(p.request).toHaveBeenCalledTimes(3);
+    vi.setSystemTime(start + 6 * 60 * 60_000);
+    const refreshed = await newsletterCampaignReports(db(), p.get);
+    expect(p.request).toHaveBeenCalledTimes(6);
+    expect(refreshed[id].updatedAt).toBe(new Date().toISOString());
+  });
+  it("refreshes a newly completed send or new broadcast without waiting six hours", async () => {
+    const p = provider();
+    await newsletterCampaignReports(db(), p.get);
+    const completed = { ...campaign, sent_at: "2026-10-30T09:35:00Z" };
+    await newsletterCampaignReports(db(true, [completed]), p.get);
+    expect(p.request).toHaveBeenCalledTimes(6);
+    await newsletterCampaignReports(
+      db(true, [{ ...completed, resend_id: "broadcast-2" }]),
+      p.get,
+    );
+    expect(p.request).toHaveBeenCalledTimes(9);
+  });
+  it("allows a failed performance query to recover after the short error cache", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const start = Date.parse("2026-10-30T10:00:00-03:00");
+    vi.setSystemTime(start);
+    await newsletterCampaignReports(db(), provider(true, true).get);
+    const p = provider();
+    vi.setSystemTime(start + 30_000);
+    const recovered = await newsletterCampaignReports(db(), p.get);
+    expect(recovered[id].available).toBe(true);
+    expect(p.request).toHaveBeenCalledTimes(3);
+  });
   it("retrieves unique engagement in one batch, scoped to owned broadcasts and caches it", async () => {
     const p = provider();
     const stats = await newsletterCampaignReports(db(), p.get);

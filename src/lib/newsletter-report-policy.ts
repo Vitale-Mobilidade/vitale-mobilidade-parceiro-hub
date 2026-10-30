@@ -1,0 +1,1 @@
+export const NEWSLETTER_REPORT_INTERVAL_MS = 6 * 60 * 60_000;

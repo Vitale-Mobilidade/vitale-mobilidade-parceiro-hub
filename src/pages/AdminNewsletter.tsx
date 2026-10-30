@@ -123,6 +123,10 @@ function NewsletterOperation() {
     staleTime: 60_000,
   });
   const data = query.data;
+  const reportsVersion =
+    data?.campaigns
+      .map((c) => `${c.id}:${c.resend_id ?? ""}:${c.status}`)
+      .join(",") ?? "";
   async function action(name: string, payload: Record<string, unknown> = {}) {
     setBusy(true);
     setError("");
@@ -659,6 +663,7 @@ function NewsletterOperation() {
                       id={c.id}
                       delivered={c.delivered}
                       failed={c.failed}
+                      reportsVersion={reportsVersion}
                     />
                     <button
                       className={button + " mt-2"}
