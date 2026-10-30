@@ -1,6 +1,6 @@
 # Roadmap Vitale Mobilidade
 
-> **Campanhas e ofertas pontuais — 30/10/2026 (local, não publicado):** direção final do redator/refinamento e QA preserva Black Friday, outras datas e oportunidades de preço quando centrais na fonte, sem transformar preços históricos em oferta vigente. Diagnóstico da V29 Pro confirmou falha na etapa de capa; thumbnails oficiais retornam 404 na inspeção atual. Transcrição existente permanece operacional. Sem nova geração paga, retomada de fila ou mudança em produção. Escopo, evidências, revisão das oito perspectivas e limite de agendamento em [EDITORIAL_TEMPORAL_2026-10-30.md](./EDITORIAL_TEMPORAL_2026-10-30.md).
+> **Campanhas e ofertas pontuais — publicado em 30/10/2026:** redator/refinamento e QA preservam Black Friday, outras datas e oportunidades de preço centrais na fonte. A capa pode usar fotos oficiais e assunto quando a thumbnail está indisponível; fonte, fotos das Bikes associadas e QA continuam obrigatórios. PRs #56/#57 integradas e somente `editorial-admin` implantada. Artigo V29 Pro recuperado, QA aprovado e publicado às 10h48, com o fundo pago reaproveitado após corrigir a trava antiga de título. O iframe mantém o vídeo agendado pelo ID; nenhuma data/visibilidade do YouTube, schema, cron ou frontend mudou. Preços atuais continuam no Radar. Evidências, custos, rollback e oito perspectivas em [EDITORIAL_TEMPORAL_2026-10-30.md](./EDITORIAL_TEMPORAL_2026-10-30.md).
 
 > **Decisão vigente de 15/10/2026:** `/radar` e `/radar/{bikeId}` são a
 > experiência canônica de Bike. A implementação pública duplicada de `/bikes`

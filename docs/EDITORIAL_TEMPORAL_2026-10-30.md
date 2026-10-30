@@ -1,5 +1,19 @@
 # Campanhas e ofertas pontuais — 30/10/2026
 
+## Resultado publicado
+
+Concluído em produção em 30/10/2026, às 10h48 (São Paulo). Artigo: [V29 Pro na Black Friday: quando a oferta vale a pena?](https://vitalemobilidade.com/conteudos/v29-pro-na-black-friday-quando-a-oferta-vale-a-pena). Registro `31bca5a0-3456-4d27-ad8c-a05235f92a82`, revisão final 7, `published`, `indexable=true`, fonte `done`. QA independente `automatic-publication-v8-temporal-intent`: `pass=true`, sem issues nem violações factuais apontadas, com fingerprint da fonte original `5993:59b2fcf2`.
+
+Código integrado pelas PRs #56 e #57, merges `d9599df` e `8a5c20f`; somente `editorial-admin` implantada. `deno check` aprovado no Cloud. Hash SHA-256 do `index.ts` da segunda implantação igual ao arquivo local: `a29793d0366524aa66acac796ee98d7c467f8c3f68f65faa2f72dac85d4537fb`. O hash de pacote de deploy é distinto do hash do arquivo. Smoke independente sem autenticação após o deploy retornou 403.
+
+A primeira reescrita recuperou campanha no corpo/metadados. O H1 ainda era fixado pela rotina antiga, corrigida no delta da PR #57. Para este rascunho, título, slug e OG foram ajustados diretamente sob guarda de revisão 4, sem pagar outra redação do corpo já corrigido. O fundo já pago foi reutilizado e o título recomposto pelo mesmo renderer; o QA automático completo aprovou a revisão 6 e publicou a revisão 7. Há somente um evento novo `cover_generated`, com `reference=null` e `referenceMode=catalog_only`; os dois eventos `cover_applied` correspondem ao mesmo fundo antes/depois da correção do título, sem segunda geração de imagem.
+
+Verificação pública: HTTP 200, canonical exato, ausência de `noindex`, H1 Black Friday no HTML SSR, imagem editorial JPEG pública 200 e iframe `youtube-nocookie.com/embed/U5MzgegMIIo`. O player mantém o ID e sua reprodução depende da liberação no YouTube; não houve alteração de agendamento. VideoObject com data futura permanece omitido pela regra existente. Página e capa conferidas visualmente no navegador. Evidências no checkout de referência: `artifacts/v29-pro-black-friday-publication-2026-10-30.json` e `artifacts/v29-pro-black-friday-published-2026-10-30.png`.
+
+Custos conhecidos: 1,4 + 1,4 créditos de construção Lovable para os dois deploys; geração de conteúdo/capa/QA feita pelo gateway existente, sem custo monetário medido nesta auditoria. Nenhuma nova imagem foi cobrada para trocar o título. O status Vercel falho também existia na main anterior `cd81ab9`; essa hospedagem não é o ambiente operacional desta entrega. Nenhum deploy de frontend foi feito.
+
+Revisão final das mesmas oito perspectivas: Produto **Pass** (campanha preservada e artigo publicado); CTO **Pass** (mesma função, checkpoints e SSR); IA **Pass** (fonte íntegra, fallback real e QA aprovado); Segurança **Pass** (403 sem sessão, RLS e secrets intactos); UX **Pass** (H1 e capa legíveis conferidos); CX **Pass** (fonte `done`, backup preservado, sem repetir imagem); Growth **Pass** (canonical/indexação corretos, preço atual no Radar, sem promessa de vigência ou ranking); PMO **Pass** (validações locais, deploys confirmados e smoke real concluídos). **GO — entrega concluída.** As seções abaixo registram o diagnóstico e as decisões anteriores, não pendências atuais.
+
 ## Descoberta no smoke real — trava do título na recuperação
 
 Após o primeiro deploy, a geração real recuperou Black Friday no corpo, abertura e metadados. A capa foi gerada em modo `catalog_only`, com thumbnail omitida, e aplicada. Porém, a recuperação antiga passava `preserveTitle=true` para qualquer problema que não fosse similaridade narrativa; isso manteve o H1 genérico independentemente da nova instrução. A fonte foi devolvida de `publish_pending` para `needs_review` antes da publicação, preservando o fundo pago.
@@ -39,7 +53,7 @@ Backup privado de artigo/fonte/vídeo em `/tmp/vitale-temporal-release-20261030-
 
 Revisão posterior das mesmas oito perspectivas: Produto **Pass** (autorização explícita para artigo antes do vídeo); CTO **Pass** (leases/checkpoints e chamada única preservados); IA **Pass** (fotos reais/assunto, sem placeholder); Segurança **Pass** (allowlist e autenticação intactas); UX **Pass** (iframe por ID preservado); CX **Pass** (backup e retomada individual planejada); Growth **Pass** (preços atuais nas entidades e schema futuro já protegido); PMO/QA **Pass** (testes, validate, rollback e escopo restrito). **GO para implantação autorizada de `editorial-admin` e recuperação individual**. A confirmação do deploy e o resultado real do artigo serão registrados abaixo após execução.
 
-Estado: diagnóstico e ajuste local; não publicado. Base: `origin/main` em `cd81ab9`, repositório operacional sincronizado com o mesmo projeto Lovable. O checkout raiz continua referência.
+Registro inicial, superado pelo resultado publicado acima: diagnóstico e ajuste local sobre `origin/main` em `cd81ab9`, repositório operacional sincronizado com o mesmo projeto Lovable. O checkout raiz continua referência.
 
 ## Evidência e diagnóstico
 
