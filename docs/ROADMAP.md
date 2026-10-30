@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Campanhas e ofertas pontuais — 30/10/2026 (local, não publicado):** direção final do redator/refinamento e QA preserva Black Friday, outras datas e oportunidades de preço quando centrais na fonte, sem transformar preços históricos em oferta vigente. Diagnóstico da V29 Pro confirmou falha na etapa de capa; thumbnails oficiais retornam 404 na inspeção atual. Transcrição existente permanece operacional. Sem nova geração paga, retomada de fila ou mudança em produção. Escopo, evidências, revisão das oito perspectivas e limite de agendamento em [EDITORIAL_TEMPORAL_2026-10-30.md](./EDITORIAL_TEMPORAL_2026-10-30.md).
+
 > **Decisão vigente de 15/10/2026:** `/radar` e `/radar/{bikeId}` são a
 > experiência canônica de Bike. A implementação pública duplicada de `/bikes`
 > foi removida localmente; os endereços antigos permanecem somente como 301 para
