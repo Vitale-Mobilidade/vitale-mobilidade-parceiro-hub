@@ -24,7 +24,8 @@ import {
   fetchPublishedIndex,
   fetchPublishedArticle,
 } from "./editorial-repository.server";
-import { fetchTrackerSplit } from "./radar-repository.server";
+import { fetchTrackerSplit, fetchRankedTrackerSplit } from "./radar-repository.server";
+import { offerClickPriority } from "../../supabase/functions/_shared/bike-relevance";
 import { fetchVideoCatalog } from "./video-catalog.server";
 import { fetchBikeCatalogFromDb } from "./bikes-repository.server";
 import { persistentBikeImage } from "./bike-catalog";
@@ -65,11 +66,11 @@ export async function automaticNewsletter(
 }> {
   const [articles, radar, videos, catalog] = await Promise.all([
     fetchPublishedIndex(),
-    fetchTrackerSplit(),
+    fetchRankedTrackerSplit(),
     fetchVideoCatalog(),
     fetchBikeCatalogFromDb(),
   ]);
-  if (!articles?.length || !radar.ok || !videos.length || !catalog?.length)
+  if (!articles?.length || !radar.ok || !radar.data.relevanceAvailable || !videos.length || !catalog?.length)
     throw new Error("newsletter_sources_unavailable");
   const activeIds = new Set(
     (radar.data.active as { id: string }[]).map((b) => b.id),
@@ -78,6 +79,13 @@ export async function automaticNewsletter(
     candidate: Parameters<typeof newsletterCandidateHasOffers>[0],
   ) => newsletterCandidateHasOffers(candidate, catalog, activeIds);
   const memory = newsletterMemory(previousEditions, articles, videos, catalog);
+  const ranks = new Map((radar.data.active as { id: string; offerClickRank30d?: number | null }[])
+    .map((b) => [b.id, b.offerClickRank30d]));
+  const audience = (candidate: Parameters<typeof newsletterCandidateBikeIds>[0]) => {
+    const values = newsletterCandidateBikeIds(candidate, catalog).map((id) => offerClickPriority(ranks.get(id)));
+    const rank = Math.min(...values);
+    return { ...candidate, offerClickRank30d: Number.isFinite(rank) ? rank : null };
+  };
   const usedSources = await newsletterUsedSources(
     previousEditions,
     fetchPublishedArticle,
@@ -88,10 +96,10 @@ export async function automaticNewsletter(
         (a) =>
           !a.newsletterUsed && newsletterReaderTopic(a.title) && eligible(a),
       )
-      .map((a) => ({ ...a, bikeIds: newsletterCandidateBikeIds(a, catalog) })),
+      .map((a) => ({ ...a, ...audience(a), bikeIds: newsletterCandidateBikeIds(a, catalog) })),
     videos
       .filter((v) => newsletterReaderTopic(v.title) && eligible(v))
-      .map((v) => ({ ...v, bikeIds: newsletterCandidateBikeIds(v, catalog) }))
+      .map((v) => ({ ...v, ...audience(v), bikeIds: newsletterCandidateBikeIds(v, catalog) }))
       .filter(
         (v) =>
           !previousEditions.some((p) =>
@@ -123,12 +131,13 @@ export async function automaticNewsletter(
   const drops = selectNewsletterDrops(
     radar.data.active as NewsletterDropBike[],
     new Date(),
+    memory.recentBikeIds,
   );
   const related = [
     ...pickedVideos.flatMap((v) => v.bikeIds),
     ...pickedArticles.flatMap((a) => a.bikeIds),
   ];
-  const bikes = (radar.data.active as { id: string; name: string }[]).filter(
+  const bikes = (radar.data.active as { id: string; name: string; offerClickRank30d?: number | null }[]).filter(
     (b) =>
       typeof b.id === "string" &&
       /^[a-z0-9_]+$/.test(b.id) &&

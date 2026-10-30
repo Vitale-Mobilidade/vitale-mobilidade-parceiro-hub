@@ -1,14 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
-import { fetchBikeHistory, fetchTrackerSplit } from "./radar-repository.server";
+import { fetchBikeHistory, fetchRankedTrackerSplit } from "./radar-repository.server";
 
 export const getRadarCatalog = createServerFn({ method: "GET" }).handler(async () => {
-  const r = await fetchTrackerSplit();
+  const r = await fetchRankedTrackerSplit();
   // JSON serializável: dados já vêm como JSON da RPC.
   // `bikes` = oferta atual válida; `archived` = histórico sem oferta (sem preço/link).
   return r.ok
     ? {
         ok: true as const,
+        relevanceAvailable: r.data.relevanceAvailable,
         bikes: JSON.parse(JSON.stringify(r.data.active)) as Json[],
         archived: JSON.parse(JSON.stringify(r.data.archived)) as Json[],
       }

@@ -5,7 +5,9 @@ import {
 import {
   newsletterCandidateModels,
   newsletterModelFamily,
+  newsletterBikeRecencyPenalty,
 } from "./newsletter-models";
+import { compareOfferClickRelevance, offerClickPriority } from "../../supabase/functions/_shared/bike-relevance";
 export type NewsletterCategory =
   "comparison" | "practical" | "review" | "guide" | "price" | "variety";
 export const NEWSLETTER_CATEGORY_LABELS = {
@@ -76,6 +78,7 @@ export type NewsletterCandidate = {
   primaryBikeId?: string | null;
   relatedBikeIds?: string[];
   bikeIds?: string[];
+  offerClickRank30d?: number | null;
 };
 /** Diversity across media, not just within each list. Never fill scarce slots with duplicates. */
 export function curateNewsletter<
@@ -102,7 +105,7 @@ export function curateNewsletter<
           ),
       )
       .filter((x) => Number.isFinite(date(x)) && date(x) <= now.getTime())
-      .sort((a, b) => date(b) - date(a));
+      .sort((a, b) => offerClickPriority(a.offerClickRank30d) - offerClickPriority(b.offerClickRank30d) || date(b) - date(a));
   const used = new Set<NewsletterCategory>();
   const videoIds = new Set<string>();
   const titles = new Set<string>();
@@ -193,7 +196,7 @@ export function newsletterCategoryLabel(title: string, type?: string) {
 }
 
 export function selectFeaturedNewsletterBike<
-  T extends { id: string; name?: string },
+  T extends { id: string; name?: string; offerClickRank30d?: number | null },
 >(
   bikes: T[],
   radarIds: string[],
@@ -205,15 +208,9 @@ export function selectFeaturedNewsletterBike<
   const score = (b: T) =>
     (matches(relatedIds, b) ? 30 : 0) +
     (matches(radarIds, b) ? 10 : 0) +
-    (matches(recentIds, b)
-      ? 3 +
-        (recentIds.length -
-          recentIds.findIndex(
-            (id) => newsletterModelFamily(id) === newsletterModelFamily(b.id),
-          )) /
-          recentIds.length
-      : 0);
+    (newsletterBikeRecencyPenalty(b.id, recentIds) > 0
+      ? 3 + newsletterBikeRecencyPenalty(b.id, recentIds) / recentIds.length : 0);
   return bikes
     .filter((b) => !excludedNewsletterMotorcycle(b.id, b.name))
-    .sort((a, b) => score(a) - score(b))[0];
+    .sort((a, b) => score(a) - score(b) || compareOfferClickRelevance(a, b))[0];
 }

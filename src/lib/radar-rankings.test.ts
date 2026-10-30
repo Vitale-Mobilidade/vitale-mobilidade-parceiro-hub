@@ -114,6 +114,27 @@ describe("rankings do radar", () => {
     expect(sortEntries(entries, "name")[0].name).toBe("Álfa Urbana");
   });
 
+  it("relevância prioriza cliques de oferta mesmo sem desconto ou histórico longo", () => {
+    const ranked = buildRadarEntries([
+      bike({ id: "desconto", name: "Desconto", offerClickRank30d: 2, image: "https://example.test/bike.webp", perfilIndicado: "Trajetos urbanos" }),
+      bike({ id: "popular", name: "Popular", offerClickRank30d: 1, daily: [day(TODAY, 9000)], currentPrice: 9000 }),
+    ], "all", TODAY);
+    expect(sortEntries(ranked, "relevance").map((e) => e.id)).toEqual(["popular", "desconto"]);
+    expect(sortEntries(ranked, "price").map((e) => e.id)).toEqual(["desconto", "popular"]);
+  });
+
+  it("desempata cliques em A–Z e não usa preço como fallback", () => {
+    const ranked = buildRadarEntries([
+      bike({ id: "z", name: "Zulu", offerClickRank30d: 1, currentPrice: 1000 }),
+      bike({ id: "a", name: "Álfa", offerClickRank30d: 1, currentPrice: 8000 }),
+      bike({ id: "sem", name: "Sem cliques", offerClickRank30d: 2 }),
+    ], "all", TODAY);
+    expect(sortEntries(ranked, "relevance").map((e) => e.id)).toEqual(["a", "z", "sem"]);
+    const unavailable = ranked.map((e) => ({ ...e, offerClickRank30d: null }));
+    expect(sortEntries(unavailable, "relevance").map((e) => e.id)).toEqual(["a", "sem", "z"]);
+    expect(ranked.map((e) => e.id)).toEqual(["a", "sem", "z"]);
+  });
+
   it("ordena maior queda pelo percentual contra o preço anterior", () => {
     const top = sortEntries(entries, "drop")[0];
     expect(top.dropPct).toBeLessThan(0);

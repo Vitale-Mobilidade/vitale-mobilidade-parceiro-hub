@@ -12,6 +12,7 @@ export type BikeCandidate = {
   name: string;
   image_url?: string | null;
   aliases?: string[];
+  offerClickRank30d?: number | null;
 };
 export type BikeDetection = {
   primaryBikeId: string | null;

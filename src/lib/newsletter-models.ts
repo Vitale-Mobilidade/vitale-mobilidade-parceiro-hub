@@ -13,6 +13,12 @@ export function newsletterModelFamily(id: string) {
   const code = tokens.findIndex((s) => /^[a-z]+\d+$/.test(s));
   return code < 0 ? normalize(id) : tokens.slice(0, code + 1).join(" ");
 }
+/** Zero for unseen families; otherwise prefer the least recent when rotation is exhausted. */
+export function newsletterBikeRecencyPenalty(id: string, recentIds: string[]) {
+  const family = newsletterModelFamily(id);
+  const index = recentIds.findIndex((recent) => newsletterModelFamily(recent) === family);
+  return index < 0 ? 0 : recentIds.length - index;
+}
 export function newsletterCandidateBikeIds(
   item: NewsletterCandidate,
   catalog: NewsletterBikeIdentity[] = [],

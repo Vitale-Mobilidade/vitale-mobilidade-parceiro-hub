@@ -82,7 +82,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
     return dates.length ? dates.sort()[0] : null;
   }, [entries]);
 
-   const featured = useMemo(() => sortEntries(entries, "relevance")[0] ?? null, [entries]);
+   const featured = useMemo(() => initial.ok && initial.relevanceAvailable ? sortEntries(entries, "relevance")[0] ?? null : null, [entries, initial]);
 
   const toggleChip = (next: ChipKey) => { setCategory(""); setChip((prev) => prev === next ? null : next); };
 
@@ -200,9 +200,12 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               <div className="flex flex-wrap items-center gap-2">
                 {categories.length > 0 && <><label htmlFor="radar-category" className="text-sm text-muted-foreground">Uso / categoria</label><select id="radar-category" value={category} onChange={e => { setCategory(e.target.value); setChip(null); }} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action"><option value="">Todas</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></>}
                 <label htmlFor="radar-sort" className="text-sm text-muted-foreground">Ordenar por</label>
-                <select id="radar-sort" value={sort} onChange={e => setSort(e.target.value as SortKey)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action">{SORTS.map(key => <option key={key} value={key}>{SORT_LABEL[key]}</option>)}</select>
+                <select id="radar-sort" aria-describedby={sort === "relevance" ? "radar-sort-help" : undefined} value={sort} onChange={e => setSort(e.target.value as SortKey)} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action">{SORTS.map(key => <option key={key} value={key}>{SORT_LABEL[key]}</option>)}</select>
               </div>
             </div>
+            {sort === "relevance" && <p id="radar-sort-help" aria-live="polite" className="mb-4 text-sm text-muted-foreground">{initial.ok && initial.relevanceAvailable
+              ? "Mais relevantes: bikes com mais cliques para ofertas nos últimos 30 dias."
+              : "A ordenação por cliques está indisponível no momento. As bikes aparecem em ordem alfabética."}</p>}
             <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filtro rápido — escolha uma opção">{CHIPS.map(option => <button key={option} type="button" aria-pressed={chip === option} onClick={() => toggleChip(option)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chip === option ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[option]}</button>)}{(chip || category) && <button type="button" onClick={() => { setChip(null); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
             {filtered.length ? (
               <>

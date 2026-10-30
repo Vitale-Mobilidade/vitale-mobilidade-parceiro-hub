@@ -3,6 +3,7 @@
 
 import { BIKE_ID_RE } from "@/lib/bike-identity";
 import { resolveBikeRecordImage } from "./bike-catalog";
+import { parseOfferClickRanks } from "../../supabase/functions/_shared/bike-relevance";
 
 const TIMEOUT_MS = 6000;
 
@@ -66,6 +67,34 @@ export async function fetchTrackerSplit(): Promise<RadarResult<{ active: unknown
 export async function fetchTrackerCatalog(): Promise<RadarResult<unknown[]>> {
   const r = await fetchTrackerSplit();
   return r.ok ? { ok: true, data: r.data.active } : { ok: false };
+}
+
+/** Ranking usado só onde há ordenação por relevância; sitemap/jobs não dependem de analytics. */
+export async function fetchRankedTrackerSplit(): Promise<
+  RadarResult<{ active: unknown[]; archived: unknown[]; relevanceAvailable: boolean }>
+> {
+  const [catalog, ranks] = await Promise.all([
+    fetchTrackerSplit(),
+    callRpc<unknown>("get_radar_offer_click_ranks_30d", {}),
+  ]);
+  if (!catalog.ok) return { ok: false };
+
+  const parsed = ranks.ok ? parseOfferClickRanks(ranks.data) : null;
+  const byId = parsed ?? new Map<string, number>();
+  let relevanceAvailable = parsed !== null;
+  // Never use a partial response: a missing rank could silently demote a bike.
+  if (catalog.data.active.some((item) => !byId.has((item as { id: string }).id))) relevanceAvailable = false;
+  return {
+    ok: true,
+    data: {
+      archived: catalog.data.archived,
+      relevanceAvailable,
+      active: catalog.data.active.map((item) => ({
+        ...(item as Record<string, unknown>),
+        offerClickRank30d: relevanceAvailable ? byId.get((item as { id: string }).id) : null,
+      })),
+    },
+  };
 }
 
 export async function fetchBikeHistory(bikeId: string): Promise<RadarResult<unknown | null>> {

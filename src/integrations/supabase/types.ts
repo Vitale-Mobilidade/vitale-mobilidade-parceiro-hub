@@ -2523,6 +2523,13 @@ export type Database = {
       }
       get_published_editorial_index: { Args: never; Returns: Json }
       get_quiz_catalog: { Args: never; Returns: Json }
+      get_radar_offer_click_ranks_30d: {
+        Args: never
+        Returns: {
+          bike_id: string
+          relevance_rank: number
+        }[]
+      }
       ingest_youtube_editorial_snapshot: {
         Args: { video_ids: string[] }
         Returns: string
