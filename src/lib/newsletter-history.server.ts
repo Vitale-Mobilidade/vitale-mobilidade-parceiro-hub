@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { ResendNewsletter } from "./resend-newsletter.server";
 import type { NewsletterCampaignStats } from "./newsletter-api";
+import { NEWSLETTER_REPORT_INTERVAL_MS } from "./newsletter-report-policy";
 import {
   renderResendNewsletter,
   type NewsletterContent,
@@ -36,7 +37,11 @@ export async function newsletterCampaignReports(
   }[];
   const sent = campaigns.filter((c) => c.resend_id);
   if (!sent.length) return {};
-  const key = sent.map((c) => c.resend_id).join(",");
+  const broadcastIds = sent.map((c) => c.resend_id).join(",");
+  // Refresh immediately when a new broadcast appears or an accepted send completes.
+  const key = sent
+    .map((c) => `${c.id}:${c.resend_id}:${c.sent_at ?? ""}`)
+    .join(",");
   if (cache?.key === key && cache.expires > Date.now()) return cache.value;
   if (inFlight?.key === key) return inFlight.value;
   const fetchReports = async (): Promise<Reports> => {
@@ -54,7 +59,7 @@ export async function newsletterCampaignReports(
       const params = new URLSearchParams({
         start_date: sent.map((c) => c.edition_day).sort()[0],
         end_date: new Date().toISOString(),
-        broadcast_id: key,
+        broadcast_id: broadcastIds,
         dimensions: "broadcast",
         metrics: "sent,delivered,unique_opened,unique_clicked",
       });
@@ -141,7 +146,11 @@ export async function newsletterCampaignReports(
           updatedAt: new Date().toISOString(),
         };
       }
-      cache = { key, value: result, expires: Date.now() + 5 * 60_000 };
+      cache = {
+        key,
+        value: result,
+        expires: Date.now() + NEWSLETTER_REPORT_INTERVAL_MS,
+      };
     } catch {
       cache = { key, value: result, expires: Date.now() + 30_000 };
     }

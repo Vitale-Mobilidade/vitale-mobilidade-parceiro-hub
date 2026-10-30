@@ -1,5 +1,6 @@
 import { NewsletterEngagementPeople } from "./NewsletterEngagementPeople";
 import { useQuery } from "@tanstack/react-query";
+import { NEWSLETTER_REPORT_INTERVAL_MS } from "@/lib/newsletter-report-policy";
 import {
   newsletterCall,
   type NewsletterCampaignStats,
@@ -8,18 +9,22 @@ export function NewsletterCampaignResults({
   id,
   delivered,
   failed,
+  reportsVersion,
 }: {
   id: string;
   delivered: number;
   failed: number;
+  reportsVersion: string;
 }) {
   const query = useQuery({
-    queryKey: ["admin", "newsletter", "campaign-reports"],
+    queryKey: ["admin", "newsletter", "campaign-reports", reportsVersion],
     queryFn: () =>
       newsletterCall<Record<string, NewsletterCampaignStats>>(
         "campaign_reports",
       ),
-    staleTime: 5 * 60_000,
+    staleTime: NEWSLETTER_REPORT_INTERVAL_MS,
+    gcTime: NEWSLETTER_REPORT_INTERVAL_MS,
+    refetchInterval: NEWSLETTER_REPORT_INTERVAL_MS,
     retry: false,
   });
   const stats = query.data?.[id];
@@ -55,8 +60,9 @@ export function NewsletterCampaignResults({
       )}
       {stats?.available && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Abertos e com clique: e-mails com pelo menos um evento registrado.
-          Atualização do provedor pode levar até 15 minutos.
+          Abertos e com clique: e-mails com pelo menos um evento registrado. Os
+          resultados são consultados a cada 6 horas. Atualização do provedor
+          pode levar até 15 minutos.
           {stats.openTracking !== true &&
             " Rastreamento de abertura desativado ou não confirmado."}
           {stats.clickTracking !== true &&
