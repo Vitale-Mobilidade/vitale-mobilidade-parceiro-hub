@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { fetchTrackerCatalog } from "./radar-repository.server";
+import { fetchRankedTrackerSplit } from "./radar-repository.server";
 import { buildRadarEntries, sortEntries, type RadarBike } from "./radar-rankings";
 import { BIKE_ID_RE } from "./bike-identity";
 import type { Classification } from "./price-tracker";
@@ -18,7 +18,7 @@ const MAX_CARDS = 5;
 const MAX_RADAR = 4;
 
 /**
- * Home B2C: cards (até 5, por relevância factual), lista de busca e preview do Radar.
+ * Home B2C: cards (até 5, por cliques para ofertas em 30 dias), busca e preview do Radar.
  * Nunca devolve link afiliado nem histórico.
  */
 export const getHomeCards = createServerFn({ method: "GET" }).handler(
@@ -26,9 +26,9 @@ export const getHomeCards = createServerFn({ method: "GET" }).handler(
     { ok: true; cards: HomeCard[]; search: HomeSearchItem[]; radar: HomeRadarItem[] } | { ok: false }
   > => {
     try {
-      const r = await fetchTrackerCatalog();
-      if (!r.ok || !Array.isArray(r.data)) return { ok: false };
-      const valid = buildRadarEntries(r.data as unknown as RadarBike[], "all").filter(
+      const r = await fetchRankedTrackerSplit();
+      if (!r.ok) return { ok: false };
+      const valid = buildRadarEntries(r.data.active as unknown as RadarBike[], "all").filter(
         (e) =>
           typeof e.id === "string" &&
           BIKE_ID_RE.test(e.id) &&

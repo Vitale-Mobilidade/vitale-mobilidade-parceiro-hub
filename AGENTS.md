@@ -5,3 +5,5 @@
 Legacy `/bikes/$slug` URLs permanently redirect to `/radar/$bikeId`; public bike discovery and detail links target Radar because it is the canonical bike destination.
 
 Newsletter content is composed by the existing server writer and validated independently; opening policy and deterministic Radar cards belong to the content contract/renderer, never to a separate writer or database schema. This keeps generation, pricing and delivery responsibilities isolated.
+
+Bike relevance follows [docs/BIKE_RELEVANCE_POLICY.md](docs/BIKE_RELEVANCE_POLICY.md): offer CTA clicks over the last 30 Sao Paulo calendar days, via the shared ranking RPC. Use it across Radar, Home, newsletter curation and grounded editorial context. Context, verified offers, source fidelity and rotation take precedence over popularity; never repeat sent article/video sources to fill an edition or force a popular bike into an unrelated transcript.

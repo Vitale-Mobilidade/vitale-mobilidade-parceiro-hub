@@ -22,6 +22,10 @@ vi.mock("./editorial-repository.server", () => ({
 }));
 vi.mock("./radar-repository.server", () => ({
   fetchTrackerSplit: mocked.radar,
+  fetchRankedTrackerSplit: async () => {
+    const r = await mocked.radar();
+    return r?.ok ? { ...r, data: { relevanceAvailable: true, ...r.data } } : r;
+  },
 }));
 vi.mock("./video-catalog.server", () => ({ fetchVideoCatalog: mocked.videos }));
 vi.mock("./bikes-repository.server", () => ({

@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Relevância por cliques — release autorizado em 30/10/2026:** “Mais relevantes”, destaque do Radar e cards da Home usam cliques para ofertas nos últimos 30 dias civis em São Paulo. Essa prioridade orienta também newsletter e contexto de criação editorial, subordinada a fontes inéditas, pertinência, ofertas verificadas e rotação de modelos. Uma RPC pública expõe somente bike_id/rank, sem contagens ou dados pessoais. Implementação local e validações concluídas; publicação autorizada, aplicação em curso pelo mesmo projeto Lovable. [Política permanente](./BIKE_RELEVANCE_POLICY.md), [governança, evidências e rollback](./RADAR_RELEVANCE_30D_2026-10-30.md).
+
 > **Campanhas e ofertas pontuais — publicado em 30/10/2026:** redator/refinamento e QA preservam Black Friday, outras datas e oportunidades de preço centrais na fonte. A capa pode usar fotos oficiais e assunto quando a thumbnail está indisponível; fonte, fotos das Bikes associadas e QA continuam obrigatórios. PRs #56/#57 integradas e somente `editorial-admin` implantada. Artigo V29 Pro recuperado, QA aprovado e publicado às 10h48, com o fundo pago reaproveitado após corrigir a trava antiga de título. O iframe mantém o vídeo agendado pelo ID; nenhuma data/visibilidade do YouTube, schema, cron ou frontend mudou. Preços atuais continuam no Radar. Evidências, custos, rollback e oito perspectivas em [EDITORIAL_TEMPORAL_2026-10-30.md](./EDITORIAL_TEMPORAL_2026-10-30.md).
 
 > **Decisão vigente de 15/10/2026:** `/radar` e `/radar/{bikeId}` são a

@@ -1,10 +1,11 @@
 /**
  * Radar de Preços — montagem das entradas públicas, ordenações e destaques.
- * Tudo é derivado do histórico real: nada de urgência artificial.
+ * Preços vêm do histórico real; relevância vem dos cliques para ofertas em 30 dias.
  */
 
 import { dailyMetrics, distanceToMinPct, normalizeText, type DailyMetrics, type DailyPoint, type DailyWindow } from "./price-daily";
 import { isSafePurchaseLink, type Classification } from "./price-tracker";
+import { compareOfferClickRelevance } from "../../supabase/functions/_shared/bike-relevance";
 
 export interface RadarBike {
   id: string;
@@ -12,6 +13,8 @@ export interface RadarBike {
   currentPrice: number;
   link: string;
   image: string | null;
+  /** Posição agregada por cliques para ofertas em 30 dias; menor = mais cliques. */
+  offerClickRank30d?: number | null;
   shortDescription?: string | null;
   perfilIndicado?: string | null;
   bestFor?: string[] | null;
@@ -109,20 +112,9 @@ export function buildRadarEntries(
 export function sortEntries(entries: RadarEntry[], key: SortKey): RadarEntry[] {
   const out = [...entries];
   const alphabetical = (a: RadarEntry, b: RadarEntry) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
-  // Relevância editorial/preço: nenhum sinal de cliques, acessos ou popularidade.
-  const relevance = (e: RadarEntry) => {
-    const { classification, verifiedDays, expectedDays, coverage } = e.metrics;
-    const priceSignal = classification === "lowest" ? 2 : classification === "good" ? 1 : 0;
-    const reliable = classification !== "forming" ? 1 : 0;
-    const discount = reliable && Number.isFinite(e.savingsPct) ? Math.max(0, Math.min(e.savingsPct ?? 0, 100)) : 0;
-    const days = Math.min(verifiedDays, 30);
-    const editorial = Number(Boolean(e.image)) + Number(Boolean(radarUseLine(e)));
-    return priceSignal * 1000 + reliable * 300 + discount * 2 +
-      (expectedDays > 0 ? coverage : 0) * 100 + days + editorial * 5;
-  };
   switch (key) {
     case "relevance":
-      return out.sort((a, b) => relevance(b) - relevance(a) || alphabetical(a, b));
+      return out.sort((a, b) => compareOfferClickRelevance(a, b) || alphabetical(a, b));
     case "opportunity":
       return out.sort((a, b) => (b.savingsPct ?? -Infinity) - (a.savingsPct ?? -Infinity));
     case "drop":

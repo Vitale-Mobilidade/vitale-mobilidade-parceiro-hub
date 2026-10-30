@@ -1,9 +1,12 @@
 import { excludedNewsletterMotorcycle } from "./newsletter-bike-policy";
+import { compareOfferClickRelevance, offerClickPriority } from "../../supabase/functions/_shared/bike-relevance";
+import { newsletterBikeRecencyPenalty, newsletterModelFamily } from "./newsletter-models";
 /** Compare current offers with the most recent higher verified price, never a cherry-picked peak. */
 export type NewsletterDropBike = {
   id: string;
   name: string;
   currentPrice: number;
+  offerClickRank30d?: number | null;
   daily?: {
     date: string;
     close: number;
@@ -11,14 +14,14 @@ export type NewsletterDropBike = {
     lastVerifiedAt: string;
   }[];
 };
-export function selectNewsletterDrops(bikes: NewsletterDropBike[], now: Date) {
+export function selectNewsletterDrops(bikes: NewsletterDropBike[], now: Date, recentBikeIds: string[] = []) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(now);
-  return bikes
+  const candidates = bikes
     .filter((b) => !excludedNewsletterMotorcycle(b.id, b.name))
     .flatMap((b) => {
       if (!Number.isFinite(b.currentPrice) || b.currentPrice <= 0) return [];
@@ -53,6 +56,7 @@ export function selectNewsletterDrops(bikes: NewsletterDropBike[], now: Date) {
         {
           id: b.id,
           name: b.name,
+          offerClickRank30d: b.offerClickRank30d,
           previous: baseline.close,
           current: current.close,
           percent: ((baseline.close - current.close) / baseline.close) * 100,
@@ -61,6 +65,24 @@ export function selectNewsletterDrops(bikes: NewsletterDropBike[], now: Date) {
         },
       ];
     })
-    .sort((a, b) => b.percent - a.percent || a.id.localeCompare(b.id))
-    .slice(0, 3);
+    .sort((a, b) =>
+      newsletterBikeRecencyPenalty(a.id, recentBikeIds) - newsletterBikeRecencyPenalty(b.id, recentBikeIds) ||
+      ((Number.isFinite(offerClickPriority(a.offerClickRank30d)) || Number.isFinite(offerClickPriority(b.offerClickRank30d)))
+        ? compareOfferClickRelevance(a, b) : 0) || b.percent - a.percent || a.id.localeCompare(b.id))
+    ;
+  const selected: typeof candidates = [];
+  const families = new Set<string>();
+  for (const candidate of candidates) {
+    const family = newsletterModelFamily(candidate.id);
+    if (families.has(family)) continue;
+    families.add(family);
+    selected.push(candidate);
+    if (selected.length === 3) return selected;
+  }
+  for (const candidate of candidates) {
+    if (selected.some((item) => item.id === candidate.id)) continue;
+    selected.push(candidate);
+    if (selected.length === 3) break;
+  }
+  return selected;
 }
