@@ -1184,10 +1184,10 @@ it("a newly written factual correction still receives the full voice refinement"
 });
 
 
-it("a distinct grounded title reuses the paid background through the real cover-render queue", async () => {
+it.each(["Similaridade narrativa material com o artigo existente.", "Recuperar Black Friday no título: a avaliação genérica perdeu o tema da campanha."])("a grounded title correction reuses the paid background: %s", async issue => {
   const transcript = "A autonomia depende do percurso.";
   const article = { id: "draft", video_id: "abcDEFG1234", status: "draft", revision: 4, title: "Título anterior", primary_bike_id: null, related_bike_ids: [], blocks: [{ type: "text", text: "Corpo." }] };
-  const capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationQa: { pass: false, articleRevision: 4, sourceKey: foundation.sourceFingerprint(transcript), issues: ["Similaridade narrativa material com o artigo existente."] }, coverBackground: { path: "draft/backgrounds/paid.png", mime: "image/png", title: article.title } };
+  const capture = { videoId: article.video_id, channelId: "UC9LuObKw8ZLoQBk6qHydEeg", originalVtt: "WEBVTT\n", transcript, publicationRepairAttempted: true, publicationQa: { pass: false, articleRevision: 4, sourceKey: foundation.sourceFingerprint(transcript), issues: [issue] }, coverBackground: { path: "draft/backgrounds/paid.png", mime: "image/png", title: article.title } };
   const writes: Record<string, unknown>[] = [];
   const db = { from: (table: string) => {
     const data = table === "editorial_articles" ? article : table === "editorial_videos" ? { transcript } : { capture };
@@ -1197,6 +1197,7 @@ it("a distinct grounded title reuses the paid background through the real cover-
   try {
     expect(await (await exports.finishQueuedRewrite!(new Request("http://localhost"), db, { id: "owner" }, { article_id: article.id, video_id: article.video_id })).json()).toMatchObject({ status: "cover_render_pending" });
     expect(writer.mock.calls[0][6]).toBe(false);
+    expect(writer.mock.calls[0][8]).toEqual([issue]);
     expect(writes[0]).toMatchObject({ state: "cover_render_pending", capture: { coverBackground: { path: capture.coverBackground.path, title: "Novo recorte da autonomia" } } });
   } finally { restore(); }
 });

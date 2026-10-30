@@ -1,5 +1,15 @@
 # Campanhas e ofertas pontuais — 30/10/2026
 
+## Descoberta no smoke real — trava do título na recuperação
+
+Após o primeiro deploy, a geração real recuperou Black Friday no corpo, abertura e metadados. A capa foi gerada em modo `catalog_only`, com thumbnail omitida, e aplicada. Porém, a recuperação antiga passava `preserveTitle=true` para qualquer problema que não fosse similaridade narrativa; isso manteve o H1 genérico independentemente da nova instrução. A fonte foi devolvida de `publish_pending` para `needs_review` antes da publicação, preservando o fundo pago.
+
+Revisão prévia do delta estrutural pelas mesmas oito perspectivas: Produto — recuperar intenção também no H1; CTO — permitir alteração do título quando há apontamentos materiais e reaproveitar o checkpoint da capa; IA — corrigir título/abertura/metadados contra fonte, sem inventar um recorte para contornar falha factual; Segurança — fonte, revisão e lease continuam obrigatórias; UX — título corresponde ao assunto; CX — não repetir geração de imagem; Growth — slug só pode mudar se ainda não publicado, conforme helper existente; PMO — regressão da função real para título temático e renderização do mesmo fundo. Recomendação das oito: **prosseguir com essas condições**, sem schema, cron ou alteração de identidade de Bike.
+
+Decisão consolidada: correção com issues válidas pode ajustar título; ajuste exclusivamente de voz sem issues preserva título. Não ampliar contagem de tentativas ou enfraquecer QA. Verificar reaproveitamento do fundo, `pnpm validate` e deploy do delta antes da retomada. O mesmo rollback da função continua aplicável.
+
+Validação do delta: 8 testes dirigidos passaram, incluindo correção temática permitindo título novo e reaproveitamento do mesmo fundo pago; `pnpm validate` passou novamente (64 regressões, typecheck e SSR). Revisão posterior: Produto **Pass** (H1 pode recuperar intenção); CTO **Pass** (checkpoint reaproveitado); IA **Pass** (correção fiel, sem recorte artificial); Segurança **Pass** (guardas preservadas); UX **Pass** (título alinhável); CX **Pass** (sem nova imagem paga); Growth **Pass** (regra de slug de publicados preservada); PMO **Pass** (regressão e rollback). GO para o delta autorizado.
+
 ## Ampliação autorizada — capa sem thumbnail e publicação
 
 O responsável autorizou nesta conversa: “Sim, pode implementar e publicar” e permitiu gerar sem thumbnail, mantendo o vídeo incorporado para quando for liberado. Essa decisão supera a condição anterior de aguardar a publicação do vídeo. A fonte completa continua obrigatória; disponibilidade da miniatura passa a ser opcional apenas para a imagem de referência, sem afrouxar integridade da fonte, foto da Bike, capa final ou QA.
