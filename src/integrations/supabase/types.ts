@@ -1344,6 +1344,88 @@ export type Database = {
         }
         Relationships: []
       }
+      member_identity_challenges: {
+        Row: {
+          attempts: number
+          channel: string
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          destination: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          destination: string
+          expires_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          destination?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_identity_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      member_identity_verifications: {
+        Row: {
+          email_address: string | null
+          email_verified_at: string | null
+          phone_number: string | null
+          phone_verified_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_address?: string | null
+          email_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_address?: string | null
+          email_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_identity_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "member_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       member_moderation_audit: {
         Row: {
           action: string
@@ -2852,6 +2934,15 @@ export type Database = {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
       }
+      member_identity: {
+        Args: { p_action?: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_identity_service: {
+        Args: { p_action: string; p_actor: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_identity_verified: { Args: { p_user: string }; Returns: boolean }
       member_password_recovery_budget: {
         Args: { p_email: string; p_fingerprint: string }
         Returns: boolean
