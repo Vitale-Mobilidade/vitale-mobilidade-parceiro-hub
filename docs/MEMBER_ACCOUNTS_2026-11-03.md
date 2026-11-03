@@ -1,5 +1,7 @@
 # Contas de leitores — primeira entrega
 
+> Continuação autorizada: a indicação da newsletter já foi implementada localmente após esta primeira entrega. O estado e os testes desse segundo corte estão em [NEWSLETTER_REFERRALS_2026-11-03.md](NEWSLETTER_REFERRALS_2026-11-03.md). As listas de backlog abaixo descrevem o escopo original deste marco.
+
 Estado: implementação local na branch `codex/member-accounts-2026-11-03`, base operacional `540fc1d`. Não publicado; migration não aplicada ao Supabase integrado ao Lovable.
 
 ## Classificação e revisão prévia

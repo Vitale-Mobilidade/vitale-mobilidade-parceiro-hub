@@ -1,3 +1,4 @@
+import { newsletterReferralsEnabled } from "@/lib/newsletter-referrals";
 import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteFooter, SiteHeader } from "@/components/site/site-ui";
@@ -28,6 +29,12 @@ function PrivacyPage() {
           remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
         </p>
         <div className="mt-8 space-y-6 leading-relaxed">
+          {newsletterReferralsEnabled && <section>
+            <h2 className="text-xl font-bold">Convites para a newsletter</h2>
+            <p>Quem tem conta pode compartilhar um link pessoal. Contamos acessos de forma agregada; eles não representam visitantes únicos. Para limitar abuso, usamos uma chave técnica derivada do endereço de rede no controle de tentativas, sem publicá-la ou incluí-la nos totais de acessos. Ao preencher o formulário por um convite, você autoriza a inscrição na newsletter. Para uma nova inscrição por indicação, enviamos uma confirmação para comprovar acesso ao e-mail. Só depois da confirmação a inscrição entra na newsletter e pode contar para o indicador. A conta do indicador não é inscrita automaticamente.</p>
+            <p className="mt-3">O indicador vê totais e resultados por dia, sem nomes ou e-mails dos convidados. Guardamos os dados do pedido até a confirmação ou a limpeza de pendências expiradas. O link expira em 48 horas; os dados de pendências expiradas há mais de sete dias são limpos em lotes nas próximas solicitações elegíveis. Após confirmar, nome e e-mail ficam apenas no cadastro habitual da newsletter; mantemos a atribuição e uma chave técnica privada para impedir contagem duplicada. Descadastro posterior preserva o resultado histórico agregado. Você pode solicitar exclusão pelo canal de contato desta página.</p>
+          </section>}
+
           {memberAccountsEnabled && <section>
             <h2 className="text-xl font-bold">Conta de leitor e comentários</h2>
             <p>Usamos seu e-mail para autenticação, confirmação e recuperação de acesso, com Supabase Auth no projeto da Vitale. A senha é tratada pelo serviço de autenticação e não fica disponível à equipe. A sessão fica no armazenamento necessário do navegador até você sair ou ela expirar. O nome público informado no envio e os comentários aprovados aparecem no site; o e-mail permanece privado. Alterar o nome do perfil vale para os próximos comentários. Comentários pendentes e rejeitados são acessíveis apenas ao autor e à moderação.</p>

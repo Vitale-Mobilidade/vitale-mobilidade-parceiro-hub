@@ -50,6 +50,7 @@ import { Route as FerramentasMetaEntregasRouteImport } from './routes/ferramenta
 import { Route as FerramentasMotoVsBikeRouteImport } from './routes/ferramentas/moto-vs-bike'
 import { Route as FerramentasTransportePublicoVsBikeRouteImport } from './routes/ferramentas/transporte-publico-vs-bike'
 import { Route as FerramentasVeiculoAlugadoVsBikePropriaRouteImport } from './routes/ferramentas/veiculo-alugado-vs-bike-propria'
+import { Route as NewsletterConfirmarRouteImport } from './routes/newsletter_.confirmar'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
@@ -276,6 +277,11 @@ const FerramentasVeiculoAlugadoVsBikePropriaRoute =
     path: '/ferramentas/veiculo-alugado-vs-bike-propria',
     getParentRoute: () => rootRouteImport,
   } as any)
+const NewsletterConfirmarRoute = NewsletterConfirmarRouteImport.update({
+  id: '/newsletter_/confirmar',
+  path: '/newsletter/confirmar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/newsletter/confirmar': typeof NewsletterConfirmarRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/newsletter/confirmar': typeof NewsletterConfirmarRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -490,6 +498,7 @@ export interface FileRoutesById {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/newsletter_/confirmar': typeof NewsletterConfirmarRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -547,6 +556,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/newsletter/confirmar'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/admin/'
@@ -602,6 +612,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/newsletter/confirmar'
     | '/radar/$bikeId'
     | '/acompanhamento'
     | '/admin'
@@ -657,6 +668,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/newsletter_/confirmar'
     | '/radar/$bikeId'
     | '/acompanhamento/'
     | '/admin/'
@@ -713,6 +725,7 @@ export interface RootRouteChildren {
   FerramentasMotoVsBikeRoute: typeof FerramentasMotoVsBikeRoute
   FerramentasTransportePublicoVsBikeRoute: typeof FerramentasTransportePublicoVsBikeRoute
   FerramentasVeiculoAlugadoVsBikePropriaRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  NewsletterConfirmarRoute: typeof NewsletterConfirmarRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1019,6 +1032,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/newsletter_/confirmar': {
+      id: '/newsletter_/confirmar'
+      path: '/newsletter/confirmar'
+      fullPath: '/newsletter/confirmar'
+      preLoaderRoute: typeof NewsletterConfirmarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -1158,6 +1178,7 @@ const rootRouteChildren: RootRouteChildren = {
     FerramentasTransportePublicoVsBikeRoute,
   FerramentasVeiculoAlugadoVsBikePropriaRoute:
     FerramentasVeiculoAlugadoVsBikePropriaRoute,
+  NewsletterConfirmarRoute: NewsletterConfirmarRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   AdminIndexRoute: AdminIndexRoute,

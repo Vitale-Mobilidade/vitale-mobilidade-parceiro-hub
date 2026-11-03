@@ -505,3 +505,7 @@ Inventário final: 101 artigos, 143 URLs de sitemap. Sitemap enviado e processad
 ## Contas de leitores — pedido de 03/11/2026
 
 Prioridade autorizada: cadastro/login, confirmação e recuperação, perfil próprio e comentários moderados. Preparação local, sem publicação ou migration de produção. Curtidas, indicação de newsletter com ranking, anúncios de bike por R$ 150 e ações/sorteios ficam em fases posteriores. Identidade compartilhada é o UUID de Supabase Auth, sem conceder papel administrativo. Ver [escopo, revisão e gates](MEMBER_ACCOUNTS_2026-11-03.md).
+
+## Indicações por conta — 03/11/2026, preparação local
+
+Implementados link pessoal estável, copiar/WhatsApp, totais privados de acessos, pendentes e confirmadas, histórico de 30 dias e confirmação por e-mail para novos convidados. Estende o `newsletter-interest` atual e preserva inscrição habitual, preferências existentes e writer de campanhas. Sem ranking público, pontos, prêmios ou anúncios. Tudo segue local, desligado por padrão e sem migration/publicação/envio real. Ver [revisão e evidências](NEWSLETTER_REFERRALS_2026-11-03.md). Este registro atualiza a fase de indicações tratada como backlog na entrega inicial de contas.

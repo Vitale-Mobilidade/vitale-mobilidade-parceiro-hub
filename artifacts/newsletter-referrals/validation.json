@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-03",
+  "base_accounts_commit": "2ddae74",
+  "operational_base": "540fc1d",
+  "scope": "personal newsletter invitation, private aggregates, confirmed new subscriptions",
+  "targeted_tests": {
+    "status": "pass",
+    "files": 8,
+    "tests": 63
+  },
+  "database": {
+    "status": "pass",
+    "engine": "PostgreSQL 17 disposable Unix socket only",
+    "cases": "RLS/grants, existing delivery trigger, ownership, first attribution, self/existing exclusion, confirmation/replay/expiry, pending PII cleanup, budget, disabled features, concurrent allocation and credit"
+  },
+  "ui": {
+    "status": "pass",
+    "browser": "Chrome",
+    "api": "mocked",
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1024,
+        800
+      ]
+    ],
+    "external_browser_requests": 0,
+    "runtime_errors": 0,
+    "clipboard": "real local browser clipboard, synthetic invitation"
+  },
+  "validation": {
+    "command": "pnpm validate",
+    "status": "pass",
+    "tests": 66,
+    "typecheck": "pass",
+    "client_ssr_build": "pass"
+  },
+  "lint": "direct modules pass",
+  "diff_check": "pass",
+  "production": "no migration, publication, real email or paid credits",
+  "defaults": {
+    "frontend": "VITE_NEWSLETTER_REFERRALS_ENABLED disabled",
+    "edge": "NEWSLETTER_REFERRALS_ENABLED disabled",
+    "database": "member_referral_settings.enabled false",
+    "daily_mail_limit": 100
+  }
+}

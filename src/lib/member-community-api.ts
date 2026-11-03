@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { memberAccountsEnabled } from "./member-accounts-feature";
+import { newsletterReferralsEnabled } from "./newsletter-referrals";
 
 // Local migration contract until the existing project's generated types are refreshed.
 // Reuses the existing Auth client and session; never creates a second auth store.
@@ -13,6 +14,7 @@ type CommunityDatabase = Omit<Database, "public"> & {
         Args: { p_action: string; p_payload: Json };
         Returns: Json;
       };
+      member_referrals: { Args: Record<string, never>; Returns: Json };
     };
   };
 };
@@ -29,3 +31,12 @@ export const memberCall = createClientOnlyFn(
     return data;
   },
 );
+
+export const getMemberReferrals = createClientOnlyFn(async () => {
+  if (!newsletterReferralsEnabled) throw new Error("community_disabled");
+  const { data, error } = await (
+    supabase as SupabaseClient<CommunityDatabase>
+  ).rpc("member_referrals");
+  if (error) throw error;
+  return data;
+});

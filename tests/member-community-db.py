@@ -9,6 +9,7 @@ import getpass
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 repo = Path(__file__).resolve().parents[1]
@@ -70,5 +71,48 @@ COMMIT;
         result = sql("SELECT count(*)=1 FROM public.member_article_comments WHERE body='Concurrent submission';")
         assert result.returncode == 0 and " t" in result.stdout, result.stderr
         print("PASS persisted concurrency invariant")
+        if "--referrals" in sys.argv:
+            fixture = (repo / "supabase/migrations/20260925200500_newsletter_interest.sql").read_text() + """
+CREATE SCHEMA extensions;
+CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
+ALTER TABLE public.newsletter_subscriptions ADD COLUMN interest text NOT NULL DEFAULT 'general';
+ALTER TABLE public.newsletter_subscriptions ADD COLUMN suppressed_at timestamptz;
+CREATE TABLE public.newsletter_settings(singleton boolean PRIMARY KEY DEFAULT true, enabled boolean DEFAULT true, from_email text DEFAULT 'Vitale <newsletter@example.invalid>',signing_key bytea DEFAULT decode(repeat('ab',32),'hex'));
+INSERT INTO public.newsletter_settings(singleton) VALUES(true);
+CREATE FUNCTION public.newsletter_subscription_delivery() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+BEGIN
+ NEW.delivery_enabled:= NEW.status='interested' AND NEW.consent_version='v2' AND NEW.suppressed_at IS NULL AND COALESCE((SELECT enabled FROM newsletter_settings WHERE singleton),false);
+ RETURN NEW;
+END $$;
+CREATE TRIGGER newsletter_delivery_gate BEFORE INSERT OR UPDATE ON public.newsletter_subscriptions FOR EACH ROW EXECUTE FUNCTION public.newsletter_subscription_delivery();
+"""
+            for label, content in [
+                ("existing newsletter fixture + real delivery trigger", fixture),
+                ("referral migration", (repo / "supabase/migrations/20261103190000_newsletter_referrals.sql").read_text()),
+                ("referral contracts", (repo / "tests/newsletter-referrals.sql").read_text()),
+            ]:
+                result = sql(content)
+                if result.returncode:
+                    raise RuntimeError(f"{label}: {result.stderr[-3500:]}")
+                print(f"PASS {label}")
+            # Registration and confirmation both run through actual concurrent connections.
+            # Fetch the private code as the owner's authenticated session, then put
+            # the constant into each service-side request (no direct table grants).
+            code = sql("SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',false); SELECT public.member_referrals()->>'code';").stdout.splitlines()[-3].strip()
+            assert len(code) == 32, "Missing local referral code"
+            registration = "SET ROLE service_role; SELECT public.newsletter_referral_service('register'," + "jsonb_build_object('code','" + code + "','email','race@example.invalid','name','Race','consent',true,'fingerprint',repeat('a',32)));"
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                races = list(executor.map(sql, [registration, registration]))
+            assert all(r.returncode == 0 for r in races), str([r.stderr for r in races])
+            assert sum('"send": true' in r.stdout for r in races) == 1, "Duplicate confirmation mail allocation"
+            token = sql("SELECT encode(extensions.hmac(convert_to('newsletter-referral:'||id::text||':'||nonce::text,'UTF8'),(SELECT signing_key FROM public.newsletter_settings WHERE singleton),'sha256'),'hex') FROM public.member_referral_signups WHERE candidate_email='race@example.invalid';").stdout.splitlines()[-3].strip()
+            assert len(token) == 64, "Missing local confirmation token"
+            confirmation = "SET ROLE service_role; SELECT public.newsletter_referral_service('confirm',jsonb_build_object('token','" + token + "','fingerprint',repeat('b',32)));"
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                races = list(executor.map(sql, [confirmation, confirmation]))
+            assert all(r.returncode == 0 for r in races), str([r.stderr for r in races])
+            invariant = sql("SELECT (SELECT count(*) FROM public.newsletter_subscriptions WHERE email='race@example.invalid')=1 AND (SELECT count(*) FROM public.member_referral_signups WHERE email_key=sha256(convert_to('race@example.invalid','UTF8')) AND credited)=1;")
+            assert invariant.returncode == 0 and " t" in invariant.stdout, invariant.stderr
+            print("PASS concurrent registration sends once; concurrent confirmation subscribes/credits exactly once")
     finally:
         subprocess.run([str(pg / "pg_ctl"), "-D", str(data), "-m", "fast", "-w", "stop"], check=True, env=env, stdout=subprocess.DEVNULL)

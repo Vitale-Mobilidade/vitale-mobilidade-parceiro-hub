@@ -2,11 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { canonicalUrl, pageHead } from "@/lib/seo";
+import { useEffect } from "react";
+import { newsletterReferralsEnabled, referralCode } from "@/lib/newsletter-referrals";
 
 const title = "Newsletter de bikes elétricas | Vitale Mobilidade";
 const description = "Inscreva-se na newsletter gratuita da Vitale Mobilidade e receba artigos, vídeos, bikes em destaque e novidades do Radar de preços por e-mail.";
 
 export const Route = createFileRoute("/newsletter")({
+  validateSearch: (search: Record<string, unknown>) => ({ ref: referralCode(search.ref) }),
   head: () => ({
     ...pageHead({ path: "/newsletter", title, description }),
     scripts: [{ type: "application/ld+json", children: JSON.stringify({
@@ -19,6 +22,16 @@ export const Route = createFileRoute("/newsletter")({
 });
 
 export function NewsletterPage() {
+  const { ref } = Route.useSearch();
+  useEffect(() => {
+    if (!newsletterReferralsEnabled || !ref) return;
+    let active = true;
+    void import("@/integrations/supabase/client").then(({ supabase }) => {
+      if (active) return supabase.functions.invoke("newsletter-interest", { body: { action: "referral_visit", referralCode: ref } });
+      return undefined;
+    }).catch(() => { /* The form never waits for a visit metric. */ });
+    return () => { active = false; };
+  }, [ref]);
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -27,7 +40,8 @@ export function NewsletterPage() {
           <p className="text-sm font-bold tracking-wide text-action">NEWSLETTER VITALE · GRATUITA</p>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Bikes elétricas e boas leituras no seu e-mail.</h1>
         </div>
-        <div className="mt-6 max-w-3xl"><NewsletterSignup compact /></div>
+        {newsletterReferralsEnabled && ref && <p className="mt-5 text-sm text-muted-foreground">Você recebeu um convite para a newsletter. Confirme seu e-mail após o cadastro para concluir sua inscrição e registrar a indicação.</p>}
+        <div className="mt-6 max-w-3xl"><NewsletterSignup compact referralCode={ref} /></div>
         <div className="mt-6 max-w-3xl">
           <p className="text-lg leading-relaxed text-muted-foreground">Receba artigos, vídeos e destaques de bikes elétricas e do Radar de preços no seu e-mail.</p>
           <p className="mt-2 text-sm text-muted-foreground">É gratuito. Cancele quando quiser pelo link nos e-mails.</p>

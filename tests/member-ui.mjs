@@ -16,6 +16,11 @@ const external = [];
 const errors = [];
 page.on('pageerror', (e) => { errors.push(e.message); console.error('Browser error:', e.message); });
 const user = { id: '00000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: 'leitor@example.invalid', email_confirmed_at: new Date().toISOString(), app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: { display_name: 'Leitor teste' }, identities: [], created_at: new Date().toISOString() };
+const testReferrals = process.env.MEMBER_TEST_REFERRALS === 'true';
+const screenshots = testReferrals ? '../artifacts/newsletter-referrals/' : '../artifacts/member-accounts/';
+const referralCode = 'a'.repeat(32);
+let visits = 0, pendingReferrals = 0, confirmedReferrals = 0;
+let dashboardError = false, failConfirmOnce = true;
 let profile = null;
 let communityEnabled = true;
 let comment = null;
@@ -38,6 +43,16 @@ await context.route('**/*', async (route) => {
   if (url.pathname.endsWith('/recover') || url.pathname.endsWith('/resend') || url.pathname.endsWith('/logout')) return reply({});
   if (url.pathname.endsWith('/token')) return input.email === 'erro@example.invalid' ? reply({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400) : reply(session);
   if (url.pathname.endsWith('/user')) return reply(user);
+  if (url.pathname === '/rest/v1/rpc/member_referrals') return dashboardError ? reply({message:'unavailable'},503) : reply({enabled:true,code:referralCode,visits,pending:pendingReferrals,confirmed:confirmedReferrals,history:confirmedReferrals?[{day:'2026-11-03',confirmed:confirmedReferrals}]:[]});
+  if (url.pathname === '/functions/v1/newsletter-interest') {
+    if (input.action === 'referral_visit') { visits++; return reply({ok:true}); }
+    if (input.action === 'confirm_referral') {
+      if (failConfirmOnce) { failConfirmOnce=false; return reply({ok:false,error:'referral_unavailable'},503); }
+      confirmedReferrals=1; pendingReferrals=0; return reply({ok:true});
+    }
+    if (input.referralCode) { pendingReferrals=1; return reply({ok:true,confirmationRequired:true}); }
+    return reply({ok:true});
+  }
   assert.equal(url.pathname, '/rest/v1/rpc/member_community');
   const payload = input.p_payload;
   switch (input.p_action) {
@@ -94,14 +109,67 @@ try {
   await page.getByRole('button',{name:'Salvar nova senha'}).click();
   await page.getByRole('status').filter({hasText:'Senha atualizada'}).waitFor();
   assert(requests.some(r=>r.path.endsWith('/user') && r.input.password === 'nova-senha-local-123'));
-  await mkdir(new URL('../artifacts/member-accounts/',import.meta.url),{recursive:true});
-  await page.screenshot({path: new URL('../artifacts/member-accounts/account-mobile.png',import.meta.url).pathname,fullPage:true});
+  await mkdir(new URL(screenshots,import.meta.url),{recursive:true});
+  await page.screenshot({path: new URL(screenshots+'account-mobile.png',import.meta.url).pathname,fullPage:true});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth));
   await page.setViewportSize({width:1024,height:800});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth));
-  await page.screenshot({path:new URL('../artifacts/member-accounts/account-desktop.png',import.meta.url).pathname,fullPage:true});
+  await page.screenshot({path:new URL(screenshots+'account-desktop.png',import.meta.url).pathname,fullPage:true});
   await page.setViewportSize({width:390,height:844});
   console.log('PASS keyboard signup, mobile/desktop layout, login failure/success, password recovery/update, profile, no subscription');
+
+  if (testReferrals) {
+    const invitation = page.getByRole('textbox',{name:'Seu link pessoal',exact:true});
+    await invitation.waitFor();
+    assert.equal(await invitation.inputValue(),`https://vitalemobilidade.com/newsletter?ref=${referralCode}`);
+    const whatsapp = await page.getByRole('link',{name:'Compartilhar no WhatsApp'}).getAttribute('href');
+    assert.equal(new URL(whatsapp).hostname,'wa.me');
+    assert(new URL(whatsapp).searchParams.get('text').includes(`?ref=${referralCode}`));
+    await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
+    await page.getByRole('button',{name:'Copiar convite'}).click();
+    await page.getByRole('status').filter({hasText:'Link copiado'}).waitFor();
+    assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),await invitation.inputValue());
+    dashboardError=true;
+    await page.getByRole('button',{name:'Atualizar indicações'}).click();
+    await page.getByRole('alert').waitFor();
+    dashboardError=false;
+    await page.getByRole('button',{name:'Atualizar indicações'}).click();
+    await page.getByRole('alert').waitFor({state:'hidden'});
+    console.log('PASS stable personal invitation, clipboard, encoded WhatsApp link and dashboard error/retry');
+
+    await page.goto(`${origin}/newsletter?ref=${referralCode}`,{waitUntil:"networkidle"});
+    await page.getByLabel('Seu nome',{exact:true}).fill('Pessoa convidada');
+    await page.getByLabel('Seu e-mail',{exact:true}).fill('convidado@example.invalid');
+    await page.getByRole('checkbox').check();
+    await page.getByRole('button',{name:'Cadastrar e-mail'}).click();
+    await page.getByRole('status').filter({hasText:'Se esta for uma nova inscrição'}).waitFor();
+    assert.equal(await page.evaluate(()=>localStorage.getItem('vitale-newsletter-subscribed')),null);
+    assert(requests.some(r=>r.input.action==='referral_visit' && r.input.referralCode===referralCode));
+    assert(requests.some(r=>r.path.endsWith('newsletter-interest') && r.input.email==='convidado@example.invalid' && r.input.referralCode===referralCode));
+    const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
+    assert.equal(canonical,'https://vitalemobilidade.com/newsletter');
+    await page.screenshot({path:new URL(screenshots+'invitation-newsletter-mobile.png',import.meta.url).pathname,fullPage:true});
+    const countBefore = requests.filter(r=>r.input.action==='confirm_referral').length;
+    const confirmationResponse=await page.goto(`${origin}/newsletter/confirmar#token=${'b'.repeat(64)}`);
+    assert.equal(confirmationResponse.headers()['cache-control'],'private, no-store');
+    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).waitFor();
+    assert(!page.url().includes('#'));
+    assert.equal(requests.filter(r=>r.input.action==='confirm_referral').length,countBefore);
+    assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'),/noindex/);
+    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).press('Enter');
+    await page.getByRole('alert').filter({hasText:'Não foi possível confirmar'}).waitFor();
+    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).click();
+    await page.getByRole('heading',{name:'Inscrição confirmada',exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>localStorage.getItem('vitale-newsletter-subscribed')),'1');
+    await page.screenshot({path:new URL(screenshots+'confirmation-mobile.png',import.meta.url).pathname,fullPage:true});
+    await page.goto(`${origin}/conta`);
+    await page.getByRole('textbox',{name:'Seu link pessoal',exact:true}).waitFor();
+    const confirmed=page.locator('dl > div').filter({has:page.getByText('Indicações confirmadas',{exact:true})});
+    assert.equal(await confirmed.locator('dd').textContent(),'1');
+    await page.getByRole('region',{name:'Convide para a newsletter',exact:true}).screenshot({path:new URL(screenshots+'referral-panel-mobile.png',import.meta.url).pathname,style:'header { visibility:hidden; }'});
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+    console.log('PASS referred signup waits for email; explicit private confirmation and retry update owner totals');
+  }
 
   await page.goto(fixture('comments'));
   await page.getByText('<img src=x onerror=alert(1)> dúvida',{exact:true}).waitFor();
@@ -110,7 +178,7 @@ try {
   await page.getByLabel('Seu comentário').fill('Minha dúvida sobre esta bike.');
   await page.getByRole('button',{name:'Enviar para moderação'}).click();
   await page.getByText('Aguardando moderação · visível só para você',{exact:true}).waitFor();
-  await page.screenshot({path:new URL('../artifacts/member-accounts/comments-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.screenshot({path:new URL(screenshots+'comments-mobile.png',import.meta.url).pathname,fullPage:true});
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button',{name:'Remover meu comentário'}).click();
   await page.getByRole('status').filter({hasText:'Comentário removido'}).waitFor();

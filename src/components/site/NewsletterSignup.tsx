@@ -2,8 +2,18 @@ import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  newsletterReferralsEnabled,
+  referralCode as validReferralCode,
+} from "@/lib/newsletter-referrals";
 
-export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
+export function NewsletterSignup({
+  compact = false,
+  referralCode,
+}: {
+  compact?: boolean;
+  referralCode?: string;
+}) {
   const id = useId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -11,6 +21,7 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState("");
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
 
   const submitNewsletter = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,13 +42,26 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
             consent,
             interest: "general",
             website,
+            ...(newsletterReferralsEnabled && validReferralCode(referralCode)
+              ? { referralCode }
+              : {}),
             sourceUrl:
-              captureQuizAttribution().source_url ?? window.location.href,
+              newsletterReferralsEnabled && validReferralCode(referralCode)
+                ? `${window.location.origin}/newsletter`
+                : (captureQuizAttribution().source_url ?? window.location.href),
           },
         },
       );
       if (fnError || (data as { ok?: boolean } | null)?.ok !== true)
         throw new Error("signup failed");
+      if (
+        (data as { confirmationRequired?: boolean }).confirmationRequired ===
+        true
+      ) {
+        setConfirmationRequired(true);
+        setStatus("done");
+        return;
+      }
       try {
         localStorage.setItem("vitale-newsletter-subscribed", "1");
       } catch {
@@ -80,8 +104,21 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
       )}
       {status === "done" ? (
         <p role="status" className="rounded-lg bg-mint/20 p-4 text-sm text-ink">
-          Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da
-          Vitale.
+          {confirmationRequired
+            ? "Se esta for uma nova inscrição, você receberá um e-mail para confirmar. Abra o link e escolha Confirmar inscrição para concluir. Confira também a caixa de spam. O link vale por 48 horas; você pode solicitar novamente pelo formulário após 15 minutos."
+            : "Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da Vitale."}
+          {confirmationRequired && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatus("idle");
+                setConfirmationRequired(false);
+              }}
+              className="mt-3 block min-h-11 font-semibold underline"
+            >
+              Voltar ao formulário
+            </button>
+          )}
         </p>
       ) : (
         <form
