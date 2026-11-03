@@ -168,8 +168,17 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           throw new Error("password_invalid");
         const { error } = await supabase.auth.updateUser({ password });
         if (error) throw error;
+        const { error: revokeError } = await supabase.auth.signOut({
+          scope: "others",
+        });
+        if (revokeError) {
+          setMessage(
+            "Senha atualizada. Não foi possível encerrar outras sessões; tente sair dos outros dispositivos.",
+          );
+        } else {
+          setMessage("Senha atualizada. As outras sessões foram encerradas.");
+        }
         setMode("entrar");
-        setMessage("Senha atualizada.");
       } else if (session) {
         if (!displayNameSchema.safeParse(name).success)
           throw new Error("invalid_name");
@@ -182,7 +191,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           });
           setProfile(memberProfileSchema.parse(data));
           setMessage(
-            "Você entrou na comunidade Vitale. Sua assinatura da newsletter está incluída.",
+            "Você entrou na comunidade Vitale. Confira abaixo o estado da sua assinatura da newsletter.",
           );
         } else {
           const data = await memberCall("save_profile", {
@@ -193,9 +202,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           setMessage("Perfil salvo.");
         }
       } else if (mode === "recuperar" || mode === "senha") {
-        const { error } = await supabase.auth.resetPasswordForEmail(
-          email.trim(),
-          { redirectTo: `${window.location.origin}/conta?modo=senha` },
+        const { error } = await supabase.functions.invoke(
+          "member-password-recovery",
+          {
+            body: { email: email.trim(), website: "" },
+          },
         );
         if (error) throw error;
         setMessage(
@@ -207,7 +218,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         if (!passwordSchema.safeParse(password).success)
           throw new Error("password_invalid");
         if (!privacy) throw new Error("privacy_required");
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -216,9 +227,14 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           },
         });
         if (error) throw error;
-        setMessage(
-          "Confira seu e-mail para ativar sua conta na comunidade. Ao entrar, sua assinatura da newsletter será concluída junto com a adesão. Se já tiver conta, entre ou recupere sua senha.",
-        );
+        if (!data.session) {
+          setMessage(
+            "Não foi possível iniciar seu acesso. Se já tem conta, entre ou use a recuperação de senha.",
+          );
+        } else {
+          setMode("entrar");
+          setMessage("Conta criada. Bem-vindo à comunidade Vitale!");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -226,7 +242,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         });
         if (error) {
           setError(
-            "Não foi possível entrar. Confira e-mail, senha e confirmação do cadastro.",
+            "Não foi possível entrar. Confira seu e-mail e senha ou use a recuperação de acesso.",
           );
           return;
         }
@@ -258,28 +274,6 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       setEmail("");
       setName("");
       setPrivacy(false);
-    } catch (e) {
-      setError(memberError(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function resendConfirmation() {
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/conta?retorno=${encodeURIComponent(returnTo)}`,
-        },
-      });
-      if (error) throw error;
-      setMessage(
-        "Se houver um cadastro aguardando confirmação, enviaremos um novo link. Confira também a caixa de spam.",
-      );
     } catch (e) {
       setError(memberError(e));
     } finally {
@@ -321,7 +315,10 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 ? "assinatura ativa"
                 : "assinatura cancelada"}
             </strong>
-            . Você pode cancelar o recebimento pelo link nos e-mails.
+            .{" "}
+            {profile.newsletterSubscribed
+              ? "Você pode cancelar o recebimento pelo link nos e-mails."
+              : "Mantivemos seu pedido de descadastro. Sua participação na comunidade continua ativa."}
           </p>
         )}
         {error && (
@@ -527,16 +524,6 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             </>
           )}
         </div>
-        {signup && (
-          <button
-            type="button"
-            disabled={busy || !email.trim()}
-            onClick={resendConfirmation}
-            className="mt-3 min-h-11 text-sm underline disabled:opacity-40"
-          >
-            Reenviar confirmação de e-mail
-          </button>
-        )}
         {(!session || ready) && (
           <a
             href={returnTo}

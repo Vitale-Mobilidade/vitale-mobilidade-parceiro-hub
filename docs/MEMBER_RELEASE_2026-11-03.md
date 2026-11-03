@@ -47,3 +47,8 @@ O responsável esclareceu cadastro único da comunidade com newsletter incluída
 37 testes direcionados, contratos SQL/conexões concorrentes, ensaio em schema real restaurado, smoke de interface e `pnpm validate` (66 regressões + build SSR) passaram. Sem chamadas externas nos testes. Novo preflight confirmou gates desligados, perfis/indicações vazios e um admin ativo. A newsletter passou de 90 para 91 registros durante a operação normal do site, sem escrita de teste nesta tarefa.
 
 A promessa do teste de e-mail anterior continua válida: a caixa fornecida não será inscrita silenciosamente. O teste de transporte pode criar uma conta Auth sem metadados de adesão; a assinatura só ocorrerá quando o próprio responsável aceitar a adesão combinada. Não afirmar recebimento de mensagem sem retorno da caixa.
+
+
+## Segunda correção: acesso imediato, Resend e publicação pausada
+
+O responsável confirmou recebimento do e-mail de teste, mas rejeitou o remetente/fluxo padrão Lovable e a exigência de confirmação. Antes de qualquer merge/publicação, foi preparado e validado o [acesso imediato com recuperação pelo Resend](COMMUNITY_IMMEDIATE_ACCESS_2026-11-03.md). PR #59 continua aberta; três migrations aplicadas com gates desligados; quarta migration pronta apenas localmente. Auto-confirm ainda não alterado. Não houve fallback, segunda confirmação ou novo envio de teste.

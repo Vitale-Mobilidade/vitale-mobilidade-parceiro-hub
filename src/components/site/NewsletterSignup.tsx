@@ -4,7 +4,7 @@ import {
   referralCode as validReferralCode,
 } from "@/lib/newsletter-referrals";
 
-/** Newsletter is included in community membership: one signup and one confirmation. */
+/** Newsletter is included in community membership: one signup and immediate access. */
 export function NewsletterSignup({
   compact = false,
   referralCode,
@@ -43,8 +43,8 @@ export function NewsletterSignup({
           Criar conta e participar
         </a>
         <p className="mt-3 text-sm text-muted-foreground">
-          A newsletter está incluída na adesão à comunidade. Você confirma o
-          e-mail uma única vez e pode cancelar o recebimento pelos e-mails.
+          A newsletter está incluída na adesão à comunidade. Seu acesso é
+          imediato e você pode cancelar o recebimento pelos e-mails.
         </p>
         <a
           href="/conta"

@@ -136,6 +136,20 @@ COMMIT;
                 invariant=sql("SELECT (SELECT count(*) FROM public.newsletter_subscriptions WHERE email='concurrent-member@example.invalid')=1 AND (SELECT count(*) FROM public.member_referral_signups WHERE invitee_user_id='00000000-0000-4000-8000-000000000011' AND community_member AND credited)=1;")
                 assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
                 print("PASS concurrent first login subscribes and credits one community member exactly once")
+                for label,content in [
+                    ("immediate access migration",(repo / "supabase/migrations/20261103210000_community_immediate_access.sql").read_text()),
+                    ("immediate access and recovery budgets",(repo / "tests/community-immediate-access.sql").read_text()),
+                ]:
+                    result=sql(content)
+                    if result.returncode: raise RuntimeError(f"{label}: {result.stderr[-3500:]}")
+                    print(f"PASS {label}")
+                reserve="SET ROLE service_role; SELECT public.member_password_recovery_budget('parallel@example.invalid',repeat('c',32));"
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    reservations=list(executor.map(sql,[reserve,reserve]))
+                assert all(r.returncode==0 for r in reservations),str([r.stderr for r in reservations])
+                assert sum(" t" in r.stdout for r in reservations)==1,"Parallel recovery budget bypass"
+                print("PASS parallel recovery attempts serialize at email limit")
+
 
     finally:
         subprocess.run([str(pg / "pg_ctl"), "-D", str(data), "-m", "fast", "-w", "stop"], check=True, env=env, stdout=subprocess.DEVNULL)

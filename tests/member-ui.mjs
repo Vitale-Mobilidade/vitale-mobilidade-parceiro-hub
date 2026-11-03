@@ -39,11 +39,12 @@ await context.route('**/*', async (route) => {
   const input = request.postDataJSON() || {};
   requests.push({ path: url.pathname, input });
   const reply = (data, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': origin }, body: JSON.stringify(data) });
-  if (url.pathname.endsWith('/signup')) { user.user_metadata = input.data; return reply(user); }
+  if (url.pathname.endsWith('/signup')) { user.user_metadata = input.data; return reply(session); }
   if (url.pathname.endsWith('/recover') || url.pathname.endsWith('/resend') || url.pathname.endsWith('/logout')) return reply({});
   if (url.pathname.endsWith('/token')) return input.email === 'erro@example.invalid' ? reply({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400) : reply(session);
   if (url.pathname.endsWith('/user')) return reply(user);
   if (url.pathname === '/rest/v1/rpc/member_referrals') return dashboardError ? reply({message:'unavailable'},503) : reply({enabled:true,code:referralCode,visits,pending:pendingReferrals,confirmed:confirmedReferrals,history:confirmedReferrals?[{day:'2026-11-03',confirmed:confirmedReferrals}]:[]});
+  if (url.pathname === '/functions/v1/member-password-recovery') return reply({ok:true});
   if (url.pathname === '/functions/v1/newsletter-interest') {
     assert.equal(input.action,'community_referral_visit');
     visits++; return reply({ok:true});
@@ -82,13 +83,17 @@ try {
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);
   await page.getByLabel('Senha',{exact:true}).fill('minha-senha-local-123');
   await page.getByRole('checkbox').check();
+  await mkdir(new URL(screenshots,import.meta.url),{recursive:true});
+  await page.screenshot({path:new URL(screenshots+'signup-mobile.png',import.meta.url).pathname,fullPage:true});
   await page.getByRole('button',{name:'Criar conta',exact:true}).press('Enter');
-  await page.getByRole('status').filter({hasText:'Confira seu e-mail'}).waitFor();
+  await page.getByText('assinatura ativa',{exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Reenviar confirmação de e-mail'}).count(),0);
   assert.equal(requests.filter(r=>r.path.endsWith('/signup')).length,1);
   const metadata = requests.find(r=>r.path.endsWith('/signup')).input.data;
   assert.deepEqual(metadata,{display_name:'Leitor teste',community_consent_version:'2026-11-03',community_newsletter_consent:true});
   assert(!requests.some(r=>/newsletter|quiz|editorial-admin/.test(r.path)));
-  await page.getByRole('button',{name:'Já tenho conta',exact:true}).click();
+  await page.getByRole('button',{name:'Sair desta conta',exact:true}).click();
+  await page.getByRole('heading',{name:'Entre na comunidade Vitale'}).waitFor();
   await page.getByLabel('E-mail',{exact:true}).fill('erro@example.invalid');
   await page.getByLabel('Senha',{exact:true}).fill('senha-errada');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
@@ -97,7 +102,8 @@ try {
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);
   await page.getByRole('button',{name:'Enviar link de recuperação'}).click();
   await page.getByRole('status').filter({hasText:'Se houver uma conta'}).waitFor();
-  assert(requests.some(r=>r.path.endsWith('/recover')));
+  assert(requests.some(r=>r.path.endsWith('/member-password-recovery')));
+  assert(!requests.some(r=>r.path.endsWith('/recover') || r.path.endsWith('/resend')));
   await page.getByRole('button',{name:'Já tenho conta',exact:true}).click();
   await page.getByLabel('Senha',{exact:true}).fill('minha-senha-local-123');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
@@ -120,7 +126,7 @@ try {
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth));
   await page.screenshot({path:new URL(screenshots+'account-desktop.png',import.meta.url).pathname,fullPage:true});
   await page.setViewportSize({width:390,height:844});
-  console.log('PASS keyboard signup, mobile/desktop layout, login failure/success, password recovery/update, profile and one automatic community/newsletter adhesion');
+  console.log('PASS immediate keyboard signup without confirmation email, mobile/desktop layout, login failure/success, password recovery/update, profile and one automatic community/newsletter adhesion');
 
   if (testReferrals) {
     const invitation = page.getByRole('textbox',{name:'Seu link pessoal',exact:true});

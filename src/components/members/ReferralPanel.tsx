@@ -55,8 +55,8 @@ export function ReferralPanel() {
         Convide para a comunidade
       </h2>
       <p className="mt-3 text-muted-foreground">
-        Compartilhe seu convite. Cada novo membro que confirma o e-mail e entra
-        na comunidade conta como uma indicação sua.
+        Compartilhe seu convite. Cada novo cadastro que conclui a adesão à
+        comunidade conta como uma indicação sua.
       </p>
       {error && (
         <p role="alert" className="mt-4 text-red-800">
@@ -104,7 +104,7 @@ export function ReferralPanel() {
           <dl className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
               ["Acessos ao link", data.visits],
-              ["Cadastros a confirmar", data.pending],
+              ["Adesões pendentes", data.pending],
               ["Novos membros indicados", data.confirmed],
             ].map(([label, value]) => (
               <div key={String(label)} className="rounded-xl bg-surface p-4">
@@ -118,10 +118,9 @@ export function ReferralPanel() {
           <p className="mt-4 text-sm text-muted-foreground">
             Acessos podem incluir mais de uma visita da mesma pessoa. Quem já
             participa da comunidade, repetições e autoindicações identificadas
-            não contam. Cadastros ainda não confirmados aparecem por até 48
-            horas.
+            não contam. Adesões ainda não concluídas aparecem por até 48 horas.
           </p>
-          <h3 className="mt-6 font-bold">Confirmações nos últimos 30 dias</h3>
+          <h3 className="mt-6 font-bold">Novos membros nos últimos 30 dias</h3>
           {data.history.length ? (
             <ul className="mt-3 space-y-2">
               {data.history.map((row) => (

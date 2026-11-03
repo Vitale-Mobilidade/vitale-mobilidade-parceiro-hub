@@ -7,3 +7,8 @@ verify_jwt = false
 [functions.site-analytics]
 # Public write-only collector. Validation and the server-side kill switch live in the function.
 verify_jwt = false
+
+[functions.member-password-recovery]
+# Public, write-only recovery. Generates no tokens until the database budget allows it.
+# Returns no token, account existence or user data. Uses existing Resend secrets server-side.
+verify_jwt = false

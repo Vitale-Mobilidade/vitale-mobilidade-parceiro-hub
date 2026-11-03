@@ -58,7 +58,7 @@ export function memberError(error: unknown): string {
       "Confirme sua adesão à comunidade, que inclui o recebimento da newsletter.",
     community_disabled: "A comunidade está temporariamente indisponível.",
     email_confirmation_required:
-      "Confirme seu e-mail e entre novamente para continuar.",
+      "Entre na sua conta para continuar. Se tiver dificuldade, use a recuperação de acesso.",
     profile_required: "Complete seu perfil na Minha conta antes de comentar.",
     account_suspended:
       "Seu acesso a comentários foi suspenso. Entre em contato com a Vitale para pedir uma revisão.",

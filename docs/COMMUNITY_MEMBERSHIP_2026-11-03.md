@@ -1,5 +1,7 @@
 # Cadastro único da comunidade Vitale
 
+> **Decisão posterior:** o responsável optou por acesso imediato, sem confirmação no cadastro, e recuperação pelo Resend. O contrato vigente e as novas evidências estão em [COMMUNITY_IMMEDIATE_ACCESS_2026-11-03.md](COMMUNITY_IMMEDIATE_ACCESS_2026-11-03.md). A primeira revisão abaixo é histórica.
+
 ## Decisão corrigida pelo responsável
 
 O responsável esclareceu que o cadastro é para **entrar na comunidade Vitale**, incluindo a assinatura da newsletter. O convite é para a comunidade; fórum e feed de notícias são evoluções futuras. Esta decisão substitui a separação de conta e newsletter proposta nas entregas locais anteriores.
