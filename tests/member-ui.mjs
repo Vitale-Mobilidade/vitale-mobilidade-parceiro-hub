@@ -17,7 +17,7 @@ const errors = [];
 page.on('pageerror', (e) => { errors.push(e.message); console.error('Browser error:', e.message); });
 const user = { id: '00000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: 'leitor@example.invalid', email_confirmed_at: new Date().toISOString(), app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: { display_name: 'Leitor teste' }, identities: [], created_at: new Date().toISOString() };
 const testReferrals = process.env.MEMBER_TEST_COMMUNITY === 'true';
-const screenshots = process.env.MEMBER_TEST_IDENTITY === 'true' ? '../artifacts/member-identity/' : testReferrals ? '../artifacts/community-membership/' : '../artifacts/member-accounts/';
+const screenshots = process.env.MEMBER_TEST_ARTIFACTS || (process.env.MEMBER_TEST_IDENTITY === 'true' ? '../artifacts/member-identity/' : testReferrals ? '../artifacts/community-membership/' : '../artifacts/member-accounts/');
 const referralCode = 'a'.repeat(32);
 let visits = 0, pendingReferrals = 0, confirmedReferrals = 0;
 let dashboardError = false;
@@ -44,6 +44,7 @@ await context.route('**/*', async (route) => {
   if (url.pathname.endsWith('/recover') || url.pathname.endsWith('/resend') || url.pathname.endsWith('/logout')) return reply({});
   if (url.pathname.endsWith('/token')) return input.email === 'erro@example.invalid' ? reply({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400) : reply(session);
   if (url.pathname.endsWith('/user')) return reply(user);
+  if(url.pathname === '/rest/v1/rpc/member_classifieds') return reply({displayName:profile?.displayName??null,communityJoined:Boolean(profile?.communityJoinedAt),canAdvertise:false,canPublish:identity.canInteract,canUploadAvatar:identity.canInteract,avatarId:null,avatarPath:null});
   if (url.pathname === '/rest/v1/rpc/member_identity') {
     if(input.p_action==='verify') {
       if(input.p_payload.code!=='123456') return reply({ok:false,error:'identity_invalid_code'});

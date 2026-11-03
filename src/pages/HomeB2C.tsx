@@ -1,3 +1,4 @@
+import { BikeClassifiedsSection } from "@/components/classifieds/BikeClassifiedsSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
 import {
@@ -448,6 +449,7 @@ const HomeB2C = () => {
             <CalculatorPanel />
           </div>
           <ArticlesBlock articles={data?.articles ?? []} />
+          <BikeClassifiedsSection items={data.classifieds.items} unavailable={!data.classifieds.ok} />
 
         </div>
       </main>

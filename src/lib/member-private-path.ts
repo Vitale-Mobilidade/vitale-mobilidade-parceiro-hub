@@ -1,3 +1,8 @@
 export function isMemberPrivatePath(path: string) {
-  return ["/conta", "/newsletter/confirmar"].includes(path.replace(/\/+$/, ""));
+  const normalized = path.replace(/\/+$/, "");
+  return (
+    normalized === "/conta" ||
+    normalized.startsWith("/conta/") ||
+    normalized === "/newsletter/confirmar"
+  );
 }

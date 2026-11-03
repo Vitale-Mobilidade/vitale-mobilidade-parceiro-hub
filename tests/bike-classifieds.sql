@@ -1,0 +1,84 @@
+\set ON_ERROR_STOP on
+CREATE OR REPLACE FUNCTION pg_temp.check_true(v boolean,label text) RETURNS void LANGUAGE plpgsql AS $$BEGIN IF v IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAILED: %',label; END IF; END $$;
+CREATE OR REPLACE FUNCTION pg_temp.expect_error(statement text,fragment text) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE failed boolean:=false;BEGIN BEGIN EXECUTE statement;EXCEPTION WHEN OTHERS THEN IF position(fragment IN SQLERRM)=0 THEN RAISE EXCEPTION 'Unexpected error: % wanted %',SQLERRM,fragment;END IF;failed:=true;END;IF NOT failed THEN RAISE EXCEPTION 'Expected rejection: %',fragment;END IF;END $$;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'disabled initial projection empty');
+UPDATE public.member_classifieds_settings SET enabled=true,pilot_user_id='00000000-0000-4000-8000-000000000090';
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false);
+SET ROLE authenticated;
+SELECT pg_temp.check_true(public.member_classifieds('account')->>'canAdvertise'='false','nonpilot not entitled');
+SELECT pg_temp.expect_error($q$SELECT public.member_classifieds('create','{"userId":"00000000-0000-4000-8000-000000000090","paid":true}')$q$,'classifieds_pilot_only');
+SELECT pg_temp.expect_error('SELECT * FROM public.member_bike_listings','permission denied');
+SELECT pg_temp.expect_error('UPDATE public.member_classifieds_settings SET enabled=true','permission denied');
+SELECT pg_temp.expect_error($q$INSERT INTO storage.objects(bucket_id,name) VALUES('member-media','arbitrary.webp')$q$,'row-level security');
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT public.member_classifieds('create','{"feeCents":0,"feeStatus":"paid"}')->>'id' AS listing_id \gset
+SELECT pg_temp.check_true(public.member_classifieds('mine')->0->>'feeCents'='15000' AND public.member_classifieds('mine')->0->>'feeStatus'='pilot_exempt','fee is server-controlled, never paid');
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','publish',jsonb_build_object('id',:'listing_id','contactConsent',true)),'identity_verification_required');
+SELECT public.member_classifieds('save',jsonb_build_object('id',:'listing_id','title','Bike usada de teste','brand','Marca','model','Modelo','priceCents',350000,'city','São Paulo','state','SP','modelYear',2025,'mileageKm',1234,'condition','good','battery','original','invoice',true,'description','Bicicleta real de teste sintético, sem venda real.','maintenance','Revisão em dia.'));
+SELECT public.member_classifieds('reserve_image',jsonb_build_object('id',:'listing_id')) AS reservation \gset
+SELECT :'reservation'::jsonb->>'id' AS asset_id,:'reservation'::jsonb->>'path' AS asset_path \gset
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','finalize_image',jsonb_build_object('id',:'listing_id','assetId',:'asset_id')),'media_not_ready');
+INSERT INTO storage.objects(bucket_id,name,metadata) VALUES('member-media',:'asset_path','{"size":1024,"mimetype":"image/webp"}');
+SELECT public.member_classifieds('finalize_image',jsonb_build_object('id',:'listing_id','assetId',:'asset_id'));
+SELECT pg_temp.check_true((SELECT count(*) FROM storage.objects WHERE name=:'asset_path')=1,'own draft image readable');
+WITH attempt AS (UPDATE storage.objects SET metadata='{}' WHERE name=:'asset_path' RETURNING 1) SELECT pg_temp.check_true((SELECT count(*) FROM attempt)=0,'immutable storage asset');
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false);
+SET ROLE authenticated;
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','save',jsonb_build_object('id',:'listing_id')),'classifieds_pilot_only');
+SELECT pg_temp.check_true((SELECT count(*) FROM storage.objects WHERE name=:'asset_path')=0,'other member cannot read pilot draft despite permissive legacy policy');
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','',false);
+SET ROLE anon;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'draft absent public projection');
+SELECT pg_temp.check_true(public.member_bike_image_public(:'asset_id') IS NULL,'draft image endpoint resolver empty');
+SELECT pg_temp.check_true((SELECT count(*) FROM storage.objects WHERE name=:'asset_path')=0,'anonymous cannot read draft media');
+SELECT pg_temp.expect_error('SELECT public.member_classifieds()','permission denied');
+SELECT pg_temp.expect_error('SELECT * FROM public.member_media_assets','permission denied');
+RESET ROLE;
+-- Synthetic proofs only: this test does not contact email or WhatsApp.
+INSERT INTO public.member_identity_verifications(user_id,email_address,email_verified_at,phone_number,phone_verified_at) VALUES('00000000-0000-4000-8000-000000000090','pilot@example.invalid',now(),'+5511999999999',now());
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','publish',jsonb_build_object('id',:'listing_id')),'listing_contact_consent');
+SELECT public.member_classifieds('publish',jsonb_build_object('id',:'listing_id','contactConsent',true));
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','save',jsonb_build_object('id',:'listing_id')),'listing_not_draft');
+WITH attempt AS (DELETE FROM storage.objects WHERE name=:'asset_path' RETURNING 1) SELECT pg_temp.check_true((SELECT count(*) FROM attempt)=0,'cannot remove published photo without withdrawing');
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','',false);
+SET ROLE anon;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=1,'verified and consented listing public');
+SELECT pg_temp.check_true((SELECT count(*) FROM storage.objects WHERE name=:'asset_path')=1,'published image readable');
+SELECT pg_temp.check_true(public.member_bike_image_public(:'asset_id')=:'asset_path','public image resolver exposes only published path');
+SELECT pg_temp.check_true(public.member_bike_listings_public()->'items'->0->>'whatsapp'='5511999999999','explicitly consented verified phone projected');
+SELECT pg_temp.check_true(NOT(public.member_bike_listings_public()->'items'->0 ? 'user_id') AND NOT(public.member_bike_listings_public()->'items'->0 ? 'email'),'no auth email or private row in projection');
+RESET ROLE;
+UPDATE auth.users SET email='changed@example.invalid' WHERE id='00000000-0000-4000-8000-000000000090';
+SET ROLE anon;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'changed mailbox hides listing');
+SELECT pg_temp.check_true((SELECT count(*) FROM storage.objects WHERE name=:'asset_path')=0,'changed mailbox hides media');
+RESET ROLE;
+UPDATE auth.users SET email='pilot@example.invalid' WHERE id='00000000-0000-4000-8000-000000000090';
+UPDATE public.member_profiles SET suspended=true WHERE user_id='00000000-0000-4000-8000-000000000090';
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'suspension hides listing');
+UPDATE public.member_profiles SET suspended=false WHERE user_id='00000000-0000-4000-8000-000000000090';
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT public.member_classifieds('sold',jsonb_build_object('id',:'listing_id'));
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'sold bike leaves available listings');
+SELECT public.member_classifieds('withdraw',jsonb_build_object('id',:'listing_id'));
+SELECT public.member_classifieds('reserve_image',jsonb_build_object('id',:'listing_id'));
+SELECT public.member_classifieds('reserve_image',jsonb_build_object('id',:'listing_id'));
+SELECT public.member_classifieds('reserve_image',jsonb_build_object('id',:'listing_id'));
+RESET ROLE;
+UPDATE public.member_classifieds_settings SET pilot_user_id='00000000-0000-4000-8000-000000000091';
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false);
+SET ROLE authenticated;
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','withdraw',jsonb_build_object('id',:'listing_id')),'listing_unavailable');
+RESET ROLE;
+UPDATE public.member_classifieds_settings SET pilot_user_id='00000000-0000-4000-8000-000000000090';
+-- Four slots occupied; Python runner races for the fifth.
+RESET ROLE;

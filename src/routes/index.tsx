@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getPublicBikeListings } from "@/lib/bike-classifieds.functions";
 import HomeB2C from "@/pages/HomeB2C";
 import { pageHead } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
@@ -8,11 +9,12 @@ import { getPublishedArticles } from "@/lib/editorial.functions";
 export const Route = createFileRoute("/")({
   // Leitura read-only: servidor devolve só os cards prontos; falha apenas omite os cards.
   loader: async () => {
-    const [cards, articles] = await Promise.all([
+    const [cards, articles, classifieds] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
       getPublishedArticles().catch(() => null),
+      getPublicBikeListings({ data: { limit: 3, offset: 0 } }),
     ]);
-    return { ...cards, articles: articles ?? [] };
+    return { ...cards, articles: articles ?? [], classifieds };
   },
   head: () =>
     pageHead({

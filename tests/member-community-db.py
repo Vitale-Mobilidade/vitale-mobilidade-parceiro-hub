@@ -12,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 
+if "--classifieds" in sys.argv: sys.argv.append("--identity")
+
 repo = Path(__file__).resolve().parents[1]
 pg = Path(os.environ.get("PG_BIN", "/opt/homebrew/opt/postgresql@17/bin"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("PG")}
@@ -166,6 +168,23 @@ COMMIT;
                     print("PASS concurrent wrong OTP guesses persist both attempts")
 
 
+        if "--classifieds" in sys.argv:
+            for label,path in [
+                ("classifieds storage and owner fixture","tests/bike-classifieds-fixture.sql"),
+                ("classifieds pilot migration","supabase/migrations/20261103230000_bike_classifieds_pilot.sql"),
+                ("classifieds RLS and publication contracts","tests/bike-classifieds.sql"),
+            ]:
+                result=sql((repo/path).read_text())
+                if result.returncode: raise RuntimeError(f"{label}: {result.stderr[-4000:]}")
+                print(f"PASS {label}")
+            race="SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false); SELECT public.member_classifieds('reserve_image',jsonb_build_object('id',public.member_classifieds('mine')->0->>'id'));"
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                races=list(executor.map(sql,[race,race]))
+            assert sum(r.returncode==0 for r in races)==1, str([r.stderr for r in races])
+            assert any("listing_image_limit" in r.stderr for r in races)
+            print("PASS concurrent fifth-photo reservation accepts exactly one; five-slot limit persisted")
+            invariant=sql("SELECT count(*)=5 FROM public.member_media_assets WHERE kind='listing' AND status<>'removed';")
+            assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
 
     finally:
         subprocess.run([str(pg / "pg_ctl"), "-D", str(data), "-m", "fast", "-w", "stop"], check=True, env=env, stdout=subprocess.DEVNULL)

@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Venda sua bike — piloto preparado localmente em 03/11/2026:** Home com até três anúncios reais, vitrine completa, conta após Quiz, foto/perfil e editor com cinco imagens. Criação restrita ao UUID da conta convidada; publicação exige e-mail/celular validados e consentimento para contato. Valor R$150, isenção piloto explícita e nenhuma cobrança. Implementação e testes locais concluídos; migração privilegiada/ativação/publicação produtiva ainda pendentes. [Escopo, evidências e rollback](BIKE_CLASSIFIEDS_PILOT_2026-11-03.md).
+
 > **Celular da comunidade configurado — 03/11/2026:** template `validacao_telefone` aprovado e confirmado como enviável pela API Hotpipe, chave dedicada mínima e configuração publicada. Dry-run e um único código de teste recebidos/confirmados pelo responsável. Usuários validam email e celular na própria conta para interagir. Newsletter permanece no formulário original, sem cadastro completo ou confirmação. [Registro e limites da homologação](MEMBER_IDENTITY_2026-11-03.md).
 
 > **Restauração exata da newsletter — 03/11/2026:** correção prioritária autorizada pelo responsável. Componente compartilhado e página /newsletter retornam byte a byte ao formulário original 540fc1d, sem conta, senha, confirmação ou CTA de comunidade. Home, rodapés, artigos e popup usam o mesmo componente. Comunidade e validação permanecem em /conta. [Evidência e revisão](NEWSLETTER_FORM_RESTORE_2026-11-03.md).

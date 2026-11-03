@@ -1,0 +1,98 @@
+// Local-only pilot smoke. Synthetic Auth, HTTP database/Storage fixture and canvas
+// photos. No email, WhatsApp, production database, payment or real listing.
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { mkdir,readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+const origin='http://127.0.0.1:4318', backend='http://127.0.0.1:54321';
+const userId='00000000-0000-4000-8000-000000000090';
+const user={id:userId,aud:'authenticated',role:'authenticated',email:'pilot@example.invalid',email_confirmed_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{display_name:'Conta piloto'},identities:[],created_at:new Date().toISOString()};
+const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
+const expires=Math.floor(Date.now()/1000)+3600;
+const token=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:userId,exp:expires,aud:'authenticated',role:'authenticated'})}.fake`;
+const session={access_token:token,token_type:'bearer',expires_in:3600,expires_at:expires,refresh_token:'local-fake-refresh',user};
+let canAdvertise=true,canPublish=false,avatar=null;
+let listings=[];const blobs=new Map();const requests=[];
+const profile={displayName:'Conta piloto',suspended:false,createdAt:user.created_at,communityJoinedAt:user.created_at,newsletterSubscribed:true};
+const account=()=>({displayName:profile.displayName,communityJoined:true,canAdvertise,canPublish,canUploadAvatar:true,avatarId:avatar?.id??null,avatarPath:avatar?.path??null});
+const publicItems=()=>listings.filter(l=>l.status==='published').map(l=>({...l,sellerName:profile.displayName,avatarPath:avatar?.path??null,whatsapp:'5511999999999'}));
+const server=createServer(async(req,res)=>{
+ res.setHeader('access-control-allow-origin',origin);res.setHeader('access-control-allow-headers','*');res.setHeader('access-control-allow-methods','POST,GET,PUT,DELETE,OPTIONS');
+ if(req.method==='OPTIONS'){res.writeHead(204).end();return}
+ const url=new URL(req.url,backend);const chunks=[];for await(const c of req)chunks.push(c);const raw=Buffer.concat(chunks);let input={};try{input=JSON.parse(raw.toString())}catch{}
+ requests.push({path:url.pathname,input});
+ const reply=(data,status=200)=>{res.writeHead(status,{'content-type':'application/json'}).end(JSON.stringify(data))};
+ if(url.pathname.endsWith('/auth/v1/user'))return reply(user);
+ if(url.pathname.endsWith('/auth/v1/logout'))return reply({});
+ if(url.pathname.endsWith('/member_community_account'))return reply(profile);
+ if(url.pathname.endsWith('/member_referrals'))return reply({enabled:true,code:'a'.repeat(32),visits:0,pending:0,confirmed:0,history:[]});
+ if(url.pathname.endsWith('/member_identity'))return reply({emailVerified:canPublish,phoneVerified:canPublish,phoneMasked:canPublish?'+55 •• •••••-9999':null,canInteract:canPublish});
+ if(url.pathname.endsWith('/member_community')){if(input.p_action==='save_profile'){profile.displayName=input.p_payload.displayName;return reply(profile)}return reply({enabled:true})}
+ if(url.pathname.endsWith('/member_bike_listings_public')){let items=publicItems();if(input.p_id)items=items.filter(l=>l.id===input.p_id);return reply({total:items.length,items:items.slice(input.p_offset||0,(input.p_offset||0)+(input.p_limit||12))})}
+ if(url.pathname.endsWith('/member_bike_image_public')){const paths=publicItems().flatMap(l=>l.images);const image=paths.find(i=>i.id===input.p_id)??(publicItems().length&&avatar?.id===input.p_id?avatar:null);return reply(image?.path??null)}
+ if(url.pathname.endsWith('/member_classifieds')){
+  const p=input.p_payload||{};const l=listings.find(l=>l.id===p.id);const action=input.p_action;
+  if(action==='account')return reply(account());
+  if(!canAdvertise)return reply({message:'classifieds_pilot_only'},403);
+  if(action==='mine')return reply(listings);
+  if(action==='create'){const l={id:randomUUID(),title:'Minha bike',brand:'',model:'',priceCents:0,city:'',state:'',modelYear:null,mileageKm:null,condition:'good',battery:'unknown',invoice:false,description:'',maintenance:'',status:'draft',feeCents:15000,feeStatus:'pilot_exempt',images:[],publishedAt:null,updatedAt:new Date().toISOString()};listings.unshift(l);return reply(l)}
+  if(action==='reserve_avatar'){avatar={id:randomUUID(),path:''};avatar.path=`${userId}/avatar/${avatar.id}.webp`;return reply(avatar)}
+  if(action==='finalize_avatar')return reply({ok:true});
+  if(action==='remove_avatar'){avatar=null;return reply({ok:true})}
+  assert(l,`missing listing ${action}`);
+  if(action==='save'){Object.assign(l,p);delete l.contactConsent}
+  else if(action==='reserve_image'){const id=randomUUID();const image={id,path:`${userId}/listings/${l.id}/${id}.webp`,position:l.images.length,status:'reserved'};l.images.push(image);return reply(image)}
+  else if(action==='finalize_image')l.images.find(i=>i.id===p.assetId).status='ready';
+  else if(action==='remove_image')l.images=l.images.filter(i=>i.id!==p.assetId);
+  else if(action==='cover'){const index=l.images.findIndex(i=>i.id===p.assetId);const [image]=l.images.splice(index,1);l.images.unshift(image);l.images.forEach((i,index)=>i.position=index)}
+  else if(action==='publish'){assert(canPublish&&p.contactConsent===true);l.status='published';l.publishedAt=new Date().toISOString()}
+  else if(action==='withdraw')l.status='draft';
+  else if(action==='sold')l.status='sold';
+  else if(action==='archive')l.status='archived';
+  else throw Error(`unexpected action ${action}`);
+  l.updatedAt=new Date().toISOString();return reply(l);
+ }
+ if(url.pathname==='/storage/v1/object/sign/member-media')return reply(input.paths.map(path=>({path,signedURL:`/object/sign/member-media/${path}?token=mock`}))); 
+ if(url.pathname.startsWith('/storage/v1/object/')){
+  if(req.method==='POST'){const path=decodeURIComponent(url.pathname.split('/member-media/')[1]);const start=raw.indexOf(Buffer.from('RIFF'));assert(start>=0,'upload reencoded to WebP');const length=raw.readUInt32LE(start+4)+8;blobs.set(path,raw.subarray(start,start+length));return reply({Key:`member-media/${path}`})}
+  if(req.method==='DELETE'){for(const path of input.prefixes||[])blobs.delete(path);return reply([])}
+  const path=decodeURIComponent(url.pathname.split('/member-media/')[1]||'');const blob=blobs.get(path);if(!blob)return reply({},404);res.writeHead(200,{'content-type':'image/webp'}).end(blob);return;
+ }
+ return reply([]);
+});
+await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(54321,'127.0.0.1',resolve)});
+const browser=await chromium.launch({headless:true,channel:'chrome'});
+const context=await browser.newContext({viewport:{width:1440,height:1000}});
+const errors=[];context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));
+await context.route('**/*',route=>{const url=new URL(route.request().url());return [origin,backend].includes(url.origin)?route.continue():route.abort()});
+await context.addInitScript(session=>{if(location.hostname==='127.0.0.1'&&location.port==='4318')localStorage.setItem('sb-127-auth-token',JSON.stringify(session))},session);
+const page=await context.newPage();page.setDefaultTimeout(15000);
+const artifacts=new URL('../artifacts/bike-classifieds/',import.meta.url);await mkdir(artifacts,{recursive:true});
+try{
+ let response=await page.goto(`${origin}/conta/anuncios`);assert.equal(response.headers()['cache-control'],'private, no-store');assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'),/noindex/);
+ await page.getByRole('heading',{name:'Meus anúncios',exact:true}).waitFor();await page.getByRole('button',{name:'Criar meu primeiro anúncio'}).click();
+ await page.getByLabel('Título do anúncio').fill('V9 Max revisada — anúncio de teste');await page.getByLabel('Marca',{exact:true}).fill('Marca teste');await page.getByLabel('Modelo',{exact:true}).fill('V9 Max');await page.getByLabel('Preço de venda (R$)').fill('4800');await page.getByLabel('Quilometragem (km)').fill('1234');await page.getByLabel('Cidade',{exact:true}).fill('São Paulo');await page.getByLabel('Estado',{exact:true}).selectOption('SP');await page.getByLabel('Ano do modelo (opcional)').fill('2025');await page.getByLabel('Descrição da bike').fill('Bike de demonstração local. Nunca será anunciada em produção. Usada por um ano, revisão em dia.');await page.getByLabel('Manutenção, acessórios e defeitos conhecidos (opcional)').fill('Pastilhas novas. Pequeno risco no paralama.');
+ assert(await page.getByRole('button',{name:'Anuncie sua bike',exact:true}).isDisabled(),'switch/create disabled while dirty');await page.getByRole('button',{name:'Salvar rascunho'}).click();await page.getByRole('status').filter({hasText:'Rascunho salvo'}).waitFor();
+ const file=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');x.fillStyle='#d9f4e5';x.fillRect(0,0,800,600);x.fillStyle='#123a30';x.font='bold 40px sans-serif';x.fillText('Foto de teste · bicicleta',100,290);return c.toDataURL('image/png').split(',')[1]});
+ const upload=n=>Array.from({length:n},(_,i)=>({name:`foto-${i}.png`,mimeType:'image/png',buffer:Buffer.from(file,'base64')}));
+ await page.getByLabel('Adicionar fotos da bike').setInputFiles(upload(5));await page.getByRole('heading',{name:'2. Fotos da bike · 5/5'}).waitFor();assert.equal(await page.getByLabel('Adicionar fotos da bike').count(),0);
+ await page.getByRole('button',{name:'Usar como capa'}).nth(1).click();await page.getByRole('status').filter({hasText:'Capa atualizada'}).waitFor();
+ await page.getByRole('checkbox').check();assert(await page.getByRole('button',{name:'Publicar anúncio · piloto sem cobrança'}).isDisabled(),'identity gate');
+ await page.screenshot({path:new URL('editor-desktop.png',artifacts).pathname,fullPage:true});
+ await page.getByRole('button',{name:'Ver prévia salva'}).click();await page.getByText('Prévia privada.').waitFor();assert.equal(await page.getByRole('button',{name:/Ver foto/}).count(),5);await page.getByRole('button',{name:'Ver foto 5',exact:true}).click();await page.getByRole('button',{name:'Voltar à edição'}).click();
+ await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:new URL('editor-mobile.png',artifacts).pathname,fullPage:true});
+ canPublish=true;await page.reload();await page.getByRole('button',{name:/V9 Max revisada/}).click();await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Publicar anúncio · piloto sem cobrança'}).click();await page.getByRole('link',{name:'Ver anúncio no site',exact:true}).waitFor();
+ const published=listings[0];assert.equal(published.priceCents,480000);assert.equal(published.feeCents,15000);assert.equal(published.feeStatus,'pilot_exempt');assert.equal(published.images.length,5);assert.equal(blobs.size,5);
+ // Four synthetic listings prove SSR featured-three + all and pagination contract.
+ for(let i=0;i<3;i++)listings.push({...structuredClone(published),id:randomUUID(),title:`Outra bike de teste ${i+1}`,publishedAt:new Date(Date.now()-1000*(i+1)).toISOString()});
+ response=await page.goto(`${origin}/venda-sua-bike`);const ssr=await response.text();assert(ssr.includes('V9 Max revisada'),'SSR title');assert(ssr.includes('Outra bike de teste 3'),'SSR all listings');await page.getByRole('heading',{name:'Todas as bikes',exact:true}).waitFor();assert.equal(await page.locator('section[aria-labelledby="classificados-destaque"] article').count(),3);assert.equal(await page.locator('section[aria-labelledby="classificados-todos"] article').count(),4);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:new URL('hub-mobile.png',artifacts).pathname,fullPage:true});
+ await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:new URL('hub-desktop.png',artifacts).pathname,fullPage:true});
+ await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor();const quiz=await page.getByRole('link',{name:'Faça o Quiz e descubra a bike ideal',exact:true}).first().boundingBox();const menu=await page.getByRole('button',{name:'Abrir menu da minha conta'}).boundingBox();assert(menu.x>=quiz.x+quiz.width,`account after quiz ${JSON.stringify({menu,quiz})}`);await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Anuncie sua bike'}).waitFor();await page.keyboard.press('Escape');
+ await page.goto(`${origin}/venda-sua-bike/${published.id}`);await page.getByRole('heading',{name:published.title,exact:true}).waitFor();assert.match(await page.getByRole('link',{name:'Conversar com o vendedor'}).getAttribute('href'),/^https:\/\/wa.me\/5511999999999/);assert(await page.locator('img').first().evaluate(img=>img.complete&&img.naturalWidth>0));await page.screenshot({path:new URL('listing-desktop.png',artifacts).pathname,fullPage:true});
+ await page.goto(`${origin}/`);await page.getByRole('heading',{name:'Venda sua bike aqui',exact:true}).waitFor();assert.equal(await page.locator('section[aria-labelledby="classificados-home"] article').count(),3);
+ for(const width of [320,390,1024,1280,1440]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`header/home width ${width}`)}
+ await page.goto(`${origin}/conta`);await page.getByLabel('Adicionar foto de perfil').setInputFiles(upload(1));await page.getByRole('status').filter({hasText:'Foto salva.'}).waitFor();assert(avatar&&blobs.has(avatar.path));await page.getByLabel('Nome público',{exact:true}).fill('Meu novo perfil');await page.getByRole('button',{name:'Salvar perfil'}).click();await page.getByRole('status').filter({hasText:'Perfil salvo.'}).waitFor();await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();assert.equal(await page.locator('header img').count(),2);await page.keyboard.press('Escape');await page.screenshot({path:new URL('profile-desktop.png',artifacts).pathname,fullPage:true});
+ canAdvertise=false;await page.goto(`${origin}/conta/anuncios`);await page.getByText('Sua conta ainda não tem acesso à criação.').waitFor();assert.equal(await page.getByRole('button',{name:'Anuncie sua bike',exact:true}).count(),0);
+ assert(!requests.some(r=>/newsletter-interest|member-identity-code|recover|stripe|payment/.test(r.path)),'no marketing, identity transport or payment sends');assert.equal(errors.length,0,errors.join('\n'));console.log('PASS local UI: draft/save, five reencoded uploads, cover/preview, verification gate, pilot exemption, SSR featured-three/all/detail/Home, responsive header after Quiz, profile photo/name, nonpilot denial; zero real messages or charges');
+}finally{await context.close();await browser.close();await new Promise(resolve=>server.close(resolve))}

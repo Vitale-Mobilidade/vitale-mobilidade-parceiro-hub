@@ -1,0 +1,131 @@
+import { useEffect, useState } from "react";
+import { ChevronDown, UserRound } from "lucide-react";
+import { useMemberSession } from "@/hooks/use-member-session";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  classifiedsAccountSchema,
+  type ClassifiedsAccount,
+} from "@/lib/bike-classifieds";
+import {
+  classifiedsCall,
+  signedMemberImages,
+} from "@/lib/bike-classifieds-api";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+export function AccountMenu() {
+  const { session, loading } = useMemberSession();
+  const userId = session?.user.id;
+  const [account, setAccount] = useState<ClassifiedsAccount | null>(null);
+  const [avatar, setAvatar] = useState<string>();
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    setAccount(null);
+    setAvatar(undefined);
+    async function refresh() {
+      if (!userId) return;
+      try {
+        const a = classifiedsAccountSchema.parse(
+          await classifiedsCall("account"),
+        );
+        const urls = a.avatarPath
+          ? await signedMemberImages([a.avatarPath])
+          : null;
+        if (active) {
+          setAccount(a);
+          setAvatar(a.avatarPath ? urls?.get(a.avatarPath) : undefined);
+        }
+      } catch {
+        if (active) {
+          setAccount(null);
+          setAvatar(undefined);
+        }
+      }
+    }
+    void refresh();
+    const listener = () => void refresh();
+    window.addEventListener("vitale-profile-updated", listener);
+    const timer = window.setInterval(listener, 240000);
+    return () => {
+      active = false;
+      window.removeEventListener("vitale-profile-updated", listener);
+      window.clearInterval(timer);
+    };
+  }, [userId]);
+  if (!session)
+    return (
+      <a
+        href="/conta"
+        aria-busy={loading}
+        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/30 px-3 text-sm font-bold text-white hover:bg-white/10"
+      >
+        <UserRound className="h-5 w-5" aria-hidden="true" />
+        <span>Entrar</span>
+      </a>
+    );
+  return (
+    <div data-heatmap-private>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/30 px-2 text-sm font-bold text-white hover:bg-white/10"
+          aria-label="Abrir menu da minha conta"
+        >
+          {avatar ? (
+            <img
+              src={avatar}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-mint text-mint-foreground">
+              {account?.displayName?.trim().slice(0, 1).toUpperCase() || (
+                <UserRound className="h-4 w-4" aria-hidden="true" />
+              )}
+            </span>
+          )}
+          <span className="hidden max-w-24 truncate xl:inline">
+            Minha conta
+          </span>
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 p-2">
+          <DropdownMenuItem asChild>
+            <a href="/conta" className="min-h-11">
+              Editar meu perfil
+            </a>
+          </DropdownMenuItem>
+          {account?.canAdvertise && (
+            <DropdownMenuItem asChild>
+              <a href="/conta/anuncios" className="min-h-11">
+                Anuncie sua bike
+              </a>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="min-h-11"
+            onSelect={async () => {
+              const { error } = await supabase.auth.signOut({ scope: "local" });
+              if (error)
+                setError("Não foi possível sair. Tente pela Minha conta.");
+            }}
+          >
+            Sair
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {error && (
+        <span role="alert" className="sr-only">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
