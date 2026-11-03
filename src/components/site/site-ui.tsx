@@ -78,7 +78,7 @@ export function SiteHeader() {
         <Brand />
         <nav
           aria-label="Principal"
-          className={`hidden items-center font-semibold text-ink-foreground xl:flex ${memberAccountsEnabled ? "gap-4 text-sm" : "gap-9 text-base"}`}
+          className="hidden items-center gap-4 whitespace-nowrap text-base font-semibold text-ink-foreground xl:flex"
         >
           {SITE_NAV.map((n) => (
             <NavLink
@@ -92,20 +92,20 @@ export function SiteHeader() {
           <Link
             to="/quiz"
             reloadDocument
-            className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 xl:inline-flex"
+            className="hidden h-11 items-center rounded-xl bg-mint px-5 text-base font-bold text-mint-foreground hover:opacity-90 xl:inline-flex"
           >
             Faça o Quiz e descubra a bike ideal
           </Link>
           {memberAccountsEnabled && <AccountMenu />}
         </div>
         <details className="relative xl:hidden">
-          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-3 text-sm font-semibold text-ink-foreground">
+          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-3 text-base font-semibold text-ink-foreground">
             <Menu className="h-5 w-5" aria-hidden="true" />{" "}
             <span className="sr-only sm:not-sr-only">Menu</span>
           </summary>
           <nav
             aria-label="Principal (celular)"
-            className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
+            className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-base text-popover-foreground shadow-xl"
           >
             {SITE_NAV.map((n) => (
               <NavLink

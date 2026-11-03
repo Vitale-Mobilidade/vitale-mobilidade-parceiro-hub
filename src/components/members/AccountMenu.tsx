@@ -1,5 +1,7 @@
+import { useRouterState } from "@tanstack/react-router";
+import { memberLoginHref, memberReturnPath } from "@/lib/member-community";
 import { useEffect, useState } from "react";
-import { ChevronDown, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { useMemberSession } from "@/hooks/use-member-session";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,6 +20,30 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 export function AccountMenu() {
+  const locationKey = useRouterState({
+    select: (state) =>
+      `${state.location.pathname}${state.location.searchStr}#${state.location.hash}`,
+  });
+  const [loginHref, setLoginHref] = useState(() =>
+    memberLoginHref(memberReturnPath(locationKey)),
+  );
+  useEffect(() => {
+    const sync = () =>
+      setLoginHref(
+        memberLoginHref(
+          window.location.pathname +
+            window.location.search +
+            window.location.hash,
+        ),
+      );
+    sync();
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, [locationKey]);
   const { session, loading } = useMemberSession();
   const userId = session?.user.id;
   const [account, setAccount] = useState<ClassifiedsAccount | null>(null);
@@ -60,9 +86,16 @@ export function AccountMenu() {
   if (!session)
     return (
       <a
-        href="/conta"
+        href={loginHref}
+        onClick={(event) => {
+          event.currentTarget.href = memberLoginHref(
+            window.location.pathname +
+              window.location.search +
+              window.location.hash,
+          );
+        }}
         aria-busy={loading}
-        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/30 px-3 text-sm font-bold text-white hover:bg-white/10"
+        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/30 px-3 text-base font-bold text-white hover:bg-white/10"
       >
         <UserRound className="h-5 w-5" aria-hidden="true" />
         <span>Entrar</span>
@@ -72,7 +105,7 @@ export function AccountMenu() {
     <div data-heatmap-private>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/30 px-2 text-sm font-bold text-white hover:bg-white/10"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 text-base font-bold text-white hover:bg-white/10"
           aria-label="Abrir menu da minha conta"
         >
           {avatar ? (
@@ -85,19 +118,20 @@ export function AccountMenu() {
             />
           ) : (
             <span className="grid h-8 w-8 place-items-center rounded-full bg-mint text-mint-foreground">
-              {account?.displayName?.trim().slice(0, 1).toUpperCase() || (
+              {Array.from(
+                (
+                  account?.displayName ??
+                  String(session.user.user_metadata?.display_name ?? "")
+                ).trim(),
+              )[0]?.toLocaleUpperCase("pt-BR") || (
                 <UserRound className="h-4 w-4" aria-hidden="true" />
               )}
             </span>
           )}
-          <span className="hidden max-w-24 truncate xl:inline">
-            Minha conta
-          </span>
-          <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 p-2">
           <DropdownMenuItem asChild>
-            <a href="/conta" className="min-h-11">
+            <a href="/conta?modo=perfil" className="min-h-11">
               Editar meu perfil
             </a>
           </DropdownMenuItem>

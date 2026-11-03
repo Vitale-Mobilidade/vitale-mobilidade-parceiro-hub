@@ -1,3 +1,4 @@
+import { memberLoginHref } from "@/lib/member-community";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import {
@@ -53,14 +54,13 @@ function ClassifiedsPage() {
               </p>
             </div>
             <div className="rounded-2xl border border-white/20 bg-white/5 p-6">
-              <p className="text-sm text-white/80">Valor por anúncio</p>
-              <p className="mt-2 text-4xl font-bold">R$ 150</p>
-              <p className="mt-3 text-sm text-white/80">
-                Estamos em fase piloto. A criação está disponível somente para a
-                conta convidada, com isenção neste teste.
+              <h2 className="text-2xl font-bold">Quer vender sua bike aqui?</h2>
+              <p className="mt-3 text-white/80">
+                Adicione fotos e conte a história da sua bike. Entre na sua
+                conta para criar seu anúncio.
               </p>
               <a
-                href="/conta/anuncios"
+                href={memberLoginHref("/conta/anuncios")}
                 className="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-mint px-5 font-bold text-mint-foreground"
               >
                 Anuncie sua bike

@@ -1,50 +1,93 @@
 import { ArrowRight, Bike, MapPin } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
-import { CONDITIONS, type PublicBikeListing } from "@/lib/bike-classifieds";
-export function ClassifiedCard({ listing }: { listing: PublicBikeListing }) {
-  const cover = listing.images[0];
+import { memberLoginHref } from "@/lib/member-community";
+import {
+  CONDITIONS,
+  type BikeListing,
+  type PublicBikeListing,
+} from "@/lib/bike-classifieds";
+/** Same image frame, typography, fact chips and action placement as RadarBikeCard. */
+export function ClassifiedCard({
+  listing,
+  preview = false,
+}: {
+  listing: BikeListing | PublicBikeListing;
+  preview?: boolean;
+}) {
+  const cover = listing.images.find((i) => i.status === "ready");
+  const CardLink = preview ? "div" : "a";
   return (
-    <article className="group overflow-hidden rounded-2xl border border-line bg-white transition hover:border-action hover:shadow-md">
-      <a
-        href={`/venda-sua-bike/${listing.id}`}
-        className="block focus-visible:outline-action"
+    <article className="h-full">
+      <CardLink
+        href={preview ? undefined : `/venda-sua-bike/${listing.id}`}
+        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
       >
-        {cover?.url ? (
-          <img
-            src={cover.url}
-            alt={listing.title}
-            width={640}
-            height={480}
-            loading="lazy"
-            decoding="async"
-            className="aspect-[4/3] w-full object-cover"
-          />
-        ) : (
-          <div className="grid aspect-[4/3] place-items-center bg-surface">
-            <Bike className="h-16 w-16 text-action" aria-hidden="true" />
-            <span className="sr-only">Foto indisponível</span>
-          </div>
-        )}
-        <div className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-action">
-            {CONDITIONS[listing.condition]} ·{" "}
-            {listing.mileageKm?.toLocaleString("pt-BR")} km
-          </p>
-          <h3 className="mt-2 text-xl font-bold text-ink group-hover:text-action">
-            {listing.title}
+        <div className="flex h-52 items-center justify-center overflow-hidden bg-surface">
+          {cover?.url ? (
+            <img
+              src={cover.url}
+              alt={listing.title || "Sua bike"}
+              width={640}
+              height={480}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="grid place-items-center gap-2 text-muted-foreground">
+              <Bike className="h-12 w-12" aria-hidden="true" />
+              <span className="text-sm">
+                {preview ? "Adicione a foto de capa" : "Foto indisponível"}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col p-5">
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight">
+            {listing.title.trim() || "O título da sua bike"}
           </h3>
-          <p className="mt-3 text-2xl font-bold text-ink">
-            {formatBRL(listing.priceCents / 100)}
+          <p className="mt-2 text-sm text-muted-foreground">
+            {[listing.brand, listing.model].filter(Boolean).join(" · ") ||
+              "Marca e modelo"}
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-1.5 text-xs text-ink">
+            {[
+              CONDITIONS[listing.condition],
+              listing.mileageKm !== null
+                ? `${listing.mileageKm.toLocaleString("pt-BR")} km`
+                : null,
+              listing.modelYear,
+            ]
+              .filter((v) => v !== null)
+              .map((v) => (
+                <li key={String(v)} className="rounded-md bg-surface px-2 py-1">
+                  {v}
+                </li>
+              ))}
+          </ul>
+          <p className="mt-3 text-3xl font-bold tracking-tight text-primary">
+            {listing.priceCents > 0
+              ? formatBRL(listing.priceCents / 100)
+              : "Preço a informar"}
           </p>
           <p className="mt-3 flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" aria-hidden="true" />
-            {listing.city}, {listing.state}
+            {listing.city || "Sua cidade"}
+            {listing.state ? `, ${listing.state}` : ""}
           </p>
+          <div className="mt-auto pt-4">
+            <span className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 py-2 text-sm font-medium text-primary-foreground group-hover:opacity-90">
+              <Bike className="h-4 w-4" aria-hidden="true" />
+              Ver bike e anúncio
+            </span>
+          </div>
         </div>
-      </a>
+      </CardLink>
     </article>
   );
 }
+
 export function ClassifiedsEmpty({
   unavailable = false,
 }: {
@@ -61,13 +104,15 @@ export function ClassifiedsEmpty({
       <p className="mt-2 max-w-xl text-muted-foreground">
         {unavailable
           ? "Tente recarregar a página em alguns instantes."
-          : "Os primeiros anúncios da comunidade chegam em breve. A área está em teste com uma conta convidada."}
+          : "Ainda não há bikes anunciadas. A sua pode encontrar um novo caminho por aqui."}
       </p>
       <a
-        href={unavailable ? "/venda-sua-bike" : "/conta/anuncios"}
+        href={
+          unavailable ? "/venda-sua-bike" : memberLoginHref("/conta/anuncios")
+        }
         className="mt-5 inline-flex min-h-11 items-center gap-2 font-bold text-action underline"
       >
-        {unavailable ? "Tentar novamente" : "Acessar meus anúncios"}
+        {unavailable ? "Tentar novamente" : "Quer vender sua bike aqui?"}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </a>
     </div>

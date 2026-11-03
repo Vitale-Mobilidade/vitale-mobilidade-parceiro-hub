@@ -11,7 +11,9 @@ export const Route = createFileRoute("/conta")({
   validateSearch: (search: Record<string, unknown>) => ({
     retorno: memberReturnPath(search.retorno),
     convite: referralCode(search.convite),
-    modo: ["cadastro", "recuperar", "senha"].includes(String(search.modo))
+    modo: ["cadastro", "recuperar", "senha", "perfil"].includes(
+      String(search.modo),
+    )
       ? String(search.modo)
       : "entrar",
   }),
