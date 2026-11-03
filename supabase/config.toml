@@ -12,3 +12,7 @@ verify_jwt = false
 # Public, write-only recovery. Generates no tokens until the database budget allows it.
 # Returns no token, account existence or user data. Uses existing Resend secrets server-side.
 verify_jwt = false
+
+[functions.member-identity-code]
+# Verifies the user's JWT with Auth before any budget allocation or code delivery.
+verify_jwt = false

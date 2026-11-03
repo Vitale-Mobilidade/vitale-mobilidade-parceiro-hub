@@ -19,6 +19,11 @@ const field = "mt-1 w-full rounded-lg border border-line bg-white p-3 text-ink";
 const button =
   "min-h-11 rounded-lg bg-ink px-5 py-3 font-bold text-white disabled:opacity-50";
 type Mode = "entrar" | "cadastro" | "recuperar" | "senha";
+const IdentityPanel = lazy(() =>
+  import("./IdentityPanel").then((module) => ({
+    default: module.IdentityPanel,
+  })),
+);
 const ReferralPanel = lazy(() =>
   import("./ReferralPanel").then((module) => ({
     default: module.ReferralPanel,
@@ -299,8 +304,8 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 : "Entre na comunidade Vitale"}
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Uma conta para participar da comunidade Vitale, comentar nos artigos e
-          receber nossa newsletter.
+          Sua conta inclui a newsletter. Para curtir artigos, comentar e
+          anunciar, valide seu e-mail e celular.
         </p>
         {session && (
           <p className="mt-4 break-all text-sm">
@@ -544,6 +549,17 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           </p>
         )}
       </section>
+      {ready && profile?.communityJoinedAt && userId && (
+        <Suspense
+          fallback={
+            <p role="status" className="mt-6">
+              Carregando validação de acesso…
+            </p>
+          }
+        >
+          <IdentityPanel key={userId} email={session?.user.email ?? ""} />
+        </Suspense>
+      )}
       {newsletterReferralsEnabled &&
         ready &&
         profile?.communityJoinedAt &&

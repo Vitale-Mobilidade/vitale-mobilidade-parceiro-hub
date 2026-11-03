@@ -1,10 +1,9 @@
+import { referralCode as validReferralCode } from "@/lib/newsletter-referrals";
+import { captureQuizAttribution } from "@/lib/quiz-attribution";
+import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
-import {
-  newsletterReferralsEnabled,
-  referralCode as validReferralCode,
-} from "@/lib/newsletter-referrals";
+import { Button } from "@/components/ui/button";
 
-/** Newsletter is included in community membership: one signup and immediate access. */
 export function NewsletterSignup({
   compact = false,
   referralCode,
@@ -12,47 +11,186 @@ export function NewsletterSignup({
   compact?: boolean;
   referralCode?: string;
 }) {
-  const invitation = newsletterReferralsEnabled
-    ? validReferralCode(referralCode)
-    : undefined;
-  const href = `/conta?modo=cadastro${invitation ? `&convite=${invitation}` : ""}`;
+  const invitation = validReferralCode(referralCode);
+  const communityUrl = `/conta?modo=cadastro${invitation ? `&convite=${invitation}` : ""}`;
+  const id = useId();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
+  const [error, setError] = useState("");
+
+  const submitNewsletter = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    if (!consent) {
+      setError("Autorize o cadastro para continuar.");
+      return;
+    }
+    setStatus("sending");
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "newsletter-interest",
+        {
+          body: {
+            name,
+            email,
+            consent,
+            interest: "general",
+            website,
+            sourceUrl:
+              captureQuizAttribution().source_url ?? window.location.href,
+          },
+        },
+      );
+      if (fnError || (data as { ok?: boolean } | null)?.ok !== true)
+        throw new Error("signup failed");
+      try {
+        localStorage.setItem("vitale-newsletter-subscribed", "1");
+      } catch {
+        /* Storage unavailable. */
+      }
+      window.dispatchEvent(new Event("vitale-newsletter-subscribed"));
+      setStatus("done");
+    } catch {
+      setStatus("idle");
+      setError(
+        "Não foi possível registrar agora. Tente novamente em instantes.",
+      );
+    }
+  };
+
   return (
     <section
-      aria-label="Participar da comunidade Vitale"
+      aria-labelledby={compact ? undefined : "newsletter"}
+      aria-label={compact ? "Inscrição na newsletter" : undefined}
       className={`grid gap-6 rounded-lg border border-line bg-card p-6 sm:p-8 ${compact ? "" : "md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-center"}`}
     >
-      <div className="flex items-start gap-4">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-mint/25 text-action">
-          <Mail className="h-6 w-6" aria-hidden="true" />
-        </span>
-        <div>
-          <h2 className="text-xl font-bold text-ink">
-            Faça parte da comunidade Vitale
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Crie sua conta gratuita para comentar nos artigos e receber a
-            newsletter com conteúdos, vídeos e novidades sobre bikes elétricas.
-          </p>
+      {!compact && (
+        <div className="flex items-start gap-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-mint/25 text-action">
+            <Mail className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2
+              id="newsletter"
+              className="text-xl font-bold text-ink sm:text-2xl"
+            >
+              Newsletter Vitale
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cadastre-se para receber novidades sobre bikes elétricas, preços e
+              ferramentas.
+            </p>
+          </div>
         </div>
-      </div>
-      <div>
-        <a
-          href={href}
-          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-action px-6 py-3 font-bold text-primary-foreground hover:bg-action/90"
-        >
-          Criar conta e participar
-        </a>
-        <p className="mt-3 text-sm text-muted-foreground">
-          A newsletter está incluída na adesão à comunidade. Seu acesso é
-          imediato e você pode cancelar o recebimento pelos e-mails.
+      )}
+      {status === "done" ? (
+        <p role="status" className="rounded-lg bg-mint/20 p-4 text-sm text-ink">
+          Inscrição recebida. Não é preciso criar conta nem confirmar o e-mail
+          para receber a newsletter da Vitale.
         </p>
-        <a
-          href="/conta"
-          className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold underline"
+      ) : (
+        <form
+          onSubmit={submitNewsletter}
+          aria-busy={status === "sending"}
+          className="min-w-0 space-y-3"
         >
-          Já tenho conta
-        </a>
-      </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div>
+              <label
+                htmlFor={`${id}-nl-name`}
+                className="mb-1 block text-sm font-medium text-ink"
+              >
+                Seu nome
+              </label>
+              <input
+                id={`${id}-nl-name`}
+                name="name"
+                autoComplete="name"
+                required
+                minLength={2}
+                maxLength={80}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                aria-invalid={!!error || undefined}
+                aria-describedby={error ? `${id}-nl-error` : undefined}
+                className="h-12 w-full rounded-lg border border-input bg-card px-4 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${id}-nl-email`}
+                className="mb-1 block text-sm font-medium text-ink"
+              >
+                Seu e-mail
+              </label>
+              <input
+                id={`${id}-nl-email`}
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                aria-invalid={!!error || undefined}
+                aria-describedby={error ? `${id}-nl-error` : undefined}
+                className="h-12 w-full rounded-lg border border-input bg-card px-4 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+              />
+            </div>
+          </div>
+          <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+              aria-invalid={(!!error && !consent) || undefined}
+              aria-describedby={error ? `${id}-nl-error` : undefined}
+              className="mt-0.5 shrink-0 accent-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+            />{" "}
+            <span>
+              Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me
+              contatar sobre a newsletter.
+            </span>
+          </label>
+          <input
+            type="text"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="hidden"
+          />
+          {error && (
+            <p
+              id={`${id}-nl-error`}
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={status === "sending"}
+            className="min-h-12 w-full rounded-lg bg-action px-6 font-bold text-primary-foreground hover:bg-action/90 lg:w-auto"
+          >
+            {status === "sending" ? "Registrando…" : "Cadastrar e-mail"}
+          </Button>
+        </form>
+      )}
+      <p className="text-sm text-muted-foreground md:col-span-full">
+        Só quer receber a newsletter? Não precisa criar conta nem confirmar o
+        e-mail. Para comentar e participar da comunidade,{" "}
+        <a href={communityUrl} className="font-semibold underline">
+          crie sua conta
+        </a>{" "}
+        e valide seu e-mail e celular.
+      </p>
     </section>
   );
 }

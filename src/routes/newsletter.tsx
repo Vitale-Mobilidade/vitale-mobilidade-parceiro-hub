@@ -38,13 +38,13 @@ export function NewsletterPage() {
       <main className="responsive-container py-10 sm:py-16">
         <div className="max-w-3xl">
           <p className="text-sm font-bold tracking-wide text-action">NEWSLETTER VITALE · GRATUITA</p>
-          <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Sua comunidade de bikes elétricas, com newsletter incluída.</h1>
+          <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">Bikes elétricas, conteúdos e novidades no seu e-mail.</h1>
         </div>
         {newsletterReferralsEnabled && ref && <p className="mt-5 text-sm text-muted-foreground">Você recebeu um convite para a comunidade Vitale. Sua conta inclui a newsletter; crie seu acesso para participar.</p>}
         <div className="mt-6 max-w-3xl"><NewsletterSignup compact referralCode={ref} /></div>
         <div className="mt-6 max-w-3xl">
           <p className="text-lg leading-relaxed text-muted-foreground">Receba artigos, vídeos e destaques de bikes elétricas e do Radar de preços no seu e-mail.</p>
-          <p className="mt-2 text-sm text-muted-foreground">A conta é gratuita. Você pode cancelar o recebimento da newsletter pelo link nos e-mails.</p>
+          <p className="mt-2 text-sm text-muted-foreground">A inscrição é gratuita, sem conta e sem confirmação. Você pode cancelar o recebimento pelo link nos e-mails.</p>
         </div>
         <section aria-labelledby="newsletter-benefits" className="mt-12">
           <h2 id="newsletter-benefits" className="text-2xl font-bold text-ink">O que você vai receber?</h2>
@@ -57,8 +57,8 @@ export function NewsletterPage() {
         <section aria-labelledby="newsletter-questions" className="mt-12 max-w-3xl">
           <h2 id="newsletter-questions" className="text-2xl font-bold text-ink">Dúvidas sobre a inscrição</h2>
           <div className="mt-5 space-y-6 leading-relaxed">
-            <div><h3 className="font-bold text-ink">A newsletter é gratuita?</h3><p className="mt-1 text-muted-foreground">Sim. A newsletter está incluída na conta gratuita da comunidade Vitale. Você cria seu acesso e já passa a participar da comunidade e receber os conteúdos.</p></div>
-            <div><h3 className="font-bold text-ink">Preciso participar do grupo ou me inscrever no YouTube?</h3><p className="mt-1 text-muted-foreground">Não. Sua conta na comunidade Vitale já inclui a newsletter; participar do grupo ou se inscrever no canal é opcional.</p></div>
+            <div><h3 className="font-bold text-ink">A newsletter é gratuita?</h3><p className="mt-1 text-muted-foreground">Sim. Basta informar nome e e-mail e autorizar o recebimento. Você não precisa criar conta nem confirmar o e-mail.</p></div>
+            <div><h3 className="font-bold text-ink">Preciso participar do grupo ou me inscrever no YouTube?</h3><p className="mt-1 text-muted-foreground">Não. A newsletter é independente da conta na comunidade, do grupo e do canal. Criar uma conta na comunidade também inclui a newsletter.</p></div>
             <div><h3 className="font-bold text-ink">Como cancelo a inscrição?</h3><p className="mt-1 text-muted-foreground">Use o link de descadastro presente nos e-mails. Saiba mais sobre o tratamento de seus dados na <a href="/privacidade" className="font-semibold text-action underline underline-offset-4">política de privacidade</a>.</p></div>
             <div><h3 className="font-bold text-ink">Os preços enviados continuam válidos?</h3><p className="mt-1 text-muted-foreground">Preços e disponibilidade podem mudar. Consulte o Radar e a oferta no destino antes de comprar.</p></div>
           </div>

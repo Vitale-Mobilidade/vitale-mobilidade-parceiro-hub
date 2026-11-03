@@ -71,7 +71,7 @@ COMMIT;
         result = sql("SELECT count(*)=1 FROM public.member_article_comments WHERE body='Concurrent submission';")
         assert result.returncode == 0 and " t" in result.stdout, result.stderr
         print("PASS persisted concurrency invariant")
-        if "--referrals" in sys.argv or "--community" in sys.argv:
+        if "--referrals" in sys.argv or "--community" in sys.argv or "--identity" in sys.argv:
             fixture = (repo / "supabase/migrations/20260925200500_newsletter_interest.sql").read_text() + """
 CREATE SCHEMA extensions;
 CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
@@ -114,7 +114,7 @@ CREATE TRIGGER newsletter_delivery_gate BEFORE INSERT OR UPDATE ON public.newsle
             invariant = sql("SELECT (SELECT count(*) FROM public.newsletter_subscriptions WHERE email='race@example.invalid')=1 AND (SELECT count(*) FROM public.member_referral_signups WHERE email_key=sha256(convert_to('race@example.invalid','UTF8')) AND credited)=1;")
             assert invariant.returncode == 0 and " t" in invariant.stdout, invariant.stderr
             print("PASS concurrent registration sends once; concurrent confirmation subscribes/credits exactly once")
-            if "--community" in sys.argv:
+            if "--community" in sys.argv or "--identity" in sys.argv:
                 for label, content in [
                     ("community correction migration",(repo / "supabase/migrations/20261103200000_community_membership.sql").read_text()),
                     ("unified community contracts",(repo / "tests/community-membership.sql").read_text()),
@@ -149,6 +149,22 @@ COMMIT;
                 assert all(r.returncode==0 for r in reservations),str([r.stderr for r in reservations])
                 assert sum(" t" in r.stdout for r in reservations)==1,"Parallel recovery budget bypass"
                 print("PASS parallel recovery attempts serialize at email limit")
+                if "--identity" in sys.argv:
+                    for label,content in [
+                        ("identity migration",(repo / "supabase/migrations/20261103220000_member_identity.sql").read_text()),
+                        ("identity security contracts",(repo / "tests/member-identity.sql").read_text()),
+                    ]:
+                        result=sql(content)
+                        if result.returncode: raise RuntimeError(f"{label}: {result.stderr[-3500:]}")
+                        print(f"PASS {label}")
+                    guesses="SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',false); SELECT public.member_identity('verify','{\"channel\":\"email\",\"code\":\"000000\"}');"
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                        guesses_result=list(executor.map(sql,[guesses,guesses]))
+                    assert all(r.returncode==0 for r in guesses_result),str([r.stderr for r in guesses_result])
+                    invariant=sql("SELECT attempts=2 FROM public.member_identity_challenges WHERE user_id='00000000-0000-4000-8000-000000000013' AND channel='email';")
+                    assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+                    print("PASS concurrent wrong OTP guesses persist both attempts")
+
 
 
     finally:

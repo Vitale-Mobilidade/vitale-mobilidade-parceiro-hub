@@ -52,6 +52,16 @@ export function memberError(error: unknown): string {
       ? String(error.message)
       : "";
   const messages: Record<string, string> = {
+    identity_verification_required:
+      "Valide seu e-mail e celular na Minha conta para participar.",
+    identity_invalid_code:
+      "Código inválido ou já utilizado. Confira os seis dígitos ou solicite um novo código.",
+    identity_code_expired:
+      "Esse código expirou. Solicite um novo para continuar.",
+    identity_rate_limited:
+      "Aguarde antes de solicitar outro código. Há um limite de tentativas por hora.",
+    invalid_phone:
+      "Informe seu celular com DDD e autorize o recebimento do código pelo WhatsApp.",
     community_join_required:
       "Entre na comunidade pela Minha conta para participar.",
     community_consent_required:
