@@ -1,5 +1,7 @@
 # Ativação de contas e indicações — 03/11/2026
 
+> **Estado final: publicado e ativo.** Contrato vigente: [acesso imediato e recuperação Resend](COMMUNITY_IMMEDIATE_ACCESS_2026-11-03.md). As pausas e confirmações abaixo são registros históricos anteriores à correção do responsável.
+
 O responsável respondeu “pode seguir e implementar” após a entrega local informar publicação/migration pendentes de autorização. Esta continuação executa a ativação desse escopo no projeto Lovable `638f4032-8ff8-45dd-b03b-e69c0c064154`, preservando as condições técnicas de recuperação e validação. Não inclui curtidas, ranking público, pagamentos, anúncios ou sorteios.
 
 ## Revisão prévia de ativação
@@ -52,3 +54,5 @@ A promessa do teste de e-mail anterior continua válida: a caixa fornecida não 
 ## Segunda correção: acesso imediato, Resend e publicação pausada
 
 O responsável confirmou recebimento do e-mail de teste, mas rejeitou o remetente/fluxo padrão Lovable e a exigência de confirmação. Antes de qualquer merge/publicação, foi preparado e validado o [acesso imediato com recuperação pelo Resend](COMMUNITY_IMMEDIATE_ACCESS_2026-11-03.md). PR #59 continua aberta; três migrations aplicadas com gates desligados; quarta migration pronta apenas localmente. Auto-confirm ainda não alterado. Não houve fallback, segunda confirmação ou novo envio de teste.
+
+Resultado final: quatro migrations aplicadas, auto-confirm autorizado e ligado, funções implantadas, recuperação Resend recebida pelo responsável e formulário/área de comentários conferidos no domínio. Deployment 175d268c-4d61-4b58-8ca2-f96bb96d2152; código 9c1a468. Evidências e oito pareceres finais no documento vigente.
