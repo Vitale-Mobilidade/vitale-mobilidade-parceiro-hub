@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-03",
+  "branch": "codex/member-accounts-2026-11-03",
+  "base": "540fc1d",
+  "environment": "local synthetic only; no production changes or real email",
+  "targeted_tests": {
+    "status": "pass",
+    "tests": 19
+  },
+  "operational_gate": {
+    "command": "pnpm validate",
+    "status": "pass",
+    "tests": 66,
+    "includes": "typecheck and client/SSR build"
+  },
+  "database": {
+    "status": "pass",
+    "engine": "PostgreSQL 17 disposable, Unix socket only",
+    "checks": "permissions, confirmation, ownership, published content, moderation, suspension, removal, snapshot name, pagination, daily counter, concurrent writes"
+  },
+  "ui": {
+    "status": "pass",
+    "browser": "Chrome headless",
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        1024,
+        800
+      ]
+    ],
+    "api": "mocked",
+    "external_requests": 0,
+    "runtime_errors": 0
+  },
+  "lint": "new modules pass",
+  "diff_check": "pass",
+  "release": "not applied or published; both feature switches default off"
+}

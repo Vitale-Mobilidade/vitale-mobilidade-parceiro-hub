@@ -1,4 +1,5 @@
-// Registra inscrição consentida. Não envia e-mail nem habilita disparos.
+// Compatibility writer for previously published newsletter forms, plus community invitation visits.
+// New community membership/consent is completed atomically by member_community_account.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -18,14 +19,26 @@ Deno.serve(async (req) => {
     const raw = await req.text();
     if (raw.length > 2000) return json({ ok: false }, 400);
     const body = JSON.parse(raw || "{}") as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ ok: false }, 400);
     if (typeof body.website === "string" && body.website.trim()) return json({ ok: true });
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const fp = await fingerprint(req);
+    if (body.action === "community_referral_visit") {
+      if (Deno.env.get("NEWSLETTER_REFERRALS_ENABLED") === "false" || typeof body.referralCode !== "string" || !/^[a-f0-9]{32}$/.test(body.referralCode)) return json({ ok: true });
+      let actorId: string | null = null;
+      const bearer = req.headers.get("authorization")?.replace(/^Bearer /i, "");
+      if (bearer && bearer !== Deno.env.get("SUPABASE_ANON_KEY") && bearer.split(".").length === 3) {
+        const { data } = await supabase.auth.getUser(bearer);
+        actorId = data.user?.id ?? null;
+      }
+      const { error } = await supabase.rpc("newsletter_referral_service", { p_action: "visit", p_payload: { code: body.referralCode, fingerprint: fp, actorId } });
+      return error ? json({ ok: false }, 503) : json({ ok: true });
+    }
     const name = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ") : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     if (name.length < 2 || name.length > 80 || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || body.consent !== true) {
       return json({ ok: false, error: "Confira nome, e-mail e autorização." }, 400);
     }
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-    const fp = await fingerprint(req);
     const now = new Date();
     const { data: throttle, error: throttleError } = await supabase.from("newsletter_throttle").select("attempts, window_started_at").eq("fingerprint", fp).maybeSingle();
     if (throttleError) return json({ ok: false }, 503);

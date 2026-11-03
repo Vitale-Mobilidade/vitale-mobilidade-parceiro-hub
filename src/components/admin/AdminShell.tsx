@@ -1,3 +1,4 @@
+import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,7 +36,7 @@ async function verifyAdminAccess(force = false): Promise<AdminSession> {
 
 const NAV = [
   { title: "Operação", links: [["Visão geral", "/admin"], ["Growth", "/admin/growth"], ["Newsletter", "/admin/newsletter"], ["Radar · alertas", "/admin/radar"], ["Bikes", "/admin/bikes"]] },
-  { title: "Conteúdo", links: [["Vídeos", "/admin/videos"], ["Artigos", "/admin/conteudos"]] },
+  { title: "Conteúdo", links: [["Vídeos", "/admin/videos"], ["Artigos", "/admin/conteudos"], ... (memberAccountsEnabled ? [["Comentários", "/admin/comentarios"] as const] : [])] },
   { title: "Sistema", links: [["Grupo de ofertas", "/admin/grupo-de-ofertas"], ["IA", "/admin/ia"], ["Logs", "/admin/logs"]] },
 ] as const;
 
@@ -183,7 +184,7 @@ export function AdminShell({ children }: Props) {
       <nav aria-label="Navegação administrativa" className="flex gap-4 overflow-x-auto pb-2 md:block md:space-y-6">
         {NAV.map(group => {
           const links = group.links.filter(([, href]) => {
-            if (["/admin/growth", "/admin/newsletter", "/admin/radar", "/admin/grupo-de-ofertas"].includes(href) && role !== "admin") return false;
+            if (["/admin/growth", "/admin/newsletter", "/admin/radar", "/admin/grupo-de-ofertas", "/admin/comentarios"].includes(href) && role !== "admin") return false;
             return role !== "operation" || ["/admin", "/admin/bikes"].includes(href);
           });
           if (!links.length) return null;
