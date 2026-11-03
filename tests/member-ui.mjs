@@ -181,8 +181,8 @@ try {
     console.log('PASS stable personal invitation, clipboard, encoded WhatsApp link and dashboard error/retry');
 
     await page.goto(`${origin}/newsletter?ref=${referralCode}`,{waitUntil:"networkidle"});
-    const joinLink=page.getByRole('link',{name:'crie sua conta',exact:true});
-    assert.equal(await joinLink.getAttribute('href'),`/conta?modo=cadastro&convite=${referralCode}`);
+    assert.equal(await page.getByRole('link',{name:'Criar conta e participar',exact:true}).count(),0);
+    assert.equal(await page.getByRole('link',{name:'crie sua conta',exact:true}).count(),0);
     assert.equal(await page.locator('input[type="email"]').count(),1);
     const signupBefore=requests.filter(r=>r.path.endsWith('/signup')).length;
     await page.getByLabel('Seu nome',{exact:true}).fill('Só newsletter');
@@ -191,10 +191,10 @@ try {
     await page.screenshot({path:new URL(screenshots+'invitation-newsletter-mobile.png',import.meta.url).pathname,fullPage:true});
     await page.getByRole('region',{name:'Inscrição na newsletter',exact:true}).screenshot({path:new URL(screenshots+'newsletter-only-mobile.png',import.meta.url).pathname,style:'header {visibility:hidden;}'});
     await page.getByRole('button',{name:'Cadastrar e-mail',exact:true}).click();
-    await page.getByRole('status').filter({hasText:'Inscrição recebida'}).waitFor();
+    await page.getByRole('status').filter({hasText:'Cadastro confirmado. Guardamos seu nome e e-mail'}).waitFor();
     assert.equal(requests.filter(r=>r.path.endsWith('/signup')).length,signupBefore);
     assert(requests.some(r=>r.path.endsWith('newsletter-interest') && r.input.email==='newsletter-only@example.invalid' && r.input.consent===true));
-    assert(requests.some(r=>r.input.action==='community_referral_visit' && r.input.referralCode===referralCode));
+    assert(!requests.some(r=>r.input.action==='community_referral_visit' && r.input.referralCode===referralCode));
     assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'),'https://vitalemobilidade.com/newsletter');
     await page.goto(`${origin}/conta`);
     await page.getByRole('textbox',{name:'Seu link pessoal',exact:true}).waitFor();
@@ -205,7 +205,7 @@ try {
     await page.reload();
     await page.getByText('assinatura cancelada',{exact:true}).waitFor();
     assert.equal(requests.filter(r=>r.path.endsWith('member_community_account') && r.input.p_action==='join').length,joinsBefore);
-    console.log('PASS community invitation links/metrics, newsletter CTA, no second confirmation and later unsubscribe preserved');
+    console.log('PASS community invitation links/metrics, independent newsletter capture, no second confirmation and later unsubscribe preserved');
 
   }
 
