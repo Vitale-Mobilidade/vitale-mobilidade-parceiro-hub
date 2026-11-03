@@ -16,11 +16,11 @@ const external = [];
 const errors = [];
 page.on('pageerror', (e) => { errors.push(e.message); console.error('Browser error:', e.message); });
 const user = { id: '00000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: 'leitor@example.invalid', email_confirmed_at: new Date().toISOString(), app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: { display_name: 'Leitor teste' }, identities: [], created_at: new Date().toISOString() };
-const testReferrals = process.env.MEMBER_TEST_REFERRALS === 'true';
-const screenshots = testReferrals ? '../artifacts/newsletter-referrals/' : '../artifacts/member-accounts/';
+const testReferrals = process.env.MEMBER_TEST_COMMUNITY === 'true';
+const screenshots = testReferrals ? '../artifacts/community-membership/' : '../artifacts/member-accounts/';
 const referralCode = 'a'.repeat(32);
 let visits = 0, pendingReferrals = 0, confirmedReferrals = 0;
-let dashboardError = false, failConfirmOnce = true;
+let dashboardError = false;
 let profile = null;
 let communityEnabled = true;
 let comment = null;
@@ -39,26 +39,27 @@ await context.route('**/*', async (route) => {
   const input = request.postDataJSON() || {};
   requests.push({ path: url.pathname, input });
   const reply = (data, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': origin }, body: JSON.stringify(data) });
-  if (url.pathname.endsWith('/signup')) return reply(user);
+  if (url.pathname.endsWith('/signup')) { user.user_metadata = input.data; return reply(user); }
   if (url.pathname.endsWith('/recover') || url.pathname.endsWith('/resend') || url.pathname.endsWith('/logout')) return reply({});
   if (url.pathname.endsWith('/token')) return input.email === 'erro@example.invalid' ? reply({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400) : reply(session);
   if (url.pathname.endsWith('/user')) return reply(user);
   if (url.pathname === '/rest/v1/rpc/member_referrals') return dashboardError ? reply({message:'unavailable'},503) : reply({enabled:true,code:referralCode,visits,pending:pendingReferrals,confirmed:confirmedReferrals,history:confirmedReferrals?[{day:'2026-11-03',confirmed:confirmedReferrals}]:[]});
   if (url.pathname === '/functions/v1/newsletter-interest') {
-    if (input.action === 'referral_visit') { visits++; return reply({ok:true}); }
-    if (input.action === 'confirm_referral') {
-      if (failConfirmOnce) { failConfirmOnce=false; return reply({ok:false,error:'referral_unavailable'},503); }
-      confirmedReferrals=1; pendingReferrals=0; return reply({ok:true});
+    assert.equal(input.action,'community_referral_visit');
+    visits++; return reply({ok:true});
+  }
+  if (url.pathname === '/rest/v1/rpc/member_community_account') {
+    if (input.p_action === 'join' && !profile?.communityJoinedAt) {
+      profile = { displayName:input.p_payload.displayName || user.user_metadata.display_name, suspended:false,createdAt:new Date().toISOString(), communityJoinedAt:new Date().toISOString(),newsletterSubscribed:true };
     }
-    if (input.referralCode) { pendingReferrals=1; return reply({ok:true,confirmationRequired:true}); }
-    return reply({ok:true});
+    return reply(profile);
   }
   assert.equal(url.pathname, '/rest/v1/rpc/member_community');
   const payload = input.p_payload;
   switch (input.p_action) {
     case 'status': return reply({ enabled: communityEnabled });
     case 'profile': return reply(profile);
-    case 'save_profile': profile = { displayName: payload.displayName, suspended: false, createdAt: new Date().toISOString() }; return reply(profile);
+    case 'save_profile': profile = { ...profile, displayName: payload.displayName, suspended: false, createdAt: new Date().toISOString() }; return reply(profile);
     case 'comments': return reply([
       ...(comment && comment.status !== 'removed' ? [comment] : []),
       { id: '20000000-0000-4000-8000-000000000001', body: '<img src=x onerror=alert(1)> dúvida', authorName: '<b>Ana</b>', status: 'approved', createdAt: new Date().toISOString(), isOwn: false },
@@ -75,7 +76,7 @@ try {
   const response = await page.goto(`${origin}/conta`);
   assert.equal(response.headers()['cache-control'], 'private, no-store');
   assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'), /noindex/);
-  await page.getByRole('heading', {name:'Entre na Vitale'}).waitFor();
+  await page.getByRole('heading', {name:'Entre na comunidade Vitale'}).waitFor();
   await page.getByRole('button', {name:'Criar conta gratuita',exact:true}).click();
   await page.getByLabel('Nome público',{exact:true}).fill('Leitor teste');
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);
@@ -84,7 +85,8 @@ try {
   await page.getByRole('button',{name:'Criar conta',exact:true}).press('Enter');
   await page.getByRole('status').filter({hasText:'Confira seu e-mail'}).waitFor();
   assert.equal(requests.filter(r=>r.path.endsWith('/signup')).length,1);
-  assert.deepEqual(Object.keys(requests.find(r=>r.path.endsWith('/signup')).input.data),['display_name']);
+  const metadata = requests.find(r=>r.path.endsWith('/signup')).input.data;
+  assert.deepEqual(metadata,{display_name:'Leitor teste',community_consent_version:'2026-11-03',community_newsletter_consent:true});
   assert(!requests.some(r=>/newsletter|quiz|editorial-admin/.test(r.path)));
   await page.getByRole('button',{name:'Já tenho conta',exact:true}).click();
   await page.getByLabel('E-mail',{exact:true}).fill('erro@example.invalid');
@@ -100,6 +102,8 @@ try {
   await page.getByLabel('Senha',{exact:true}).fill('minha-senha-local-123');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
   await page.getByRole('heading',{name:'Minha conta',exact:true}).waitFor();
+  await page.getByText('assinatura ativa',{exact:true}).waitFor();
+  assert.equal(requests.filter(r=>r.path.endsWith('member_community_account') && r.input.p_action==='join').length,1);
   await page.getByLabel('Nome público',{exact:true}).fill('Meu nome público');
   await page.getByRole('checkbox').check();
   await page.getByRole('button',{name:'Salvar perfil'}).click();
@@ -116,15 +120,15 @@ try {
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth));
   await page.screenshot({path:new URL(screenshots+'account-desktop.png',import.meta.url).pathname,fullPage:true});
   await page.setViewportSize({width:390,height:844});
-  console.log('PASS keyboard signup, mobile/desktop layout, login failure/success, password recovery/update, profile, no subscription');
+  console.log('PASS keyboard signup, mobile/desktop layout, login failure/success, password recovery/update, profile and one automatic community/newsletter adhesion');
 
   if (testReferrals) {
     const invitation = page.getByRole('textbox',{name:'Seu link pessoal',exact:true});
     await invitation.waitFor();
-    assert.equal(await invitation.inputValue(),`https://vitalemobilidade.com/newsletter?ref=${referralCode}`);
+    assert.equal(await invitation.inputValue(),`https://vitalemobilidade.com/conta?modo=cadastro&convite=${referralCode}`);
     const whatsapp = await page.getByRole('link',{name:'Compartilhar no WhatsApp'}).getAttribute('href');
     assert.equal(new URL(whatsapp).hostname,'wa.me');
-    assert(new URL(whatsapp).searchParams.get('text').includes(`?ref=${referralCode}`));
+    assert(new URL(whatsapp).searchParams.get('text').includes(`convite=${referralCode}`));
     await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
     await page.getByRole('button',{name:'Copiar convite'}).click();
     await page.getByRole('status').filter({hasText:'Link copiado'}).waitFor();
@@ -138,37 +142,23 @@ try {
     console.log('PASS stable personal invitation, clipboard, encoded WhatsApp link and dashboard error/retry');
 
     await page.goto(`${origin}/newsletter?ref=${referralCode}`,{waitUntil:"networkidle"});
-    await page.getByLabel('Seu nome',{exact:true}).fill('Pessoa convidada');
-    await page.getByLabel('Seu e-mail',{exact:true}).fill('convidado@example.invalid');
-    await page.getByRole('checkbox').check();
-    await page.getByRole('button',{name:'Cadastrar e-mail'}).click();
-    await page.getByRole('status').filter({hasText:'Se esta for uma nova inscrição'}).waitFor();
-    assert.equal(await page.evaluate(()=>localStorage.getItem('vitale-newsletter-subscribed')),null);
-    assert(requests.some(r=>r.input.action==='referral_visit' && r.input.referralCode===referralCode));
-    assert(requests.some(r=>r.path.endsWith('newsletter-interest') && r.input.email==='convidado@example.invalid' && r.input.referralCode===referralCode));
-    const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-    assert.equal(canonical,'https://vitalemobilidade.com/newsletter');
+    const joinLink=page.getByRole('link',{name:'Criar conta e participar',exact:true});
+    assert.equal(await joinLink.getAttribute('href'),`/conta?modo=cadastro&convite=${referralCode}`);
+    assert.equal(await page.locator('input[type="email"]').count(),0);
+    assert(requests.some(r=>r.input.action==='community_referral_visit' && r.input.referralCode===referralCode));
+    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'),'https://vitalemobilidade.com/newsletter');
     await page.screenshot({path:new URL(screenshots+'invitation-newsletter-mobile.png',import.meta.url).pathname,fullPage:true});
-    const countBefore = requests.filter(r=>r.input.action==='confirm_referral').length;
-    const confirmationResponse=await page.goto(`${origin}/newsletter/confirmar#token=${'b'.repeat(64)}`);
-    assert.equal(confirmationResponse.headers()['cache-control'],'private, no-store');
-    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).waitFor();
-    assert(!page.url().includes('#'));
-    assert.equal(requests.filter(r=>r.input.action==='confirm_referral').length,countBefore);
-    assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'),/noindex/);
-    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).press('Enter');
-    await page.getByRole('alert').filter({hasText:'Não foi possível confirmar'}).waitFor();
-    await page.getByRole('button',{name:'Confirmar inscrição',exact:true}).click();
-    await page.getByRole('heading',{name:'Inscrição confirmada',exact:true}).waitFor();
-    assert.equal(await page.evaluate(()=>localStorage.getItem('vitale-newsletter-subscribed')),'1');
-    await page.screenshot({path:new URL(screenshots+'confirmation-mobile.png',import.meta.url).pathname,fullPage:true});
     await page.goto(`${origin}/conta`);
     await page.getByRole('textbox',{name:'Seu link pessoal',exact:true}).waitFor();
-    const confirmed=page.locator('dl > div').filter({has:page.getByText('Indicações confirmadas',{exact:true})});
-    assert.equal(await confirmed.locator('dd').textContent(),'1');
-    await page.getByRole('region',{name:'Convide para a newsletter',exact:true}).screenshot({path:new URL(screenshots+'referral-panel-mobile.png',import.meta.url).pathname,style:'header { visibility:hidden; }'});
+    await page.getByRole('region',{name:'Convide para a comunidade',exact:true}).screenshot({path:new URL(screenshots+'referral-panel-mobile.png',import.meta.url).pathname,style:'header { visibility:hidden; }'});
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
-    console.log('PASS referred signup waits for email; explicit private confirmation and retry update owner totals');
+    const joinsBefore=requests.filter(r=>r.path.endsWith('member_community_account') && r.input.p_action==='join').length;
+    profile.newsletterSubscribed=false;
+    await page.reload();
+    await page.getByText('assinatura cancelada',{exact:true}).waitFor();
+    assert.equal(requests.filter(r=>r.path.endsWith('member_community_account') && r.input.p_action==='join').length,joinsBefore);
+    console.log('PASS community invitation links/metrics, newsletter CTA, no second confirmation and later unsubscribe preserved');
+
   }
 
   await page.goto(fixture('comments'));
@@ -193,7 +183,7 @@ try {
 
   await page.goto(`${origin}/conta`);
   await page.getByRole('button',{name:'Sair desta conta'}).click();
-  await page.getByRole('heading',{name:'Entre na Vitale'}).waitFor();
+  await page.getByRole('heading',{name:'Entre na comunidade Vitale'}).waitFor();
   await page.goto(`${origin}/conta?modo=senha`);
   await page.getByRole('heading',{name:'Recuperar acesso'}).waitFor();
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);
@@ -205,11 +195,23 @@ try {
   await page.getByRole('button',{name:'Salvar nova senha'}).click();
   await page.getByRole('status').filter({hasText:'Senha atualizada'}).waitFor();
   await page.getByRole('button',{name:'Sair desta conta'}).click();
-  await page.getByRole('heading',{name:'Entre na Vitale'}).waitFor();
+  await page.getByRole('heading',{name:'Entre na comunidade Vitale'}).waitFor();
   console.log('PASS expired/missing recovery session fallback and simulated email recovery callback');
+  user.user_metadata={display_name:'Conta antiga'}; profile=null;
+  await page.getByLabel('E-mail',{exact:true}).fill(user.email);
+  await page.getByLabel('Senha',{exact:true}).fill('minha-senha-local-123');
+  await page.getByRole('button',{name:'Entrar',exact:true}).click();
+  await page.getByRole('button',{name:'Entrar na comunidade',exact:true}).waitFor();
+  assert.equal(profile,null);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Entrar na comunidade',exact:true}).click();
+  await page.getByText('assinatura ativa',{exact:true}).waitFor();
+  assert(requests.some(r=>r.input.p_action==='join' && r.input.p_payload.acknowledged===true));
+  await page.getByRole('button',{name:'Sair desta conta'}).click();
+  console.log('PASS old account joins only after explicit combined consent');
   communityEnabled = false;
   await page.goto(`${origin}/conta`);
-  await page.getByText('A área de leitores está temporariamente indisponível.',{exact:true}).waitFor();
+  await page.getByText('A comunidade está temporariamente indisponível.',{exact:true}).waitFor();
   assert.equal(await page.getByRole('button',{name:'Criar conta gratuita',exact:true}).count(),0);
   assert.equal(external.length,0, `External requests: ${external.join(', ')}`);
   assert.deepEqual(errors,[]);

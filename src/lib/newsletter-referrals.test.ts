@@ -18,7 +18,7 @@ it.each([
 it("creates fixed-origin encoded sharing links with no contact or recipient data", () => {
   const code = "a".repeat(32);
   expect(referralLink(code)).toBe(
-    `https://vitalemobilidade.com/newsletter?ref=${code}`,
+    `https://vitalemobilidade.com/conta?modo=cadastro&convite=${code}`,
   );
   const whatsapp = new URL(referralWhatsAppLink(code));
   expect(whatsapp.hostname).toBe("wa.me");

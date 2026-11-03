@@ -17,6 +17,8 @@ export const memberProfileSchema = z.object({
   displayName: displayNameSchema,
   suspended: z.boolean(),
   createdAt: z.string(),
+  communityJoinedAt: z.string().nullable().optional(),
+  newsletterSubscribed: z.boolean().optional(),
 });
 export const memberCommentSchema = z.object({
   id: z.string().uuid(),
@@ -50,7 +52,11 @@ export function memberError(error: unknown): string {
       ? String(error.message)
       : "";
   const messages: Record<string, string> = {
-    community_disabled: "A área de leitores está temporariamente indisponível.",
+    community_join_required:
+      "Entre na comunidade pela Minha conta para participar.",
+    community_consent_required:
+      "Confirme sua adesão à comunidade, que inclui o recebimento da newsletter.",
+    community_disabled: "A comunidade está temporariamente indisponível.",
     email_confirmation_required:
       "Confirme seu e-mail e entre novamente para continuar.",
     profile_required: "Complete seu perfil na Minha conta antes de comentar.",

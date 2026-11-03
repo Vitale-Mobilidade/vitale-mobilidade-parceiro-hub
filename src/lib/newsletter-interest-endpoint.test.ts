@@ -2,18 +2,13 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { expect, it, vi } from "vitest";
-import { newsletterReferral } from "../../supabase/functions/_shared/newsletter-referrals";
 
-function harness(
-  enabled = true,
-  result: unknown = { kind: "pending", send: false },
-) {
+function harness(enabled = true, result: unknown = { kind: "recorded" }) {
   let handler: (req: Request) => Promise<Response> = async () =>
     new Response(null, { status: 500 });
   const subscribe = vi.fn().mockResolvedValue({ error: null });
   const throttle = vi.fn().mockResolvedValue({ error: null });
   const rpc = vi.fn().mockResolvedValue({ data: result, error: null });
-  const send = vi.fn().mockResolvedValue(undefined);
   const getUser = vi.fn().mockResolvedValue({
     data: { user: { id: "00000000-0000-4000-8000-000000000002" } },
     error: null,
@@ -55,7 +50,7 @@ function harness(
         ? { corsHeaders: { "Access-Control-Allow-Origin": "*" } }
         : name.startsWith("npm:")
           ? { createClient: () => db }
-          : { newsletterReferral, sendReferralConfirmation: send },
+          : {},
     Deno: {
       env: {
         get: (key: string) =>
@@ -78,7 +73,7 @@ function harness(
     Uint8Array,
     Array,
   });
-  return { handler, subscribe, throttle, rpc, send, getUser };
+  return { handler, subscribe, throttle, rpc, getUser };
 }
 const code = "a".repeat(32);
 const input = {
@@ -112,7 +107,6 @@ it("ordinary newsletter keeps its existing normalized writer and no referral cal
     { onConflict: "email" },
   );
   expect(h.rpc).not.toHaveBeenCalled();
-  expect(h.send).not.toHaveBeenCalled();
 });
 it("disabled referrals still accept ordinary newsletter signup", async () => {
   const h = harness(false);
@@ -122,21 +116,13 @@ it("disabled referrals still accept ordinary newsletter signup", async () => {
   expect(h.subscribe).toHaveBeenCalledTimes(1);
   expect(h.rpc).not.toHaveBeenCalled();
 });
-it("referred pending signup does not enter the campaign writer or leak private fields", async () => {
-  const h = harness(true, {
-    kind: "pending",
-    send: true,
-    id: "id",
-    nonce: "nonce",
-    token: "b".repeat(64),
-    email: "guest@example.invalid",
-    from: "newsletter@example.invalid",
-  });
+it("cached newsletter forms retain the writer without creating a community member", async () => {
+  const h = harness();
   const result = await h.handler(post({ ...input, referralCode: code }));
   expect(result.status).toBe(200);
-  expect(await result.json()).toEqual({ ok: true, confirmationRequired: true });
-  expect(h.subscribe).not.toHaveBeenCalled();
-  expect(h.send).toHaveBeenCalledTimes(1);
+  expect(await result.json()).toEqual({ ok: true });
+  expect(h.subscribe).toHaveBeenCalledOnce();
+  expect(h.rpc).not.toHaveBeenCalled();
 });
 it("requires newsletter consent even when a referral code is present", async () => {
   const h = harness();
@@ -145,12 +131,18 @@ it("requires newsletter consent even when a referral code is present", async () 
       .status,
   ).toBe(400);
   expect(h.rpc).not.toHaveBeenCalled();
-  expect(h.send).not.toHaveBeenCalled();
 });
 it("ignores forged identity and uses verified Auth identity", async () => {
   const h = harness();
   await h.handler(
-    post({ ...input, referralCode: code, actorId: "forged" }, true),
+    post(
+      {
+        action: "community_referral_visit",
+        referralCode: code,
+        actorId: "forged",
+      },
+      true,
+    ),
   );
   expect(h.getUser).toHaveBeenCalledWith("a.b.c");
   expect(h.rpc).toHaveBeenCalledWith(
@@ -165,18 +157,20 @@ it("ignores forged identity and uses verified Auth identity", async () => {
 it("visit needs no mailbox or consent and never subscribes or sends", async () => {
   const h = harness(true, { kind: "recorded" });
   expect(
-    (await h.handler(post({ action: "referral_visit", referralCode: code })))
-      .status,
+    (
+      await h.handler(
+        post({ action: "community_referral_visit", referralCode: code }),
+      )
+    ).status,
   ).toBe(200);
   expect(h.rpc).toHaveBeenCalledWith(
     "newsletter_referral_service",
     expect.objectContaining({ p_action: "visit" }),
   );
   expect(h.subscribe).not.toHaveBeenCalled();
-  expect(h.send).not.toHaveBeenCalled();
 });
-it("confirmation is POST only and does not expose the raw token in success", async () => {
-  const h = harness(true, { kind: "confirmed" });
+it("has no second newsletter confirmation and accepts no GET mutation", async () => {
+  const h = harness();
   expect(
     (
       await h.handler(
@@ -184,14 +178,31 @@ it("confirmation is POST only and does not expose the raw token in success", asy
       )
     ).status,
   ).toBe(405);
+  expect(
+    (
+      await h.handler(
+        post({ action: "confirm_referral", token: "b".repeat(64) }),
+      )
+    ).status,
+  ).toBe(400);
   expect(h.rpc).not.toHaveBeenCalled();
-  const result = await h.handler(
-    post({ action: "confirm_referral", token: "b".repeat(64) }),
-  );
-  expect(await result.json()).toEqual({ ok: true });
   expect(h.subscribe).not.toHaveBeenCalled();
-  expect(h.send).not.toHaveBeenCalled();
 });
+it.each([false, true])(
+  "invalid or disabled visits are harmless without newsletter writes (%s)",
+  async (enabled) => {
+    const h = harness(enabled);
+    const result = await h.handler(
+      post({
+        action: "community_referral_visit",
+        referralCode: enabled ? "invalid" : code,
+      }),
+    );
+    expect(await result.json()).toEqual({ ok: true });
+    expect(h.rpc).not.toHaveBeenCalled();
+    expect(h.subscribe).not.toHaveBeenCalled();
+  },
+);
 it("rejects malformed JSON shapes and bots before any provider request", async () => {
   const h = harness();
   expect((await h.handler(post([]))).status).toBe(400);
@@ -201,5 +212,4 @@ it("rejects malformed JSON shapes and bots before any provider request", async (
   ).toBe(200);
   expect(h.rpc).not.toHaveBeenCalled();
   expect(h.subscribe).not.toHaveBeenCalled();
-  expect(h.send).not.toHaveBeenCalled();
 });

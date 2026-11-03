@@ -52,11 +52,11 @@ export function ReferralPanel() {
       data-heatmap-private
     >
       <h2 id="referral-title" className="text-2xl font-bold text-ink">
-        Convide para a newsletter
+        Convide para a comunidade
       </h2>
       <p className="mt-3 text-muted-foreground">
-        Compartilhe seu convite. Cada nova inscrição confirmada pelo e-mail
-        conta como uma indicação sua.
+        Compartilhe seu convite. Cada novo membro que confirma o e-mail e entra
+        na comunidade conta como uma indicação sua.
       </p>
       {error && (
         <p role="alert" className="mt-4 text-red-800">
@@ -104,8 +104,8 @@ export function ReferralPanel() {
           <dl className="mt-6 grid gap-3 sm:grid-cols-3">
             {[
               ["Acessos ao link", data.visits],
-              ["Aguardam confirmação", data.pending],
-              ["Indicações confirmadas", data.confirmed],
+              ["Cadastros a confirmar", data.pending],
+              ["Novos membros indicados", data.confirmed],
             ].map(([label, value]) => (
               <div key={String(label)} className="rounded-xl bg-surface p-4">
                 <dt className="text-sm text-muted-foreground">{label}</dt>
@@ -116,9 +116,10 @@ export function ReferralPanel() {
             ))}
           </dl>
           <p className="mt-4 text-sm text-muted-foreground">
-            Acessos podem incluir mais de uma visita da mesma pessoa. Inscritos
-            anteriores, repetições e autoindicações identificadas não contam.
-            Convites aguardam confirmação por até 48 horas.
+            Acessos podem incluir mais de uma visita da mesma pessoa. Quem já
+            participa da comunidade, repetições e autoindicações identificadas
+            não contam. Cadastros ainda não confirmados aparecem por até 48
+            horas.
           </p>
           <h3 className="mt-6 font-bold">Confirmações nos últimos 30 dias</h3>
           {data.history.length ? (
@@ -140,7 +141,7 @@ export function ReferralPanel() {
             </ul>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
-              Suas primeiras indicações confirmadas aparecerão aqui.
+              Seus primeiros membros indicados aparecerão aqui.
             </p>
           )}
           <p className="mt-4 text-sm text-muted-foreground">

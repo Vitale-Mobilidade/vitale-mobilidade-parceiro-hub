@@ -29,13 +29,13 @@ with tempfile.TemporaryDirectory(prefix="vitale-member-test-") as directory:
         bootstrap = """
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users(id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false);
+CREATE TABLE auth.users(id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false,raw_user_meta_data jsonb DEFAULT '{}',confirmation_sent_at timestamptz,created_at timestamptz DEFAULT now());
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role;
 CREATE TABLE public.editorial_admin_memberships(user_id uuid PRIMARY KEY, active boolean, role text);
 REVOKE ALL ON public.editorial_admin_memberships FROM PUBLIC,anon,authenticated;
 CREATE TABLE public.editorial_articles(id uuid PRIMARY KEY, status text, title text, slug text);
-INSERT INTO auth.users VALUES
+INSERT INTO auth.users(id,email,email_confirmed_at,is_anonymous) VALUES
 ('00000000-0000-4000-8000-000000000001','admin@example.invalid',now(),false),
 ('00000000-0000-4000-8000-000000000002','a@example.invalid',now(),false),
 ('00000000-0000-4000-8000-000000000003','b@example.invalid',now(),false),
@@ -71,7 +71,7 @@ COMMIT;
         result = sql("SELECT count(*)=1 FROM public.member_article_comments WHERE body='Concurrent submission';")
         assert result.returncode == 0 and " t" in result.stdout, result.stderr
         print("PASS persisted concurrency invariant")
-        if "--referrals" in sys.argv:
+        if "--referrals" in sys.argv or "--community" in sys.argv:
             fixture = (repo / "supabase/migrations/20260925200500_newsletter_interest.sql").read_text() + """
 CREATE SCHEMA extensions;
 CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
@@ -114,5 +114,28 @@ CREATE TRIGGER newsletter_delivery_gate BEFORE INSERT OR UPDATE ON public.newsle
             invariant = sql("SELECT (SELECT count(*) FROM public.newsletter_subscriptions WHERE email='race@example.invalid')=1 AND (SELECT count(*) FROM public.member_referral_signups WHERE email_key=sha256(convert_to('race@example.invalid','UTF8')) AND credited)=1;")
             assert invariant.returncode == 0 and " t" in invariant.stdout, invariant.stderr
             print("PASS concurrent registration sends once; concurrent confirmation subscribes/credits exactly once")
+            if "--community" in sys.argv:
+                for label, content in [
+                    ("community correction migration",(repo / "supabase/migrations/20261103200000_community_membership.sql").read_text()),
+                    ("unified community contracts",(repo / "tests/community-membership.sql").read_text()),
+                ]:
+                    result=sql(content)
+                    if result.returncode: raise RuntimeError(f"{label}: {result.stderr[-3500:]}")
+                    print(f"PASS {label}")
+                join_sql="""
+BEGIN;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000011',true);
+SET LOCAL ROLE authenticated;
+SELECT public.member_community_account('join');
+SELECT pg_sleep(0.2);
+COMMIT;
+"""
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    joins=list(executor.map(sql,[join_sql,join_sql]))
+                assert all(r.returncode==0 for r in joins), str([r.stderr for r in joins])
+                invariant=sql("SELECT (SELECT count(*) FROM public.newsletter_subscriptions WHERE email='concurrent-member@example.invalid')=1 AND (SELECT count(*) FROM public.member_referral_signups WHERE invitee_user_id='00000000-0000-4000-8000-000000000011' AND community_member AND credited)=1;")
+                assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+                print("PASS concurrent first login subscribes and credits one community member exactly once")
+
     finally:
         subprocess.run([str(pg / "pg_ctl"), "-D", str(data), "-m", "fast", "-w", "stop"], check=True, env=env, stdout=subprocess.DEVNULL)

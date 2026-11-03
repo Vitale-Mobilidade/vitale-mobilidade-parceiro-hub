@@ -29,4 +29,21 @@ Classificação: **estrutural** (Auth, tabelas/RLS novas e inscrição de newsle
 
 ## Evidências da execução
 
-Em andamento. Atualizar somente com resultados observados; autorização não substitui recuperação nem validação.
+- Backup novo privado `database_export_03_11_26/vitale-mobilidade-parceiro-hub_261103.backup`, concluído em 03/11/2026 21:02:55 UTC, baixado em ZIP íntegro (26.809.789 bytes), SHA-256 `9b449a11944ec9c57ec1b9c5ae6d54cf62469be00c335e4f769fe9f091fd2294`. Material fora do Git, diretório restrito.
+- Ensaio proporcional passou: restauração de seis tabelas reais do backup e constraints de chave/check, sem dados pessoais, cron ou funções de rede. As três migrations e contratos completos de contas/indicações/comunidade passaram com registros sintéticos e o trigger real de entrega. FKs de outros módulos e recuperação completa da plataforma não fazem parte deste ensaio; rollback rotineiro é por switches/versão.
+- Auth conferido na UI: cadastro permitido; login por e-mail ligado; auto-confirmação desligada; anonymous desligado; secure email change e HIBP ligados; OTP de 3.600 segundos e oito dígitos; limite de 1.000 e-mails/hora. Domínios atuais permitem `/conta`; Site URL legado `https://vitale-mobilidade-parceiro-hub.lovable.app` preservado, pois signup/recuperação usam retorno explícito no domínio correto.
+- Política do provedor atualizada de seis para 12 caracteres, com confirmação de salvamento na UI; nenhuma credencial existente foi alterada.
+- PR #59 criada; preview Netlify passou. Status Vercel com falha será comparado ao baseline, pois o destino operacional é Lovable. Nenhum merge/publicação ainda neste ponto.
+- Ativação de código: 53 testes direcionados e `pnpm validate` (66 regressões e build SSR) passaram.
+- Usuário forneceu uma caixa própria para o teste de cadastro; o endereço não é registrado no Git. Não inscrever automaticamente essa caixa na newsletter.
+
+## Correção de escopo antes da publicação
+
+O responsável esclareceu cadastro único da comunidade com newsletter incluída, e convites para membros. Publicação/merge foram mantidos suspensos para incorporar [a decisão corrigida](COMMUNITY_MEMBERSHIP_2026-11-03.md). As migrations iniciais existem e permanecem desativadas; a correção será aditiva, sem remover histórico ou alterar inscritos antigos em massa.
+
+
+## Evidências do contrato corrigido
+
+37 testes direcionados, contratos SQL/conexões concorrentes, ensaio em schema real restaurado, smoke de interface e `pnpm validate` (66 regressões + build SSR) passaram. Sem chamadas externas nos testes. Novo preflight confirmou gates desligados, perfis/indicações vazios e um admin ativo. A newsletter passou de 90 para 91 registros durante a operação normal do site, sem escrita de teste nesta tarefa.
+
+A promessa do teste de e-mail anterior continua válida: a caixa fornecida não será inscrita silenciosamente. O teste de transporte pode criar uma conta Auth sem metadados de adesão; a assinatura só ocorrerá quando o próprio responsável aceitar a adesão combinada. Não afirmar recebimento de mensagem sem retorno da caixa.

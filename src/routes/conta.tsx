@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site/site-ui";
 import { MemberAccount } from "@/components/members/MemberAccount";
+import { referralCode } from "@/lib/newsletter-referrals";
 import {
   memberAccountsEnabled,
   memberReturnPath,
@@ -9,6 +10,7 @@ import {
 export const Route = createFileRoute("/conta")({
   validateSearch: (search: Record<string, unknown>) => ({
     retorno: memberReturnPath(search.retorno),
+    convite: referralCode(search.convite),
     modo: ["cadastro", "recuperar", "senha"].includes(String(search.modo))
       ? String(search.modo)
       : "entrar",
@@ -27,13 +29,17 @@ export const Route = createFileRoute("/conta")({
 });
 
 function AccountPage() {
-  const { retorno, modo } = Route.useSearch();
+  const { retorno, modo, convite } = Route.useSearch();
   return (
     <div className="min-h-screen bg-surface">
       <SiteHeader />
       <main className="mx-auto max-w-xl px-4 py-12" data-heatmap-private>
         {memberAccountsEnabled ? (
-          <MemberAccount returnTo={retorno} initialMode={modo} />
+          <MemberAccount
+            returnTo={retorno}
+            initialMode={modo}
+            invitationCode={convite}
+          />
         ) : (
           <>
             <h1 className="text-3xl font-bold">Minha conta</h1>

@@ -12,10 +12,10 @@ export function referralCode(value: unknown): string | undefined {
 export function referralLink(code: string) {
   const valid = referralCode(code);
   if (!valid) throw new Error("invalid_referral_code");
-  return `https://vitalemobilidade.com/newsletter?ref=${valid}`;
+  return `https://vitalemobilidade.com/conta?modo=cadastro&convite=${valid}`;
 }
 export function referralWhatsAppLink(code: string) {
-  return `https://wa.me/?text=${encodeURIComponent(`Receba artigos, vídeos e novidades sobre bikes elétricas na newsletter gratuita da Vitale: ${referralLink(code)}`)}`;
+  return `https://wa.me/?text=${encodeURIComponent(`Entre para a comunidade Vitale Mobilidade e receba nossa newsletter: ${referralLink(code)}`)}`;
 }
 export const referralDashboardSchema = z.discriminatedUnion("enabled", [
   z.object({ enabled: z.literal(false) }),

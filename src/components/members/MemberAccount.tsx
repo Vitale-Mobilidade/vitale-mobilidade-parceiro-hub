@@ -2,7 +2,11 @@ import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { newsletterReferralsEnabled } from "@/lib/newsletter-referrals";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemberSession } from "@/hooks/use-member-session";
-import { memberCall } from "@/lib/member-community-api";
+import { communityAccount, memberCall } from "@/lib/member-community-api";
+import {
+  communitySignupMetadata,
+  hasCommunityConsent,
+} from "@/lib/community-membership";
 import {
   displayNameSchema,
   memberError,
@@ -21,9 +25,23 @@ const ReferralPanel = lazy(() =>
   })),
 );
 
-type Props = { returnTo: string; initialMode: string };
+type Props = { returnTo: string; initialMode: string; invitationCode?: string };
 export function MemberAccount(props: Props) {
   const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!newsletterReferralsEnabled || !props.invitationCode) return;
+    void supabase.functions
+      .invoke("newsletter-interest", {
+        body: {
+          action: "community_referral_visit",
+          referralCode: props.invitationCode,
+        },
+      })
+      .catch(() => {
+        /* Visits never block membership. */
+      });
+  }, [props.invitationCode]);
+
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
@@ -47,14 +65,13 @@ export function MemberAccount(props: Props) {
       active = false;
     };
   }, [retry]);
-  if (available === null)
-    return <p role="status">Carregando área de leitores…</p>;
+  if (available === null) return <p role="status">Carregando comunidade…</p>;
   if (!available)
     return (
       <section>
         <h1 className="text-3xl font-bold">Minha conta</h1>
         <p role="status" className="mt-4">
-          A área de leitores está temporariamente indisponível.
+          A comunidade está temporariamente indisponível.
         </p>
         <button
           onClick={() => setRetry((n) => n + 1)}
@@ -70,7 +87,7 @@ export function MemberAccount(props: Props) {
   return <AccountWorkspace {...props} />;
 }
 
-function AccountWorkspace({ returnTo, initialMode }: Props) {
+function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
   const { session, loading } = useMemberSession();
   const [mode, setMode] = useState<Mode>(initialMode as Mode);
   const [profile, setProfile] = useState<MemberProfile | null>(null);
@@ -90,29 +107,49 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
     setReady(false);
     setProfile(null);
     if (!userId) return;
-    void memberCall("profile")
-      .then((data) => {
-        const next = memberProfileSchema.nullable().parse(data);
-        if (active) {
-          setProfile(next);
-          setName(
-            next?.displayName ??
-              String(session?.user.user_metadata?.display_name ?? ""),
-          );
-          setPrivacy(Boolean(next));
-          setReady(true);
-          setError("");
-        }
-      })
-      .catch((e) => {
-        if (active) setError(memberError(e));
-      });
+    let readSucceeded = false;
+    void (async () => {
+      let next = memberProfileSchema
+        .nullable()
+        .parse(await communityAccount("profile"));
+      readSucceeded = true;
+      const metadata = session?.user.user_metadata;
+      const initialName =
+        next?.displayName ?? String(metadata?.display_name ?? "");
+      if (active) {
+        setProfile(next);
+        setName(initialName);
+      }
+      if (
+        !next?.communityJoinedAt &&
+        hasCommunityConsent(metadata) &&
+        displayNameSchema.safeParse(initialName).success
+      ) {
+        next = memberProfileSchema.parse(
+          await communityAccount("join", {
+            displayName: initialName,
+            ...(invitationCode ? { invitationCode } : {}),
+          }),
+        );
+      }
+      if (active) {
+        setProfile(next);
+        setPrivacy(Boolean(next?.communityJoinedAt));
+        setReady(true);
+        setError("");
+      }
+    })().catch((e) => {
+      if (active) {
+        setReady(readSucceeded);
+        setError(memberError(e));
+      }
+    });
     return () => {
       active = false;
     };
     // Only identity changes reset the form; token refresh must not overwrite typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, retry]);
+  }, [userId, retry, invitationCode]);
 
   function changeMode(next: Mode) {
     setMode(next);
@@ -137,12 +174,24 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
         if (!displayNameSchema.safeParse(name).success)
           throw new Error("invalid_name");
         if (!privacy) throw new Error("privacy_required");
-        const data = await memberCall("save_profile", {
-          displayName: name.trim(),
-          privacyAcknowledged: true,
-        });
-        setProfile(memberProfileSchema.parse(data));
-        setMessage("Perfil salvo.");
+        if (!profile?.communityJoinedAt) {
+          const data = await communityAccount("join", {
+            displayName: name.trim(),
+            acknowledged: true,
+            ...(invitationCode ? { invitationCode } : {}),
+          });
+          setProfile(memberProfileSchema.parse(data));
+          setMessage(
+            "Você entrou na comunidade Vitale. Sua assinatura da newsletter está incluída.",
+          );
+        } else {
+          const data = await memberCall("save_profile", {
+            displayName: name.trim(),
+            privacyAcknowledged: true,
+          });
+          setProfile({ ...profile, ...memberProfileSchema.parse(data) });
+          setMessage("Perfil salvo.");
+        }
       } else if (mode === "recuperar" || mode === "senha") {
         const { error } = await supabase.auth.resetPasswordForEmail(
           email.trim(),
@@ -163,12 +212,12 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/conta?retorno=${encodeURIComponent(returnTo)}`,
-            data: { display_name: name.trim() },
+            data: communitySignupMetadata(name.trim(), invitationCode),
           },
         });
         if (error) throw error;
         setMessage(
-          "Confira seu e-mail para confirmar o cadastro. Se já tiver conta, entre ou recupere sua senha.",
+          "Confira seu e-mail para ativar sua conta na comunidade. Ao entrar, sua assinatura da newsletter será concluída junto com a adesão. Se já tiver conta, entre ou recupere sua senha.",
         );
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -250,17 +299,29 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
               ? "Definir nova senha"
               : "Minha conta"
             : signup
-              ? "Crie sua conta gratuita"
+              ? "Entre para a comunidade Vitale"
               : recovery
                 ? "Recuperar acesso"
-                : "Entre na Vitale"}
+                : "Entre na comunidade Vitale"}
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Seu perfil para participar das conversas sobre bikes elétricas.
+          Uma conta para participar da comunidade Vitale, comentar nos artigos e
+          receber nossa newsletter.
         </p>
         {session && (
           <p className="mt-4 break-all text-sm">
             Conectado como {session.user.email}
+          </p>
+        )}
+        {profile?.communityJoinedAt && (
+          <p className="mt-4 rounded-lg bg-surface p-3 text-sm">
+            Você faz parte da comunidade Vitale. Newsletter:{" "}
+            <strong>
+              {profile.newsletterSubscribed
+                ? "assinatura ativa"
+                : "assinatura cancelada"}
+            </strong>
+            . Você pode cancelar o recebimento pelo link nos e-mails.
           </p>
         )}
         {error && (
@@ -373,6 +434,13 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
                   required
                 />
                 <span>
+                  {(signup || !profile?.communityJoinedAt) && (
+                    <>
+                      Quero fazer parte da comunidade Vitale Mobilidade e
+                      receber sua newsletter. Autorizo o uso do meu nome e
+                      e-mail para essa participação e comunicação.{" "}
+                    </>
+                  )}
                   Li o{" "}
                   <a
                     href="/privacidade"
@@ -383,7 +451,7 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
                     aviso de privacidade
                   </a>{" "}
                   e entendo que meu nome público e comentários aprovados ficam
-                  visíveis no site. A newsletter tem inscrição separada.
+                  visíveis no site.
                 </span>
               </label>
             )}
@@ -401,7 +469,9 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
               {busy
                 ? "Aguarde…"
                 : editing
-                  ? "Salvar perfil"
+                  ? profile?.communityJoinedAt
+                    ? "Salvar perfil"
+                    : "Entrar na comunidade"
                   : session
                     ? "Salvar nova senha"
                     : signup
@@ -487,17 +557,20 @@ function AccountWorkspace({ returnTo, initialMode }: Props) {
           </p>
         )}
       </section>
-      {newsletterReferralsEnabled && ready && profile && userId && (
-        <Suspense
-          fallback={
-            <p role="status" className="mt-6">
-              Carregando suas indicações…
-            </p>
-          }
-        >
-          <ReferralPanel key={userId} />
-        </Suspense>
-      )}
+      {newsletterReferralsEnabled &&
+        ready &&
+        profile?.communityJoinedAt &&
+        userId && (
+          <Suspense
+            fallback={
+              <p role="status" className="mt-6">
+                Carregando suas indicações…
+              </p>
+            }
+          >
+            <ReferralPanel key={userId} />
+          </Suspense>
+        )}
     </>
   );
 }

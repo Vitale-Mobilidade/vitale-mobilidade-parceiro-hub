@@ -1,5 +1,7 @@
 # Indicações da newsletter por conta
 
+> **Registro histórico substituído:** o contrato vigente é o [cadastro único da comunidade com newsletter incluída](COMMUNITY_MEMBERSHIP_2026-11-03.md). A separação de newsletter e confirmação própria descritas abaixo não serão ativadas. Para release, consulte [MEMBER_RELEASE_2026-11-03.md](MEMBER_RELEASE_2026-11-03.md).
+
 Estado inicial: implementação local autorizada pelo responsável em continuação às contas (`2ddae74`). Classificação **estrutural**: Supabase, dados privados, inscrição existente, confirmação e atribuição. Base operacional remota continua `540fc1d`; não há autorização para publicar, aplicar migrations ou enviar e-mails reais.
 
 ## Revisão pré-implementação

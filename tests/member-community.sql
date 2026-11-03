@@ -50,7 +50,7 @@ SELECT pg_temp.expect_error($q$SELECT public.member_community('add_comment','{"a
 RESET ROLE;
 SELECT id AS comment_id FROM public.member_article_comments LIMIT 1 \gset
 SELECT pg_temp.check_true((SELECT count(*) FROM public.editorial_admin_memberships)=1,'no added admin membership');
-INSERT INTO public.editorial_admin_memberships VALUES('00000000-0000-4000-8000-000000000003',false,'admin');
+INSERT INTO public.editorial_admin_memberships(user_id,active,role) VALUES('00000000-0000-4000-8000-000000000003',false,'admin');
 
 SELECT set_config('request.jwt.claim.sub','',false);
 SET ROLE anon;

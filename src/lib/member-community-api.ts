@@ -15,6 +15,10 @@ type CommunityDatabase = Omit<Database, "public"> & {
         Returns: Json;
       };
       member_referrals: { Args: Record<string, never>; Returns: Json };
+      member_community_account: {
+        Args: { p_action: string; p_payload: Json };
+        Returns: Json;
+      };
     };
   };
 };
@@ -40,3 +44,14 @@ export const getMemberReferrals = createClientOnlyFn(async () => {
   if (error) throw error;
   return data;
 });
+
+export const communityAccount = createClientOnlyFn(
+  async (action: "profile" | "join", payload: Record<string, Json> = {}) => {
+    if (!memberAccountsEnabled) throw new Error("community_disabled");
+    const { data, error } = await (
+      supabase as SupabaseClient<CommunityDatabase>
+    ).rpc("member_community_account", { p_action: action, p_payload: payload });
+    if (error) throw error;
+    return data;
+  },
+);

@@ -1,7 +1,7 @@
-// Preserva a inscrição consentida e confirma novos convites por e-mail. Campanhas usam o writer existente.
+// Compatibility writer for previously published newsletter forms, plus community invitation visits.
+// New community membership/consent is completed atomically by member_community_account.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { newsletterReferral, sendReferralConfirmation } from "../_shared/newsletter-referrals.ts";
 
 const CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome e e-mail e a me contatar sobre a newsletter.";
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -23,21 +23,16 @@ Deno.serve(async (req) => {
     if (typeof body.website === "string" && body.website.trim()) return json({ ok: true });
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
     const fp = await fingerprint(req);
-    const referralsEnabled = Deno.env.get("NEWSLETTER_REFERRALS_ENABLED") !== "false";
-    // Ignore untrusted actorId in JSON. A real session may exclude self-visits/
-    // self-referrals; normal anonymous newsletter subscriptions need no account.
-    let actorId: string | null = null;
-    const bearer = req.headers.get("authorization")?.replace(/^Bearer /i, "");
-    if (referralsEnabled && (body.referralCode || body.action === "confirm_referral") && bearer && bearer !== Deno.env.get("SUPABASE_ANON_KEY") && bearer.split(".").length === 3) {
-      const { data: identity } = await supabase.auth.getUser(bearer);
-      actorId = identity.user?.id ?? null;
-    }
-    const referralContext = { enabled: referralsEnabled, fingerprint: fp, actorId,
-      send: (mail: Parameters<typeof sendReferralConfirmation>[0]) => sendReferralConfirmation(mail, { apiKey: Deno.env.get("RESEND_API_KEY"), gatewayKey: Deno.env.get("LOVABLE_API_KEY") }),
-    };
-    if (body.action === "referral_visit" || body.action === "confirm_referral") {
-      const result = await newsletterReferral(supabase, body, referralContext);
-      return result.handled ? json(result.body, result.status) : json({ ok: false }, 400);
+    if (body.action === "community_referral_visit") {
+      if (Deno.env.get("NEWSLETTER_REFERRALS_ENABLED") === "false" || typeof body.referralCode !== "string" || !/^[a-f0-9]{32}$/.test(body.referralCode)) return json({ ok: true });
+      let actorId: string | null = null;
+      const bearer = req.headers.get("authorization")?.replace(/^Bearer /i, "");
+      if (bearer && bearer !== Deno.env.get("SUPABASE_ANON_KEY") && bearer.split(".").length === 3) {
+        const { data } = await supabase.auth.getUser(bearer);
+        actorId = data.user?.id ?? null;
+      }
+      const { error } = await supabase.rpc("newsletter_referral_service", { p_action: "visit", p_payload: { code: body.referralCode, fingerprint: fp, actorId } });
+      return error ? json({ ok: false }, 503) : json({ ok: true });
     }
     const name = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ") : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -52,8 +47,6 @@ Deno.serve(async (req) => {
     if (attempts > 8) return json({ ok: false, error: "Tente novamente mais tarde." }, 429);
     const { error: rateError } = await supabase.from("newsletter_throttle").upsert({ fingerprint: fp, attempts, window_started_at: fresh ? now.toISOString() : throttle.window_started_at });
     if (rateError) return json({ ok: false }, 503);
-    const referred = await newsletterReferral(supabase, { ...body, name, email }, referralContext);
-    if (referred.handled) return json(referred.body, referred.status);
     const interest = ["general", "radar", "content"].includes(String(body.interest ?? "general")) ? String(body.interest ?? "general") : "general";
     const sourceUrl = typeof body.sourceUrl === "string" && /^https:\/\//.test(body.sourceUrl) ? body.sourceUrl.slice(0, 500) : null;
     const { error } = await supabase.from("newsletter_subscriptions").upsert({

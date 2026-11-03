@@ -39,7 +39,7 @@ export const SITE_NAV: NavItem[] = [
   { label: "Radar de preços", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
-  ...(memberAccountsEnabled ? [{ label: "Minha conta", to: "/conta" as const }] : []),
+  ...(memberAccountsEnabled ? [{ label: "Comunidade", to: "/conta" as const }] : []),
 ];
 
 function NavLink({ item, className }: { item: NavItem; className: string }) {
