@@ -53,7 +53,7 @@ const server=createServer(async(req,res)=>{
   else throw Error(`unexpected action ${action}`);
   l.updatedAt=new Date().toISOString();return reply(l);
  }
- if(url.pathname==='/storage/v1/object/sign/member-media')return reply(input.paths.map(path=>({path,signedURL:`/object/sign/member-media/${path}?token=mock`}))); 
+ if(url.pathname==='/storage/v1/object/sign/member-media')return reply(input.paths.map(path=>({path,signedURL:`/object/sign/member-media/${path}?token=mock`})));
  if(url.pathname.startsWith('/storage/v1/object/')){
   if(req.method==='POST'){const path=decodeURIComponent(url.pathname.split('/member-media/')[1]);const start=raw.indexOf(Buffer.from('RIFF'));assert(start>=0,'upload reencoded to WebP');const length=raw.readUInt32LE(start+4)+8;blobs.set(path,raw.subarray(start,start+length));return reply({Key:`member-media/${path}`})}
   if(req.method==='DELETE'){for(const path of input.prefixes||[])blobs.delete(path);return reply([])}
