@@ -1,5 +1,7 @@
 # Comunidade: acesso imediato e e-mails pelo Resend
 
+> **Publicado e ativo em 03/11/2026:** [cadastro da comunidade](https://vitalemobilidade.com/conta?modo=cadastro). Auto-confirm ativo, newsletter incluída com cancelamentos respeitados, comentários moderados, convites privados e recuperação pelo Resend. O teste de recuperação foi recebido corretamente pelo responsável. Evidência pública em artifacts/community-membership/production-signup.png.
+
 ## Decisão do responsável
 
 O responsável rejeitou a confirmação de cadastro enviada pelo provedor padrão Lovable. O cadastro deve entrar diretamente na comunidade, incluindo a newsletter, sem exigir clique no e-mail. Os e-mails necessários, como recuperação de senha, devem usar a integração Resend existente, no mesmo Supabase integrado ao projeto atual. Esta decisão substitui o requisito de confirmação de cadastro de COMMUNITY_MEMBERSHIP_2026-11-03.md.
@@ -53,3 +55,36 @@ Referências oficiais: [Supabase generateLink](https://supabase.com/docs/referen
 - Alterar o provedor para auto-confirm afeta todos os novos cadastros por email deste Auth. Exige confirmação no momento da ação via navegador, porque reduz a verificação de titularidade. Não se trata de ausência de acesso ao Supabase.
 - Configuração e integração técnica da recuperação não equivalem à prova de entrega real; testar uma única caixa controlada após deploy, sem efetuar trocas de senha do responsável.
 - Sem apagar usuários/inscrições/migrations; sem migrar de banco ou habilitar Lovable Emails. Rollback por gates/versão, com histórico preservado.
+
+## Ativação autorizada — em andamento
+
+O responsável respondeu “Sim, ativar acesso imediato” à confirmação específica de Auto-confirm no Supabase atual, incluindo o efeito sobre titularidade do e-mail. Configuração salva e reaberta na UI: auto-confirm true; secure email change e HIBP continuam true. Quarta migration aplicada e registrada; budgets executáveis somente por service_role; gates continuam false e nenhum perfil criado. PR #59 integrada no merge `4485c8b74393719400ef22e86c3e83aa0d8d6b24`. Preview Netlify passou; falha Vercel é a mesma do baseline 540fc1d.
+
+Operação exclusiva de plataforma solicitada ao Lovable, modo normal e escopo mínimo: deploy de newsletter-interest e member-password-recovery, sem código novo, emails, campanhas, migrações ou publicação do frontend. Secrets existentes foram conferidos por nome na UI; valores nunca lidos ou impressos. Domínio do remetente operacional: news.vitalemobilidade.com.
+
+
+## Fechamento de release
+
+- PR #59 integrada no merge `4485c8b`; plataforma sincronizada em `9c1a4686ae81172aaaf5a255ba64c6ba786c8952`. Commits de plataforma posteriores ao merge alteraram somente os tipos gerados do Supabase, sem delta nas funções/configuração. `pnpm validate` passou novamente incluindo esses tipos (66 regressões e build SSR).
+- Lovable confirmou deploy seletivo de `newsletter-interest` e `member-password-recovery`, sem informar IDs de versão das funções. Custo informado: **0,7 crédito**; nenhuma outra chamada de geração nesta entrega.
+- Quatro migrations registradas em produção; gates de comunidade/convites ligados. RPC pública de status respondeu enabled=true; RPC de orçamento permanece service-only. Um admin ativo preservado; zero perfis, comentários e ledger de indicação de teste ao fechar. Nenhum teste criou um membro/newsletter em nome do responsável.
+- Endpoint real de recuperação: GET 405, POST genérico 200; link gerado no Auth e um envio de teste solicitado ao endereço controlado. O responsável confirmou que chegou corretamente, com assunto em português e remetente Vitale via Resend. Não consumir o link nem definir a senha pelo responsável. Nenhuma campanha, welcome ou confirmação de cadastro enviada neste corte final.
+- Auth real `/auth/v1/settings`: auto-confirm true, signup permitido, anonymous false; UI reaberta preserva secure email change e HIBP true. Política de senha 12+ mantida. Auto-confirm não comprova titularidade; escolha expressamente autorizada, sem usar a contagem para premiação automática.
+- Publicação solicitada pelo conector: deployment `175d268c-4d61-4b58-8ca2-f96bb96d2152`. Após propagação, o navegador autenticou a versão nova em **vitalemobilidade.com/conta?modo=cadastro**: menu Comunidade, formulário nome/email/senha e aceite com newsletter, sem etapa/reenvio de confirmação. Screenshot salvo. HTTP automatizado ao domínio teve 403 do edge; a validação pública foi feita no navegador real, não confundida com ausência da rota.
+- Artigo público real conferido: leitura permanece aberta, área de comentários carrega sem erro, convida a entrar/criar conta e informa moderação. Newsletter e CTA de rodapé levam ao cadastro único. Nenhum comentário real enviado como teste.
+- Preview Netlify conferido: /conta com private,no-store e noindex; /newsletter SSR com CTA da comunidade e sem formulário separado. Vercel falha também no baseline e não é o hosting operacional desta entrega.
+
+| Perspectiva final | Status | Evidência |
+| --- | --- | --- |
+| Produto e Estratégia | Pass | Contrato de acesso imediato publicado; fórum/feed/curtidas/ranking/anúncios continuam roadmap |
+| CTO e Arquitetura | Pass | Mesmo projeto/banco/UUID; quatro migrations aditivas; backend seletivo e SSR preservado; versão sincronizada identificada |
+| IA e Agentes | Pass | Sem alteração em geração, grounding, cron ou campanha; uso Lovable limitado ao deploy exclusivo |
+| Segurança | Pass | Escolha de auto-confirm autorizada após explicar titularidade; RLS/grants e limites verificados; cancelamentos e admins preservados; sem tokens/PII nos artefatos |
+| UX/UI | Pass | Cadastro público e comentário anônimo conferidos no domínio; smoke de signup imediato/perfil/convites/recovery mobile/desktop passou com APIs simuladas |
+| CX e Operação | Pass | Recuperação real Resend recebida e confirmada pelo responsável; moderação disponível no painel; nenhuma senha alterada pelo agente |
+| Growth e CRO | Pass | Uma adesão inclui newsletter; convites de membros agregados e deduplicados; sem prometer e-mail verificado/pontos/prêmios |
+| PMO e QA | Pass | 50 testes direcionados, SQL/concorrrência e restore proporcional, smoke local/público e validate aprovados; release e rollback documentados |
+
+Estado: **publicado e operacional no escopo**. Limite de evidência: signup/login/edição e convites foram exercitados em mocks/SQL; no ambiente vivo foram conferidos configuração Auth, disponibilidade do formulário, comentários anônimos, permissões e recuperação recebida. O responsável conclui sua própria senha e adesão pelo fluxo normal; não se alega um cadastro completo real feito pelo agente.
+
+Rollback do release: desligar os dois gates no banco, reverter frontend e funções ao baseline 540fc1d e voltar Auto-confirm false, sob autorização operacional. Preservar as quatro migrations, as contas e inscrições novas; confirmação habilitada de novo não desconfirma contas existentes. Não alterar domínios, DNS ou credenciais como rollback.
