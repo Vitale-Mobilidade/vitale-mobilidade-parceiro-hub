@@ -1,4 +1,9 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import {
+  rememberMemberReturn,
+  rememberedMemberReturn,
+  clearMemberReturn,
+} from "@/lib/member-auth-return";
 import { newsletterReferralsEnabled } from "@/lib/newsletter-referrals";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemberSession } from "@/hooks/use-member-session";
@@ -21,7 +26,7 @@ const ProfilePhoto = lazy(() =>
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3 text-ink";
 const button =
   "min-h-11 rounded-lg bg-ink px-5 py-3 font-bold text-white disabled:opacity-50";
-type Mode = "entrar" | "cadastro" | "recuperar" | "senha";
+type Mode = "entrar" | "cadastro" | "recuperar" | "senha" | "perfil";
 const IdentityPanel = lazy(() =>
   import("./IdentityPanel").then((module) => ({
     default: module.IdentityPanel,
@@ -87,9 +92,6 @@ export function MemberAccount(props: Props) {
         >
           Tentar novamente
         </button>
-        <a href="/conteudos" className="ml-4 underline">
-          Explorar os artigos
-        </a>
       </section>
     );
   return <AccountWorkspace {...props} />;
@@ -100,6 +102,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
   const [mode, setMode] = useState<Mode>(initialMode as Mode);
   const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [ready, setReady] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -109,10 +112,40 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
   const [message, setMessage] = useState("");
   const [retry, setRetry] = useState(0);
   const userId = session?.user.id;
+  const profileRequested = initialMode === "perfil";
+  const [recoveryReturn, setRecoveryReturn] = useState(returnTo);
+  useEffect(() => {
+    if (initialMode === "senha")
+      setRecoveryReturn(rememberedMemberReturn(returnTo));
+  }, [initialMode, returnTo]);
+  const destination = initialMode === "senha" ? recoveryReturn : returnTo;
+  useEffect(() => {
+    if (
+      session &&
+      ready &&
+      profileUserId === userId &&
+      profile?.communityJoinedAt &&
+      !profileRequested &&
+      (mode === "entrar" || mode === "cadastro")
+    ) {
+      clearMemberReturn();
+      window.location.replace(destination);
+    }
+  }, [
+    session,
+    ready,
+    profileUserId,
+    userId,
+    profile?.communityJoinedAt,
+    profileRequested,
+    mode,
+    destination,
+  ]);
 
   useEffect(() => {
     let active = true;
     setReady(false);
+    setProfileUserId(undefined);
     setProfile(null);
     if (!userId) return;
     let readSucceeded = false;
@@ -144,11 +177,13 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         setProfile(next);
         setPrivacy(Boolean(next?.communityJoinedAt));
         setReady(true);
+        setProfileUserId(userId);
         setError("");
       }
     })().catch((e) => {
       if (active) {
         setReady(readSucceeded);
+        if (readSucceeded) setProfileUserId(userId);
         setError(memberError(e));
       }
     });
@@ -186,8 +221,8 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         } else {
           setMessage("Senha atualizada. As outras sessões foram encerradas.");
         }
-        setMode("entrar");
-      } else if (session) {
+        if (!revokeError) setMode(profileRequested ? "perfil" : "entrar");
+      } else if (session && mode !== "recuperar") {
         if (!displayNameSchema.safeParse(name).success)
           throw new Error("invalid_name");
         if (!privacy) throw new Error("privacy_required");
@@ -198,9 +233,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             ...(invitationCode ? { invitationCode } : {}),
           });
           setProfile(memberProfileSchema.parse(data));
-          setMessage(
-            "Você entrou na comunidade Vitale. Confira abaixo o estado da sua assinatura da newsletter.",
-          );
+          setMessage("Cadastro concluído.");
         } else {
           const data = await memberCall("save_profile", {
             displayName: name.trim(),
@@ -211,6 +244,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           window.dispatchEvent(new Event("vitale-profile-updated"));
         }
       } else if (mode === "recuperar" || mode === "senha") {
+        rememberMemberReturn(returnTo);
         const { error } = await supabase.functions.invoke(
           "member-password-recovery",
           {
@@ -255,7 +289,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           );
           return;
         }
-        setMode("entrar");
+        setMode(profileRequested ? "perfil" : "entrar");
       }
     } catch (e) {
       const code =
@@ -290,45 +324,63 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     }
   }
   if (loading) return <p role="status">Carregando sua conta…</p>;
-  const editing = Boolean(session) && mode !== "senha";
+  const passwordUpdate = Boolean(session) && mode === "senha";
+  const recovery =
+    (!session && (mode === "recuperar" || mode === "senha")) ||
+    mode === "recuperar";
+  const joining =
+    Boolean(session) &&
+    ready &&
+    !profile?.communityJoinedAt &&
+    !passwordUpdate &&
+    !recovery;
+  const editing =
+    Boolean(session) &&
+    !passwordUpdate &&
+    !recovery &&
+    (profileRequested || joining);
   const signup = !session && mode === "cadastro";
-  const recovery = !session && (mode === "recuperar" || mode === "senha");
+  if (session && !passwordUpdate && !recovery && !editing)
+    return (
+      <section className="rounded-2xl border border-line bg-white p-7">
+        <p role="status">
+          {error ? "Não foi possível concluir seu acesso." : "Entrando…"}
+        </p>
+        {error && (
+          <>
+            <p role="alert" className="mt-3">
+              {error}
+            </p>
+            <button
+              onClick={() => setRetry((n) => n + 1)}
+              className={`${button} mt-4`}
+            >
+              Tentar novamente
+            </button>
+          </>
+        )}
+      </section>
+    );
   return (
     <>
       <section className="rounded-2xl border border-line bg-white p-5 sm:p-8">
         <h1 className="text-3xl font-bold text-ink">
-          {session
-            ? mode === "senha"
-              ? "Definir nova senha"
-              : "Minha conta"
-            : signup
-              ? "Entre para a comunidade Vitale"
-              : recovery
-                ? "Recuperar acesso"
-                : "Entre na comunidade Vitale"}
+          {recovery
+            ? "Recuperar acesso"
+            : session
+              ? passwordUpdate
+                ? "Definir nova senha"
+                : joining
+                  ? "Concluir cadastro"
+                  : "Editar meu perfil"
+              : signup
+                ? "Entre para a comunidade Vitale"
+                : recovery
+                  ? "Recuperar acesso"
+                  : "Entre na comunidade Vitale"}
         </h1>
-        <p className="mt-3 text-muted-foreground">
-          Sua conta inclui a newsletter. Para curtir artigos, comentar e
-          anunciar, valide seu e-mail e celular.
-        </p>
-        {session && (
-          <p className="mt-4 break-all text-sm">
-            Conectado como {session.user.email}
-          </p>
-        )}
-        {profile?.communityJoinedAt && (
-          <p className="mt-4 rounded-lg bg-surface p-3 text-sm">
-            Você faz parte da comunidade Vitale. Newsletter:{" "}
-            <strong>
-              {profile.newsletterSubscribed
-                ? "assinatura ativa"
-                : "assinatura cancelada"}
-            </strong>
-            .{" "}
-            {profile.newsletterSubscribed
-              ? "Você pode cancelar o recebimento pelo link nos e-mails."
-              : "Mantivemos seu pedido de descadastro. Sua participação na comunidade continua ativa."}
-          </p>
+        {session && (editing || passwordUpdate) && (
+          <p className="mt-4 break-all text-sm">{session.user.email}</p>
         )}
         {error && (
           <p
@@ -430,7 +482,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 )}
               </div>
             )}
-            {(editing || signup) && (
+            {(joining || signup) && (
               <label className="flex items-start gap-3 text-sm">
                 <input
                   type="checkbox"
@@ -478,24 +530,34 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   ? profile?.communityJoinedAt
                     ? "Salvar perfil"
                     : "Entrar na comunidade"
-                  : session
+                  : passwordUpdate
                     ? "Salvar nova senha"
-                    : signup
-                      ? "Criar conta"
-                      : recovery
-                        ? "Enviar link de recuperação"
+                    : recovery
+                      ? "Enviar link de recuperação"
+                      : signup
+                        ? "Criar conta"
                         : "Entrar"}
             </button>
           </form>
         )}
         <div className="mt-6 flex flex-wrap gap-4 text-sm">
-          {session ? (
+          {passwordUpdate ? (
+            <a href={destination} className="min-h-11 underline">
+              Cancelar
+            </a>
+          ) : session && !recovery ? (
             <>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() =>
-                  changeMode(mode === "senha" ? "entrar" : "senha")
+                  changeMode(
+                    mode === "senha"
+                      ? profileRequested
+                        ? "perfil"
+                        : "entrar"
+                      : "senha",
+                  )
                 }
                 className="min-h-11 underline"
               >
@@ -520,34 +582,34 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 }
                 className="min-h-11 underline"
               >
-                {signup || recovery ? "Já tenho conta" : "Criar conta gratuita"}
+                {recovery
+                  ? "Voltar para entrar"
+                  : signup
+                    ? "Já tenho conta"
+                    : "Criar conta gratuita"}
               </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => changeMode("recuperar")}
-                className="min-h-11 underline"
-              >
-                Esqueci minha senha
-              </button>
+              {!recovery && !signup && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => changeMode("recuperar")}
+                  className="min-h-11 underline"
+                >
+                  Esqueci minha senha
+                </button>
+              )}
             </>
           )}
         </div>
-        {(!session || ready) && (
+        {editing && profileRequested && (
           <a
-            href={returnTo}
+            href={destination}
             className="mt-5 inline-flex min-h-11 items-center font-semibold underline"
           >
-            {returnTo === "/conteudos"
-              ? "Explorar os artigos"
-              : returnTo.startsWith("/conta/anuncios")
-                ? "Ir para meus anúncios"
-                : returnTo.startsWith("/venda-sua-bike")
-                  ? "Ver bikes anunciadas"
-                  : "Voltar ao artigo"}
+            Voltar
           </a>
         )}
-        {session && (
+        {editing && (
           <p className="mt-5 text-sm text-muted-foreground">
             Para solicitar exclusão da conta e dos seus dados, contate{" "}
             <a href="mailto:wowbmo@gmail.com" className="underline">
@@ -557,12 +619,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           </p>
         )}
       </section>
-      {ready && profile?.communityJoinedAt && userId && (
+      {editing && ready && profile?.communityJoinedAt && userId && (
         <Suspense fallback={<p role="status">Carregando foto do perfil…</p>}>
           <ProfilePhoto key={userId} />
         </Suspense>
       )}
-      {ready && profile?.communityJoinedAt && userId && (
+      {editing && ready && profile?.communityJoinedAt && userId && (
         <Suspense
           fallback={
             <p role="status" className="mt-6">
@@ -574,6 +636,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         </Suspense>
       )}
       {newsletterReferralsEnabled &&
+        editing &&
         ready &&
         profile?.communityJoinedAt &&
         userId && (

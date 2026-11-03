@@ -38,15 +38,72 @@ export const moderationCommentSchema = memberCommentSchema
 export type MemberProfile = z.infer<typeof memberProfileSchema>;
 export type MemberComment = z.infer<typeof memberCommentSchema>;
 
-/** Allowlisted internal destinations only; never hosts, tokens or arbitrary paths. */
+/** Return to a known internal page, never to credentials, external hosts or auth loops. */
 export function memberReturnPath(value: unknown): string {
-  return typeof value === "string" &&
-    (/^\/conteudos\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ||
-      value === "/conta/anuncios" ||
-      value === "/venda-sua-bike" ||
-      /^\/venda-sua-bike\/[a-f0-9-]{36}$/.test(value))
-    ? value
-    : "/conteudos";
+  if (
+    typeof value !== "string" ||
+    value.length > 2000 ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\") ||
+    Array.from(value).some(
+      (c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127,
+    )
+  )
+    return "/";
+  try {
+    const url = new URL(value, "https://vitalemobilidade.com");
+    if (url.origin !== "https://vitalemobilidade.com") return "/";
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    const allowed =
+      [
+        "/",
+        "/radar",
+        "/conteudos",
+        "/ferramentas",
+        "/quiz",
+        "/newsletter",
+        "/videos",
+        "/grupodeofertas",
+        "/privacidade",
+        "/venda-sua-bike",
+        "/conta/anuncios",
+      ].includes(path) ||
+      /^\/radar\/[a-z0-9_]+$/.test(path) ||
+      /^\/(?:conteudos|ferramentas|calculadoras)\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+        path,
+      ) ||
+      /^\/venda-sua-bike\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
+        path,
+      );
+    if (!allowed) return "/";
+    const safe = new URLSearchParams();
+    for (const [key, val] of url.searchParams)
+      if (
+        [
+          "pagina",
+          "page",
+          "compare",
+          "q",
+          "busca",
+          "categoria",
+          "sort",
+          "ordem",
+          "status",
+          "perfil",
+        ].includes(key) &&
+        val.length <= 200 &&
+        !/[<>]/.test(val)
+      )
+        safe.append(key, val);
+    const hash = /^#[a-zA-Z0-9_-]{1,100}$/.test(url.hash) ? url.hash : "";
+    return path + (safe.size ? `?${safe.toString()}` : "") + hash;
+  } catch {
+    return "/";
+  }
+}
+export function memberLoginHref(returnTo: string) {
+  return `/conta?retorno=${encodeURIComponent(memberReturnPath(returnTo))}`;
 }
 
 export function memberError(error: unknown): string {

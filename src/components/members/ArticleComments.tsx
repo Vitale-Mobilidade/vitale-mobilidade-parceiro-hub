@@ -54,7 +54,7 @@ export default function ArticleComments({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const key = `${articleId}:${session?.user.id ?? "anon"}:${offset}`;
-  const accountUrl = `/conta?retorno=${encodeURIComponent(memberReturnPath(`/conteudos/${slug}`))}`;
+  const accountUrl = `/conta?retorno=${encodeURIComponent(memberReturnPath(`/conteudos/${slug}#comentarios`))}${session ? "&modo=perfil" : ""}`;
   useEffect(() => {
     setOffset(0);
     setBody("");

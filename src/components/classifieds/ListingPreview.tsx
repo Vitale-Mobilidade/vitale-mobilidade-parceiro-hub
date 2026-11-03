@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bike, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
+import { SectionHeading } from "@/components/site/site-ui";
 import {
   BATTERIES,
   CONDITIONS,
@@ -7,6 +8,8 @@ import {
   type PublicBikeListing,
 } from "@/lib/bike-classifieds";
 import { formatBRL } from "@/lib/price-tracker";
+/** Follows AcompanhamentoBike: equal hero columns, contained image, title/price,
+ * factual chips, action, specifications and description. No Radar price metrics. */
 export function ListingPreview({
   listing,
   preview = false,
@@ -18,9 +21,11 @@ export function ListingPreview({
   const images = listing.images.filter((i) => i.status === "ready");
   const image = images[selected] ?? images[0];
   const seller = "sellerName" in listing ? listing : null;
+  const title = listing.title.trim() || "O título da sua bike";
+  const Title = preview ? "h2" : "h1";
   const facts = [
-    ["Marca", listing.brand],
-    ["Modelo", listing.model],
+    ["Marca", listing.brand || "A informar"],
+    ["Modelo", listing.model || "A informar"],
     ["Ano", listing.modelYear ?? "Não informado"],
     [
       "Quilometragem",
@@ -28,86 +33,118 @@ export function ListingPreview({
         ? "Não informada"
         : `${listing.mileageKm.toLocaleString("pt-BR")} km`,
     ],
-    ["Estado de conservação", CONDITIONS[listing.condition]],
+    ["Conservação", CONDITIONS[listing.condition]],
     ["Bateria", BATTERIES[listing.battery]],
     ["Nota fiscal", listing.invoice ? "Sim" : "Não"],
   ];
   return (
-    <div>
+    <div className="min-w-0 text-ink">
       {preview && (
-        <p className="mb-5 rounded-lg bg-amber-50 p-4 text-amber-950">
-          Prévia privada. Este anúncio ainda não está disponível na vitrine.
+        <p className="mb-5 rounded-xl bg-surface p-4 text-sm">
+          Prévia do anúncio com os dados que você está preenchendo.
         </p>
       )}
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)]">
-        <div>
-          {image?.url ? (
-            <img
-              src={image.url}
-              alt={`${listing.title} — foto ${selected + 1}`}
-              width={1200}
-              height={900}
-              className="aspect-[4/3] w-full rounded-2xl bg-surface object-contain"
-            />
-          ) : (
-            <div className="grid aspect-[4/3] place-items-center rounded-2xl bg-surface">
-              <Bike className="h-20 w-20 text-action" aria-hidden="true" />
-              <span>Adicione as fotos da sua bike</span>
-            </div>
-          )}
+      <header className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex h-[240px] items-center justify-center overflow-hidden rounded-3xl border border-line bg-surface sm:h-[280px]">
+            {image?.url ? (
+              <img
+                src={image.url}
+                alt={`${title} — foto ${selected + 1}`}
+                width={1200}
+                height={900}
+                decoding="async"
+                className="h-full w-full object-contain p-4"
+              />
+            ) : (
+              <div className="grid place-items-center gap-3 text-muted-foreground">
+                <Bike className="h-16 w-16 text-action" aria-hidden="true" />
+                <span>Adicione as fotos da sua bike</span>
+              </div>
+            )}
+          </div>
           {images.length > 1 && (
             <div
-              className="mt-3 flex flex-wrap gap-3"
+              className="mt-3 flex flex-wrap gap-2"
               role="group"
               aria-label="Fotos da bicicleta"
             >
               {images.map((photo, index) => (
                 <button
+                  type="button"
                   key={photo.id}
                   aria-label={`Ver foto ${index + 1}`}
-                  aria-pressed={index === selected}
+                  aria-pressed={photo.id === image?.id}
                   onClick={() => setSelected(index)}
-                  className={`h-20 w-20 overflow-hidden rounded-lg border-2 ${selected === index ? "border-action" : "border-line"}`}
+                  className={`h-16 w-16 overflow-hidden rounded-xl border-2 sm:h-20 sm:w-20 ${photo.id === image?.id ? "border-action" : "border-line"}`}
                 >
                   <img
                     src={photo.url}
                     alt=""
                     width={80}
                     height={80}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 </button>
               ))}
             </div>
           )}
         </div>
-        <div className="rounded-2xl border border-line p-6">
-          <p className="text-sm font-semibold text-action">
+        <div className="flex min-w-0 flex-col">
+          <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
             Bike da comunidade
+          </span>
+          <Title className="mt-2 break-words text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">
+            {title}
+          </Title>
+          <p className="mt-3 text-4xl font-extrabold tracking-tight text-action md:text-5xl">
+            {Number.isFinite(listing.priceCents) && listing.priceCents > 0
+              ? formatBRL(listing.priceCents / 100)
+              : "Preço a informar"}
           </p>
-          <h1 className="mt-3 text-3xl font-bold text-ink">{listing.title}</h1>
-          <p className="mt-4 text-4xl font-bold text-ink">
-            {formatBRL(listing.priceCents / 100)}
-          </p>
-          <p className="mt-4 flex items-center gap-2 text-muted-foreground">
-            <MapPin className="h-5 w-5" aria-hidden="true" />
+          <p className="mt-3 flex items-center gap-2 text-muted-foreground">
+            <MapPin className="h-5 w-5 shrink-0" aria-hidden="true" />
             {listing.city || "Sua cidade"}
             {listing.state ? `, ${listing.state}` : ""}
           </p>
-          {seller && (
-            <div className="mt-6 border-t border-line pt-5">
-              <div className="flex items-center gap-3">
+          <ul className="mt-4 flex flex-wrap gap-2 text-sm">
+            {[
+              CONDITIONS[listing.condition],
+              listing.mileageKm !== null
+                ? `${listing.mileageKm.toLocaleString("pt-BR")} km`
+                : null,
+              listing.modelYear,
+            ]
+              .filter((v) => v !== null)
+              .map((v) => (
+                <li key={String(v)} className="rounded-lg bg-surface px-3 py-2">
+                  {v}
+                </li>
+              ))}
+          </ul>
+          {seller ? (
+            <div className="mt-5">
+              <a
+                href={`https://wa.me/${seller.whatsapp}?text=${encodeURIComponent(`Olá! Vi seu anúncio ${title} na Vitale Mobilidade.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
+              >
+                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                Conversar com o vendedor
+              </a>
+              <div className="mt-4 flex items-center gap-3">
                 {seller.avatarUrl && (
                   <img
                     src={seller.avatarUrl}
                     alt=""
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full object-cover"
                   />
                 )}
                 <div>
-                  <p className="font-bold">{seller.sellerName}</p>
+                  <p className="font-semibold">{seller.sellerName}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-action">
                     <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                     E-mail e celular validados
@@ -115,51 +152,50 @@ export function ListingPreview({
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                A validação confirma os contatos do anunciante. Confira a bike e
-                os documentos com ele.
+                Confira a bike e os documentos diretamente com o anunciante.
               </p>
-              <a
-                href={`https://wa.me/${seller.whatsapp}?text=${encodeURIComponent(`Olá! Vi seu anúncio ${listing.title} na Vitale Mobilidade.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-white"
-              >
-                <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                Conversar com o vendedor
-              </a>
             </div>
+          ) : (
+            <span className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground">
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              Conversar com o vendedor
+            </span>
           )}
         </div>
-      </div>
-      <div className="mt-10 grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-        <section>
-          <h2 className="text-2xl font-bold text-ink">Sobre esta bike</h2>
-          <p className="mt-4 whitespace-pre-wrap break-words leading-relaxed">
-            {listing.description || "A descrição aparecerá aqui."}
-          </p>
-          {listing.maintenance && (
-            <>
-              <h2 className="mt-8 text-xl font-bold text-ink">
-                Manutenção e pontos de atenção
-              </h2>
-              <p className="mt-3 whitespace-pre-wrap break-words leading-relaxed">
-                {listing.maintenance}
-              </p>
-            </>
-          )}
-        </section>
-        <dl className="rounded-xl bg-surface p-5">
+      </header>
+      <section className="mt-10" aria-labelledby="listing-specifications">
+        <SectionHeading
+          id="listing-specifications"
+          title="Informações da bike"
+        />
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {facts.map(([label, value]) => (
             <div
               key={label}
-              className="flex justify-between gap-4 border-b border-line py-3 last:border-0"
+              className="rounded-2xl border border-line bg-surface p-4"
             >
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="text-right font-semibold">{value}</dd>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="mt-1 break-words font-semibold">{value}</dd>
             </div>
           ))}
         </dl>
-      </div>
+      </section>
+      <section className="mt-10" aria-labelledby="listing-description">
+        <SectionHeading id="listing-description" title={`Conheça a ${title}`} />
+        <p className="mt-5 whitespace-pre-wrap break-words text-base leading-relaxed text-muted-foreground">
+          {listing.description || "A descrição da sua bike aparecerá aqui."}
+        </p>
+        {listing.maintenance && (
+          <>
+            <h3 className="mt-7 text-xl font-bold text-ink">
+              Manutenção e pontos de atenção
+            </h3>
+            <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-muted-foreground">
+              {listing.maintenance}
+            </p>
+          </>
+        )}
+      </section>
     </div>
   );
 }

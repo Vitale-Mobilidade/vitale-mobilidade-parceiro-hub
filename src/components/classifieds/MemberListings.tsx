@@ -19,6 +19,7 @@ import {
   type BikeListing,
   type ClassifiedsAccount,
 } from "@/lib/bike-classifieds";
+import { ClassifiedCard } from "./BikeClassifiedsSection";
 import { memberError } from "@/lib/member-community";
 import { ListingPreview } from "./ListingPreview";
 const field =
@@ -160,7 +161,7 @@ export function MemberListings() {
           anúncio.
         </p>
         <a
-          href="/conta?retorno=%2Fconta%2Fanuncios"
+          href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
           className={`${button} mt-6`}
         >
           Completar meu perfil
@@ -173,7 +174,7 @@ export function MemberListings() {
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <a
-            href="/conta"
+            href="/conta?modo=perfil"
             className="inline-flex min-h-11 items-center gap-1 text-action underline"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -299,7 +300,6 @@ function ListingEditor({
     setMessage("");
     try {
       await action();
-      setDirty(false);
       await onChange();
       setMessage(success);
     } catch (e) {
@@ -317,10 +317,14 @@ function ListingEditor({
       );
       return;
     }
-    await run(
-      () => classifiedsCall("save", { id: listing.id, ...data.data }),
-      "Rascunho salvo.",
-    );
+    await run(async () => {
+      const saved = listingSchema.parse(
+        await classifiedsCall("save", { id: listing.id, ...data.data }),
+      );
+      setForm(saved);
+      setDirty(false);
+      return saved;
+    }, "Rascunho salvo.");
   }
   async function files(selected: FileList | null) {
     if (!selected?.length) return;
@@ -342,9 +346,11 @@ function ListingEditor({
     }
   }
   useEffect(() => {
-    setForm(listing);
-    setDirty(false);
-  }, [listing]);
+    if (listing.status !== form.status) {
+      setForm(listing);
+      setDirty(false);
+    }
+  }, [listing, form.status]);
   useEffect(() => {
     onEditing(dirty || busy);
     return () => onEditing(false);
@@ -390,7 +396,7 @@ function ListingEditor({
           className="min-h-11 font-semibold text-action underline"
           onClick={() => setPreview((v) => !v)}
         >
-          {preview ? "Voltar à edição" : "Ver prévia salva"}
+          {preview ? "Voltar à edição" : "Ver prévia"}
         </button>
       </div>
       {error && (
@@ -412,16 +418,125 @@ function ListingEditor({
         </p>
       )}
       {preview ? (
-        <ListingPreview listing={listing} preview={draft} />
+        <div className="space-y-8">
+          <section aria-labelledby="preview-card-title">
+            <h3 id="preview-card-title" className="mb-4 text-lg font-bold">
+              Como aparece na vitrine
+            </h3>
+            <div className="max-w-sm">
+              <ClassifiedCard
+                listing={{ ...listing, ...form, images: listing.images }}
+                preview
+              />
+            </div>
+          </section>
+          <ListingPreview
+            listing={{ ...listing, ...form, images: listing.images }}
+            preview
+          />
+        </div>
       ) : (
         <>
+          <section
+            className="mb-9 border-b border-line pb-7"
+            aria-labelledby="listing-photos"
+          >
+            <h3 id="listing-photos" className="text-lg font-bold">
+              1. Fotos da bike · {listing.images.length}/5
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Mostre a bike inteira, os dois lados, bateria e detalhes. A
+              primeira foto será a capa. JPEG, PNG ou WebP, até 10 MB por foto.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {listing.images.map((image, index) => (
+                <div
+                  key={image.id}
+                  className="overflow-hidden rounded-xl border border-line"
+                >
+                  {image.url && image.status === "ready" ? (
+                    <img
+                      src={image.url}
+                      alt={`Sua bike, foto ${index + 1}`}
+                      width={320}
+                      height={240}
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid aspect-[4/3] place-items-center bg-surface text-center text-sm">
+                      Envio pendente
+                    </div>
+                  )}
+                  <div className="p-3">
+                    {index === 0 && image.status === "ready" ? (
+                      <span className="block text-sm font-bold text-action">
+                        Foto de capa
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={locked || image.status !== "ready"}
+                        onClick={() =>
+                          void run(
+                            () =>
+                              classifiedsCall("cover", {
+                                id: listing.id,
+                                assetId: image.id,
+                              }),
+                            "Capa atualizada.",
+                          )
+                        }
+                        className="min-h-11 text-sm underline disabled:opacity-50"
+                      >
+                        Usar como capa
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={locked}
+                      onClick={() =>
+                        void run(
+                          () =>
+                            removeMemberImage(image.path, image.id, listing.id),
+                          "Foto removida.",
+                        )
+                      }
+                      className="block min-h-11 text-sm text-red-800 underline disabled:opacity-50"
+                    >
+                      Remover foto {index + 1}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {draft && listing.images.length < 5 && (
+              <label className="mt-5 inline-flex min-h-12 cursor-pointer items-center rounded-xl border border-action px-4 font-semibold text-action focus-within:ring-2 focus-within:ring-action">
+                <span className="flex items-center gap-2">
+                  <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                  Adicionar fotos
+                </span>
+                <input
+                  type="file"
+                  aria-label="Adicionar fotos da bike"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  disabled={busy}
+                  onChange={(e) => {
+                    void files(e.currentTarget.files);
+                    e.currentTarget.value = "";
+                  }}
+                  className="sr-only"
+                />
+              </label>
+            )}
+          </section>
           <form onSubmit={save}>
             <fieldset
               disabled={locked}
               className="space-y-5 disabled:opacity-70"
             >
               <legend className="mb-5 text-lg font-bold">
-                1. Informações da bike
+                2. Informações da bike
               </legend>
               {input("title", "Título do anúncio", 100, 6)}
               <div className="grid gap-5 sm:grid-cols-2">
@@ -564,104 +679,6 @@ function ListingEditor({
               </button>
             </fieldset>
           </form>
-          <section
-            className="mt-9 border-t border-line pt-7"
-            aria-labelledby="listing-photos"
-          >
-            <h3 id="listing-photos" className="text-lg font-bold">
-              2. Fotos da bike · {listing.images.length}/5
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Mostre a bike inteira, os dois lados, bateria e detalhes. A
-              primeira foto será a capa. JPEG, PNG ou WebP, até 10 MB por foto.
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {listing.images.map((image, index) => (
-                <div
-                  key={image.id}
-                  className="overflow-hidden rounded-xl border border-line"
-                >
-                  {image.url && image.status === "ready" ? (
-                    <img
-                      src={image.url}
-                      alt={`Sua bike, foto ${index + 1}`}
-                      width={320}
-                      height={240}
-                      className="aspect-[4/3] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="grid aspect-[4/3] place-items-center bg-surface text-center text-sm">
-                      Envio pendente
-                    </div>
-                  )}
-                  <div className="p-3">
-                    {index === 0 && image.status === "ready" ? (
-                      <span className="block text-sm font-bold text-action">
-                        Foto de capa
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={locked || dirty || image.status !== "ready"}
-                        onClick={() =>
-                          void run(
-                            () =>
-                              classifiedsCall("cover", {
-                                id: listing.id,
-                                assetId: image.id,
-                              }),
-                            "Capa atualizada.",
-                          )
-                        }
-                        className="min-h-11 text-sm underline disabled:opacity-50"
-                      >
-                        Usar como capa
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={locked || dirty}
-                      onClick={() =>
-                        void run(
-                          () =>
-                            removeMemberImage(image.path, image.id, listing.id),
-                          "Foto removida.",
-                        )
-                      }
-                      className="block min-h-11 text-sm text-red-800 underline disabled:opacity-50"
-                    >
-                      Remover foto {index + 1}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {draft && listing.images.length < 5 && (
-              <label className="mt-5 block font-semibold">
-                <span className="flex items-center gap-2">
-                  <ImagePlus className="h-5 w-5" aria-hidden="true" />
-                  Adicionar fotos
-                </span>
-                <input
-                  type="file"
-                  aria-label="Adicionar fotos da bike"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  disabled={busy || dirty}
-                  onChange={(e) => {
-                    void files(e.currentTarget.files);
-                    e.currentTarget.value = "";
-                  }}
-                  className="mt-3 block max-w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:p-3 file:text-white disabled:opacity-50"
-                />
-              </label>
-            )}
-            {dirty && (
-              <p className="mt-3 text-sm text-amber-900">
-                Salve as informações antes de alterar as fotos ou publicar.
-              </p>
-            )}
-          </section>
         </>
       )}
       <section
@@ -677,7 +694,7 @@ function ListingEditor({
               <p className="mt-3 rounded-lg bg-amber-50 p-4 text-amber-950">
                 Para publicar,{" "}
                 <a
-                  href="/conta?retorno=%2Fconta%2Fanuncios"
+                  href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
                   className="font-bold underline"
                 >
                   valide seu e-mail e celular na Minha conta

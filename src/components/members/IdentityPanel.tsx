@@ -103,9 +103,7 @@ export function IdentityPanel({ email }: { email: string }) {
         Valide seu acesso
       </h2>
       <p className="mt-3 text-muted-foreground">
-        A newsletter não exige validação. Para curtir artigos, comentar ou criar
-        anúncios, precisamos confirmar que o e-mail e o celular pertencem a
-        você.
+        Confirme seu e-mail e celular para comentar, curtir e anunciar.
       </p>
       {error && (
         <p role="alert" className="mt-4 text-red-800">

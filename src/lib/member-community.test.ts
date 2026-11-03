@@ -13,15 +13,24 @@ describe("reader boundaries", () => {
     "https://evil.invalid",
     "//evil.invalid",
     "/admin",
-    "/conta/anuncios?token=secret",
     "/conta/anuncios/../../admin",
     "/conta?token=secret",
-    "/conteudos/artigo?next=//evil",
     "/conteudos/%2f%2fevil",
     null,
   ])("rejects unsafe return %s", (path) => {
-    expect(memberReturnPath(path)).toBe("/conteudos");
+    expect(memberReturnPath(path)).toBe("/");
   });
+  it("drops redirect and credential parameters while preserving the page", () => {
+    expect(
+      memberReturnPath(
+        "/radar?compare=v9_max%2Cv8_pro&access_token=secret&next=https://evil.invalid#bikes",
+      ),
+    ).toBe("/radar?compare=v9_max%2Cv8_pro#bikes");
+  });
+  it("strips credential params from an allowed private destination", () =>
+    expect(memberReturnPath("/conta/anuncios?token=secret")).toBe(
+      "/conta/anuncios",
+    ));
   it("preserves an article return path", () =>
     expect(memberReturnPath("/conteudos/bike-v9-max")).toBe(
       "/conteudos/bike-v9-max",
