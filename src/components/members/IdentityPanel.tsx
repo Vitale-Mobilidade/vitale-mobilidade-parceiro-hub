@@ -81,6 +81,7 @@ export function IdentityPanel({ email }: { email: string }) {
     try {
       await identityCall("verify", { channel, code: codes[channel] ?? "" });
       setIdentity(memberIdentitySchema.parse(await identityCall("status")));
+      window.dispatchEvent(new Event("vitale-profile-updated"));
       setSent((old) => ({ ...old, [channel]: false }));
       setCodes((old) => ({ ...old, [channel]: "" }));
       setMessage(
@@ -242,8 +243,9 @@ export function IdentityPanel({ email }: { email: string }) {
             );
           })}
           <p className="mt-5 text-sm text-muted-foreground">
-            Seu celular permanece privado. Os códigos servem apenas para validar
-            seu acesso, sem autorizar mensagens de marketing pelo WhatsApp.
+            Seu celular só será divulgado em anúncios se você autorizar na
+            publicação. Os códigos servem apenas para validar seu acesso, sem
+            autorizar mensagens de marketing pelo WhatsApp.
           </p>
         </>
       )}

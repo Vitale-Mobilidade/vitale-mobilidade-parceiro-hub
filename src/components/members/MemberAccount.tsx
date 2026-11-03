@@ -15,6 +15,9 @@ import {
   type MemberProfile,
 } from "@/lib/member-community";
 
+const ProfilePhoto = lazy(() =>
+  import("./ProfilePhoto").then((module) => ({ default: module.ProfilePhoto })),
+);
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3 text-ink";
 const button =
   "min-h-11 rounded-lg bg-ink px-5 py-3 font-bold text-white disabled:opacity-50";
@@ -205,6 +208,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           });
           setProfile({ ...profile, ...memberProfileSchema.parse(data) });
           setMessage("Perfil salvo.");
+          window.dispatchEvent(new Event("vitale-profile-updated"));
         }
       } else if (mode === "recuperar" || mode === "senha") {
         const { error } = await supabase.functions.invoke(
@@ -536,7 +540,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           >
             {returnTo === "/conteudos"
               ? "Explorar os artigos"
-              : "Voltar ao artigo"}
+              : returnTo.startsWith("/conta/anuncios")
+                ? "Ir para meus anúncios"
+                : returnTo.startsWith("/venda-sua-bike")
+                  ? "Ver bikes anunciadas"
+                  : "Voltar ao artigo"}
           </a>
         )}
         {session && (
@@ -549,6 +557,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           </p>
         )}
       </section>
+      {ready && profile?.communityJoinedAt && userId && (
+        <Suspense fallback={<p role="status">Carregando foto do perfil…</p>}>
+          <ProfilePhoto key={userId} />
+        </Suspense>
+      )}
       {ready && profile?.communityJoinedAt && userId && (
         <Suspense
           fallback={

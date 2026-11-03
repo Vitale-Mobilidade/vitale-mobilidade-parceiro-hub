@@ -18,6 +18,7 @@ import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as VendaSuaBikeRouteImport } from './routes/venda-sua-bike'
 import { Route as VideosRouteImport } from './routes/videos'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
@@ -40,6 +41,7 @@ import { Route as CalculadorasTempoNoTransitoRouteImport } from './routes/calcul
 import { Route as CalculadorasTempoRecuperadoRouteImport } from './routes/calculadoras/tempo-recuperado'
 import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './routes/calculadoras/transporte-publico-vs-bike'
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
+import { Route as ContaAnunciosRouteImport } from './routes/conta_.anuncios'
 import { Route as ConteudosIndexRouteImport } from './routes/conteudos/index'
 import { Route as ConteudosSlugRouteImport } from './routes/conteudos/$slug'
 import { Route as FerramentasIndexRouteImport } from './routes/ferramentas/index'
@@ -52,11 +54,13 @@ import { Route as FerramentasTransportePublicoVsBikeRouteImport } from './routes
 import { Route as FerramentasVeiculoAlugadoVsBikePropriaRouteImport } from './routes/ferramentas/veiculo-alugado-vs-bike-propria'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
+import { Route as VendaSuaBikeIdRouteImport } from './routes/venda-sua-bike_.$id'
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
 import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
+import { Route as ApiPublicBikeImageRouteImport } from './routes/api/public/bike-image'
 import { Route as ApiPublicNewsletterImageRouteImport } from './routes/api/public/newsletter-image'
 import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
@@ -106,6 +110,11 @@ const QuizRoute = QuizRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendaSuaBikeRoute = VendaSuaBikeRouteImport.update({
+  id: '/venda-sua-bike',
+  path: '/venda-sua-bike',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VideosRoute = VideosRouteImport.update({
@@ -222,6 +231,11 @@ const CalculadorasUberVsBikeRoute = CalculadorasUberVsBikeRouteImport.update({
   path: '/calculadoras/uber-vs-bike',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContaAnunciosRoute = ContaAnunciosRouteImport.update({
+  id: '/conta_/anuncios',
+  path: '/conta/anuncios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConteudosIndexRoute = ConteudosIndexRouteImport.update({
   id: '/conteudos/',
   path: '/conteudos/',
@@ -286,6 +300,11 @@ const RadarBikeIdRoute = RadarBikeIdRouteImport.update({
   path: '/radar/$bikeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendaSuaBikeIdRoute = VendaSuaBikeIdRouteImport.update({
+  id: '/venda-sua-bike_/$id',
+  path: '/venda-sua-bike/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConteudosIndexRoute = AdminConteudosIndexRouteImport.update({
   id: '/admin/conteudos/',
   path: '/admin/conteudos/',
@@ -309,6 +328,11 @@ const ApiAdminNewsletterRoute = ApiAdminNewsletterRouteImport.update({
 const ApiAdminRadarAlertsRoute = ApiAdminRadarAlertsRouteImport.update({
   id: '/api/admin/radar-alerts',
   path: '/api/admin/radar-alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicBikeImageRoute = ApiPublicBikeImageRouteImport.update({
+  id: '/api/public/bike-image',
+  path: '/api/public/bike-image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicNewsletterImageRoute =
@@ -351,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -371,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conta/anuncios': typeof ContaAnunciosRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -380,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
+  '/venda-sua-bike/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/conteudos/': typeof ConteudosIndexRoute
@@ -389,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/bike-image': typeof ApiPublicBikeImageRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -406,6 +434,7 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -426,6 +455,7 @@ export interface FileRoutesByTo {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conta/anuncios': typeof ContaAnunciosRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -435,6 +465,7 @@ export interface FileRoutesByTo {
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
+  '/venda-sua-bike/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
   '/admin': typeof AdminIndexRoute
   '/conteudos': typeof ConteudosIndexRoute
@@ -444,6 +475,7 @@ export interface FileRoutesByTo {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/bike-image': typeof ApiPublicBikeImageRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -462,6 +494,7 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
@@ -482,6 +515,7 @@ export interface FileRoutesById {
   '/calculadoras/tempo-recuperado': typeof CalculadorasTempoRecuperadoRoute
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
+  '/conta_/anuncios': typeof ContaAnunciosRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -491,6 +525,7 @@ export interface FileRoutesById {
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
+  '/venda-sua-bike_/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/conteudos/': typeof ConteudosIndexRoute
@@ -500,6 +535,7 @@ export interface FileRoutesById {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/public/bike-image': typeof ApiPublicBikeImageRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -519,6 +555,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -539,6 +576,7 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conta/anuncios'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -548,6 +586,7 @@ export interface FileRouteTypes {
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
+    | '/venda-sua-bike/$id'
     | '/acompanhamento/'
     | '/admin/'
     | '/conteudos/'
@@ -557,6 +596,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/bike-image'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -574,6 +614,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -594,6 +635,7 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conta/anuncios'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -603,6 +645,7 @@ export interface FileRouteTypes {
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
+    | '/venda-sua-bike/$id'
     | '/acompanhamento'
     | '/admin'
     | '/conteudos'
@@ -612,6 +655,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/bike-image'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -629,6 +673,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
@@ -649,6 +694,7 @@ export interface FileRouteTypes {
     | '/calculadoras/tempo-recuperado'
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
+    | '/conta_/anuncios'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -658,6 +704,7 @@ export interface FileRouteTypes {
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
     | '/radar/$bikeId'
+    | '/venda-sua-bike_/$id'
     | '/acompanhamento/'
     | '/admin/'
     | '/conteudos/'
@@ -667,6 +714,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/public/bike-image'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -685,6 +733,7 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   QuizRoute: typeof QuizRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VendaSuaBikeRoute: typeof VendaSuaBikeRoute
   VideosRoute: typeof VideosRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
@@ -705,6 +754,7 @@ export interface RootRouteChildren {
   CalculadorasTempoRecuperadoRoute: typeof CalculadorasTempoRecuperadoRoute
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
+  ContaAnunciosRoute: typeof ContaAnunciosRoute
   ConteudosSlugRoute: typeof ConteudosSlugRoute
   FerramentasAplicativosVsBikeRoute: typeof FerramentasAplicativosVsBikeRoute
   FerramentasCarroVsBikeRoute: typeof FerramentasCarroVsBikeRoute
@@ -714,6 +764,7 @@ export interface RootRouteChildren {
   FerramentasTransportePublicoVsBikeRoute: typeof FerramentasTransportePublicoVsBikeRoute
   FerramentasVeiculoAlugadoVsBikePropriaRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
+  VendaSuaBikeIdRoute: typeof VendaSuaBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ConteudosIndexRoute: typeof ConteudosIndexRoute
@@ -723,6 +774,7 @@ export interface RootRouteChildren {
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
   ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
+  ApiPublicBikeImageRoute: typeof ApiPublicBikeImageRoute
   ApiPublicNewsletterImageRoute: typeof ApiPublicNewsletterImageRoute
   ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
@@ -793,6 +845,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/venda-sua-bike': {
+      id: '/venda-sua-bike'
+      path: '/venda-sua-bike'
+      fullPath: '/venda-sua-bike'
+      preLoaderRoute: typeof VendaSuaBikeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/videos': {
@@ -949,6 +1008,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalculadorasUberVsBikeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conta_/anuncios': {
+      id: '/conta_/anuncios'
+      path: '/conta/anuncios'
+      fullPath: '/conta/anuncios'
+      preLoaderRoute: typeof ContaAnunciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/conteudos/': {
       id: '/conteudos/'
       path: '/conteudos'
@@ -1033,6 +1099,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RadarBikeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/venda-sua-bike_/$id': {
+      id: '/venda-sua-bike_/$id'
+      path: '/venda-sua-bike/$id'
+      fullPath: '/venda-sua-bike/$id'
+      preLoaderRoute: typeof VendaSuaBikeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/conteudos/': {
       id: '/admin/conteudos/'
       path: '/admin/conteudos'
@@ -1066,6 +1139,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/radar-alerts'
       fullPath: '/api/admin/radar-alerts'
       preLoaderRoute: typeof ApiAdminRadarAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bike-image': {
+      id: '/api/public/bike-image'
+      path: '/api/public/bike-image'
+      fullPath: '/api/public/bike-image'
+      preLoaderRoute: typeof ApiPublicBikeImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/newsletter-image': {
@@ -1127,6 +1207,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   QuizRoute: QuizRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VendaSuaBikeRoute: VendaSuaBikeRoute,
   VideosRoute: VideosRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
@@ -1148,6 +1229,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalculadorasTransportePublicoVsBikeRoute:
     CalculadorasTransportePublicoVsBikeRoute,
   CalculadorasUberVsBikeRoute: CalculadorasUberVsBikeRoute,
+  ContaAnunciosRoute: ContaAnunciosRoute,
   ConteudosSlugRoute: ConteudosSlugRoute,
   FerramentasAplicativosVsBikeRoute: FerramentasAplicativosVsBikeRoute,
   FerramentasCarroVsBikeRoute: FerramentasCarroVsBikeRoute,
@@ -1159,6 +1241,7 @@ const rootRouteChildren: RootRouteChildren = {
   FerramentasVeiculoAlugadoVsBikePropriaRoute:
     FerramentasVeiculoAlugadoVsBikePropriaRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
+  VendaSuaBikeIdRoute: VendaSuaBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
   AdminIndexRoute: AdminIndexRoute,
   ConteudosIndexRoute: ConteudosIndexRoute,
@@ -1168,6 +1251,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
   ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
+  ApiPublicBikeImageRoute: ApiPublicBikeImageRoute,
   ApiPublicNewsletterImageRoute: ApiPublicNewsletterImageRoute,
   ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,

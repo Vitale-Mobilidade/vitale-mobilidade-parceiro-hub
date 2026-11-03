@@ -38,10 +38,13 @@ export const moderationCommentSchema = memberCommentSchema
 export type MemberProfile = z.infer<typeof memberProfileSchema>;
 export type MemberComment = z.infer<typeof memberCommentSchema>;
 
-/** Return only to an editorial article; never accept hosts, auth tokens or arbitrary paths. */
+/** Allowlisted internal destinations only; never hosts, tokens or arbitrary paths. */
 export function memberReturnPath(value: unknown): string {
   return typeof value === "string" &&
-    /^\/conteudos\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+    (/^\/conteudos\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ||
+      value === "/conta/anuncios" ||
+      value === "/venda-sua-bike" ||
+      /^\/venda-sua-bike\/[a-f0-9-]{36}$/.test(value))
     ? value
     : "/conteudos";
 }

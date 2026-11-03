@@ -1,3 +1,4 @@
+import { AccountMenu } from "@/components/members/AccountMenu";
 import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
@@ -8,7 +9,11 @@ import { CLASSIFICATION_LABEL, type Classification } from "@/lib/price-tracker";
 import { OffersBanner } from "@/components/site/DecisionBanners";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
-import { SOCIAL_LINKS, YOUTUBE_SUBSCRIBE, YOUTUBE_CHANNEL } from "@/lib/social-links";
+import {
+  SOCIAL_LINKS,
+  YOUTUBE_SUBSCRIBE,
+  YOUTUBE_CHANNEL,
+} from "@/lib/social-links";
 
 /*
  * Vitale Design System — peças compartilhadas por Home, Radar e detalhe.
@@ -19,7 +24,7 @@ export function Brand({ large = false }: { large?: boolean }) {
   return (
     <Link
       to="/"
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-logo-surface bg-logo-surface p-1 ${large ? "h-16 w-48 sm:h-20 sm:w-60" : "h-11 w-36 sm:h-14 sm:w-48"}`}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-logo-surface bg-logo-surface p-1 ${large ? "h-16 w-48 sm:h-20 sm:w-60" : "h-11 w-28 sm:h-14 sm:w-40"}`}
       aria-label="Vitale Mobilidade — início"
     >
       <img
@@ -34,18 +39,26 @@ export function Brand({ large = false }: { large?: boolean }) {
   );
 }
 
-type NavItem = { label: string; href?: string; to?: "/radar" | "/ferramentas" | "/conteudos" | "/conta" };
+type NavItem = {
+  label: string;
+  href?: string;
+  to?: "/radar" | "/ferramentas" | "/conteudos" | "/venda-sua-bike";
+};
 export const SITE_NAV: NavItem[] = [
   { label: "Radar de preços", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
-  ...(memberAccountsEnabled ? [{ label: "Comunidade", to: "/conta" as const }] : []),
+  { label: "Venda sua bike aqui", to: "/venda-sua-bike" },
 ];
 
 function NavLink({ item, className }: { item: NavItem; className: string }) {
   if (item.to) {
     return (
-      <Link to={item.to} className={className} activeProps={{ "aria-current": "page", className: "text-mint" }}>
+      <Link
+        to={item.to}
+        className={className}
+        activeProps={{ "aria-current": "page", className: "text-mint" }}
+      >
         {item.label}
       </Link>
     );
@@ -61,11 +74,11 @@ function NavLink({ item, className }: { item: NavItem; className: string }) {
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-foreground/10 bg-ink">
-      <div className="responsive-container grid h-16 sm:h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 lg:flex lg:justify-between">
+      <div className="responsive-container grid h-16 sm:h-18 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 py-3 sm:gap-4 xl:flex xl:justify-between">
         <Brand />
         <nav
           aria-label="Principal"
-          className={`hidden items-center font-semibold text-ink-foreground lg:flex ${memberAccountsEnabled ? "gap-5 text-sm" : "gap-9 text-base"}`}
+          className={`hidden items-center font-semibold text-ink-foreground xl:flex ${memberAccountsEnabled ? "gap-4 text-sm" : "gap-9 text-base"}`}
         >
           {SITE_NAV.map((n) => (
             <NavLink
@@ -75,23 +88,31 @@ export function SiteHeader() {
             />
           ))}
         </nav>
-        <Link
-          to="/quiz"
-          reloadDocument
-          className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 lg:inline-flex"
-        >
-          Faça o Quiz e descubra a bike ideal
-        </Link>
-        <details className="relative lg:hidden">
-          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-4 text-sm font-semibold text-ink-foreground">
-            <Menu className="h-5 w-5" aria-hidden="true" /> Menu
+        <div className="flex items-center gap-3 max-xl:col-start-2">
+          <Link
+            to="/quiz"
+            reloadDocument
+            className="hidden h-11 items-center rounded-xl bg-mint px-5 text-sm font-bold text-mint-foreground hover:opacity-90 xl:inline-flex"
+          >
+            Faça o Quiz e descubra a bike ideal
+          </Link>
+          {memberAccountsEnabled && <AccountMenu />}
+        </div>
+        <details className="relative xl:hidden">
+          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-ink-foreground/25 px-3 text-sm font-semibold text-ink-foreground">
+            <Menu className="h-5 w-5" aria-hidden="true" />{" "}
+            <span className="sr-only sm:not-sr-only">Menu</span>
           </summary>
           <nav
             aria-label="Principal (celular)"
             className="absolute right-0 mt-2 w-72 space-y-1 rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
           >
             {SITE_NAV.map((n) => (
-              <NavLink key={n.label} item={n} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted" />
+              <NavLink
+                key={n.label}
+                item={n}
+                className="block rounded-lg px-3 py-3 font-medium hover:bg-muted"
+              />
             ))}
             <Link
               to="/quiz"

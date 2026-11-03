@@ -13,6 +13,8 @@ describe("reader boundaries", () => {
     "https://evil.invalid",
     "//evil.invalid",
     "/admin",
+    "/conta/anuncios?token=secret",
+    "/conta/anuncios/../../admin",
     "/conta?token=secret",
     "/conteudos/artigo?next=//evil",
     "/conteudos/%2f%2fevil",
@@ -24,6 +26,13 @@ describe("reader boundaries", () => {
     expect(memberReturnPath("/conteudos/bike-v9-max")).toBe(
       "/conteudos/bike-v9-max",
     ));
+  it.each([
+    "/conta/anuncios",
+    "/venda-sua-bike",
+    "/venda-sua-bike/00000000-0000-4000-8000-000000000090",
+  ])("preserves classifieds return %s", (path) =>
+    expect(memberReturnPath(path)).toBe(path),
+  );
   it("rejects empty, excessive or control-character names and comments", () => {
     expect(displayNameSchema.safeParse("  ").success).toBe(false);
     expect(displayNameSchema.safeParse("Ana\nMaria").success).toBe(false);

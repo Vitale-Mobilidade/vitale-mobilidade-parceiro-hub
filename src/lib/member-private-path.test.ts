@@ -3,6 +3,8 @@ import { isMemberPrivatePath } from "./member-private-path";
 it.each([
   "/conta",
   "/conta/",
+  "/conta/anuncios",
+  "/conta/anuncios/",
   "/newsletter/confirmar",
   "/newsletter/confirmar/",
 ])("keeps private path %s outside tracking", (path) =>
