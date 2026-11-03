@@ -1,5 +1,7 @@
 # Venda sua bike — piloto de 03/11/2026
 
+> **Estado atual: publicado e ativado.** [Vitrine](https://vitalemobilidade.com/venda-sua-bike), [Meus anúncios](https://vitalemobilidade.com/conta/anuncios). Criação liberada apenas à conta convidada, sem cobrança piloto; publicar exige adesão e provas de e-mail/celular do próprio anunciante. Registro de etapas anteriores preservado abaixo.
+
 Classificação: estrutural (Supabase, Storage, identidade, SSR e novas rotas públicas).
 
 ## Revisão pré-implementação
@@ -80,3 +82,66 @@ Estado: implementação local concluída, pronta para revisão/ativação autori
 Rollback preparado em `supabase/rollback/20261103230000_bike_classifieds_pilot.sql` (desabilita flag; preserva conteúdo). Para retirar toda a interface, reverter o commit da PR. Não remover migrations aplicadas ou apagar metadados Storage por SQL.
 
 Referências primárias utilizadas: [controle de acesso Storage](https://supabase.com/docs/guides/storage/security/access-control), [URLs assinadas e permissões SELECT](https://supabase.com/docs/reference/javascript/storage-from-createsignedurl).
+
+
+## Release autorizado — em execução
+
+O responsável autorizou integrar, aplicar a migração, restringir a conta convidada e publicar, após a apresentação do escopo/custo/rollback. PR #65 integrada em `25f121a1d9b825c35d43feb6a745b36e2c6cb7c5`. Prévia Netlify passou. O status Vercel falha também no main anterior `b732443` e não é o hosting ativo; não houve desvio para corrigir essa configuração herdada.
+
+Migração solicitada ao fluxo privilegiado oficial do Lovable com flag desligada, arquivo exato SHA256 `a8db95adf6b35349189f1d71925baa8a6b7b45f6f5aad8cd50d94df2536a9c02`, sem mudança de ownership, concessão de novos papéis ou enfraquecimento de RLS. Esta operação exclusiva foi o único uso de agente Lovable autorizado para este release. Verificações/entitlement/publicação serão registrados abaixo após conclusão real.
+
+
+### Ajuste da sequência de aplicação (mesmo contrato)
+
+O fluxo oficial recusou antes de escrever: não aceita INSERT em storage.buckets nem BEGIN/COMMIT e mantém journal próprio. Custo reportado: 0,9 crédito. Nenhum objeto criado nessa tentativa. Não é necessário mudar o contrato nem ampliar permissões.
+
+Revisão de dependência: Produto/UX/Growth/IA/CX preservam o mesmo resultado e escopo; CTO/Segurança/PMO aprovam separar aplicação de tabelas/RPCs (transação como proprietário legítimo), criação do bucket pelo recurso oficial e aplicação das sete policies pelo fluxo privilegiado. Nenhuma troca de ownership/novo papel é permitida. A flag permanece desligada e o histórico só será marcado concluído após os três passos e conferência das definições. Se uma etapa falhar, não ativar/publicar; os objetos novos permanecem privados/desligados. A migração original continua como contrato de referência e não será reexecutada sobre objetos existentes. O journal gerado pela plataforma será documentado para evitar dupla execução.
+
+
+### Reconciliação do journal já aplicado
+
+A segunda operação oficial (0,9 crédito) encontrou o journal Drizzle parado em 0005; 0006–0010 já estavam aplicadas fora desse journal. Não refazer o Quiz/grupos: comparação direta dos sete corpos de funções com o código confirmou igualdade normalizando apenas whitespace, configurações/volatilidade/definer e grants esperados, dois índices válidos, colunas/RLS/policy e grants por coluna dos grupos preservados. O histórico anterior de seis linhas foi salvo em artefato privado sem dados pessoais.
+
+Decisão revisada das oito perspectivas: Produto/UX/CX/Growth/IA não mudam resultado nem comportamento; CTO/Segurança/PMO autorizam a reconciliação de cinco registros de histórico correspondentes a SQL já instalado e comprovado. Transação com trava curta e guards contra alteração concorrente do journal e dos sete corpos; não reexecutar DDL antigo. Um PostgreSQL descartável com o migrador oficial Drizzle demonstrou que, após o checkpoint 0010, somente as sete policies novas executam e nenhum DDL antigo é repetido. Não há migração de dados, alteração de funções existentes ou aumento de permissões nessa reconciliação.
+
+O bucket foi criado pelo painel oficial de Storage e configurado por UPDATE autorizado, limitado exclusivamente ao novo bucket, com file_size_limit=2097152, MIME image/webp e public=false. Nenhum objeto/metadata de arquivo existente foi alterado.
+
+
+### Banco e entitlement concluídos
+
+- Policies aplicadas pelo fluxo oficial, idênticas byte a byte ao trecho aprovado: três permissivas + quatro restritivas. Ownership de storage.objects permanece supabase_storage_admin; nenhum papel elevado.
+- Plataforma gerou `drizzle/migrations/0011_member_media_storage_policies.sql`, snapshot 0011 e journal; regeneração automática de tipos Supabase foi inspecionada. Nenhuma alteração de interface ou módulos preservados. Custo do agente nesta aplicação: 1,0 crédito; total das três operações Lovable: 2,8 créditos.
+- Migração original registrada uma única vez como 20261103230000 após conferir bucket e sete policies. O journal Drizzle cobre 0011; não reexecutar o DDL da referência.
+- Flag ativada só para o UUID resolvido da conta solicitada. Leitura confirmou requested_account_only=true, pilot_entitled=true e other_accounts_denied=true. Valor 15000 centavos. Zero anúncios/mídias criados pelo operador.
+- A conta Auth convidada existe; perfil da comunidade e provas de posse ainda não concluídos nesse fluxo. A pessoa conclui a própria adesão/validação na conta. Não houve criação de consentimento/prova pelo operador. O acesso ao piloto não dispensa a verificação para publicar.
+- `pnpm validate` repetido após geração de tipos: Pass (66 testes e build SSR). Hash do SQL original preservado; migration 0011 igual ao trecho da referência. Nenhuma diferença nos formulários originais da newsletter.
+- Publicação solicitada pelo conector: deployment 1090bc98-60fe-4948-a495-70c26ed2a584. Verificação pública ainda em andamento; não considerar o retorno pending como conclusão.
+
+
+## Verificação de produção e fechamento
+
+Deployment 1090bc98-60fe-4948-a495-70c26ed2a584 confirmado no domínio público por navegação nova, sem URL especial de preview ou cache-busting:
+
+- `/venda-sua-bike`: título correto, novo item de navegação, Entrar à direita do Quiz, R$150 e isenção piloto, estado vazio real (zero anúncios), CTA para área privada. A leitura pública retornou `{items:[],total:0}` com o módulo ativo.
+- `/conta/anuncios`: visitante recebe CTA de login com retorno preservado, robots noindex/nofollow e ausência do assistente na página privada. Nenhuma sessão, senha ou identidade real foi criada para o smoke.
+- Home: seção “Venda sua bike aqui” publicada; até três anúncios reais aparecerão automaticamente conforme publicados. Catálogo/Radar e conteúdo já existentes permanecem apresentados.
+- `/newsletter`: formulário original de nome/e-mail/aceite e botão Cadastrar e-mail, sem cadastro completo. Screenshot e comparação com 540fc1d confirmados. Nenhuma assinatura de teste foi enviada.
+- Storage: grants normais SELECT/INSERT/DELETE de authenticated presentes e SELECT de anon, todos limitados pelas sete policies aprovadas. Ownership continua supabase_storage_admin. Bucket privado/WebP/2MB conferido. Nenhuma foto de teste foi enviada a produção.
+- Entitlement: piloto solicitado corresponde ao UUID configurado e todas as outras contas são negadas. Perfil/validações serão concluídos pela própria pessoa, sem consentimentos ou provas forjados. Operador não publicou anúncio.
+
+Capturas públicas reais: `artifacts/bike-classifieds/production-hub.png`, `production-home.png` e `production-newsletter-preserved.png`. Diferem das evidências mock documentadas no mesmo diretório.
+
+### Parecer final das oito perspectivas
+
+| Perspectiva | Status | Conclusão |
+| --- | --- | --- |
+| Produto e Estratégia | Pass | Piloto individual ativo, preço/isenção claros; cobrança e abertura geral continuam backlog |
+| CTO e Arquitetura | Pass | Schema/RPCs, sete policies oficiais, tipos regenerados e SSR publicados; journal reconciliado sem repetir DDL antigo |
+| IA e Agentes | Pass | Nenhum fluxo de IA/editorial alterado; 2,8 créditos Lovable usados somente na lacuna operacional exclusiva |
+| Segurança | Pass | Bucket privado, ownership preservado, RLS/roles/entitlement conferidos; publicação exige identidade e consentimento |
+| UX/UI | Pass | Header/CTA/Home/vitrine públicos conferidos; editor protegido e formulário validado localmente em mobile/desktop |
+| CX e Operação | Pass | Acesso piloto disponível, edição/rascunho/vendida/retirada implementados; anunciante fará seu primeiro cadastro de bike real |
+| Growth e CRO | Pass | Newsletter original pública preservada; classificados SSR separados do Radar, noindex nesta fase |
+| PMO e QA | Pass | PR65 integrada, validate repetido após tipos, restore e teste real do migrador; release e rollback registrados |
+
+Parecer: GO para o piloto autorizado. Entrega publicada e banco ativo. Limite de evidência: CRUD e uploads completos foram exercitados localmente; em produção foram conferidos estrutura/permissões/entitlement/projeção e interface pública/guest. A primeira publicação real depende de ação do anunciante após concluir seu perfil e provas; nenhum conteúdo comercial foi inventado para simular essa etapa. Não há checkout nem cobrança ativa.

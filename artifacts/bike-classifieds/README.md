@@ -11,3 +11,10 @@ A conta piloto da captura é fictícia (`example.invalid`).
 
 Comando: `PLAYWRIGHT_MODULE=/caminho/playwright/index.mjs node tests/bike-classifieds-ui.mjs`.
 Usa somente `127.0.0.1:4318` (Vite com envs fake) e `127.0.0.1:54321` (mock descartável).
+
+
+## Evidência de produção
+
+`production-hub.png`, `production-home.png` e `production-newsletter-preserved.png`
+foram capturados no domínio público após a publicação. A vitrine está vazia porque
+nenhum anúncio real foi criado pelo operador. Não mostram uma sessão autenticada.
