@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     if (typeof body.website === "string" && body.website.trim()) return json({ ok: true });
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
     const fp = await fingerprint(req);
-    const referralsEnabled = Deno.env.get("NEWSLETTER_REFERRALS_ENABLED") === "true";
+    const referralsEnabled = Deno.env.get("NEWSLETTER_REFERRALS_ENABLED") !== "false";
     // Ignore untrusted actorId in JSON. A real session may exclude self-visits/
     // self-referrals; normal anonymous newsletter subscriptions need no account.
     let actorId: string | null = null;

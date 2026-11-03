@@ -3,7 +3,7 @@ import { memberAccountsEnabled } from "./member-accounts-feature";
 
 export const newsletterReferralsEnabled =
   memberAccountsEnabled &&
-  import.meta.env.VITE_NEWSLETTER_REFERRALS_ENABLED === "true";
+  import.meta.env.VITE_NEWSLETTER_REFERRALS_ENABLED !== "false";
 export function referralCode(value: unknown): string | undefined {
   return typeof value === "string" && /^[a-f0-9]{32}$/.test(value)
     ? value
