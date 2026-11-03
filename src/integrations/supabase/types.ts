@@ -1329,6 +1329,113 @@ export type Database = {
           },
         ]
       }
+      member_bike_listings: {
+        Row: {
+          battery: string
+          bike_id: string | null
+          brand: string
+          city: string
+          condition: string
+          contact_consent_at: string | null
+          created_at: string
+          description: string
+          fee_cents: number
+          fee_status: string
+          id: string
+          invoice: boolean
+          maintenance: string
+          mileage_km: number | null
+          model: string
+          model_year: number | null
+          price_cents: number
+          published_at: string | null
+          state: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          battery?: string
+          bike_id?: string | null
+          brand?: string
+          city?: string
+          condition?: string
+          contact_consent_at?: string | null
+          created_at?: string
+          description?: string
+          fee_cents?: number
+          fee_status?: string
+          id?: string
+          invoice?: boolean
+          maintenance?: string
+          mileage_km?: number | null
+          model?: string
+          model_year?: number | null
+          price_cents?: number
+          published_at?: string | null
+          state?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          battery?: string
+          bike_id?: string | null
+          brand?: string
+          city?: string
+          condition?: string
+          contact_consent_at?: string | null
+          created_at?: string
+          description?: string
+          fee_cents?: number
+          fee_status?: string
+          id?: string
+          invoice?: boolean
+          maintenance?: string
+          mileage_km?: number | null
+          model?: string
+          model_year?: number | null
+          price_cents?: number
+          published_at?: string | null
+          state?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_bike_listings_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["bike_id"]
+          },
+        ]
+      }
+      member_classifieds_settings: {
+        Row: {
+          enabled: boolean
+          listing_fee_cents: number
+          pilot_user_id: string | null
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          listing_fee_cents?: number
+          pilot_user_id?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          listing_fee_cents?: number
+          pilot_user_id?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       member_community_settings: {
         Row: {
           enabled: boolean
@@ -1426,6 +1533,47 @@ export type Database = {
           },
         ]
       }
+      member_media_assets: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          listing_id: string | null
+          object_path: string
+          position: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          listing_id?: string | null
+          object_path: string
+          position?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          listing_id?: string | null
+          object_path?: string
+          position?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_media_assets_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_moderation_audit: {
         Row: {
           action: string
@@ -1452,6 +1600,7 @@ export type Database = {
       }
       member_profiles: {
         Row: {
+          avatar_asset_id: string | null
           comment_day: string | null
           comment_day_count: number
           community_consent_version: string | null
@@ -1467,6 +1616,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_asset_id?: string | null
           comment_day?: string | null
           comment_day_count?: number
           community_consent_version?: string | null
@@ -1482,6 +1632,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_asset_id?: string | null
           comment_day?: string | null
           comment_day_count?: number
           community_consent_version?: string | null
@@ -1497,6 +1648,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "member_profiles_avatar_asset_id_fkey"
+            columns: ["avatar_asset_id"]
+            isOneToOne: false
+            referencedRelation: "member_media_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "member_profiles_newsletter_subscription_id_fkey"
             columns: ["newsletter_subscription_id"]
@@ -2926,6 +3084,17 @@ export type Database = {
         }
         Returns: Json
       }
+      member_bike_image_public: { Args: { p_id: string }; Returns: string }
+      member_bike_listings_public: {
+        Args: { p_id?: string; p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      member_classifieds: {
+        Args: { p_action?: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_classifieds_pilot: { Args: { p_actor: string }; Returns: boolean }
+      member_classifieds_visible: { Args: { p_user: string }; Returns: boolean }
       member_community: {
         Args: { p_action: string; p_payload?: Json }
         Returns: Json
@@ -2943,6 +3112,16 @@ export type Database = {
         Returns: Json
       }
       member_identity_verified: { Args: { p_user: string }; Returns: boolean }
+      member_listing_json: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
+        }
+        Returns: Json
+      }
+      member_media_access: {
+        Args: { p_operation: string; p_path: string }
+        Returns: boolean
+      }
       member_password_recovery_budget: {
         Args: { p_email: string; p_fingerprint: string }
         Returns: boolean
