@@ -128,3 +128,7 @@ Credencial será criada por administração restrita do projeto integrado, com f
 | PMO e QA | Pass no escopo | Configuração e transporte comprovados, validate aprovado e evidências registradas; criação/login/aceite e digitação real dos dois OTPs ficam com o usuário |
 
 Estado: **configuração publicada e transporte WhatsApp homologado**. A validação completa de uma conta real somente ocorre no fluxo normal, com sessão própria e códigos digitados pelo usuário; nenhum perfil foi retrovalidado pelo agente. Rollback: revogar apenas a nova chave, interromper emissão por flag/secret se necessário e manter o gate de interação fechado quando faltar uma prova, preservando registros e newsletter.
+
+Conferência final de publicação: Lovable exibiu “Your website is up to date”. A varredura já existente citou offers_group_settings por policy permissiva, mas declarou que os papéis do aplicativo não alcançam a tabela; leitura administrativa confirmou anon/authenticated sem grants de leitura ou escrita. Não houve alteração dessa tabela nem execução de autofix/deep scan, por ser separada desta configuração. A ausência de acesso direto é evidência suficiente para não atribuir exposição a esta ativação.
+
+Registro operacional correspondente no Hotpipe: PR #256 (STATUS, DECISIONS e task de configuração), sem runtime ou publicação Hotpipe. Destinatário e OTP reais não foram versionados. A chave continua restrita a templates:read/templates:send e nenhuma conta foi marcada como validada pelo teste de transporte.
