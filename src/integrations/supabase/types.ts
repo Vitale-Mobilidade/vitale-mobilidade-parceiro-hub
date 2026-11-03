@@ -1278,6 +1278,306 @@ export type Database = {
           },
         ]
       }
+      member_article_comments: {
+        Row: {
+          article_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_article_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_article_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      member_community_settings: {
+        Row: {
+          enabled: boolean
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      member_moderation_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          id: number
+          target_id: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          id?: never
+          target_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          id?: never
+          target_id?: string
+        }
+        Relationships: []
+      }
+      member_profiles: {
+        Row: {
+          comment_day: string | null
+          comment_day_count: number
+          community_consent_version: string | null
+          community_joined_at: string | null
+          created_at: string
+          display_name: string
+          last_comment_at: string | null
+          newsletter_subscription_id: string | null
+          privacy_acknowledged_at: string
+          privacy_version: string
+          suspended: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_day?: string | null
+          comment_day_count?: number
+          community_consent_version?: string | null
+          community_joined_at?: string | null
+          created_at?: string
+          display_name: string
+          last_comment_at?: string | null
+          newsletter_subscription_id?: string | null
+          privacy_acknowledged_at?: string
+          privacy_version?: string
+          suspended?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_day?: string | null
+          comment_day_count?: number
+          community_consent_version?: string | null
+          community_joined_at?: string | null
+          created_at?: string
+          display_name?: string
+          last_comment_at?: string | null
+          newsletter_subscription_id?: string | null
+          privacy_acknowledged_at?: string
+          privacy_version?: string
+          suspended?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_profiles_newsletter_subscription_id_fkey"
+            columns: ["newsletter_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_referral_links: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_referral_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "member_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      member_referral_settings: {
+        Row: {
+          daily_mail_limit: number
+          enabled: boolean
+          mail_attempts: number
+          mail_day: string | null
+          singleton: boolean
+        }
+        Insert: {
+          daily_mail_limit?: number
+          enabled?: boolean
+          mail_attempts?: number
+          mail_day?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          daily_mail_limit?: number
+          enabled?: boolean
+          mail_attempts?: number
+          mail_day?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      member_referral_signups: {
+        Row: {
+          candidate_email: string | null
+          candidate_name: string | null
+          community_member: boolean
+          confirmed_at: string | null
+          consent_at: string
+          created_at: string
+          credited: boolean
+          email_key: string
+          expires_at: string
+          id: string
+          invitee_user_id: string | null
+          last_mail_attempt_at: string | null
+          mail_state: string
+          nonce: string
+          referrer_id: string
+          status: string
+          subscription_id: string | null
+          token_hash: string | null
+        }
+        Insert: {
+          candidate_email?: string | null
+          candidate_name?: string | null
+          community_member?: boolean
+          confirmed_at?: string | null
+          consent_at?: string
+          created_at?: string
+          credited?: boolean
+          email_key: string
+          expires_at?: string
+          id?: string
+          invitee_user_id?: string | null
+          last_mail_attempt_at?: string | null
+          mail_state?: string
+          nonce?: string
+          referrer_id: string
+          status?: string
+          subscription_id?: string | null
+          token_hash?: string | null
+        }
+        Update: {
+          candidate_email?: string | null
+          candidate_name?: string | null
+          community_member?: boolean
+          confirmed_at?: string | null
+          consent_at?: string
+          created_at?: string
+          credited?: boolean
+          email_key?: string
+          expires_at?: string
+          id?: string
+          invitee_user_id?: string | null
+          last_mail_attempt_at?: string | null
+          mail_state?: string
+          nonce?: string
+          referrer_id?: string
+          status?: string
+          subscription_id?: string | null
+          token_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_referral_signups_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "member_referral_links"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "member_referral_signups_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: true
+            referencedRelation: "newsletter_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_referral_visits: {
+        Row: {
+          code: string
+          day: string
+          visits: number
+        }
+        Insert: {
+          code: string
+          day: string
+          visits?: number
+        }
+        Update: {
+          code?: string
+          day?: string
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_referral_visits_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "member_referral_links"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       newsletter_campaigns: {
         Row: {
           created_at: string
@@ -2544,6 +2844,19 @@ export type Database = {
         }
         Returns: Json
       }
+      member_community: {
+        Args: { p_action: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_community_account: {
+        Args: { p_action?: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_password_recovery_budget: {
+        Args: { p_email: string; p_fingerprint: string }
+        Returns: boolean
+      }
+      member_referrals: { Args: never; Returns: Json }
       newsletter_acquire: { Args: never; Returns: string }
       newsletter_authorize: {
         Args: { issued_at: string; signature: string }
@@ -2589,6 +2902,10 @@ export type Database = {
           p_type: string
         }
         Returns: boolean
+      }
+      newsletter_referral_service: {
+        Args: { p_action: string; p_payload?: Json }
+        Returns: Json
       }
       newsletter_release: { Args: { tok: string }; Returns: undefined }
       newsletter_renew: { Args: { tok: string }; Returns: boolean }
