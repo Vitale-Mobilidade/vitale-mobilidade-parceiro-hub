@@ -1,3 +1,4 @@
+import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
 import { bikeImageFallback } from "@/lib/bike-catalog";
@@ -33,11 +34,12 @@ export function Brand({ large = false }: { large?: boolean }) {
   );
 }
 
-type NavItem = { label: string; href?: string; to?: "/radar" | "/ferramentas" | "/conteudos" };
+type NavItem = { label: string; href?: string; to?: "/radar" | "/ferramentas" | "/conteudos" | "/conta" };
 export const SITE_NAV: NavItem[] = [
   { label: "Radar de preços", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
+  ...(memberAccountsEnabled ? [{ label: "Minha conta", to: "/conta" as const }] : []),
 ];
 
 function NavLink({ item, className }: { item: NavItem; className: string }) {
@@ -63,7 +65,7 @@ export function SiteHeader() {
         <Brand />
         <nav
           aria-label="Principal"
-          className="hidden items-center gap-9 text-base font-semibold text-ink-foreground lg:flex"
+          className={`hidden items-center font-semibold text-ink-foreground lg:flex ${memberAccountsEnabled ? "gap-5 text-sm" : "gap-9 text-base"}`}
         >
           {SITE_NAV.map((n) => (
             <NavLink

@@ -1,3 +1,4 @@
+import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteFooter, SiteHeader } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
@@ -27,6 +28,12 @@ function PrivacyPage() {
           remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
         </p>
         <div className="mt-8 space-y-6 leading-relaxed">
+          {memberAccountsEnabled && <section>
+            <h2 className="text-xl font-bold">Conta de leitor e comentários</h2>
+            <p>Usamos seu e-mail para autenticação, confirmação e recuperação de acesso, com Supabase Auth no projeto da Vitale. A senha é tratada pelo serviço de autenticação e não fica disponível à equipe. A sessão fica no armazenamento necessário do navegador até você sair ou ela expirar. O nome público informado no envio e os comentários aprovados aparecem no site; o e-mail permanece privado. Alterar o nome do perfil vale para os próximos comentários. Comentários pendentes e rejeitados são acessíveis apenas ao autor e à moderação.</p>
+            <p className="mt-3">A conta não inscreve você automaticamente na newsletter. Mantemos perfil e contribuições enquanto a conta estiver ativa ou até solicitação de exclusão. Você pode remover seus comentários pelo artigo; o texto é retirado e substituído por um registro de remoção. A moderação guarda um registro de ações para segurança. Para corrigir ou excluir seus dados ou pedir revisão de uma suspensão, escreva pelo e-mail cadastrado para <a href="mailto:wowbmo@gmail.com" className="underline">wowbmo@gmail.com</a>. A equipe verifica a identidade antes de executar a solicitação.</p>
+          </section>}
+
           <section>
             <h2 className="text-xl font-bold">Google Analytics</h2>
             <p>

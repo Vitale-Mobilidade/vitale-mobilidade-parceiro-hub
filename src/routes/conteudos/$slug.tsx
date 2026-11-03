@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { ArticleView } from "@/components/editorial/ArticleView";
@@ -17,6 +19,8 @@ import {
   orderEditorialHighlights,
   relatedPublishedArticles,
 } from "@/lib/editorial-discovery";
+
+const ArticleComments = lazy(() => import("@/components/members/ArticleComments"));
 
 export const Route = createFileRoute("/conteudos/$slug")({
   loader: async ({ params }) => {
@@ -209,6 +213,7 @@ function ContentDetail() {
           relatedVideos={relatedVideos}
           sourceVideo={data.sourceVideo}
         />
+        {memberAccountsEnabled && <Suspense fallback={<p className="responsive-container py-8" role="status">Carregando área de comentários…</p>}><ArticleComments articleId={article.id} slug={article.slug} /></Suspense>}
       </main>
       <SiteFooter />
     </div>

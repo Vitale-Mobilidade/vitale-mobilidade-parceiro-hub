@@ -501,3 +501,7 @@ Implementado e validado localmente: formulário por link, título/transcrição 
 ### 29/09/2026 — Auditoria final SEO/GEO, performance e taxonomia
 
 Inventário final: 101 artigos, 143 URLs de sitemap. Sitemap enviado e processado no Search Console do perfil Lucas, propriedade de domínio Vitale. Código publicado no `main` (`1581ae92f29957e4af9fff16fc64f9c5608930a8`) e no deployment Lovable `e5fbb175-0d96-46cd-b5b1-1c066f18673a`. Etapas 2 e 4 concluídas em implementação e validação técnica; etapa 3 concluída em validação técnica com Lighthouse mobile no domínio e variação de latência documentada. Crawl de produção: 143 URLs, 101 artigos, zero issues. Indexação efetiva, citações de IA e CWV de campo continuam sujeitos à coleta e decisão dos buscadores. Evidências, limites e revisão de governança em [SEO_FINAL_2026-09-29.md](SEO_FINAL_2026-09-29.md); configurações reais em [SEARCH_CONSOLE_2026-09-29.md](SEARCH_CONSOLE_2026-09-29.md).
+
+## Contas de leitores — pedido de 03/11/2026
+
+Prioridade autorizada: cadastro/login, confirmação e recuperação, perfil próprio e comentários moderados. Preparação local, sem publicação ou migration de produção. Curtidas, indicação de newsletter com ranking, anúncios de bike por R$ 150 e ações/sorteios ficam em fases posteriores. Identidade compartilhada é o UUID de Supabase Auth, sem conceder papel administrativo. Ver [escopo, revisão e gates](MEMBER_ACCOUNTS_2026-11-03.md).

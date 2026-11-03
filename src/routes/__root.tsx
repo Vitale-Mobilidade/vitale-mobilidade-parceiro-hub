@@ -55,12 +55,12 @@ const SITE_JSONLD = {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
   loader: ({ location }) =>
-    location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz")
+    location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz") || location.pathname === "/conta"
       ? { footerVideos: [] }
       : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin") && window.location.pathname !== "/conta") {
       captureQuizAttribution();
     }
   },
@@ -130,7 +130,8 @@ function RootComponent() {
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const href = useRouterState({ select: (s) => s.location.href });
-  const excluded = path.startsWith("/quiz");
+  const privateAccount = path === "/conta";
+  const excluded = path.startsWith("/quiz") || privateAccount;
   useEffect(
     () =>
       startHeatmap(
@@ -143,9 +144,11 @@ function RootComponent() {
   );
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
-    if (!window.location.pathname.startsWith("/admin")) captureQuizAttribution();
-    siteAnalytics.pageView(window.location.href);
-    trackGooglePageView(window.location.href);
+    if (!window.location.pathname.startsWith("/admin") && window.location.pathname !== "/conta") captureQuizAttribution();
+    if (window.location.pathname !== "/conta") {
+      siteAnalytics.pageView(window.location.href);
+      trackGooglePageView(window.location.href);
+    }
   }, [href]);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -173,7 +176,7 @@ function RootComponent() {
           <HotPipeWidget />
         </div>
       )}
-      <NewsletterExitPopup path={path} />
+      {!privateAccount && <NewsletterExitPopup path={path} />}
     </QueryClientProvider>
   );
 }

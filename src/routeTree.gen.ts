@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContaRouteImport } from './routes/conta'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
@@ -22,6 +23,7 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
+import { Route as AdminComentariosRouteImport } from './routes/admin/comentarios'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
 import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de-ofertas'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
@@ -64,6 +66,11 @@ import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/cont
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaRoute = ContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EscolherbikeRoute = EscolherbikeRouteImport.update({
@@ -124,6 +131,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminBikesRoute = AdminBikesRouteImport.update({
   id: '/admin/bikes',
   path: '/admin/bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminComentariosRoute = AdminComentariosRouteImport.update({
+  id: '/admin/comentarios',
+  path: '/admin/comentarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminGrowthRoute = AdminGrowthRouteImport.update({
@@ -331,6 +343,7 @@ const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/newsletter': typeof NewsletterRoute
@@ -341,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -384,6 +398,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/newsletter': typeof NewsletterRoute
@@ -394,6 +409,7 @@ export interface FileRoutesByTo {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -438,6 +454,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
   '/newsletter': typeof NewsletterRoute
@@ -448,6 +465,7 @@ export interface FileRoutesById {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -493,6 +511,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
     | '/newsletter'
@@ -503,6 +522,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/comentarios'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -546,6 +566,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
     | '/newsletter'
@@ -556,6 +577,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/comentarios'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -599,6 +621,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
     | '/newsletter'
@@ -609,6 +632,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/comentarios'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -653,6 +677,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContaRoute: typeof ContaRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
   NewsletterRoute: typeof NewsletterRoute
@@ -663,6 +688,7 @@ export interface RootRouteChildren {
   VideosRoute: typeof VideosRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
+  AdminComentariosRoute: typeof AdminComentariosRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
   AdminGrupoDeOfertasRoute: typeof AdminGrupoDeOfertasRoute
   AdminIaRoute: typeof AdminIaRoute
@@ -711,6 +737,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conta': {
+      id: '/conta'
+      path: '/conta'
+      fullPath: '/conta'
+      preLoaderRoute: typeof ContaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/escolherbike': {
@@ -795,6 +828,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/bikes'
       fullPath: '/admin/bikes'
       preLoaderRoute: typeof AdminBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/comentarios': {
+      id: '/admin/comentarios'
+      path: '/admin/comentarios'
+      fullPath: '/admin/comentarios'
+      preLoaderRoute: typeof AdminComentariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/growth': {
@@ -1079,6 +1119,7 @@ const AdminConteudosIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContaRoute: ContaRoute,
   EscolherbikeRoute: EscolherbikeRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,
   NewsletterRoute: NewsletterRoute,
@@ -1089,6 +1130,7 @@ const rootRouteChildren: RootRouteChildren = {
   VideosRoute: VideosRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
+  AdminComentariosRoute: AdminComentariosRoute,
   AdminGrowthRoute: AdminGrowthRoute,
   AdminGrupoDeOfertasRoute: AdminGrupoDeOfertasRoute,
   AdminIaRoute: AdminIaRoute,
