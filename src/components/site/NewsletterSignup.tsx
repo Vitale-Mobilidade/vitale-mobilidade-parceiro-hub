@@ -1,18 +1,9 @@
-import { referralCode as validReferralCode } from "@/lib/newsletter-referrals";
 import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function NewsletterSignup({
-  compact = false,
-  referralCode,
-}: {
-  compact?: boolean;
-  referralCode?: string;
-}) {
-  const invitation = validReferralCode(referralCode);
-  const communityUrl = `/conta?modo=cadastro${invitation ? `&convite=${invitation}` : ""}`;
+export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const id = useId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -89,8 +80,8 @@ export function NewsletterSignup({
       )}
       {status === "done" ? (
         <p role="status" className="rounded-lg bg-mint/20 p-4 text-sm text-ink">
-          Inscrição recebida. Não é preciso criar conta nem confirmar o e-mail
-          para receber a newsletter da Vitale.
+          Cadastro confirmado. Guardamos seu nome e e-mail para a newsletter da
+          Vitale.
         </p>
       ) : (
         <form
@@ -183,14 +174,6 @@ export function NewsletterSignup({
           </Button>
         </form>
       )}
-      <p className="text-sm text-muted-foreground md:col-span-full">
-        Só quer receber a newsletter? Não precisa criar conta nem confirmar o
-        e-mail. Para comentar e participar da comunidade,{" "}
-        <a href={communityUrl} className="font-semibold underline">
-          crie sua conta
-        </a>{" "}
-        e valide seu e-mail e celular.
-      </p>
     </section>
   );
 }
