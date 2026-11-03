@@ -1,5 +1,7 @@
 # Comunidade: acesso imediato e e-mails pelo Resend
 
+> **Contrato corrigido depois deste release:** a newsletter também deve aceitar inscrição sem conta completa; interações exigem email e celular validados. Ver [MEMBER_IDENTITY_2026-11-03.md](MEMBER_IDENTITY_2026-11-03.md). Os registros abaixo descrevem o release anterior.
+
 > **Publicado e ativo em 03/11/2026:** [cadastro da comunidade](https://vitalemobilidade.com/conta?modo=cadastro). Auto-confirm ativo, newsletter incluída com cancelamentos respeitados, comentários moderados, convites privados e recuperação pelo Resend. O teste de recuperação foi recebido corretamente pelo responsável. Evidência pública em artifacts/community-membership/production-signup.png.
 
 ## Decisão do responsável

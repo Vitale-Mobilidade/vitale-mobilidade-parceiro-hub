@@ -15,6 +15,10 @@ type CommunityDatabase = Omit<Database, "public"> & {
         Returns: Json;
       };
       member_referrals: { Args: Record<string, never>; Returns: Json };
+      member_identity: {
+        Args: { p_action: string; p_payload: Json };
+        Returns: Json;
+      };
       member_community_account: {
         Args: { p_action: string; p_payload: Json };
         Returns: Json;
@@ -52,6 +56,24 @@ export const communityAccount = createClientOnlyFn(
       supabase as SupabaseClient<CommunityDatabase>
     ).rpc("member_community_account", { p_action: action, p_payload: payload });
     if (error) throw error;
+    return data;
+  },
+);
+
+export const identityCall = createClientOnlyFn(
+  async (action: "status" | "verify", payload: Record<string, Json> = {}) => {
+    if (!memberAccountsEnabled) throw new Error("community_disabled");
+    const { data, error } = await (
+      supabase as SupabaseClient<CommunityDatabase>
+    ).rpc("member_identity", { p_action: action, p_payload: payload });
+    if (error) throw error;
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      data.ok === false
+    )
+      throw new Error(String(data.error));
     return data;
   },
 );

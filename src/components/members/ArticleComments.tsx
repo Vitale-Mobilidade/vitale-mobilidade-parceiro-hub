@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { useMemberSession } from "@/hooks/use-member-session";
-import { memberCall } from "@/lib/member-community-api";
+import { identityCall, memberCall } from "@/lib/member-community-api";
 import {
   commentBodySchema,
   memberCommentSchema,
@@ -22,6 +22,30 @@ export default function ArticleComments({
     key: string;
     items: MemberComment[];
   } | null>(null);
+  const [canInteract, setCanInteract] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setCanInteract(false);
+    if (session?.user.id)
+      void identityCall("status")
+        .then((data) => {
+          if (active)
+            setCanInteract(
+              Boolean(
+                data &&
+                typeof data === "object" &&
+                !Array.isArray(data) &&
+                data.canInteract === true,
+              ),
+            );
+        })
+        .catch(() => {
+          /* The account page handles verification; public reading stays available. */
+        });
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id]);
   const [offset, setOffset] = useState(0);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -108,7 +132,7 @@ export default function ArticleComments({
         <p role="status" className="mt-4">
           Verificando acesso…
         </p>
-      ) : session ? (
+      ) : session && canInteract ? (
         <form onSubmit={submit} className="mt-5 space-y-3">
           <p className="text-sm">
             Use seu nome público.{" "}
@@ -148,7 +172,9 @@ export default function ArticleComments({
             href={accountUrl}
             className="inline-flex min-h-11 items-center font-semibold underline"
           >
-            Entre ou crie sua conta gratuita para comentar
+            {session
+              ? "Valide seu e-mail e celular para comentar"
+              : "Entre ou crie sua conta gratuita para comentar"}
           </a>
         </p>
       )}
