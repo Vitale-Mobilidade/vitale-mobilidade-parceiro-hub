@@ -1,5 +1,7 @@
 # Newsletter simples e identidade validada para interações
 
+> **Configuração de celular ativa — 03/11/2026:** template `validacao_telefone` aprovado, catálogo oficial com api_sendable=true, duas variáveis mapeadas, chave dedicada de templates e secrets salvos/publicados. Dry-run passou e uma única mensagem de teste foi aceita pelo Hotpipe e recebida pelo responsável. Newsletter original preservada. O teste de transporte não marca conta como validada; cada usuário digita seus próprios códigos de email/celular.
+
 ## Decisão vigente
 
 O responsável distinguiu os fluxos: newsletter aceita nome/e-mail e consentimento, sem conta completa nem confirmação. Cadastro da comunidade continua imediato e inclui newsletter, mas curtir artigos, comentar e criar anúncios exigem **e-mail e celular validados**. E-mail usa o Resend existente e celular usa a conta Vitale no Hotpipe IA. Não confundir `email_confirmed_at` preenchido por auto-confirm com prova de titularidade.
@@ -84,3 +86,49 @@ Custo externo proposto: configuração sem campanha; envios unitários de códig
 Estado final deste corte: **GO para newsletter independente e bloqueio das interações sem prova. NO-GO para declarar validação de celular operacional.** Preparação SQL/UI/integração validada em mocks e schema real; envio/validação real email/celular não homologados neste delta. Ainda não há template_id, variáveis ou chave Hotpipe de OTP configurados; a função falha fechada no canal celular. Nenhum código foi enviado ao destinatário de teste autorizado.
 
 A ativação de WhatsApp depende de uma mudança própria no produto Hotpipe para suportar AUTHENTICATION/OTP, seguida de template da Vitale aprovado, chave específica, dry_run e teste controlado. Não alterar ou reativar captação/newsletter para resolver essa dependência. Não apresentar a recuperação de senha previamente recebida como prova de homologação do novo código de validação.
+
+## Retomada — template criado pelo responsável
+
+O responsável criou na Meta e sincronizou no Hotpipe o template `validacao_telefone`, pt_BR, AUTHENTICATION. Consulta na conta Vitale confirmou APPROVED/approved, UUID Hotpipe `1f5fbb6d-578d-48e9-b402-e98764967c9e`, BODY `code` e botão URL dinâmico `button_1_1`; ambos devem receber o mesmo OTP. O botão sincronizado é URL da Meta para copiar o código, formato já suportado pela API de envio. A limitação anterior era do editor de criação, não impede por si só enviar este registro aprovado.
+
+### Revisão prévia da configuração — estrutural
+
+| Perspectiva | Impacto / risco / decisão |
+| --- | --- |
+| Produto | Concluir somente a validação de celular da comunidade; newsletter original permanece separada. Prosseguir. |
+| Arquitetura | Usar endpoint oficial api-template-send e função Vitale já implantada, sem novo Auth/banco/código de newsletter. Prosseguir após catálogo/dry_run. |
+| IA | Nenhum agente generativo necessário; integração determinística com template existente. Prosseguir. |
+| Segurança | Chave nova apenas templates:read/send, empresa Vitale e segredo exclusivo de backend; hash SHA-256 no Hotpipe, sem mexer em roles/perfis/chaves existentes. Prosseguir dentro da autorização explícita anterior. |
+| UX | Mesmo painel de validação já publicado; confirmação somente depois de digitar OTP correto. Prosseguir sem marcar usuário como validado pelo ACK de entrega. |
+| CX | Conferir mapeamento das duas variáveis e um único envio ao destinatário já autorizado. Prosseguir sem campanhas ou marketing. |
+| Growth | Captação da newsletter não é afetada nem gera conta por este teste; indicação continua agregada. Prosseguir. |
+| QA | Catálogo + dry_run antes do teste unitário de transporte autorizado; conferir secret/live e retornar estado real. GO condicionado à prova de envio/recebimento. |
+
+Credencial será criada por administração restrita do projeto integrado, com formato/colunas/hashing do writer oficial e autoria do operador, pois a sessão UI disponível é de outra empresa e a troca é placeholder. Nenhum vínculo de usuário ou permissão existente será alterado. Raw fica somente em arquivo temporário local 0600 e depois em secret do backend; não será impresso, enviado ao chat ou versionado. Rollback: revogar apenas a chave nova e interromper emissão, sem apagar registros, códigos ou perfis. Não há necessidade de alterar Hotpipe/Meta para criar outro template.
+
+
+### Fechamento da ativação com template existente
+
+- Catálogo oficial respondeu HTTP 200 para o UUID 1f5fbb6d-578d-48e9-b402-e98764967c9e, categoria AUTHENTICATION, idioma pt_BR, approved e `api_sendable=true`. Variáveis obrigatórias exatas: `code` e `button_1_1`. As duas recebem o mesmo OTP. O botão aprovado é representado como URL pela Meta; não houve necessidade de alterar o editor ou o motor de envio Hotpipe.
+- Criada somente a chave “Vitale - validação de celular”, UUID a86e7c61-236b-471e-84be-ac417404e011, restrita à empresa Vitale e escopos templates:read/templates:send. Registro tem autoria do operador administrativo; não altera profiles, roles, memberships, outras empresas ou as chaves anteriores. O hash e formato correspondem ao writer oficial; o raw foi transferido diretamente ao campo protegido do secret, sem impressão, chat ou Git.
+- Backend Vitale configurado com HOTPIPE_IDENTITY_API_KEY, HOTPIPE_IDENTITY_TEMPLATE_ID e HOTPIPE_IDENTITY_CODE_VARIABLES. Conferida a existência dos três nomes sem abrir os valores. Publicação de configuração: deployment 5f33cc5e-7a75-4ac5-9866-3f58b8d84465; fonte daa8939 (documentação anterior, sem alteração do runtime nesta ativação). A função member-identity-code já estava implantada; não foi reimplantada nem gerado código pelo Lovable.
+- Dry-run oficial HTTP 200, ok=true e dry_run=true, telefone/OTP fictícios; sem mensagem real nessa validação. Um único envio posterior ao destinatário expressamente autorizado retornou HTTP 200/code sent, provider ID presente e telefone/template correspondentes. Request c237c3e0-1179-4d9e-93d6-e76ebbac34db; message 224e9ad7-c1b7-46d4-93c5-b708a76a3113. O responsável confirmou recebimento. Não houve reenvio, campanha, signup de newsletter nem concessão de identidade ao destinatário.
+- Arquivos temporários locais contendo raw da chave e código do teste foram removidos após salvar o secret e confirmar o envio. Nenhum desses valores foi versionado. Não registrar o OTP ou o telefone completo no relatório, mesmo se fornecidos no chat.
+- `pnpm validate` passou (66 regressões, types e SSR build). Código de newsletter e página continuam idênticos ao baseline 540fc1d; nenhuma alteração nesses arquivos neste corte. Não houve chamada de agente generativo Lovable; o envio unitário pode ser tarifado conforme a conta Hotpipe/WhatsApp existente, sem compra de saldo/plano.
+
+| Perspectiva final | Status | Evidência |
+| --- | --- | --- |
+| Produto e Estratégia | Pass | Conclusão da configuração de celular somente na comunidade; newsletter independente preservada |
+| CTO e Arquitetura | Pass | API e função existentes, mesmo Auth/UUID e banco; catálogo, variáveis e configuração publicados sem novo runtime |
+| IA e Agentes | Pass | Integração determinística, sem LLM ou conteúdo gerado |
+| Segurança | Pass | Chave mínima por empresa, hash em banco, secret server-side, nenhum raw/OTP retido em Git; nenhuma prova concedida pelo teste de entrega |
+| UX/UI | Pass | Painel existente solicita e verifica códigos; sucesso de transporte não substitui digitação pelo dono da conta |
+| CX e Operação | Pass | Dry-run e um único envio recebido, confirmado pelo responsável; rollback por revogação da chave nova |
+| Growth e CRO | Pass | Sem alteração de captação/newsletter, campanhas, afiliados ou métricas de indicação |
+| PMO e QA | Pass no escopo | Configuração e transporte comprovados, validate aprovado e evidências registradas; criação/login/aceite e digitação real dos dois OTPs ficam com o usuário |
+
+Estado: **configuração publicada e transporte WhatsApp homologado**. A validação completa de uma conta real somente ocorre no fluxo normal, com sessão própria e códigos digitados pelo usuário; nenhum perfil foi retrovalidado pelo agente. Rollback: revogar apenas a nova chave, interromper emissão por flag/secret se necessário e manter o gate de interação fechado quando faltar uma prova, preservando registros e newsletter.
+
+Conferência final de publicação: Lovable exibiu “Your website is up to date”. A varredura já existente citou offers_group_settings por policy permissiva, mas declarou que os papéis do aplicativo não alcançam a tabela; leitura administrativa confirmou anon/authenticated sem grants de leitura ou escrita. Não houve alteração dessa tabela nem execução de autofix/deep scan, por ser separada desta configuração. A ausência de acesso direto é evidência suficiente para não atribuir exposição a esta ativação.
+
+Registro operacional correspondente no Hotpipe: PR #256 (STATUS, DECISIONS e task de configuração), sem runtime ou publicação Hotpipe. Destinatário e OTP reais não foram versionados. A chave continua restrita a templates:read/templates:send e nenhuma conta foi marcada como validada pelo teste de transporte.

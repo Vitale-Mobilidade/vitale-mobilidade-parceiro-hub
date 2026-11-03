@@ -1,5 +1,7 @@
 # Roadmap Vitale Mobilidade
 
+> **Celular da comunidade configurado — 03/11/2026:** template `validacao_telefone` aprovado e confirmado como enviável pela API Hotpipe, chave dedicada mínima e configuração publicada. Dry-run e um único código de teste recebidos/confirmados pelo responsável. Usuários validam email e celular na própria conta para interagir. Newsletter permanece no formulário original, sem cadastro completo ou confirmação. [Registro e limites da homologação](MEMBER_IDENTITY_2026-11-03.md).
+
 > **Restauração exata da newsletter — 03/11/2026:** correção prioritária autorizada pelo responsável. Componente compartilhado e página /newsletter retornam byte a byte ao formulário original 540fc1d, sem conta, senha, confirmação ou CTA de comunidade. Home, rodapés, artigos e popup usam o mesmo componente. Comunidade e validação permanecem em /conta. [Evidência e revisão](NEWSLETTER_FORM_RESTORE_2026-11-03.md).
 
 > **Correção de identidade e newsletter — 03/11/2026, preparada localmente:** newsletter simples com nome/e-mail e aceite, sem conta ou confirmação. Conta da comunidade inclui newsletter; comentar e futuras curtidas/anúncios exigem prova independente de email e celular. Email pelo Resend; WhatsApp pela conta Vitale no Hotpipe, que ainda precisa de template AUTHENTICATION aprovado e chave específica de templates. [Decisão, dependências e evidências](MEMBER_IDENTITY_2026-11-03.md). Não confundir auto-confirm do Auth com validação.
