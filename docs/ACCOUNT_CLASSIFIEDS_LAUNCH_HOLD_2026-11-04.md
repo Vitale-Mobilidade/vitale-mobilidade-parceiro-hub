@@ -41,3 +41,10 @@ Validação exclusivamente local com Auth/Storage/RPC sintéticos e cinco fotos 
 Lint: regras funcionais dos cinco módulos alterados verificadas. O lint padrão encontrou formatação Prettier já extensa em HomeB2C; os trechos novos foram ajustados sem reformatar a página inteira.
 
 Estado: GO para ocultar somente a descoberta pública, autorizado pela instrução atual; verificação no domínio pendente. Nenhum bloqueio total será publicado.
+
+
+## Registro final
+
+PR #68 integrada em `52f8021a12b956129b510d26095675c1c3d95a51`; código conferido no Lovable antes do deploy `c39a3201-684d-4886-8fda-ee45a8f6d69c`. Domínio público verificado: Home sem Venda/Entrar, seção de classificados omitida e newsletter preservada. `/conta?modo=entrar` mostra formulário funcional por URL e `/conta/anuncios` mantém o fluxo Entrar na minha conta. Inspeção pública sem credenciais; não houve login, logout ou alteração da sessão real do responsável. Smoke completo de membros também passou após ajuste da navegação (signup, retorno, recovery, perfil, identidade, comentários e indicação com mocks).
+
+Flags de backend restauradas true; piloto e rascunho preservados. Nenhuma migration, envio real ou crédito de IA. Evidência visual em `outputs/vitale-navigation-hold-2026-11-04/public-home.png`. Estado final: descoberta pública suspensa, acesso direto e sessão preservados conforme esclarecimento; reabrir divulgação depende de instrução futura.
