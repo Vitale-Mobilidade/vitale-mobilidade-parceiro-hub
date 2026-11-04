@@ -49,4 +49,15 @@ Ação operacional autorizada: publicar código e migration deste escopo no mesm
 
 ## Ativação externa
 
-Pendente de execução; não confundir build e testes locais com publicação ou liquidação real.
+Concluída em 04/11/2026, aproximadamente 15h56 BRT:
+
+- PR #76 integrada normalmente, sem bypass de proteção; main `46900ac92080fc6823be0c115e0f4e0e7457bf2e`. Publicação Lovable `233b36dc-9534-4b25-9849-4d6424ec0b9d`. Código novo servido no domínio próprio, confirmado pela recusa400 do contrato mensal antigo antes de autenticação.
+- Migration `20261104200000` aplicada e registrada em transação, inicialmente com novas compras bloqueadas. Grants conferidos: authenticated não reserva pelo serviço e anon não lê a tabela financeira. Cron ativo.
+- Probe assinado65888 respondeuHTTP200: sessão anônima aceita com `billingTypes=PIX/CREDIT_CARD`, `chargeType=DETACHED` e itemR$150; cancelada antes de dados de pagador ou pagamento. Webhook existente mantido/atualizado. O provedor confirmou bloqueio de iframe, portanto o checkout abre em nova aba.
+- Link mensal manual exato foi desativado; a resposta do provedor confirmou `active=false`. Outros produtos e assinaturas da conta não foram alterados.
+- `enabled`, `provider_ready` e `purchase_ready` verdadeiros somente após esse probe. Cinco execuções regulares recentes do worker responderam200. Sem pedido, pagamento ou cliente financeiro criado no banco Vitale durante os testes.
+- Um rascunho e quatro fotos reais prontos permanecem intactos; nenhuma escrita de teste no anúncio, perfil ou sessão do responsável. A prova de identidade dessa conta ainda estava pendente na conferência: precisa ser concluída na jornada normal antes de pagar/publicar.
+- Home e header públicos continuam sem Entrar/Venda sua bike. Bundles cliente sem nomes de secretsAsaas/service-role. Newsletter preservada.
+- Preview Netlify e regra de headers passaram; Pages/Redirect foram skipped. Vercel mantém a falha anterior e não é a hospedagem operacional. Os gates locais e o runtime Lovable do release foram verificados; não se declara que todos os serviços externos estão verdes.
+
+Revisão final: Produto, Arquitetura, Segurança, UX/UI, CX, Growth e PMO/QA **Pass** para implementação e ativação técnica neste escopo; IA **N/A** sem geração ou decisão neste fluxo. Prova de liquidação bancária real continua deliberadamente fora do teste e só ocorrerá quando o responsável concluir uma compra. Abertura pública continua pendente de autorização futura.
