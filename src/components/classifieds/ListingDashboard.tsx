@@ -28,14 +28,12 @@ import { formatBRL } from "@/lib/price-tracker";
 export type ListingAction = "archive" | "sold" | "withdraw";
 export function ListingDashboard({
   listings,
-  channel,
   busy,
   onCreate,
   onEdit,
   onAction,
 }: {
   listings: BikeListing[];
-  channel: boolean;
   busy: boolean;
   onCreate: () => void;
   onEdit: (listing: BikeListing) => void;
@@ -48,7 +46,7 @@ export function ListingDashboard({
     (l) => !isEmptyBikeDraft({ ...l, status: "draft" }),
   );
   const tabs = [
-    { key: "all", label: "Em gestão" },
+    { key: "all", label: "Todos" },
     { key: "published", label: "Ativos" },
     { key: "draft", label: "Rascunhos" },
     { key: "sold", label: "Vendidas" },
@@ -69,74 +67,67 @@ export function ListingDashboard({
     <section aria-labelledby="listing-dashboard-title">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-sm font-semibold text-action">
-            {channel
-              ? "Vitale Mobilidade · gestão do canal"
-              : "Área do anunciante"}
-          </p>
           <h1
             id="listing-dashboard-title"
             className="mt-2 text-3xl font-bold tracking-tight text-ink"
           >
-            {channel ? "Bikes do canal" : "Meus anúncios"}
+            Meus anúncios
           </h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">
             Acompanhe suas bikes, edite os anúncios e mantenha a disponibilidade
             atualizada.
           </p>
         </div>
-        <button
-          onClick={onCreate}
-          disabled={busy}
-          className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-action px-5 py-3 font-bold text-white disabled:opacity-50"
-        >
-          <Plus className="h-5 w-5" aria-hidden="true" />
-          {channel ? "Nova bike do canal" : "Criar anúncio"}
-        </button>
-      </div>
-      {!channel && (
-        <p className="mt-6 rounded-xl bg-white p-4 text-sm text-muted-foreground">
-          R$150 por anúncio. Nesta etapa, sua conta convidada tem isenção;
-          nenhuma cobrança será feita.
-        </p>
-      )}
-      <div className="mt-8 rounded-2xl border border-line bg-white p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div
-            className="flex max-w-full flex-wrap gap-2"
-            role="group"
-            aria-label="Filtrar anúncios por status"
+        {meaningful.length > 0 && (
+          <button
+            onClick={onCreate}
+            disabled={busy}
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-action px-5 py-3 font-bold text-white disabled:opacity-50"
           >
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                aria-pressed={filter === tab.key}
-                className={`min-h-11 rounded-xl px-3 py-2 text-sm font-semibold ${filter === tab.key ? "bg-ink text-white" : "bg-surface text-ink"}`}
-              >
-                {tab.label}{" "}
-                <span className="ml-1 opacity-75">
-                  {meaningful.filter((l) => matches(l, tab.key)).length}
-                </span>
-              </button>
-            ))}
-          </div>
-          <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line px-3 sm:w-72">
-            <Search
-              className="h-5 w-5 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="sr-only">Pesquisar suas bikes</span>
-            <input
-              className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por bike, marca ou modelo"
-              type="search"
-            />
-          </label>
-        </div>
+            <Plus className="h-5 w-5" aria-hidden="true" />
+            Anuncie sua bike
+          </button>
+        )}
       </div>
+      {meaningful.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-line bg-white p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div
+              className="flex max-w-full flex-wrap gap-2"
+              role="group"
+              aria-label="Filtrar anúncios por status"
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilter(tab.key)}
+                  aria-pressed={filter === tab.key}
+                  className={`min-h-11 rounded-xl px-3 py-2 text-sm font-semibold ${filter === tab.key ? "bg-ink text-white" : "bg-surface text-ink"}`}
+                >
+                  {tab.label}{" "}
+                  <span className="ml-1 opacity-75">
+                    {meaningful.filter((l) => matches(l, tab.key)).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line px-3 sm:w-72">
+              <Search
+                className="h-5 w-5 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="sr-only">Pesquisar suas bikes</span>
+              <input
+                className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por bike, marca ou modelo"
+                type="search"
+              />
+            </label>
+          </div>
+        </div>
+      )}
       {visible.length ? (
         <ul className="mt-5 space-y-4">
           {visible.map((listing) => {
@@ -266,15 +257,23 @@ export function ListingDashboard({
           <h2 className="mt-4 text-2xl font-bold text-ink">
             {meaningful.length
               ? "Nenhuma bike neste filtro"
-              : channel
-                ? "Vamos preparar a primeira bike do canal?"
-                : "Seu próximo anúncio começa aqui"}
+              : "Vamos criar seu primeiro anúncio?"}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
             {meaningful.length
               ? "Experimente outro status ou ajuste sua busca."
               : "Comece pelas fotos, preencha a ficha e confira a prévia. O anúncio só vai ao ar quando você escolher publicar."}
           </p>
+          {!meaningful.length && (
+            <button
+              onClick={onCreate}
+              disabled={busy}
+              className="mx-auto mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 py-3 font-bold text-white disabled:opacity-50"
+            >
+              <Plus className="h-5 w-5" aria-hidden="true" />
+              Criar meu primeiro anúncio
+            </button>
+          )}
         </div>
       )}
       <AlertDialog

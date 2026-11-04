@@ -18,7 +18,6 @@ export function SellerPanel() {
       active = false;
     };
   }, []);
-  const channel = account?.sellerType === "channel";
   return (
     <section
       className="mt-6 rounded-2xl border border-line bg-white p-5 sm:p-8"
@@ -26,14 +25,11 @@ export function SellerPanel() {
     >
       <Bike className="mb-3 h-8 w-8 text-action" aria-hidden="true" />
       <h2 id="seller-panel-title" className="text-2xl font-bold text-ink">
-        {channel
-          ? "Bikes do canal Vitale Mobilidade"
-          : "Anuncie sua bike na Vitale Mobilidade"}
+        Anuncie sua bike na Vitale Mobilidade
       </h2>
       <p className="mt-3 text-muted-foreground">
-        {channel
-          ? "Esta é a área para gerenciar as bicicletas do canal: prepare os anúncios, receba interessados no WhatsApp e mantenha a disponibilidade atualizada."
-          : "Apresente sua bike a quem acompanha mobilidade elétrica e converse diretamente com os interessados."}
+        Apresente sua bike a quem acompanha mobilidade elétrica e converse
+        diretamente com os interessados.
       </p>
       <ul className="mt-5 space-y-3 text-sm">
         <li className="flex gap-3">
@@ -61,7 +57,7 @@ export function SellerPanel() {
           href="/conta/anuncios"
           className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-action px-5 font-bold text-white"
         >
-          {channel ? "Gerenciar bikes do canal" : "Anuncie sua bike"}
+          Anuncie sua bike
         </a>
       ) : (
         <p className="mt-5 text-sm text-muted-foreground">
