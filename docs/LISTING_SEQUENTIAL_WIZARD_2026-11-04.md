@@ -32,4 +32,10 @@ Decisão: fotos já são persistidas no upload; continuar avança após confirma
 
 Evidências visuais locais (dados sintéticos) em outputs/vitale-sequential-wizard-2026-11-04. Nenhum rascunho/foto real alterado nem pagamento concluído. O diagnóstico ao vivo confirmou Asaas e identidade aptos; esta correção não depende de nova chave/configuração do provedor. Gate do pagamento continua exigindo ficha completa salva e aceites.
 
-Rollback: revert dos componentes/helper/testes; sem migração ou alteração de dados/financeiro. Publicação frontend deste escopo já solicitada pelo responsável, sem custo de geração Lovable. Deploy e conferência no domínio próprio são a etapa operacional restante; não confundir build com release.
+Rollback: revert dos componentes/helper/testes; sem migração ou alteração de dados/financeiro. Publicação frontend deste escopo já solicitada pelo responsável, sem custo de geração Lovable. Deploy e conferência no domínio próprio registrados abaixo; não confundir os testes simulados com liquidação financeira real.
+
+## Publicação confirmada
+
+PR81 integrada em4ab762a1e52eadba90cedb931f7a780c9fd9552a. Deployment Lovable4c29a6ad-4f81-404b-aed0-f94f4c1d6c83 no mesmo projeto. Bundle público conta_.anuncios-BlSOd_4Y.js conferido no domínio próprio com Salvar e continuar, CTA Seguir para pagamento de R$150 e nova linha de ações das fotos. Netlify preview e headers passaram, Pages/Redirect skipped; Vercel mantém falha de baseline fora da hospedagem operacional.
+
+Leitura de produção antes da publicação: enabled/provider_ready/purchase_ready=true e nenhum pedido financeiro criado pelo teste. Nenhuma escrita em título, descrição, fotos ou pagamento do responsável. A descrição mínima continua necessária; a nova tela aponta o campo e gera título por marca/modelo somente no salvamento normal do usuário. Produto, Arquitetura, Segurança, UX/UI, CX, Growth e QA: Pass neste escopo publicado; IA: N/A. Abertura pública continua suspensa.
