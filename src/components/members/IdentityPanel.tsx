@@ -78,7 +78,7 @@ export function IdentityPanel({
       setDeliveryErrors((old) => ({ ...old, [channel]: true }));
       setError(
         e instanceof Error && e.message === "identity_delivery_unavailable"
-          ? "Não foi possível enviar o código agora. Tente novamente em instantes."
+          ? "Não foi possível confirmar o envio agora. Se o código já chegou, digite-o abaixo."
           : memberError(e),
       );
     } finally {
@@ -218,11 +218,9 @@ export function IdentityPanel({
                     )}
                     {deliveryErrors[channel] && (
                       <p role="alert" className="mt-3 text-sm text-red-800">
-                        Não conseguimos enviar{" "}
-                        {channel === "email"
-                          ? "o e-mail"
-                          : "a mensagem no WhatsApp"}
-                        . Confira o contato e tente novamente neste canal.
+                        A confirmação do envio não chegou a tempo. Se você
+                        recebeu o código, pode digitá-lo abaixo. Aguarde antes
+                        de pedir outro.
                       </p>
                     )}
                     <button
@@ -241,46 +239,42 @@ export function IdentityPanel({
                           ? "Enviar código por e-mail"
                           : "Enviar código pelo WhatsApp"}
                     </button>
-                    {sent[channel] && (
-                      <form
-                        onSubmit={(event) => void verify(event, channel)}
-                        className="mt-4"
+                    <form
+                      onSubmit={(event) => void verify(event, channel)}
+                      className="mt-4"
+                    >
+                      <label
+                        className="block text-sm font-semibold"
+                        htmlFor={`identity-code-${channel}`}
                       >
-                        <label
-                          className="block text-sm font-semibold"
-                          htmlFor={`identity-code-${channel}`}
-                        >
-                          Código recebido{" "}
-                          {channel === "email" ? "por e-mail" : "no WhatsApp"}
-                        </label>
-                        <input
-                          id={`identity-code-${channel}`}
-                          className={field}
-                          value={codes[channel] ?? ""}
-                          onChange={(e) =>
-                            setCodes((old) => ({
-                              ...old,
-                              [channel]: e.target.value
-                                .replace(/\D/g, "")
-                                .slice(0, 6),
-                            }))
-                          }
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          pattern="[0-9]{6}"
-                          maxLength={6}
-                          required
-                        />
-                        <button
-                          className={button}
-                          disabled={
-                            busy || !/^\d{6}$/.test(codes[channel] ?? "")
-                          }
-                        >
-                          Validar {channel === "email" ? "e-mail" : "celular"}
-                        </button>
-                      </form>
-                    )}
+                        Código recebido{" "}
+                        {channel === "email" ? "por e-mail" : "no WhatsApp"}
+                      </label>
+                      <input
+                        id={`identity-code-${channel}`}
+                        className={field}
+                        value={codes[channel] ?? ""}
+                        onChange={(e) =>
+                          setCodes((old) => ({
+                            ...old,
+                            [channel]: e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 6),
+                          }))
+                        }
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        required
+                      />
+                      <button
+                        className={button}
+                        disabled={busy || !/^\d{6}$/.test(codes[channel] ?? "")}
+                      >
+                        Validar {channel === "email" ? "e-mail" : "celular"}
+                      </button>
+                    </form>
                   </>
                 )}
               </div>

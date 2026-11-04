@@ -252,3 +252,54 @@ it("GET never changes identity or sends a code", async () => {
   expect(h.rpc).not.toHaveBeenCalled();
   expect(h.send).not.toHaveBeenCalled();
 });
+
+it("waits for a Hotpipe acknowledgement after 22 seconds, without a duplicate send", async () => {
+  vi.useFakeTimers();
+  const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(new Error("delivery_timeout")), ms);
+    return controller.signal;
+  });
+  const request = vi.fn(
+    (_url: unknown, init?: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => reject(new Error("delivery_timeout")),
+          { once: true },
+        );
+        setTimeout(
+          () =>
+            resolve(
+              Response.json({
+                ok: true,
+                code: "sent",
+                provider_message_id: "wamid.synthetic",
+                phone: "5511999999999",
+                template: { template_id: template },
+              }),
+            ),
+          22000,
+        );
+      }),
+  );
+  try {
+    const pending = sendMemberIdentityWhatsApp({
+      phone: "+5511999999999",
+      code: "654321",
+      id,
+      key: "hp_" + "a".repeat(48),
+      templateId: template,
+      variables: ["code", "button_1_1"],
+      request: request as typeof fetch,
+    });
+    const assertion = expect(pending).resolves.toBeUndefined();
+    await vi.advanceTimersByTimeAsync(22001);
+    await assertion;
+    expect(timeout).toHaveBeenCalledWith(45000);
+    expect(request).toHaveBeenCalledTimes(1);
+  } finally {
+    timeout.mockRestore();
+    vi.useRealTimers();
+  }
+});
