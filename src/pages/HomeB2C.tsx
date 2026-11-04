@@ -1,3 +1,4 @@
+import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { BikeClassifiedsSection } from "@/components/classifieds/BikeClassifiedsSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLoaderData } from "@tanstack/react-router";
@@ -449,7 +450,9 @@ const HomeB2C = () => {
             <CalculatorPanel />
           </div>
           <ArticlesBlock articles={data?.articles ?? []} />
-          <BikeClassifiedsSection items={data.classifieds.items} unavailable={!data.classifieds.ok} />
+          {memberPublicNavigationEnabled && (
+            <BikeClassifiedsSection items={data.classifieds.items} unavailable={!data.classifieds.ok} />
+          )}
 
         </div>
       </main>

@@ -1,5 +1,5 @@
 import { AccountMenu } from "@/components/members/AccountMenu";
-import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
+import { memberAccountsEnabled, memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
 import { bikeImageFallback } from "@/lib/bike-catalog";
@@ -48,7 +48,9 @@ export const SITE_NAV: NavItem[] = [
   { label: "Radar de preços", to: "/radar" },
   { label: "Conteúdos", to: "/conteudos" },
   { label: "Ferramentas", to: "/ferramentas" },
-  { label: "Venda sua bike aqui", to: "/venda-sua-bike" },
+  ...(memberPublicNavigationEnabled
+    ? [{ label: "Venda sua bike aqui", to: "/venda-sua-bike" } as const]
+    : []),
 ];
 
 function NavLink({ item, className }: { item: NavItem; className: string }) {

@@ -64,3 +64,8 @@ Capturas locais em `artifacts/account-classifieds-ux/` são sintéticas e não r
 | PMO/QA | Pass | Testes proporcionais, validate e rollback; sem crédito Lovable ou migração |
 
 Parecer local: GO para a correção do piloto já autorizado; publicação/verificação públicas ainda pendentes. Escopo de release: componentes de conta, comentários (destino de edição), header, navegação segura e classificados; retorno de recuperação só no frontend. Rollback por revert do commit, sem tocar dados ou integrações.
+
+
+## Registro de release
+
+PR #67 integrada em `59fef035f1eb743708b0f8148b823acfa08d486c`. Prévia Netlify e checks de headers passaram; status Vercel falha também no baseline e não é o hosting ativo, sem alteração de infraestrutura nesta correção. Código validado e commit conferido no Lovable antes de publicar. Deployment `3e16fb82-54ed-4927-93dc-22cd451c066e` solicitado pelo conector, sem agente/consumo de créditos de IA. Verificado no domínio público: novo CTA, login com retorno e avatar sem texto. Em 04/11 o responsável suspendeu a divulgação de Entrar/Venda, preservando sessão e acesso por URL; ver registro ACCOUNT_CLASSIFIEDS_LAUNCH_HOLD_2026-11-04.md.
