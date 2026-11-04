@@ -14,7 +14,7 @@ export async function sendMemberIdentityEmail(input: {
 export async function sendMemberIdentityWhatsApp(input:{phone:string;code:string;id:string;key:string;templateId:string;variables:string[];request?:typeof fetch}) {
   if (!/^\+55[1-9][0-9]9\d{8}$/.test(input.phone) || !/^\d{6}$/.test(input.code) || !/^hp_[a-f0-9]{48}$/.test(input.key) || !/^[a-f0-9-]{36}$/.test(input.templateId) || !/^[a-f0-9-]{36}$/.test(input.id) || !input.variables.length || input.variables.length>5 || input.variables.some(key=>!/^[a-zA-Z0-9_]{1,40}$/.test(key))) throw new Error("invalid_delivery_input");
   const response=await (input.request ?? fetch)("https://smixxobbszyxqauysvor.supabase.co/functions/v1/api-template-send",{
-    method:"POST",redirect:"manual",signal:AbortSignal.timeout(12000),headers:{"Content-Type":"application/json","x-api-key":input.key,"Idempotency-Key":`vitale-identity-${input.id}`},
+    method:"POST",redirect:"manual",signal:AbortSignal.timeout(45000),headers:{"Content-Type":"application/json","x-api-key":input.key,"Idempotency-Key":`vitale-identity-${input.id}`},
     body:JSON.stringify({template_id:input.templateId,to:{phone:input.phone.slice(1)},variables:Object.fromEntries(input.variables.map(key=>[key,input.code]))}),
   });
   if (!response.ok) throw new Error("identity_delivery_failed");
