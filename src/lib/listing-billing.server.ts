@@ -256,7 +256,7 @@ export async function createHostedCheckout(
     "/checkouts",
     "POST",
     {
-      billingTypes: ["CREDIT_CARD", "PIX"],
+      billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 60,
       externalReference: reference,
@@ -267,7 +267,7 @@ export async function createHostedCheckout(
       },
       items: [
         {
-          name: "Anúncio mensal de bike na Vitale",
+          name: "Anúncio de bike na Vitale",
           description: title.slice(0, 100),
           quantity: 1,
           value: 150,
@@ -842,6 +842,18 @@ export async function listingBillingWorker(request: Request) {
           crypto.randomUUID(),
           "Verificação técnica — não concluir pagamento",
         );
+        let frameBlocked: boolean | null = null;
+        try {
+          const page = await fetch(checkout.url, {
+            signal: AbortSignal.timeout(5000),
+            headers: { "User-Agent": "Mozilla/5.0" },
+          });
+          const policy = page.headers.get("x-frame-options")?.toUpperCase();
+          frameBlocked = policy === "SAMEORIGIN" || policy === "DENY";
+          await page.body?.cancel();
+        } catch {
+          /* Frame policy is advisory; API creation/cancellation remains the capability proof. */
+        }
         await api.call(`/checkouts/${checkout.id}/cancel`, "POST");
         const hooks = await api.call<{ data: Array<Record<string, unknown>> }>(
           "/webhooks?limit=100",
@@ -881,6 +893,8 @@ export async function listingBillingWorker(request: Request) {
           hostedReady: true,
           anonymousCheckoutCreated: true,
           checkoutCancelled: true,
+          frameBlocked,
+          recurringBillingType: "CREDIT_CARD",
         });
       } catch (failure) {
         return result(

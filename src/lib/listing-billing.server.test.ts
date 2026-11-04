@@ -245,7 +245,7 @@ describe("anonymous hosted checkout", () => {
       expect(String(input)).toBe("https://api.asaas.com/v3/checkouts");
       const body = JSON.parse(String(init?.body));
       expect(body).toMatchObject({
-        billingTypes: ["CREDIT_CARD", "PIX"],
+        billingTypes: ["CREDIT_CARD"],
         chargeTypes: ["RECURRENT"],
         externalReference: id,
         items: [{ quantity: 1, value: 150 }],

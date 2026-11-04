@@ -178,9 +178,10 @@ export function ListingBillingPanel({
         R$150 por mês por anúncio
       </h4>
       <p className="mt-2 text-sm text-muted-foreground">
-        O pagamento é feito no checkout do Asaas. Você informa seus dados e
-        escolhe a forma de pagamento por lá. Ao desativar ou marcar a bike como
-        vendida, a renovação mensal será encerrada.
+        O pagamento por cartão é feito no checkout do Asaas, em uma nova aba. Os
+        dados do pagador e do cartão são preenchidos diretamente por lá. Ao
+        desativar ou marcar a bike como vendida, a renovação mensal será
+        encerrada.
       </p>
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-900">
