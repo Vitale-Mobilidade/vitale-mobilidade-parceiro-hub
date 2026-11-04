@@ -124,8 +124,7 @@ export function MemberListings() {
       <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-7">
         <h1 className="text-3xl font-bold text-ink">Anuncie sua bike</h1>
         <p className="mt-4">
-          Entre na sua conta para acessar os anúncios. O piloto está disponível
-          para uma conta convidada.
+          Entre na sua conta para criar e acompanhar seus anúncios.
         </p>
         <a
           href="/conta?retorno=%2Fconta%2Fanuncios"
@@ -173,11 +172,8 @@ export function MemberListings() {
   if (!account.communityJoined)
     return (
       <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-7">
-        <h1 className="text-3xl font-bold">Seu acesso piloto está liberado</h1>
-        <p className="mt-4">
-          Complete sua adesão à comunidade na Minha conta para começar o
-          anúncio.
-        </p>
+        <h1 className="text-3xl font-bold">Complete seu cadastro</h1>
+        <p className="mt-4">Complete seu perfil para começar o anúncio.</p>
         <a
           href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
           className={`${button} mt-6`}
@@ -239,9 +235,7 @@ export function MemberListings() {
         <>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-action">
-                {channel ? "Bikes do canal Vitale Mobilidade" : "Meus anúncios"}
-              </p>
+              <p className="text-sm font-semibold text-action">Meus anúncios</p>
               <h1 className="mt-2 text-3xl font-bold text-ink">
                 {isEmptyBikeDraft(listing) ? "Criar anúncio" : listing.title}
               </h1>
@@ -273,7 +267,6 @@ export function MemberListings() {
       ) : (
         <ListingDashboard
           listings={listings}
-          channel={channel}
           busy={busy}
           onCreate={() => void create()}
           onEdit={(item) => {
@@ -867,6 +860,17 @@ function ListingEditor({
           </h3>
           {draft ? (
             <>
+              <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
+                <p className="font-semibold text-ink">
+                  Valor da publicação: R$150
+                </p>
+                {listing.feeStatus === "pilot_exempt" && (
+                  <p className="mt-2 text-action">
+                    Isenção aplicada à sua conta: R$0. Nenhuma cobrança será
+                    feita nesta publicação.
+                  </p>
+                )}
+              </div>
               {!publishReady && (
                 <p className="mt-3 text-sm text-muted-foreground">
                   Para publicar, complete título, marca/modelo, preço,
@@ -917,7 +921,7 @@ function ListingEditor({
                   )
                 }
               >
-                {channel ? "Publicar bike do canal" : "Publicar anúncio"}
+                Publicar anúncio
               </button>
             </>
           ) : (

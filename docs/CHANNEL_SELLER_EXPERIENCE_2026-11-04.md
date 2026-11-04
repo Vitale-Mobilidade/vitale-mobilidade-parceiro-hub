@@ -50,3 +50,15 @@ Backup: snapshot privado fresco de configurações, três funções e três rasc
 Autorização: o responsável reiterou “pode implementar” nesta etapa após a descrição do escopo. Aplicação será no mesmo Supabase/Lovable, sem abertura dos atalhos públicos, nova permissão global, envio de teste ou cobrança. Custo externo da execução: nenhum crédito de IA/WhatsApp/Resend; cadastros reais futuros usam os dois envios solicitados e o saldo/plano existente.
 
 Estado: GO para aplicar o delta já autorizado; registrar resultado da ativação e verificação após release.
+
+
+## Ativação e verificação final
+
+- Migração `20261104150000` aplicada em transação no Supabase integrado e registrada no ledger; três corpos conferidos depois contra o arquivo versionado. Coluna privada configurada para o UUID já convidado; nenhum papel editorial global criado.
+- Os três vazios inspecionados foram arquivados com predicados de proprietário, conteúdo/fotos vazios e updated_at do snapshot. Nenhum registro com conteúdo novo foi sobrescrito; não houve DELETE. Configurações de comunidade/piloto permaneceram ativas.
+- Grants conferidos: authenticated executa o RPC, anon não executa; authenticated não altera configurações cruas. Sem mudanças de RLS, Storage ou Auth.
+- PR #69 integrada em `e2fc543db801d6e8119db6953e3c9346d3c07d55`. Netlify preview/headers passaram; Vercel falha como no baseline e não é o hosting ativo.
+- Deployment `593fedd9-a344-4ace-8279-716e77297d1a` no mesmo Lovable, sem agente de IA. Conferência no domínio: novo campo celular/aceite OTP no signup, Entrar/Venda ausentes do header e Home, newsletter original presente.
+- Evidência pública sem cadastro/envio: `outputs/vitale-channel-release-2026-11-04/signup-production.png`. Painel e perfil autenticados foram exercitados com mocks locais; a sessão real do responsável no Chrome não foi manipulada. Os contatos reais continuam dependendo de prova digitada pelo próprio titular.
+
+Estado: implementado e publicado para o uso por URL/sessão existente; divulgação pública dos atalhos continua suspensa. Cobrança geral, abertura para outros anunciantes e anúncios reais do canal continuam dependendo das próximas ações do responsável; não foram simulados em produção.

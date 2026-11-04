@@ -1,6 +1,8 @@
 # Roadmap Vitale Mobilidade
 
-> **04/11/2026 — perfil e bikes do canal:** revisão implementada e validada localmente: contatos/foto no primeiro bloco, OTP nos dois canais após signup, gestão com busca/status/desativação e editor em etapas com prévia. Designação de vendedor do canal por UUID privado; nenhuma promoção editorial global. Publicidade dos atalhos continua suspensa. [Escopo, evidências e release](./CHANNEL_SELLER_EXPERIENCE_2026-11-04.md).
+> **04/11/2026 — correção da jornada do anunciante:** o responsável rejeitou a apresentação administrativa de canal. Perfil/menu/painel/editor passam a usar a mesma jornada de anunciante comum; origem das bikes e isenção ficam como atributos do anúncio, sem área administrativa separada. [Registro e evidências](./NORMAL_ADVERTISER_EXPERIENCE_2026-11-04.md).
+
+> **04/11/2026 — perfil e bikes do canal:** revisão implementada, validada e publicada no mesmo Lovable (PR #69): contatos/foto no primeiro bloco, OTP nos dois canais após signup, gestão com busca/status/desativação e editor em etapas com prévia. Designação de vendedor do canal por UUID privado; nenhuma promoção editorial global. Publicidade dos atalhos continua suspensa. [Escopo, evidências e release](./CHANNEL_SELLER_EXPERIENCE_2026-11-04.md).
 
 > **04/11/2026 — abertura de comunidade e classificados suspensa por decisão do responsável.** Entrar para visitantes, Venda sua bike e seção da Home ficam fora da navegação pública. Avatar de quem já está logado e rotas diretas de conta/anúncios permanecem disponíveis para os testes solicitados. Flags do backend ativas; conta e rascunho preservados. Reabertura exige nova autorização explícita. Newsletter simples independente permanece pública. Ver [registro da suspensão](./ACCOUNT_CLASSIFIEDS_LAUNCH_HOLD_2026-11-04.md).
 
