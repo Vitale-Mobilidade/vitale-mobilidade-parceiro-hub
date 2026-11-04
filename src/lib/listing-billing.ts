@@ -13,6 +13,7 @@ export const billingOrderSchema = z.object({
     "expired",
   ]),
   paymentUrl: z.string().nullable(),
+  checkoutExpiresAt: z.string().nullable().optional(),
   displayStartedAt: z.string().nullable(),
   paidUntil: z.string().nullable(),
   hold: z.boolean(),
@@ -20,6 +21,7 @@ export const billingOrderSchema = z.object({
 export type BillingOrderView = z.infer<typeof billingOrderSchema>;
 export const billingResponseSchema = z.object({
   configured: z.boolean().optional(),
+  serverNow: z.string().optional(),
   amountCents: z.number().optional(),
   displayDays: z.number().optional(),
   billingModel: z.literal("one_time_90d").optional(),

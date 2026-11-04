@@ -17,6 +17,7 @@ import {
   asaasListingWebhook,
   cancelOrder,
   retireLegacyListingLink,
+  retireLegacyCheckout,
   memberListingBilling,
   reconcileEvent,
   reconcilePayment,
@@ -51,6 +52,7 @@ function chain(table: string, value: unknown) {
     "select",
     "eq",
     "is",
+    "in",
     "order",
     "limit",
     "maybeSingle",
@@ -254,6 +256,7 @@ describe("anonymous hosted checkout", () => {
       expect(body).toMatchObject({
         billingTypes: ["CREDIT_CARD", "PIX"],
         chargeTypes: ["DETACHED"],
+        minutesToExpire: 10,
         externalReference: id,
         items: [{ quantity: 1, value: 150 }],
       });
@@ -267,6 +270,10 @@ describe("anonymous hosted checkout", () => {
     const response = await memberListingBilling(request());
     expect(response.status).toBe(200);
     expect(writes.some((w) => w.value.checkout_id === checkoutId)).toBe(true);
+    const expiry = writes.find((w) => w.value.checkout_expires_at)?.value
+      .checkout_expires_at;
+    expect(Date.parse(expiry) - Date.now()).toBeGreaterThan(590000);
+    expect(Date.parse(expiry) - Date.now()).toBeLessThanOrEqual(600000);
     expect(writes.some((w) => w.value.status === "active")).toBe(false);
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
   });
@@ -636,4 +643,54 @@ it("retires only the exact legacy monthly bike product and leaves other merchant
   );
   expect(await retireLegacyListingLink(a)).toBe("pl_vitale");
   expect(calls).toHaveLength(2);
+});
+
+it("retires only a legacy unpaid quote after Asaas accepts cancellation", async () => {
+  const legacy = {
+    ...order,
+    status: "pending",
+    paid_at: null,
+    created_at: new Date(Date.now() - 60000).toISOString(),
+    checkout_expires_at: new Date(Date.now() + 3540000).toISOString(),
+  };
+  const a = api({
+    [`/checkouts/${order.checkout_id}/cancel`]: { status: "CANCELED" },
+  });
+  expect(await retireLegacyCheckout(db(), a, legacy)).toBe(true);
+  expect(writes.at(-1).value).toMatchObject({
+    status: "cancelled",
+    publish_requested: false,
+  });
+  writes.length = 0;
+  expect(
+    await retireLegacyCheckout(db(), api({}), {
+      ...legacy,
+      paid_at: new Date().toISOString(),
+    }),
+  ).toBe(false);
+  expect(
+    await retireLegacyCheckout(db(), api({}), {
+      ...legacy,
+      checkout_expires_at: new Date(
+        Date.parse(legacy.created_at) + 600000,
+      ).toISOString(),
+    }),
+  ).toBe(false);
+  expect(writes).toHaveLength(0);
+});
+it("never closes the ledger if legacy checkout cancellation is rejected", async () => {
+  const a = new AsaasClient(
+    "test",
+    "sandbox",
+    vi.fn(async () => new Response("not cancellable", { status: 400 })),
+  );
+  await expect(
+    retireLegacyCheckout(db(), a, {
+      ...order,
+      status: "pending",
+      created_at: new Date().toISOString(),
+      checkout_expires_at: new Date(Date.now() + 3600000).toISOString(),
+    }),
+  ).rejects.toThrow();
+  expect(writes).toHaveLength(0);
 });
