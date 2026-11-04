@@ -29,7 +29,7 @@ export class AsaasClient {
     if (!/^\/[a-zA-Z0-9/_?=&.%+-]+$/.test(path)) throw new AsaasFault(400);
     let response: Response;
     try {
-      response = await this.request(this.base + path, {
+      response = await this.request.call(globalThis, this.base + path, {
         method,
         redirect: "manual",
         signal: AbortSignal.timeout(8000),

@@ -112,3 +112,16 @@ describe("Asaas transport and financial evidence", () => {
       expect(safeAsaasPaymentUrl(url)).toBeNull();
   });
 });
+
+it("preserves the global fetch receiver required by the production Workers runtime", async () => {
+  const send = function (this: unknown) {
+    if (this !== globalThis)
+      throw new TypeError("Illegal invocation: incorrect this reference");
+    return Promise.resolve(Response.json({ data: [] }));
+  } as typeof fetch;
+  await expect(
+    new AsaasClient("test-only", "production", send).call(
+      "/paymentLinks?limit=1",
+    ),
+  ).resolves.toEqual({ data: [] });
+});

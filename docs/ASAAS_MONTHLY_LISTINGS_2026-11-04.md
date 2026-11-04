@@ -45,7 +45,7 @@ Rollback: flags de billing desativadas, checkout bloqueado, manter worker de can
 
 ## Evidências locais e recuperação
 
-- 22 testes unitários de transporte, documentos, token, dedup, ownership, valor fixo, checkout único, pagamento autoritativo, correlação Pix, chargeback e cancelamento incerto.
+- 24 testes unitários de transporte, documentos, token, dedup, ownership, valor fixo, checkout único, pagamento autoritativo, correlação Pix, chargeback e cancelamento incerto.
 - Rehearsal em PostgreSQL 17 isolado, sem TCP ou dados reais: nove definições de tabelas da cópia de segurança, migrations anteriores, snapshot fresco das cinco funções produtivas, nova migration e contratos SQL. Pass para reserva idempotente, grants/RLS, bloqueio de publicação/edição sem direito, pagamento válido, refund fora de ordem, mídia, expiração, venda/cancelamento e lease do consumidor.
 - Snapshot privado das funções, settings, estados de taxa/status e ledger de migrations antes da alteração; arquivos com acesso restrito fora do Git. O restore foi executado com os corpos atuais de produção antes da nova migration.
 - Playwright local: cadastro/perfil e sessão preservados, fluxo de anúncio, cinco fotos, prévia, cartão e Pix mensal com aceite, confirmação e cancelamento, bloqueio da revisão vinculada, responsividade, SSR público e menus ocultos. Respostas financeiras sintéticas, rede externa bloqueada e nenhuma cobrança real.
@@ -65,3 +65,7 @@ Rollback: flags de billing desativadas, checkout bloqueado, manter worker de can
 | PMO/QA | Pass | Testes direcionados, restore com snapshot fresco, validate e rollback definidos; ativação externa depende de prova de conexão |
 
 Risco residual: sem realizar uma transação financeira real em nome do titular, a aprovação do banco/cartão e a autorização do Pix Automático só podem ser homologadas pelo próprio pagador no checkout. Isso não autoriza simular pagamento nem publicar uma bike fictícia. Rollback operacional: bloquear novas contratações com `member_billing_settings.enabled=false`, manter consumidor e cancelamentos ativos, preservar o gate público de vigência e o ledger; não restaurar funções antigas que permitiam publicação sem pagamento.
+
+### Verificação de runtime em produção
+
+A primeira saúde assinada retornou falha antes de qualquer resposta HTTP do provedor; checkout permaneceu desabilitado e não houve criação financeira. O adaptador guardava `fetch` como propriedade e o invocava com o cliente como receiver. Corrigido para preservar `globalThis`, com teste que reproduz a exigência do runtime Workers. [Referência primária Cloudflare](https://developers.cloudflare.com/workers/observability/errors/#illegal-invocation-errors). O diagnóstico do consumidor assinado informa apenas status HTTP numérico e boolean de formato da credencial, sem segredo ou corpo do provedor. Chave regravada no campo protegido após conferência visual; webhook salvo e ativado no Asaas.
