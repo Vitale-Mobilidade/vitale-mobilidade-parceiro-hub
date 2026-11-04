@@ -23,6 +23,7 @@ let visits = 0, pendingReferrals = 0, confirmedReferrals = 0;
 let dashboardError = false;
 let profile = null;
 let identity={emailVerified:false,phoneVerified:false,phoneMasked:null,canInteract:false};
+let phoneDeliveryFailures = 0;
 let communityEnabled = true;
 let comment = null;
 const expires = Math.floor(Date.now()/1000) + 3600;
@@ -54,7 +55,7 @@ await context.route('**/*', async (route) => {
     }
     return reply(identity);
   }
-  if (url.pathname === '/functions/v1/member-identity-code') return reply({ok:true});
+  if (url.pathname === '/functions/v1/member-identity-code') { if(input.channel==='phone' && phoneDeliveryFailures>0){phoneDeliveryFailures--;return reply({ok:false},503)}return reply({ok:true}); }
   if (url.pathname === '/rest/v1/rpc/member_referrals') return dashboardError ? reply({message:'unavailable'},503) : reply({enabled:true,code:referralCode,visits,pending:pendingReferrals,confirmed:confirmedReferrals,history:confirmedReferrals?[{day:'2026-11-03',confirmed:confirmedReferrals}]:[]});
   if (url.pathname === '/functions/v1/member-password-recovery') return reply({ok:true});
   if (url.pathname === '/functions/v1/newsletter-interest') {
@@ -95,11 +96,19 @@ try {
   await page.getByLabel('Nome público',{exact:true}).fill('Leitor teste');
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);
   await page.getByLabel('Senha',{exact:true}).fill('minha-senha-local-123');
-  await page.getByRole('checkbox').filter({hasNotText:'Aceito receber'}).first().check();
+  await page.getByLabel('Celular com WhatsApp e DDD',{exact:true}).fill('(11) 99999-9999');
+  await page.getByRole('checkbox',{name:/Aceito receber os códigos/}).check();
+  await page.getByRole('checkbox',{name:/Quero fazer parte da comunidade/}).check();
   await mkdir(new URL(screenshots,import.meta.url),{recursive:true});
   await page.screenshot({path:new URL(screenshots+'signup-mobile.png',import.meta.url).pathname,fullPage:true});
   await page.getByRole('button',{name:'Criar conta',exact:true}).press('Enter');
-  await page.getByRole('button',{name:'Salvar perfil',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'Confirme seu e-mail e WhatsApp',exact:true}).waitFor();
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')&&r.input.channel==='email').length,1);
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')&&r.input.channel==='phone').length,1);
+  await page.getByLabel('Código recebido por e-mail',{exact:true}).waitFor();await page.getByLabel('Código recebido no WhatsApp',{exact:true}).waitFor();
+  await page.screenshot({path:new URL(screenshots+'signup-verification-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('link',{name:'Confirmar depois e continuar no site'}).click();await page.goto(`${origin}/conta?modo=perfil`);await page.getByRole('button',{name:'Salvar perfil',exact:true}).waitFor();
+  const profileBlock=page.locator('main > section').first();await profileBlock.getByRole('region',{name:'Sua foto de perfil',exact:true}).waitFor();await profileBlock.getByRole('region',{name:'E-mail e WhatsApp',exact:true}).waitFor();assert.equal(await profileBlock.getByRole('region',{name:'Sua foto de perfil',exact:true}).count(),1);assert.equal(await profileBlock.getByRole('region',{name:'E-mail e WhatsApp',exact:true}).count(),1);
   assert.equal(await page.getByRole('button',{name:'Reenviar confirmação de e-mail'}).count(),0);
   await page.goto(fixture('comments'));
   await page.getByRole('link',{name:'Valide seu e-mail e celular para comentar',exact:true}).waitFor();
@@ -118,7 +127,7 @@ try {
   await page.getByLabel('Código recebido no WhatsApp',{exact:true}).fill('123456');
   await page.getByRole('button',{name:'Validar celular',exact:true}).click();
   await page.getByRole('status').filter({hasText:'E-mail e celular validados'}).waitFor();
-  await page.getByRole('region',{name:'Valide seu acesso',exact:true}).screenshot({path:new URL(screenshots+'identity-panel-mobile.png',import.meta.url).pathname,style:'header {visibility:hidden;}'});
+  await page.getByRole('region',{name:'E-mail e WhatsApp',exact:true}).screenshot({path:new URL(screenshots+'identity-panel-mobile.png',import.meta.url).pathname,style:'header {visibility:hidden;}'});
   assert(requests.some(r=>r.path.endsWith('member-identity-code') && r.input.channel==='phone' && r.input.phone==='+5511999999999' && r.input.consent===true));
   console.log('PASS restricted interaction before verification; two code forms, retry and successful email/mobile validation');
 
@@ -159,7 +168,7 @@ try {
   assert(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth));
   await page.screenshot({path:new URL(screenshots+'account-desktop.png',import.meta.url).pathname,fullPage:true});
   await page.setViewportSize({width:390,height:844});
-  console.log('PASS immediate keyboard signup without confirmation email, mobile/desktop layout, login failure/success, password recovery/update, profile and one automatic community/newsletter adhesion');
+  console.log('PASS keyboard signup with one automatic email/WhatsApp OTP pair, mobile/desktop layout, login failure/success, password recovery/update, profile and one automatic community/newsletter adhesion');
 
   if (testReferrals) {
     const invitation = page.getByRole('textbox',{name:'Seu link pessoal',exact:true});
@@ -277,8 +286,8 @@ try {
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-login-password');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.waitForURL(url=>url.pathname==='/conta/anuncios');
   await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor({state:'hidden'});assert.equal(await page.getByRole('link',{name:'Entrar',exact:true}).count(),0);
   // Signup finishes membership/newsletter once and immediately returns, no profile step.
-  profile=null;const joinsAtSignup=requests.filter(r=>r.input.p_action==='join').length;
-  await page.goto(`${origin}/conta?modo=cadastro&retorno=%2Fconteudos`);await page.getByLabel('Nome público',{exact:true}).fill('Novo leitor');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-signup-password');await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Criar conta',exact:true}).click();await page.waitForURL(url=>url.pathname==='/conteudos');assert(profile.newsletterSubscribed);assert.equal(requests.filter(r=>r.input.p_action==='join').length,joinsAtSignup+1);
+  profile=null;identity={emailVerified:false,phoneVerified:false,phoneMasked:null,canInteract:false};phoneDeliveryFailures=1;const joinsAtSignup=requests.filter(r=>r.input.p_action==='join').length;const sendsBeforeSignup=requests.filter(r=>r.path.endsWith('member-identity-code')).length;
+  await page.goto(`${origin}/conta?modo=cadastro&retorno=%2Fconteudos`);await page.getByLabel('Nome público',{exact:true}).fill('Novo leitor');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-signup-password');await page.getByLabel('Celular com WhatsApp e DDD',{exact:true}).fill('11999999999');await page.getByRole('checkbox',{name:/Aceito receber os códigos/}).check();await page.getByRole('checkbox',{name:/Quero fazer parte da comunidade/}).check();await page.getByRole('button',{name:'Criar conta',exact:true}).click();await page.getByRole('heading',{name:'Confirme seu e-mail e WhatsApp',exact:true}).waitFor();assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).length,sendsBeforeSignup+2);await page.getByRole('alert').filter({hasText:'Não conseguimos enviar a mensagem no WhatsApp'}).waitFor();await page.getByRole('button',{name:'Enviar código pelo WhatsApp',exact:true}).click();assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).length,sendsBeforeSignup+3);await page.getByLabel('Código recebido por e-mail',{exact:true}).fill('123456');await page.getByRole('button',{name:'Validar e-mail',exact:true}).click();await page.getByLabel('Código recebido no WhatsApp',{exact:true}).fill('123456');await page.getByRole('button',{name:'Validar celular',exact:true}).click();await page.waitForURL(url=>url.pathname==='/conteudos');assert(profile.newsletterSubscribed);assert.equal(requests.filter(r=>r.input.p_action==='join').length,joinsAtSignup+1);
   await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor({state:'hidden'});assert.equal(await page.getByRole('link',{name:'Entrar',exact:true}).count(),0);
   // Recovery keeps navigation context in the same browser, waits for the new password.
   await page.goto(`${origin}/conta?retorno=${encodeURIComponent('/radar?compare=v9_max,v8_pro#bikes')}`);await page.getByRole('button',{name:'Esqueci minha senha'}).click();assert.equal(await page.getByRole('button',{name:'Esqueci minha senha'}).count(),0);assert.equal(await page.getByText('Sua conta inclui a newsletter.',{exact:false}).count(),0);assert.equal(await page.getByRole('link',{name:'Explorar os artigos'}).count(),0);

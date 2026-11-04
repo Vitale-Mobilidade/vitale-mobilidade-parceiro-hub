@@ -1,0 +1,1 @@
+Evidências locais, com Auth/RPC/Storage simulados e fotos canvas explicitamente sintéticas. Nenhum anúncio real foi criado. Perfil, dashboard e etapa de fotos inspecionados; estados/operações e signup/OTP constam dos dois smokes em tests/. Não confundir a verificação local autenticada com uma sessão real do responsável.

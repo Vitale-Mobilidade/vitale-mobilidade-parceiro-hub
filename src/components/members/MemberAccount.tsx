@@ -1,4 +1,16 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { memberPhone } from "@/lib/member-identity";
+import {
+  requestSignupIdentityCodes,
+  type IdentityDelivery,
+} from "@/lib/member-identity-delivery";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   rememberMemberReturn,
   rememberedMemberReturn,
@@ -23,10 +35,14 @@ import {
 const ProfilePhoto = lazy(() =>
   import("./ProfilePhoto").then((module) => ({ default: module.ProfilePhoto })),
 );
+const SellerPanel = lazy(() =>
+  import("./SellerPanel").then((m) => ({ default: m.SellerPanel })),
+);
 const field = "mt-1 w-full rounded-lg border border-line bg-white p-3 text-ink";
 const button =
   "min-h-11 rounded-lg bg-ink px-5 py-3 font-bold text-white disabled:opacity-50";
-type Mode = "entrar" | "cadastro" | "recuperar" | "senha" | "perfil";
+type Mode =
+  "entrar" | "cadastro" | "recuperar" | "senha" | "perfil" | "validar";
 const IdentityPanel = lazy(() =>
   import("./IdentityPanel").then((module) => ({
     default: module.IdentityPanel,
@@ -106,6 +122,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const creatingAccount = useRef(false);
+  const [signupFlow, setSignupFlow] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [phoneConsent, setPhoneConsent] = useState(false);
+  const [delivery, setDelivery] = useState<IdentityDelivery>();
   const [privacy, setPrivacy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -126,6 +147,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       profileUserId === userId &&
       profile?.communityJoinedAt &&
       !profileRequested &&
+      !signupFlow &&
       (mode === "entrar" || mode === "cadastro")
     ) {
       clearMemberReturn();
@@ -138,6 +160,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     userId,
     profile?.communityJoinedAt,
     profileRequested,
+    signupFlow,
     mode,
     destination,
   ]);
@@ -147,7 +170,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     setReady(false);
     setProfileUserId(undefined);
     setProfile(null);
-    if (!userId) return;
+    if (!userId || creatingAccount.current) return;
     let readSucceeded = false;
     void (async () => {
       let next = memberProfileSchema
@@ -162,6 +185,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         setName(initialName);
       }
       if (
+        !creatingAccount.current &&
         !next?.communityJoinedAt &&
         hasCommunityConsent(metadata) &&
         displayNameSchema.safeParse(initialName).success
@@ -261,6 +285,10 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         if (!passwordSchema.safeParse(password).success)
           throw new Error("password_invalid");
         if (!privacy) throw new Error("privacy_required");
+        if (!memberPhone(phone) || !phoneConsent)
+          throw new Error("invalid_phone");
+        creatingAccount.current = true;
+        setSignupFlow(true);
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -271,12 +299,24 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         });
         if (error) throw error;
         if (!data.session) {
+          setSignupFlow(false);
           setMessage(
             "Não foi possível iniciar seu acesso. Se já tem conta, entre ou use a recuperação de senha.",
           );
         } else {
-          setMode("entrar");
-          setMessage("Conta criada. Bem-vindo à comunidade Vitale!");
+          const joined = memberProfileSchema.parse(
+            await communityAccount("join", {
+              displayName: name.trim(),
+              acknowledged: true,
+              ...(invitationCode ? { invitationCode } : {}),
+            }),
+          );
+          setProfile(joined);
+          setProfileUserId(data.session.user.id);
+          setReady(true);
+          setDelivery(await requestSignupIdentityCodes(phone));
+          setMode("validar");
+          setMessage("");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -292,6 +332,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         setMode(profileRequested ? "perfil" : "entrar");
       }
     } catch (e) {
+      if (creatingAccount.current) setSignupFlow(false);
       const code =
         e && typeof e === "object" && "message" in e ? e.message : "";
       setError(
@@ -302,6 +343,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             : memberError(e),
       );
     } finally {
+      creatingAccount.current = false;
       setBusy(false);
       setPassword("");
     }
@@ -313,6 +355,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       const { error } = await supabase.auth.signOut({ scope: "local" });
       if (error) throw error;
       setMode("entrar");
+      setSignupFlow(false);
       setMessage("");
       setEmail("");
       setName("");
@@ -324,6 +367,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     }
   }
   if (loading) return <p role="status">Carregando sua conta…</p>;
+  const validatingSignup = Boolean(session) && mode === "validar";
   const passwordUpdate = Boolean(session) && mode === "senha";
   const recovery =
     (!session && (mode === "recuperar" || mode === "senha")) ||
@@ -338,8 +382,39 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     Boolean(session) &&
     !passwordUpdate &&
     !recovery &&
+    !validatingSignup &&
     (profileRequested || joining);
   const signup = !session && mode === "cadastro";
+  if (validatingSignup)
+    return (
+      <section className="rounded-2xl border border-line bg-white p-5 sm:p-8">
+        <h1 className="text-3xl font-bold text-ink">
+          Confirme seu e-mail e WhatsApp
+        </h1>
+        <p className="mt-3 text-muted-foreground">
+          Sua conta foi criada. Digite os dois códigos para liberar curtidas,
+          comentários e a publicação de bikes.
+        </p>
+        <Suspense fallback={<p role="status">Carregando validação…</p>}>
+          <IdentityPanel
+            embedded
+            email={session?.user.email ?? ""}
+            initialPhone={phone}
+            initialDelivery={delivery}
+            onVerified={() => {
+              clearMemberReturn();
+              window.location.replace(destination);
+            }}
+          />
+        </Suspense>
+        <a
+          href={destination}
+          className="mt-5 inline-flex min-h-11 items-center text-sm underline"
+        >
+          Confirmar depois e continuar no site
+        </a>
+      </section>
+    );
   if (session && !passwordUpdate && !recovery && !editing)
     return (
       <section className="rounded-2xl border border-line bg-white p-7">
@@ -379,7 +454,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   ? "Recuperar acesso"
                   : "Entre na comunidade Vitale"}
         </h1>
-        {session && (editing || passwordUpdate) && (
+        {editing && ready && profile?.communityJoinedAt && userId && (
+          <Suspense fallback={<p role="status">Carregando foto do perfil…</p>}>
+            <ProfilePhoto key={userId} embedded />
+          </Suspense>
+        )}
+        {session && passwordUpdate && (
           <p className="mt-4 break-all text-sm">{session.user.email}</p>
         )}
         {error && (
@@ -450,6 +530,38 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   maxLength={254}
                 />
               </label>
+            )}
+            {signup && (
+              <div>
+                <label htmlFor="signup-phone" className="block font-semibold">
+                  Celular com WhatsApp e DDD
+                </label>
+                <input
+                  id="signup-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className={field}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  maxLength={22}
+                  required
+                />
+                <label className="mt-3 flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0"
+                    checked={phoneConsent}
+                    onChange={(e) => setPhoneConsent(e.target.checked)}
+                    required
+                  />
+                  <span>
+                    Aceito receber os códigos de validação por e-mail e no
+                    WhatsApp informado. Se eu anunciar uma bike, esse WhatsApp
+                    será o contato para compradores, após minha autorização.
+                  </span>
+                </label>
+              </div>
             )}
             {!recovery && !editing && (
               <div className="block font-semibold">
@@ -540,6 +652,15 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             </button>
           </form>
         )}
+        {editing && ready && profile?.communityJoinedAt && userId && (
+          <Suspense fallback={<p role="status">Carregando contatos…</p>}>
+            <IdentityPanel
+              key={userId}
+              embedded
+              email={session?.user.email ?? ""}
+            />
+          </Suspense>
+        )}
         <div className="mt-6 flex flex-wrap gap-4 text-sm">
           {passwordUpdate ? (
             <a href={destination} className="min-h-11 underline">
@@ -620,19 +741,10 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         )}
       </section>
       {editing && ready && profile?.communityJoinedAt && userId && (
-        <Suspense fallback={<p role="status">Carregando foto do perfil…</p>}>
-          <ProfilePhoto key={userId} />
-        </Suspense>
-      )}
-      {editing && ready && profile?.communityJoinedAt && userId && (
         <Suspense
-          fallback={
-            <p role="status" className="mt-6">
-              Carregando validação de acesso…
-            </p>
-          }
+          fallback={<p role="status">Carregando sua área de anúncios…</p>}
         >
-          <IdentityPanel key={userId} email={session?.user.email ?? ""} />
+          <SellerPanel key={userId} />
         </Suspense>
       )}
       {newsletterReferralsEnabled &&
