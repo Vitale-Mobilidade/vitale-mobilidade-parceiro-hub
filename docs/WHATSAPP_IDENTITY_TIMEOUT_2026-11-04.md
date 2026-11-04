@@ -38,3 +38,11 @@ A função member-identity-code foi reimplantada seletivamente pelo Lovable a pa
 Validação final da clareza: Playwright mobile/desktop passou, incluindo entrada durante requisição pendente, preservação do código após ACK tardio, reload sem reenvio e recuperação/cadastro/perfil. pnpm validate limpo em log separado, sem processos concorrentes, passou com66 regressões, typecheck e builds. Lint dirigido e diff check passaram. Produto/UX/CX/QA: Pass; Arquitetura/Segurança/Growth: Pass (mesmos contratos e sem alterações de permissões); IA: N/A. Sem outro envio real neste refinamento. Código não é apagado quando a confirmação chega.
 
 O responsável decidiu preencher os dados da bike manualmente depois. Não preencher nem criar anúncio fictício para demonstrar o checkout. Sua prova de e-mail está válida; a prova de celular ainda depende de um código válido digitado por ele. Não registrar ACK como prova de identidade.
+
+## Publicação e homologação real concluídas
+
+PR79 integrada em ce756d6eaeaa406faef02befdc1d552f0eb20e3d; frontend publicado pelo deployment c47adca9-a7cf-4768-98b6-235fe9b89914. Bundle público IdentityPanel-C6n1GZ_B.js conferido no domínio próprio com campo destacado, feedback de envio e entrada do código. Preview Netlify e headers passaram; Pages/Redirect skipped; falha Vercel já existente fora da hospedagem operacional permanece registrada.
+
+O responsável abriu a tela nova, solicitou e digitou um novo código de WhatsApp e confirmou a validação concluída. Consulta administrativa posterior confirmou email_verified=true, phone_verified=true, identity_ready=true, can_publish=true e checkout_ready=true na conta controlada. Quatro fotos prontas preservadas. Essa é prova da jornada real da conta; não houve concessão manual da identidade. A recuperação anterior foi exclusivamente do ACK legítimo de transporte.
+
+Produto, Arquitetura, Segurança, UX/UI, CX, Growth e PMO/QA: Pass para a correção publicada, com testes e conferência real acima; IA: N/A. Saldo/tarifa do único novo envio de código segue a conta Hotpipe existente. Não houve cobrança Asaas, publicação fictícia de bike, mudança de newsletter ou reabertura pública. O responsável preencherá a ficha e concluirá a compra real por iniciativa própria.
