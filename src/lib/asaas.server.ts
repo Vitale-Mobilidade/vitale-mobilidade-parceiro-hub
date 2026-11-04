@@ -57,26 +57,6 @@ export class AsaasClient {
     }
   }
 }
-export function validBillingDocument(value: string): boolean {
-  const n = value.replace(/\D/g, "");
-  if (!/^(\d{11}|\d{14})$/.test(n) || /^(\d)\1+$/.test(n)) return false;
-  const digit = (base: string, weights: number[]) => {
-    const rem =
-      [...base].reduce((sum, v, i) => sum + Number(v) * weights[i], 0) % 11;
-    return rem < 2 ? 0 : 11 - rem;
-  };
-  if (n.length === 11)
-    return (
-      digit(n.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]) === Number(n[9]) &&
-      digit(n.slice(0, 10), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]) === Number(n[10])
-    );
-  return (
-    digit(n.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) ===
-      Number(n[12]) &&
-    digit(n.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) ===
-      Number(n[13])
-  );
-}
 export function safeAsaasPaymentUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {

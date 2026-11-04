@@ -873,12 +873,6 @@ function ListingEditor({
                 <p className="font-semibold text-ink">
                   Publicação: R$150 por mês enquanto o anúncio estiver ativo
                 </p>
-                {listing.feeStatus === "pilot_exempt" && (
-                  <p className="mt-2 text-action">
-                    Isenção aplicada à sua conta: R$0. Nenhuma cobrança será
-                    feita nesta publicação.
-                  </p>
-                )}
               </div>
               {!publishReady && (
                 <p className="mt-3 text-sm text-muted-foreground">
@@ -914,26 +908,6 @@ function ListingEditor({
                   anunciando.
                 </span>
               </label>
-              {listing.feeStatus === "pilot_exempt" && (
-                <button
-                  className={`${button} mt-5`}
-                  disabled={
-                    busy || dirty || !consent || !canPublish || !publishReady
-                  }
-                  onClick={() =>
-                    void run(
-                      () =>
-                        classifiedsCall("publish", {
-                          id: listing.id,
-                          contactConsent: consent,
-                        }),
-                      "Anúncio publicado.",
-                    )
-                  }
-                >
-                  Publicar com isenção
-                </button>
-              )}
             </>
           ) : (
             <div className="mt-5 flex flex-wrap gap-4">
@@ -989,6 +963,16 @@ function ListingEditor({
           {(draft || listing.feeStatus !== "pilot_exempt") && (
             <ListingBillingPanel
               listingId={listing.id}
+              active={step === "publish" && !preview}
+              reason={
+                !canPublish
+                  ? "Confirme seu e-mail e WhatsApp no perfil para anunciar."
+                  : !publishReady
+                    ? "Complete a ficha e envie ao menos uma foto antes de continuar."
+                    : dirty
+                      ? "Salve as alterações do rascunho antes de continuar."
+                      : ""
+              }
               ready={draft && canPublish && publishReady}
               locked={busy || dirty}
               contactConsent={consent}
