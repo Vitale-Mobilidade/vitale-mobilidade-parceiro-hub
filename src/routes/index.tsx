@@ -1,3 +1,4 @@
+import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute } from "@tanstack/react-router";
 import { getPublicBikeListings } from "@/lib/bike-classifieds.functions";
 import HomeB2C from "@/pages/HomeB2C";
@@ -12,7 +13,9 @@ export const Route = createFileRoute("/")({
     const [cards, articles, classifieds] = await Promise.all([
       getHomeCards().catch(() => ({ ok: false as const })),
       getPublishedArticles().catch(() => null),
-      getPublicBikeListings({ data: { limit: 3, offset: 0 } }),
+      memberPublicNavigationEnabled
+        ? getPublicBikeListings({ data: { limit: 3, offset: 0 } })
+        : { ok: true as const, items: [], total: 0 },
     ]);
     return { ...cards, articles: articles ?? [], classifieds };
   },

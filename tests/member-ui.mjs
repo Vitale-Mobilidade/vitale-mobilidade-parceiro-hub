@@ -262,8 +262,8 @@ try {
   // A normal login returns to its actual origin, including harmless UI state.
   await page.setViewportSize({width:1440,height:900});
   await page.goto(`${origin}/radar?compare=v9_max%2Cv8_pro#bikes`);
-  await page.waitForFunction(()=>document.querySelector('header a[aria-busy]')?.getAttribute('aria-busy')==='false');
-  await page.getByRole('link',{name:'Entrar',exact:true}).click();
+  assert.equal(await page.getByRole('link',{name:'Entrar',exact:true}).count(),0,'signin discovery is on hold');
+  await page.goto(`${origin}/conta?retorno=${encodeURIComponent('/radar?compare=v9_max%2Cv8_pro#bikes')}`);
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-login-password');await page.getByRole('button',{name:'Entrar',exact:true}).click();
   await page.waitForURL(url=>url.pathname==='/radar');assert.equal(new URL(page.url()).searchParams.get('compare'),'v9_max,v8_pro');assert.equal(new URL(page.url()).hash,'#bikes');
   await page.goBack();assert.notEqual(new URL(page.url()).pathname,'/conta','successful login replaces the auth entry in history');await page.goForward();
@@ -275,11 +275,11 @@ try {
   await page.goto(`${origin}/venda-sua-bike`);await page.getByRole('heading',{name:'Quer vender sua bike aqui?',exact:true}).waitFor();assert(!/R\$\s*150/.test(await page.locator('body').innerText()));
   await page.getByRole('link',{name:'Anuncie sua bike',exact:true}).click();assert.equal(new URL(page.url()).searchParams.get('retorno'),'/conta/anuncios');
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-login-password');await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.waitForURL(url=>url.pathname==='/conta/anuncios');
-  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('link',{name:'Entrar',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor({state:'hidden'});assert.equal(await page.getByRole('link',{name:'Entrar',exact:true}).count(),0);
   // Signup finishes membership/newsletter once and immediately returns, no profile step.
   profile=null;const joinsAtSignup=requests.filter(r=>r.input.p_action==='join').length;
   await page.goto(`${origin}/conta?modo=cadastro&retorno=%2Fconteudos`);await page.getByLabel('Nome público',{exact:true}).fill('Novo leitor');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('local-signup-password');await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Criar conta',exact:true}).click();await page.waitForURL(url=>url.pathname==='/conteudos');assert(profile.newsletterSubscribed);assert.equal(requests.filter(r=>r.input.p_action==='join').length,joinsAtSignup+1);
-  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('link',{name:'Entrar',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor({state:'hidden'});assert.equal(await page.getByRole('link',{name:'Entrar',exact:true}).count(),0);
   // Recovery keeps navigation context in the same browser, waits for the new password.
   await page.goto(`${origin}/conta?retorno=${encodeURIComponent('/radar?compare=v9_max,v8_pro#bikes')}`);await page.getByRole('button',{name:'Esqueci minha senha'}).click();assert.equal(await page.getByRole('button',{name:'Esqueci minha senha'}).count(),0);assert.equal(await page.getByText('Sua conta inclui a newsletter.',{exact:false}).count(),0);assert.equal(await page.getByRole('link',{name:'Explorar os artigos'}).count(),0);
   await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByRole('button',{name:'Enviar link de recuperação'}).click();await page.getByRole('status').filter({hasText:'Se houver uma conta'}).waitFor();await page.screenshot({path:new URL(screenshots+'recovery-clean.png',import.meta.url).pathname,fullPage:true});

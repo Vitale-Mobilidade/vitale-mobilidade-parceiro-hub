@@ -1,3 +1,4 @@
+import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { useRouterState } from "@tanstack/react-router";
 import { memberLoginHref, memberReturnPath } from "@/lib/member-community";
 import { useEffect, useState } from "react";
@@ -83,6 +84,7 @@ export function AccountMenu() {
       window.clearInterval(timer);
     };
   }, [userId]);
+  if (!session && !memberPublicNavigationEnabled) return null;
   if (!session)
     return (
       <a
