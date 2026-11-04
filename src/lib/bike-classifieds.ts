@@ -21,7 +21,7 @@ export const LISTING_STATUSES = {
   draft: "Rascunho",
   published: "Publicado",
   sold: "Vendida",
-  archived: "Arquivado",
+  archived: "Desativado",
 } as const;
 const text = (min: number, max: number) =>
   z
@@ -37,7 +37,7 @@ const text = (min: number, max: number) =>
       ),
     );
 export const listingInputSchema = z.object({
-  title: text(6, 100),
+  title: text(6, 100).refine((value) => value !== "Minha bike"),
   brand: text(1, 60),
   model: text(1, 80),
   priceCents: z.number().int().min(100).max(100000000),
@@ -55,6 +55,16 @@ export const listingInputSchema = z.object({
   invoice: z.boolean(),
   description: text(20, 4000),
   maintenance: text(0, 1000),
+});
+export const listingDraftInputSchema = listingInputSchema.extend({
+  title: text(0, 100).refine((value) => value.length !== 1),
+  brand: text(0, 60),
+  model: text(0, 80),
+  city: text(0, 80),
+  state: z.string().refine((v) => v === "" || STATES.includes(v)),
+  priceCents: z.number().int().min(0).max(100000000),
+  mileageKm: z.number().int().min(0).max(1000000).nullable(),
+  description: text(0, 4000),
 });
 export const listingImageSchema = z.object({
   id: z.string().uuid(),
@@ -83,6 +93,7 @@ export const listingSchema = listingInputSchema.extend({
   feeCents: z.literal(15000),
   feeStatus: z.literal("pilot_exempt"),
   images: z.array(listingImageSchema).max(5),
+  sellerType: z.enum(["channel", "individual"]).default("individual"),
   publishedAt: z.string().nullable(),
   updatedAt: z.string(),
 });
@@ -93,6 +104,7 @@ export const publicListingSchema = listingSchema.extend({
   whatsapp: z.string().regex(/^55[1-9][0-9]9[0-9]{8}$/),
 });
 export const classifiedsAccountSchema = z.object({
+  sellerType: z.enum(["channel", "individual"]).default("individual"),
   displayName: z.string().nullable(),
   communityJoined: z.boolean(),
   avatarPath: z.string().nullable(),
@@ -135,4 +147,39 @@ export function classifiedsError(error: unknown): string {
       "Não foi possível reduzir esta foto para 2 MB. Escolha outra imagem.",
   };
   return messages[code] ?? "";
+}
+
+/** Empty server drafts are reused, never promoted to dashboard listings. */
+export function isEmptyBikeDraft(listing: BikeListing): boolean {
+  return (
+    listing.status === "draft" &&
+    ["", "Minha bike"].includes(listing.title.trim()) &&
+    !listing.brand.trim() &&
+    !listing.model.trim() &&
+    !listing.description.trim() &&
+    !listing.city.trim() &&
+    !listing.state &&
+    !listing.priceCents &&
+    listing.mileageKm === null &&
+    listing.modelYear === null &&
+    listing.condition === "good" &&
+    listing.battery === "unknown" &&
+    !listing.invoice &&
+    !listing.maintenance.trim() &&
+    listing.images.length === 0
+  );
+}
+export function listingWhatsAppMessage(
+  listing: Pick<BikeListing, "id" | "title">,
+): string {
+  const id = z.string().uuid().parse(listing.id);
+  return `Olá! Vi a bike ${listing.title.trim() || "do seu anúncio"} na Vitale Mobilidade e gostaria de saber se ainda está disponível. https://vitalemobilidade.com/venda-sua-bike/${id}`;
+}
+export function listingWhatsAppHref(
+  phone: string,
+  listing: Pick<BikeListing, "id" | "title">,
+): string {
+  const digits = phone.replace(/^\+/, "");
+  if (!/^55[1-9][0-9]9[0-9]{8}$/.test(digits)) throw new Error("invalid_phone");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(listingWhatsAppMessage(listing))}`;
 }

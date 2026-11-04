@@ -44,6 +44,11 @@ export function ClassifiedCard({
           )}
         </div>
         <div className="flex flex-1 flex-col p-5">
+          {listing.sellerType === "channel" && (
+            <span className="mb-3 w-fit rounded-full bg-surface px-3 py-1 text-xs font-bold text-action">
+              Bike do canal Vitale Mobilidade
+            </span>
+          )}
           <h3 className="line-clamp-2 text-base font-semibold leading-tight">
             {listing.title.trim() || "O título da sua bike"}
           </h3>

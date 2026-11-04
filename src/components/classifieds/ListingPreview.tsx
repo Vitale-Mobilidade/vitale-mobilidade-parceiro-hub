@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Bike, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
 import { SectionHeading } from "@/components/site/site-ui";
 import {
+  listingWhatsAppHref,
+  listingWhatsAppMessage,
   BATTERIES,
   CONDITIONS,
   type BikeListing,
@@ -92,7 +94,9 @@ export function ListingPreview({
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
-            Bike da comunidade
+            {listing.sellerType === "channel"
+              ? "Bike do canal Vitale Mobilidade"
+              : "Bike da comunidade"}
           </span>
           <Title className="mt-2 break-words text-3xl font-extrabold leading-tight tracking-tight text-ink md:text-4xl">
             {title}
@@ -125,13 +129,13 @@ export function ListingPreview({
           {seller ? (
             <div className="mt-5">
               <a
-                href={`https://wa.me/${seller.whatsapp}?text=${encodeURIComponent(`Olá! Vi seu anúncio ${title} na Vitale Mobilidade.`)}`}
+                href={listingWhatsAppHref(seller.whatsapp, listing)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                Conversar com o vendedor
+                Conversar pelo WhatsApp
               </a>
               <div className="mt-4 flex items-center gap-3">
                 {seller.avatarUrl && (
@@ -158,8 +162,22 @@ export function ListingPreview({
           ) : (
             <span className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground">
               <MessageCircle className="h-5 w-5" aria-hidden="true" />
-              Conversar com o vendedor
+              Conversar pelo WhatsApp
             </span>
+          )}
+          {preview && (
+            <div className="mt-4 rounded-xl bg-surface p-4 text-sm">
+              <p className="font-semibold">
+                Mensagem que o comprador abre no WhatsApp
+              </p>
+              <p className="mt-2 break-words text-muted-foreground">
+                {listingWhatsAppMessage(listing)}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                O contato usa seu número validado. Esta prévia não envia
+                mensagens.
+              </p>
+            </div>
           )}
         </div>
       </header>

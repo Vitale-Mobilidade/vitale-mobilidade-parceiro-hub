@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { identityCall } from "@/lib/member-community-api";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  requestMemberIdentityCode,
+  type IdentityDelivery,
+} from "@/lib/member-identity-delivery";
 import {
   memberIdentitySchema,
   memberPhone,
@@ -10,15 +13,36 @@ import { memberError } from "@/lib/member-community";
 const field = "mt-2 min-h-11 w-full rounded-lg border border-line bg-white p-3";
 const button =
   "mt-3 min-h-11 rounded-lg bg-ink px-4 py-3 font-bold text-white disabled:opacity-50";
-export function IdentityPanel({ email }: { email: string }) {
+export function IdentityPanel({
+  email,
+  embedded = false,
+  initialPhone = "",
+  initialDelivery,
+  onVerified,
+}: {
+  email: string;
+  embedded?: boolean;
+  initialPhone?: string;
+  initialDelivery?: IdentityDelivery;
+  onVerified?: () => void;
+}) {
   const [identity, setIdentity] = useState<MemberIdentity | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [phone, setPhone] = useState(initialPhone);
+  const [consent, setConsent] = useState(Boolean(initialPhone));
+  const [sent, setSent] = useState<Record<string, boolean>>({
+    email: initialDelivery?.email.ok === true,
+    phone: initialDelivery?.phone.ok === true,
+  });
+  const [deliveryErrors, setDeliveryErrors] = useState<Record<string, boolean>>(
+    {
+      email: initialDelivery?.email.ok === false,
+      phone: initialDelivery?.phone.ok === false,
+    },
+  );
   const [codes, setCodes] = useState<Record<string, string>>({});
   useEffect(() => {
     let active = true;
@@ -41,21 +65,8 @@ export function IdentityPanel({ email }: { email: string }) {
     setMessage("");
     setBusy(true);
     try {
-      const canonical = channel === "phone" ? memberPhone(phone) : undefined;
-      if (channel === "phone" && (!canonical || !consent))
-        throw new Error("invalid_phone");
-      const { data, error } = await supabase.functions.invoke(
-        "member-identity-code",
-        {
-          body: {
-            channel,
-            ...(canonical ? { phone: canonical, consent } : {}),
-          },
-        },
-      );
-      if (error) throw new Error("identity_delivery_unavailable");
-      if (data?.ok !== true)
-        throw new Error(String(data?.error ?? "identity_delivery_unavailable"));
+      await requestMemberIdentityCode(channel, phone, consent);
+      setDeliveryErrors((old) => ({ ...old, [channel]: false }));
       setSent((old) => ({ ...old, [channel]: true }));
       setCodes((old) => ({ ...old, [channel]: "" }));
       setMessage(
@@ -64,6 +75,7 @@ export function IdentityPanel({ email }: { email: string }) {
           : "Enviamos um código pelo WhatsApp. Ele vale por dez minutos.",
       );
     } catch (e) {
+      setDeliveryErrors((old) => ({ ...old, [channel]: true }));
       setError(
         e instanceof Error && e.message === "identity_delivery_unavailable"
           ? "Não foi possível enviar o código agora. Tente novamente em instantes."
@@ -80,7 +92,9 @@ export function IdentityPanel({ email }: { email: string }) {
     setBusy(true);
     try {
       await identityCall("verify", { channel, code: codes[channel] ?? "" });
-      setIdentity(memberIdentitySchema.parse(await identityCall("status")));
+      const verified = memberIdentitySchema.parse(await identityCall("status"));
+      setIdentity(verified);
+      if (verified.emailVerified && verified.phoneVerified) onVerified?.();
       window.dispatchEvent(new Event("vitale-profile-updated"));
       setSent((old) => ({ ...old, [channel]: false }));
       setCodes((old) => ({ ...old, [channel]: "" }));
@@ -96,14 +110,18 @@ export function IdentityPanel({ email }: { email: string }) {
   return (
     <section
       aria-labelledby="identity-title"
-      className="mt-8 rounded-2xl border border-line bg-white p-5 sm:p-8"
+      className={
+        embedded
+          ? "mt-7 border-t border-line pt-6"
+          : "mt-8 rounded-2xl border border-line bg-white p-5 sm:p-8"
+      }
       data-heatmap-private
     >
       <h2 id="identity-title" className="text-2xl font-bold text-ink">
-        Valide seu acesso
+        E-mail e WhatsApp
       </h2>
       <p className="mt-3 text-muted-foreground">
-        Confirme seu e-mail e celular para comentar, curtir e anunciar.
+        Confirme seus contatos para curtir, comentar e publicar anúncios.
       </p>
       {error && (
         <p role="alert" className="mt-4 text-red-800">
@@ -141,6 +159,14 @@ export function IdentityPanel({ email }: { email: string }) {
                   {channel === "email" ? "E-mail" : "Celular"}:{" "}
                   {verified ? "validado" : "pendente"}
                 </h3>
+                {channel === "phone" && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Quem se interessar pela sua bike poderá tocar em “Conversar
+                    pelo WhatsApp” no anúncio. A conversa abre diretamente neste
+                    número, com uma mensagem sobre a bike. Por isso, confirme um
+                    WhatsApp que você usa.
+                  </p>
+                )}
                 {channel === "email" ? (
                   <p className="mt-2 break-all text-sm">{email}</p>
                 ) : verified ? (
@@ -159,7 +185,11 @@ export function IdentityPanel({ email }: { email: string }) {
                       autoComplete="tel"
                       className={field}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setSent((old) => ({ ...old, phone: false }));
+                        setCodes((old) => ({ ...old, phone: "" }));
+                      }}
                       placeholder="(11) 99999-9999"
                       maxLength={22}
                     />
@@ -179,6 +209,22 @@ export function IdentityPanel({ email }: { email: string }) {
                 )}
                 {!verified && (
                   <>
+                    {sent[channel] && (
+                      <p role="status" className="mt-3 text-sm text-action">
+                        Código enviado{" "}
+                        {channel === "email" ? "por e-mail" : "pelo WhatsApp"}.
+                        Digite abaixo; ele vale por dez minutos.
+                      </p>
+                    )}
+                    {deliveryErrors[channel] && (
+                      <p role="alert" className="mt-3 text-sm text-red-800">
+                        Não conseguimos enviar{" "}
+                        {channel === "email"
+                          ? "o e-mail"
+                          : "a mensagem no WhatsApp"}
+                        . Confira o contato e tente novamente neste canal.
+                      </p>
+                    )}
                     <button
                       type="button"
                       className={button}

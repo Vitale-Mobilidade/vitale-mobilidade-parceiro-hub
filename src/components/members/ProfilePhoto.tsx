@@ -12,7 +12,7 @@ import {
   type ClassifiedsAccount,
 } from "@/lib/bike-classifieds";
 import { memberError } from "@/lib/member-community";
-export function ProfilePhoto() {
+export function ProfilePhoto({ embedded = false }: { embedded?: boolean }) {
   const [account, setAccount] = useState<ClassifiedsAccount | null>(null);
   const [avatar, setAvatar] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -73,7 +73,11 @@ export function ProfilePhoto() {
   }
   return (
     <section
-      className="mt-6 rounded-2xl border border-line bg-white p-5 sm:p-8"
+      className={
+        embedded
+          ? "mt-6 border-b border-line pb-6"
+          : "mt-6 rounded-2xl border border-line bg-white p-5 sm:p-8"
+      }
       aria-labelledby="profile-photo-title"
     >
       <h2 id="profile-photo-title" className="text-xl font-bold text-ink">
@@ -108,7 +112,7 @@ export function ProfilePhoto() {
                 Remover foto para trocar
               </button>
             ) : (
-              <label className="block text-sm font-semibold">
+              <label className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-action px-4 text-sm font-semibold text-action focus-within:ring-2 focus-within:ring-action">
                 Adicionar foto
                 <input
                   aria-label="Adicionar foto de perfil"
@@ -120,7 +124,7 @@ export function ProfilePhoto() {
                     e.currentTarget.value = "";
                     if (file) void action(file);
                   }}
-                  className="mt-2 block max-w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:p-3 file:text-white"
+                  className="sr-only"
                 />
               </label>
             )}
@@ -148,14 +152,6 @@ export function ProfilePhoto() {
         <p role="status" className="mt-3 text-action">
           {message}
         </p>
-      )}
-      {account?.canAdvertise && (
-        <a
-          href="/conta/anuncios"
-          className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-action px-5 font-bold text-white"
-        >
-          Anuncie sua bike · acesso piloto
-        </a>
       )}
     </section>
   );

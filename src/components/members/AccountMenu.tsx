@@ -140,7 +140,9 @@ export function AccountMenu() {
           {account?.canAdvertise && (
             <DropdownMenuItem asChild>
               <a href="/conta/anuncios" className="min-h-11">
-                Anuncie sua bike
+                {account.sellerType === "channel"
+                  ? "Gerenciar bikes do canal"
+                  : "Anuncie sua bike"}
               </a>
             </DropdownMenuItem>
           )}
