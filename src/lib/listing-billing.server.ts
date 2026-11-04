@@ -809,7 +809,7 @@ export async function listingBillingWorker(request: Request) {
             last_health_at: new Date().toISOString(),
           })
           .eq("singleton", true);
-      } catch {
+      } catch (failure) {
         await db
           .from("member_billing_settings")
           .update({
@@ -817,7 +817,18 @@ export async function listingBillingWorker(request: Request) {
             last_health_at: new Date().toISOString(),
           })
           .eq("singleton", true);
-        return result({ ok: false, providerConnected: false }, 503);
+        return result(
+          {
+            ok: false,
+            providerConnected: false,
+            providerHttpStatus:
+              failure instanceof AsaasFault ? failure.status : 0,
+            credentialFormatValid: /^\$aact_(prod|hmlg|sandbox)_/.test(
+              process.env.ASAAS_API_KEY ?? "",
+            ),
+          },
+          503,
+        );
       }
     }
     await db.rpc("member_billing_expire_periods");

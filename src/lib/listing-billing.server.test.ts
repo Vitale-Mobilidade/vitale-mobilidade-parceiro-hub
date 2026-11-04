@@ -20,6 +20,7 @@ import {
   reconcileEvent,
   reconcilePayment,
   validAsaasWebhookToken,
+  listingBillingWorker,
   type BillingOrder,
 } from "./listing-billing.server";
 const id = "10000000-0000-4000-8000-000000000001";
@@ -421,4 +422,32 @@ describe("authoritative financial reconciliation", () => {
     ).rejects.toThrow("billing_uncertain");
     expect(writes.some((w) => w.value.status === "cancelled")).toBe(false);
   });
+});
+
+it("signed health reports only non-sensitive provider diagnostics and never creates a financial resource", async () => {
+  process.env.ASAAS_API_KEY = "$aact_prod_test-only-no-real-key";
+  state.rpc.mockResolvedValue({ data: true, error: null });
+  state.from.mockImplementation((t) => chain(t, { last_health_at: null }));
+  vi.mocked(globalThis.fetch).mockResolvedValue(
+    new Response("private provider body", { status: 401 }),
+  );
+  const response = await listingBillingWorker(
+    new Request(
+      "https://vitale.invalid/api/public/classifieds-billing-worker",
+      { method: "POST" },
+    ),
+  );
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({
+    ok: false,
+    providerConnected: false,
+    providerHttpStatus: 401,
+    credentialFormatValid: true,
+  });
+  expect(writes.at(-1).value.provider_ready).toBe(false);
+  expect(
+    vi
+      .mocked(globalThis.fetch)
+      .mock.calls.every((c) => !c[1]?.method || c[1].method === "GET"),
+  ).toBe(true);
 });
