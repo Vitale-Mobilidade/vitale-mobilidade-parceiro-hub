@@ -10,31 +10,29 @@ export const billingOrderSchema = z.object({
     "cancel_pending",
     "cancelled",
     "failed",
+    "expired",
   ]),
   paymentUrl: z.string().nullable(),
-  pixPayload: z.string().nullable(),
-  pixImage: z.string().nullable(),
-  qrExpiresAt: z.string().nullable(),
+  displayStartedAt: z.string().nullable(),
   paidUntil: z.string().nullable(),
-  renewalStatus: z.string().nullable(),
   hold: z.boolean(),
 });
 export type BillingOrderView = z.infer<typeof billingOrderSchema>;
 export const billingResponseSchema = z.object({
   configured: z.boolean().optional(),
-  monthlyCents: z.number().optional(),
+  amountCents: z.number().optional(),
+  displayDays: z.number().optional(),
+  billingModel: z.literal("one_time_90d").optional(),
   order: billingOrderSchema.nullable(),
 });
 export const billingMessage = (code: string) =>
   ({
-    billing_document_invalid:
-      "Confira o CPF ou CNPJ do responsável pelo pagamento.",
     identity_verification_required:
       "Confirme seu e-mail e WhatsApp no perfil para continuar.",
     billing_consent_required:
-      "Autorize a mensalidade e o contato dos compradores para continuar.",
+      "Aceite o pagamento único e o contato dos compradores para continuar.",
     billing_uncertain:
-      "O Asaas ainda está confirmando a solicitação. Aguarde antes de tentar novamente; evitamos gerar assinaturas duplicadas.",
+      "O Asaas ainda está confirmando a solicitação. Aguarde antes de tentar novamente; evitamos gerar cobranças duplicadas.",
     billing_provider_rejected:
       "O Asaas não aceitou a solicitação. Confira os dados e tente novamente.",
     listing_incomplete:

@@ -162,7 +162,7 @@ export function MemberListings() {
           não tem acesso à criação.
         </p>
         <p className="mt-4">
-          O valor é de R$150 por mês enquanto o anúncio estiver ativo. A
+          O valor é de R$150 por 90 dias de exibição, em pagamento único. A
           abertura para outros anunciantes virá depois.
         </p>
         <a href="/venda-sua-bike" className={`${button} mt-6`}>
@@ -199,9 +199,9 @@ export function MemberListings() {
       if (edit) setSelected(item.id);
       setNotice(
         action === "archive"
-          ? "Anúncio desativado. Se houver assinatura, o encerramento da renovação será solicitado. Você pode reativá-lo como rascunho."
+          ? "Anúncio desativado. Você pode reativá-lo durante o período pago, mantendo o vencimento original."
           : action === "sold"
-            ? "Bike marcada como vendida. Se houver assinatura, o encerramento da renovação será solicitado."
+            ? "Bike marcada como vendida e retirada da vitrine."
             : "Anúncio em rascunho. Revise antes de publicar novamente.",
       );
     } catch (e) {
@@ -538,8 +538,8 @@ function ListingEditor({
         {billingLocked && draft && (
           <p className="mb-4 rounded-xl bg-surface p-4 text-sm">
             O anúncio está vinculado a uma solicitação de pagamento. Para
-            alterar fotos ou informações, encerre a assinatura na etapa Publicar
-            e aguarde a confirmação.
+            alterar fotos ou informações, cancele o pagamento pendente na etapa
+            Publicar e aguarde a confirmação.
           </p>
         )}
         {busy && (
@@ -871,7 +871,7 @@ function ListingEditor({
             <>
               <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
                 <p className="font-semibold text-ink">
-                  Publicação: R$150 por mês enquanto o anúncio estiver ativo
+                  Publicação por 90 dias · pagamento único de R$150
                 </p>
               </div>
               {!publishReady && (
@@ -921,7 +921,7 @@ function ListingEditor({
                     onClick={() =>
                       void run(
                         () => classifiedsCall("sold", { id: listing.id }),
-                        "Bike marcada como vendida. Se houver assinatura, o encerramento da renovação será solicitado.",
+                        "Bike marcada como vendida e retirada da vitrine.",
                       )
                     }
                     className="min-h-12 rounded-xl border border-action px-5 font-bold text-action"

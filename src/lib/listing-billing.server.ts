@@ -30,6 +30,9 @@ export type BillingOrder = {
   user_id: string;
   listing_id: string;
   method: string;
+  billing_model: string;
+  paid_at: string | null;
+  display_started_at: string | null;
   status: string;
   financial_started: boolean;
   customer_id: string | null;
@@ -64,11 +67,8 @@ function projection(order: BillingOrder | null) {
         method: order.method,
         status: order.status,
         paymentUrl: safeAsaasPaymentUrl(order.payment_url),
-        pixPayload: order.pix_payload,
-        pixImage: order.pix_image,
-        qrExpiresAt: order.qr_expires_at,
+        displayStartedAt: order.display_started_at,
         paidUntil: order.paid_until,
-        renewalStatus: order.renewal_status,
         hold: order.hold,
       }
     : null;
@@ -79,6 +79,7 @@ async function currentOrder(db: Db, listing: string, user: string) {
     .select("*")
     .eq("listing_id", listing)
     .eq("user_id", user)
+    .eq("billing_model", "one_time_90d")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -95,7 +96,7 @@ export async function memberListingBilling(request: Request) {
         action: z.enum(["status", "checkout", "cancel"]),
         listingId: uuid,
         contactConsent: z.boolean().optional(),
-        monthlyAccepted: z.boolean().optional(),
+        purchaseAccepted: z.boolean().optional(),
       })
       .strict()
       .parse(JSON.parse(raw));
@@ -119,28 +120,35 @@ export async function memberListingBilling(request: Request) {
     if (input.action === "status") {
       const { data: settings } = await db
         .from("member_billing_settings")
-        .select("enabled,provider_ready,hosted_ready")
+        .select("enabled,provider_ready,purchase_ready")
         .eq("singleton", true)
         .single();
       return result({
         configured: Boolean(
           settings?.enabled &&
           settings.provider_ready &&
-          settings.hosted_ready &&
+          settings.purchase_ready &&
           process.env.ASAAS_API_KEY &&
           process.env.ASAAS_WEBHOOK_TOKEN,
         ),
-        monthlyCents: 15000,
+        amountCents: 15000,
+        displayDays: 90,
+        billingModel: "one_time_90d",
         order: projection(await currentOrder(db, listing.id, user.id)),
       });
     }
     if (input.action === "cancel") {
       const o = await currentOrder(db, listing.id, user.id);
-      if (o && !["cancelled", "failed"].includes(o.status)) {
+      if (
+        o &&
+        !o.paid_at &&
+        !["cancelled", "failed", "expired"].includes(o.status)
+      ) {
         const { error } = await db
           .from("member_listing_billing")
           .update({
             status: "cancel_pending",
+            publish_requested: false,
             cancel_requested_at: new Date().toISOString(),
             next_attempt_at: new Date().toISOString(),
           })
@@ -156,13 +164,12 @@ export async function memberListingBilling(request: Request) {
     if (!process.env.ASAAS_API_KEY || !process.env.ASAAS_WEBHOOK_TOKEN)
       return result({ error: "billing_unavailable" }, 503);
     const { data: reserved, error: reserveError } = await db.rpc(
-      "member_billing_checkout",
+      "member_billing_purchase",
       {
         p_actor: user.id,
         p_id: listing.id,
-        p_method: "hosted",
         p_contact: input.contactConsent === true,
-        p_monthly: input.monthlyAccepted === true,
+        p_accepted: input.purchaseAccepted === true,
       },
     );
     if (reserveError)
@@ -246,18 +253,12 @@ export async function createHostedCheckout(
   reference: string,
   title: string,
 ) {
-  const day = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
   const c = await api.call<{ id: string; link?: string }>(
     "/checkouts",
     "POST",
     {
-      billingTypes: ["CREDIT_CARD"],
-      chargeTypes: ["RECURRENT"],
+      billingTypes: ["CREDIT_CARD", "PIX"],
+      chargeTypes: ["DETACHED"],
       minutesToExpire: 60,
       externalReference: reference,
       callback: {
@@ -268,12 +269,11 @@ export async function createHostedCheckout(
       items: [
         {
           name: "Anúncio de bike na Vitale",
-          description: title.slice(0, 100),
+          description: `90 dias de exibição. ${title.slice(0, 100)}`,
           quantity: 1,
           value: 150,
         },
       ],
-      subscription: { cycle: "MONTHLY", nextDueDate: day },
     },
   );
   if (!uuid.safeParse(c.id).success) throw new AsaasFault(503, true);
@@ -316,25 +316,13 @@ export async function asaasListingWebhook(request: Request) {
       ? "checkout"
       : body.event.startsWith("PAYMENT_")
         ? "payment"
-        : body.event.startsWith("SUBSCRIPTION_")
-          ? "subscription"
-          : body.event.includes("AUTHORIZATION_")
-            ? "authorization"
-            : body.event.includes("PAYMENT_INSTRUCTION_")
-              ? "instruction"
-              : null;
+        : null;
     const id =
       type === "checkout"
         ? body.checkout?.id
         : type === "payment"
           ? body.payment?.id
-          : type === "subscription"
-            ? body.subscription?.id
-            : type === "authorization"
-              ? body.authorization?.id
-              : type === "instruction"
-                ? body.paymentInstruction?.id
-                : null;
+          : null;
     if (!type || !providerId(id)) return result({ ok: true, ignored: true });
     const db = database();
     const { data, error } = await db
@@ -400,75 +388,33 @@ export async function reconcilePayment(
 ) {
   const observed = new Date().toISOString();
   const p = await api.call<Record<string, unknown>>(`/payments/${id}`);
-  let order =
-    known ??
-    (await orderBy(db, "checkout_id", p.checkoutSession)) ??
-    (await orderBy(db, "subscription_id", p.subscription));
+  let order = known ?? (await orderBy(db, "checkout_id", p.checkoutSession));
   if (!order && uuid.safeParse(p.externalReference).success)
     order = await orderBy(db, "id", p.externalReference);
-  if (!order && p.billingType === "PIX" && providerId(p.pixTransaction)) {
-    const transaction = await api.call<Record<string, unknown>>(
-      `/pix/transactions/${p.pixTransaction}`,
-    );
-    order = await orderBy(
-      db,
-      "conciliation_id",
-      transaction.conciliationIdentifier,
-    );
-  }
   if (!order) {
-    // A financial event may beat the checkout response that stores provider IDs.
+    // The financial event can precede storage of the checkout response.
     if (!allowUnmapped) throw new Error("billing_mapping_pending");
     return;
   }
   if (
+    order.billing_model !== "one_time_90d" ||
+    order.method !== "hosted" ||
     p.id !== id ||
-    (order.method !== "hosted" && p.customer !== order.customer_id) ||
     Number(p.value) !== 150 ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(String(p.dueDate))
+    !/^\d{4}-\d{2}-\d{2}$/.test(String(p.dueDate)) ||
+    !order.checkout_id ||
+    p.checkoutSession !== order.checkout_id ||
+    (order.customer_id != null && p.customer !== order.customer_id) ||
+    !providerId(p.customer) ||
+    p.subscription != null ||
+    p.installment != null ||
+    !["CREDIT_CARD", "PIX"].includes(String(p.billingType))
   )
     throw new Error("billing_mismatch");
-  if (order.method === "hosted") {
-    if (
-      p.checkoutSession !== order.checkout_id ||
-      (order.customer_id !== null && p.customer !== order.customer_id) ||
-      !providerId(p.customer) ||
-      !providerId(p.subscription) ||
-      !["CREDIT_CARD", "PIX"].includes(String(p.billingType))
-    )
-      throw new Error("billing_mismatch");
-    const subscription = await api.call<Record<string, unknown>>(
-      `/subscriptions/${p.subscription}`,
-    );
-    if (
-      subscription.customer !== p.customer ||
-      Number(subscription.value) !== 150 ||
-      subscription.cycle !== "MONTHLY"
-    )
-      throw new Error("billing_mismatch");
-    if (order.subscription_id && order.subscription_id !== p.subscription)
-      throw new Error("billing_mismatch");
-    await saveOrder(db, order.id, {
-      customer_id: p.customer,
-      subscription_id: p.subscription,
-      provider_billing_type: p.billingType,
-      ...(["cancel_pending", "cancelled"].includes(order.status) ||
-      order.cancel_requested_at
-        ? {
-            status: "cancel_pending",
-            next_attempt_at: new Date().toISOString(),
-          }
-        : {}),
-    });
-  }
-  if (
-    order.method === "card" &&
-    (p.billingType !== "CREDIT_CARD" ||
-      p.subscription !== order.subscription_id)
-  )
-    throw new Error("billing_mismatch");
-  if (order.method === "pix_automatic" && p.billingType !== "PIX")
-    throw new Error("billing_mismatch");
+  await saveOrder(db, order.id, {
+    customer_id: p.customer,
+    provider_billing_type: p.billingType,
+  });
   const risk =
     p.chargeback &&
     typeof p.chargeback === "object" &&
@@ -528,10 +474,11 @@ export async function reconcileEvent(
     if (!order) return;
     if (
       ["CHECKOUT_CANCELED", "CHECKOUT_EXPIRED"].includes(e.kind ?? "") &&
-      !["active", "cancelled", "failed"].includes(order.status)
+      !["active", "cancelled", "failed", "expired"].includes(order.status)
     )
       await saveOrder(db, order.id, {
         status: "cancel_pending",
+        publish_requested: false,
         cancel_requested_at: new Date().toISOString(),
         next_attempt_at: new Date().toISOString(),
       });
@@ -539,189 +486,31 @@ export async function reconcileEvent(
   }
   if (e.resource_type === "payment")
     return reconcilePayment(db, api, e.resource_id, undefined, e.attempts > 5);
-  if (e.resource_type === "instruction") {
-    const instruction = await api.call<{
-      paymentId?: string;
-      authorization?: { id: string };
-    }>(`/pix/automatic/paymentInstructions/${e.resource_id}`);
-    const order = await orderBy(
-      db,
-      "authorization_id",
-      instruction.authorization?.id,
-    );
-    if (!order && e.attempts <= 5) throw new Error("billing_mapping_pending");
-    if (order && providerId(instruction.paymentId))
-      await reconcilePayment(db, api, instruction.paymentId!, order);
-    return;
-  }
-  if (e.resource_type === "authorization") {
-    const authorization = await api.call<Record<string, unknown>>(
-      `/pix/automatic/authorizations/${e.resource_id}`,
-    );
-    const order = await orderBy(db, "authorization_id", e.resource_id);
-    if (!order) {
-      if (e.attempts <= 5) throw new Error("billing_mapping_pending");
-      return;
-    }
-    if (
-      authorization.id !== order.authorization_id ||
-      authorization.customerId !== order.customer_id ||
-      authorization.contractId !== order.id.replaceAll("-", "") ||
-      Number(authorization.value) !== 150 ||
-      authorization.frequency !== "MONTHLY" ||
-      authorization.paymentCreationMode !== "SUBSCRIPTION"
-    )
-      throw new Error("billing_mismatch");
-    await saveOrder(db, order.id, {
-      renewal_status: authorization.status,
-      ...(providerId(authorization.subscriptionId)
-        ? { subscription_id: authorization.subscriptionId }
-        : {}),
-    });
-    // Activation is not a payment: it never grants publication here.
-    if (
-      !["cancelled", "failed"].includes(order.status) &&
-      ["CANCELLED", "EXPIRED"].includes(String(authorization.status))
-    )
-      await saveOrder(db, order.id, {
-        status: "cancel_pending",
-        cancel_requested_at: new Date().toISOString(),
-        next_attempt_at: new Date().toISOString(),
-      });
-    return;
-  }
-  const order = await orderBy(db, "subscription_id", e.resource_id);
-  if (!order) {
-    if (e.attempts <= 5) throw new Error("billing_mapping_pending");
-    return;
-  }
-  let subscription: Record<string, unknown>;
-  try {
-    subscription = await api.call<Record<string, unknown>>(
-      `/subscriptions/${e.resource_id}`,
-    );
-  } catch (failure) {
-    if (!(failure instanceof AsaasFault && failure.status === 404))
-      throw failure;
-    await saveOrder(db, order.id, {
-      status: "cancel_pending",
-      cancel_requested_at: new Date().toISOString(),
-      next_attempt_at: new Date().toISOString(),
-    });
-    return;
-  }
-  if (
-    subscription.customer !== order.customer_id ||
-    Number(subscription.value) !== 150 ||
-    subscription.cycle !== "MONTHLY"
-  )
-    throw new Error("billing_mismatch");
-  if (
-    !["cancelled", "failed"].includes(order.status) &&
-    (subscription.deleted === true || subscription.status === "INACTIVE")
-  )
-    await saveOrder(db, order.id, {
-      status: "cancel_pending",
-      cancel_requested_at: new Date().toISOString(),
-      next_attempt_at: new Date().toISOString(),
-    });
 }
 export async function cancelOrder(
   db: Db,
   api: AsaasClient,
   order: BillingOrder,
 ) {
-  if (order.method === "hosted") {
-    if (!order.checkout_id && order.financial_started)
-      throw new Error("billing_uncertain");
-    if (order.checkout_id) {
-      try {
-        await api.call(`/checkouts/${order.checkout_id}/cancel`, "POST");
-      } catch (failure) {
-        // A paid/expired/cancelled checkout is already closed for payment. Its subscription is closed below.
-        if (!(
-          failure instanceof AsaasFault &&
-          [400, 404, 409].includes(failure.status) &&
-          (order.subscription_id ||
-            (order.checkout_expires_at &&
-              Date.parse(order.checkout_expires_at) < Date.now()))
-        ))
-          throw failure;
-      }
-    }
-    if (order.subscription_id)
-      await api.call(`/subscriptions/${order.subscription_id}`, "DELETE");
-    if (
-      order.provider_billing_type === "PIX" &&
-      order.customer_id &&
-      order.subscription_id
-    ) {
-      const authorizations = await api.call<{
-        data: Array<Record<string, unknown>>;
-      }>(
-        `/pix/automatic/authorizations?customerId=${order.customer_id}&limit=100`,
-      );
-      for (const a of authorizations.data.filter(
-        (a) =>
-          a.subscriptionId === order.subscription_id && a.status === "ACTIVE",
+  if (order.billing_model !== "one_time_90d")
+    throw new Error("billing_model_changed");
+  // Paid purchases have a fixed display right; withdrawal never cancels or refunds them.
+  if (order.paid_at) return;
+  if (!order.checkout_id && order.financial_started)
+    throw new Error("billing_uncertain");
+  if (order.checkout_id) {
+    try {
+      await api.call(`/checkouts/${order.checkout_id}/cancel`, "POST");
+    } catch (failure) {
+      if (!(
+        failure instanceof AsaasFault &&
+        [400, 404, 409].includes(failure.status) &&
+        order.checkout_expires_at &&
+        Date.parse(order.checkout_expires_at) < Date.now()
       ))
-        if (providerId(a.id))
-          await api.call(`/pix/automatic/authorizations/${a.id}`, "DELETE");
+        throw failure;
     }
   }
-  // Recover an Asaas response lost between financial creation and saving its ID.
-  if (
-    order.method !== "hosted" &&
-    !order.subscription_id &&
-    !order.authorization_id
-  ) {
-    if (order.method === "card") {
-      const found = await api.call<{ data: Array<Record<string, unknown>> }>(
-        `/subscriptions?externalReference=${order.id}&limit=2`,
-      );
-      const matches = found.data.filter(
-        (s) =>
-          s.externalReference === order.id &&
-          s.customer === order.customer_id &&
-          Number(s.value) === 150 &&
-          s.cycle === "MONTHLY",
-      );
-      if (matches.length > 1) throw new Error("billing_ambiguous");
-      if (matches[0] && providerId(matches[0].id))
-        order.subscription_id = String(matches[0].id);
-    } else if (order.customer_id) {
-      const found = await api.call<{ data: Array<Record<string, unknown>> }>(
-        `/pix/automatic/authorizations?customerId=${order.customer_id}&limit=100`,
-      );
-      const matches = found.data.filter(
-        (a) =>
-          a.contractId === order.id.replaceAll("-", "") &&
-          a.customerId === order.customer_id &&
-          Number(a.value) === 150 &&
-          a.frequency === "MONTHLY",
-      );
-      if (matches.length > 1) throw new Error("billing_ambiguous");
-      if (matches[0] && providerId(matches[0].id)) {
-        order.authorization_id = String(matches[0].id);
-        if (providerId(matches[0].subscriptionId))
-          order.subscription_id = String(matches[0].subscriptionId);
-      }
-    }
-    if (order.subscription_id || order.authorization_id)
-      await saveOrder(db, order.id, {
-        subscription_id: order.subscription_id,
-        authorization_id: order.authorization_id,
-      });
-    // Never assume a timed-out creation failed: retain a visible support/retry state.
-    else if (order.financial_started) throw new Error("billing_uncertain");
-  }
-  if (order.authorization_id)
-    await api.call(
-      `/pix/automatic/authorizations/${order.authorization_id}`,
-      "DELETE",
-    );
-  if (order.method !== "hosted" && order.subscription_id)
-    await api.call(`/subscriptions/${order.subscription_id}`, "DELETE");
   const { error } = await db
     .from("member_listing_billing")
     .update({
@@ -730,87 +519,54 @@ export async function cancelOrder(
       lease_until: null,
       lease_token: null,
       error_code: null,
-      pix_payload: null,
-      pix_image: null,
     })
     .eq("id", order.id)
     .eq("lease_token", order.lease_token)
-    .eq("status", "cancel_pending");
+    .eq("status", "cancel_pending")
+    .is("paid_at", null);
   if (error) throw new Error("billing_unavailable");
 }
-async function recoverOrder(db: Db, api: AsaasClient, order: BillingOrder) {
-  if (order.method === "hosted") {
-    if (!order.checkout_id) throw new Error("billing_uncertain");
-    const { error } = await db
-      .from("member_listing_billing")
-      .update({
-        status: "pending",
-        error_code: null,
-        lease_until: null,
-        lease_token: null,
-      })
-      .eq("id", order.id)
-      .eq("status", "uncertain");
-    if (error) throw new Error("billing_unavailable");
-    return;
-  }
-  const found =
-    order.method === "card"
-      ? await api.call<{ data: Array<Record<string, unknown>> }>(
-          `/subscriptions?externalReference=${order.id}&limit=2`,
-        )
-      : await api.call<{ data: Array<Record<string, unknown>> }>(
-          `/pix/automatic/authorizations?customerId=${order.customer_id}&limit=100`,
-        );
-  const matches = found.data.filter((r) =>
-    order.method === "card"
-      ? r.externalReference === order.id &&
-        r.customer === order.customer_id &&
-        Number(r.value) === 150 &&
-        r.cycle === "MONTHLY"
-      : r.contractId === order.id.replaceAll("-", "") &&
-        r.customerId === order.customer_id &&
-        Number(r.value) === 150 &&
-        r.frequency === "MONTHLY",
-  );
-  if (matches.length !== 1 || !providerId(matches[0].id))
+async function recoverOrder(db: Db, _api: AsaasClient, order: BillingOrder) {
+  if (order.billing_model !== "one_time_90d" || !order.checkout_id)
     throw new Error("billing_uncertain");
-  const resource = matches[0];
-  if (order.method === "card") {
-    await saveOrder(db, order.id, { subscription_id: resource.id });
-    const payments = await api.call<{ data: Array<{ invoiceUrl: string }> }>(
-      `/subscriptions/${resource.id}/payments?limit=1`,
-    );
-    const url = safeAsaasPaymentUrl(payments.data[0]?.invoiceUrl);
-    if (!url) throw new Error("billing_uncertain");
-    await saveOrder(db, order.id, { payment_url: url });
-  } else {
-    await saveOrder(db, order.id, {
-      authorization_id: resource.id,
-      ...(providerId(resource.subscriptionId)
-        ? { subscription_id: resource.subscriptionId }
-        : {}),
-    });
-    // A lost QR response cannot safely be regenerated. Cancel this authorization before a new attempt.
-    await saveOrder(db, order.id, {
-      status: "cancel_pending",
-      cancel_requested_at: new Date().toISOString(),
-      next_attempt_at: new Date().toISOString(),
-    });
-    return;
-  }
   const { error } = await db
     .from("member_listing_billing")
     .update({
       status: "pending",
       error_code: null,
-      lease_token: null,
       lease_until: null,
+      lease_token: null,
     })
     .eq("id", order.id)
-    .eq("lease_token", order.lease_token)
-    .eq("status", "uncertain");
+    .eq("status", "uncertain")
+    .eq("lease_token", order.lease_token);
   if (error) throw new Error("billing_unavailable");
+}
+export async function retireLegacyListingLink(
+  api: AsaasClient,
+): Promise<string | null> {
+  const links = await api.call<{ data: Array<Record<string, unknown>> }>(
+    "/paymentLinks?name=Anuncie%20sua%20Bike&limit=100",
+  );
+  const matches = links.data.filter(
+    (l) =>
+      String(l.name).trim().toLowerCase() === "anuncie sua bike" &&
+      Number(l.value) === 150 &&
+      l.chargeType === "RECURRENT" &&
+      l.active === true,
+  );
+  if (matches.length > 1) throw new Error("ambiguous_legacy_product");
+  const old = matches[0];
+  if (!old) return null;
+  if (!providerId(old.id)) throw new Error("invalid_legacy_product");
+  const closed = await api.call<Record<string, unknown>>(
+    `/paymentLinks/${old.id}`,
+    "PUT",
+    { active: false },
+  );
+  if (closed.id !== old.id || closed.active !== false)
+    throw new Error("legacy_product_not_closed");
+  return String(old.id);
 }
 export async function listingBillingWorker(request: Request) {
   try {
@@ -883,9 +639,10 @@ export async function listingBillingWorker(request: Request) {
             ]),
           ],
         });
+        const retiredLegacyPaymentLink = await retireLegacyListingLink(api);
         const { error } = await db
           .from("member_billing_settings")
-          .update({ hosted_ready: true })
+          .update({ hosted_ready: true, purchase_ready: true })
           .eq("singleton", true);
         if (error) throw error;
         return result({
@@ -893,8 +650,11 @@ export async function listingBillingWorker(request: Request) {
           hostedReady: true,
           anonymousCheckoutCreated: true,
           checkoutCancelled: true,
+          retiredLegacyPaymentLink,
           frameBlocked,
-          recurringBillingType: "CREDIT_CARD",
+          billingTypes: ["PIX", "CREDIT_CARD"],
+          chargeType: "DETACHED",
+          displayDays: 90,
         });
       } catch (failure) {
         return result(

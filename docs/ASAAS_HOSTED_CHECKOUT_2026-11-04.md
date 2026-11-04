@@ -1,3 +1,5 @@
+> **Decisão substituída em 04/11/2026:** pagamento único de R$150 por Pix ou cartão, com 90 dias de exibição. Nenhuma escolha sobre recorrência permanece pendente. Contrato vigente: [anúncio por 90 dias](ASAAS_90_DAY_LISTINGS_2026-11-04.md).
+
 # Checkout hospedado: dados do pagador somente no Asaas
 
 Correção solicitada pelo titular em 04/11: CPF/CNPJ, cartão e escolha da forma de pagamento devem ser preenchidos diretamente no checkout do Asaas. O formulário financeiro interno não atende ao produto e será removido. Nova contratação temporariamente bloqueada; consumidores/cancelamentos continuam ativos. Não houve criação de cliente ou pedido financeiro na implementação anterior.
