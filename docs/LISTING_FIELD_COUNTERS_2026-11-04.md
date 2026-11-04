@@ -33,3 +33,9 @@ Decisão: todos os seis textos limitados do editor mostram atual/máximo e regra
 Regra de UX para próximas evoluções: todo campo com restrição deve informar a regra antes de submeter; textos usam contador atual/máximo e mínimo pertinente, números usam faixa e unidade. Este corte aplica a regra ao formulário de anúncio, sem modificar a newsletter ou outro cadastro.
 
 Evidências locais sintéticas em outputs/vitale-field-counters-2026-11-04; nenhuma cobrança/envio real. Rollback pelo frontend, sem alteração de dados ou regra de validação. Publicação autorizada neste escopo; conferência no domínio próprio após merge/deploy.
+
+## Publicação
+
+PR83 integrada em6a7aea32734f80d9c6fba80db0a4f3c73230cb53; deployment441fa157-bf1d-4836-a2f7-b39f00675fc0 no mesmo Lovable. Bundle público conta_.anuncios-COSgPssf.js conferido no domínio próprio com contador, mensagens de mínimo/restantes e máximo atingido, preservando o CTA do pagamento. Preview Netlify e headers passaram; Pages/Redirect skipped; Vercel mantém falha de baseline fora da hospedagem operacional.
+
+Conferência visual mobile: contadores quebram linha sem overflow, nomes de campos estáveis e faixas numéricas visíveis. Artefato local sintético field-counters-mobile.png. Nenhuma atualização automática da aba do responsável para evitar perda de dados não salvos. Produto, Arquitetura, Segurança, UX/UI, CX, Growth e QA: Pass no escopo publicado; IA: N/A. Sem alteração de backend/validação, dados de anúncio, pagamento, newsletter ou abertura pública.
