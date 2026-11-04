@@ -47,12 +47,15 @@ export function ListingBillingPanel({
     changed.current = onChange;
   }, [onChange]);
   const status = order?.status,
-    open = Boolean(order && !["cancelled", "failed"].includes(order.status));
+    open = Boolean(
+      order && !["cancelled", "failed", "expired"].includes(order.status),
+    );
   useEffect(() => {
-    onLockChange(busy || open);
-  }, [busy, open, onLockChange]);
+    onLockChange(busy || (open && status !== "active"));
+  }, [busy, open, status, onLockChange]);
   useEffect(() => {
-    if (status && ["cancelled", "failed"].includes(status)) setAccepted(false);
+    if (status && ["cancelled", "failed", "expired"].includes(status))
+      setAccepted(false);
   }, [status]);
   async function refresh() {
     const data = await listingBillingCall("status", listingId);
@@ -103,7 +106,7 @@ export function ListingBillingPanel({
     try {
       const data = await listingBillingCall("checkout", listingId, {
         contactConsent,
-        monthlyAccepted: accepted,
+        purchaseAccepted: accepted,
       });
       setOrder(data.order);
       await changed.current();
@@ -136,7 +139,6 @@ export function ListingBillingPanel({
     setBusy(true);
     setError("");
     try {
-      await classifiedsCall("withdraw", { id: listingId });
       await listingBillingCall("cancel", listingId);
       await refresh();
       await changed.current();
@@ -157,31 +159,28 @@ export function ListingBillingPanel({
       <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Encerrar assinatura deste anúncio?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Cancelar este pagamento?</AlertDialogTitle>
             <AlertDialogDescription>
-              A bike sairá da vitrine e solicitaremos o encerramento das
-              próximas cobranças. Uma nova contratação exigirá seu aceite
-              novamente no Asaas.
+              O checkout pendente será encerrado e seu rascunho continuará
+              salvo. Se você já pagou, atualize o status antes de continuar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Manter anúncio</AlertDialogCancel>
+            <AlertDialogCancel>Continuar pagamento</AlertDialogCancel>
             <AlertDialogAction onClick={() => void cancel()}>
-              Encerrar assinatura
+              Cancelar pagamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       <h4 id="listing-billing-title" className="text-xl font-bold text-ink">
-        R$150 por mês por anúncio
+        R$150 para anunciar por 90 dias
       </h4>
       <p className="mt-2 text-sm text-muted-foreground">
-        O pagamento por cartão é feito no checkout do Asaas, em uma nova aba. Os
-        dados do pagador e do cartão são preenchidos diretamente por lá. Ao
-        desativar ou marcar a bike como vendida, a renovação mensal será
-        encerrada.
+        Pagamento único por Pix ou cartão, diretamente no Asaas em uma nova aba.
+        Os 90 dias corridos começam na primeira publicação após a confirmação.
+        Pausar ou editar mantém o vencimento original. Não há renovação
+        automática.
       </p>
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-900">
@@ -194,19 +193,53 @@ export function ListingBillingPanel({
             {status === "active"
               ? "Pagamento confirmado"
               : status === "cancel_pending"
-                ? "Encerramento da assinatura em andamento"
+                ? "Cancelando checkout pendente"
                 : status === "uncertain"
                   ? "Conferindo a solicitação com o Asaas"
                   : "Aguardando pagamento no Asaas"}
           </p>
           {order.paidUntil && (
             <p className="text-sm">
-              Período pago até{" "}
+              Exibição até{" "}
               {new Date(order.paidUntil).toLocaleDateString("pt-BR", {
                 timeZone: "America/Sao_Paulo",
               })}
               .
             </p>
+          )}
+          {status === "active" && !order.paidUntil && !order.hold && (
+            <p className="text-sm">
+              Pagamento recebido. Revise o anúncio e publique para iniciar os 90
+              dias.
+            </p>
+          )}
+          {status === "active" && ready && !order.hold && (
+            <button
+              className={button}
+              disabled={busy || locked || !contactConsent}
+              onClick={() => {
+                setBusy(true);
+                setError("");
+                void classifiedsCall("publish", {
+                  id: listingId,
+                  contactConsent,
+                })
+                  .then(() => changed.current())
+                  .then(refresh)
+                  .catch(() =>
+                    setError(
+                      "Não foi possível publicar. Confira a ficha e a validação do seu perfil.",
+                    ),
+                  )
+                  .finally(() => setBusy(false));
+              }}
+            >
+              {busy
+                ? "Publicando…"
+                : order.paidUntil
+                  ? "Republicar no período pago"
+                  : "Publicar meu anúncio"}
+            </button>
           )}
           {order.hold && (
             <p className="text-sm text-red-900">
@@ -228,17 +261,17 @@ export function ListingBillingPanel({
             )}
           {status === "cancel_pending" && (
             <p className="text-sm text-muted-foreground">
-              A bike já saiu da vitrine. A confirmação do encerramento aparecerá
-              aqui quando o Asaas concluir o pedido.
+              Estamos encerrando o checkout pendente. Aguarde a confirmação
+              antes de iniciar outro pagamento.
             </p>
           )}
-          {status !== "cancel_pending" && (
+          {status !== "cancel_pending" && status !== "active" && (
             <button
               disabled={busy || locked}
               className="block min-h-11 text-sm text-muted-foreground underline"
               onClick={() => setConfirmCancel(true)}
             >
-              Encerrar assinatura e retirar anúncio
+              Cancelar pagamento pendente
             </button>
           )}
         </div>
@@ -246,8 +279,13 @@ export function ListingBillingPanel({
         <>
           {status === "cancelled" && (
             <p role="status" className="mt-4 text-sm text-action">
-              Assinatura encerrada. Uma nova contratação exige seu aceite
-              novamente.
+              Checkout encerrado. Seu rascunho continua salvo.
+            </p>
+          )}
+          {status === "expired" && (
+            <p role="status" className="mt-4 text-sm">
+              Os 90 dias terminaram. Para anunciar novamente, faça um novo
+              pagamento único de R$150.
             </p>
           )}
           {!configured && (
@@ -267,8 +305,8 @@ export function ListingBillingPanel({
               className="mt-1 h-5 w-5 shrink-0"
             />
             <span>
-              Quero contratar este anúncio por R$150 por mês enquanto estiver
-              ativo. Vou conferir e concluir a contratação no Asaas.
+              Quero pagar R$150 uma única vez para exibir este anúncio por 90
+              dias. Vou conferir e concluir o pagamento no Asaas.
             </span>
           </label>
           <button
@@ -284,7 +322,7 @@ export function ListingBillingPanel({
             className={`${button} mt-5 w-full`}
             onClick={() => void checkout()}
           >
-            {busy ? "Abrindo checkout…" : "Continuar no Asaas — R$150/mês"}
+            {busy ? "Abrindo checkout…" : "Pagar R$150 no Asaas"}
           </button>
         </>
       )}

@@ -1,3 +1,5 @@
+> **Decisão substituída em 04/11/2026:** pagamento único de R$150 por Pix ou cartão, com 90 dias de exibição. Nenhuma escolha sobre recorrência permanece pendente. Contrato vigente: [anúncio por 90 dias](ASAAS_90_DAY_LISTINGS_2026-11-04.md).
+
 > Fluxo financeiro inicial substituído por [checkout hospedado](ASAAS_HOSTED_CHECKOUT_2026-11-04.md): nenhum CPF/CNPJ ou formulário de pagamento na Vitale e nenhuma opção de isenção na jornada comum. Este registro preserva a evolução anterior e suas evidências.
 
 # Asaas — R$150 mensais por anúncio ativo

@@ -16,6 +16,7 @@ vi.mock("@supabase/supabase-js", () => ({
 import {
   asaasListingWebhook,
   cancelOrder,
+  retireLegacyListingLink,
   memberListingBilling,
   reconcileEvent,
   reconcilePayment,
@@ -29,10 +30,14 @@ const order = {
   id,
   user_id: owner,
   listing_id: "20000000-0000-4000-8000-000000000001",
-  method: "card",
+  method: "hosted",
+  billing_model: "one_time_90d",
+  checkout_id: "30000000-0000-4000-8000-000000000001",
+  paid_at: null,
+  display_started_at: null,
   status: "active",
   customer_id: "cus_test",
-  subscription_id: "sub_test",
+  subscription_id: null,
   authorization_id: null,
   financial_started: true,
   lease_token: "lease-test",
@@ -45,6 +50,7 @@ function chain(table: string, value: unknown) {
   for (const name of [
     "select",
     "eq",
+    "is",
     "order",
     "limit",
     "maybeSingle",
@@ -189,7 +195,7 @@ describe("anonymous hosted checkout", () => {
         action: "checkout",
         listingId: order.listing_id,
         contactConsent: true,
-        monthlyAccepted: true,
+        purchaseAccepted: true,
         ...extra,
       }),
     });
@@ -214,12 +220,11 @@ describe("anonymous hosted checkout", () => {
       error: null,
     });
     expect((await memberListingBilling(request())).status).toBe(200);
-    expect(state.rpc).toHaveBeenCalledWith("member_billing_checkout", {
+    expect(state.rpc).toHaveBeenCalledWith("member_billing_purchase", {
       p_actor: owner,
       p_id: order.listing_id,
-      p_method: "hosted",
       p_contact: true,
-      p_monthly: true,
+      p_accepted: true,
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
@@ -229,14 +234,16 @@ describe("anonymous hosted checkout", () => {
       { customerData: { cpfCnpj: "not-accepted" } },
       { value: 1 },
       { userId: "spoofed" },
+      { monthlyAccepted: true },
+      { displayDays: 900 },
     ])
       expect((await memberListingBilling(request(extra))).status).toBe(400);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
-  it("creates one fixed monthly checkout with no payer/customer fields or customer API calls", async () => {
+  it("creates one fixed one-time checkout with no payer/customer fields or customer API calls", async () => {
     state.rpc.mockImplementation(async (name: string) => ({
       data:
-        name === "member_billing_checkout"
+        name === "member_billing_purchase"
           ? { ...hosted, status: "creating", reserved: true }
           : null,
       error: null,
@@ -245,15 +252,16 @@ describe("anonymous hosted checkout", () => {
       expect(String(input)).toBe("https://api.asaas.com/v3/checkouts");
       const body = JSON.parse(String(init?.body));
       expect(body).toMatchObject({
-        billingTypes: ["CREDIT_CARD"],
-        chargeTypes: ["RECURRENT"],
+        billingTypes: ["CREDIT_CARD", "PIX"],
+        chargeTypes: ["DETACHED"],
         externalReference: id,
         items: [{ quantity: 1, value: 150 }],
-        subscription: { cycle: "MONTHLY" },
       });
       expect(body).not.toHaveProperty("customer");
       expect(body).not.toHaveProperty("customerData");
       expect(body).not.toHaveProperty("document");
+      expect(body).not.toHaveProperty("subscription");
+      expect(body).not.toHaveProperty("installment");
       return Response.json({ id: checkoutId });
     });
     const response = await memberListingBilling(request());
@@ -262,7 +270,7 @@ describe("anonymous hosted checkout", () => {
     expect(writes.some((w) => w.value.status === "active")).toBe(false);
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
   });
-  it("grants only when a GET payment matches the known checkout and authoritative monthly subscription", async () => {
+  it("grants only when a GET payment matches the known one-time checkout with no subscription", async () => {
     state.from.mockImplementation((t) => chain(t, hosted));
     await reconcilePayment(
       db(),
@@ -271,16 +279,10 @@ describe("anonymous hosted checkout", () => {
           id: "pay_hosted",
           checkoutSession: checkoutId,
           customer: "cus_hosted",
-          subscription: "sub_hosted",
           billingType: "CREDIT_CARD",
           status: "CONFIRMED",
           value: 150,
           dueDate: "2026-11-04",
-        },
-        "/subscriptions/sub_hosted": {
-          customer: "cus_hosted",
-          value: 150,
-          cycle: "MONTHLY",
         },
       }),
       "pay_hosted",
@@ -291,7 +293,7 @@ describe("anonymous hosted checkout", () => {
     );
     expect(writes[0].value).toMatchObject({
       customer_id: "cus_hosted",
-      subscription_id: "sub_hosted",
+      provider_billing_type: "CREDIT_CARD",
     });
   });
   it("checkout paid event alone never grants access or stores payer data", async () => {
@@ -333,14 +335,14 @@ describe("anonymous hosted checkout", () => {
 describe("authoritative financial reconciliation", () => {
   const paid = {
     id: "pay_test",
-    subscription: "sub_test",
+    checkoutSession: order.checkout_id,
     customer: "cus_test",
     value: 150,
     dueDate: "2026-11-04",
     billingType: "CREDIT_CARD",
     status: "CONFIRMED",
   };
-  it("uses GET payment, validates customer/amount/subscription, then records normalized proof", async () => {
+  it("uses GET payment, validates customer/amount/checkout and rejects recurring or installment payments, then records normalized proof", async () => {
     await reconcilePayment(
       db(),
       api({ "/payments/pay_test": paid }),
@@ -359,6 +361,8 @@ describe("authoritative financial reconciliation", () => {
       { customer: "cus_other" },
       { value: 1 },
       { subscription: "sub_other" },
+      { installment: "ins_other" },
+      { checkoutSession: "other_checkout" },
     ]) {
       state.rpc.mockClear();
       await expect(
@@ -388,82 +392,66 @@ describe("authoritative financial reconciliation", () => {
       }),
     );
   });
-  it("correlates the first Pix through its transaction, not only subscription", async () => {
-    const pix = {
-      ...order,
-      method: "pix_automatic",
-      subscription_id: null,
-      conciliation_id: "conc_test",
-    };
-    state.from.mockImplementation((t) => chain(t, pix));
-    await reconcilePayment(
-      db(),
-      api({
-        "/payments/pay_test": {
-          ...paid,
-          subscription: null,
-          billingType: "PIX",
-          pixTransaction: "txn_test",
-          status: "RECEIVED",
-        },
-        "/pix/transactions/txn_test": { conciliationIdentifier: "conc_test" },
-      }),
-      "pay_test",
-    );
-    expect(state.rpc).toHaveBeenCalledWith(
-      "member_billing_record_payment",
-      expect.objectContaining({ p_paid: true }),
-    );
+  it("reconciles Pix via the same owned checkout and requires received funds", async () => {
+    for (const [status, expected] of [
+      ["CONFIRMED", false],
+      ["RECEIVED", true],
+    ] as const) {
+      state.rpc.mockClear();
+      await reconcilePayment(
+        db(),
+        api({ "/payments/pay_test": { ...paid, billingType: "PIX", status } }),
+        "pay_test",
+      );
+      expect(state.rpc).toHaveBeenCalledWith(
+        "member_billing_record_payment",
+        expect.objectContaining({ p_paid: expected }),
+      );
+    }
   });
-  it("authorization ACTIVE alone never records a paid cycle", async () => {
-    state.from.mockImplementation((t) =>
-      chain(t, {
-        ...order,
-        method: "pix_automatic",
-        authorization_id: "auth_test",
-      }),
-    );
-    await reconcileEvent(
-      db(),
-      api({
-        "/pix/automatic/authorizations/auth_test": {
-          id: "auth_test",
-          customerId: "cus_test",
-          contractId: id.replaceAll("-", ""),
-          value: 150,
-          frequency: "MONTHLY",
-          paymentCreationMode: "SUBSCRIPTION",
-          status: "ACTIVE",
-        },
-      }),
-      {
-        id: "evt_test",
-        resource_id: "auth_test",
-        resource_type: "authorization",
-        lease_token: "lease",
-        attempts: 1,
-      },
-    );
+  it("ignores recurring authorization/subscription events without provider calls", async () => {
+    await reconcileEvent(db(), api({}), {
+      id: "evt_test",
+      resource_id: "auth_test",
+      resource_type: "authorization",
+      lease_token: "lease",
+      attempts: 1,
+    });
     expect(state.rpc).not.toHaveBeenCalled();
-    expect(writes[0].value).toEqual({ renewal_status: "ACTIVE" });
+    expect(writes).toHaveLength(0);
+    const r = await asaasListingWebhook(
+      webhook({
+        id: "evt_sub",
+        event: "SUBSCRIPTION_CREATED",
+        subscription: { id: "sub_test" },
+      }),
+    );
+    expect(await r.json()).toMatchObject({ ignored: true });
   });
-  it("cancels only the known recurrence and declares closed after provider success", async () => {
+  it("closes only an unpaid checkout and never creates/deletes a subscription", async () => {
     await cancelOrder(
       db(),
-      api({ "/subscriptions/sub_test": { deleted: true } }),
+      api({
+        [`/checkouts/${order.checkout_id}/cancel`]: { status: "CANCELED" },
+      }),
       { ...order, status: "cancel_pending" },
     );
     expect(writes.at(-1).value.status).toBe("cancelled");
   });
-  it("lost creation is looked up before cancellation; missing uncertain resource remains pending", async () => {
+  it("never cancels a paid purchase when an ad is paused", async () => {
+    await cancelOrder(db(), api({}), {
+      ...order,
+      paid_at: new Date().toISOString(),
+    });
+    expect(writes).toHaveLength(0);
+  });
+  it("never retries an uncertain checkout creation or assumes cancellation succeeded", async () => {
     await expect(
-      cancelOrder(
-        db(),
-        api({
-          [`/subscriptions?externalReference=${id}&limit=2`]: { data: [] },
-        }),
-        { ...order, subscription_id: null, error_code: "creation_uncertain" },
-      ),
+      cancelOrder(db(), api({}), {
+        ...order,
+        checkout_id: null,
+        financial_started: true,
+      }),
     ).rejects.toThrow("billing_uncertain");
     expect(writes.some((w) => w.value.status === "cancelled")).toBe(false);
   });
@@ -515,6 +503,7 @@ it("validates an anonymous hosted session without completing payment and cancels
     }
     if (url.endsWith(`/checkouts/${checkoutId}/cancel`))
       return Response.json({ status: "CANCELED" });
+    if (url.includes("/paymentLinks?")) return Response.json({ data: [] });
     if (url.includes("/webhooks?"))
       return Response.json({
         data: [
@@ -558,7 +547,7 @@ it("validates an anonymous hosted session without completing payment and cancels
   expect(writes.some((w) => w.value.hosted_ready === true)).toBe(true);
 });
 
-it("cancels a hosted card subscription without accessing the unrelated Pix authorization API", async () => {
+it("cancels an unpaid hosted checkout without accessing subscription or Pix automatic APIs", async () => {
   const hosted = {
     ...order,
     method: "hosted",
@@ -573,7 +562,6 @@ it("cancels a hosted card subscription without accessing the unrelated Pix autho
       "/checkouts/30000000-0000-4000-8000-000000000001/cancel": {
         status: "CANCELED",
       },
-      "/subscriptions/sub_test": { deleted: true },
     }),
     hosted,
   );
@@ -586,7 +574,7 @@ it("a partial refund in authoritative metadata cannot retain a confirmed payment
     api({
       "/payments/pay_partial": {
         id: "pay_partial",
-        subscription: "sub_test",
+        checkoutSession: order.checkout_id,
         customer: "cus_test",
         value: 150,
         dueDate: "2026-11-04",
@@ -601,4 +589,51 @@ it("a partial refund in authoritative metadata cannot retain a confirmed payment
     "member_billing_record_payment",
     expect.objectContaining({ p_paid: false, p_status: "REFUND_IN_PROGRESS" }),
   );
+});
+
+it("retires only the exact legacy monthly bike product and leaves other merchant products alone", async () => {
+  const calls: any[] = [];
+  const a = new AsaasClient(
+    "test",
+    "sandbox",
+    vi.fn(async (input, init) => {
+      calls.push({
+        path: String(input),
+        method: init?.method ?? "GET",
+        body: init?.body,
+      });
+      if (String(input).includes("paymentLinks?"))
+        return Response.json({
+          data: [
+            {
+              id: "pl_vitale",
+              name: "Anuncie sua Bike",
+              value: 150,
+              chargeType: "RECURRENT",
+              active: true,
+            },
+            {
+              id: "pl_other",
+              name: "Outro produto",
+              value: 150,
+              chargeType: "RECURRENT",
+              active: true,
+            },
+            {
+              id: "pl_oneoff",
+              name: "Anuncie sua Bike",
+              value: 150,
+              chargeType: "DETACHED",
+              active: true,
+            },
+          ],
+        });
+      expect(String(input)).toContain("/paymentLinks/pl_vitale");
+      expect(init?.method).toBe("PUT");
+      expect(JSON.parse(String(init?.body))).toEqual({ active: false });
+      return Response.json({ id: "pl_vitale", active: false });
+    }),
+  );
+  expect(await retireLegacyListingLink(a)).toBe("pl_vitale");
+  expect(calls).toHaveLength(2);
 });

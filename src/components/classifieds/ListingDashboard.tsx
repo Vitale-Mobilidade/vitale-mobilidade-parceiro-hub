@@ -188,6 +188,17 @@ export function ListingDashboard({
                         timeZone: "America/Sao_Paulo",
                       })}
                     </p>
+                    {listing.displayExpiresAt && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {Date.parse(listing.displayExpiresAt) > Date.now()
+                          ? "Exibição até "
+                          : "Período encerrado em "}
+                        {new Date(listing.displayExpiresAt).toLocaleDateString(
+                          "pt-BR",
+                          { timeZone: "America/Sao_Paulo" },
+                        )}
+                      </p>
+                    )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       {(listing.status === "draft" ||
                         listing.status === "published") && (

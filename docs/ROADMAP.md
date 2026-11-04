@@ -1,3 +1,5 @@
+> **04/11/2026 — nova decisão comercial dos classificados:** R$150 em pagamento único por Pix ou cartão, com 90 dias desde primeira publicação após confirmação; sem assinatura ou renovação automática. Checkout e dados de pagador somente no Asaas. Abertura pública continua suspensa. [Contrato, testes e integração](ASAAS_90_DAY_LISTINGS_2026-11-04.md).
+
 # Roadmap Vitale Mobilidade
 
 > **04/11/2026 — correção da jornada do anunciante:** o responsável rejeitou a apresentação administrativa de canal. Perfil/menu/painel/editor passam a usar a mesma jornada de anunciante comum; origem das bikes e isenção ficam como atributos do anúncio, sem área administrativa separada. [Registro e evidências](./NORMAL_ADVERTISER_EXPERIENCE_2026-11-04.md).
