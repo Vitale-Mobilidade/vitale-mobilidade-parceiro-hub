@@ -38,4 +38,6 @@ Critérios: header desktop/mobile sem Venda e sem Entrar anônimo; sessão váli
 
 Validação exclusivamente local com Auth/Storage/RPC sintéticos e cinco fotos canvas. Sem mensagens, pagamentos ou anúncios reais. O preview por `vite preview` não funcionou neste ambiente devido à referência esperada `dist/server/server.js`; não é evidência sobre funcionamento do deploy Lovable. Build SSR passou e smoke Vite passou. A sessão real de gpalmerio não foi inspecionada ou substituída: não há logout, token editado, senha redefinida ou usuário removido. O responsável mantém a sessão em seu Chrome.
 
+Lint: regras funcionais dos cinco módulos alterados verificadas. O lint padrão encontrou formatação Prettier já extensa em HomeB2C; os trechos novos foram ajustados sem reformatar a página inteira.
+
 Estado: GO para ocultar somente a descoberta pública, autorizado pela instrução atual; verificação no domínio pendente. Nenhum bloqueio total será publicado.

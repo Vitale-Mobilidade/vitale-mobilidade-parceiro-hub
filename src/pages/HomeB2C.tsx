@@ -451,9 +451,11 @@ const HomeB2C = () => {
           </div>
           <ArticlesBlock articles={data?.articles ?? []} />
           {memberPublicNavigationEnabled && (
-            <BikeClassifiedsSection items={data.classifieds.items} unavailable={!data.classifieds.ok} />
+            <BikeClassifiedsSection
+              items={data.classifieds.items}
+              unavailable={!data.classifieds.ok}
+            />
           )}
-
         </div>
       </main>
       <SiteFooter />

@@ -1,5 +1,8 @@
 import { AccountMenu } from "@/components/members/AccountMenu";
-import { memberAccountsEnabled, memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
+import {
+  memberAccountsEnabled,
+  memberPublicNavigationEnabled,
+} from "@/lib/member-accounts-feature";
 import { externalLinkProps } from "@/lib/external-link";
 import { useState, type ReactNode } from "react";
 import { bikeImageFallback } from "@/lib/bike-catalog";
