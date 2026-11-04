@@ -56,6 +56,42 @@ export const listingInputSchema = z.object({
   description: text(20, 4000),
   maintenance: text(0, 1000),
 });
+/** A useful default title, without replacing the seller's own title or inventing facts. */
+export function listingWithTitle<
+  T extends { title: string; brand: string; model: string },
+>(value: T): T {
+  const title = value.title.trim();
+  return {
+    ...value,
+    title:
+      title && title !== "Minha bike"
+        ? title
+        : value.brand.trim() && value.model.trim()
+          ? `${value.brand.trim()} ${value.model.trim()}`.slice(0, 100)
+          : "",
+  };
+}
+export const LISTING_FIELD_LABELS: Record<string, string> = {
+  title: "Título do anúncio (ao menos 6 caracteres)",
+  brand: "Marca",
+  model: "Modelo",
+  priceCents: "Preço de venda",
+  city: "Cidade",
+  state: "Estado",
+  mileageKm: "Quilometragem",
+  description: "Descrição da bike (ao menos 20 caracteres)",
+  modelYear: "Ano do modelo",
+  condition: "Conservação",
+  battery: "Bateria",
+  invoice: "Nota fiscal",
+  maintenance: "Manutenção",
+};
+export function missingListingFields(value: unknown): string[] {
+  const checked = listingInputSchema.safeParse(value);
+  return checked.success
+    ? []
+    : [...new Set(checked.error.issues.map((issue) => String(issue.path[0])))];
+}
 export const listingDraftInputSchema = listingInputSchema.extend({
   title: text(0, 100).refine((value) => value.length !== 1),
   brand: text(0, 60),
