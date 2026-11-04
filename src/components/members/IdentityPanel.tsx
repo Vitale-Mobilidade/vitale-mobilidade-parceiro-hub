@@ -30,6 +30,7 @@ export function IdentityPanel({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState<"email" | "phone" | null>(null);
   const [retry, setRetry] = useState(0);
   const [phone, setPhone] = useState(initialPhone);
   const [consent, setConsent] = useState(Boolean(initialPhone));
@@ -64,11 +65,12 @@ export function IdentityPanel({
     setError("");
     setMessage("");
     setBusy(true);
+    setSending(channel);
+    setCodes((old) => ({ ...old, [channel]: "" }));
     try {
       await requestMemberIdentityCode(channel, phone, consent);
       setDeliveryErrors((old) => ({ ...old, [channel]: false }));
       setSent((old) => ({ ...old, [channel]: true }));
-      setCodes((old) => ({ ...old, [channel]: "" }));
       setMessage(
         channel === "email"
           ? "Enviamos um código para seu e-mail. Ele vale por dez minutos."
@@ -76,13 +78,13 @@ export function IdentityPanel({
       );
     } catch (e) {
       setDeliveryErrors((old) => ({ ...old, [channel]: true }));
-      setError(
+      if (!(
         e instanceof Error && e.message === "identity_delivery_unavailable"
-          ? "Não foi possível confirmar o envio agora. Se o código já chegou, digite-o abaixo."
-          : memberError(e),
-      );
+      ))
+        setError(memberError(e));
     } finally {
       setBusy(false);
+      setSending(null);
     }
   }
   async function verify(event: FormEvent, channel: "email" | "phone") {
@@ -218,9 +220,8 @@ export function IdentityPanel({
                     )}
                     {deliveryErrors[channel] && (
                       <p role="alert" className="mt-3 text-sm text-red-800">
-                        A confirmação do envio não chegou a tempo. Se você
-                        recebeu o código, pode digitá-lo abaixo. Aguarde antes
-                        de pedir outro.
+                        Não conseguimos confirmar o envio. Se o código chegou,
+                        digite-o abaixo. Aguarde antes de pedir outro.
                       </p>
                     )}
                     <button
@@ -233,12 +234,23 @@ export function IdentityPanel({
                       }
                       onClick={() => void requestCode(channel)}
                     >
-                      {sent[channel]
-                        ? "Reenviar código"
-                        : channel === "email"
-                          ? "Enviar código por e-mail"
-                          : "Enviar código pelo WhatsApp"}
+                      {sending === channel
+                        ? "Enviando código…"
+                        : sent[channel]
+                          ? "Reenviar código"
+                          : channel === "email"
+                            ? "Enviar código por e-mail"
+                            : "Enviar código pelo WhatsApp"}
                     </button>
+                    {sending === channel && (
+                      <p
+                        role="status"
+                        className="mt-3 text-sm text-muted-foreground"
+                      >
+                        Aguarde um instante. O envio pode levar alguns segundos;
+                        você já pode digitar o código assim que ele chegar.
+                      </p>
+                    )}
                     <form
                       onSubmit={(event) => void verify(event, channel)}
                       className="mt-4"
@@ -252,7 +264,9 @@ export function IdentityPanel({
                       </label>
                       <input
                         id={`identity-code-${channel}`}
-                        className={field}
+                        className={`${field} max-w-xs text-center text-2xl font-semibold tracking-[0.35em]`}
+                        placeholder="000000"
+                        aria-describedby={`identity-code-hint-${channel}`}
                         value={codes[channel] ?? ""}
                         onChange={(e) =>
                           setCodes((old) => ({
@@ -268,6 +282,16 @@ export function IdentityPanel({
                         maxLength={6}
                         required
                       />
+                      <p
+                        id={`identity-code-hint-${channel}`}
+                        className="mt-2 text-sm text-muted-foreground"
+                      >
+                        Digite os seis dígitos que chegaram{" "}
+                        {channel === "email"
+                          ? "no seu e-mail"
+                          : "no seu WhatsApp"}
+                        .
+                      </p>
                       <button
                         className={button}
                         disabled={busy || !/^\d{6}$/.test(codes[channel] ?? "")}

@@ -28,3 +28,13 @@ Produto, Arquitetura, Segurança, UX, CX, Growth e QA: Pass local com as evidên
 O ACK do desafio afetado foi recuperado pelo writer privado member_identity_service(delivered), após confrontar no Hotpipe a chave de idempotência, HTTP200, code=sent, provider_id presente e telefone/template exatos. Isso não concede prova do celular nem consome o OTP. E-mail foi efetivamente validado pelo responsável; celular depende de digitação do código por ele.
 
 Implantação: necessária a ferramenta exclusiva Lovable para reimplantar seletivamente member-identity-code com o helper do Git atualizado; não existe CLI autenticada disponível. Operação limitada, custo pequeno de implantação, sem pedido de geração ou mudança de módulo. Não repetir envio real antes dessa publicação e da solicitação do responsável. Não confundir ACK com confirmação no aparelho nem com validação do celular.
+
+## Clareza da entrada do código
+
+Pedido adicional do responsável: campo sempre visível para o código já recebido, seis dígitos com indicação do canal, botão Enviando código durante a solicitação e orientação breve. Uma falha de confirmação não atribui problema ao telefone nem manda reenviar imediatamente. Mantém mesma RPC de verificação e não gera envio ao renderizar/atualizar. Revisa Produto/UX/CX/QA; demais fronteiras técnicas e permissões do parecer estrutural permanecem inalteradas.
+
+A função member-identity-code foi reimplantada seletivamente pelo Lovable a partir da PR78; helper45s conferido sem diff autorizado. Custo informado pela resposta estruturada0,8 crédito (apesar do texto do agente dizer sem consumo); nenhum outro serviço/função/secret/banco alterado. Recibo WhatsApp afetado também apresentou provider_status=delivered, sem falha.
+
+Validação final da clareza: Playwright mobile/desktop passou, incluindo entrada durante requisição pendente, preservação do código após ACK tardio, reload sem reenvio e recuperação/cadastro/perfil. pnpm validate limpo em log separado, sem processos concorrentes, passou com66 regressões, typecheck e builds. Lint dirigido e diff check passaram. Produto/UX/CX/QA: Pass; Arquitetura/Segurança/Growth: Pass (mesmos contratos e sem alterações de permissões); IA: N/A. Sem outro envio real neste refinamento. Código não é apagado quando a confirmação chega.
+
+O responsável decidiu preencher os dados da bike manualmente depois. Não preencher nem criar anúncio fictício para demonstrar o checkout. Sua prova de e-mail está válida; a prova de celular ainda depende de um código válido digitado por ele. Não registrar ACK como prova de identidade.
