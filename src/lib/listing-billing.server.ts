@@ -1,3 +1,4 @@
+import { CHECKOUT_WINDOW_MINUTES, CHECKOUT_WINDOW_MS } from "./checkout-window";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
@@ -39,6 +40,7 @@ export type BillingOrder = {
   subscription_id: string | null;
   checkout_id: string | null;
   checkout_expires_at: string | null;
+  created_at: string;
   provider_billing_type: string | null;
   authorization_id: string | null;
   conciliation_id: string | null;
@@ -67,6 +69,7 @@ function projection(order: BillingOrder | null) {
         method: order.method,
         status: order.status,
         paymentUrl: safeAsaasPaymentUrl(order.payment_url),
+        checkoutExpiresAt: order.checkout_expires_at,
         displayStartedAt: order.display_started_at,
         paidUntil: order.paid_until,
         hold: order.hold,
@@ -124,6 +127,7 @@ export async function memberListingBilling(request: Request) {
         .eq("singleton", true)
         .single();
       return result({
+        serverNow: new Date().toISOString(),
         configured: Boolean(
           settings?.enabled &&
           settings.provider_ready &&
@@ -200,11 +204,14 @@ export async function memberListingBilling(request: Request) {
       if (error) throw new AsaasFault(503);
       if (!data?.length) throw new Error("billing_cancelled");
       started = true;
+      const startedAt = Date.now();
       const checkout = await createHostedCheckout(api, order.id, listing.title);
       await saveOrder(db, order.id, {
         checkout_id: checkout.id,
         payment_url: checkout.url,
-        checkout_expires_at: new Date(Date.now() + 3600000).toISOString(),
+        checkout_expires_at: new Date(
+          startedAt + CHECKOUT_WINDOW_MS,
+        ).toISOString(),
       });
       const { error: updateError } = await db
         .from("member_listing_billing")
@@ -259,7 +266,7 @@ export async function createHostedCheckout(
     {
       billingTypes: ["CREDIT_CARD", "PIX"],
       chargeTypes: ["DETACHED"],
-      minutesToExpire: 60,
+      minutesToExpire: CHECKOUT_WINDOW_MINUTES,
       externalReference: reference,
       callback: {
         successUrl: "https://vitalemobilidade.com/conta/anuncios",
@@ -568,6 +575,43 @@ export async function retireLegacyListingLink(
     throw new Error("legacy_product_not_closed");
   return String(old.id);
 }
+/** Retire an unpaid legacy quote only after Asaas accepts cancellation. Never replace a paid intent. */
+export async function retireLegacyCheckout(
+  db: Db,
+  api: AsaasClient,
+  order: BillingOrder,
+) {
+  if (
+    order.billing_model !== "one_time_90d" ||
+    order.method !== "hosted" ||
+    order.paid_at ||
+    order.status !== "pending" ||
+    !order.checkout_id ||
+    !order.checkout_expires_at ||
+    !Number.isFinite(Date.parse(order.created_at)) ||
+    !Number.isFinite(Date.parse(order.checkout_expires_at)) ||
+    Date.parse(order.checkout_expires_at) - Date.parse(order.created_at) <=
+      11 * 60000
+  )
+    return false;
+  await api.call(`/checkouts/${order.checkout_id}/cancel`, "POST");
+  const { error } = await db
+    .from("member_listing_billing")
+    .update({
+      status: "cancelled",
+      publish_requested: false,
+      cancel_requested_at: new Date().toISOString(),
+      cancelled_at: new Date().toISOString(),
+      lease_until: null,
+      lease_token: null,
+      error_code: null,
+    })
+    .eq("id", order.id)
+    .in("status", ["pending", "cancel_pending", "uncertain"])
+    .is("paid_at", null);
+  if (error) throw new Error("billing_unavailable");
+  return true;
+}
 export async function listingBillingWorker(request: Request) {
   try {
     const db = database();
@@ -584,6 +628,28 @@ export async function listingBillingWorker(request: Request) {
       return result({ ok: false, configured: false }, 503);
     const api = provider();
     const command = await request.json().catch(() => ({}));
+    if (command.action === "retire_legacy_checkout") {
+      if (!uuid.safeParse(command.orderId).success)
+        return result({ error: "invalid_input" }, 400);
+      const order = await orderBy(db, "id", command.orderId);
+      if (!order) return result({ error: "listing_unavailable" }, 404);
+      try {
+        return result({
+          ok: true,
+          retired: await retireLegacyCheckout(db, api, order),
+        });
+      } catch (failure) {
+        return result(
+          {
+            ok: false,
+            retired: false,
+            providerHttpStatus:
+              failure instanceof AsaasFault ? failure.status : 0,
+          },
+          409,
+        );
+      }
+    }
     if (command.action === "validate_hosted_checkout") {
       const { data: gate } = await db
         .from("member_billing_settings")

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { checkoutClock, checkoutSecondsRemaining } from "@/lib/checkout-window";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Clock3, ExternalLink, LoaderCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ export function ListingBillingPanel({
   active,
   reason,
   contactConsent,
+  onConsentChange,
   onChange,
   onLockChange,
 }: {
@@ -32,15 +34,17 @@ export function ListingBillingPanel({
   active: boolean;
   reason: string;
   contactConsent: boolean;
+  onConsentChange: (value: boolean) => void;
   onChange: () => Promise<void>;
   onLockChange: (v: boolean) => void;
 }) {
   const [configured, setConfigured] = useState<boolean | null>(null),
     [order, setOrder] = useState<BillingOrderView | null>(null),
-    [accepted, setAccepted] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmCancel, setConfirmCancel] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  const clockOffset = useRef(0);
   const previous = useRef<string | undefined>(undefined),
     changed = useRef(onChange);
   useEffect(() => {
@@ -55,44 +59,77 @@ export function ListingBillingPanel({
   }, [busy, open, status, onLockChange]);
   useEffect(() => {
     if (status && ["cancelled", "failed", "expired"].includes(status))
-      setAccepted(false);
-  }, [status]);
+      onConsentChange(false);
+  }, [status, onConsentChange]);
+  const apply = useCallback(
+    async (data: Awaited<ReturnType<typeof listingBillingCall>>) => {
+      if (data.serverNow && Number.isFinite(Date.parse(data.serverNow)))
+        clockOffset.current = Date.parse(data.serverNow) - Date.now();
+      setNow(Date.now());
+      setConfigured(data.configured === true);
+      setOrder(data.order);
+      if (previous.current && previous.current !== data.order?.status)
+        await changed.current();
+      previous.current = data.order?.status;
+      setError((old) =>
+        data.order?.status === "active" ||
+        old.startsWith("A conexão está oscilando")
+          ? ""
+          : old,
+      );
+    },
+    [],
+  );
   async function refresh() {
-    const data = await listingBillingCall("status", listingId);
-    setConfigured(data.configured === true);
-    setOrder(data.order);
-    if (previous.current && previous.current !== data.order?.status)
-      await changed.current();
-    previous.current = data.order?.status;
+    await apply(await listingBillingCall("status", listingId));
   }
   useEffect(() => {
     if (!active) return;
-    let current = true;
-    const update = () =>
-      void listingBillingCall("status", listingId)
-        .then((data) => {
-          if (!current) return;
-          setConfigured(data.configured === true);
-          setOrder(data.order);
-          if (previous.current && previous.current !== data.order?.status)
-            void changed.current();
-          previous.current = data.order?.status;
-        })
-        .catch(() => {
-          if (current)
-            setError("Não foi possível atualizar o pagamento agora.");
-        });
-    update();
-    window.addEventListener("focus", update);
-    const timer = window.setInterval(() => {
-      if (window.document.visibilityState === "visible") update();
-    }, 15000);
+    let current = true,
+      inFlight = false;
+    const update = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const data = await listingBillingCall("status", listingId);
+        if (current) await apply(data);
+      } catch {
+        if (current)
+          setError(
+            "A conexão está oscilando. Continuaremos verificando seu pagamento automaticamente.",
+          );
+      } finally {
+        inFlight = false;
+      }
+    };
+    void update();
+    const focus = () => void update();
+    window.addEventListener("focus", focus);
+    const waiting =
+      !status ||
+      ["creating", "pending", "uncertain", "cancel_pending"].includes(status);
+    const timer = waiting
+      ? window.setInterval(() => {
+          if (document.visibilityState === "visible") void update();
+        }, 5000)
+      : undefined;
     return () => {
       current = false;
-      window.removeEventListener("focus", update);
-      window.clearInterval(timer);
+      window.removeEventListener("focus", focus);
+      if (timer) window.clearInterval(timer);
     };
-  }, [listingId, active]);
+  }, [listingId, active, status, apply]);
+  const deadline = order?.checkoutExpiresAt;
+  const remaining = checkoutSecondsRemaining(
+    deadline,
+    now + clockOffset.current,
+  );
+  useEffect(() => {
+    if (!active || status !== "pending" || !deadline) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [active, status, deadline]);
   async function checkout() {
     const paymentTab = window.open("about:blank", "_blank");
     if (paymentTab) {
@@ -106,7 +143,7 @@ export function ListingBillingPanel({
     try {
       const data = await listingBillingCall("checkout", listingId, {
         contactConsent,
-        purchaseAccepted: accepted,
+        purchaseAccepted: contactConsent,
       });
       setOrder(data.order);
       await changed.current();
@@ -115,11 +152,11 @@ export function ListingBillingPanel({
           paymentTab.location.replace(data.order.paymentUrl);
         else
           setError(
-            "O checkout está pronto. Use o botão Continuar pagamento no Asaas para abrir uma nova aba.",
+            "O checkout está pronto. Use o botão Seguir para pagamento de R$150 para abrir uma nova aba.",
           );
       } else
         setError(
-          "A solicitação está sendo conferida. Atualize o status antes de tentar novamente.",
+          "Estamos conferindo a solicitação. A confirmação aparecerá automaticamente nesta página.",
         );
     } catch (e) {
       if (paymentTab && !paymentTab.closed) {
@@ -144,7 +181,7 @@ export function ListingBillingPanel({
       await changed.current();
     } catch {
       setError(
-        "Não foi possível confirmar o encerramento agora. Atualize o status; o pedido continuará sendo processado.",
+        "Ainda não recebemos a confirmação do encerramento. Continuaremos acompanhando automaticamente.",
       );
     } finally {
       setBusy(false);
@@ -162,7 +199,8 @@ export function ListingBillingPanel({
             <AlertDialogTitle>Cancelar este pagamento?</AlertDialogTitle>
             <AlertDialogDescription>
               O checkout pendente será encerrado e seu rascunho continuará
-              salvo. Se você já pagou, atualize o status antes de continuar.
+              salvo. Se você já pagou, aguarde a confirmação automática antes de
+              cancelar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -187,6 +225,33 @@ export function ListingBillingPanel({
           {error}
         </p>
       )}
+      {(!open || (status === "active" && ready && !order?.hold)) && (
+        <label
+          className="mt-5 flex items-start gap-3 text-sm"
+          data-testid="publication-consent"
+        >
+          <input
+            type="checkbox"
+            checked={contactConsent}
+            disabled={busy || locked}
+            onChange={(e) => onConsentChange(e.target.checked)}
+            className="mt-1 h-5 w-5 shrink-0"
+          />
+          <span>
+            Confirmo as informações e fotos da bike e autorizo meu nome, foto de
+            perfil e WhatsApp verificado neste anúncio para receber contatos de
+            compradores.
+            {status !== "active" &&
+              " Aceito o pagamento único de R$150 por 90 dias de exibição, sem renovação automática."}
+          </span>
+        </label>
+      )}
+      {busy && !open && (
+        <p role="status" className="mt-4 flex items-center gap-2 text-sm">
+          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Preparando seu pagamento…
+        </p>
+      )}
       {open && order ? (
         <div className="mt-5 space-y-4">
           <p role="status" className="rounded-xl bg-surface p-4 font-semibold">
@@ -198,6 +263,46 @@ export function ListingBillingPanel({
                   ? "Conferindo a solicitação com o Asaas"
                   : "Aguardando pagamento no Asaas"}
           </p>
+          {status === "pending" && remaining !== null && (
+            <div
+              className="rounded-xl border border-line bg-surface p-4"
+              data-testid="payment-countdown"
+            >
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <Clock3 className="h-5 w-5" aria-hidden="true" />
+                Tempo para concluir o pagamento
+              </p>
+              <p
+                role="timer"
+                aria-label="Tempo restante para pagar"
+                aria-live="off"
+                className="mt-2 text-3xl font-bold tabular-nums text-ink"
+              >
+                {checkoutClock(remaining)}
+              </p>
+              {remaining === 0 && (
+                <p className="mt-2 text-sm">
+                  O prazo deste checkout terminou. Se já pagou, aguarde a
+                  confirmação; estamos verificando.
+                </p>
+              )}
+            </div>
+          )}
+          {["creating", "pending", "uncertain", "cancel_pending"].includes(
+            status ?? "",
+          ) && (
+            <p
+              role="status"
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+            >
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+              Verificando o pagamento automaticamente. A confirmação aparecerá
+              aqui.
+            </p>
+          )}
           {order.paidUntil && (
             <p className="text-sm">
               Exibição até{" "}
@@ -247,16 +352,17 @@ export function ListingBillingPanel({
             </p>
           )}
           {status === "pending" &&
+            (remaining === null || remaining > 0) &&
             order.paymentUrl &&
             safePaymentLink(order.paymentUrl) && (
               <a
                 href={order.paymentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={button}
+                className={`${button} flex w-full sm:ml-auto sm:w-auto`}
               >
                 <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                Continuar pagamento no Asaas
+                Seguir para pagamento de R$150
               </a>
             )}
           {status === "cancel_pending" && (
@@ -302,27 +408,10 @@ export function ListingBillingPanel({
           {reason && (
             <p className="mt-4 text-sm text-muted-foreground">{reason}</p>
           )}
-          <label className="mt-5 flex items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              className="mt-1 h-5 w-5 shrink-0"
-            />
-            <span>
-              Quero pagar R$150 uma única vez para exibir este anúncio por 90
-              dias. Vou conferir e concluir o pagamento no Asaas.
-            </span>
-          </label>
           <button
             type="button"
             disabled={
-              busy ||
-              locked ||
-              !ready ||
-              !contactConsent ||
-              !accepted ||
-              !configured
+              busy || locked || !ready || !contactConsent || !configured
             }
             className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
             onClick={() => void checkout()}
@@ -331,19 +420,6 @@ export function ListingBillingPanel({
           </button>
         </>
       )}
-      <button
-        type="button"
-        className="mt-4 inline-flex min-h-11 items-center gap-2 font-semibold text-action underline"
-        disabled={busy}
-        onClick={() =>
-          void refresh().catch(() =>
-            setError("Não foi possível atualizar agora."),
-          )
-        }
-      >
-        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-        Atualizar pagamento
-      </button>
     </section>
   );
 }

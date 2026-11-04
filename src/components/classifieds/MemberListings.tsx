@@ -1079,21 +1079,6 @@ function ListingEditor({
                   . Você já pode preparar o rascunho.
                 </p>
               )}
-              <label className="mt-5 flex items-start gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-5 w-5 shrink-0"
-                  disabled={busy}
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                />
-                <span>
-                  Autorizo a divulgação do meu nome, foto de perfil e WhatsApp
-                  verificado neste anúncio para receber contatos de compradores.
-                  Confirmo que as informações e fotos são da bike que estou
-                  anunciando.
-                </span>
-              </label>
             </>
           ) : (
             <div className="mt-5 flex flex-wrap gap-4">
@@ -1166,6 +1151,7 @@ function ListingEditor({
               ready={draft && canPublish && publishReady}
               locked={busy || dirty}
               contactConsent={consent}
+              onConsentChange={setConsent}
               onChange={onChange}
               onLockChange={setBillingLocked}
             />
