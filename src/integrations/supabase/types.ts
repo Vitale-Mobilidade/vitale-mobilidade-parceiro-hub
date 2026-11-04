@@ -1415,20 +1415,113 @@ export type Database = {
           },
         ]
       }
+      member_billing_customers: {
+        Row: {
+          asaas_customer_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          asaas_customer_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          asaas_customer_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      member_billing_events: {
+        Row: {
+          attempts: number
+          available_at: string
+          created_at: string
+          id: string
+          kind: string
+          lease_token: string | null
+          lease_until: string | null
+          order_reference: string | null
+          resource_id: string
+          resource_type: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          id: string
+          kind: string
+          lease_token?: string | null
+          lease_until?: string | null
+          order_reference?: string | null
+          resource_id: string
+          resource_type: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          order_reference?: string | null
+          resource_id?: string
+          resource_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      member_billing_settings: {
+        Row: {
+          enabled: boolean
+          hosted_ready: boolean
+          last_health_at: string | null
+          provider_ready: boolean
+          purchase_ready: boolean
+          signing_key: string
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          hosted_ready?: boolean
+          last_health_at?: string | null
+          provider_ready?: boolean
+          purchase_ready?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          hosted_ready?: boolean
+          last_health_at?: string | null
+          provider_ready?: boolean
+          purchase_ready?: boolean
+          signing_key?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       member_classifieds_settings: {
         Row: {
+          channel_seller_user_id: string | null
           enabled: boolean
           listing_fee_cents: number
           pilot_user_id: string | null
           singleton: boolean
         }
         Insert: {
+          channel_seller_user_id?: string | null
           enabled?: boolean
           listing_fee_cents?: number
           pilot_user_id?: string | null
           singleton?: boolean
         }
         Update: {
+          channel_seller_user_id?: string | null
           enabled?: boolean
           listing_fee_cents?: number
           pilot_user_id?: string | null
@@ -1530,6 +1623,181 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "member_profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      member_listing_billing: {
+        Row: {
+          amount_cents: number
+          attempts: number
+          authorization_id: string | null
+          billing_model: string
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          checkout_expires_at: string | null
+          checkout_id: string | null
+          conciliation_id: string | null
+          contact_consent_at: string
+          created_at: string
+          customer_id: string | null
+          display_days: number
+          display_started_at: string | null
+          error_code: string | null
+          financial_started: boolean
+          hold: boolean
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          listing_id: string
+          listing_revision: string
+          method: string
+          monthly_accepted_at: string
+          monthly_cents: number
+          next_attempt_at: string
+          paid_at: string | null
+          paid_until: string | null
+          payment_url: string | null
+          pix_image: string | null
+          pix_payload: string | null
+          provider_billing_type: string | null
+          publish_requested: boolean
+          purchase_accepted_at: string | null
+          qr_expires_at: string | null
+          renewal_status: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          attempts?: number
+          authorization_id?: string | null
+          billing_model?: string
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          checkout_expires_at?: string | null
+          checkout_id?: string | null
+          conciliation_id?: string | null
+          contact_consent_at: string
+          created_at?: string
+          customer_id?: string | null
+          display_days?: number
+          display_started_at?: string | null
+          error_code?: string | null
+          financial_started?: boolean
+          hold?: boolean
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          listing_id: string
+          listing_revision: string
+          method: string
+          monthly_accepted_at: string
+          monthly_cents?: number
+          next_attempt_at?: string
+          paid_at?: string | null
+          paid_until?: string | null
+          payment_url?: string | null
+          pix_image?: string | null
+          pix_payload?: string | null
+          provider_billing_type?: string | null
+          publish_requested?: boolean
+          purchase_accepted_at?: string | null
+          qr_expires_at?: string | null
+          renewal_status?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          attempts?: number
+          authorization_id?: string | null
+          billing_model?: string
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          checkout_expires_at?: string | null
+          checkout_id?: string | null
+          conciliation_id?: string | null
+          contact_consent_at?: string
+          created_at?: string
+          customer_id?: string | null
+          display_days?: number
+          display_started_at?: string | null
+          error_code?: string | null
+          financial_started?: boolean
+          hold?: boolean
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          listing_id?: string
+          listing_revision?: string
+          method?: string
+          monthly_accepted_at?: string
+          monthly_cents?: number
+          next_attempt_at?: string
+          paid_at?: string | null
+          paid_until?: string | null
+          payment_url?: string | null
+          pix_image?: string | null
+          pix_payload?: string | null
+          provider_billing_type?: string | null
+          publish_requested?: boolean
+          purchase_accepted_at?: string | null
+          qr_expires_at?: string | null
+          renewal_status?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_listing_billing_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_listing_payment_cycles: {
+        Row: {
+          due_date: string
+          observed_at: string
+          order_id: string
+          paid: boolean
+          payment_id: string
+          period_end: string | null
+          status: string
+        }
+        Insert: {
+          due_date: string
+          observed_at?: string
+          order_id: string
+          paid: boolean
+          payment_id: string
+          period_end?: string | null
+          status: string
+        }
+        Update: {
+          due_date?: string
+          observed_at?: string
+          order_id?: string
+          paid?: boolean
+          payment_id?: string
+          period_end?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_listing_payment_cycles_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "member_listing_billing"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3089,6 +3357,170 @@ export type Database = {
         Args: { p_id?: string; p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      member_billing_authorize: {
+        Args: { issued_at: string; signature: string }
+        Returns: boolean
+      }
+      member_billing_checkout: {
+        Args: {
+          p_actor: string
+          p_contact: boolean
+          p_id: string
+          p_method: string
+          p_monthly: boolean
+        }
+        Returns: Json
+      }
+      member_billing_claim_cancellations: {
+        Args: never
+        Returns: {
+          amount_cents: number
+          attempts: number
+          authorization_id: string | null
+          billing_model: string
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          checkout_expires_at: string | null
+          checkout_id: string | null
+          conciliation_id: string | null
+          contact_consent_at: string
+          created_at: string
+          customer_id: string | null
+          display_days: number
+          display_started_at: string | null
+          error_code: string | null
+          financial_started: boolean
+          hold: boolean
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          listing_id: string
+          listing_revision: string
+          method: string
+          monthly_accepted_at: string
+          monthly_cents: number
+          next_attempt_at: string
+          paid_at: string | null
+          paid_until: string | null
+          payment_url: string | null
+          pix_image: string | null
+          pix_payload: string | null
+          provider_billing_type: string | null
+          publish_requested: boolean
+          purchase_accepted_at: string | null
+          qr_expires_at: string | null
+          renewal_status: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "member_listing_billing"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      member_billing_claim_events: {
+        Args: never
+        Returns: {
+          attempts: number
+          available_at: string
+          created_at: string
+          id: string
+          kind: string
+          lease_token: string | null
+          lease_until: string | null
+          order_reference: string | null
+          resource_id: string
+          resource_type: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "member_billing_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      member_billing_claim_uncertain: {
+        Args: never
+        Returns: {
+          amount_cents: number
+          attempts: number
+          authorization_id: string | null
+          billing_model: string
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          checkout_expires_at: string | null
+          checkout_id: string | null
+          conciliation_id: string | null
+          contact_consent_at: string
+          created_at: string
+          customer_id: string | null
+          display_days: number
+          display_started_at: string | null
+          error_code: string | null
+          financial_started: boolean
+          hold: boolean
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          listing_id: string
+          listing_revision: string
+          method: string
+          monthly_accepted_at: string
+          monthly_cents: number
+          next_attempt_at: string
+          paid_at: string | null
+          paid_until: string | null
+          payment_url: string | null
+          pix_image: string | null
+          pix_payload: string | null
+          provider_billing_type: string | null
+          publish_requested: boolean
+          purchase_accepted_at: string | null
+          qr_expires_at: string | null
+          renewal_status: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "member_listing_billing"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      member_billing_dispatch: { Args: never; Returns: number }
+      member_billing_expire_periods: { Args: never; Returns: undefined }
+      member_billing_purchase: {
+        Args: {
+          p_accepted: boolean
+          p_actor: string
+          p_contact: boolean
+          p_id: string
+        }
+        Returns: Json
+      }
+      member_billing_recalculate: {
+        Args: { p_order: string }
+        Returns: undefined
+      }
+      member_billing_record_payment: {
+        Args: {
+          p_due: string
+          p_observed: string
+          p_order: string
+          p_paid: boolean
+          p_payment: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       member_classifieds: {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
@@ -3112,6 +3544,7 @@ export type Database = {
         Returns: Json
       }
       member_identity_verified: { Args: { p_user: string }; Returns: boolean }
+      member_listing_entitled: { Args: { p_id: string }; Returns: boolean }
       member_listing_json: {
         Args: {
           p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
