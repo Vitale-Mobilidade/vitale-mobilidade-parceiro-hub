@@ -1,3 +1,4 @@
+import { FieldCounter } from "./FieldCounter";
 import { ListingBillingPanel } from "./ListingBillingPanel";
 import {
   AlertDialog,
@@ -520,6 +521,7 @@ function ListingEditor({
         <textarea
           id={`listing-field-${key}`}
           aria-label={label}
+          aria-describedby={`listing-field-${key}-limits`}
           aria-invalid={invalidFields.includes(key)}
           className={`${field} min-h-32 ${invalidFields.includes(key) ? "border-red-600" : ""}`}
           value={form[key]}
@@ -532,6 +534,7 @@ function ListingEditor({
         <input
           id={`listing-field-${key}`}
           aria-label={label}
+          aria-describedby={`listing-field-${key}-limits`}
           aria-invalid={invalidFields.includes(key)}
           className={`${field} ${invalidFields.includes(key) ? "border-red-600" : ""}`}
           value={form[key]}
@@ -541,6 +544,13 @@ function ListingEditor({
           required={min > 0}
         />
       )}
+      <FieldCounter
+        id={`listing-field-${key}-limits`}
+        value={form[key]}
+        min={key === "title" ? 6 : min}
+        max={max}
+        optional={min === 0}
+      />
     </label>
   );
   return (
@@ -689,9 +699,9 @@ function ListingEditor({
                 1. Fotos da bike · {listing.images.length}/5
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Mostre a bike inteira, os dois lados, bateria e detalhes. A
-                primeira foto será a capa. JPEG, PNG ou WebP, até 10 MB por
-                foto.
+                Envie de 1 a 5 fotos. Mostre a bike inteira, os dois lados,
+                bateria e detalhes. A primeira foto será a capa. JPEG, PNG ou
+                WebP, até 10 MB por foto.
               </p>
               <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {listing.images.map((image, index) => (
@@ -821,6 +831,8 @@ function ListingEditor({
                     Preço de venda (R$)
                     <input
                       id="listing-field-priceCents"
+                      aria-label="Preço de venda (R$)"
+                      aria-describedby="listing-field-priceCents-limits"
                       type="number"
                       className={field}
                       min="1"
@@ -835,11 +847,19 @@ function ListingEditor({
                         )
                       }
                     />
+                    <span
+                      id="listing-field-priceCents-limits"
+                      className="mt-2 block text-xs font-normal text-muted-foreground"
+                    >
+                      Mínimo R$1 · máximo R$1.000.000
+                    </span>
                   </label>
                   <label className="block font-semibold">
                     Quilometragem (km)
                     <input
                       id="listing-field-mileageKm"
+                      aria-label="Quilometragem (km)"
+                      aria-describedby="listing-field-mileageKm-limits"
                       type="number"
                       className={field}
                       min="0"
@@ -854,6 +874,12 @@ function ListingEditor({
                         )
                       }
                     />
+                    <span
+                      id="listing-field-mileageKm-limits"
+                      className="mt-2 block text-xs font-normal text-muted-foreground"
+                    >
+                      De 0 a 1.000.000 km
+                    </span>
                   </label>
                   {input("city", "Cidade", 80, 2)}
                   <label className="block font-semibold">
@@ -881,6 +907,8 @@ function ListingEditor({
                       min="1980"
                       max={new Date().getFullYear() + 1}
                       id="listing-field-modelYear"
+                      aria-label="Ano do modelo (opcional)"
+                      aria-describedby="listing-field-modelYear-limits"
                       aria-invalid={invalidFields.includes("modelYear")}
                       value={form.modelYear ?? ""}
                       onChange={(e) =>
@@ -890,6 +918,12 @@ function ListingEditor({
                         )
                       }
                     />
+                    <span
+                      id="listing-field-modelYear-limits"
+                      className="mt-2 block text-xs font-normal text-muted-foreground"
+                    >
+                      De 1980 a {new Date().getFullYear() + 1}
+                    </span>
                   </label>
                   <label className="block font-semibold">
                     Conservação
@@ -946,7 +980,7 @@ function ListingEditor({
                 {input("description", "Descrição da bike", 4000, 20)}
                 <p className="text-sm text-muted-foreground">
                   Conte como está a bike, seu tempo de uso e os detalhes que o
-                  comprador precisa saber. Mínimo de 20 caracteres.
+                  comprador precisa saber.
                 </p>
                 {input(
                   "maintenance",
