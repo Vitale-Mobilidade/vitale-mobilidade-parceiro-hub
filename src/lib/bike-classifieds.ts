@@ -91,7 +91,7 @@ export const listingSchema = listingInputSchema.extend({
   id: z.string().uuid(),
   status: z.enum(["draft", "published", "sold", "archived"]),
   feeCents: z.literal(15000),
-  feeStatus: z.literal("pilot_exempt"),
+  feeStatus: z.enum(["pilot_exempt", "required", "paid"]),
   images: z.array(listingImageSchema).max(5),
   sellerType: z.enum(["channel", "individual"]).default("individual"),
   publishedAt: z.string().nullable(),
@@ -125,6 +125,9 @@ export function classifiedsError(error: unknown): string {
       ? String(error.message)
       : "";
   const messages: Record<string, string> = {
+    billing_pending:
+      "Há uma assinatura ou pagamento em andamento. Encerre a solicitação antes de editar a bike.",
+    billing_required: "Confirme o pagamento mensal para publicar este anúncio.",
     classifieds_pilot_only:
       "Os anúncios estão em teste com uma conta convidada. A abertura para outros anunciantes virá depois.",
     listing_limit: "Você atingiu o limite de anúncios deste piloto.",
