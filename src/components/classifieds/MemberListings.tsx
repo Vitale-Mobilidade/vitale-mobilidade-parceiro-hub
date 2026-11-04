@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ListingDashboard, type ListingAction } from "./ListingDashboard";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { useMemberSession } from "@/hooks/use-member-session";
 import {
@@ -27,6 +27,9 @@ import {
   classifiedsAccountSchema,
   classifiedsError,
   listingInputSchema,
+  listingWithTitle,
+  missingListingFields,
+  LISTING_FIELD_LABELS,
   listingDraftInputSchema,
   isEmptyBikeDraft,
   listingSchema,
@@ -323,7 +326,7 @@ function ListingEditor({
 }) {
   const [form, setForm] = useState(() => ({
     ...listing,
-    title: isEmptyBikeDraft(listing) ? "" : listing.title,
+    title: listing.title === "Minha bike" ? "" : listing.title,
   }));
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -333,6 +336,15 @@ function ListingEditor({
   const [preview, setPreview] = useState(false);
   const [step, setStep] = useState<"photos" | "details" | "publish">("photos");
   const [consent, setConsent] = useState(false);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const photosReady =
+    listing.images.some((i) => i.status === "ready") &&
+    !listing.images.some((i) => i.status === "reserved");
+  const [lastStep, setLastStep] = useState(
+    photosReady ? (listingInputSchema.safeParse(listing).success ? 2 : 1) : 0,
+  );
+  const steps = ["photos", "details", "publish"] as const;
   const draft = listing.status === "draft";
   useEffect(() => {
     function warn(e: BeforeUnloadEvent) {
@@ -347,6 +359,7 @@ function ListingEditor({
   function change<K extends keyof BikeListing>(key: K, value: BikeListing[K]) {
     setForm((v) => ({ ...v, [key]: value }));
     setDirty(true);
+    setInvalidFields((old) => old.filter((field) => field !== key));
     setMessage("");
   }
   async function run(action: () => Promise<unknown>, success: string) {
@@ -363,23 +376,99 @@ function ListingEditor({
       setBusy(false);
     }
   }
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    const data = listingDraftInputSchema.safeParse(form);
+  function showStep(next: typeof step) {
+    setStep(next);
+    requestAnimationFrame(() => {
+      const panel = editorRef.current?.querySelector<HTMLElement>(
+        `#listing-panel-${next}`,
+      );
+      panel?.focus({ preventScroll: true });
+      panel?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+  }
+  async function persist(complete: boolean): Promise<boolean> {
+    const candidate = listingWithTitle(form);
+    const missing = complete ? missingListingFields(candidate) : [];
+    if (complete && (!photosReady || missing.length)) {
+      setInvalidFields(missing);
+      setError(
+        !photosReady
+          ? "Adicione ao menos uma foto para continuar."
+          : `Para continuar, complete: ${missing.map((key) => LISTING_FIELD_LABELS[key] ?? key).join("; ")}.`,
+      );
+      requestAnimationFrame(() => {
+        const target =
+          editorRef.current?.querySelector<HTMLElement>(
+            `#listing-field-${missing[0]}`,
+          ) ??
+          editorRef.current?.querySelector<HTMLElement>("[data-wizard-error]");
+        target?.focus();
+      });
+      return false;
+    }
+    const data = listingDraftInputSchema.safeParse(candidate);
     if (!data.success) {
       setError(
-        "Confira os campos preenchidos. Você pode deixar informações em branco para completar depois.",
+        "Confira os campos preenchidos. Você pode salvar informações incompletas como rascunho.",
       );
-      return;
+      return false;
     }
-    await run(async () => {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
       const saved = listingSchema.parse(
         await classifiedsCall("save", { id: listing.id, ...data.data }),
       );
       setForm(saved);
       setDirty(false);
-      return saved;
-    }, "Rascunho salvo.");
+      setInvalidFields([]);
+      await onChange();
+      setMessage("Rascunho salvo.");
+      return true;
+    } catch (e) {
+      setError(classifiedsError(e) || memberError(e));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function navigate(next: typeof step) {
+    if (busy) return;
+    const current = steps.indexOf(step),
+      target = steps.indexOf(next);
+    if (billingLocked || !draft) {
+      if (target <= lastStep) showStep(next);
+      return;
+    }
+    if (target <= current) {
+      showStep(next);
+      return;
+    }
+    if (step === "photos" && next === "details") {
+      if (!photosReady) {
+        setError("Adicione ao menos uma foto para continuar.");
+        return;
+      }
+      if (dirty && !(await persist(false))) return;
+      setLastStep((value) => Math.max(value, 1));
+      showStep("details");
+      return;
+    }
+    if (step === "details" && next === "publish") {
+      if (!(await persist(true))) return;
+      setLastStep(2);
+      showStep("publish");
+    }
+  }
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    await navigate("publish");
   }
   async function files(selected: FileList | null) {
     if (!selected?.length) return;
@@ -429,7 +518,10 @@ function ListingEditor({
       {label}
       {key === "description" || key === "maintenance" ? (
         <textarea
-          className={`${field} min-h-32`}
+          id={`listing-field-${key}`}
+          aria-label={label}
+          aria-invalid={invalidFields.includes(key)}
+          className={`${field} min-h-32 ${invalidFields.includes(key) ? "border-red-600" : ""}`}
           value={form[key]}
           onChange={(e) => change(key, e.target.value)}
           maxLength={max}
@@ -438,7 +530,10 @@ function ListingEditor({
         />
       ) : (
         <input
-          className={field}
+          id={`listing-field-${key}`}
+          aria-label={label}
+          aria-invalid={invalidFields.includes(key)}
+          className={`${field} ${invalidFields.includes(key) ? "border-red-600" : ""}`}
           value={form[key]}
           onChange={(e) => change(key, e.target.value)}
           maxLength={max}
@@ -450,6 +545,7 @@ function ListingEditor({
   );
   return (
     <div
+      ref={editorRef}
       className={
         preview
           ? ""
@@ -504,14 +600,16 @@ function ListingEditor({
                             : -1;
                   if (index < 0) return;
                   event.preventDefault();
-                  setStep(keys[index]);
-                  event.currentTarget.parentElement
-                    ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                    [index]?.focus();
+                  if (index > lastStep || Math.abs(index - current) > 1) return;
+                  void navigate(keys[index]);
                 }}
                 aria-controls={`listing-panel-${key}`}
-                disabled={busy}
-                onClick={() => setStep(key)}
+                disabled={
+                  busy ||
+                  steps.indexOf(key) > lastStep ||
+                  Math.abs(steps.indexOf(key) - steps.indexOf(step)) > 1
+                }
+                onClick={() => void navigate(key)}
                 className={`min-h-12 rounded-xl px-2 py-3 text-sm font-semibold ${step === key ? "bg-ink text-white" : "bg-surface text-ink"}`}
               >
                 {label}
@@ -522,6 +620,8 @@ function ListingEditor({
         {error && (
           <p
             role="alert"
+            tabIndex={-1}
+            data-wizard-error
             className="mb-5 rounded-lg bg-red-50 p-4 text-red-900"
           >
             {error}
@@ -557,7 +657,7 @@ function ListingEditor({
                 <ClassifiedCard
                   listing={{
                     ...listing,
-                    ...form,
+                    ...listingWithTitle(form),
                     images: listing.images,
                     sellerType: channel ? "channel" : "individual",
                   }}
@@ -568,7 +668,7 @@ function ListingEditor({
             <ListingPreview
               listing={{
                 ...listing,
-                ...form,
+                ...listingWithTitle(form),
                 images: listing.images,
                 sellerType: channel ? "channel" : "individual",
               }}
@@ -582,7 +682,8 @@ function ListingEditor({
               role="tabpanel"
               id="listing-panel-photos"
               aria-labelledby="listing-tab-photos"
-              className="pb-3"
+              tabIndex={-1}
+              className="scroll-mt-28 pb-3 outline-none"
             >
               <h3 id="listing-photos" className="text-lg font-bold">
                 1. Fotos da bike · {listing.images.length}/5
@@ -657,40 +758,47 @@ function ListingEditor({
                   </div>
                 ))}
               </div>
-              {draft && listing.images.length < 5 && (
-                <label className="mt-5 inline-flex min-h-12 cursor-pointer items-center rounded-xl border border-action px-4 font-semibold text-action focus-within:ring-2 focus-within:ring-action">
-                  <span className="flex items-center gap-2">
-                    <ImagePlus className="h-5 w-5" aria-hidden="true" />
-                    Adicionar fotos
-                  </span>
-                  <input
-                    type="file"
-                    aria-label="Adicionar fotos da bike"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    disabled={locked}
-                    onChange={(e) => {
-                      void files(e.currentTarget.files);
-                      e.currentTarget.value = "";
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-              )}
-              <button
-                type="button"
-                className={`${button} mt-6`}
-                disabled={busy}
-                onClick={() => setStep("details")}
+              <div
+                className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"
+                data-testid="photo-step-actions"
               >
-                Continuar para informações
-              </button>
+                {draft && listing.images.length < 5 && (
+                  <label className="inline-flex min-h-12 cursor-pointer items-center rounded-xl border border-action px-4 font-semibold text-action focus-within:ring-2 focus-within:ring-action">
+                    <span className="flex items-center gap-2">
+                      <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                      Adicionar fotos
+                    </span>
+                    <input
+                      type="file"
+                      aria-label="Adicionar fotos da bike"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={locked}
+                      onChange={(e) => {
+                        void files(e.currentTarget.files);
+                        e.currentTarget.value = "";
+                      }}
+                      className="sr-only"
+                    />
+                  </label>
+                )}
+                <button
+                  type="button"
+                  className={`${button} w-full sm:ml-auto sm:w-auto`}
+                  disabled={busy || !photosReady}
+                  onClick={() => void navigate("details")}
+                >
+                  Continuar para informações
+                </button>
+              </div>
             </section>
             <form
               hidden={step !== "details"}
               role="tabpanel"
               id="listing-panel-details"
               aria-labelledby="listing-tab-details"
+              tabIndex={-1}
+              className="scroll-mt-28 outline-none"
               noValidate
               onSubmit={save}
             >
@@ -701,13 +809,18 @@ function ListingEditor({
                 <legend className="mb-5 text-lg font-bold">
                   2. Informações da bike
                 </legend>
-                {input("title", "Título do anúncio", 100, 6)}
+                {input("title", "Título do anúncio", 100, 0)}
+                <p className="text-sm text-muted-foreground">
+                  Se deixar o título em branco, usamos a marca e o modelo da
+                  bike.
+                </p>
                 <div className="grid gap-5 sm:grid-cols-2">
                   {input("brand", "Marca", 60)}
                   {input("model", "Modelo", 80)}
                   <label className="block font-semibold">
                     Preço de venda (R$)
                     <input
+                      id="listing-field-priceCents"
                       type="number"
                       className={field}
                       min="1"
@@ -726,6 +839,7 @@ function ListingEditor({
                   <label className="block font-semibold">
                     Quilometragem (km)
                     <input
+                      id="listing-field-mileageKm"
                       type="number"
                       className={field}
                       min="0"
@@ -748,6 +862,8 @@ function ListingEditor({
                       aria-label="Estado"
                       className={field}
                       required
+                      id="listing-field-state"
+                      aria-invalid={invalidFields.includes("state")}
                       value={form.state}
                       onChange={(e) => change("state", e.target.value)}
                     >
@@ -764,6 +880,8 @@ function ListingEditor({
                       className={field}
                       min="1980"
                       max={new Date().getFullYear() + 1}
+                      id="listing-field-modelYear"
+                      aria-invalid={invalidFields.includes("modelYear")}
                       value={form.modelYear ?? ""}
                       onChange={(e) =>
                         change(
@@ -826,6 +944,10 @@ function ListingEditor({
                   </label>
                 </div>
                 {input("description", "Descrição da bike", 4000, 20)}
+                <p className="text-sm text-muted-foreground">
+                  Conte como está a bike, seu tempo de uso e os detalhes que o
+                  comprador precisa saber. Mínimo de 20 caracteres.
+                </p>
                 {input(
                   "maintenance",
                   "Manutenção, acessórios e defeitos conhecidos (opcional)",
@@ -837,22 +959,34 @@ function ListingEditor({
                   quando souber. Use as fotos reais da sua bike. O WhatsApp de
                   contato será adicionado após sua autorização na publicação.
                 </p>
-                <button className={button} disabled={busy || !dirty}>
-                  Salvar rascunho
-                </button>
-                <button
-                  type="button"
-                  className="ml-4 min-h-12 font-semibold text-action underline disabled:opacity-50"
-                  disabled={busy || dirty}
-                  onClick={() => setStep("publish")}
+                <div
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center"
+                  data-testid="details-step-actions"
                 >
-                  Revisar publicação
-                </button>
-                {dirty && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Salve o rascunho para revisar a publicação.
-                  </p>
-                )}
+                  <button
+                    type="button"
+                    className="min-h-12 px-3 font-semibold text-action underline"
+                    disabled={busy}
+                    onClick={() => void navigate("photos")}
+                  >
+                    Voltar às fotos
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-12 rounded-xl border border-action px-4 font-semibold text-action disabled:opacity-50"
+                    disabled={busy || !dirty}
+                    onClick={() => void persist(false)}
+                  >
+                    Salvar rascunho
+                  </button>
+                  <button
+                    type="submit"
+                    className={`${button} w-full sm:ml-auto sm:w-auto`}
+                    disabled={busy}
+                  >
+                    {busy ? "Salvando…" : "Salvar e continuar"}
+                  </button>
+                </div>
               </fieldset>
             </form>
           </>
@@ -862,11 +996,20 @@ function ListingEditor({
           role="tabpanel"
           id="listing-panel-publish"
           aria-labelledby="listing-tab-publish"
-          className="pt-2"
+          tabIndex={-1}
+          className="scroll-mt-28 pt-2 outline-none"
         >
           <h3 id="listing-publish" className="text-lg font-bold">
             3. Publicação
           </h3>
+          <button
+            type="button"
+            className="mb-4 min-h-11 font-semibold text-action underline"
+            disabled={busy}
+            onClick={() => void navigate("details")}
+          >
+            Voltar às informações
+          </button>
           {draft ? (
             <>
               <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
@@ -876,9 +1019,18 @@ function ListingEditor({
               </div>
               {!publishReady && (
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Para publicar, complete título, marca/modelo, preço,
-                  localização, quilometragem, descrição e ao menos uma foto.
-                  Você pode salvar um rascunho incompleto.
+                  Falta completar:{" "}
+                  {missingListingFields(listing)
+                    .map((key) => LISTING_FIELD_LABELS[key] ?? key)
+                    .join("; ")}
+                  {!photosReady ? "; ao menos uma foto" : ""}.
+                  <button
+                    type="button"
+                    onClick={() => showStep("details")}
+                    className="ml-2 font-semibold text-action underline"
+                  >
+                    Completar informações
+                  </button>
                 </p>
               )}
               {!canPublish && (
@@ -968,7 +1120,11 @@ function ListingEditor({
                 !canPublish
                   ? "Confirme seu e-mail e WhatsApp no perfil para anunciar."
                   : !publishReady
-                    ? "Complete a ficha e envie ao menos uma foto antes de continuar."
+                    ? `Complete: ${missingListingFields(listing)
+                        .map((key) => LISTING_FIELD_LABELS[key] ?? key)
+                        .join(
+                          "; ",
+                        )}${!photosReady ? "; ao menos uma foto" : ""}.`
                     : dirty
                       ? "Salve as alterações do rascunho antes de continuar."
                       : ""
@@ -995,7 +1151,7 @@ function ListingEditor({
         <ClassifiedCard
           listing={{
             ...listing,
-            ...form,
+            ...listingWithTitle(form),
             images: listing.images,
             sellerType: channel ? "channel" : "individual",
           }}

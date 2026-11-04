@@ -35,7 +35,7 @@ export function ListingBillingPanel({
   onChange: () => Promise<void>;
   onLockChange: (v: boolean) => void;
 }) {
-  const [configured, setConfigured] = useState(false),
+  const [configured, setConfigured] = useState<boolean | null>(null),
     [order, setOrder] = useState<BillingOrderView | null>(null),
     [accepted, setAccepted] = useState(false),
     [busy, setBusy] = useState(false),
@@ -288,7 +288,12 @@ export function ListingBillingPanel({
               pagamento único de R$150.
             </p>
           )}
-          {!configured && (
+          {configured === null && (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              Carregando opções de pagamento…
+            </p>
+          )}
+          {configured === false && (
             <p role="status" className="mt-4 rounded-xl bg-surface p-4 text-sm">
               O checkout está temporariamente indisponível. Seu rascunho
               continua salvo.
@@ -319,10 +324,10 @@ export function ListingBillingPanel({
               !accepted ||
               !configured
             }
-            className={`${button} mt-5 w-full`}
+            className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
             onClick={() => void checkout()}
           >
-            {busy ? "Abrindo checkout…" : "Pagar R$150 no Asaas"}
+            {busy ? "Abrindo checkout…" : "Seguir para pagamento de R$150"}
           </button>
         </>
       )}
