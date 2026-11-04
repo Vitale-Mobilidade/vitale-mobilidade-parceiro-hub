@@ -1,7 +1,7 @@
 import { z } from "zod";
 export const billingOrderSchema = z.object({
   id: z.string().uuid(),
-  method: z.enum(["card", "pix_automatic"]),
+  method: z.enum(["card", "pix_automatic", "hosted"]),
   status: z.enum([
     "creating",
     "pending",

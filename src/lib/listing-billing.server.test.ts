@@ -40,6 +40,7 @@ const order = {
 } as BillingOrder;
 const writes: any[] = [];
 function chain(table: string, value: unknown) {
+  let single = false;
   const x: any = {};
   for (const name of [
     "select",
@@ -52,12 +53,16 @@ function chain(table: string, value: unknown) {
     "upsert",
   ])
     x[name] = vi.fn((...args: any[]) => {
+      if (["single", "maybeSingle"].includes(name)) single = true;
       if (["update", "upsert"].includes(name))
         writes.push({ table, action: name, value: args[0] });
       return x;
     });
   x.then = (resolve: any) =>
-    Promise.resolve({ data: value, error: null }).then(resolve);
+    Promise.resolve({
+      data: single && Array.isArray(value) ? value[0] : value,
+      error: null,
+    }).then(resolve);
   return x;
 }
 const db = () => ({ from: state.from, rpc: state.rpc }) as any;
@@ -166,8 +171,29 @@ describe("authenticated billing boundary", () => {
     expect((await memberListingBilling(req())).status).toBe(404);
   });
 });
-describe("checkout creates only a fixed consented monthly contract", () => {
-  it("double clicks reuse the reserved order without calling the financial provider", async () => {
+describe("anonymous hosted checkout", () => {
+  const checkoutId = "30000000-0000-4000-8000-000000000001";
+  const hosted = {
+    ...order,
+    method: "hosted",
+    checkout_id: checkoutId,
+    customer_id: null,
+    subscription_id: null,
+    status: "pending",
+  };
+  const request = (extra: Record<string, unknown> = {}) =>
+    new Request("https://vitale.invalid/api/member/listing-billing", {
+      method: "POST",
+      headers: { Authorization: "Bearer fake.jwt" },
+      body: JSON.stringify({
+        action: "checkout",
+        listingId: order.listing_id,
+        contactConsent: true,
+        monthlyAccepted: true,
+        ...extra,
+      }),
+    });
+  beforeEach(() => {
     process.env.ASAAS_API_KEY = "test-key";
     state.getUser.mockResolvedValue({
       data: { user: { id: owner, email: "payer@example.invalid" } },
@@ -178,111 +204,130 @@ describe("checkout creates only a fixed consented monthly contract", () => {
         t,
         t === "member_bike_listings"
           ? { id: order.listing_id, title: "Bike sintética", user_id: owner }
-          : order,
+          : [hosted],
       ),
     );
+  });
+  it("reuses the same order on a double click without creating a new checkout", async () => {
     state.rpc.mockResolvedValue({
-      data: { ...order, reserved: false },
+      data: { ...hosted, reserved: false },
       error: null,
     });
-    const response = await memberListingBilling(
-      new Request("https://vitale.invalid/api/member/listing-billing", {
-        method: "POST",
-        headers: { Authorization: "Bearer fake.jwt" },
-        body: JSON.stringify({
-          action: "checkout",
-          listingId: order.listing_id,
-          method: "card",
-          document: "52998224725",
-          contactConsent: true,
-          monthlyAccepted: true,
-          value: 1,
-          userId: "spoofed",
-        }),
-      }),
-    );
-    expect(response.status).toBe(200);
+    expect((await memberListingBilling(request())).status).toBe(200);
     expect(state.rpc).toHaveBeenCalledWith("member_billing_checkout", {
       p_actor: owner,
       p_id: order.listing_id,
-      p_method: "card",
+      p_method: "hosted",
       p_contact: true,
       p_monthly: true,
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
-  it("card creation persists provider ID and never lets a redirect grant access", async () => {
-    process.env.ASAAS_API_KEY = "test-key";
-    state.getUser.mockResolvedValue({
-      data: { user: { id: owner, email: "payer@example.invalid" } },
-      error: null,
-    });
-    state.from.mockImplementation((t) =>
-      chain(
-        t,
-        t === "member_bike_listings"
-          ? { id: order.listing_id, title: "Bike sintética", user_id: owner }
-          : t === "member_billing_customers"
-            ? { asaas_customer_id: "cus_test" }
-            : t === "member_listing_billing"
-              ? [{ ...order, status: "creating" }]
-              : order,
-      ),
-    );
+  it("rejects payer documents and client price/ownership overrides instead of accepting them", async () => {
+    for (const extra of [
+      { document: "synthetic-unwanted-document" },
+      { customerData: { cpfCnpj: "not-accepted" } },
+      { value: 1 },
+      { userId: "spoofed" },
+    ])
+      expect((await memberListingBilling(request(extra))).status).toBe(400);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+  it("creates one fixed monthly checkout with no payer/customer fields or customer API calls", async () => {
     state.rpc.mockImplementation(async (name: string) => ({
       data:
         name === "member_billing_checkout"
-          ? { ...order, status: "creating", reserved: true }
+          ? { ...hosted, status: "creating", reserved: true }
           : null,
       error: null,
     }));
-    const send = vi.mocked(globalThis.fetch);
-    send.mockImplementation(async (input, init) => {
-      const url = String(input);
-      if (url.endsWith("/customers/cus_test"))
-        return Response.json({
-          externalReference: owner,
-          cpfCnpj: "52998224725",
-        });
-      if (url.endsWith("/subscriptions")) {
-        expect(JSON.parse(String(init?.body))).toMatchObject({
+    vi.mocked(globalThis.fetch).mockImplementation(async (input, init) => {
+      expect(String(input)).toBe("https://api.asaas.com/v3/checkouts");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toMatchObject({
+        billingTypes: ["CREDIT_CARD", "PIX"],
+        chargeTypes: ["RECURRENT"],
+        externalReference: id,
+        items: [{ quantity: 1, value: 150 }],
+        subscription: { cycle: "MONTHLY" },
+      });
+      expect(body).not.toHaveProperty("customer");
+      expect(body).not.toHaveProperty("customerData");
+      expect(body).not.toHaveProperty("document");
+      return Response.json({ id: checkoutId });
+    });
+    const response = await memberListingBilling(request());
+    expect(response.status).toBe(200);
+    expect(writes.some((w) => w.value.checkout_id === checkoutId)).toBe(true);
+    expect(writes.some((w) => w.value.status === "active")).toBe(false);
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
+  });
+  it("grants only when a GET payment matches the known checkout and authoritative monthly subscription", async () => {
+    state.from.mockImplementation((t) => chain(t, hosted));
+    await reconcilePayment(
+      db(),
+      api({
+        "/payments/pay_hosted": {
+          id: "pay_hosted",
+          checkoutSession: checkoutId,
+          customer: "cus_hosted",
+          subscription: "sub_hosted",
+          billingType: "CREDIT_CARD",
+          status: "CONFIRMED",
+          value: 150,
+          dueDate: "2026-11-04",
+        },
+        "/subscriptions/sub_hosted": {
+          customer: "cus_hosted",
           value: 150,
           cycle: "MONTHLY",
-          externalReference: id,
-          billingType: "CREDIT_CARD",
-          customer: "cus_test",
-        });
-        return Response.json({ id: "sub_new" });
-      }
-      if (url.includes("/subscriptions/sub_new/payments"))
-        return Response.json({
-          data: [{ invoiceUrl: "https://asaas.com/i/synthetic" }],
-        });
-      throw Error("unexpected fetch");
+        },
+      }),
+      "pay_hosted",
+    );
+    expect(state.rpc).toHaveBeenCalledWith(
+      "member_billing_record_payment",
+      expect.objectContaining({ p_order: id, p_paid: true }),
+    );
+    expect(writes[0].value).toMatchObject({
+      customer_id: "cus_hosted",
+      subscription_id: "sub_hosted",
     });
-    const response = await memberListingBilling(
-      new Request("https://vitale.invalid/api/member/listing-billing", {
-        method: "POST",
-        headers: { Authorization: "Bearer fake.jwt" },
-        body: JSON.stringify({
-          action: "checkout",
-          listingId: order.listing_id,
-          method: "card",
-          document: "52998224725",
-          contactConsent: true,
-          monthlyAccepted: true,
-          value: 1,
-        }),
+  });
+  it("checkout paid event alone never grants access or stores payer data", async () => {
+    state.from.mockImplementation((t) => chain(t, hosted));
+    await reconcileEvent(db(), api({}), {
+      id: "evt_checkout",
+      resource_id: checkoutId,
+      resource_type: "checkout",
+      kind: "CHECKOUT_PAID",
+      lease_token: "lease",
+      attempts: 1,
+    });
+    expect(state.rpc).not.toHaveBeenCalled();
+    expect(writes).toHaveLength(0);
+  });
+  it("accepts real Asaas event IDs containing ampersands and discards customerData", async () => {
+    state.from.mockImplementation((t) => chain(t, []));
+    const response = await asaasListingWebhook(
+      webhook({
+        id: "evt_checkout&123",
+        event: "CHECKOUT_CREATED",
+        checkout: {
+          id: checkoutId,
+          externalReference: id,
+          customerData: { cpfCnpj: "not-stored" },
+        },
       }),
     );
     expect(response.status).toBe(200);
-    expect(writes.some((w) => w.value.subscription_id === "sub_new")).toBe(
-      true,
-    );
-    expect(writes.some((w) => w.value.status === "active")).toBe(false);
-    expect(
-      send.mock.calls.filter((c) => String(c[0]).endsWith("/subscriptions")),
-    ).toHaveLength(1);
+    expect(writes[0].value).toEqual({
+      id: "evt_checkout&123",
+      kind: "CHECKOUT_CREATED",
+      resource_id: checkoutId,
+      resource_type: "checkout",
+      order_reference: id,
+    });
   });
 });
 describe("authoritative financial reconciliation", () => {
@@ -450,4 +495,110 @@ it("signed health reports only non-sensitive provider diagnostics and never crea
       .mocked(globalThis.fetch)
       .mock.calls.every((c) => !c[1]?.method || c[1].method === "GET"),
   ).toBe(true);
+});
+
+it("validates an anonymous hosted session without completing payment and cancels the quote", async () => {
+  process.env.ASAAS_API_KEY = "test-only";
+  state.rpc.mockResolvedValue({ data: true, error: null });
+  state.from.mockImplementation((t) => chain(t, { enabled: false }));
+  const checkoutId = "30000000-0000-4000-8000-000000000099";
+  const calls: Array<{ url: string; method: string }> = [];
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, init) => {
+    const url = String(input),
+      method = init?.method ?? "GET";
+    calls.push({ url, method });
+    if (url.endsWith("/checkouts")) {
+      const b = JSON.parse(String(init?.body));
+      expect(b).not.toHaveProperty("customerData");
+      expect(b).not.toHaveProperty("customer");
+      return Response.json({ id: checkoutId });
+    }
+    if (url.endsWith(`/checkouts/${checkoutId}/cancel`))
+      return Response.json({ status: "CANCELED" });
+    if (url.includes("/webhooks?"))
+      return Response.json({
+        data: [
+          {
+            id: "hook_test",
+            name: "Vitale",
+            url: "https://vitalemobilidade.com/api/public/asaas-webhook",
+            email: "operator@example.invalid",
+            enabled: true,
+            events: ["PAYMENT_RECEIVED"],
+            sendType: "NON_SEQUENTIALLY",
+          },
+        ],
+      });
+    if (url.endsWith("/webhooks/hook_test")) {
+      const b = JSON.parse(String(init?.body));
+      expect(b.events).toContain("PAYMENT_RECEIVED");
+      expect(b.events).toContain("CHECKOUT_PAID");
+      expect(b.authToken).toBe(process.env.ASAAS_WEBHOOK_TOKEN);
+      return Response.json({ id: "hook_test" });
+    }
+    throw Error("Unexpected provider operation");
+  });
+  const response = await listingBillingWorker(
+    new Request(
+      "https://vitale.invalid/api/public/classifieds-billing-worker",
+      {
+        method: "POST",
+        body: JSON.stringify({ action: "validate_hosted_checkout" }),
+      },
+    ),
+  );
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    hostedReady: true,
+    checkoutCancelled: true,
+  });
+  expect(
+    calls.some((c) => /\/customers|\/subscriptions|\/payments/.test(c.url)),
+  ).toBe(false);
+  expect(writes.some((w) => w.value.hosted_ready === true)).toBe(true);
+});
+
+it("cancels a hosted card subscription without accessing the unrelated Pix authorization API", async () => {
+  const hosted = {
+    ...order,
+    method: "hosted",
+    checkout_id: "30000000-0000-4000-8000-000000000001",
+    checkout_expires_at: new Date(Date.now() + 3600000).toISOString(),
+    provider_billing_type: "CREDIT_CARD",
+    status: "cancel_pending",
+  };
+  await cancelOrder(
+    db(),
+    api({
+      "/checkouts/30000000-0000-4000-8000-000000000001/cancel": {
+        status: "CANCELED",
+      },
+      "/subscriptions/sub_test": { deleted: true },
+    }),
+    hosted,
+  );
+  expect(writes.at(-1).value.status).toBe("cancelled");
+});
+
+it("a partial refund in authoritative metadata cannot retain a confirmed payment entitlement", async () => {
+  await reconcilePayment(
+    db(),
+    api({
+      "/payments/pay_partial": {
+        id: "pay_partial",
+        subscription: "sub_test",
+        customer: "cus_test",
+        value: 150,
+        dueDate: "2026-11-04",
+        billingType: "CREDIT_CARD",
+        status: "CONFIRMED",
+        refunds: [{ status: "DONE", value: 50 }],
+      },
+    }),
+    "pay_partial",
+  );
+  expect(state.rpc).toHaveBeenCalledWith(
+    "member_billing_record_payment",
+    expect.objectContaining({ p_paid: false, p_status: "REFUND_IN_PROGRESS" }),
+  );
 });

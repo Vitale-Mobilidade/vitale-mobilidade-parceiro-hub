@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import {
   AsaasClient,
   AsaasFault,
-  validBillingDocument,
   paidAsaasCycle,
   safeAsaasPaymentUrl,
 } from "./asaas.server";
@@ -52,14 +51,6 @@ describe("Asaas transport and financial evidence", () => {
       message: "asaas_unavailable",
       status: 404,
     });
-  });
-  it.each(["11111111111", "12345678900", "00000000000000", "", "123"])(
-    "rejects invalid document %s",
-    (d) => expect(validBillingDocument(d)).toBe(false),
-  );
-  it("validates both document check digits", () => {
-    expect(validBillingDocument("529.982.247-25")).toBe(true);
-    expect(validBillingDocument("11.222.333/0001-81")).toBe(true);
   });
   it("activation, authorization, provisional Pix and wrong values cannot grant publication", () => {
     for (const status of [
