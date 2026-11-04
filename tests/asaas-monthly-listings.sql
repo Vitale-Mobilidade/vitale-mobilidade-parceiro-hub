@@ -1,0 +1,71 @@
+\set ON_ERROR_STOP on
+CREATE OR REPLACE FUNCTION pg_temp.check_true(v boolean,label text) RETURNS void LANGUAGE plpgsql AS $$BEGIN IF v IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAILED: %',label; END IF; END $$;
+CREATE OR REPLACE FUNCTION pg_temp.expect_error(statement text,fragment text) RETURNS void LANGUAGE plpgsql AS $$DECLARE failed boolean:=false;BEGIN BEGIN EXECUTE statement;EXCEPTION WHEN OTHERS THEN IF position(fragment IN SQLERRM)=0 THEN RAISE EXCEPTION 'Unexpected: % wanted %',SQLERRM,fragment;END IF;failed:=true;END;IF NOT failed THEN RAISE EXCEPTION 'Expected rejection: %',fragment;END IF;END $$;
+UPDATE public.member_billing_settings SET enabled=true,provider_ready=true;
+-- Reuse a complete synthetic bike with a ready image; no external requests or real PII.
+SELECT id AS listing_id FROM public.member_bike_listings WHERE user_id='00000000-0000-4000-8000-000000000090' AND brand='Marca' LIMIT 1 \gset
+UPDATE public.member_bike_listings SET status='draft',updated_at=now() WHERE id=:'listing_id';
+SELECT pg_temp.expect_error(format('SELECT public.member_billing_checkout(%L,%L,%L,true,true)','00000000-0000-4000-8000-000000000091',:'listing_id','card'),'identity_verification_required');
+SELECT pg_temp.expect_error(format('SELECT public.member_billing_checkout(%L,%L,%L,true,false)','00000000-0000-4000-8000-000000000090',:'listing_id','card'),'billing_consent_required');
+SELECT public.member_billing_checkout('00000000-0000-4000-8000-000000000090',:'listing_id','card',true,true)->>'id' AS order_id \gset
+SELECT pg_temp.check_true((public.member_billing_checkout('00000000-0000-4000-8000-000000000090',:'listing_id','card',true,true)->>'id')=:'order_id','double click reserves exactly one order');
+SELECT pg_temp.check_true(NOT public.member_listing_entitled(:'listing_id'),'checkout is not payment');
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT pg_temp.expect_error('SELECT * FROM public.member_listing_billing','permission denied');
+SELECT pg_temp.expect_error('SELECT public.member_billing_claim_events()','permission denied');
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','publish',jsonb_build_object('id',:'listing_id','contactConsent',true)),'billing_required');
+SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','reserve_image',jsonb_build_object('id',:'listing_id')),'billing_pending');
+RESET ROLE;
+SELECT pg_temp.check_true(NOT public.member_billing_authorize('bad','0'),'worker rejects false signature');
+SELECT public.member_billing_record_payment(:'order_id','pay_synthetic','PENDING',false,current_date,now());
+SELECT pg_temp.check_true(NOT public.member_listing_entitled(:'listing_id'),'unpaid cycle cannot publish');
+SELECT public.member_billing_record_payment(:'order_id','pay_synthetic','CONFIRMED',true,current_date,now()+interval '1 second');
+SELECT pg_temp.check_true(public.member_listing_entitled(:'listing_id'),'authoritative paid monthly cycle grants only this listing');
+SELECT pg_temp.check_true((SELECT status='published' FROM public.member_bike_listings WHERE id=:'listing_id'),'payment publishes consented exact revision');
+SELECT set_config('request.jwt.claim.sub','',false);
+SET ROLE anon;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=1,'paid bike is visible');
+SELECT pg_temp.expect_error('SELECT * FROM public.member_listing_payment_cycles','permission denied');
+RESET ROLE;
+SELECT public.member_billing_record_payment(:'order_id','pay_synthetic','REFUNDED',false,current_date,now()+interval '3 seconds');
+SELECT public.member_billing_record_payment(:'order_id','pay_synthetic','CONFIRMED',true,current_date,now()+interval '2 seconds');
+SELECT pg_temp.check_true(NOT public.member_listing_entitled(:'listing_id'),'out of order old confirmation cannot reverse refund');
+SELECT pg_temp.check_true((SELECT status='cancel_pending' AND hold FROM public.member_listing_billing WHERE id=:'order_id'),'refund queues cancellation');
+SELECT set_config('request.jwt.claim.sub','',false);
+SET ROLE anon;
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'refund hides listing before cancellation provider succeeds');
+SELECT pg_temp.check_true(NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='member-media'),'refund hides private bike and avatar images');
+RESET ROLE;
+UPDATE public.member_listing_billing SET status='cancelled',lease_until=null WHERE id=:'order_id';
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT public.member_classifieds('withdraw',jsonb_build_object('id',:'listing_id'));
+RESET ROLE;
+SELECT public.member_billing_checkout('00000000-0000-4000-8000-000000000090',:'listing_id','pix_automatic',true,true)->>'id' AS renewed_order \gset
+SELECT public.member_billing_record_payment(:'renewed_order','pay_synthetic2','RECEIVED',true,current_date,now());
+SELECT pg_temp.check_true(public.member_listing_entitled(:'listing_id'),'new separate explicit contract can publish');
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT public.member_classifieds('sold',jsonb_build_object('id',:'listing_id'));
+RESET ROLE;
+SELECT pg_temp.check_true(NOT public.member_listing_entitled(:'listing_id'),'sold revokes access immediately');
+SELECT pg_temp.check_true((SELECT status='cancel_pending' AND cancel_requested_at IS NOT NULL FROM public.member_listing_billing WHERE id=:'renewed_order'),'sold queues recurrence cancellation');
+SELECT public.member_billing_record_payment(:'renewed_order','pay_synthetic3','RECEIVED',true,current_date+30,now());
+SELECT pg_temp.check_true(NOT public.member_listing_entitled(:'listing_id'),'late paid webhook never resurrects a cancelled listing');
+UPDATE public.member_listing_billing SET status='cancelled',lease_until=null WHERE id=:'renewed_order';
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090',false);
+SET ROLE authenticated;
+SELECT public.member_classifieds('withdraw',jsonb_build_object('id',:'listing_id'));
+RESET ROLE;
+SELECT public.member_billing_checkout('00000000-0000-4000-8000-000000000090',:'listing_id','card',true,true)->>'id' AS expired_order \gset
+SELECT public.member_billing_record_payment(:'expired_order','pay_expired','CONFIRMED',true,current_date-40,now());
+SELECT public.member_billing_expire_periods();
+SELECT pg_temp.check_true((SELECT status='cancel_pending' FROM public.member_listing_billing WHERE id=:'expired_order'),'expired paid period queues cancellation even if status pending');
+SELECT pg_temp.check_true((public.member_bike_listings_public()->>'total')::int=0,'expired paid period is not public');
+INSERT INTO public.member_billing_events(id,kind,resource_id,resource_type) VALUES('evt_once','PAYMENT_RECEIVED','pay_once','payment') ON CONFLICT DO NOTHING;
+INSERT INTO public.member_billing_events(id,kind,resource_id,resource_type) VALUES('evt_once','PAYMENT_RECEIVED','pay_once','payment') ON CONFLICT DO NOTHING;
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM public.member_billing_events WHERE id='evt_once'),'webhook dedup durable unique');
+SELECT pg_temp.check_true((SELECT count(*)=1 FROM public.member_billing_claim_events()),'worker claims queued event');
+SELECT pg_temp.check_true((SELECT count(*)=0 FROM public.member_billing_claim_events()),'second worker cannot claim leased event');

@@ -1,3 +1,4 @@
+import { ListingBillingPanel } from "./ListingBillingPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -161,8 +162,8 @@ export function MemberListings() {
           não tem acesso à criação.
         </p>
         <p className="mt-4">
-          O valor previsto é de R$150 por anúncio. A abertura para outros
-          anunciantes virá depois.
+          O valor é de R$150 por mês enquanto o anúncio estiver ativo. A
+          abertura para outros anunciantes virá depois.
         </p>
         <a href="/venda-sua-bike" className={`${button} mt-6`}>
           Ver bikes disponíveis
@@ -198,9 +199,9 @@ export function MemberListings() {
       if (edit) setSelected(item.id);
       setNotice(
         action === "archive"
-          ? "Anúncio desativado. Você pode reativá-lo no filtro Desativados."
+          ? "Anúncio desativado. Se houver assinatura, o encerramento da renovação será solicitado. Você pode reativá-lo como rascunho."
           : action === "sold"
-            ? "Bike marcada como vendida."
+            ? "Bike marcada como vendida. Se houver assinatura, o encerramento da renovação será solicitado."
             : "Anúncio em rascunho. Revise antes de publicar novamente.",
       );
     } catch (e) {
@@ -326,6 +327,7 @@ function ListingEditor({
   }));
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [billingLocked, setBillingLocked] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState(false);
@@ -412,7 +414,7 @@ function ListingEditor({
     onBusy(busy);
     return () => onBusy(false);
   }, [busy, onBusy]);
-  const locked = busy || !draft;
+  const locked = busy || !draft || billingLocked;
   const publishReady =
     listingInputSchema.safeParse(listing).success &&
     listing.images.some((i) => i.status === "ready") &&
@@ -531,6 +533,13 @@ function ListingEditor({
             className="mb-5 rounded-lg bg-emerald-50 p-4 text-emerald-950"
           >
             {message}
+          </p>
+        )}
+        {billingLocked && draft && (
+          <p className="mb-4 rounded-xl bg-surface p-4 text-sm">
+            O anúncio está vinculado a uma solicitação de pagamento. Para
+            alterar fotos ou informações, encerre a assinatura na etapa Publicar
+            e aguarde a confirmação.
           </p>
         )}
         {busy && (
@@ -659,7 +668,7 @@ function ListingEditor({
                     aria-label="Adicionar fotos da bike"
                     accept="image/jpeg,image/png,image/webp"
                     multiple
-                    disabled={busy}
+                    disabled={locked}
                     onChange={(e) => {
                       void files(e.currentTarget.files);
                       e.currentTarget.value = "";
@@ -862,7 +871,7 @@ function ListingEditor({
             <>
               <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
                 <p className="font-semibold text-ink">
-                  Valor da publicação: R$150
+                  Publicação: R$150 por mês enquanto o anúncio estiver ativo
                 </p>
                 {listing.feeStatus === "pilot_exempt" && (
                   <p className="mt-2 text-action">
@@ -905,24 +914,26 @@ function ListingEditor({
                   anunciando.
                 </span>
               </label>
-              <button
-                className={`${button} mt-5`}
-                disabled={
-                  busy || dirty || !consent || !canPublish || !publishReady
-                }
-                onClick={() =>
-                  void run(
-                    () =>
-                      classifiedsCall("publish", {
-                        id: listing.id,
-                        contactConsent: consent,
-                      }),
-                    "Anúncio publicado.",
-                  )
-                }
-              >
-                Publicar anúncio
-              </button>
+              {listing.feeStatus === "pilot_exempt" && (
+                <button
+                  className={`${button} mt-5`}
+                  disabled={
+                    busy || dirty || !consent || !canPublish || !publishReady
+                  }
+                  onClick={() =>
+                    void run(
+                      () =>
+                        classifiedsCall("publish", {
+                          id: listing.id,
+                          contactConsent: consent,
+                        }),
+                      "Anúncio publicado.",
+                    )
+                  }
+                >
+                  Publicar com isenção
+                </button>
+              )}
             </>
           ) : (
             <div className="mt-5 flex flex-wrap gap-4">
@@ -936,7 +947,7 @@ function ListingEditor({
                     onClick={() =>
                       void run(
                         () => classifiedsCall("sold", { id: listing.id }),
-                        "Bike marcada como vendida.",
+                        "Bike marcada como vendida. Se houver assinatura, o encerramento da renovação será solicitado.",
                       )
                     }
                     className="min-h-12 rounded-xl border border-action px-5 font-bold text-action"
@@ -974,6 +985,16 @@ function ListingEditor({
             >
               Desativar rascunho
             </button>
+          )}
+          {(draft || listing.feeStatus !== "pilot_exempt") && (
+            <ListingBillingPanel
+              listingId={listing.id}
+              ready={draft && canPublish && publishReady}
+              locked={busy || dirty}
+              contactConsent={consent}
+              onChange={onChange}
+              onLockChange={setBillingLocked}
+            />
           )}
         </section>
       </section>

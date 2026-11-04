@@ -60,7 +60,10 @@ import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
 import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
+import { Route as ApiMemberListingBillingRouteImport } from './routes/api/member/listing-billing'
+import { Route as ApiPublicAsaasWebhookRouteImport } from './routes/api/public/asaas-webhook'
 import { Route as ApiPublicBikeImageRouteImport } from './routes/api/public/bike-image'
+import { Route as ApiPublicClassifiedsBillingWorkerRouteImport } from './routes/api/public/classifieds-billing-worker'
 import { Route as ApiPublicNewsletterImageRouteImport } from './routes/api/public/newsletter-image'
 import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
@@ -330,11 +333,27 @@ const ApiAdminRadarAlertsRoute = ApiAdminRadarAlertsRouteImport.update({
   path: '/api/admin/radar-alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMemberListingBillingRoute = ApiMemberListingBillingRouteImport.update({
+  id: '/api/member/listing-billing',
+  path: '/api/member/listing-billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAsaasWebhookRoute = ApiPublicAsaasWebhookRouteImport.update({
+  id: '/api/public/asaas-webhook',
+  path: '/api/public/asaas-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicBikeImageRoute = ApiPublicBikeImageRouteImport.update({
   id: '/api/public/bike-image',
   path: '/api/public/bike-image',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicClassifiedsBillingWorkerRoute =
+  ApiPublicClassifiedsBillingWorkerRouteImport.update({
+    id: '/api/public/classifieds-billing-worker',
+    path: '/api/public/classifieds-billing-worker',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicNewsletterImageRoute =
   ApiPublicNewsletterImageRouteImport.update({
     id: '/api/public/newsletter-image',
@@ -416,7 +435,10 @@ export interface FileRoutesByFullPath {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/bike-image': typeof ApiPublicBikeImageRoute
+  '/api/public/classifieds-billing-worker': typeof ApiPublicClassifiedsBillingWorkerRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -475,7 +497,10 @@ export interface FileRoutesByTo {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/bike-image': typeof ApiPublicBikeImageRoute
+  '/api/public/classifieds-billing-worker': typeof ApiPublicClassifiedsBillingWorkerRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -535,7 +560,10 @@ export interface FileRoutesById {
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
+  '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/bike-image': typeof ApiPublicBikeImageRoute
+  '/api/public/classifieds-billing-worker': typeof ApiPublicClassifiedsBillingWorkerRoute
   '/api/public/newsletter-image': typeof ApiPublicNewsletterImageRoute
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
@@ -596,7 +624,10 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/member/listing-billing'
+    | '/api/public/asaas-webhook'
     | '/api/public/bike-image'
+    | '/api/public/classifieds-billing-worker'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -655,7 +686,10 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/member/listing-billing'
+    | '/api/public/asaas-webhook'
     | '/api/public/bike-image'
+    | '/api/public/classifieds-billing-worker'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -714,7 +748,10 @@ export interface FileRouteTypes {
     | '/admin/conteudos/novo'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
+    | '/api/member/listing-billing'
+    | '/api/public/asaas-webhook'
     | '/api/public/bike-image'
+    | '/api/public/classifieds-billing-worker'
     | '/api/public/newsletter-image'
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
@@ -774,7 +811,10 @@ export interface RootRouteChildren {
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
   ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
+  ApiMemberListingBillingRoute: typeof ApiMemberListingBillingRoute
+  ApiPublicAsaasWebhookRoute: typeof ApiPublicAsaasWebhookRoute
   ApiPublicBikeImageRoute: typeof ApiPublicBikeImageRoute
+  ApiPublicClassifiedsBillingWorkerRoute: typeof ApiPublicClassifiedsBillingWorkerRoute
   ApiPublicNewsletterImageRoute: typeof ApiPublicNewsletterImageRoute
   ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
@@ -1141,11 +1181,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRadarAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/member/listing-billing': {
+      id: '/api/member/listing-billing'
+      path: '/api/member/listing-billing'
+      fullPath: '/api/member/listing-billing'
+      preLoaderRoute: typeof ApiMemberListingBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/asaas-webhook': {
+      id: '/api/public/asaas-webhook'
+      path: '/api/public/asaas-webhook'
+      fullPath: '/api/public/asaas-webhook'
+      preLoaderRoute: typeof ApiPublicAsaasWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/bike-image': {
       id: '/api/public/bike-image'
       path: '/api/public/bike-image'
       fullPath: '/api/public/bike-image'
       preLoaderRoute: typeof ApiPublicBikeImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/classifieds-billing-worker': {
+      id: '/api/public/classifieds-billing-worker'
+      path: '/api/public/classifieds-billing-worker'
+      fullPath: '/api/public/classifieds-billing-worker'
+      preLoaderRoute: typeof ApiPublicClassifiedsBillingWorkerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/newsletter-image': {
@@ -1251,7 +1312,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
   ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
+  ApiMemberListingBillingRoute: ApiMemberListingBillingRoute,
+  ApiPublicAsaasWebhookRoute: ApiPublicAsaasWebhookRoute,
   ApiPublicBikeImageRoute: ApiPublicBikeImageRoute,
+  ApiPublicClassifiedsBillingWorkerRoute:
+    ApiPublicClassifiedsBillingWorkerRoute,
   ApiPublicNewsletterImageRoute: ApiPublicNewsletterImageRoute,
   ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,

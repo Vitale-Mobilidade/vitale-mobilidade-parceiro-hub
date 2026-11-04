@@ -38,3 +38,14 @@ Critérios: nenhum “gestão do canal”, “Bikes do canal” ou “Nova bike 
 A cobrança Asaas não foi simulada ou ativada. A classificação de bike do canal permanece na prévia/vitrine como atributo do anúncio, enquanto todos os controles do proprietário são os mesmos. Fluxo com preço/isenção somente na etapa Publicação. Nenhuma alteração de sessão ou banco.
 
 Estado local: GO para publicar a correção já solicitada; conferência autenticada no Chrome real após deploy. O browser nativo permitiu acessar a aba real existente; nenhuma senha ou token foi lido/copied e nenhum outro serviço aberto nas abas foi alterado.
+
+
+## Release e conferência autenticada
+
+PR #70 integrada em `65380488d9e90dcb9787bf200f42c7f07ec5b81f`; deployment `088e637a-c973-45d0-b03a-bdda359f8152` no mesmo Lovable. Preview Netlify e headers passaram. Vercel mantém falha de baseline fora do hosting ativo.
+
+No domínio público a cópia visitante nova foi conferida. No Chrome nativo com a sessão real já existente do responsável, a aba da Vitale foi atualizada: Meus anúncios e Criar meu primeiro anúncio aparecem sem controles administrativos ou filtros zerados. Esse botão foi acionado pela UI real e abriu o editor com as etapas Fotos/Informações/Publicar; os campos reais de título, marca/modelo, preço e km foram conferidos, sem inserir dados fictícios.
+
+A abertura iniciou/reaproveitou o rascunho técnico normal do fluxo, sem publicar anúncio. Ele foi deixado na etapa Fotos, pronto para o responsável usar e reutilizado na próxima criação se permanecer vazio. Nenhuma foto foi enviada, campo alterado, código disparado, cobrança gerada ou sessão modificada. As demais abas do usuário foram preservadas.
+
+Evidências reais, fora do Git por serem capturas do desktop pessoal: `outputs/vitale-normal-advertiser-2026-11-04/real-account-dashboard.png` e `real-account-editor.png`. Estado: correção publicada, conferida autenticada; editor aberto no Chrome para continuar. Testes e build passaram. Divulgação pública continua suspensa; Asaas permanece fora deste delta.
