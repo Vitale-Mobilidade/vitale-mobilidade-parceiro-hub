@@ -33,3 +33,13 @@ Decisão: novos pedidos10min; status mostra checkoutExpiresAt e horário do serv
 As simulações de UI comprovam confirmação automática, único aceite, CTA inicial/retomada, término do prazo sem concessão de acesso e pausa/edição/republicação no período pago. Não são evidência de pagamento bancário real. O teste de transporte Asaas e o payload validam o prazo solicitado; o checkout real seguinte depende de ação do usuário.
 
 Publicação: proposta restrita a estes componentes/serviços/testes; sem migração, RLS, secrets ou alterações de anúncios. Risco principal: sessão antiga continuar aberta; operação interna somente cancela se ainda não paga e o provedor aceitar. Custo: build/hosting existente, sem nova cobrança, mensagem ou uso de agente Lovable. Rollback: reverter o commit de runtime; não apagar ledger nem direitos pagos.
+
+
+## Evidência de release
+
+- Runtime: PR #85, commit de merge `a998835b48543049aa04ba4e08b960a686e11a5b`, deploy Lovable `65c05d5b-f6f8-4933-9d8d-19e0800aec13`.
+- Bundle público de `vitalemobilidade.com/conta/anuncios?retorno=%2F&release=waiting85`: `conta_.anuncios-CR5PV4Ss.js`, contém `payment-countdown` e CTA solicitado; não contém “Atualizar pagamento”. Conferência também no domínio Lovable.
+- Comando interno assinado com ID inválido retornou HTTP400/invalid_input, comprovando versão nova do backend sem criar cobrança.
+- Sessão antiga de 60 minutos: Asaas aceitou cancelamento (HTTP200/retired:true); ledger confirmou cancelled, sem paid_at e sem publish_requested. Nenhum checkout substituto foi criado. Próximo clique explícito do usuário cria sessão de 10 minutos.
+- Netlify preview e headers passaram; Vercel permanece falha de baseline fora do hosting operacional, sem bypass de proteção.
+- Sem pagamento bancário realizado pelo agente. Rascunho e fotos não foram editados por esta operação. Divulgação pública segue retida.
