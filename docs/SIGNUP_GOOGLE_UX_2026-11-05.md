@@ -43,3 +43,11 @@ O projeto integrado está em Managed by Lovable, sem Client ID/secret próprios 
 Google Cloud autenticado do proprietário possui Hotpipe SaaS Workspace, cuja marca não deve ser alterada para Vitale. Busca por Vitale não mostrou projeto. Formulário de um projeto dedicado Vitale Mobilidade / vitale-mobilidade-auth preparado, ainda não criado. Etapa posterior exige criar/configurar cliente OAuth com escopos básicos e registrar apenas no backend integrado; credenciais nunca em chat/Git. A marca/consentimento e eventual verificação do Google são dependências externas reais.
 
 Rollback da correção: reverter UI/adaptador/copy desta PR, preservando dados e o login Google vigente. Custo até aqui: testes locais e leitura de configurações, nenhum agente Lovable, nenhuma mensagem real e nenhum recurso Google Cloud criado.
+
+## Publicação da correção
+
+PR #91 incorporada sem bypass, commit e34faf5ead881d92ffacd6e501b8337308c0a2c1, sincronizado no Lovable antes do deploy bae3a707-ec80-40f6-9594-cd1256d9e6a5. GitHub apresentou erro interno transitório no push/GraphQL; retry do push e API REST criaram/mesclaram a PR normalmente, com preview Netlify aprovado. Vercel mantém a falha preexistente fora do hosting ativo, sem alteração ou bypass de regras.
+
+Domínio público exibiu o novo bloco Termos da comunidade e cadastro em /privacidade#termos-comunidade. Prévia da mesma revisão mostrou um único checkbox e contatos obrigatórios. Provas salvas fora do Git em outputs/vitale-signup-ux-2026-11-05. Testes/build já aprovados continuam válidos, sem alteração executável posterior.
+
+Branding próprio ainda pendente: ao ser consultado sobre a criação, o usuário perguntou se haveria custo. A resposta esclareceu custo adicional previsto R$0 para login básico, apoiada pelo guia Google https://codelabs.developers.google.com/codelabs/sign-in-with-google-button (conta e projeto gratuitos). Isso não foi tratado como autorização: novo projeto/cliente não criado, billing não ativado, provedor gerenciado preservado. Formulário preparado e mantido para continuação após autorização explícita.

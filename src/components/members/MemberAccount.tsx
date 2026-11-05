@@ -403,9 +403,15 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       setMessage("");
       setEmail("");
       setName("");
+      setPhone("");
+      setPassword("");
+      setDelivery(undefined);
+      setGoogleEmailVerified(false);
       setPrivacy(false);
+      return true;
     } catch (e) {
       setError(memberError(e));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -527,6 +533,26 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   ? "Recuperar acesso"
                   : "Entre na comunidade Vitale"}
         </h1>
+        {joining && (
+          <div className="mt-5 rounded-xl border border-line bg-surface p-4">
+            <p className="text-sm text-muted-foreground">
+              Você está acessando com
+            </p>
+            <p className="mt-1 break-all font-semibold">
+              {session?.user.email}
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                if (await signOut()) setMode("cadastro");
+              }}
+              className="mt-2 min-h-11 font-semibold text-action underline disabled:opacity-50"
+            >
+              Usar outra conta
+            </button>
+          </div>
+        )}
         {editing && ready && profile?.communityJoinedAt && userId && (
           <Suspense fallback={<p role="status">Carregando foto do perfil…</p>}>
             <ProfilePhoto key={userId} embedded />

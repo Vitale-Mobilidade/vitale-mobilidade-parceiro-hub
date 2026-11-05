@@ -42,7 +42,7 @@ await context.route('**/*', async (route) => {
   if (url.origin !== 'http://127.0.0.1:54321') { external.push(url.origin); return route.abort(); }
   if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': origin, 'access-control-allow-headers':'*','access-control-allow-methods':'POST,GET,PUT,DELETE,OPTIONS' } });
   const input = request.postDataJSON() || {};
-  requests.push({ path: url.pathname, input });
+  requests.push({ path: url.pathname, input, scope: url.searchParams.get('scope') });
   const reply = (data, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': origin }, body: JSON.stringify(data) });
   if (url.pathname.endsWith('/signup')) { user.user_metadata = input.data; return reply(session); }
   if (url.pathname.endsWith('/recover') || url.pathname.endsWith('/resend') || url.pathname.endsWith('/logout')) return reply({});
@@ -315,6 +315,31 @@ try {
   await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();
   console.log('PASS origin-preserving login/signup/recovery; explicit profile only; avatar-only menu at 16px; public CTA to authenticated editor and private fee');
   }
+  // An existing password session must not be mistaken for a completed Google callback.
+  profile=null; user.user_metadata={};
+  const joinsBeforeSwitch=requests.filter(r=>r.input.p_action==='join').length;
+  const codesBeforeSwitch=requests.filter(r=>r.path.endsWith('member-identity-code')).length;
+  await page.goto(`${origin}/conta?modo=entrar`);
+  await page.evaluate((session)=>localStorage.setItem('sb-127-auth-token',JSON.stringify(session)),{...session,expires_at:expires});
+  await page.goto(`${origin}/conta/google`);
+  await page.getByRole('heading',{name:'Não foi possível concluir o acesso',exact:true}).waitFor();
+  await page.goto(`${origin}/conta?modo=cadastro&retorno=%2Fconteudos`);
+  await page.getByRole('heading',{name:'Concluir cadastro',exact:true}).waitFor();
+  assert.equal(await page.locator('#member-account-email').inputValue(),user.email);
+  await page.getByLabel('Nome público',{exact:true}).fill('Nome da sessão anterior');
+  await page.getByLabel('Celular com WhatsApp e DDD',{exact:true}).fill('11999999999');
+  await page.getByRole('checkbox',{name:/Aceito os termos da comunidade/}).check();
+  await mkdir(new URL(screenshots,import.meta.url),{recursive:true});
+  await page.screenshot({path:new URL(screenshots+'existing-session-switch-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('button',{name:'Usar outra conta',exact:true}).click();
+  await page.getByRole('button',{name:'Criar conta',exact:true}).waitFor();
+  for(const label of ['Nome público','E-mail','Senha','Celular com WhatsApp e DDD']) assert.equal(await page.getByLabel(label,{exact:true}).inputValue(),'');
+  assert.equal(await page.getByRole('checkbox',{name:/Aceito os termos da comunidade/}).isChecked(),false);
+  assert.equal(requests.filter(r=>r.path.endsWith('/logout')).at(-1).scope,'local');
+  assert.equal(requests.filter(r=>r.input.p_action==='join').length,joinsBeforeSwitch);
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).length,codesBeforeSwitch);
+  await page.screenshot({path:new URL(screenshots+'new-account-empty-mobile.png',import.meta.url).pathname,fullPage:true});
+  console.log('PASS password session rejected as Google; local account switch clears all fields/consent without joining or OTP');
   // Google flow is simulated end-to-end locally: no provider, account or real OTP request.
   await page.goto(`${origin}/conta?modo=senha`);
   await page.getByRole('heading',{name:'Recuperar acesso',exact:true}).waitFor();
@@ -331,6 +356,7 @@ try {
   assert(googleFeedback.status.includes('Estamos direcionando você para entrar na Vitale Mobilidade.'));
   const brokerUrl=new URL(page.url());
   assert.equal(brokerUrl.searchParams.get('provider'),'google');
+  assert.equal(brokerUrl.searchParams.get('prompt'),'select_account');
   assert.equal(brokerUrl.searchParams.get('redirect_uri'),`${origin}/conta/google`);
   assert(brokerUrl.searchParams.get('state'));
   user.app_metadata={provider:'google',providers:['google']};
