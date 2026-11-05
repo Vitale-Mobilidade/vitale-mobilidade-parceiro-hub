@@ -50,6 +50,7 @@ Trade-offs: reaproveitamento altera a associação operacional do pedido ao anú
 
 - `python3 tests/member-community-db.py --seller`: migration, reativação/troca, data preservada, origem/auditoria, bloqueio de cobrança nova tendo direito livre, ownership, grant/RLS (inclusive defaults amplos e sequência privada), ordem de fotos, métrica privada/deduplicada, vencimento e suspensão. Duas publicações simultâneas aceitam somente uma; transferência e observação de pagamento simultâneas não dão deadlock. Mudança de telefone durante checkout mantém pagamento ativo e exige nova confirmação; reembolso retira a bike atualmente vinculada. Rollback preserva histórico e restaura RPCs anteriores.
 - `tests/bike-classifieds-ui.mjs`: condições antes da criação, 1>2>3, contato/mensagem, cinco fotos e ordem em telas estreitas, checkbox único, modal de pagamento, reativação direta, troca do direito sem segundo checkout, Todos/Desativados, atalhos, newsletter oculta ao logado, capa em OG, compartilhamento, métricas, SSR e perfil. Backend/Storage/Asaas sintéticos; zero cobranças, mensagens ou dados reais alterados.
+- `node tests/classifieds-share-ssr.mjs`: resposta SSR local conferida com os user agents WhatsApp e Facebook; capa absoluta em OG/Twitter, canonical sem query e ação de compartilhar versionada presentes no HTML, sem executar JavaScript. Backend sintético; sem envio de mensagem.
 - 62 testes direcionados: contratos de mensagem/compartilhamento/retorno, login/retorno, servidor de classificados, Asaas, Admin e newsletter. `pnpm validate`: 66 testes/typecheck/build.
 - Capturas locais (ignoradas no Git): `artifacts/seller-experience/seller-conditions-desktop.png`, `paid-success-modal.png`, `photo-order-mobile.png`, `reused-paid-period-mobile.png`, `dashboard-mobile.png`, `listing-desktop.png`.
 
@@ -61,7 +62,7 @@ Trade-offs: reaproveitamento altera a associação operacional do pedido ao anú
 - Antes do deploy, aplicar migration no Supabase integrado do mesmo Lovable. Ela cria colunas/RPCs/tabelas e copia os vínculos originais de pedidos e os contatos consentidos dos anúncios já publicados; não muda valores, pagamentos ou datas de exibição. Invalidar schema cache é parte da migration.
 - O próprio contato publicado não muda silenciosamente ao trocar o telefone do perfil: requer editar/confirmar novamente. Direitos pagos continuam válidos.
 
-Estado: implementação e validação locais concluídas. Sem risco material pendente identificado; produção/migration/merge ainda não autorizados neste escopo. Próximo passo: PR e autorização específica. Rollback preparado em `supabase/rollback/20261105230000_classifieds_seller_experience.sql`, acompanhado do revert do código; nunca apagar tabelas ou reconstruir pagamentos.
+Estado: implementação e validação locais concluídas. Sem risco material pendente identificado; produção/migration/merge ainda não autorizados neste escopo. PR #94 preparada; próximo passo: autorização específica para migration, merge e publicação. Rollback preparado em `supabase/rollback/20261105230000_classifieds_seller_experience.sql`, acompanhado do revert do código; nunca apagar tabelas ou reconstruir pagamentos.
 
 
 ### Pré-flight de produção (somente leitura)
