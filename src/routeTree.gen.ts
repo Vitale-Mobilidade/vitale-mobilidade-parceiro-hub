@@ -43,6 +43,7 @@ import { Route as CalculadorasTempoRecuperadoRouteImport } from './routes/calcul
 import { Route as CalculadorasTransportePublicoVsBikeRouteImport } from './routes/calculadoras/transporte-publico-vs-bike'
 import { Route as CalculadorasUberVsBikeRouteImport } from './routes/calculadoras/uber-vs-bike'
 import { Route as ContaAnunciosRouteImport } from './routes/conta_.anuncios'
+import { Route as ContaGoogleRouteImport } from './routes/conta_.google'
 import { Route as ConteudosIndexRouteImport } from './routes/conteudos/index'
 import { Route as ConteudosSlugRouteImport } from './routes/conteudos/$slug'
 import { Route as FerramentasIndexRouteImport } from './routes/ferramentas/index'
@@ -246,6 +247,11 @@ const ContaAnunciosRoute = ContaAnunciosRouteImport.update({
   path: '/conta/anuncios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContaGoogleRoute = ContaGoogleRouteImport.update({
+  id: '/conta_/google',
+  path: '/conta/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConteudosIndexRoute = ConteudosIndexRouteImport.update({
   id: '/conteudos/',
   path: '/conteudos/',
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conta/anuncios': typeof ContaAnunciosRoute
+  '/conta/google': typeof ContaGoogleRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -493,6 +500,7 @@ export interface FileRoutesByTo {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conta/anuncios': typeof ContaAnunciosRoute
+  '/conta/google': typeof ContaGoogleRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -558,6 +566,7 @@ export interface FileRoutesById {
   '/calculadoras/transporte-publico-vs-bike': typeof CalculadorasTransportePublicoVsBikeRoute
   '/calculadoras/uber-vs-bike': typeof CalculadorasUberVsBikeRoute
   '/conta_/anuncios': typeof ContaAnunciosRoute
+  '/conta_/google': typeof ContaGoogleRoute
   '/conteudos/$slug': typeof ConteudosSlugRoute
   '/ferramentas/aplicativos-vs-bike': typeof FerramentasAplicativosVsBikeRoute
   '/ferramentas/carro-vs-bike': typeof FerramentasCarroVsBikeRoute
@@ -624,6 +633,7 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conta/anuncios'
+    | '/conta/google'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -688,6 +698,7 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conta/anuncios'
+    | '/conta/google'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -752,6 +763,7 @@ export interface FileRouteTypes {
     | '/calculadoras/transporte-publico-vs-bike'
     | '/calculadoras/uber-vs-bike'
     | '/conta_/anuncios'
+    | '/conta_/google'
     | '/conteudos/$slug'
     | '/ferramentas/aplicativos-vs-bike'
     | '/ferramentas/carro-vs-bike'
@@ -817,6 +829,7 @@ export interface RootRouteChildren {
   CalculadorasTransportePublicoVsBikeRoute: typeof CalculadorasTransportePublicoVsBikeRoute
   CalculadorasUberVsBikeRoute: typeof CalculadorasUberVsBikeRoute
   ContaAnunciosRoute: typeof ContaAnunciosRoute
+  ContaGoogleRoute: typeof ContaGoogleRoute
   ConteudosSlugRoute: typeof ConteudosSlugRoute
   FerramentasAplicativosVsBikeRoute: typeof FerramentasAplicativosVsBikeRoute
   FerramentasCarroVsBikeRoute: typeof FerramentasCarroVsBikeRoute
@@ -1088,6 +1101,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContaAnunciosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conta_/google': {
+      id: '/conta_/google'
+      path: '/conta/google'
+      fullPath: '/conta/google'
+      preLoaderRoute: typeof ContaGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/conteudos/': {
       id: '/conteudos/'
       path: '/conteudos'
@@ -1332,6 +1352,7 @@ const rootRouteChildren: RootRouteChildren = {
     CalculadorasTransportePublicoVsBikeRoute,
   CalculadorasUberVsBikeRoute: CalculadorasUberVsBikeRoute,
   ContaAnunciosRoute: ContaAnunciosRoute,
+  ContaGoogleRoute: ContaGoogleRoute,
   ConteudosSlugRoute: ConteudosSlugRoute,
   FerramentasAplicativosVsBikeRoute: FerramentasAplicativosVsBikeRoute,
   FerramentasCarroVsBikeRoute: FerramentasCarroVsBikeRoute,

@@ -22,9 +22,10 @@ export async function requestMemberIdentityCode(
 /** Called only by the successful signup submit, never by a render/effect/reload. */
 export async function requestSignupIdentityCodes(
   phone: string,
+  emailVerified = false,
 ): Promise<IdentityDelivery> {
   const result = await Promise.allSettled([
-    requestMemberIdentityCode("email"),
+    emailVerified ? Promise.resolve() : requestMemberIdentityCode("email"),
     requestMemberIdentityCode("phone", phone, true),
   ]);
   return {

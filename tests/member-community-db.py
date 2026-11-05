@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--google" in sys.argv: sys.argv.append("--identity")
 if "--launch" in sys.argv: sys.argv.append("--classifieds")
 if "--classifieds" in sys.argv: sys.argv.append("--identity")
 
@@ -199,6 +200,12 @@ COMMIT;
                 "tests/admin-channel-classifieds.sql",
             ]:
                 result = sql((repo / path).read_text())
+                if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-3000:]}")
+                print(f"PASS {path}")
+
+        if "--google" in sys.argv:
+            for path in ["tests/member-google-fixture.sql","supabase/migrations/20261105160000_google_member_email_proof.sql","tests/member-google.sql"]:
+                result=sql((repo/path).read_text())
                 if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-3000:]}")
                 print(f"PASS {path}")
 

@@ -36,6 +36,7 @@ await context.route('**/*', async (route) => {
   const request = route.request();
   const url = new URL(request.url());
   if (url.origin === origin && url.pathname === '/tests/member-ui.html') return route.fulfill({ contentType: 'text/html', body: await readFile(fixtures, 'utf8') });
+  if (url.origin === origin && url.pathname === '/~oauth/initiate') return route.fulfill({contentType:'text/html',body:'<h1>Broker Google simulado localmente</h1>'});
   if (url.origin === origin) return route.continue();
   if (url.origin !== 'http://127.0.0.1:54321') { external.push(url.origin); return route.abort(); }
   if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': origin, 'access-control-allow-headers':'*','access-control-allow-methods':'POST,GET,PUT,DELETE,OPTIONS' } });
@@ -47,6 +48,7 @@ await context.route('**/*', async (route) => {
   if (url.pathname.endsWith('/token')) return input.email === 'erro@example.invalid' ? reply({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400) : reply(session);
   if (url.pathname.endsWith('/user')) return reply(user);
   if(url.pathname === '/rest/v1/rpc/member_classifieds') return reply({displayName:profile?.displayName??null,communityJoined:Boolean(profile?.communityJoinedAt),canAdvertise:false,canPublish:identity.canInteract,canUploadAvatar:identity.canInteract,avatarId:null,avatarPath:null});
+  if (url.pathname === '/rest/v1/rpc/member_google_email') {identity.emailVerified=true;identity.canInteract=identity.phoneVerified;return reply({emailVerified:true});}
   if (url.pathname === '/rest/v1/rpc/member_identity') {
     if(input.p_action==='verify') {
       if(input.p_payload.code!=='123456') return reply({ok:false,error:'identity_invalid_code'});
@@ -89,6 +91,7 @@ await context.route('**/*', async (route) => {
 });
 const fixture = (view='account') => `${origin}/tests/member-ui.html?view=${view}`;
 try {
+  if (process.env.MEMBER_TEST_GOOGLE_ONLY !== 'true') {
   const response = await page.goto(`${origin}/conta?modo=perfil`);
   assert.equal(response.headers()['cache-control'], 'private, no-store');
   assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'), /noindex/);
@@ -297,6 +300,77 @@ try {
   await page.goto(`${origin}/conta?modo=senha#access_token=${token}&refresh_token=fake-local-refresh&expires_in=3600&token_type=bearer&type=recovery`);await page.getByRole('heading',{name:'Definir nova senha'}).waitFor();assert.equal(new URL(page.url()).pathname,'/conta');await page.getByLabel('Nova senha',{exact:true}).fill('local-recovered-password');await page.getByRole('button',{name:'Salvar nova senha'}).click();await page.waitForURL(url=>url.pathname==='/radar');assert.equal(new URL(page.url()).hash,'#bikes');assert.equal(new URL(page.url()).searchParams.get('compare'),'v9_max,v8_pro');
   await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();
   console.log('PASS origin-preserving login/signup/recovery; explicit profile only; avatar-only menu at 16px; public CTA to authenticated editor and private fee');
+  }
+  // Google flow is simulated end-to-end locally: no provider, account or real OTP request.
+  await page.goto(`${origin}/conta?modo=senha`);
+  await page.getByRole('heading',{name:'Recuperar acesso',exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Continuar com Google',exact:true}).count(),0);
+  const googleOrigin='/radar?compare=v9_max%2Cv8_pro#bikes';
+  await page.goto(`${origin}/conta?modo=cadastro&retorno=${encodeURIComponent(googleOrigin)}&convite=${referralCode}`);
+  await page.getByRole('button',{name:'Continuar com Google',exact:true}).waitFor();
+  await page.setViewportSize({width:390,height:844});
+  await page.screenshot({path:new URL(screenshots+'google-signup-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('button',{name:'Continuar com Google',exact:true}).click();
+  await page.waitForURL(url=>url.pathname==='/~oauth/initiate');
+  const brokerUrl=new URL(page.url());
+  assert.equal(brokerUrl.searchParams.get('provider'),'google');
+  assert.equal(brokerUrl.searchParams.get('redirect_uri'),`${origin}/conta/google`);
+  assert(brokerUrl.searchParams.get('state'));
+  user.app_metadata={provider:'google',providers:['google']};
+  user.identities=[{id:'local-google-identity',user_id:user.id,provider:'google',identity_data:{email:user.email,email_verified:true}}];
+  user.user_metadata={full_name:'Leitora Google'};
+  profile=null;identity={emailVerified:false,phoneVerified:false,phoneMasked:null,canInteract:false};
+  const googleJoins=requests.filter(r=>r.input.p_action==='join').length;
+  const googleSends=requests.filter(r=>r.path.endsWith('member-identity-code')).length;
+  await page.evaluate((session)=>localStorage.setItem('sb-127-auth-token',JSON.stringify(session)),{...session,expires_at:expires});
+  const callback=await page.goto(`${origin}/conta/google`);
+  assert.equal(callback.headers()['cache-control'],'private, no-store');
+  assert.equal(callback.headers()['referrer-policy'],'no-referrer');
+  await page.getByRole('heading',{name:'Concluir cadastro',exact:true}).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get('retorno'),googleOrigin);
+  assert.equal(new URL(page.url()).searchParams.get('convite'),referralCode);
+  assert.equal(await page.getByLabel('Nome público',{exact:true}).inputValue(),'Leitora Google');
+  assert.equal(await page.locator('input[type=password]').count(),0);
+  assert.equal(requests.filter(r=>r.input.p_action==='join').length,googleJoins,'Google identity alone never opts into newsletter');
+  await page.getByLabel('Celular com WhatsApp e DDD',{exact:true}).fill('11999999999');
+  await page.getByRole('checkbox',{name:/Aceito receber um código de validação/}).check();
+  await page.getByRole('checkbox',{name:/Quero fazer parte da comunidade/}).check();
+  await page.screenshot({path:new URL(screenshots+'google-complete-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('button',{name:'Entrar na comunidade',exact:true}).click();
+  await page.getByRole('heading',{name:'Confirme seu WhatsApp',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'E-mail: validado',exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Código recebido por e-mail',{exact:true}).count(),0);
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).length,googleSends+1);
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).at(-1).input.channel,'phone');
+  await page.getByLabel('Código recebido no WhatsApp',{exact:true}).fill('123456');
+  await page.screenshot({path:new URL(screenshots+'google-whatsapp-mobile.png',import.meta.url).pathname,fullPage:true});
+  await page.getByRole('button',{name:'Validar celular',exact:true}).click();
+  await page.waitForURL(url=>url.pathname==='/radar');
+  assert.equal(new URL(page.url()).hash,'#bikes');
+  assert.equal(new URL(page.url()).searchParams.get('compare'),'v9_max,v8_pro');
+  assert(profile.newsletterSubscribed);
+  assert.equal(requests.filter(r=>r.input.p_action==='join').length,googleJoins+1);
+  assert(requests.some(r=>r.input.p_action==='join' && r.input.p_payload.invitationCode===referralCode));
+  profile.newsletterSubscribed=false;
+  await page.evaluate((origin)=>localStorage.setItem('vitale-google-return',JSON.stringify({returnTo:origin,expiresAt:Date.now()+60000})),googleOrigin);
+  await page.goto(`${origin}/conta/google`);
+  await page.waitForURL(url=>url.pathname==='/radar');
+  assert.equal(requests.filter(r=>r.input.p_action==='join').length,googleJoins+1);
+  assert.equal(profile.newsletterSubscribed,false,'Google re-login preserves newsletter unsubscribe');
+  assert.equal(requests.filter(r=>r.path.endsWith('member-identity-code')).length,googleSends+1);
+  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();
+  await page.getByRole('menuitem',{name:'Sair',exact:true}).click();
+  await page.getByRole('link',{name:'Entrar',exact:true}).waitFor();
+  await page.evaluate(()=>localStorage.setItem('vitale-google-return',JSON.stringify({returnTo:'/conteudos',expiresAt:Date.now()+60000})));
+  await page.goto(`${origin}/conta/google#error=access_denied&error_description=private-provider-detail`);
+  await page.getByRole('heading',{name:'Não foi possível concluir o acesso',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Tentar com Google novamente',exact:true}).waitFor();
+  assert(!page.url().includes('private-provider-detail'));
+  assert(!(await page.locator('body').innerText()).includes('private-provider-detail'));
+  const fallback=new URL(await page.getByRole('link',{name:'Entrar com e-mail',exact:true}).getAttribute('href'),origin);
+  assert.equal(fallback.searchParams.get('retorno'),'/conteudos');
+  await page.screenshot({path:new URL(screenshots+'google-cancel-mobile.png',import.meta.url).pathname,fullPage:true});
+  console.log('PASS Google broker, callback, cancellation, consent before membership, one WhatsApp OTP, verified provider email, origin/invitation, existing identity and unsubscribe');
   communityEnabled = false;
   await page.goto(`${origin}/conta?modo=perfil`);
   await page.getByText('A comunidade está temporariamente indisponível.',{exact:true}).waitFor();

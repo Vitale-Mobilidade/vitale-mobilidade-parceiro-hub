@@ -1,3 +1,5 @@
+import { startGoogleMemberSignIn } from "@/lib/member-google-auth";
+import { memberGoogleAuthEnabled } from "@/lib/member-accounts-feature";
 import { memberPhone } from "@/lib/member-identity";
 import {
   requestSignupIdentityCodes,
@@ -19,7 +21,11 @@ import {
 import { newsletterReferralsEnabled } from "@/lib/newsletter-referrals";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemberSession } from "@/hooks/use-member-session";
-import { communityAccount, memberCall } from "@/lib/member-community-api";
+import {
+  acceptGoogleMemberEmail,
+  communityAccount,
+  memberCall,
+} from "@/lib/member-community-api";
 import {
   communitySignupMetadata,
   hasCommunityConsent,
@@ -124,6 +130,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
   const [password, setPassword] = useState("");
   const creatingAccount = useRef(false);
   const [signupFlow, setSignupFlow] = useState(false);
+  const [googleEmailVerified, setGoogleEmailVerified] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const googleAccount = Boolean(
+    session?.user.identities?.some((i) => i.provider === "google") ||
+    session?.user.app_metadata?.provider === "google",
+  );
   const [phone, setPhone] = useState("");
   const [phoneConsent, setPhoneConsent] = useState(false);
   const [delivery, setDelivery] = useState<IdentityDelivery>();
@@ -179,7 +191,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       readSucceeded = true;
       const metadata = session?.user.user_metadata;
       const initialName =
-        next?.displayName ?? String(metadata?.display_name ?? "");
+        next?.displayName ??
+        String(
+          metadata?.display_name ?? metadata?.full_name ?? metadata?.name ?? "",
+        )
+          .trim()
+          .slice(0, 60);
       if (active) {
         setProfile(next);
         setName(initialName);
@@ -196,6 +213,10 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             ...(invitationCode ? { invitationCode } : {}),
           }),
         );
+      }
+      if (googleAccount && next?.communityJoinedAt) {
+        const verified = await acceptGoogleMemberEmail().catch(() => false);
+        if (active) setGoogleEmailVerified(verified);
       }
       if (active) {
         setProfile(next);
@@ -224,6 +245,19 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     setMessage("");
     setPassword("");
   }
+  async function googleSignIn() {
+    setGoogleBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await startGoogleMemberSignIn(returnTo, invitationCode);
+    } catch {
+      setGoogleBusy(false);
+      setError(
+        "Não foi possível entrar com Google. Tente novamente ou use seu e-mail e senha.",
+      );
+    }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -251,6 +285,8 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           throw new Error("invalid_name");
         if (!privacy) throw new Error("privacy_required");
         if (!profile?.communityJoinedAt) {
+          if (googleAccount && (!memberPhone(phone) || !phoneConsent))
+            throw new Error("invalid_phone");
           const data = await communityAccount("join", {
             displayName: name.trim(),
             acknowledged: true,
@@ -258,6 +294,14 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           });
           setProfile(memberProfileSchema.parse(data));
           setMessage("Cadastro concluído.");
+          if (googleAccount) {
+            setSignupFlow(true);
+            const verified = await acceptGoogleMemberEmail().catch(() => false);
+            setGoogleEmailVerified(verified);
+            setDelivery(await requestSignupIdentityCodes(phone, verified));
+            setMode("validar");
+            setMessage("");
+          }
         } else {
           const data = await memberCall("save_profile", {
             displayName: name.trim(),
@@ -389,11 +433,14 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     return (
       <section className="rounded-2xl border border-line bg-white p-5 sm:p-8">
         <h1 className="text-3xl font-bold text-ink">
-          Confirme seu e-mail e WhatsApp
+          {googleEmailVerified
+            ? "Confirme seu WhatsApp"
+            : "Confirme seu e-mail e WhatsApp"}
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Sua conta foi criada. Digite os dois códigos para liberar curtidas,
-          comentários e a publicação de bikes.
+          {googleEmailVerified
+            ? "Seu e-mail já foi confirmado pelo Google. Digite o código recebido no WhatsApp para liberar curtidas, comentários e anúncios."
+            : "Sua conta foi criada. Digite os dois códigos para liberar curtidas, comentários e a publicação de bikes."}
         </p>
         <Suspense fallback={<p role="status">Carregando validação…</p>}>
           <IdentityPanel
@@ -478,6 +525,44 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             {message}
           </p>
         )}
+        {!session && !recovery && memberGoogleAuthEnabled && (
+          <div className="mt-6">
+            <button
+              type="button"
+              disabled={busy || googleBusy}
+              onClick={() => void googleSignIn()}
+              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-line bg-white px-5 py-3 font-semibold text-ink hover:bg-surface disabled:opacity-50"
+            >
+              <svg
+                aria-hidden="true"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#4285F4"
+                  d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 22c2.7 0 4.96-.9 6.61-2.41l-3.24-2.51c-.9.6-2.05.96-3.37.96-2.6 0-4.81-1.76-5.6-4.12H3.05v2.59A10 10 0 0 0 12 22Z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M6.4 13.92a6 6 0 0 1 0-3.84V7.49H3.05a10 10 0 0 0 0 9.02l3.35-2.59Z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.96c1.47 0 2.79.51 3.83 1.51l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.95 5.49l3.35 2.59c.79-2.36 3-4.12 5.6-4.12Z"
+                />
+              </svg>
+              {googleBusy ? "Conectando ao Google…" : "Continuar com Google"}
+            </button>
+            <p className="mt-5 text-center text-sm text-muted-foreground">
+              ou continue com e-mail
+            </p>
+          </div>
+        )}
         {editing && !ready ? (
           <div className="mt-5">
             <p>
@@ -511,8 +596,8 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   id="member-name-help"
                   className="mt-1 block text-sm font-normal text-muted-foreground"
                 >
-                  Esse nome aparece nos seus novos comentários. Seu e-mail fica
-                  privado.
+                  {name.length}/60 caracteres · mínimo de 2. Esse nome aparece
+                  nos seus comentários. Seu e-mail fica privado.
                 </span>
               </div>
             )}
@@ -531,7 +616,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 />
               </label>
             )}
-            {signup && (
+            {joining && googleAccount && (
+              <p className="break-all text-sm">
+                E-mail da sua conta Google: {session?.user.email}
+              </p>
+            )}
+            {(signup || (joining && googleAccount)) && (
               <div>
                 <label htmlFor="signup-phone" className="block font-semibold">
                   Celular com WhatsApp e DDD
@@ -545,8 +635,16 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(11) 99999-9999"
                   maxLength={22}
+                  aria-describedby="signup-phone-help"
                   required
                 />
+                <p
+                  id="signup-phone-help"
+                  className="mt-2 text-sm text-muted-foreground"
+                >
+                  {phone.length}/22 caracteres. Informe DDD e os 9 dígitos do
+                  celular.
+                </p>
                 <label className="mt-3 flex items-start gap-3 text-sm">
                   <input
                     type="checkbox"
@@ -556,9 +654,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                     required
                   />
                   <span>
-                    Aceito receber os códigos de validação por e-mail e no
-                    WhatsApp informado. Se eu anunciar uma bike, esse WhatsApp
-                    será o contato para compradores, após minha autorização.
+                    {googleAccount
+                      ? "Aceito receber um código de validação no WhatsApp informado."
+                      : "Aceito receber os códigos de validação por e-mail e no WhatsApp informado."}{" "}
+                    Se eu anunciar uma bike, esse WhatsApp será o contato para
+                    compradores, após minha autorização.
                   </span>
                 </label>
               </div>
@@ -635,7 +735,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 .
               </p>
             )}
-            <button className={button} disabled={busy}>
+            <button className={button} disabled={busy || googleBusy}>
               {busy
                 ? "Aguarde…"
                 : editing
