@@ -14,6 +14,7 @@ type CommunityDatabase = Omit<Database, "public"> & {
         Args: { p_action: string; p_payload: Json };
         Returns: Json;
       };
+      member_google_email: { Args: Record<string, never>; Returns: Json };
       member_referrals: { Args: Record<string, never>; Returns: Json };
       member_identity: {
         Args: { p_action: string; p_payload: Json };
@@ -77,3 +78,17 @@ export const identityCall = createClientOnlyFn(
     return data;
   },
 );
+
+export const acceptGoogleMemberEmail = createClientOnlyFn(async () => {
+  if (!memberAccountsEnabled) throw new Error("community_disabled");
+  const { data, error } = await (
+    supabase as SupabaseClient<CommunityDatabase>
+  ).rpc("member_google_email");
+  if (error) throw error;
+  return Boolean(
+    data &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    data.emailVerified === true,
+  );
+});
