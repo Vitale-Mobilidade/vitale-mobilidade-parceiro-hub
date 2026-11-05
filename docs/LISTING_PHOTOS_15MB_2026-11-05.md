@@ -49,3 +49,17 @@ Rollback: reverter conversor, textos e dependência mantendo fotos existentes e 
 - O fallback adiciona cerca de 281–346 kB de WASM sem gzip, carregado apenas quando necessário; processamento local pode demorar em aparelhos modestos. Há feedback e prazos de conversão, sem custo novo de processamento no servidor.
 
 Estado: implementação local concluída, sem risco material pendente identificado. Publicação exige autorização específica para merge/deploy desta PR, conforme EXECUTION_GUARDRAILS; aprovação da PR #92 não cobre este escopo. Rollback: reverter código/dependência, preservando fotos já armazenadas.
+
+
+## Publicação autorizada e verificação ao vivo
+
+- Usuário aprovou explicitamente integrar/publicar a PR #93 nesta thread em 05/11/2026.
+- PR #93 integrada com cabeça exata `9e4c036594b9d830fa95f84a20ea9bac6405bd4c`; merge `712ea695f85921059ef5cde5c7fc3f8a0c0fe9b1`. Lovable confirmou esse SHA antes do deploy.
+- Deploy `6807eded-a9c1-4a39-8e7d-92d7539ed238`, domínio `https://vitalemobilidade.com`. Interface Lovable confirmou “Published / Your website is up to date”. Nenhuma solicitação ao agente Lovable, migration ou upload real de teste.
+- Preview Netlify #93 aprovado. Check Vercel falha igualmente na base `555ec56686b884ed7ced0a6f0bc9ce0cbf197acf`; hosting operacional deste projeto é Lovable, cuja publicação foi comprovada no domínio.
+- GET público `/conta/anuncios` entrega o bundle novo, com progresso e texto de otimização. API compilada contém limite de 15 MiB e aponta para `/assets/member-image-worker-CDOKLRoR.js`.
+- Worker e ambos encoders JavaScript retornaram HTTP 200 / text/javascript. Ambos WASM retornaram HTTP 200 / application/wasm, assinatura binária válida e SHA256 idêntico aos binários do build testado. Headers incluem o ID desse deploy. O hash do Worker no build Lovable difere do local; a referência foi obtida no bundle efetivamente servido, não presumida.
+- Inspeção pela interface real autenticada: aberto apenas o rascunho existente, sem salvar/alterar; quatro fotos preservadas, limite “15 MB por foto” e “Nós otimizamos as imagens automaticamente para o site” visíveis. Captura `artifacts/listing-photos-15mb/published-editor-15mb.png`. Nenhuma foto real enviada/removida e nenhum pagamento executado.
+- Evidência de publicação adicional: `artifacts/listing-photos-15mb/published-15mb-lovable.png` (artefatos locais, fora do commit).
+
+Estado final: publicado e conferido no domínio. Mesmos resultados Pass/N/A da revisão; teste da foto específica no iPhone físico permanece como verificação de campo, sem impedir o release aprovado e validado em WebKit.
