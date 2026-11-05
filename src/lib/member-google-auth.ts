@@ -13,6 +13,7 @@ export async function startGoogleMemberSignIn(
   );
   const result = await createLovableAuth().signInWithOAuth("google", {
     redirect_uri: `${window.location.origin}/conta/google`,
+    extraParams: { prompt: "select_account" },
   });
   if (result.error)
     throw new Error(

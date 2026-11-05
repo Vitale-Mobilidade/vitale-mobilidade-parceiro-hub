@@ -32,7 +32,11 @@ export function GoogleMemberCallback() {
       if (
         verified.error ||
         !verified.data.user ||
-        verified.data.user.is_anonymous
+        verified.data.user.is_anonymous ||
+        verified.data.user.id !== data.session.user.id ||
+        !verified.data.user.identities?.some(
+          (identity) => identity.provider === "google",
+        )
       ) {
         if (active) setError(true);
         return;
