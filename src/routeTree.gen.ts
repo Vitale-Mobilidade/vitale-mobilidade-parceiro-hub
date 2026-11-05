@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnuncieSuaBikeRouteImport } from './routes/anuncie-sua-bike'
 import { Route as ContaRouteImport } from './routes/conta'
 import { Route as EscolherbikeRouteImport } from './routes/escolherbike'
 import { Route as GrupodeofertasRouteImport } from './routes/grupodeofertas'
@@ -76,6 +77,11 @@ import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/cont
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnuncieSuaBikeRoute = AnuncieSuaBikeRouteImport.update({
+  id: '/anuncie-sua-bike',
+  path: '/anuncie-sua-bike',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContaRoute = ContaRouteImport.update({
@@ -404,6 +410,7 @@ const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/anuncie-sua-bike': typeof AnuncieSuaBikeRoute
   '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/anuncie-sua-bike': typeof AnuncieSuaBikeRoute
   '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
@@ -535,6 +543,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/anuncie-sua-bike': typeof AnuncieSuaBikeRoute
   '/conta': typeof ContaRoute
   '/escolherbike': typeof EscolherbikeRoute
   '/grupodeofertas': typeof GrupodeofertasRoute
@@ -602,6 +611,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/anuncie-sua-bike'
     | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
@@ -667,6 +677,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/anuncie-sua-bike'
     | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
@@ -732,6 +743,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/anuncie-sua-bike'
     | '/conta'
     | '/escolherbike'
     | '/grupodeofertas'
@@ -798,6 +810,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnuncieSuaBikeRoute: typeof AnuncieSuaBikeRoute
   ContaRoute: typeof ContaRoute
   EscolherbikeRoute: typeof EscolherbikeRoute
   GrupodeofertasRoute: typeof GrupodeofertasRoute
@@ -868,6 +881,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anuncie-sua-bike': {
+      id: '/anuncie-sua-bike'
+      path: '/anuncie-sua-bike'
+      fullPath: '/anuncie-sua-bike'
+      preLoaderRoute: typeof AnuncieSuaBikeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conta': {
@@ -1320,6 +1340,7 @@ const AdminConteudosIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnuncieSuaBikeRoute: AnuncieSuaBikeRoute,
   ContaRoute: ContaRoute,
   EscolherbikeRoute: EscolherbikeRoute,
   GrupodeofertasRoute: GrupodeofertasRoute,

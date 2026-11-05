@@ -67,6 +67,7 @@ export function memberReturnPath(value: unknown): string {
         "/grupodeofertas",
         "/privacidade",
         "/venda-sua-bike",
+        "/anuncie-sua-bike",
         "/conta/anuncios",
       ].includes(path) ||
       /^\/radar\/[a-z0-9_]+$/.test(path) ||
@@ -96,6 +97,8 @@ export function memberReturnPath(value: unknown): string {
         !/[<>]/.test(val)
       )
         safe.append(key, val);
+    if (path === "/conta/anuncios" && url.searchParams.get("novo") === "1")
+      safe.set("novo", "1");
     const hash = /^#[a-zA-Z0-9_-]{1,100}$/.test(url.hash) ? url.hash : "";
     return path + (safe.size ? `?${safe.toString()}` : "") + hash;
   } catch {

@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
+import { trackListing } from "@/lib/listing-analytics";
 import { ArrowRight, Bike, MapPin } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
-import { memberLoginHref } from "@/lib/member-community";
 import {
   CONDITIONS,
   type BikeListing,
@@ -14,10 +15,25 @@ export function ClassifiedCard({
   listing: BikeListing | PublicBikeListing;
   preview?: boolean;
 }) {
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (preview || !cardRef.current || !window.IntersectionObserver) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          trackListing(listing.id, "impression");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [listing.id, preview]);
   const cover = listing.images.find((i) => i.status === "ready");
   const CardLink = preview ? "div" : "a";
   return (
-    <article className="h-full">
+    <article ref={cardRef} className="h-full">
       <CardLink
         href={preview ? undefined : `/venda-sua-bike/${listing.id}`}
         className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
@@ -112,9 +128,7 @@ export function ClassifiedsEmpty({
           : "Ainda não há bikes anunciadas. A sua pode encontrar um novo caminho por aqui."}
       </p>
       <a
-        href={
-          unavailable ? "/venda-sua-bike" : memberLoginHref("/conta/anuncios")
-        }
+        href={unavailable ? "/venda-sua-bike" : "/anuncie-sua-bike"}
         className="mt-5 inline-flex min-h-11 items-center gap-2 font-bold text-action underline"
       >
         {unavailable ? "Tentar novamente" : "Quer vender sua bike aqui?"}

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { ListingShare } from "./ListingShare";
+import { trackListing } from "@/lib/listing-analytics";
+import { useEffect, useState } from "react";
 import { Bike, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
 import { SectionHeading } from "@/components/site/site-ui";
 import {
@@ -20,6 +22,9 @@ export function ListingPreview({
   preview?: boolean;
 }) {
   const [selected, setSelected] = useState(0);
+  useEffect(() => {
+    if (!preview) trackListing(listing.id, "visit");
+  }, [listing.id, preview]);
   const images = listing.images.filter((i) => i.status === "ready");
   const image = images[selected] ?? images[0];
   const seller = "sellerName" in listing ? listing : null;
@@ -130,6 +135,7 @@ export function ListingPreview({
             <div className="mt-5">
               <a
                 href={listingWhatsAppHref(seller.whatsapp, listing)}
+                onClick={() => trackListing(listing.id, "whatsapp")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-action px-4 font-bold text-primary-foreground hover:opacity-90"
@@ -137,6 +143,13 @@ export function ListingPreview({
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
                 Conversar pelo WhatsApp
               </a>
+              {!preview && (
+                <ListingShare
+                  id={listing.id}
+                  title={title}
+                  coverId={images[0]?.id}
+                />
+              )}
               <div className="mt-4 flex items-center gap-3">
                 {seller.avatarUrl && (
                   <img

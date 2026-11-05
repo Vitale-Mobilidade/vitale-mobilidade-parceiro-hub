@@ -1,3 +1,4 @@
+import { useMemberSession } from "@/hooks/use-member-session";
 import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
@@ -13,10 +14,12 @@ import {
 } from "@/lib/newsletter-exit";
 
 export function NewsletterExitPopup({ path }: { path: string }) {
+  const { session, loading } = useMemberSession();
   const [open, setOpen] = useState(false);
   const suppressed = useRef(false);
   useEffect(() => {
     setOpen(false);
+    if (loading || session) return;
     const started = Date.now();
     let deepest = 0;
     let previous = window.scrollY;
@@ -61,6 +64,7 @@ export function NewsletterExitPopup({ path }: { path: string }) {
     };
     const subscribed = () => {
       suppressed.current = true;
+      setOpen(false);
     };
     document.addEventListener("mouseout", exit);
     window.addEventListener("scroll", scroll, { passive: true });
@@ -70,7 +74,7 @@ export function NewsletterExitPopup({ path }: { path: string }) {
       window.removeEventListener("scroll", scroll);
       window.removeEventListener("vitale-newsletter-subscribed", subscribed);
     };
-  }, [path]);
+  }, [path, session, loading]);
   const close = () => {
     suppressed.current = true;
     try {
@@ -82,7 +86,7 @@ export function NewsletterExitPopup({ path }: { path: string }) {
   };
   return (
     <Dialog
-      open={open}
+      open={open && !session && !loading}
       onOpenChange={(next) => {
         if (!next) close();
       }}

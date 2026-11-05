@@ -1,9 +1,11 @@
+import { useMemberSession } from "@/hooks/use-member-session";
 import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
+  const { session } = useMemberSession();
   const id = useId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,6 +55,7 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
     }
   };
 
+  if (session) return null;
   return (
     <section
       aria-labelledby={compact ? undefined : "newsletter"}

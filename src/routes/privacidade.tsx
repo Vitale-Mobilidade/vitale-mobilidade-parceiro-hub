@@ -24,6 +24,12 @@ function PrivacyPage() {
       <main className="responsive-container max-w-3xl py-12 text-ink sm:py-16">
         <h1 className="text-3xl font-bold">Privacidade e uso de dados</h1>
         <p className="mt-5 leading-relaxed">
+          Nos anúncios de bicicletas, medimos exibições na vitrine, visitas e cliques no WhatsApp.
+          Usamos um identificador aleatório do navegador para deduplicar eventos por anúncio e dia.
+          Não guardamos IP, nome, e-mail ou telefone nesses eventos; o vendedor vê apenas os totais.
+          A preferência de desativar analytics abaixo também interrompe essa medição.
+        </p>
+        <p className="mt-5 leading-relaxed">
           Você pode usar o site, consultar o Radar, fazer o Quiz e abrir links de ofertas sem um aviso de aceite de
           cookies. Usamos Google Analytics para medir o uso das páginas, com cookies analíticos e sem publicidade ou
           remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
