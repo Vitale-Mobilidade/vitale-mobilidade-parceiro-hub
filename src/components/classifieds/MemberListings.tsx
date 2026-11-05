@@ -30,6 +30,7 @@ import {
   BATTERIES,
   CONDITIONS,
   LISTING_STATUSES,
+  MEMBER_IMAGE_MAX_MB,
   STATES,
   classifiedsAccountSchema,
   classifiedsError,
@@ -355,6 +356,7 @@ export function ListingEditor({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState<string>();
   const [step, setStep] = useState<"photos" | "details" | "publish">("photos");
   const [consent, setConsent] = useState(false);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
@@ -501,12 +503,18 @@ export function ListingEditor({
     setBusy(true);
     setError("");
     try {
-      for (const file of files) await upload(file, listing.id);
+      for (const [index, file] of files.entries()) {
+        setPhotoProgress(
+          `Preparando e enviando foto ${index + 1} de ${files.length}…`,
+        );
+        await upload(file, listing.id);
+      }
       setMessage("Fotos adicionadas.");
     } catch (e) {
       setError(classifiedsError(e) || memberError(e));
     } finally {
       await onChange().catch(() => {});
+      setPhotoProgress(undefined);
       setBusy(false);
     }
   }
@@ -674,7 +682,7 @@ export function ListingEditor({
         )}
         {busy && (
           <p role="status" className="mb-4">
-            Salvando alteração…
+            {photoProgress ?? "Salvando alteração…"}
           </p>
         )}
         {preview ? (
@@ -721,7 +729,8 @@ export function ListingEditor({
               <p className="mt-2 text-sm text-muted-foreground">
                 Envie de 1 a 5 fotos. Mostre a bike inteira, os dois lados,
                 bateria e detalhes. A primeira foto será a capa. JPEG, PNG ou
-                WebP, até 10 MB por foto.
+                WebP, até {MEMBER_IMAGE_MAX_MB} MB por foto. Nós otimizamos as
+                imagens automaticamente para o site.
               </p>
               <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {listing.images.map((image, index) => (
