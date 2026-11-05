@@ -51,3 +51,13 @@ Descoberta concreta: Auth auto-confirm de senha permanece ativo para acesso imed
 Segurança/Arquitetura/QA condicionam o release a um trigger restrito em Auth.identities: Google só pode se unir a conta com senha já existente se houver prova Vitale válida para o endereço atual. Cadastro Google novo sem senha continua normal. Conta de senha legítima ainda não validada usa o fluxo existente de senha/recuperação para validar primeiro. Não redefinir senhas, remover identidades nem encerrar sessões reais. UX apresenta o caminho alternativo em caso de falha; Produto aceita essa fricção só para vinculação não validada, preservando acesso direto dos já validados. Retirar esse guard em rollback somente se o provedor Google estiver desativado primeiro.
 
 A leitura do endpoint oficial de atualização de usuário também confirmou que user_metadata é separado de AppData/identidade do provedor: https://github.com/supabase/auth/blob/master/internal/api/user.go .
+
+## Ativação autorizada
+
+O usuário autorizou explicitamente “Sim, ativar e publicar o Google” na mesma conversa. Em 05/11/2026, a migration 20261105160000 foi aplicada transacionalmente no Supabase integrado e registrada; RPC para authenticated, negada a anon; guard de Auth.identities ativo. Não houve escrita em contas reais.
+
+Google habilitado pela UI Users > Settings > Google, opção Managed by Lovable; a confirmação Auth config updated e Google Enabled foram observadas. Não foi necessário criar/guardar Client Secret próprio. O botão Save acionou uma solicitação automática “Add a Google sign-in button to my app”; geração interrompida imediatamente, sem alteração de commit (Lovable e Git main ainda em af4d95e). Eventual consumo dessa execução automática não foi quantificado; nenhum agente foi solicitado para editar código.
+
+Preview Netlify da PR #89 e regras de headers passaram. Vercel falha também no commit-base af4d95e, fora do hosting ativo Lovable; nenhuma mudança/bypass de hosting foi feita. Build local e preview Netlify comprovaram resolução da nova dependência/lockfile.
+
+Próximo gate: merge normal e publicação autorizados, depois redirecionamento real até Google. O usuário escolhe a própria conta; não escolher conta nem consentir em seu nome.
