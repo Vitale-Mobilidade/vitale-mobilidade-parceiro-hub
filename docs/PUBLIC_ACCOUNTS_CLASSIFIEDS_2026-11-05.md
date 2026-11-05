@@ -59,3 +59,18 @@ O responsável esclareceu que não existe conta de teste e pediu cadastro de bik
 | QA | Provar admin sem perfil, negar usuário comum/admin inativo, canal sem débito, cliente exige pagamento e OTP. Faturamento bruto por primeiro registro confirmado em São Paulo, uma compra contada uma vez; estorno/contestação indicados separadamente, sem inferir saldo líquido. Prosseguir condicionado. |
 
 Decisão complementar: origem `channel` só gravável pelo servidor administrativo, contato institucional por anúncio, período de 90 dias sem faturamento fictício. Métricas agregadas, sem nomes/e-mails de membros: perfis que aderiram à comunidade, anúncios por origem/status, faturamento bruto confirmado por dia no horário de São Paulo, número de pagamentos com estorno/contestação. Não é demonstrativo contábil de saldo líquido ou taxas Asaas. Sem criar contas técnicas, alterar credenciais ou publicar bikes automaticamente. Rollback também desativa rotas Admin novas e preserva ledger e anúncios; gate público não restaura conta de teste.
+
+
+## Release verificado
+
+- PR #87 integrada em `14b100db958e338ec492fd70c83fdb85f51f16a6`; deploy Lovable `737d0f75-3aac-403e-a618-32daf907e893`.
+- Migrations `20261105130000` e `20261105140000` aplicadas no Supabase integrado em transação única, com registro no histórico de migrations. Gate público true; nenhuma exceção de conta teste no helper.
+- Permissões produtivas verificadas: anon não executa RPC institucional; authenticated não executa métricas; service_role executa. Endpoint administrativo sem JWT retorna HTTP401/unauthorized.
+- Leitura agregada produtiva após a aplicação: 1 membro da comunidade, 4 anúncios históricos (incluindo rascunhos/desativados), 0 ativos, 0 institucionais, R$0 bruto confirmado nos últimos 7 dias. Rascunho pessoal preservado; nenhuma bike real criada por esta entrega.
+- Domínio real conferido com navegador isolado sem sessão: Home com seção e Entrar, menu celular com Venda sua bike, formulário de cadastro com nome/e-mail/senha/celular e Admin/comunidade protegido por login. Nenhum submit de cadastro, código ou pagamento.
+- Assets: `comunidade-MgGgy2XH.js` com painel/contato institucional, `MemberListings-zG6_bvwD.js` com Nova bike do canal e `site-ui-DsWFfwGU.js`. Nenhum browser ou sessão do usuário foi alterado.
+- UI privada de criação/upload/publicação/desativação comprovada localmente com transporte sintético; SQL produtivo confirmou agregados e contratos/privacidade. Não foi criado um anúncio ou pagamento real para homologação.
+- Netlify preview e headers passaram. Falha de Vercel permanece baseline fora do hosting operacional; nenhum bypass de proteção, mudança de domínio ou novo hosting.
+- Evidências locais: `outputs/vitale-public-launch-2026-11-05/` e `outputs/vitale-admin-community-2026-11-05/`. Estado final: abertura pública e Admin institucional publicados; operação de cadastro de bikes é manual pelo responsável.
+
+Acabamento de UX do contato institucional: contador de 0/20 caracteres e orientação explícita de 11 dígitos, ou 13 com 55. Mantém a regra anterior de expor limites dos campos; ajuste pequeno, reversível e sem mudança de validação/API/banco. Revisão UX e QA Pass por descrição associada ao input, lint e validate; demais perspectivas preservadas/N/A para esta copy.

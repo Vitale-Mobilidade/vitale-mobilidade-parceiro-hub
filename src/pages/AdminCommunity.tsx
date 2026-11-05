@@ -61,8 +61,9 @@ function ChannelPublication({
         id="channel-contact-help"
         className="mt-2 text-sm text-muted-foreground"
       >
-        Informe DDD + celular, com ou sem 55. O botão do anúncio abre uma
-        conversa neste WhatsApp, com o título e o link da bike.
+        {phone.length}/20 caracteres. Informe 11 dígitos (DDD + celular), ou 13
+        com o código 55. O botão do anúncio abre uma conversa neste WhatsApp,
+        com o título e o link da bike.
       </p>
       {phone && !valid && (
         <p role="alert" className="mt-2 text-sm text-red-800">
