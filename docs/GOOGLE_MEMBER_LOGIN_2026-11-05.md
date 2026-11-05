@@ -61,3 +61,15 @@ Google habilitado pela UI Users > Settings > Google, opção Managed by Lovable;
 Preview Netlify da PR #89 e regras de headers passaram. Vercel falha também no commit-base af4d95e, fora do hosting ativo Lovable; nenhuma mudança/bypass de hosting foi feita. Build local e preview Netlify comprovaram resolução da nova dependência/lockfile.
 
 Próximo gate: merge normal e publicação autorizados, depois redirecionamento real até Google. O usuário escolhe a própria conta; não escolher conta nem consentir em seu nome.
+
+## Release e prova real concluídos
+
+PR #89 incorporada sem bypass em main, commit 48a9a7bfd65d0eef6410c6caec4a7a689bba385a. Lovable sincronizou esse mesmo commit antes do deploy 06763f5b-8f06-45e4-804f-cdd31ef220bf. O domínio vitalemobilidade.com exibiu Continuar com Google no login. A mesma proteção e o mesmo fluxo testados foram publicados; não houve troca do Supabase ou migração para outra base de contas.
+
+O clique real no botão concluiu Google sem exigir nova escolha/consentimento nesse navegador já autorizado, retornando à Home autenticada. A primeira observação de Home ocorreu antes da hidratação do avatar e foi descrita prematuramente como falha; investigação do estado final corrigiu essa interpretação, sem mudança de código. Auth.identities confirmou uma identidade Google com email_verified=true e last_sign_in_at 2026-11-05T15:48:32Z.
+
+Consulta agregada confirmou que o vínculo pertence ao membro existente gpalmerio@gmail.com e que o total de membros continua 1 (sem duplicação). A UI real de Editar meu perfil mostrou Guilherme Palmerio, e-mail e celular validados; o telefone, convites e dados existentes permanecem presentes. A RPC reconheceu o e-mail Google na mesma conta; não se criou usuário de teste, não se escolheu conta pessoal nem se aceitou permissão em nome do usuário, não se enviou OTP nem se redefiniu senha. Conta deixada conectada e página inicial aberta.
+
+Evidências locais fora do Git: outputs/vitale-google-login-2026-11-05/google-provider-enabled.png, google-login-live.png e google-existing-account-live.png, além dos smokes móveis simulados. O cenário Google novo/WhatsApp/aceites e os negativos de vínculo permanecem provados por testes locais; o caminho de membro existente foi provado também no ambiente real.
+
+Revisão final: Produto, Arquitetura, Segurança, UX, CX, Growth e QA = Pass com as evidências acima; IA = N/A. Nenhum Fail ou risco material pendente no escopo. A necessidade de validar previamente uma conta com senha não comprovada continua um trade-off explícito de segurança. O erro Vercel preexistente permanece fora do hosting ativo; Netlify preview e build SSR passaram. Testes não repetidos depois desta anotação, pois nenhum arquivo executável mudou desde pnpm validate aprovado.
