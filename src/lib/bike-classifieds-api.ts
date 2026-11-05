@@ -1,3 +1,4 @@
+import { prepareMemberImage } from "./member-image";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -36,59 +37,7 @@ export const signedMemberImages = createClientOnlyFn(
     );
   },
 );
-/** Decode then re-encode locally: bounded size, consistent format, no original EXIF. */
-export async function prepareMemberImage(
-  file: File,
-  avatar = false,
-): Promise<Blob> {
-  if (
-    !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-    file.size > 10 * 1024 * 1024 ||
-    !file.size
-  )
-    throw new Error("image_invalid");
-  const bitmap = await createImageBitmap(file).catch(() => {
-    throw new Error("image_invalid");
-  });
-  try {
-    if (bitmap.width * bitmap.height > 60000000)
-      throw new Error("image_invalid");
-    const canvas = document.createElement("canvas");
-    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-    canvas.width = avatar ? 320 : Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = avatar
-      ? 320
-      : Math.max(1, Math.round(bitmap.height * scale));
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("image_invalid");
-    if (avatar) {
-      const side = Math.min(bitmap.width, bitmap.height);
-      context.drawImage(
-        bitmap,
-        (bitmap.width - side) / 2,
-        (bitmap.height - side) / 2,
-        side,
-        side,
-        0,
-        0,
-        320,
-        320,
-      );
-    } else context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (v) => (v ? resolve(v) : reject(new Error("image_invalid"))),
-        "image/webp",
-        0.82,
-      ),
-    );
-    if (blob.type !== "image/webp" || blob.size > 2097152)
-      throw new Error("image_too_large");
-    return blob;
-  } finally {
-    bitmap.close();
-  }
-}
+export { prepareMemberImage } from "./member-image";
 export async function uploadMemberImage(file: File, listingId?: string) {
   const blob = await prepareMemberImage(file, !listingId);
   const reservation = await classifiedsCall(

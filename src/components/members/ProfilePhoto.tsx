@@ -7,6 +7,7 @@ import {
   uploadMemberImage,
 } from "@/lib/bike-classifieds-api";
 import {
+  MEMBER_IMAGE_MAX_MB,
   classifiedsAccountSchema,
   classifiedsError,
   type ClassifiedsAccount,
@@ -129,7 +130,8 @@ export function ProfilePhoto({ embedded = false }: { embedded?: boolean }) {
               </label>
             )}
             <p className="text-xs text-muted-foreground">
-              JPEG, PNG ou WebP, até 10 MB.
+              JPEG, PNG ou WebP, até {MEMBER_IMAGE_MAX_MB} MB. A foto é
+              otimizada automaticamente.
             </p>
           </div>
         ) : (
@@ -140,7 +142,7 @@ export function ProfilePhoto({ embedded = false }: { embedded?: boolean }) {
       </div>
       {busy && (
         <p role="status" className="mt-3">
-          Enviando alteração…
+          Salvando alteração…
         </p>
       )}
       {error && (

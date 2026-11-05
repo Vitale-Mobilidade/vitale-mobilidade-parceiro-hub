@@ -1,6 +1,9 @@
 import { z } from "zod";
 export const CLASSIFIEDS_FEE_CENTS = 15000;
 export const MEMBER_MEDIA_BUCKET = "member-media";
+export const MEMBER_IMAGE_MAX_MB = 15;
+export const MEMBER_IMAGE_MAX_BYTES = MEMBER_IMAGE_MAX_MB * 1024 * 1024;
+export const MEMBER_IMAGE_OUTPUT_MAX_BYTES = 2 * 1024 * 1024;
 export const STATES =
   "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(
     " ",
@@ -184,9 +187,13 @@ export function classifiedsError(error: unknown): string {
       "Você atingiu o limite diário de uploads. Tente novamente amanhã.",
     media_not_ready:
       "O envio da foto não foi concluído. Remova a imagem pendente e tente novamente.",
-    image_invalid: "Escolha uma imagem JPEG, PNG ou WebP de até 10 MB.",
+    image_invalid:
+      "Não conseguimos abrir essa foto. Escolha uma imagem JPEG, PNG ou WebP válida.",
+    image_input_too_large: `Essa foto ultrapassa ${MEMBER_IMAGE_MAX_MB} MB. Envie uma foto de até ${MEMBER_IMAGE_MAX_MB} MB.`,
     image_too_large:
-      "Não foi possível reduzir esta foto para 2 MB. Escolha outra imagem.",
+      "Não conseguimos preparar essa foto. Tente enviá-la novamente.",
+    image_processing_failed:
+      "Não conseguimos preparar essa foto. Tente enviá-la novamente.",
   };
   return messages[code] ?? "";
 }

@@ -86,7 +86,27 @@ try{
  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:new URL('new-editor-desktop.png',artifacts).pathname,fullPage:true});
  const file=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');x.fillStyle='#d9f4e5';x.fillRect(0,0,800,600);x.fillStyle='#123a30';x.font='bold 40px sans-serif';x.fillText('Foto de teste · bicicleta',100,290);return c.toDataURL('image/png').split(',')[1]});
  const upload=n=>Array.from({length:n},(_,i)=>({name:`foto-${i}.png`,mimeType:'image/png',buffer:Buffer.from(file,'base64')}));
- await page.getByLabel('Adicionar fotos da bike').setInputFiles(upload(4));await page.getByRole('heading',{name:'1. Fotos da bike · 4/5'}).waitFor();
+ if(process.env.CLASSIFIEDS_TEST_LARGE_PHOTOS==='true') {
+   await page.evaluate(()=>{
+     const native=HTMLCanvasElement.prototype.toBlob;
+     HTMLCanvasElement.prototype.toBlob=function(cb,type,q){return native.call(this,cb,type==='image/webp'?'image/png':type,q)};
+   });
+   const oversized={name:'camera-too-large.png',mimeType:'image/png',buffer:Buffer.concat([Buffer.from(file,'base64'),Buffer.alloc(15*1024*1024+1-Buffer.from(file,'base64').length)])};
+   await page.getByLabel('Adicionar fotos da bike').setInputFiles([oversized]);
+   await page.getByRole('alert').filter({hasText:'Essa foto ultrapassa 15 MB'}).waitFor();
+   assert.equal(blobs.size,0,'oversized original never uploaded or reserved');
+ }
+
+ const firstBatch=upload(4);
+ if(process.env.CLASSIFIEDS_TEST_LARGE_PHOTOS==='true') firstBatch[0].buffer=Buffer.concat([firstBatch[0].buffer,Buffer.alloc(12*1024*1024-firstBatch[0].buffer.length)]);
+ await page.getByLabel('Adicionar fotos da bike').setInputFiles(firstBatch);
+ if(process.env.CLASSIFIEDS_TEST_LARGE_PHOTOS==='true') {
+   await page.getByRole('status').filter({hasText:'Preparando e enviando foto 1 de 4'}).waitFor();
+   await page.setViewportSize({width:390,height:844});
+   await page.screenshot({path:new URL('large-photo-progress-mobile.png',artifacts).pathname,fullPage:true});
+   await page.setViewportSize({width:1440,height:1000});
+ }
+ await page.getByRole('heading',{name:'1. Fotos da bike · 4/5'}).waitFor();
  const photoRow=page.getByTestId('photo-step-actions');const addBox=await photoRow.getByText('Adicionar fotos',{exact:true}).boundingBox();const nextBox=await photoRow.getByRole('button',{name:'Continuar para informações'}).boundingBox();assert(nextBox.x>addBox.x+addBox.width+8,'photo controls separated, next on right');assert(Math.abs(addBox.y+addBox.height/2-nextBox.y-nextBox.height/2)<12,'photo controls aligned');
  await page.screenshot({path:new URL('photo-actions-desktop.png',artifacts).pathname,fullPage:true});await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();await page.waitForFunction(()=>document.activeElement?.id==='listing-panel-details');
  await page.getByLabel('Marca',{exact:true}).fill('Marca parcial');await page.getByRole('button',{name:'Salvar rascunho',exact:true}).click();await page.getByRole('status').filter({hasText:'Rascunho salvo'}).waitFor();assert.equal(listings[0].brand,'Marca parcial');await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.getByRole('alert').filter({hasText:'Descrição da bike'}).waitFor();assert(await page.getByRole('tab',{name:'3. Publicar',exact:true}).isDisabled(),'partial save does not unlock review');assert.equal(billingRequests.length,0,'no checkout for incomplete bike');
