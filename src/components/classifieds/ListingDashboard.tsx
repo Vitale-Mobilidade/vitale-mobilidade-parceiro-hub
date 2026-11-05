@@ -32,8 +32,10 @@ export function ListingDashboard({
   onCreate,
   onEdit,
   onAction,
+  channel = false,
 }: {
   listings: BikeListing[];
+  channel?: boolean;
   busy: boolean;
   onCreate: () => void;
   onEdit: (listing: BikeListing) => void;
@@ -71,7 +73,7 @@ export function ListingDashboard({
             id="listing-dashboard-title"
             className="mt-2 text-3xl font-bold tracking-tight text-ink"
           >
-            Meus anúncios
+            {channel ? "Bikes do canal" : "Meus anúncios"}
           </h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">
             Acompanhe suas bikes, edite os anúncios e mantenha a disponibilidade
@@ -85,7 +87,7 @@ export function ListingDashboard({
             className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-action px-5 py-3 font-bold text-white disabled:opacity-50"
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
-            Anuncie sua bike
+            {channel ? "Nova bike do canal" : "Anuncie sua bike"}
           </button>
         )}
       </div>
@@ -268,7 +270,9 @@ export function ListingDashboard({
           <h2 className="mt-4 text-2xl font-bold text-ink">
             {meaningful.length
               ? "Nenhuma bike neste filtro"
-              : "Vamos criar seu primeiro anúncio?"}
+              : channel
+                ? "Cadastre a primeira bike do canal"
+                : "Vamos criar seu primeiro anúncio?"}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
             {meaningful.length
@@ -282,7 +286,7 @@ export function ListingDashboard({
               className="mx-auto mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-6 py-3 font-bold text-white disabled:opacity-50"
             >
               <Plus className="h-5 w-5" aria-hidden="true" />
-              Criar meu primeiro anúncio
+              {channel ? "Nova bike do canal" : "Criar meu primeiro anúncio"}
             </button>
           )}
         </div>

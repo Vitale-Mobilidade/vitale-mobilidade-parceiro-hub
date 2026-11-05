@@ -25,6 +25,7 @@ import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhament
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
 import { Route as AdminComentariosRouteImport } from './routes/admin/comentarios'
+import { Route as AdminComunidadeRouteImport } from './routes/admin/comunidade'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
 import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de-ofertas'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
@@ -58,6 +59,7 @@ import { Route as VendaSuaBikeIdRouteImport } from './routes/venda-sua-bike_.$id
 import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudos/index'
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
+import { Route as ApiAdminClassifiedsRouteImport } from './routes/api/admin/classifieds'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
 import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
 import { Route as ApiMemberListingBillingRouteImport } from './routes/api/member/listing-billing'
@@ -148,6 +150,11 @@ const AdminBikesRoute = AdminBikesRouteImport.update({
 const AdminComentariosRoute = AdminComentariosRouteImport.update({
   id: '/admin/comentarios',
   path: '/admin/comentarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminComunidadeRoute = AdminComunidadeRouteImport.update({
+  id: '/admin/comunidade',
+  path: '/admin/comunidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminGrowthRoute = AdminGrowthRouteImport.update({
@@ -323,6 +330,11 @@ const AdminConteudosNovoRoute = AdminConteudosNovoRouteImport.update({
   path: '/admin/conteudos/novo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminClassifiedsRoute = ApiAdminClassifiedsRouteImport.update({
+  id: '/api/admin/classifieds',
+  path: '/api/admin/classifieds',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminNewsletterRoute = ApiAdminNewsletterRouteImport.update({
   id: '/api/admin/newsletter',
   path: '/api/admin/newsletter',
@@ -399,6 +411,7 @@ export interface FileRoutesByFullPath {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/comentarios': typeof AdminComentariosRoute
+  '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -433,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -461,6 +475,7 @@ export interface FileRoutesByTo {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/comentarios': typeof AdminComentariosRoute
+  '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -495,6 +510,7 @@ export interface FileRoutesByTo {
   '/radar': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -524,6 +540,7 @@ export interface FileRoutesById {
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
   '/admin/comentarios': typeof AdminComentariosRoute
+  '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
@@ -558,6 +575,7 @@ export interface FileRoutesById {
   '/radar/': typeof RadarIndexRoute
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
+  '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -588,6 +606,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/comentarios'
+    | '/admin/comunidade'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -622,6 +641,7 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/classifieds'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -650,6 +670,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/comentarios'
+    | '/admin/comunidade'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -684,6 +705,7 @@ export interface FileRouteTypes {
     | '/radar'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/classifieds'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -712,6 +734,7 @@ export interface FileRouteTypes {
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
     | '/admin/comentarios'
+    | '/admin/comunidade'
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
@@ -746,6 +769,7 @@ export interface FileRouteTypes {
     | '/radar/'
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
+    | '/api/admin/classifieds'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -775,6 +799,7 @@ export interface RootRouteChildren {
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
   AdminComentariosRoute: typeof AdminComentariosRoute
+  AdminComunidadeRoute: typeof AdminComunidadeRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
   AdminGrupoDeOfertasRoute: typeof AdminGrupoDeOfertasRoute
   AdminIaRoute: typeof AdminIaRoute
@@ -809,6 +834,7 @@ export interface RootRouteChildren {
   RadarIndexRoute: typeof RadarIndexRoute
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
+  ApiAdminClassifiedsRoute: typeof ApiAdminClassifiedsRoute
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
   ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
   ApiMemberListingBillingRoute: typeof ApiMemberListingBillingRoute
@@ -934,6 +960,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/comentarios'
       fullPath: '/admin/comentarios'
       preLoaderRoute: typeof AdminComentariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/comunidade': {
+      id: '/admin/comunidade'
+      path: '/admin/comunidade'
+      fullPath: '/admin/comunidade'
+      preLoaderRoute: typeof AdminComunidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/growth': {
@@ -1167,6 +1200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConteudosNovoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/classifieds': {
+      id: '/api/admin/classifieds'
+      path: '/api/admin/classifieds'
+      fullPath: '/api/admin/classifieds'
+      preLoaderRoute: typeof ApiAdminClassifiedsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/newsletter': {
       id: '/api/admin/newsletter'
       path: '/api/admin/newsletter'
@@ -1273,6 +1313,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
   AdminComentariosRoute: AdminComentariosRoute,
+  AdminComunidadeRoute: AdminComunidadeRoute,
   AdminGrowthRoute: AdminGrowthRoute,
   AdminGrupoDeOfertasRoute: AdminGrupoDeOfertasRoute,
   AdminIaRoute: AdminIaRoute,
@@ -1310,6 +1351,7 @@ const rootRouteChildren: RootRouteChildren = {
   RadarIndexRoute: RadarIndexRoute,
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
+  ApiAdminClassifiedsRoute: ApiAdminClassifiedsRoute,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
   ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
   ApiMemberListingBillingRoute: ApiMemberListingBillingRoute,

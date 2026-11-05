@@ -1,5 +1,5 @@
 export const memberAccountsEnabled =
   import.meta.env.VITE_MEMBER_ACCOUNTS_ENABLED !== "false";
 
-// Keep public discovery on hold; direct access and existing sessions stay available.
-export const memberPublicNavigationEnabled = false;
+// Public accounts and classifieds launched with the server eligibility gate on 05/11/2026.
+export const memberPublicNavigationEnabled = memberAccountsEnabled;

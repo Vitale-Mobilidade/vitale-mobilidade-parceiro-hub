@@ -129,6 +129,7 @@ export const listingSchema = listingInputSchema.extend({
   feeCents: z.literal(15000),
   feeStatus: z.enum(["pilot_exempt", "required", "paid"]),
   displayExpiresAt: z.string().nullable().optional(),
+  channelWhatsapp: z.string().nullable().optional(),
   images: z.array(listingImageSchema).max(5),
   sellerType: z.enum(["channel", "individual"]).default("individual"),
   publishedAt: z.string().nullable(),
@@ -167,8 +168,8 @@ export function classifiedsError(error: unknown): string {
     billing_required:
       "Confirme o pagamento único de R$150 para publicar por 90 dias.",
     classifieds_pilot_only:
-      "Os anúncios estão em teste com uma conta convidada. A abertura para outros anunciantes virá depois.",
-    listing_limit: "Você atingiu o limite de anúncios deste piloto.",
+      "A criação de anúncios não está disponível nesta conta. Confira seu perfil ou tente novamente.",
+    listing_limit: "Você atingiu o limite de anúncios da sua conta.",
     listing_invalid: "Confira os campos do anúncio antes de salvar.",
     listing_incomplete:
       "Complete as informações e adicione de uma a cinco fotos antes de publicar.",

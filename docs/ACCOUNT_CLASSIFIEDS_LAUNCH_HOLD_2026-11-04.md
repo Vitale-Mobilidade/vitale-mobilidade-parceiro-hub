@@ -1,5 +1,7 @@
 # Navegação pública em espera — 04/11/2026
 
+> Superada pela liberação explícita de 05/11/2026. Ver [abertura pública e Admin do canal](PUBLIC_ACCOUNTS_CLASSIFIEDS_2026-11-05.md). Este registro preserva o histórico do período de espera.
+
 Decisão do responsável: não divulgar Entrar nem Venda sua bike antes de finalizar. Correção explícita posterior: manter a sessão de gpalmerio@gmail.com e acesso aos testes; apenas não mostrar no menu. Esta decisão substitui o bloqueio total inicialmente interpretado.
 
 Classificação: relevante; revisão pelas oito perspectivas. Sem alteração de schema, RLS, Auth ou integrações.

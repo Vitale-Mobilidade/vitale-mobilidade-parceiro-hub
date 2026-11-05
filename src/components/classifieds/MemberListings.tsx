@@ -11,7 +11,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ListingDashboard, type ListingAction } from "./ListingDashboard";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { useMemberSession } from "@/hooks/use-member-session";
 import {
@@ -162,12 +168,12 @@ export function MemberListings() {
       <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-7">
         <h1 className="text-3xl font-bold text-ink">Venda sua bike aqui</h1>
         <p className="mt-4">
-          Estamos testando os anúncios com uma conta convidada. Sua conta ainda
-          não tem acesso à criação.
+          Não foi possível liberar a criação de anúncios nesta conta. Confira
+          seu perfil ou tente novamente em alguns instantes.
         </p>
         <p className="mt-4">
           O valor é de R$150 por 90 dias de exibição, em pagamento único. A
-          abertura para outros anunciantes virá depois.
+          publicação exige e-mail e WhatsApp validados.
         </p>
         <a href="/venda-sua-bike" className={`${button} mt-6`}>
           Ver bikes disponíveis
@@ -188,7 +194,7 @@ export function MemberListings() {
       </section>
     );
   const listing = listings.find((l) => l.id === selected);
-  const channel = account.sellerType === "channel";
+  const channel = listing?.sellerType === "channel";
   async function manage(
     action: ListingAction,
     item: BikeListing,
@@ -310,13 +316,14 @@ export function MemberListings() {
   );
 }
 
-function ListingEditor({
+export function ListingEditor({
   listing,
   canPublish,
   channel,
   onChange,
   onEditing,
   onBusy,
+  actions,
 }: {
   listing: BikeListing;
   canPublish: boolean;
@@ -324,7 +331,20 @@ function ListingEditor({
   onChange: () => Promise<void>;
   onEditing: (value: boolean) => void;
   onBusy: (value: boolean) => void;
+  actions?: {
+    call: typeof classifiedsCall;
+    upload: (file: File, id: string) => Promise<unknown>;
+    remove: typeof removeMemberImage;
+    publication: (state: {
+      ready: boolean;
+      locked: boolean;
+      submit: (phone: string) => Promise<void>;
+    }) => ReactNode;
+  };
 }) {
+  const call = actions?.call ?? classifiedsCall;
+  const upload = actions?.upload ?? uploadMemberImage;
+  const remove = actions?.remove ?? removeMemberImage;
   const [form, setForm] = useState(() => ({
     ...listing,
     title: listing.title === "Minha bike" ? "" : listing.title,
@@ -424,7 +444,7 @@ function ListingEditor({
     setMessage("");
     try {
       const saved = listingSchema.parse(
-        await classifiedsCall("save", { id: listing.id, ...data.data }),
+        await call("save", { id: listing.id, ...data.data }),
       );
       setForm(saved);
       setDirty(false);
@@ -481,7 +501,7 @@ function ListingEditor({
     setBusy(true);
     setError("");
     try {
-      for (const file of files) await uploadMemberImage(file, listing.id);
+      for (const file of files) await upload(file, listing.id);
       setMessage("Fotos adicionadas.");
     } catch (e) {
       setError(classifiedsError(e) || memberError(e));
@@ -734,7 +754,7 @@ function ListingEditor({
                           onClick={() =>
                             void run(
                               () =>
-                                classifiedsCall("cover", {
+                                call("cover", {
                                   id: listing.id,
                                   assetId: image.id,
                                 }),
@@ -751,12 +771,7 @@ function ListingEditor({
                         disabled={locked}
                         onClick={() =>
                           void run(
-                            () =>
-                              removeMemberImage(
-                                image.path,
-                                image.id,
-                                listing.id,
-                              ),
+                            () => remove(image.path, image.id, listing.id),
                             "Foto removida.",
                           )
                         }
@@ -1048,7 +1063,9 @@ function ListingEditor({
             <>
               <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
                 <p className="font-semibold text-ink">
-                  Publicação por 90 dias · pagamento único de R$150
+                  {actions
+                    ? "Bike do canal · publicação institucional por 90 dias"
+                    : "Publicação por 90 dias · pagamento único de R$150"}
                 </p>
               </div>
               {!publishReady && (
@@ -1091,7 +1108,7 @@ function ListingEditor({
                     disabled={busy}
                     onClick={() =>
                       void run(
-                        () => classifiedsCall("sold", { id: listing.id }),
+                        () => call("sold", { id: listing.id }),
                         "Bike marcada como vendida e retirada da vitrine.",
                       )
                     }
@@ -1105,7 +1122,7 @@ function ListingEditor({
                 disabled={busy}
                 onClick={() =>
                   void run(
-                    () => classifiedsCall("withdraw", { id: listing.id }),
+                    () => call("withdraw", { id: listing.id }),
                     "Anúncio em rascunho. Você pode editar.",
                   )
                 }
@@ -1122,7 +1139,7 @@ function ListingEditor({
               disabled={busy || dirty}
               onClick={() =>
                 void run(
-                  () => classifiedsCall("archive", { id: listing.id }),
+                  () => call("archive", { id: listing.id }),
                   "Anúncio arquivado.",
                 )
               }
@@ -1131,31 +1148,47 @@ function ListingEditor({
               Desativar rascunho
             </button>
           )}
-          {(draft || listing.feeStatus !== "pilot_exempt") && (
-            <ListingBillingPanel
-              listingId={listing.id}
-              active={step === "publish" && !preview}
-              reason={
-                !canPublish
-                  ? "Confirme seu e-mail e WhatsApp no perfil para anunciar."
-                  : !publishReady
-                    ? `Complete: ${missingListingFields(listing)
-                        .map((key) => LISTING_FIELD_LABELS[key] ?? key)
-                        .join(
-                          "; ",
-                        )}${!photosReady ? "; ao menos uma foto" : ""}.`
-                    : dirty
-                      ? "Salve as alterações do rascunho antes de continuar."
-                      : ""
-              }
-              ready={draft && canPublish && publishReady}
-              locked={busy || dirty}
-              contactConsent={consent}
-              onConsentChange={setConsent}
-              onChange={onChange}
-              onLockChange={setBillingLocked}
-            />
-          )}
+          {actions
+            ? draft &&
+              actions.publication({
+                ready: canPublish && publishReady,
+                locked: busy || dirty,
+                submit: (phone) =>
+                  run(
+                    () =>
+                      call("publish", {
+                        id: listing.id,
+                        whatsapp: phone,
+                        contactConsent: true,
+                      }),
+                    "Bike do canal publicada.",
+                  ),
+              })
+            : (draft || listing.feeStatus !== "pilot_exempt") && (
+                <ListingBillingPanel
+                  listingId={listing.id}
+                  active={step === "publish" && !preview}
+                  reason={
+                    !canPublish
+                      ? "Confirme seu e-mail e WhatsApp no perfil para anunciar."
+                      : !publishReady
+                        ? `Complete: ${missingListingFields(listing)
+                            .map((key) => LISTING_FIELD_LABELS[key] ?? key)
+                            .join(
+                              "; ",
+                            )}${!photosReady ? "; ao menos uma foto" : ""}.`
+                        : dirty
+                          ? "Salve as alterações do rascunho antes de continuar."
+                          : ""
+                  }
+                  ready={draft && canPublish && publishReady}
+                  locked={busy || dirty}
+                  contactConsent={consent}
+                  onConsentChange={setConsent}
+                  onChange={onChange}
+                  onLockChange={setBillingLocked}
+                />
+              )}
         </section>
       </section>
       <aside
@@ -1178,8 +1211,9 @@ function ListingEditor({
           preview
         />
         <p className="mt-4 text-sm text-muted-foreground">
-          O botão de contato abre o WhatsApp validado, com o título e o link da
-          bike na mensagem.
+          O botão de contato abre o{" "}
+          {actions ? "WhatsApp da Vitale informado" : "WhatsApp validado"}, com
+          o título e o link da bike na mensagem.
         </p>
         <p className="mt-3 text-xs font-semibold text-action">
           {dirty ? "Alterações ainda não salvas" : "Dados e fotos salvos"}
