@@ -61,8 +61,8 @@ export function SellerPanel() {
         </a>
       ) : (
         <p className="mt-5 text-sm text-muted-foreground">
-          A criação de anúncios ainda está restrita à conta de teste. Seus
-          contatos devem estar validados para publicar.
+          Entre na comunidade para criar seu anúncio. Confirme seu e-mail e
+          WhatsApp para publicar e receber contatos de compradores.
         </p>
       )}
     </section>

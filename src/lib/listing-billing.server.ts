@@ -117,6 +117,7 @@ export async function memberListingBilling(request: Request) {
       .select("id,title,user_id,status")
       .eq("id", input.listingId)
       .eq("user_id", user.id)
+      .eq("seller_kind", "individual")
       .maybeSingle();
     if (listingError || !listing)
       return result({ error: "listing_unavailable" }, 404);

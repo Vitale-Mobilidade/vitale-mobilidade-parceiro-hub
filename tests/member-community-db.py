@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--launch" in sys.argv: sys.argv.append("--classifieds")
 if "--classifieds" in sys.argv: sys.argv.append("--identity")
 
 repo = Path(__file__).resolve().parents[1]
@@ -185,6 +186,21 @@ COMMIT;
             print("PASS concurrent fifth-photo reservation accepts exactly one; five-slot limit persisted")
             invariant=sql("SELECT count(*)=5 FROM public.member_media_assets WHERE kind='listing' AND status<>'removed';")
             assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+
+        if "--launch" in sys.argv:
+            for path in [
+                "supabase/migrations/20261104150000_channel_seller_experience.sql",
+                "supabase/migrations/20261104180000_asaas_monthly_listings.sql",
+                "supabase/migrations/20261104190000_asaas_hosted_checkout.sql",
+                "supabase/migrations/20261104200000_asaas_90_day_purchase.sql",
+                "supabase/migrations/20261105130000_public_classifieds_launch.sql",
+                "tests/public-classifieds-launch.sql",
+                "supabase/migrations/20261105140000_admin_channel_classifieds.sql",
+                "tests/admin-channel-classifieds.sql",
+            ]:
+                result = sql((repo / path).read_text())
+                if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-3000:]}")
+                print(f"PASS {path}")
 
     finally:
         subprocess.run([str(pg / "pg_ctl"), "-D", str(data), "-m", "fast", "-w", "stop"], check=True, env=env, stdout=subprocess.DEVNULL)
