@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import { startGoogleMemberSignIn } from "@/lib/member-google-auth";
 import { memberGoogleAuthEnabled } from "@/lib/member-accounts-feature";
 import { memberPhone } from "@/lib/member-identity";
@@ -137,7 +138,6 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     session?.user.app_metadata?.provider === "google",
   );
   const [phone, setPhone] = useState("");
-  const [phoneConsent, setPhoneConsent] = useState(false);
   const [delivery, setDelivery] = useState<IdentityDelivery>();
   const [privacy, setPrivacy] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -285,8 +285,9 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           throw new Error("invalid_name");
         if (!privacy) throw new Error("privacy_required");
         if (!profile?.communityJoinedAt) {
-          if (googleAccount && (!memberPhone(phone) || !phoneConsent))
+          if (!session.user.email || !memberPhone(phone))
             throw new Error("invalid_phone");
+          setSignupFlow(true);
           const data = await communityAccount("join", {
             displayName: name.trim(),
             acknowledged: true,
@@ -294,14 +295,13 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
           });
           setProfile(memberProfileSchema.parse(data));
           setMessage("Cadastro concluído.");
-          if (googleAccount) {
-            setSignupFlow(true);
-            const verified = await acceptGoogleMemberEmail().catch(() => false);
-            setGoogleEmailVerified(verified);
-            setDelivery(await requestSignupIdentityCodes(phone, verified));
-            setMode("validar");
-            setMessage("");
-          }
+          const verified = googleAccount
+            ? await acceptGoogleMemberEmail().catch(() => false)
+            : false;
+          setGoogleEmailVerified(verified);
+          setDelivery(await requestSignupIdentityCodes(phone, verified));
+          setMode("validar");
+          setMessage("");
         } else {
           const data = await memberCall("save_profile", {
             displayName: name.trim(),
@@ -329,8 +329,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         if (!passwordSchema.safeParse(password).success)
           throw new Error("password_invalid");
         if (!privacy) throw new Error("privacy_required");
-        if (!memberPhone(phone) || !phoneConsent)
-          throw new Error("invalid_phone");
+        if (!memberPhone(phone)) throw new Error("invalid_phone");
         creatingAccount.current = true;
         setSignupFlow(true);
         const { data, error } = await supabase.auth.signUp({
@@ -376,14 +375,15 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
         setMode(profileRequested ? "perfil" : "entrar");
       }
     } catch (e) {
-      if (creatingAccount.current) setSignupFlow(false);
+      if (creatingAccount.current || !profile?.communityJoinedAt)
+        setSignupFlow(false);
       const code =
         e && typeof e === "object" && "message" in e ? e.message : "";
       setError(
         code === "password_invalid"
           ? "Use uma senha de 12 a 128 caracteres."
           : code === "privacy_required"
-            ? "Confirme a leitura do aviso de privacidade."
+            ? "Aceite os termos e a política de privacidade para concluir o cadastro."
             : memberError(e),
       );
     } finally {
@@ -429,6 +429,32 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
     !validatingSignup &&
     (profileRequested || joining);
   const signup = !session && mode === "cadastro";
+  if (googleBusy)
+    return (
+      <section
+        className="rounded-2xl border border-line bg-white p-7 sm:p-10"
+        aria-busy="true"
+      >
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-col items-center gap-4 py-8 text-center"
+        >
+          <LoaderCircle
+            aria-hidden="true"
+            className="h-10 w-10 animate-spin text-action motion-reduce:animate-none"
+          />
+          <h1 className="text-2xl font-bold text-ink">Abrindo o Google…</h1>
+          <p className="text-muted-foreground">
+            Estamos direcionando você para entrar na Vitale Mobilidade.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Aguarde alguns instantes. Você voltará ao site após confirmar sua
+            conta.
+          </p>
+        </div>
+      </section>
+    );
   if (validatingSignup)
     return (
       <section className="rounded-2xl border border-line bg-white p-5 sm:p-8">
@@ -603,9 +629,13 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             )}
             {!session && (
               <label className="block font-semibold" htmlFor="member-email">
-                E-mail
+                E-mail{" "}
+                {signup && (
+                  <span className="text-sm font-normal">(obrigatório)</span>
+                )}
                 <input
                   id="member-email"
+                  aria-label="E-mail"
                   className={field}
                   type="email"
                   value={email}
@@ -616,18 +646,44 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                 />
               </label>
             )}
-            {joining && googleAccount && (
-              <p className="break-all text-sm">
-                E-mail da sua conta Google: {session?.user.email}
-              </p>
+            {joining && (
+              <div>
+                <label
+                  htmlFor="member-account-email"
+                  className="block font-semibold"
+                >
+                  E-mail{" "}
+                  <span className="text-sm font-normal">(obrigatório)</span>
+                </label>
+                <input
+                  id="member-account-email"
+                  className={field}
+                  type="email"
+                  value={session?.user.email ?? ""}
+                  required
+                  readOnly
+                  aria-describedby="member-account-email-help"
+                  autoComplete="email"
+                />
+                <p
+                  id="member-account-email-help"
+                  className="mt-2 text-sm text-muted-foreground"
+                >
+                  {googleAccount
+                    ? "E-mail fornecido pela sua conta Google."
+                    : "E-mail utilizado para acessar sua conta."}
+                </p>
+              </div>
             )}
-            {(signup || (joining && googleAccount)) && (
+            {(signup || joining) && (
               <div>
                 <label htmlFor="signup-phone" className="block font-semibold">
-                  Celular com WhatsApp e DDD
+                  Celular com WhatsApp e DDD{" "}
+                  <span className="text-sm font-normal">(obrigatório)</span>
                 </label>
                 <input
                   id="signup-phone"
+                  aria-label="Celular com WhatsApp e DDD"
                   type="tel"
                   autoComplete="tel"
                   className={field}
@@ -645,22 +701,6 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   {phone.length}/22 caracteres. Informe DDD e os 9 dígitos do
                   celular.
                 </p>
-                <label className="mt-3 flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-5 w-5 shrink-0"
-                    checked={phoneConsent}
-                    onChange={(e) => setPhoneConsent(e.target.checked)}
-                    required
-                  />
-                  <span>
-                    {googleAccount
-                      ? "Aceito receber um código de validação no WhatsApp informado."
-                      : "Aceito receber os códigos de validação por e-mail e no WhatsApp informado."}{" "}
-                    Se eu anunciar uma bike, esse WhatsApp será o contato para
-                    compradores, após minha autorização.
-                  </span>
-                </label>
               </div>
             )}
             {!recovery && !editing && (
@@ -704,24 +744,27 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
                   required
                 />
                 <span>
-                  {(signup || !profile?.communityJoinedAt) && (
-                    <>
-                      Quero fazer parte da comunidade Vitale Mobilidade e
-                      receber sua newsletter. Autorizo o uso do meu nome e
-                      e-mail para essa participação e comunicação.{" "}
-                    </>
-                  )}
-                  Li o{" "}
+                  Aceito os{" "}
+                  <a
+                    href="/privacidade#termos-comunidade"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    termos da comunidade
+                  </a>{" "}
+                  e a{" "}
                   <a
                     href="/privacidade"
                     target="_blank"
                     rel="noreferrer"
                     className="underline"
                   >
-                    aviso de privacidade
-                  </a>{" "}
-                  e entendo que meu nome público e comentários aprovados ficam
-                  visíveis no site.
+                    política de privacidade
+                  </a>
+                  , que incluem a newsletter da Vitale e o envio de códigos de
+                  validação por e-mail e WhatsApp. Posso cancelar a newsletter
+                  pelo link nos e-mails.
                 </span>
               </label>
             )}
