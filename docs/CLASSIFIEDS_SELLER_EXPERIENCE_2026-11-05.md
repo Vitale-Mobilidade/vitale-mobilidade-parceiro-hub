@@ -68,3 +68,5 @@ Estado: implementação e validação locais concluídas. Sem risco material pen
 ### Pré-flight de produção (somente leitura)
 
 Conexão Lovable confirmou Supabase habilitado. Consulta agregada ao projeto ativo: 7 anúncios e 3 pedidos (2 ativos pagos, 1 cancelado sem pagamento); contratos de visibilidade, observação de pagamento e Admin presentes. Tabela de realocações ainda não existe: migration não foi aplicada. Zero anúncios publicados elegíveis ao backfill de contato naquele momento. A migration registra a associação original dos 3 pedidos existentes; a publicação de anúncios já pagos continua dispensando nova cobrança. Nenhuma escrita produtiva foi feita nesta etapa.
+
+Verificação da PR #94: preview Netlify aprovado no commit de implementação `5d8836c`. O status Vercel falha também na base `712ea69`, anterior a esta alteração; não é o hosting de produção, que permanece Lovable. Não houve bypass de checks ou tentativa de promover esse deploy.
