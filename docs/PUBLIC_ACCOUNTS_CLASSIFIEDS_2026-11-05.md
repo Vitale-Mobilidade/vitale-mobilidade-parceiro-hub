@@ -72,3 +72,5 @@ Decisão complementar: origem `channel` só gravável pelo servidor administrati
 - UI privada de criação/upload/publicação/desativação comprovada localmente com transporte sintético; SQL produtivo confirmou agregados e contratos/privacidade. Não foi criado um anúncio ou pagamento real para homologação.
 - Netlify preview e headers passaram. Falha de Vercel permanece baseline fora do hosting operacional; nenhum bypass de proteção, mudança de domínio ou novo hosting.
 - Evidências locais: `outputs/vitale-public-launch-2026-11-05/` e `outputs/vitale-admin-community-2026-11-05/`. Estado final: abertura pública e Admin institucional publicados; operação de cadastro de bikes é manual pelo responsável.
+
+Acabamento de UX do contato institucional: contador de 0/20 caracteres e orientação explícita de 11 dígitos, ou 13 com 55. Mantém a regra anterior de expor limites dos campos; ajuste pequeno, reversível e sem mudança de validação/API/banco. Revisão UX e QA Pass por descrição associada ao input, lint e validate; demais perspectivas preservadas/N/A para esta copy.
