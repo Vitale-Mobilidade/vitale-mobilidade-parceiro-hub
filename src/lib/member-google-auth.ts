@@ -1,3 +1,4 @@
+import { createLovableAuth } from "@lovable.dev/cloud-auth-js";
 import { supabase } from "@/integrations/supabase/client";
 import { rememberGoogleMemberContext } from "./member-google-context";
 /** The supported broker handles Google OAuth state/redirects; existing Supabase owns the session. */
@@ -6,7 +7,10 @@ export async function startGoogleMemberSignIn(
   invitationCode?: string,
 ) {
   rememberGoogleMemberContext(returnTo, invitationCode);
-  const { createLovableAuth } = await import("@lovable.dev/cloud-auth-js");
+  // Paint the pending state before the browser leaves. The SDK is already loaded with this auth route.
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => setTimeout(resolve, 0)),
+  );
   const result = await createLovableAuth().signInWithOAuth("google", {
     redirect_uri: `${window.location.origin}/conta/google`,
   });
