@@ -45,7 +45,7 @@ export function ListingDashboard({
   const [query, setQuery] = useState("");
   const [disabling, setDisabling] = useState<BikeListing | null>(null);
   const meaningful = listings.filter(
-    (l) => l.status !== "draft" || !isEmptyBikeDraft(l),
+    (l) => !isEmptyBikeDraft({ ...l, status: "draft" }),
   );
   const tabs = [
     { key: "all", label: "Todos" },

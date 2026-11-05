@@ -31,13 +31,13 @@ Trade-offs: reaproveitamento altera a associação operacional do pedido ao anú
 | UX | Pass | Menu com três atalhos; Todos inclui desativados; reativação direta quando elegível; etapas com contato/mensagem, controles de ordem mobile/teclado e modal de confirmação. Capturas mobile inspecionadas. Aviso de rascunho não aparece depois de publicado. |
 | CX | Pass | Pausa preserva fotos/dados e período; transferência explícita e auditada; checkout bloqueado quando há direito livre. Falha ao consultar direitos tem tentativa novamente, sem liberar cobrança indevida. Rollback executado no banco descartável sem perder histórico. |
 | Growth | Pass | Popup espera reconhecer sessão e não abre para logados; formulário público continua SSR para visitantes e some após reconhecer a sessão. OG/Twitter usam a capa pública, compartilhamento nativo/WhatsApp/cópia e URL versionada pela capa. Eventos não bloqueiam navegação; respeitam opt-out/DNT/GPC. |
-| QA | Pass | SQL real em PostgreSQL descartável; percurso de interface em Chrome com mocks locais e larguras 320/390/1024/1280/1440; 61 testes direcionados e pnpm validate (66 testes, typecheck, build), lint direcionado e diff check aprovados. |
+| QA | Pass | SQL real em PostgreSQL descartável; percurso de interface em Chrome com mocks locais e larguras 320/390/1024/1280/1440; 62 testes direcionados e pnpm validate (66 testes, typecheck, build), lint direcionado e diff check aprovados. |
 
 ### Mapa dos 12 pedidos
 
 1. `NewsletterSignup` oculta captação quando a sessão é reconhecida; popup bloqueado também durante carregamento de auth.
 2. Menu: Editar meu perfil / Anuncie sua bike / Meus anúncios, mantendo Sair.
-3. Todos inclui desativados; apenas rascunho completamente vazio é omitido.
+3. Todos inclui desativados; placeholders completamente vazios antigos continuam omitidos.
 4. Reativação elegível publica diretamente. Outro anúncio pode reivindicar um direito livre de uma bike inativa; prazo, pagamento, compra original e auditoria mantidos. A consulta do pedido prioriza o aberto para que uma cobrança antiga encerrada não esconda um direito realocado.
 5/10. `/anuncie-sua-bike` explica valor, duração, troca, contato, validação, fotos e negociação antes de criar rascunho. CTAs levam a ela. Após login, `novo=1` é preservado com validação restrita e consumido uma vez.
 6. Etapa Informações mostra número e link para validar/trocar no perfil, permite personalizar texto até 600 caracteres e mostra prévia; o nome da bike fica entre asteriscos no WhatsApp e o link é sempre acrescentado. Continuar confirma no servidor o número validado, sem um novo checkbox.
@@ -48,9 +48,9 @@ Trade-offs: reaproveitamento altera a associação operacional do pedido ao anú
 
 ### Testes e evidências
 
-- `python3 tests/member-community-db.py --seller`: migration, reativação/troca, data preservada, origem/auditoria, bloqueio de cobrança nova tendo direito livre, ownership, grant/RLS, ordem de fotos, métrica privada/deduplicada, vencimento e suspensão. Duas publicações simultâneas aceitam somente uma; transferência e observação de pagamento simultâneas não dão deadlock. Mudança de telefone durante checkout mantém pagamento ativo e exige nova confirmação; reembolso retira a bike atualmente vinculada. Rollback preserva histórico e restaura RPCs anteriores.
+- `python3 tests/member-community-db.py --seller`: migration, reativação/troca, data preservada, origem/auditoria, bloqueio de cobrança nova tendo direito livre, ownership, grant/RLS (inclusive defaults amplos e sequência privada), ordem de fotos, métrica privada/deduplicada, vencimento e suspensão. Duas publicações simultâneas aceitam somente uma; transferência e observação de pagamento simultâneas não dão deadlock. Mudança de telefone durante checkout mantém pagamento ativo e exige nova confirmação; reembolso retira a bike atualmente vinculada. Rollback preserva histórico e restaura RPCs anteriores.
 - `tests/bike-classifieds-ui.mjs`: condições antes da criação, 1>2>3, contato/mensagem, cinco fotos e ordem em telas estreitas, checkbox único, modal de pagamento, reativação direta, troca do direito sem segundo checkout, Todos/Desativados, atalhos, newsletter oculta ao logado, capa em OG, compartilhamento, métricas, SSR e perfil. Backend/Storage/Asaas sintéticos; zero cobranças, mensagens ou dados reais alterados.
-- 61 testes direcionados: contratos de mensagem/compartilhamento/retorno, login/retorno, servidor de classificados, Asaas, Admin e newsletter. `pnpm validate`: 66 testes/typecheck/build.
+- 62 testes direcionados: contratos de mensagem/compartilhamento/retorno, login/retorno, servidor de classificados, Asaas, Admin e newsletter. `pnpm validate`: 66 testes/typecheck/build.
 - Capturas locais (ignoradas no Git): `artifacts/seller-experience/seller-conditions-desktop.png`, `paid-success-modal.png`, `photo-order-mobile.png`, `reused-paid-period-mobile.png`, `dashboard-mobile.png`, `listing-desktop.png`.
 
 ### Limites e operação

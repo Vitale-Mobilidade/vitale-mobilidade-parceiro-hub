@@ -27,6 +27,7 @@ CREATE TABLE public.member_listing_period_transfers (
  to_listing_id uuid NOT NULL REFERENCES public.member_bike_listings(id),
  transferred_at timestamptz NOT NULL DEFAULT now()
 );
+REVOKE ALL ON SEQUENCE public.member_listing_period_transfers_id_seq FROM PUBLIC,anon,authenticated;
 ALTER TABLE public.member_listing_period_transfers ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.member_listing_period_transfers FROM PUBLIC,anon,authenticated;
 GRANT SELECT ON public.member_listing_period_transfers TO service_role;

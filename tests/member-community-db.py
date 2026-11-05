@@ -205,6 +205,8 @@ COMMIT;
                 print(f"PASS {path}")
 
         if "--seller" in sys.argv:
+            broad_defaults=sql("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;")
+            assert broad_defaults.returncode==0,broad_defaults.stderr
             for path in ["supabase/migrations/20261105230000_classifieds_seller_experience.sql","tests/classifieds-seller-experience.sql"]:
                 result=sql((repo/path).read_text())
                 if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-4000:]}")

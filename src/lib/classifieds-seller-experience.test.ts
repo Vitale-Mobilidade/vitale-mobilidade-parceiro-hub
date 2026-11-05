@@ -1,5 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { ListingDashboard } from "@/components/classifieds/ListingDashboard";
+import { listingSchema } from "./bike-classifieds";
 import { ListingShare } from "@/components/classifieds/ListingShare";
 import { describe, expect, it } from "vitest";
 import {
@@ -14,6 +16,49 @@ const listing = {
   title: "Minha V8 Pro",
 };
 describe("seller contact and share contract", () => {
+  it("Todos shows deactivated real ads without restoring empty test placeholders", () => {
+    const empty = listingSchema.parse({
+      ...listing,
+      title: "Minha bike",
+      brand: "",
+      model: "",
+      priceCents: 0,
+      city: "",
+      state: "",
+      modelYear: null,
+      mileageKm: null,
+      condition: "good",
+      battery: "unknown",
+      invoice: false,
+      description: "",
+      maintenance: "",
+      status: "archived",
+      feeCents: 15000,
+      feeStatus: "required",
+      images: [],
+      publishedAt: null,
+      updatedAt: "2026-11-05T00:00:00Z",
+    });
+    const real = {
+      ...empty,
+      id: "00000000-0000-4000-8000-000000000782",
+      title: "Bike real desativada",
+      brand: "Marca",
+      model: "Modelo",
+    };
+    const html = renderToStaticMarkup(
+      createElement(ListingDashboard, {
+        listings: [empty, real],
+        busy: false,
+        onCreate: () => {},
+        onEdit: () => {},
+        onAction: async () => {},
+      }),
+    );
+    expect(html).toContain("Bike real desativada");
+    expect(html).not.toContain(">Minha bike<");
+    expect(html).not.toContain("Nenhuma bike neste filtro");
+  });
   it("versions the shared link with the cover so a new cover gets a fresh share URL", () => {
     const cover = "00000000-0000-4000-8000-000000000782";
     const html = renderToStaticMarkup(

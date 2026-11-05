@@ -50,6 +50,7 @@ SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000090'
 SET ROLE authenticated;
 SELECT pg_temp.expect_error(format('SELECT public.member_classifieds(%L,%L::jsonb)','claim_period',jsonb_build_object('id',:'target_id','orderId',:'paid_order')),'listing_unavailable');
 SELECT pg_temp.expect_error('SELECT * FROM public.member_listing_events','permission denied');
+SELECT pg_temp.expect_error('SELECT last_value FROM public.member_listing_period_transfers_id_seq','permission denied');
 SELECT pg_temp.expect_error('SELECT public.member_available_periods(auth.uid(),gen_random_uuid())','permission denied');
 RESET ROLE;
 -- Publish a channel bike for anonymous metrics; no contact details in the aggregate.
