@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--seller" in sys.argv: sys.argv.append("--launch")
 if "--google" in sys.argv: sys.argv.append("--identity")
 if "--launch" in sys.argv: sys.argv.append("--classifieds")
 if "--classifieds" in sys.argv: sys.argv.append("--identity")
@@ -202,6 +203,45 @@ COMMIT;
                 result = sql((repo / path).read_text())
                 if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-3000:]}")
                 print(f"PASS {path}")
+
+        if "--seller" in sys.argv:
+            broad_defaults=sql("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;")
+            assert broad_defaults.returncode==0,broad_defaults.stderr
+            for path in ["supabase/migrations/20261105230000_classifieds_seller_experience.sql","tests/classifieds-seller-experience.sql"]:
+                result=sql((repo/path).read_text())
+                if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-4000:]}")
+                print(f"PASS {path}")
+
+            def claim(target):
+                return sql("BEGIN; SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false); SELECT public.member_classifieds('claim_period',jsonb_build_object('id','"+target+"','orderId',(public.member_classifieds('periods',jsonb_build_object('id','"+target+"'))->0->>'id'))); SELECT public.member_classifieds('publish',jsonb_build_object('id','"+target+"','contactConsent',true)); COMMIT;")
+            targets=["00000000-0000-4000-8000-000000000781","00000000-0000-4000-8000-000000000782"]
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                claims=list(executor.map(claim,targets))
+            assert sum(r.returncode==0 for r in claims)==1, str([r.stderr for r in claims])
+            invariant=sql("SELECT count(*)=1 FROM public.member_bike_listings WHERE id IN ('00000000-0000-4000-8000-000000000781','00000000-0000-4000-8000-000000000782') AND status='published';")
+            assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+            print("PASS concurrent paid-period claim/publication permits exactly one active bike")
+            prepare_race=sql("UPDATE public.member_bike_listings SET status='draft' WHERE id=(SELECT listing_id FROM public.member_listing_billing WHERE user_id='00000000-0000-4000-8000-000000000091' LIMIT 1);")
+            assert prepare_race.returncode==0,prepare_race.stderr
+            claim_observe="SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false); DO $$ DECLARE t uuid:='00000000-0000-4000-8000-000000000781'; o uuid; BEGIN o:=(public.member_classifieds('periods',jsonb_build_object('id',t))->0->>'id')::uuid; IF o IS NULL THEN t:='00000000-0000-4000-8000-000000000782'; o:=(public.member_classifieds('periods',jsonb_build_object('id',t))->0->>'id')::uuid; END IF; PERFORM public.member_classifieds('claim_period',jsonb_build_object('id',t,'orderId',o)); PERFORM public.member_classifieds('publish',jsonb_build_object('id',t,'contactConsent',true)); END $$;"
+            observe="SELECT public.member_billing_record_payment(o.id,(SELECT payment_id FROM public.member_listing_payment_cycles WHERE order_id=o.id LIMIT 1),'CONFIRMED',true,current_date,now()) FROM public.member_listing_billing o;"
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                observed=list(executor.map(sql,[claim_observe,observe]))
+            assert all(r.returncode==0 for r in observed),str([r.stderr for r in observed])
+            print("PASS concurrent payment observation and transfer serialize without deadlock")
+            changed_phone=sql("UPDATE public.member_identity_verifications SET phone_number='+5511999999997' WHERE user_id='00000000-0000-4000-8000-000000000091'; SELECT count(*)=0 FROM public.member_bike_listings WHERE id IN ('00000000-0000-4000-8000-000000000781','00000000-0000-4000-8000-000000000782') AND public.member_listing_visible(id);")
+            assert changed_phone.returncode==0 and " t" in changed_phone.stdout,changed_phone.stderr
+            pending_changed_phone=sql("UPDATE public.member_bike_listings SET status='draft' WHERE id=(SELECT listing_id FROM public.member_listing_billing WHERE user_id='00000000-0000-4000-8000-000000000091' LIMIT 1); UPDATE public.member_listing_billing o SET publish_requested=true,listing_revision=l.updated_at FROM public.member_bike_listings l WHERE l.id=o.listing_id; SELECT public.member_billing_recalculate(id) FROM public.member_listing_billing; SELECT bool_and(status='active' AND NOT publish_requested AND paid_at IS NOT NULL) FROM public.member_listing_billing;")
+            assert pending_changed_phone.returncode==0 and " t" in pending_changed_phone.stdout,pending_changed_phone.stderr
+            print("PASS changed phone hides prior contact and paid reconciliation stops auto-publication without losing payment")
+            refund=sql("UPDATE public.member_identity_verifications SET phone_number='+5511999999998' WHERE user_id='00000000-0000-4000-8000-000000000091'; UPDATE public.member_bike_listings SET status='published',contact_consent_at=now() WHERE id=(SELECT listing_id FROM public.member_listing_billing WHERE user_id='00000000-0000-4000-8000-000000000091' LIMIT 1); UPDATE public.member_listing_payment_cycles SET status='REFUNDED',paid=false; SELECT public.member_billing_recalculate(id) FROM public.member_listing_billing; SELECT count(*)=0 FROM public.member_bike_listings WHERE id IN ('00000000-0000-4000-8000-000000000781','00000000-0000-4000-8000-000000000782') AND status='published';")
+            assert refund.returncode==0 and " t" in refund.stdout,refund.stderr
+            print("PASS refund reconciliation withdraws the reassigned bike")
+            rollback=sql((repo/"supabase/rollback/20261105230000_classifieds_seller_experience.sql").read_text())
+            assert rollback.returncode==0,rollback.stderr
+            invariant=sql("SELECT NOT has_function_privilege('anon','public.member_listing_track(uuid,text,uuid)','EXECUTE') AND to_regprocedure('public.member_classifieds(text,jsonb)') IS NOT NULL AND (SELECT count(*)>0 FROM public.member_listing_period_transfers);")
+            assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+            print("PASS rollback restores prior RPCs while retaining private transfer/payment history")
 
         if "--google" in sys.argv:
             for path in ["tests/member-google-fixture.sql","supabase/migrations/20261105160000_google_member_email_proof.sql","tests/member-google.sql"]:

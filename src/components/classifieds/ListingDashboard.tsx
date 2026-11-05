@@ -25,7 +25,7 @@ import {
   type BikeListing,
 } from "@/lib/bike-classifieds";
 import { formatBRL } from "@/lib/price-tracker";
-export type ListingAction = "archive" | "sold" | "withdraw";
+export type ListingAction = "archive" | "sold" | "withdraw" | "reactivate";
 export function ListingDashboard({
   listings,
   busy,
@@ -55,7 +55,7 @@ export function ListingDashboard({
     { key: "archived", label: "Desativados" },
   ];
   const matches = (l: BikeListing, value: string) =>
-    value === "all" ? l.status !== "archived" : l.status === value;
+    value === "all" || l.status === value;
   const visible = meaningful.filter(
     (l) =>
       matches(l, filter) &&
@@ -77,7 +77,9 @@ export function ListingDashboard({
           </h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">
             Acompanhe suas bikes, edite os anúncios e mantenha a disponibilidade
-            atualizada.
+            atualizada. As métricas mostram exibições na vitrine, visitas ao
+            anúncio e cliques no WhatsApp, deduplicados por navegador a cada
+            dia.
           </p>
         </div>
         {meaningful.length > 0 && (
@@ -201,6 +203,27 @@ export function ListingDashboard({
                         )}
                       </p>
                     )}
+                    {listing.metrics && (
+                      <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                        {[
+                          ["Na vitrine", listing.metrics.impressions],
+                          ["Visitas", listing.metrics.visits],
+                          [
+                            "Cliques no WhatsApp",
+                            listing.metrics.whatsappClicks,
+                          ],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <dt className="text-xs text-muted-foreground">
+                              {label}
+                            </dt>
+                            <dd className="mt-1 text-xl font-bold text-ink">
+                              {value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       {(listing.status === "draft" ||
                         listing.status === "published") && (
@@ -241,10 +264,10 @@ export function ListingDashboard({
                         <button
                           className={actionClass}
                           disabled={busy}
-                          onClick={() => void onAction("withdraw", listing)}
+                          onClick={() => void onAction("reactivate", listing)}
                         >
                           <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                          Reativar como rascunho
+                          Reativar anúncio
                         </button>
                       ) : null}
                       {listing.status !== "archived" && (
@@ -303,7 +326,8 @@ export function ListingDashboard({
             <AlertDialogDescription>
               “{disabling?.title}” sairá da vitrine e deixará de receber novos
               contatos pelo site. As fotos e os dados serão mantidos. Você pode
-              reativá-lo depois como rascunho.
+              reativá-lo ou usar o período restante em outra bike, com uma ativa
+              por pagamento. O prazo de 90 dias continua contando.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,3 +1,11 @@
+import { z } from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { checkoutClock, checkoutSecondsRemaining } from "@/lib/checkout-window";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Clock3, ExternalLink, LoaderCircle } from "lucide-react";
@@ -13,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { listingBillingCall } from "@/lib/listing-billing-api";
 import { type BillingOrderView } from "@/lib/listing-billing";
+import { classifiedsError } from "@/lib/bike-classifieds";
 import { classifiedsCall } from "@/lib/bike-classifieds-api";
 import { safePaymentLink } from "@/lib/payment-url";
 const button =
@@ -27,8 +36,10 @@ export function ListingBillingPanel({
   onConsentChange,
   onChange,
   onLockChange,
+  published = false,
 }: {
   listingId: string;
+  published?: boolean;
   ready: boolean;
   locked: boolean;
   active: boolean;
@@ -43,6 +54,44 @@ export function ListingBillingPanel({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmCancel, setConfirmCancel] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [periods, setPeriods] = useState<
+    Array<{ id: string; listingTitle: string; paidUntil: string | null }>
+  >([]);
+  const [periodsLoaded, setPeriodsLoaded] = useState(false),
+    [periodsError, setPeriodsError] = useState(false),
+    [periodRetry, setPeriodRetry] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let current = true;
+    setPeriodsLoaded(false);
+    setPeriodsError(false);
+    void classifiedsCall("periods", { id: listingId })
+      .then((value) => {
+        const parsed = z
+          .array(
+            z.object({
+              id: z.string().uuid(),
+              listingTitle: z.string(),
+              paidUntil: z.string().nullable(),
+            }),
+          )
+          .parse(value);
+        if (current) {
+          setPeriods(parsed);
+          setPeriodsLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setPeriods([]);
+          setPeriodsError(true);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [listingId, active, periodRetry]);
   const [now, setNow] = useState(Date.now);
   const clockOffset = useRef(0);
   const previous = useRef<string | undefined>(undefined),
@@ -70,6 +119,12 @@ export function ListingBillingPanel({
       setOrder(data.order);
       if (previous.current && previous.current !== data.order?.status)
         await changed.current();
+      if (
+        previous.current &&
+        previous.current !== "active" &&
+        data.order?.status === "active"
+      )
+        setPaymentConfirmed(true);
       previous.current = data.order?.status;
       setError((old) =>
         data.order?.status === "active" ||
@@ -167,6 +222,7 @@ export function ListingBillingPanel({
         }
       }
       setError(e instanceof Error ? e.message : "Não foi possível continuar.");
+      setPeriodRetry((n) => n + 1);
       await refresh().catch(() => {});
     } finally {
       setBusy(false);
@@ -193,6 +249,32 @@ export function ListingBillingPanel({
       aria-labelledby="listing-billing-title"
       data-heatmap-private
     >
+      <Dialog open={paymentConfirmed} onOpenChange={setPaymentConfirmed}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Parabéns! Pagamento confirmado 🎉
+            </DialogTitle>
+            <DialogDescription>
+              {published
+                ? "Sua bike já está na vitrine da Vitale Mobilidade. Agora é hora de compartilhar seu anúncio!"
+                : "Seu período de 90 dias está garantido. Revise e publique o anúncio para começar a exposição."}
+            </DialogDescription>
+          </DialogHeader>
+          {published ? (
+            <a href={`/venda-sua-bike/${listingId}`} className={button}>
+              Ver meu anúncio
+            </a>
+          ) : (
+            <button
+              className={button}
+              onClick={() => setPaymentConfirmed(false)}
+            >
+              Continuar para publicar
+            </button>
+          )}
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -408,10 +490,83 @@ export function ListingBillingPanel({
           {reason && (
             <p className="mt-4 text-sm text-muted-foreground">{reason}</p>
           )}
+          {periods.length > 0 && (
+            <div className="mt-5 rounded-xl bg-emerald-50 p-4">
+              <p className="font-bold">
+                Você já tem um período pago disponível
+              </p>
+              <p className="mt-2 text-sm">
+                Use-o nesta bike sem nova cobrança. A anterior permanece fora do
+                ar e a data final é mantida.
+              </p>
+              {periods.map((period) => (
+                <button
+                  key={period.id}
+                  type="button"
+                  className={`${button} mt-3`}
+                  disabled={busy || locked || !ready || !contactConsent}
+                  onClick={() => {
+                    setBusy(true);
+                    setError("");
+                    void classifiedsCall("claim_period", {
+                      id: listingId,
+                      orderId: period.id,
+                    })
+                      .then(() =>
+                        classifiedsCall("publish", {
+                          id: listingId,
+                          contactConsent: true,
+                        }),
+                      )
+                      .then(() => changed.current())
+                      .then(refresh)
+                      .catch((e) =>
+                        setError(
+                          classifiedsError(e) ||
+                            "Não foi possível usar o período. Confira se a bike anterior está desativada e tente novamente.",
+                        ),
+                      )
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  Publicar no período pago
+                  {period.paidUntil
+                    ? ` até ${new Date(period.paidUntil).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
+                    : " de 90 dias"}
+                </button>
+              ))}
+            </div>
+          )}
+          {!periodsLoaded &&
+            (periodsError ? (
+              <div className="mt-4">
+                <p role="alert" className="text-sm">
+                  Não foi possível conferir seus períodos pagos. Tente novamente
+                  para evitar uma cobrança desnecessária.
+                </p>
+                <button
+                  type="button"
+                  className="min-h-11 text-action underline"
+                  onClick={() => setPeriodRetry((n) => n + 1)}
+                >
+                  Conferir meus períodos
+                </button>
+              </div>
+            ) : (
+              <p role="status" className="mt-4 text-sm">
+                Conferindo seus períodos pagos…
+              </p>
+            ))}
           <button
             type="button"
             disabled={
-              busy || locked || !ready || !contactConsent || !configured
+              busy ||
+              locked ||
+              !ready ||
+              !contactConsent ||
+              !configured ||
+              !periodsLoaded ||
+              periods.length > 0
             }
             className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
             onClick={() => void checkout()}

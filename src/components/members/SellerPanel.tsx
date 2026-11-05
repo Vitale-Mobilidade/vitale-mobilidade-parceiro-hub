@@ -31,6 +31,10 @@ export function SellerPanel() {
         Apresente sua bike a quem acompanha mobilidade elétrica e converse
         diretamente com os interessados.
       </p>
+      <p className="mt-3 font-semibold text-ink">
+        Pagamento único de R$150 por 90 dias de exposição, sem renovação
+        automática.
+      </p>
       <ul className="mt-5 space-y-3 text-sm">
         <li className="flex gap-3">
           <Camera className="h-5 w-5 shrink-0 text-action" aria-hidden="true" />
@@ -54,7 +58,7 @@ export function SellerPanel() {
       </ul>
       {account?.canAdvertise ? (
         <a
-          href="/conta/anuncios"
+          href="/anuncie-sua-bike"
           className="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-action px-5 font-bold text-white"
         >
           Anuncie sua bike

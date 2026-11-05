@@ -1,4 +1,3 @@
-import { memberLoginHref } from "@/lib/member-community";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import {
@@ -60,7 +59,7 @@ function ClassifiedsPage() {
                 conta para criar seu anúncio.
               </p>
               <a
-                href={memberLoginHref("/conta/anuncios")}
+                href={"/anuncie-sua-bike"}
                 className="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-mint px-5 font-bold text-mint-foreground"
               >
                 Anuncie sua bike

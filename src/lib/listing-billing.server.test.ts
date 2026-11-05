@@ -53,6 +53,7 @@ function chain(table: string, value: unknown) {
     "eq",
     "is",
     "in",
+    "not",
     "order",
     "limit",
     "maybeSingle",

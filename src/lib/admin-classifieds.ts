@@ -24,6 +24,12 @@ export const adminClassifiedsInput = z.discriminatedUnion("action", [
     .strict(),
   z
     .object({
+      action: z.literal("reorder"),
+      payload: id.extend({ imageIds: z.array(uuid).min(1).max(5) }).strict(),
+    })
+    .strict(),
+  z
+    .object({
       action: z.literal("save"),
       payload: listingDraftInputSchema.extend({ id: uuid }).strict(),
     })

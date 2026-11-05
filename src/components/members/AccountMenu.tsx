@@ -137,13 +137,16 @@ export function AccountMenu() {
               Editar meu perfil
             </a>
           </DropdownMenuItem>
-          {account?.canAdvertise && (
-            <DropdownMenuItem asChild>
-              <a href="/conta/anuncios" className="min-h-11">
-                Anuncie sua bike
-              </a>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem asChild>
+            <a href="/anuncie-sua-bike" className="min-h-11">
+              Anuncie sua bike
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="/conta/anuncios" className="min-h-11">
+              Meus anúncios
+            </a>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="min-h-11"

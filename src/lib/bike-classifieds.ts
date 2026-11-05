@@ -58,6 +58,7 @@ export const listingInputSchema = z.object({
   invoice: z.boolean(),
   description: text(20, 4000),
   maintenance: text(0, 1000),
+  whatsappMessage: text(0, 600).default(""),
 });
 /** A useful default title, without replacing the seller's own title or inventing facts. */
 export function listingWithTitle<
@@ -133,6 +134,14 @@ export const listingSchema = listingInputSchema.extend({
   feeStatus: z.enum(["pilot_exempt", "required", "paid"]),
   displayExpiresAt: z.string().nullable().optional(),
   channelWhatsapp: z.string().nullable().optional(),
+  contactConfirmed: z.boolean().default(false),
+  metrics: z
+    .object({
+      impressions: z.number(),
+      visits: z.number(),
+      whatsappClicks: z.number(),
+    })
+    .optional(),
   images: z.array(listingImageSchema).max(5),
   sellerType: z.enum(["channel", "individual"]).default("individual"),
   publishedAt: z.string().nullable(),
@@ -147,6 +156,7 @@ export const publicListingSchema = listingSchema.extend({
 export const classifiedsAccountSchema = z.object({
   sellerType: z.enum(["channel", "individual"]).default("individual"),
   displayName: z.string().nullable(),
+  verifiedPhone: z.string().nullable().optional(),
   communityJoined: z.boolean(),
   avatarPath: z.string().nullable(),
   avatarId: z.string().uuid().nullable().optional(),
@@ -166,6 +176,12 @@ export function classifiedsError(error: unknown): string {
       ? String(error.message)
       : "";
   const messages: Record<string, string> = {
+    listing_phone_confirmation:
+      "Confirme seu WhatsApp na etapa Informações antes de continuar.",
+    billing_credit_available:
+      "Você tem um período pago disponível. Use-o antes de iniciar outro pagamento.",
+    period_in_use:
+      "Desative a bike que está usando este período antes de transferi-lo.",
     billing_pending:
       "Há um pagamento em andamento. Encerre a solicitação antes de editar a bike.",
     billing_required:
@@ -218,15 +234,25 @@ export function isEmptyBikeDraft(listing: BikeListing): boolean {
     listing.images.length === 0
   );
 }
+export const DEFAULT_LISTING_MESSAGE =
+  "Olá! Vi a bike *{bike}* na Vitale Mobilidade e gostaria de saber se ainda está disponível. {link}";
 export function listingWhatsAppMessage(
-  listing: Pick<BikeListing, "id" | "title">,
+  listing: Pick<BikeListing, "id" | "title"> & { whatsappMessage?: string },
 ): string {
   const id = z.string().uuid().parse(listing.id);
-  return `Olá! Vi a bike ${listing.title.trim() || "do seu anúncio"} na Vitale Mobilidade e gostaria de saber se ainda está disponível. https://vitalemobilidade.com/venda-sua-bike/${id}`;
+  const title =
+    listing.title.trim().replace(/[*_~`\r\n]/g, "") || "do seu anúncio";
+  const link = `https://vitalemobilidade.com/venda-sua-bike/${id}`;
+  let template = listing.whatsappMessage?.trim() || DEFAULT_LISTING_MESSAGE;
+  if (!template.includes("{bike}")) template += " *{bike}*";
+  if (!template.includes("{link}")) template += " {link}";
+  return template
+    .replace(/\*?\{bike\}\*?/g, `*${title}*`)
+    .replace(/\{link\}/g, link);
 }
 export function listingWhatsAppHref(
   phone: string,
-  listing: Pick<BikeListing, "id" | "title">,
+  listing: Pick<BikeListing, "id" | "title"> & { whatsappMessage?: string },
 ): string {
   const digits = phone.replace(/^\+/, "");
   if (!/^55[1-9][0-9]9[0-9]{8}$/.test(digits)) throw new Error("invalid_phone");

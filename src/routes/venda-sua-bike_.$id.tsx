@@ -25,6 +25,13 @@ export const Route = createFileRoute("/venda-sua-bike_/$id")({
         loaderData?.listing?.description.slice(0, 160) ??
         "Bike anunciada pela comunidade Vitale.",
       robots: "noindex, follow",
+      image: loaderData?.listing?.images[0]
+        ? {
+            url: `https://vitalemobilidade.com/api/public/bike-image?id=${loaderData.listing.images[0].id}`,
+            type: "image/webp",
+            alt: loaderData.listing.title,
+          }
+        : undefined,
     }),
   component: function BikeListingPage() {
     const { listing } = Route.useLoaderData();

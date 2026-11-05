@@ -77,12 +77,21 @@ function projection(order: BillingOrder | null) {
     : null;
 }
 async function currentOrder(db: Db, listing: string, user: string) {
-  const { data, error } = await db
-    .from("member_listing_billing")
-    .select("*")
-    .eq("listing_id", listing)
-    .eq("user_id", user)
-    .eq("billing_model", "one_time_90d")
+  const query = () =>
+    db
+      .from("member_listing_billing")
+      .select("*")
+      .eq("listing_id", listing)
+      .eq("user_id", user)
+      .eq("billing_model", "one_time_90d");
+  const open = await query()
+    .not("status", "in", "(cancelled,failed,expired)")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (open.error) throw new Error("billing_unavailable");
+  if (open.data) return open.data as BillingOrder;
+  const { data, error } = await query()
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

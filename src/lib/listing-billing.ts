@@ -29,6 +29,10 @@ export const billingResponseSchema = z.object({
 });
 export const billingMessage = (code: string) =>
   ({
+    listing_phone_confirmation:
+      "Confirme seu WhatsApp na etapa Informações antes de continuar.",
+    billing_credit_available:
+      "Você tem um período pago disponível. Use-o para publicar sem nova cobrança.",
     identity_verification_required:
       "Confirme seu e-mail e WhatsApp no perfil para continuar.",
     billing_consent_required:

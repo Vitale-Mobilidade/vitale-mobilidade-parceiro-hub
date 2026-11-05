@@ -197,7 +197,7 @@ export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean
           <a href="/videos" className="mt-5 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-4">Ver todos os vídeos →</a>
         </div>
       </section>
-      {showNewsletter && <aside aria-label="Cadastro da newsletter" className="bg-surface py-10 sm:py-14">
+      {showNewsletter && <aside aria-label="Cadastro da newsletter" className="bg-surface has-[section]:py-10 sm:has-[section]:py-14">
         <div className="responsive-container">
           <NewsletterSignup />
         </div>

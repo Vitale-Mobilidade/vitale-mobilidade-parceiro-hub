@@ -32,6 +32,8 @@ import {
   LISTING_STATUSES,
   MEMBER_IMAGE_MAX_MB,
   STATES,
+  DEFAULT_LISTING_MESSAGE,
+  listingWhatsAppMessage,
   classifiedsAccountSchema,
   classifiedsError,
   listingInputSchema,
@@ -45,13 +47,14 @@ import {
   type ClassifiedsAccount,
 } from "@/lib/bike-classifieds";
 import { ClassifiedCard } from "./BikeClassifiedsSection";
+import { memberPhone } from "@/lib/member-identity";
 import { memberError } from "@/lib/member-community";
 import { ListingPreview } from "./ListingPreview";
 const field =
   "mt-2 block min-h-12 w-full rounded-xl border border-line bg-white px-3 py-3 text-ink disabled:bg-surface";
 const button =
   "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 py-3 font-bold text-white disabled:opacity-50";
-export function MemberListings() {
+export function MemberListings({ startNew = false }: { startNew?: boolean }) {
   const { session, loading } = useMemberSession();
   const userId = session?.user.id;
   const [account, setAccount] = useState<ClassifiedsAccount | null>(null);
@@ -124,12 +127,31 @@ export function MemberListings() {
         listingSchema.parse(await classifiedsCall("create"));
       await load();
       setSelected(l.id);
+      if (startNew)
+        window.history.replaceState(
+          window.history.state,
+          "",
+          "/conta/anuncios",
+        );
     } catch (e) {
       setError(classifiedsError(e) || memberError(e));
     } finally {
       setBusy(false);
     }
   }
+  const startedNew = useRef(false);
+  useEffect(() => {
+    if (
+      startNew &&
+      ready &&
+      account?.canAdvertise &&
+      account.communityJoined &&
+      !startedNew.current
+    ) {
+      startedNew.current = true;
+      void create();
+    }
+  });
   if (loading) return <p role="status">Carregando sua conta…</p>;
   if (!session)
     return (
@@ -139,7 +161,11 @@ export function MemberListings() {
           Entre na sua conta para criar e acompanhar seus anúncios.
         </p>
         <a
-          href="/conta?retorno=%2Fconta%2Fanuncios"
+          href={
+            startNew
+              ? "/conta?retorno=%2Fconta%2Fanuncios%3Fnovo%3D1"
+              : "/conta?retorno=%2Fconta%2Fanuncios"
+          }
           className={`${button} mt-6`}
         >
           Entrar na minha conta
@@ -205,15 +231,29 @@ export function MemberListings() {
     setError("");
     setNotice("");
     try {
-      await classifiedsCall(action, { id: item.id });
+      await classifiedsCall(action === "reactivate" ? "withdraw" : action, {
+        id: item.id,
+      });
+      if (action === "reactivate") {
+        if (item.feeStatus === "paid" && item.contactConfirmed)
+          await classifiedsCall("publish", {
+            id: item.id,
+            contactConsent: true,
+          });
+        else setSelected(item.id);
+      }
       await load();
       if (edit) setSelected(item.id);
       setNotice(
         action === "archive"
           ? "Anúncio desativado. Você pode reativá-lo durante o período pago, mantendo o vencimento original."
-          : action === "sold"
-            ? "Bike marcada como vendida e retirada da vitrine."
-            : "Anúncio em rascunho. Revise antes de publicar novamente.",
+          : action === "reactivate"
+            ? item.feeStatus === "paid" && item.contactConfirmed
+              ? "Anúncio reativado. Seu período pago e a data final foram mantidos."
+              : "Anúncio em rascunho. Confira o contato e seu período pago antes de publicar."
+            : action === "sold"
+              ? "Bike marcada como vendida e retirada da vitrine."
+              : "Anúncio em rascunho. Revise antes de publicar novamente.",
       );
     } catch (e) {
       setError(classifiedsError(e) || memberError(e));
@@ -270,6 +310,7 @@ export function MemberListings() {
             key={listing.id}
             listing={listing}
             channel={channel}
+            verifiedPhone={account.verifiedPhone ?? undefined}
             canPublish={account.canPublish}
             onChange={load}
             onEditing={setEditing}
@@ -280,7 +321,9 @@ export function MemberListings() {
         <ListingDashboard
           listings={listings}
           busy={busy}
-          onCreate={() => void create()}
+          onCreate={() => {
+            window.location.href = "/anuncie-sua-bike";
+          }}
           onEdit={(item) => {
             if (item.status !== "draft") void manage("withdraw", item, true);
             else setSelected(item.id);
@@ -325,8 +368,10 @@ export function ListingEditor({
   onEditing,
   onBusy,
   actions,
+  verifiedPhone,
 }: {
   listing: BikeListing;
+  verifiedPhone?: string;
   canPublish: boolean;
   channel: boolean;
   onChange: () => Promise<void>;
@@ -350,6 +395,7 @@ export function ListingEditor({
     ...listing,
     title: listing.title === "Minha bike" ? "" : listing.title,
   }));
+  const [contactPhone, setContactPhone] = useState(verifiedPhone ?? "");
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [billingLocked, setBillingLocked] = useState(false);
@@ -365,7 +411,12 @@ export function ListingEditor({
     listing.images.some((i) => i.status === "ready") &&
     !listing.images.some((i) => i.status === "reserved");
   const [lastStep, setLastStep] = useState(
-    photosReady ? (listingInputSchema.safeParse(listing).success ? 2 : 1) : 0,
+    photosReady
+      ? listingInputSchema.safeParse(listing).success &&
+        (channel || listing.contactConfirmed)
+        ? 2
+        : 1
+      : 0,
   );
   const steps = ["photos", "details", "publish"] as const;
   const draft = listing.status === "draft";
@@ -434,6 +485,18 @@ export function ListingEditor({
       });
       return false;
     }
+    if (
+      complete &&
+      !channel &&
+      (!canPublish ||
+        !verifiedPhone ||
+        memberPhone(contactPhone)?.replace("+", "") !== verifiedPhone)
+    ) {
+      setError(
+        "Para continuar, confirme um WhatsApp validado. Altere e valide o número no seu perfil se necessário.",
+      );
+      return false;
+    }
     const data = listingDraftInputSchema.safeParse(candidate);
     if (!data.success) {
       setError(
@@ -446,7 +509,16 @@ export function ListingEditor({
     setMessage("");
     try {
       const saved = listingSchema.parse(
-        await call("save", { id: listing.id, ...data.data }),
+        await call("save", {
+          id: listing.id,
+          ...data.data,
+          ...(!channel && complete
+            ? {
+                confirmContact: true,
+                contactPhone: memberPhone(contactPhone)?.replace("+", "") ?? "",
+              }
+            : {}),
+        }),
       );
       setForm(saved);
       setDirty(false);
@@ -665,14 +737,17 @@ export function ListingEditor({
             {error}
           </p>
         )}
-        {message && (
-          <p
-            role="status"
-            className="mb-5 rounded-lg bg-emerald-50 p-4 text-emerald-950"
-          >
-            {message}
-          </p>
-        )}
+        {message &&
+          !(
+            listing.status === "published" && message === "Rascunho salvo."
+          ) && (
+            <p
+              role="status"
+              className="mb-5 rounded-lg bg-emerald-50 p-4 text-emerald-950"
+            >
+              {message}
+            </p>
+          )}
         {billingLocked && draft && (
           <p className="mb-4 rounded-xl bg-surface p-4 text-sm">
             O anúncio está vinculado a uma solicitação de pagamento. Para
@@ -775,6 +850,44 @@ export function ListingEditor({
                           Usar como capa
                         </button>
                       )}
+                      <div
+                        className="mt-2 flex flex-wrap gap-2"
+                        role="group"
+                        aria-label={`Ordem da foto ${index + 1}`}
+                      >
+                        {[-1, 1].map((direction) => (
+                          <button
+                            type="button"
+                            key={direction}
+                            disabled={
+                              locked ||
+                              index + direction < 0 ||
+                              index + direction >= listing.images.length ||
+                              listing.images.some((i) => i.status !== "ready")
+                            }
+                            className="min-h-11 rounded-lg border border-line px-3 text-sm disabled:opacity-40"
+                            aria-label={`Mover foto ${index + 1} para ${direction < 0 ? "antes" : "depois"}`}
+                            onClick={() => {
+                              const ids = listing.images.map((i) => i.id);
+                              const target = index + direction;
+                              [ids[index], ids[target]] = [
+                                ids[target],
+                                ids[index],
+                              ];
+                              void run(
+                                () =>
+                                  call("reorder", {
+                                    id: listing.id,
+                                    imageIds: ids,
+                                  }),
+                                "Ordem das fotos atualizada. A primeira é a capa.",
+                              );
+                            }}
+                          >
+                            {direction < 0 ? "← Antes" : "Depois →"}
+                          </button>
+                        ))}
+                      </div>
                       <button
                         type="button"
                         disabled={locked}
@@ -1017,6 +1130,89 @@ export function ListingEditor({
                   quando souber. Use as fotos reais da sua bike. O WhatsApp de
                   contato será adicionado após sua autorização na publicação.
                 </p>
+                <section
+                  aria-labelledby="listing-contact-title"
+                  className="rounded-2xl border border-line bg-surface p-5"
+                >
+                  <h4
+                    id="listing-contact-title"
+                    className="text-lg font-bold text-ink"
+                  >
+                    Como os compradores vão falar com você
+                  </h4>
+                  {!channel && (
+                    <>
+                      <label className="mt-4 block font-semibold">
+                        WhatsApp que receberá os contatos
+                        <input
+                          type="tel"
+                          className={field}
+                          value={contactPhone}
+                          onChange={(e) =>
+                            setContactPhone(e.target.value.replace(/\D/g, ""))
+                          }
+                          aria-label="WhatsApp que receberá os contatos"
+                          aria-describedby="listing-phone-limits"
+                          maxLength={13}
+                        />
+                      </label>
+                      <FieldCounter
+                        id="listing-phone-limits"
+                        value={contactPhone}
+                        min={11}
+                        max={13}
+                      />
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        O botão do anúncio abrirá uma conversa diretamente neste
+                        WhatsApp. Ele precisa estar validado no seu perfil.
+                      </p>
+                      <a
+                        href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
+                        className="inline-flex min-h-11 items-center font-semibold text-action underline"
+                      >
+                        Alterar ou validar meu WhatsApp
+                      </a>
+                    </>
+                  )}
+                  <label className="mt-3 block font-semibold">
+                    Mensagem que gostaria de receber
+                    <textarea
+                      aria-label="Mensagem que gostaria de receber"
+                      aria-describedby="listing-message-limits"
+                      className={`${field} min-h-28`}
+                      maxLength={600}
+                      value={form.whatsappMessage || DEFAULT_LISTING_MESSAGE}
+                      onChange={(e) =>
+                        change("whatsappMessage", e.target.value)
+                      }
+                    />
+                  </label>
+                  <FieldCounter
+                    id="listing-message-limits"
+                    value={form.whatsappMessage || DEFAULT_LISTING_MESSAGE}
+                    max={600}
+                    min={0}
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Use {"{bike}"} para o nome da bicicleta, que aparece em
+                    negrito no WhatsApp, e {"{link}"} para o endereço do
+                    anúncio. Se não os incluir, adicionaremos os dois ao final.
+                  </p>
+                  <p
+                    className="mt-3 whitespace-pre-wrap break-words text-sm"
+                    aria-label="Prévia da mensagem de contato"
+                  >
+                    {listingWhatsAppMessage({ ...form, id: listing.id })
+                      .split(/(\*[^*]+\*)/)
+                      .map((part, i) =>
+                        part.startsWith("*") ? (
+                          <strong key={i}>{part.slice(1, -1)}</strong>
+                        ) : (
+                          part
+                        ),
+                      )}
+                  </p>
+                </section>
                 <div
                   className="flex flex-col gap-3 sm:flex-row sm:items-center"
                   data-testid="details-step-actions"
@@ -1175,6 +1371,7 @@ export function ListingEditor({
               })
             : (draft || listing.feeStatus !== "pilot_exempt") && (
                 <ListingBillingPanel
+                  published={listing.status === "published"}
                   listingId={listing.id}
                   active={step === "publish" && !preview}
                   reason={
