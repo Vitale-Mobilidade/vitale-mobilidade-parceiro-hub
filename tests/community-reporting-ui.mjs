@@ -1,3 +1,4 @@
+import {periodMetricsFixture} from './fixtures/community-period-metrics.mjs';
 // Local synthetic Admin. No community profile, live database, messages or financial provider.
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
@@ -15,6 +16,7 @@ await context.route('**/*',async route=>{
  if(r.method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':origin,'access-control-allow-headers':'*','access-control-allow-methods':'*'}});
  if(u.pathname==='/api/admin/classifieds'){
   const {action,payload:p={id:null},days=30}=r.postDataJSON();calls.push(action);const l=listings.find(l=>l.id===p.id);
+  if(action==='period_metrics')return reply(periodMetricsFixture(p,{trackingSince:'2026-11-06',excludedOrders:2,comparable:false,previous:null,effectiveStart:'2026-11-06',current:{members:1,listings:1,channelListings:0,publications:0,payments:0,grossCents:0,reversedPayments:0},daily:[{day:'2026-11-06',members:1,listings:1,channelListings:0,publications:0,payments:0,grossCents:0,reversedPayments:0}]}));
   if(action==='metrics')return reply({generatedAt:new Date().toISOString(),trackingSince:'2026-11-06',excludedOrders:2,days,members:1,listings:1,channelListings:0,activeListings:0,grossCents:0,reversedPayments:0,daily:[{day:'2026-11-06',members:1,listings:1,payments:0,grossCents:0}]});
   if(action==='list')return reply(listings.map(l=>({...l,images:l.images.map(a=>({...a,url:a.status==='ready'?`${backend}/photo/${a.id}`:undefined}))})));
   if(action==='create'){const l={id:randomUUID(),title:'Minha bike',brand:'',model:'',priceCents:0,city:'',state:'',modelYear:null,mileageKm:null,condition:'good',battery:'unknown',invoice:false,description:'',maintenance:'',status:'draft',feeCents:15000,feeStatus:'required',images:[],sellerType:'channel',channelWhatsapp:null,publishedAt:null,updatedAt:new Date().toISOString()};listings.push(l);return reply(l);}
@@ -37,11 +39,11 @@ await context.route('**/*',async route=>{
 });
 try{
  await page.goto(`${origin}/admin/comunidade`);
- await page.getByRole('status').filter({hasText:'Indicadores da comunidade desde'}).waitFor();
- assert(await page.getByRole('status').filter({hasText:'Indicadores da comunidade desde'}).getByText('06/11/2026',{exact:true}).isVisible());
+ await page.getByRole('status').filter({hasText:'Indicadores desde'}).waitFor();
+ assert(await page.getByRole('status').filter({hasText:'Indicadores desde'}).getByText('Indicadores desde 06/11/2026.',{exact:false}).isVisible());
  const revenue=page.getByRole('heading',{name:'Faturamento confirmado',exact:true}).locator('..');assert.match(await revenue.innerText(),/R\$\s*0/);
- const profiles=page.getByRole('heading',{name:'Perfis cadastrados',exact:true}).locator('..');assert.match(await profiles.innerText(),/Cadastros desde 06\/11\/2026/);assert.equal(await page.locator('tbody tr').count(),1);
- await page.getByLabel('Período do painel').selectOption('7');await page.getByText('Bruto nos últimos 7 dias',{exact:true}).waitFor();assert.equal(await page.locator('tbody tr').count(),1);
+ const profiles=page.getByRole('heading',{name:'Perfis cadastrados',exact:true}).locator('..');assert.match(await profiles.innerText(),/Novos membros no período/);assert.equal(await page.locator('tbody tr').count(),1);
+ await page.getByLabel('Período do painel').selectOption('last7');await page.getByText('Bruto confirmado no período',{exact:true}).waitFor();assert.equal(await page.locator('tbody tr').count(),1);
  await page.screenshot({path:new URL('community-metrics-desktop.png',artifacts).pathname,fullPage:true});await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.getByRole('heading',{name:'Faturamento confirmado',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:new URL('community-metrics-mobile.png',artifacts).pathname});assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS reporting UI: baseline date, tests excluded, today counters and revenue zero, no pre-baseline days, period switch, desktop/mobile, no external requests');
 }finally{await context.close();await browser.close();}

@@ -44,6 +44,81 @@ export async function adminClassifieds(request: Request, dbFactory = database) {
     const input = adminClassifiedsInput.safeParse(JSON.parse(text));
     if (!input.success) return reply({ error: "invalid_input" }, 400);
     const data = input.data;
+    if (data.action === "period_metrics") {
+      const r = await db.rpc("admin_member_period_metrics", {
+        p_actor: auth.user.id,
+        p_period: data.payload.period,
+        p_start: data.payload.start ?? null,
+        p_end: data.payload.end ?? null,
+      });
+      if (r.error)
+        return reply(
+          {
+            error:
+              r.error.message === "invalid_period"
+                ? "invalid_period"
+                : "metrics_unavailable",
+          },
+          r.error.message === "invalid_period" ? 400 : 503,
+        );
+      return reply(r.data);
+    }
+    if (data.action === "remove_member") {
+      // The browser cannot call preparation/finalization or supply Storage paths.
+      const payload = {
+        userId: data.payload.userId,
+        email: data.payload.email,
+      };
+      const prepared = await db.rpc("admin_community_manage", {
+        p_actor: auth.user.id,
+        p_action: "prepare_removal",
+        p_payload: payload,
+      });
+      if (prepared.error) {
+        const code = [
+          "protected_account",
+          "payment_pending",
+          "email_mismatch",
+          "member_unavailable",
+        ].includes(prepared.error.message)
+          ? prepared.error.message
+          : "removal_unavailable";
+        return reply({ error: code }, 409);
+      }
+      const paths: unknown = prepared.data?.paths;
+      if (
+        !Array.isArray(paths) ||
+        paths.length > 10000 ||
+        paths.some(
+          (p) =>
+            typeof p !== "string" ||
+            !p.startsWith(`${data.payload.userId}/`) ||
+            p.includes(".."),
+        )
+      )
+        return reply({ error: "removal_pending" }, 503);
+      for (let i = 0; i < paths.length; i += 100) {
+        const removed = await db.storage
+          .from("member-media")
+          .remove(paths.slice(i, i + 100));
+        if (removed.error) return reply({ error: "removal_pending" }, 503);
+      }
+      if (!prepared.data.alreadyDeleted) {
+        // Soft deletion anonymizes Auth and invalidates refresh sessions without cascading payments.
+        const removed = await db.auth.admin.deleteUser(
+          data.payload.userId,
+          true,
+        );
+        if (removed.error) return reply({ error: "removal_pending" }, 503);
+      }
+      const finished = await db.rpc("admin_community_manage", {
+        p_actor: auth.user.id,
+        p_action: "finish_removal",
+        p_payload: payload,
+      });
+      if (finished.error) return reply({ error: "removal_pending" }, 503);
+      return reply({ removed: true });
+    }
     if (
       ["members", "listings", "member", "grant", "revoke"].includes(data.action)
     ) {

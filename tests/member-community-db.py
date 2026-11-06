@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--workspace" in sys.argv: sys.argv.append("--partners")
 if "--reporting" in sys.argv: sys.argv.append("--launch")
 if "--partners" in sys.argv: sys.argv.append("--notifications")
 if "--notifications" in sys.argv: sys.argv.append("--seller")
@@ -38,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix="vitale-member-test-") as directory:
         bootstrap = """
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users(id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false,raw_user_meta_data jsonb DEFAULT '{}',confirmation_sent_at timestamptz,created_at timestamptz DEFAULT now());
+CREATE TABLE auth.users(id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false,raw_user_meta_data jsonb DEFAULT '{}',confirmation_sent_at timestamptz,created_at timestamptz DEFAULT now(),deleted_at timestamptz);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role;
 CREATE TABLE public.editorial_admin_memberships(user_id uuid PRIMARY KEY, active boolean, role text);
@@ -288,6 +289,27 @@ COMMIT;
                         concurrent_claims=list(executor.map(sql,race_commands))
                     assert sum(x.returncode==0 for x in concurrent_claims)==1,str([x.stderr for x in concurrent_claims])
                     print("PASS concurrent grant idempotency and courtesy claim/publication serialize")
+                    if "--workspace" in sys.argv:
+                        result=sql((repo/"supabase/migrations/20261106170000_community_reporting_start.sql").read_text())
+                        assert result.returncode==0,result.stderr
+                        before_workspace=root/"before-workspace.dump"
+                        subprocess.run([str(pg/"pg_dump"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"-d","postgres","-Fc","-f",str(before_workspace)],env=env,check=True,capture_output=True)
+                        subprocess.run([str(pg/"createdb"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"workspace_restore"],env=env,check=True,capture_output=True)
+                        subprocess.run([str(pg/"pg_restore"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"-d","workspace_restore","--exit-on-error",str(before_workspace)],env=env,check=True,capture_output=True)
+                        print("PASS pre-workspace backup restores complete schema and financial references")
+                        snapshot_sql="SELECT md5(COALESCE(jsonb_agg(to_jsonb(b) ORDER BY b.id)::text,'')) FROM public.member_listing_billing b; SELECT count(*) FROM public.member_operation_alerts;"
+                        commercial_before=sql(snapshot_sql).stdout
+                        for path in ["supabase/migrations/20261106190000_admin_community_workspace.sql","tests/admin-community-workspace.sql"]:
+                            result=sql((repo/path).read_text())
+                            if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-6000:]}")
+                            print(f"PASS {path}")
+                            assert sql(snapshot_sql).stdout==commercial_before,"Workspace migration or test changed billing/outbox"
+                        print("PASS migration leaves every financial field and notification outbox unchanged")
+                        result=sql((repo/"supabase/rollback/20261106190000_admin_community_workspace.sql").read_text())
+                        assert result.returncode==0,result.stderr
+                        result=sql("SELECT NOT has_function_privilege('service_role','public.admin_member_period_metrics(uuid,text,date,date)','EXECUTE') AND (public.admin_community_manage('00000000-0000-4000-8000-000000000001','members')->>'total')::int>0 AND (SELECT count(*)>0 FROM public.member_listing_billing);")
+                        assert result.returncode==0 and " t" in result.stdout,result.stderr
+                        print("PASS workspace rollback restores prior directory and retains all commercial records")
                     rollback=sql((repo/"supabase/rollback/20261106150000_admin_members_partners.sql").read_text())
                     assert rollback.returncode==0,rollback.stderr
                     invariant=sql("SELECT NOT has_function_privilege('service_role','public.admin_community_manage(uuid,text,jsonb)','EXECUTE') AND (SELECT count(*)>0 FROM public.member_listing_courtesies);")

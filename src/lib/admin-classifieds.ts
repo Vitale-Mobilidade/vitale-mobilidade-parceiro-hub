@@ -9,7 +9,19 @@ const search = z
   })
   .strict();
 export const adminClassifiedsInput = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("members"), payload: search }).strict(),
+  z
+    .object({
+      action: z.literal("members"),
+      payload: search
+        .extend({
+          orderBy: z
+            .enum(["name", "listings", "createdAt"])
+            .default("createdAt"),
+          direction: z.enum(["asc", "desc"]).default("desc"),
+        })
+        .strict(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("listings"),
@@ -23,6 +35,39 @@ export const adminClassifiedsInput = z.discriminatedUnion("action", [
     })
     .strict(),
   z.object({ action: z.literal("member"), payload: id }).strict(),
+  z
+    .object({
+      action: z.literal("remove_member"),
+      payload: z
+        .object({
+          userId: uuid,
+          email: z.string().trim().email().max(254),
+          confirmed: z.literal(true),
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("period_metrics"),
+      payload: z
+        .object({
+          period: z.enum([
+            "today",
+            "yesterday",
+            "week",
+            "month",
+            "last7",
+            "last30",
+            "last90",
+            "custom",
+          ]),
+          start: z.string().date().optional(),
+          end: z.string().date().optional(),
+        })
+        .strict(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("grant"),
@@ -125,6 +170,7 @@ export const adminMemberSchema = z.object({
   phone: z.string().nullable(),
   joinedAt: z.string(),
   suspended: z.boolean(),
+  removalPending: z.boolean().optional(),
   emailVerified: z.boolean(),
   phoneVerified: z.boolean(),
   listings: z.number(),
@@ -165,3 +211,30 @@ export const adminListingsResultSchema = z.object({
   offset: z.number(),
   items: z.array(adminListingSchema),
 });
+
+const periodTotalsSchema = z.object({
+  members: z.number(),
+  listings: z.number(),
+  channelListings: z.number(),
+  publications: z.number(),
+  payments: z.number(),
+  grossCents: z.number(),
+  reversedPayments: z.number(),
+});
+export const periodMetricsSchema = z.object({
+  generatedAt: z.string(),
+  period: z.string(),
+  trackingSince: z.string().nullable(),
+  excludedOrders: z.number(),
+  start: z.string(),
+  end: z.string(),
+  previousStart: z.string(),
+  previousEnd: z.string(),
+  effectiveStart: z.string(),
+  comparable: z.boolean(),
+  current: periodTotalsSchema,
+  previous: periodTotalsSchema.nullable(),
+  activeNow: z.number(),
+  daily: z.array(periodTotalsSchema.extend({ day: z.string() })),
+});
+export type PeriodMetrics = z.infer<typeof periodMetricsSchema>;

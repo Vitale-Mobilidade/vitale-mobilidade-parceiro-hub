@@ -1,0 +1,63 @@
+BEGIN;
+CREATE FUNCTION pg_temp.check_true(v boolean,label text) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF v IS DISTINCT FROM true THEN RAISE EXCEPTION 'FAIL %',label; END IF; END $$;
+CREATE FUNCTION pg_temp.reject(command text,code text) RETURNS void LANGUAGE plpgsql AS $$ BEGIN EXECUTE command; RAISE EXCEPTION 'expected rejection'; EXCEPTION WHEN OTHERS THEN IF SQLERRM<>code THEN RAISE EXCEPTION 'wrong error expected %, got %',code,SQLERRM; END IF; END $$;
+SELECT pg_temp.check_true(NOT has_function_privilege('authenticated','public.admin_member_period_metrics(uuid,text,date,date)','EXECUTE') AND NOT has_function_privilege('anon','public.admin_community_manage(uuid,text,jsonb)','EXECUTE'),'no browser grants');
+SELECT pg_temp.check_true(NOT has_table_privilege('service_role','public.member_account_removals','SELECT') AND NOT has_function_privilege('service_role','public.member_metrics_between(date,date)','EXECUTE'),'private tombstones and metrics internals');
+SELECT pg_temp.reject($q$SELECT public.admin_member_period_metrics('00000000-0000-4000-8000-000000000002','today')$q$,'forbidden');
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000002','members')$q$,'forbidden');
+SELECT pg_temp.check_true(public.member_reporting_period('today',NULL,NULL,'2026-11-06T02:59:59Z')->>'start'='2026-11-05','SP before midnight');
+SELECT pg_temp.check_true(public.member_reporting_period('today',NULL,NULL,'2026-11-06T03:00:00Z')->>'start'='2026-11-06','SP midnight');
+SELECT pg_temp.check_true(public.member_reporting_period('week',NULL,NULL,'2026-11-06T15:00:00Z')=jsonb_build_object('start','2026-11-02','end','2026-11-06','previousStart','2026-10-26','previousEnd','2026-10-30'),'week elapsed Monday-Friday');
+SELECT pg_temp.check_true(public.member_reporting_period('month',NULL,NULL,'2026-03-31T15:00:00Z')->>'previousEnd'='2026-02-28','month clamps shorter previous month');
+SELECT pg_temp.check_true(public.member_reporting_period('custom','2026-10-01','2026-10-03','2026-11-06T15:00:00Z')->>'previousStart'='2026-09-28','custom contiguous prior equal length');
+SELECT pg_temp.reject($q$SELECT public.member_reporting_period('custom','2026-10-03','2026-10-01')$q$,'invalid_period');
+SELECT pg_temp.reject($q$SELECT public.member_reporting_period('custom','2025-01-01','2026-01-02')$q$,'invalid_period');
+SELECT pg_temp.reject($q$SELECT public.member_reporting_period('custom',current_date,current_date+10)$q$,'invalid_period');
+SELECT pg_temp.reject($q$SELECT public.member_reporting_period('bad')$q$,'invalid_period');
+SELECT pg_temp.reject($q$SELECT public.member_reporting_period('today',current_date,current_date)$q$,'invalid_period');
+-- Distinct synthetic names and creation times allow cross-page ordering checks.
+INSERT INTO auth.users(id,email,email_confirmed_at) SELECT ('90000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'sort'||n||'@example.invalid',now() FROM generate_series(1,25)n;
+INSERT INTO public.member_profiles(user_id,display_name,community_joined_at) SELECT id,'Tabela '||lpad(n::text,2,'0'),now()-n*interval '1 minute' FROM generate_series(1,25)n JOIN auth.users ON id=('90000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid;
+INSERT INTO public.member_bike_listings(id,user_id,title) VALUES('91000000-0000-4000-8000-000000000001','90000000-0000-4000-8000-000000000025','Teste A'),('91000000-0000-4000-8000-000000000002','90000000-0000-4000-8000-000000000025','Teste B');
+SELECT pg_temp.check_true(public.admin_community_manage('00000000-0000-4000-8000-000000000001','members','{"query":"Tabela","orderBy":"name","direction":"asc","offset":20}')->'items'->0->>'name'='Tabela 21','server sorting before second-page pagination');
+SELECT pg_temp.check_true(public.admin_community_manage('00000000-0000-4000-8000-000000000001','members','{"query":"Tabela","orderBy":"name","direction":"desc"}')->'items'->0->>'name'='Tabela 25','reverse name');
+SELECT pg_temp.check_true(public.admin_community_manage('00000000-0000-4000-8000-000000000001','members','{"query":"Tabela","orderBy":"listings","direction":"desc"}')->'items'->0->>'name'='Tabela 25','listing count ordering');
+SELECT pg_temp.check_true(public.admin_community_manage('00000000-0000-4000-8000-000000000001','members','{"query":"Tabela","orderBy":"createdAt","direction":"asc"}')->'items'->0->>'name'='Tabela 25','oldest first');
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','members','{"orderBy":"email;drop table"}')$q$,'invalid_input');
+-- Reporting reset: prior days are unavailable rather than fake zero growth.
+UPDATE public.member_reporting_settings SET tracking_since=(now() AT TIME ZONE 'America/Sao_Paulo')::date;
+SELECT pg_temp.check_true((public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->'previous')='null'::jsonb AND public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->>'comparable'='false','baseline comparison unavailable');
+SELECT pg_temp.check_true((public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','yesterday')->'current'->>'grossCents')::int=0 AND public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','yesterday')->'daily'='[]'::jsonb,'prebaseline period empty');
+UPDATE public.member_reporting_settings SET tracking_since=(now() AT TIME ZONE 'America/Sao_Paulo')::date-100;
+SELECT pg_temp.check_true(public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->>'comparable'='true','covered previous day');
+SELECT pg_temp.check_true((public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->'current'->>'members')::int>=25,'period counts current members');
+INSERT INTO public.member_bike_listings(id,user_id,title,seller_kind,status) VALUES('91000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000001','Canal sintético','channel','published');
+CREATE TEMP TABLE first_publication_backup AS SELECT first_published_at FROM public.member_bike_listings WHERE id='91000000-0000-4000-8000-000000000003';
+UPDATE public.member_bike_listings SET status='draft' WHERE id='91000000-0000-4000-8000-000000000003';
+UPDATE public.member_bike_listings SET status='published',first_published_at=now()+interval '1 day' WHERE id='91000000-0000-4000-8000-000000000003';
+SELECT pg_temp.check_true((SELECT l.first_published_at=b.first_published_at FROM public.member_bike_listings l,first_publication_backup b WHERE l.id='91000000-0000-4000-8000-000000000003'),'republish cannot inflate first publications');
+-- Range-specific revenue, test exclusions and no future/day leakage.
+UPDATE public.member_listing_billing SET paid_at=now() WHERE id=(SELECT id FROM public.member_listing_billing LIMIT 1);
+CREATE TEMP TABLE revenue_before AS SELECT (public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->'current'->>'grossCents')::bigint cents;
+UPDATE public.member_reporting_settings SET excluded_order_ids=ARRAY[(SELECT id FROM public.member_listing_billing WHERE paid_at=now() LIMIT 1)];
+SELECT pg_temp.check_true((SELECT (public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','today')->'current'->>'grossCents')::bigint=cents-(SELECT amount_cents FROM public.member_listing_billing WHERE paid_at=now() LIMIT 1) FROM revenue_before),'test purchase excluded from new dashboard');
+SELECT pg_temp.check_true((public.admin_member_period_metrics('00000000-0000-4000-8000-000000000001','custom',(now() AT TIME ZONE 'America/Sao_Paulo')::date-20,(now() AT TIME ZONE 'America/Sao_Paulo')::date-10)->'current'->>'members')::int=0,'custom counters are not cumulative');
+-- Protect the team and exact email; preparation is resumable and cannot finalize without Auth API.
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','prepare_removal','{"userId":"00000000-0000-4000-8000-000000000001","email":"admin@example.invalid"}')$q$,'protected_account');
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','prepare_removal','{"userId":"90000000-0000-4000-8000-000000000025","email":"wrong@example.invalid"}')$q$,'email_mismatch');
+SAVEPOINT pending_checkout;
+UPDATE public.member_listing_billing SET user_id='90000000-0000-4000-8000-000000000025',paid_at=NULL,status='pending',checkout_expires_at=now()+interval '10 minutes' WHERE id=(SELECT id FROM public.member_listing_billing LIMIT 1);
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','prepare_removal','{"userId":"90000000-0000-4000-8000-000000000025","email":"sort25@example.invalid"}')$q$,'payment_pending');
+ROLLBACK TO pending_checkout;
+CREATE TEMP TABLE financial_before AS SELECT md5(row_to_json(b)::text) fingerprint FROM public.member_listing_billing b;
+SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','prepare_removal','{"userId":"90000000-0000-4000-8000-000000000025","email":"sort25@example.invalid"}');
+SELECT pg_temp.check_true((SELECT suspended FROM public.member_profiles WHERE user_id='90000000-0000-4000-8000-000000000025') AND NOT public.member_classifieds_pilot('90000000-0000-4000-8000-000000000025'),'suspended immediately');
+SELECT pg_temp.reject($q$SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','finish_removal','{"userId":"90000000-0000-4000-8000-000000000025"}')$q$,'removal_not_ready');
+-- ONLY in this isolated fixture, stand in for the mocked official Auth delete API.
+UPDATE auth.users SET deleted_at=now(),email='removed-hash@example.invalid' WHERE id='90000000-0000-4000-8000-000000000025';
+SELECT pg_temp.check_true(public.admin_community_manage('00000000-0000-4000-8000-000000000001','prepare_removal','{"userId":"90000000-0000-4000-8000-000000000025","email":"sort25@example.invalid"}')->>'alreadyDeleted'='true','retry after Auth soft deletion');
+SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','finish_removal','{"userId":"90000000-0000-4000-8000-000000000025"}');
+SELECT pg_temp.check_true(public.admin_member_summary('90000000-0000-4000-8000-000000000025') IS NULL AND (SELECT count(*)=2 AND bool_and(status='archived' AND title='Anúncio removido') FROM public.member_bike_listings WHERE user_id='90000000-0000-4000-8000-000000000025'),'removed member anonymized, listing references archived');
+SELECT pg_temp.check_true(NOT EXISTS((SELECT fingerprint FROM financial_before EXCEPT SELECT md5(row_to_json(b)::text) FROM public.member_listing_billing b) UNION ALL (SELECT md5(row_to_json(b)::text) FROM public.member_listing_billing b EXCEPT SELECT fingerprint FROM financial_before)),'all financial rows unchanged');
+SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','finish_removal','{"userId":"90000000-0000-4000-8000-000000000025"}');
+ROLLBACK;
