@@ -1,0 +1,49 @@
+{
+  "authorization": "User approved implementation and publication in current chat on 2026-11-06",
+  "implementationCommit": "d5ccbda3584f8436261839a4f6dc6c4073ddb44f",
+  "pr": "https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/101",
+  "mergeCommit": "6d6b38f5a3a186a6335e1f937d71a6673847a354",
+  "rollbackFrontend": "3c9c07c89d9766b747a4c84446e9db20af55a715",
+  "backupDailyUTC": "2026-11-06T04:28:39Z",
+  "dependencySchemaBackupSHA256": "82cd8ebda208ef12e97df62f4e63c395a7e7f52ac43f936e02c4402b47caa025",
+  "recoveryScope": "Current definitions/constraints/RLS of auth.users, public.bikes and public.member_community_settings restored in isolated PostgreSQL. Synthetic rows only; no production data restored. No full-platform recovery claimed.",
+  "migrationVersion": "20261106230000",
+  "migrationApplied": true,
+  "migrationRegistry": "supabase_migrations.schema_migrations",
+  "productionSQLSmoke": "pass; authenticated list/set/idempotency/remove and denied direct read; transaction rolled back; no test favorites persisted",
+  "productionGrants": {
+    "rls": true,
+    "anonRead": false,
+    "anonExecute": false,
+    "memberDirectRead": false,
+    "memberExecute": true,
+    "securityDefiner": true,
+    "fixedSearchPath": true
+  },
+  "githubPreview": "Netlify pass. Vercel fails on both unchanged baseline and PR; unrelated to Lovable hosting. No rules bypassed.",
+  "deployment": "verified on public domain",
+  "deploymentId": "35f3353a-35dc-4f69-826d-98edbbeb8ed5",
+  "deploymentRequestedStatus": "pending",
+  "publishedCodeCommit": "6d6b38f5a3a186a6335e1f937d71a6673847a354",
+  "publicURL": "https://vitalemobilidade.com/radar",
+  "publicSmoke": {
+    "cardCount": 12,
+    "priceAlertButtons": 12,
+    "favoriteButtons": 12,
+    "anonymousFavoriteLoginReturn": "/radar#bike-v9_max",
+    "loginPageRendered": true,
+    "alertBike": "V9 Max",
+    "alertReferencePrice": 6174,
+    "alertDefaultTarget": 6074,
+    "noNestedAnchorButtons": true,
+    "dialogFitsActualViewport": true,
+    "actualProductionBrowserViewport": [
+      1280,
+      720
+    ],
+    "mobileValidation": "local mocked smoke at 390x844; production browser viewport override did not take effect",
+    "realAlertsSubmitted": 0,
+    "realMessagesSent": 0
+  },
+  "proof": "artifacts/radar-favorites/production-cards.jpg"
+}
