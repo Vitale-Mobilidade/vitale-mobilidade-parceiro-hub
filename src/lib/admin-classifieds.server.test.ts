@@ -22,6 +22,8 @@ function setup(role = "admin", active = true, badToken = false) {
         );
       if (u.pathname.endsWith("/editorial_admin_memberships"))
         return Response.json({ role, active });
+      if (u.pathname.endsWith("/rpc/admin_member_period_metrics"))
+        return Response.json({ period: "today" });
       if (u.pathname.endsWith("/rpc/admin_member_metrics"))
         return Response.json({ members: 3, listings: 4, grossCents: 0 });
       if (u.pathname.endsWith("/rpc/admin_community_manage"))
@@ -170,7 +172,10 @@ it("directory search and courtesy actions bind the real admin and reject spoofed
       body: {
         p_actor: actor,
         p_action: input.action,
-        p_payload: input.payload,
+        p_payload:
+          input.action === "members"
+            ? { ...input.payload, orderBy: "createdAt", direction: "desc" }
+            : input.payload,
       },
     });
   }
@@ -211,4 +216,77 @@ it("non-admin cannot search contacts or issue/revoke free listings", async () =>
     expect(r.status).toBe(403);
     expect(s.calls.some((c) => c.path.includes("/rpc/"))).toBe(false);
   }
+});
+
+it("orders directory results at the backend, rejecting arbitrary sort keys", async () => {
+  const s = setup();
+  const payload = {
+    query: "Tabela",
+    offset: 20,
+    orderBy: "name",
+    direction: "asc",
+  };
+  expect(
+    (await adminClassifieds(req({ action: "members", payload }), () => s.db))
+      .status,
+  ).toBe(200);
+  expect(s.calls.at(-1)?.body).toEqual({
+    p_actor: actor,
+    p_action: "members",
+    p_payload: payload,
+  });
+  for (const value of [{ orderBy: "email" }, { direction: "drop" }])
+    expect(
+      (
+        await adminClassifieds(
+          req({ action: "members", payload: value }),
+          () => s.db,
+        )
+      ).status,
+    ).toBe(400);
+});
+it("period metrics do not accept a browser-supplied identity or unbounded inputs", async () => {
+  const s = setup();
+  for (const payload of [
+    { period: "all" },
+    { period: "custom", start: "bad", end: "2026-11-06" },
+    { period: "today", actor },
+  ])
+    expect(
+      (
+        await adminClassifieds(
+          req({ action: "period_metrics", payload }),
+          () => s.db,
+        )
+      ).status,
+    ).toBe(400);
+});
+
+it("period metrics bind the verified admin and validated calendar dates", async () => {
+  const s = setup();
+  const r = await adminClassifieds(
+    req({
+      action: "period_metrics",
+      payload: { period: "custom", start: "2026-11-01", end: "2026-11-06" },
+    }),
+    () => s.db,
+  );
+  expect(r.status).toBe(200);
+  expect(s.calls.at(-1)?.body).toEqual({
+    p_actor: actor,
+    p_period: "custom",
+    p_start: "2026-11-01",
+    p_end: "2026-11-06",
+  });
+  expect(
+    (
+      await adminClassifieds(
+        req({
+          action: "period_metrics",
+          payload: { period: "custom", start: "2026-02-30", end: "2026-11-06" },
+        }),
+        () => s.db,
+      )
+    ).status,
+  ).toBe(400);
 });

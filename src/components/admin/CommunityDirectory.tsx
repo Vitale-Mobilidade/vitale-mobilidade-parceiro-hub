@@ -184,7 +184,11 @@ export function CommunityDirectory({
     [search, setSearch] = useState(""),
     [offset, setOffset] = useState(0),
     [status, setStatus] = useState("all"),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    [orderBy, setOrderBy] = useState<"name" | "listings" | "createdAt">(
+      "createdAt",
+    ),
+    [direction, setDirection] = useState<"asc" | "desc">("desc");
   const [results, setResults] = useState<{
       total: number;
       items: AdminMember[] | AdminListing[];
@@ -199,6 +203,8 @@ export function CommunityDirectory({
     [reason, setReason] = useState(""),
     [confirm, setConfirm] = useState<"grant" | string | null>(null),
     [revokeReason, setRevokeReason] = useState("");
+  const [removeOpen, setRemoveOpen] = useState(false),
+    [confirmationEmail, setConfirmationEmail] = useState("");
   const requestId = useRef<string | null>(null),
     detailSequence = useRef(0);
   const memberFocus = useRef<HTMLDivElement>(null);
@@ -216,7 +222,7 @@ export function CommunityDirectory({
     void adminClassifiedsCall(tab, {
       query: search,
       offset,
-      ...(tab === "listings" ? { status } : {}),
+      ...(tab === "listings" ? { status } : { orderBy, direction }),
     })
       .then((v) => {
         if (current)
@@ -236,7 +242,7 @@ export function CommunityDirectory({
     return () => {
       current = false;
     };
-  }, [tab, search, offset, status, retry]);
+  }, [tab, search, offset, status, retry, orderBy, direction]);
   async function openMember(id: string) {
     const sequence = ++detailSequence.current;
     setSelected(id);
@@ -314,6 +320,57 @@ export function CommunityDirectory({
     } finally {
       setBusy(false);
     }
+  }
+  async function removeMember() {
+    if (
+      !detail ||
+      confirmationEmail.trim().toLowerCase() !==
+        detail.member.email?.toLowerCase()
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      await adminClassifiedsCall("remove_member", {
+        userId: detail.member.id,
+        email: confirmationEmail.trim(),
+        confirmed: true,
+      });
+      setRemoveOpen(false);
+      setConfirmationEmail("");
+      back();
+      setNotice(
+        "Usuário removido. Acesso encerrado e anúncios retirados; registros financeiros preservados.",
+      );
+      setRetry((n) => n + 1);
+      await onChanged().catch(() => {});
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message === "protected_account"
+          ? "Contas da equipe editorial não podem ser removidas por esta área."
+          : e instanceof Error && e.message === "payment_pending"
+            ? "Há um pagamento em andamento. Aguarde a conclusão ou o vencimento antes de remover a conta."
+            : e instanceof Error && e.message === "email_mismatch"
+              ? "O e-mail não corresponde ao cadastro. Confira antes de remover."
+              : "A remoção não foi concluída. A conta pode estar suspensa; tente novamente para concluir com segurança.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  function sort(key: "name" | "listings" | "createdAt") {
+    setDirection(
+      orderBy === key
+        ? direction === "asc"
+          ? "desc"
+          : "asc"
+        : key === "name"
+          ? "asc"
+          : "desc",
+    );
+    setOrderBy(key);
+    setOffset(0);
+    back();
   }
   return (
     <section
@@ -449,6 +506,22 @@ export function CommunityDirectory({
                   className="scroll-mt-28 outline-none"
                 >
                   <MemberInfo member={detail.member} />
+                  <button
+                    className="mt-4 min-h-11 text-sm font-semibold text-red-800 underline"
+                    disabled={busy || !detail.member.email}
+                    onClick={() => {
+                      setConfirmationEmail("");
+                      setRemoveOpen(true);
+                    }}
+                  >
+                    Remover usuário
+                  </button>
+                  {detail.member.removalPending && (
+                    <p className="mt-2 text-sm text-red-800">
+                      Remoção pendente. A conta está suspensa; use “Remover
+                      usuário” para concluir.
+                    </p>
+                  )}
                 </div>
                 <section className="rounded-2xl border border-line bg-white p-5">
                   <h3 className="text-xl font-bold">Liberar anúncios grátis</h3>
@@ -626,41 +699,120 @@ export function CommunityDirectory({
               </p>
             )}
             <TabsContent value="members">
-              <div className="space-y-3">
-                {(tab === "members"
-                  ? (results?.items as AdminMember[])
-                  : []
-                )?.map((m) => (
-                  <article
-                    key={m.id}
-                    className="flex min-w-0 flex-col justify-between gap-4 rounded-2xl border border-line bg-white p-5 sm:flex-row sm:items-center"
-                  >
-                    <div className="min-w-0">
-                      <h3 className="break-words text-lg font-bold">
-                        {m.name}
-                      </h3>
-                      <p className="mt-1 break-all text-sm">{m.email}</p>
-                      <p className="mt-1 text-sm">
-                        {m.phone ?? "Telefone não informado"} ·{" "}
-                        {m.phoneVerified
-                          ? "WhatsApp validado"
-                          : "Validação pendente"}
-                      </p>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {m.listings} anúncios · {m.activeListings} ativos ·
-                        Cadastro em {date(m.joinedAt)}
-                        {m.suspended ? " · Suspenso" : ""}
-                      </p>
-                    </div>
-                    <button
-                      className={`${secondary} shrink-0`}
-                      onClick={() => void openMember(m.id)}
-                      aria-label={`Ver usuário ${m.name}`}
-                    >
-                      Ver usuário
-                    </button>
-                  </article>
-                ))}
+              <div
+                className="max-w-full overflow-x-auto rounded-2xl border border-line bg-white"
+                role="region"
+                tabIndex={0}
+                aria-label="Tabela de usuários"
+              >
+                <table className="w-full text-left text-sm">
+                  <caption className="sr-only">
+                    Usuários da comunidade. Ordene por nome, anúncios ou data de
+                    criação.
+                  </caption>
+                  <thead>
+                    <tr>
+                      {[
+                        ["name", "Nome"],
+                        [null, "Contato"],
+                        ["listings", "Anúncios"],
+                        ["createdAt", "Data de criação"],
+                        [null, "Ações"],
+                      ].map(([key, label]) => (
+                        <th
+                          key={label}
+                          scope="col"
+                          className={`whitespace-nowrap border-b border-line px-4 py-3 ${key === "name" ? "sticky left-0 z-10 bg-white" : ""}`}
+                          aria-sort={
+                            key
+                              ? orderBy === key
+                                ? direction === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : "none"
+                              : undefined
+                          }
+                        >
+                          {key ? (
+                            <button
+                              className="min-h-11 font-semibold text-action underline"
+                              disabled={busy}
+                              onClick={() =>
+                                sort(key as "name" | "listings" | "createdAt")
+                              }
+                              aria-label={`Ordenar por ${label?.toLowerCase()}`}
+                            >
+                              {label}{" "}
+                              {orderBy === key
+                                ? direction === "asc"
+                                  ? "↑"
+                                  : "↓"
+                                : "↕"}
+                            </button>
+                          ) : (
+                            label
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(tab === "members"
+                      ? (results?.items as AdminMember[])
+                      : []
+                    )?.map((m) => (
+                      <tr
+                        key={m.id}
+                        className="border-b border-line last:border-0"
+                      >
+                        <th
+                          scope="row"
+                          className="sticky left-0 z-10 min-w-32 bg-white px-4 py-3 font-semibold"
+                        >
+                          {m.name}
+                          {m.suspended && (
+                            <span className="mt-1 block text-xs text-red-800">
+                              {m.removalPending
+                                ? "Remoção pendente"
+                                : "Suspenso"}
+                            </span>
+                          )}
+                        </th>
+                        <td className="max-w-64 px-4 py-3">
+                          <span className="block break-all">
+                            {m.email || "E-mail não informado"}
+                          </span>
+                          <span className="mt-1 block whitespace-nowrap">
+                            {m.phone || "Telefone não informado"}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {m.phoneVerified
+                              ? "WhatsApp validado"
+                              : "Validação pendente"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <strong>{m.listings}</strong>
+                          <span className="mt-1 block whitespace-nowrap text-xs text-muted-foreground">
+                            {m.activeListings} ativos
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3">
+                          {date(m.joinedAt)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            className={`${secondary} whitespace-nowrap`}
+                            onClick={() => void openMember(m.id)}
+                            aria-label={`Ver usuário ${m.name}`}
+                          >
+                            Ver usuário
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </TabsContent>
             <TabsContent value="listings">
@@ -710,6 +862,64 @@ export function CommunityDirectory({
           </>
         )}
       </Tabs>
+      <Dialog
+        open={removeOpen}
+        onOpenChange={(v) => {
+          if (!busy) setRemoveOpen(v);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover usuário</DialogTitle>
+            <DialogDescription>
+              Remover o acesso de {detail?.member.name}, anonimizar o perfil e
+              retirar seus anúncios e fotos. Esta ação não pode ser desfeita.
+              Compras e histórico financeiro serão preservados. A newsletter
+              independente não será alterada.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="block text-sm font-semibold">
+            Digite o e-mail para confirmar:{" "}
+            <span className="break-all">{detail?.member.email}</span>
+            <input
+              autoComplete="off"
+              type="email"
+              maxLength={254}
+              value={confirmationEmail}
+              onChange={(e) => setConfirmationEmail(e.target.value)}
+              disabled={busy}
+              className={field}
+              aria-label="E-mail para confirmar remoção"
+            />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-red-800">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-3">
+            <button
+              className={secondary}
+              disabled={busy}
+              onClick={() => setRemoveOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className={`${button} bg-red-800`}
+              disabled={
+                busy ||
+                !detail?.member.email ||
+                confirmationEmail.trim().toLowerCase() !==
+                  detail.member.email.toLowerCase()
+              }
+              onClick={() => void removeMember()}
+            >
+              {busy ? "Removendo…" : "Remover definitivamente"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={confirm !== null}
         onOpenChange={(v) => {

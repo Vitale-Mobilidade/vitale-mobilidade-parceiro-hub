@@ -1,3 +1,4 @@
+import {periodMetricsFixture} from './fixtures/community-period-metrics.mjs';
 // Local synthetic Admin. No community profile, live database, messages or financial provider.
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
@@ -15,6 +16,7 @@ await context.route('**/*',async route=>{
  if(r.method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':origin,'access-control-allow-headers':'*','access-control-allow-methods':'*'}});
  if(u.pathname==='/api/admin/classifieds'){
   const {action,payload:p={id:null},days=30}=r.postDataJSON();calls.push(action);const l=listings.find(l=>l.id===p.id);
+  if(action==='period_metrics')return reply(periodMetricsFixture(p));
   if(action==='metrics')return reply({generatedAt:new Date().toISOString(),days,members:3,listings:listings.length+2,channelListings:listings.length,activeListings:listings.filter(l=>l.status==='published').length,grossCents:15000,reversedPayments:0,daily:Array.from({length:days},(_,i)=>({day:new Date(Date.UTC(2026,10,5-i)).toISOString().slice(0,10),members:i===0?1:0,listings:i===0?2:0,payments:i===0?1:0,grossCents:i===0?15000:0}))});
   if(action==='list')return reply(listings.map(l=>({...l,images:l.images.map(a=>({...a,url:a.status==='ready'?`${backend}/photo/${a.id}`:undefined}))})));
   if(action==='create'){const l={id:randomUUID(),title:'Minha bike',brand:'',model:'',priceCents:0,city:'',state:'',modelYear:null,mileageKm:null,condition:'good',battery:'unknown',invoice:false,description:'',maintenance:'',status:'draft',feeCents:15000,feeStatus:'required',images:[],sellerType:'channel',channelWhatsapp:null,publishedAt:null,updatedAt:new Date().toISOString()};listings.push(l);return reply(l);}
@@ -36,7 +38,7 @@ await context.route('**/*',async route=>{
  if(u.origin===origin)return route.continue();return route.abort();
 });
 try{
- await page.goto(`${origin}/admin/comunidade`);await page.getByRole('heading',{name:'Faturamento por dia',exact:true}).waitFor();assert.equal(await page.getByRole('heading',{name:'Perfis cadastrados',exact:true}).count(),1);await page.getByLabel('Período do painel').selectOption('7');await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===7);await page.screenshot({path:new URL('admin-dashboard-desktop.png',artifacts).pathname,fullPage:true});
+ await page.goto(`${origin}/admin/comunidade`);await page.getByRole('heading',{name:'Faturamento por dia',exact:true}).waitFor();assert.equal(await page.getByRole('heading',{name:'Perfis cadastrados',exact:true}).count(),1);await page.getByLabel('Período do painel').selectOption('last7');await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);await page.screenshot({path:new URL('admin-dashboard-desktop.png',artifacts).pathname,fullPage:true});
  await page.getByRole('button',{name:'Bikes do canal',exact:true}).click();
  await page.getByRole('button',{name:'Nova bike do canal',exact:true}).click();await page.getByRole('heading',{name:'1. Fotos da bike · 0/5',exact:true}).waitFor();
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=640;c.height=480;c.getContext('2d').fillRect(0,0,640,480);return c.toDataURL('image/png').split(',')[1];});await page.getByLabel('Adicionar fotos da bike').setInputFiles({name:'bike.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.getByRole('heading',{name:'1. Fotos da bike · 1/5',exact:true}).waitFor();await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();

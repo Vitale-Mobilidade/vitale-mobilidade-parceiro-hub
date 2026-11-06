@@ -1,3 +1,4 @@
+import {periodMetricsFixture} from './fixtures/community-period-metrics.mjs';
 // Local synthetic Admin. No community profile, live database, messages or financial provider.
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
@@ -18,6 +19,7 @@ await context.route('**/*',async route=>{
  if(r.method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':origin,'access-control-allow-headers':'*','access-control-allow-methods':'*'}});
  if(u.pathname==='/api/admin/classifieds'){
   const {action,payload:p={id:null},days=30}=r.postDataJSON();calls.push(action);const l=listings.find(l=>l.id===p.id);
+  if(action==='period_metrics')return reply(periodMetricsFixture(p));
   if(action==='metrics')return reply({generatedAt:new Date().toISOString(),days,members:3,listings:listings.length+2,channelListings:listings.length,activeListings:listings.filter(l=>l.status==='published').length,grossCents:15000,reversedPayments:0,daily:Array.from({length:days},(_,i)=>({day:new Date(Date.UTC(2026,10,5-i)).toISOString().slice(0,10),members:i===0?1:0,listings:i===0?2:0,payments:i===0?1:0,grossCents:i===0?15000:0}))});
   if(action==='list')return reply(listings.map(l=>({...l,images:l.images.map(a=>({...a,url:a.status==='ready'?`${backend}/photo/${a.id}`:undefined}))})));
   if(action==='create'){const l={id:randomUUID(),title:'Minha bike',brand:'',model:'',priceCents:0,city:'',state:'',modelYear:null,mileageKm:null,condition:'good',battery:'unknown',invoice:false,description:'',maintenance:'',status:'draft',feeCents:15000,feeStatus:'required',images:[],sellerType:'channel',channelWhatsapp:null,publishedAt:null,updatedAt:new Date().toISOString()};listings.push(l);return reply(l);}
