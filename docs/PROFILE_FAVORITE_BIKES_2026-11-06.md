@@ -1,5 +1,7 @@
 # Bikes favoritas no menu do perfil — 06/11/2026
 
+> **Publicado:** menu do perfil → “Bikes favoritas”. [Acesso direto](https://vitalemobilidade.com/radar?favoritos=1#todas). PR #103, código `782e91bc2812047a037b3ca86371d8b402e0e230`, deployment `256b7db7-1408-4686-9693-883789ae73cb`.
+
 Objetivo: dar acesso persistente às bikes salvas a partir do avatar, conforme correção solicitada pelo responsável após o release de favoritos. Base operacional `a07e55e`; branch `codex/profile-favorite-bikes-2026-11-06`.
 
 Classificação **estrutural** por envolver navegação do Radar. Delta apenas de frontend: reaproveitar o filtro e a RPC de favoritos já publicados, sem migration, alteração de dados, autenticação ou envio de alertas. Refinamento da mesma funcionalidade cuja implementação/publicação foram autorizadas nesta conversa.
@@ -49,3 +51,16 @@ Classificação **estrutural** por envolver navegação do Radar. Delta apenas d
 - Rollback apenas de frontend para `a07e55e`; nenhuma migration ou ação de recuperação de banco necessária.
 
 Decisão: **GO local**. Publicação é refinamento do acesso aos favoritos no mesmo release autorizado nesta conversa; código, testes e rollback preparados antes de integrar/publicar.
+
+
+## Release e fechamento
+
+- Refinamento publicado sob a autorização de implementação/publicação dos favoritos nesta conversa; sem novo banco, writer, contato ou custo de geração.
+- PR [#103](https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/103) integrada em `782e91bc2812047a037b3ca86371d8b402e0e230`; árvore igual ao código local validado. Netlify aprovado. Vercel mantém falha preexistente fora do Lovable; sem bypass de regras.
+- Mesmo SHA reconhecido no Lovable, preview conferido antes do deploy. Deployment `256b7db7-1408-4686-9693-883789ae73cb` solicitado; domínio público confirmado depois da propagação.
+- Público anônimo em `/radar?favoritos=1#todas`: título “Bikes favoritas”, zero cards apresentados como salvos, mensagem de acesso e link `/conta?retorno=%2Fradar%3Ffavoritos%3D1%23todas`. Sem falso estado vazio; âncora a 96px, abaixo do header. [Captura do domínio](../artifacts/radar-favorites/profile-favorites-production.jpg).
+- Navegar pelo header para `/radar` removeu a flag, restaurou “Todas as bikes monitoradas (27)” e 12 cards iniciais. Menu autenticado, lista realista por conta, desktop/mobile/teclado, reload/back e retorno pós-login exercitados no smoke local com Auth/RPC simulados. Sessão pessoal do Chrome não foi usada nem alterada.
+- Nenhuma escrita produtiva de preferências ou teste de alerta foi realizada nesta correção. Dados e permissões dos favoritos anteriores permanecem.
+- Oito perspectivas mantêm os status da matriz pós-implementação: **Pass**, com **N/A** para IA. Critérios cumpridos, nenhuma pendência de release.
+
+Decisão final: **GO — publicado**. Rollback de frontend para `a07e55e1cdaec9dcea1c2c06972003ddfb85a73e`, mantendo favoritos e alertas existentes. Custo externo adicional: nenhum previsto/consumido por geração.
