@@ -92,6 +92,12 @@ export const adminClassifiedsInput = z.discriminatedUnion("action", [
     .strict(),
 ]);
 export const memberMetricsSchema = z.object({
+  trackingSince: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  excludedOrders: z.number().int().min(0).optional(),
   generatedAt: z.string(),
   days: z.number(),
   members: z.number(),

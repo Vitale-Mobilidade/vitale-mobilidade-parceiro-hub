@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--reporting" in sys.argv: sys.argv.append("--launch")
 if "--partners" in sys.argv: sys.argv.append("--notifications")
 if "--notifications" in sys.argv: sys.argv.append("--seller")
 if "--seller" in sys.argv: sys.argv.append("--launch")
@@ -206,6 +207,19 @@ COMMIT;
                 result = sql((repo / path).read_text())
                 if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-3000:]}")
                 print(f"PASS {path}")
+
+        if "--reporting" in sys.argv:
+            saved_definition=subprocess.run(command+["-Atc","SELECT pg_get_functiondef('public.admin_member_metrics(uuid,integer)'::regprocedure)"],env=env,capture_output=True,text=True,check=True).stdout
+            (root/"metrics-before.sql").write_text(saved_definition)
+            for path in ["supabase/migrations/20261106170000_community_reporting_start.sql","tests/community-reporting-start.sql"]:
+                result=sql((repo/path).read_text())
+                if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-4000:]}")
+                print(f"PASS {path}")
+            restored=sql((root/"metrics-before.sql").read_text())
+            assert restored.returncode==0,restored.stderr
+            invariant=sql("SELECT public.admin_member_metrics('00000000-0000-4000-8000-000000000001',7)=public.admin_member_metrics_before_reporting_start('00000000-0000-4000-8000-000000000001',7);")
+            assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+            print("PASS metrics definition backup restores the previous report exactly")
 
         if "--seller" in sys.argv:
             broad_defaults=sql("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon,authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon,authenticated;")
