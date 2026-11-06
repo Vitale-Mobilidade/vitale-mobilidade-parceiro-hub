@@ -1,3 +1,5 @@
+> **06/11/2026 — favoritos e sininho nos cards do Radar, validados localmente:** favoritos privados por conta com login/retomada, filtro “Meus favoritos” e acesso ao formulário de alerta diretamente no card. 11 testes direcionados, PostgreSQL isolado, navegador desktop/mobile e `pnpm validate` aprovados. Ainda não publicado; migration aditiva no Supabase integrado exige autorização e recuperação verificada. [Decisão, oito perspectivas e evidências](RADAR_FAVORITES_ALERTS_2026-11-06.md).
+
 > **04/11/2026 — nova decisão comercial dos classificados:** R$150 em pagamento único por Pix ou cartão, com 90 dias desde primeira publicação após confirmação; sem assinatura ou renovação automática. Checkout e dados de pagador somente no Asaas. Abertura pública continua suspensa. [Contrato, testes e integração](ASAAS_90_DAY_LISTINGS_2026-11-04.md).
 
 # Roadmap Vitale Mobilidade
