@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--empty-drafts" in sys.argv: sys.argv.append("--workspace")
 if "--workspace" in sys.argv: sys.argv.append("--partners")
 if "--reporting" in sys.argv: sys.argv.append("--launch")
 if "--partners" in sys.argv: sys.argv.append("--notifications")
@@ -305,6 +306,20 @@ COMMIT;
                             print(f"PASS {path}")
                             assert sql(snapshot_sql).stdout==commercial_before,"Workspace migration or test changed billing/outbox"
                         print("PASS migration leaves every financial field and notification outbox unchanged")
+                        if "--empty-drafts" in sys.argv:
+                            saved_aggregate=subprocess.run(command+["-Atc","SELECT pg_get_functiondef('public.member_metrics_between(date,date)'::regprocedure)"],env=env,capture_output=True,text=True,check=True).stdout
+                            for path in ["supabase/migrations/20261106210000_ignore_empty_listing_drafts.sql","tests/empty-listing-drafts.sql"]:
+                                result=sql((repo/path).read_text())
+                                if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-5000:]}")
+                                print(f"PASS {path}")
+                            assert sql(snapshot_sql).stdout==commercial_before,"Empty draft correction changed billing/outbox"
+                            result=sql((repo/"supabase/rollback/20261106210000_ignore_empty_listing_drafts.sql").read_text())
+                            assert result.returncode==0,result.stderr
+                            restored_aggregate=subprocess.run(command+["-Atc","SELECT pg_get_functiondef('public.member_metrics_between(date,date)'::regprocedure)"],env=env,capture_output=True,text=True,check=True).stdout
+                            assert restored_aggregate==saved_aggregate,"Aggregate rollback differs from original backup"
+                            result=sql(saved_aggregate)
+                            assert result.returncode==0,result.stderr
+                            print("PASS empty draft rollback/backup restores original function exactly, with commercial records unchanged")
                         result=sql((repo/"supabase/rollback/20261106190000_admin_community_workspace.sql").read_text())
                         assert result.returncode==0,result.stderr
                         result=sql("SELECT NOT has_function_privilege('service_role','public.admin_member_period_metrics(uuid,text,date,date)','EXECUTE') AND (public.admin_community_manage('00000000-0000-4000-8000-000000000001','members')->>'total')::int>0 AND (SELECT count(*)>0 FROM public.member_listing_billing);")

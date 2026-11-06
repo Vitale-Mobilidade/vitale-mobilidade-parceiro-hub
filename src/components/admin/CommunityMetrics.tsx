@@ -242,7 +242,7 @@ export function CommunityMetrics({ refreshKey = 0 }: { refreshKey?: number }) {
                     : key === "publications"
                       ? "Primeira publicação de cada bike"
                       : key === "listings"
-                        ? `${metrics.current.channelListings} do canal · inclui rascunhos e desativados`
+                        ? `${metrics.current.channelListings} do canal · inclui rascunhos com conteúdo e desativados`
                         : "Novos membros no período"}
                 </p>
                 <Comparison
