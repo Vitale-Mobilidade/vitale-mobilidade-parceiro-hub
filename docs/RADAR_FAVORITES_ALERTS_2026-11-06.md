@@ -1,5 +1,7 @@
 # Favoritos e alerta nos cards do Radar — 06/11/2026
 
+> **Publicado e verificado:** [Radar público](https://vitalemobilidade.com/radar), PR [#101](https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/101), código `6d6b38f5a3a186a6335e1f937d71a6673847a354`, deployment `35f3353a-35dc-4f69-826d-98edbbeb8ed5`. Migration aplicada ao Supabase integrado após autorização do responsável nesta conversa.
+
 Estado inicial: preparação local; base operacional `3c9c07c89d9766b747a4c84446e9db20af55a715`, branch `codex/radar-favorites-price-alerts-2026-11-06`. Checkout raiz é referência; implementação no worktree do repositório conectado ao Lovable. Nenhuma publicação ou migration produtiva autorizada.
 
 ## Classificação e revisão pré-implementação
@@ -70,3 +72,34 @@ Decisão: **GO para entrega local; GO condicionado para produção**. Nenhum Fai
 A única dependência nova de produção é a migration `20261106230000_radar_favorites.sql` no Supabase integrado ao mesmo Lovable. Antes de aplicá-la: verificar backup restaurável e ensaio, obter autorização específica e aplicar somente esse SQL aditivo. Publicar frontend após confirmar a RPC; merge/publicação exigem autorização desta thread. Não reaplicar o histórico de migrations.
 
 Rollback: voltar ao frontend base `3c9c07c89d9766b747a4c84446e9db20af55a715` (ou ao predecessor efetivo identificado no release), preservando tabela e favoritos; revogar execução da RPC apenas se necessário e autorizado. Não apagar dados para desfazer a UI. O rollback de frontend é imediato; o schema aditivo pode permanecer sem afetar catálogo/alertas existentes.
+
+
+## Release autorizado e executado
+
+O responsável autorizou “pode implementar e publicar” nesta conversa, depois da proposta que incluía recuperação, migration, merge e publicação. Esta autorização cobre o release abaixo; não altera os limites de campanhas, contatos, pagamentos ou outras features.
+
+- Preflight: GitHub/Lovable inicialmente em `3c9c07c89d9766b747a4c84446e9db20af55a715`; tabela/RPC de favoritos ausentes; 36 Bikes; comunidade habilitada; colunas Auth exigidas presentes.
+- Recuperação: backup diário de **06/11/2026 04:28:39 UTC** conferido na interface do Lovable, sem acionar Restore. Cópia privada das definições atuais de `auth.users`, `bikes` e `member_community_settings`, constraints, RLS e ACLs; SHA-256 `82cd8ebda208ef12e97df62f4e63c395a7e7f52ac43f936e02c4402b47caa025`. Definições/constraints/RLS restauradas em PostgreSQL isolado e contratos da nova migration aprovados com dados sintéticos. Nenhuma linha pessoal exportada/restaurada e nenhuma alegação de restauração completa da plataforma. A migration não substitui objetos ou dados existentes.
+- A conta GitHub inicialmente selecionada e o conector não tinham escrita neste repositório. A conta institucional **já autenticada** no CLI tinha permissão; usada apenas no processo desta task, sem trocar a conta global, expor credenciais ou alterar permissões.
+- Migration exata `20261106230000_radar_favorites.sql` aplicada e registrada em `supabase_migrations.schema_migrations`. Não reaplicado histórico; journal Drizzle preservado.
+- Pós-migration: RLS habilitada; anon sem SELECT/EXECUTE; membro sem SELECT direto, com EXECUTE na RPC; função SECURITY DEFINER e search_path vazio. Smoke autenticado list/set duas vezes/remove e bloqueio de acesso direto passou dentro de transação com ROLLBACK. **Zero favoritos de teste persistidos.**
+- PR #101: Netlify aprovado; Vercel falha também na base anterior, fora do hosting operacional. Merge normal, sem bypass de regras, em `6d6b38f5a3a186a6335e1f937d71a6673847a354`. Árvore integrada igual ao código local validado.
+- Lovable sincronizado com o mesmo SHA; preview mostrou os 12 pares de controles e alerta da Bike correta. Publicação via conector existente; sem geração paga ou créditos de agente Lovable.
+- Deployment `35f3353a-35dc-4f69-826d-98edbbeb8ed5` solicitado; **resultado confirmado diretamente em vitalemobilidade.com/radar**, não inferido do retorno inicial pending. 12 cards iniciais, 12 sininhos e 12 corações. Formulário da V9 Max com referência R$6.174 e meta inicial R$6.074. Coração anônimo abriu `/conta` com retorno `/radar#bike-v9_max`; tela de acesso visível. Nenhum formulário de alerta real foi enviado.
+- Diálogo público cabe no viewport real 1280×720 e rola internamente; mobile 390×844 foi validado no smoke local. A tentativa de override do navegador de produção não mudou suas dimensões reais, portanto não se afirma prova móvel produtiva por essa tentativa. Código de responsividade é o mesmo já validado localmente.
+- Evidências sem credenciais: [registro do release](../artifacts/radar-favorites/release-evidence.json), [cards no domínio publicado](../artifacts/radar-favorites/production-cards.jpg). Sessão pessoal do Chrome preservada; testes públicos feitos em abas separadas, sem login/OTP real.
+
+### Revisão final do release
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto e Estratégia | Pass | Funcionalidades solicitadas no catálogo público; favoritos privados e alerta continuam ações separadas. |
+| CTO e Arquitetura | Pass | Mesmo Lovable/Supabase, SHA sincronizado, SSR e dados públicos preservados; nenhum writer paralelo. |
+| IA e Agent Engineering | N/A | Nenhuma alteração ou chamada de IA; publicação não usou agente pago. |
+| Segurança | Pass | Recuperação proporcional, grants/RLS produtivos conferidos e smoke transacional sem persistência de teste. |
+| UX/UI | Pass | Controles funcionais no domínio, retorno ao login correto, alerta da Bike certa, zero botão aninhado em link; mobile local aprovado. |
+| CX e Operação | Pass | Sem contatos/envios de teste; jobs, escritores e operações existentes preservados. |
+| Growth e CRO | Pass | CTA de alerta disponível no card sem login obrigatório; favorito exige acesso; cliques de oferta não usados em testes. |
+| PMO e QA | Pass | Aprovação, PR/merge/deployment rastreados, verificações locais e produtivas documentadas; sem pendência de release deste escopo. |
+
+Decisão final: **GO — publicado**. Rollback produtivo permanece no frontend anterior `3c9c07c89d9766b747a4c84446e9db20af55a715`, preservando favoritos. A falha Vercel preexistente não representa falha do Lovable nem pendência desta entrega.
