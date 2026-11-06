@@ -24,6 +24,8 @@ function setup(role = "admin", active = true, badToken = false) {
         return Response.json({ role, active });
       if (u.pathname.endsWith("/rpc/admin_member_metrics"))
         return Response.json({ members: 3, listings: 4, grossCents: 0 });
+      if (u.pathname.endsWith("/rpc/admin_community_manage"))
+        return Response.json({ total: 0, items: [], listings: [] });
       if (u.pathname.endsWith("/rpc/admin_channel_classifieds"))
         return Response.json({ id: actor, status: "draft", images: [] });
       return Response.json(
@@ -78,7 +80,7 @@ it("metrics use the authenticated admin identity and bounded days", async () => 
     () => s.db,
   );
   expect(r.status).toBe(200);
-  expect(r.headers.get("cache-control")).toBe("no-store");
+  expect(r.headers.get("cache-control")).toBe("private, no-store");
   expect(s.calls.at(-1)?.body).toEqual({ p_actor: actor, p_days: 7 });
   for (const days of [0, 91, null])
     expect(
@@ -134,4 +136,79 @@ it("rejects malformed JSON without leaking internals", async () => {
   );
   expect(r.status).toBe(400);
   expect(await r.json()).toEqual({ error: "invalid_input" });
+});
+
+it("directory search and courtesy actions bind the real admin and reject spoofed fields", async () => {
+  const s = setup();
+  const payloads = [
+    { action: "members", payload: { query: "(11) 99999-9999", offset: 20 } },
+    {
+      action: "listings",
+      payload: { query: "Bike", offset: 0, status: "archived" },
+    },
+    { action: "member", payload: { id: actor } },
+    {
+      action: "grant",
+      payload: {
+        userId: actor,
+        requestId: actor,
+        quantity: 2,
+        reason: "Parceria local",
+      },
+    },
+    {
+      action: "revoke",
+      payload: { userId: actor, courtesyId: actor, reason: "Fim da parceria" },
+    },
+  ];
+  for (const input of payloads) {
+    const r = await adminClassifieds(req(input), () => s.db);
+    expect(r.status).toBe(200);
+    expect(r.headers.get("cache-control")).toBe("private, no-store");
+    expect(s.calls.at(-1)).toEqual({
+      path: "/rest/v1/rpc/admin_community_manage",
+      body: {
+        p_actor: actor,
+        p_action: input.action,
+        p_payload: input.payload,
+      },
+    });
+  }
+  for (const input of [
+    { action: "members", payload: { query: "x", offset: -1 } },
+    { action: "members", payload: { query: "x".repeat(121) } },
+    { action: "listings", payload: { status: "anything" } },
+    {
+      action: "grant",
+      payload: {
+        userId: actor,
+        requestId: actor,
+        quantity: 11,
+        reason: "Parceria",
+      },
+    },
+    {
+      action: "grant",
+      payload: { userId: actor, requestId: actor, quantity: 1, reason: "oi" },
+    },
+    {
+      action: "grant",
+      payload: {
+        userId: actor,
+        requestId: actor,
+        quantity: 1,
+        reason: "Parceria",
+        actor,
+      },
+    },
+  ])
+    expect((await adminClassifieds(req(input), () => s.db)).status).toBe(400);
+});
+it("non-admin cannot search contacts or issue/revoke free listings", async () => {
+  for (const action of ["members", "member", "grant", "revoke"]) {
+    const s = setup("content");
+    const r = await adminClassifieds(req({ action, payload: {} }), () => s.db);
+    expect(r.status).toBe(403);
+    expect(s.calls.some((c) => c.path.includes("/rpc/"))).toBe(false);
+  }
 });

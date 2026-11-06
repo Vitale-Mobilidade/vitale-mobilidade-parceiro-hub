@@ -31,6 +31,8 @@ export const billingMessage = (code: string) =>
   ({
     listing_phone_confirmation:
       "Confirme seu WhatsApp na etapa Informações antes de continuar.",
+    courtesy_available:
+      "Você tem uma cortesia disponível. Use-a para publicar sem pagamento.",
     billing_credit_available:
       "Você tem um período pago disponível. Use-o para publicar sem nova cobrança.",
     identity_verification_required:

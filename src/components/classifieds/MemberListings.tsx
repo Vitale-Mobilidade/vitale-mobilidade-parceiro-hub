@@ -235,7 +235,10 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
         id: item.id,
       });
       if (action === "reactivate") {
-        if (item.feeStatus === "paid" && item.contactConfirmed)
+        if (
+          ["paid", "courtesy"].includes(item.feeStatus) &&
+          item.contactConfirmed
+        )
           await classifiedsCall("publish", {
             id: item.id,
             contactConsent: true,
@@ -246,9 +249,10 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
       if (edit) setSelected(item.id);
       setNotice(
         action === "archive"
-          ? "Anúncio desativado. Você pode reativá-lo durante o período pago, mantendo o vencimento original."
+          ? "Anúncio desativado. Você pode reativá-lo durante o período de exibição, mantendo o vencimento original."
           : action === "reactivate"
-            ? item.feeStatus === "paid" && item.contactConfirmed
+            ? ["paid", "courtesy"].includes(item.feeStatus) &&
+              item.contactConfirmed
               ? "Anúncio reativado. Seu período pago e a data final foram mantidos."
               : "Anúncio em rascunho. Confira o contato e seu período pago antes de publicar."
             : action === "sold"
@@ -1270,7 +1274,9 @@ export function ListingEditor({
                 <p className="font-semibold text-ink">
                   {actions
                     ? "Bike do canal · publicação institucional por 90 dias"
-                    : "Publicação por 90 dias · pagamento único de R$150"}
+                    : listing.feeStatus === "courtesy"
+                      ? "Cortesia · publicação por 90 dias"
+                      : "Publicação por 90 dias · pagamento único de R$150"}
                 </p>
               </div>
               {!publishReady && (
@@ -1371,6 +1377,8 @@ export function ListingEditor({
               })
             : (draft || listing.feeStatus !== "pilot_exempt") && (
                 <ListingBillingPanel
+                  courtesy={listing.feeStatus === "courtesy"}
+                  courtesyExpiresAt={listing.displayExpiresAt}
                   published={listing.status === "published"}
                   listingId={listing.id}
                   active={step === "publish" && !preview}
