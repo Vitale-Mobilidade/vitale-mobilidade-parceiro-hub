@@ -273,12 +273,29 @@ function CommunityWorkspace() {
               <p role="status">Carregando acompanhamento…</p>
             ) : (
               <>
+                {metrics.trackingSince && (
+                  <p
+                    role="status"
+                    className="rounded-xl border border-line bg-white p-4 text-sm"
+                  >
+                    Indicadores da comunidade desde{" "}
+                    <strong>
+                      {metrics.trackingSince.split("-").reverse().join("/")}
+                    </strong>
+                    , no horário de São Paulo. Perfis e anúncios anteriores
+                    permanecem disponíveis na gestão.{" "}
+                    {Boolean(metrics.excludedOrders) &&
+                      "Compras de teste não entram na apuração."}
+                  </p>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {[
                     [
                       "Perfis cadastrados",
                       metrics.members.toLocaleString("pt-BR"),
-                      "Total de membros da comunidade",
+                      metrics.trackingSince
+                        ? `Cadastros desde ${metrics.trackingSince.split("-").reverse().join("/")}`
+                        : "Total de membros da comunidade",
                     ],
                     [
                       "Anúncios criados",
@@ -288,7 +305,9 @@ function CommunityWorkspace() {
                     [
                       "Anúncios ativos",
                       metrics.activeListings.toLocaleString("pt-BR"),
-                      "Disponíveis na vitrine agora",
+                      metrics.trackingSince
+                        ? "Criados desde o marco e disponíveis na vitrine"
+                        : "Disponíveis na vitrine agora",
                     ],
                     [
                       "Faturamento confirmado",

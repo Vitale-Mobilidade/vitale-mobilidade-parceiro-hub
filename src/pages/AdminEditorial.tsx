@@ -175,7 +175,7 @@ function Overview({ role }: { role: AdminRole }) {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Usuários cadastrados: perfis que concluíram o cadastro na comunidade. Newsletter: total histórico de cadastros; ativos e descadastrados no painel Newsletter. Radar: pessoas distintas por telefone com alerta ativo e consentimento; não representa mensagens entregues.
+            Usuários cadastrados: perfis que concluíram o cadastro na comunidade{community.data?.trackingSince ? ` desde ${community.data.trackingSince.split("-").reverse().join("/")}. Perfis anteriores permanecem na listagem de usuários.` : "."} Newsletter: total histórico de cadastros; ativos e descadastrados no painel Newsletter. Radar: pessoas distintas por telefone com alerta ativo e consentimento; não representa mensagens entregues.
           </p>
           {role === "admin" && community.isError && <Notice danger>Não foi possível carregar os usuários cadastrados. <button className="underline" onClick={() => void community.refetch()}>Tentar novamente</button></Notice>}
           {role === "admin" && (audience.isError || metrics.isError) && <Notice danger>Não foi possível carregar parte das métricas de audiência. <button className="underline" onClick={() => { void audience.refetch(); void metrics.refetch(); }}>Tentar novamente</button></Notice>}
