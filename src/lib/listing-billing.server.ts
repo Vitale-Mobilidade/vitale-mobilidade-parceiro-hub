@@ -192,6 +192,7 @@ export async function memberListingBilling(request: Request) {
         {
           error:
             [
+              "courtesy_available",
               "identity_verification_required",
               "listing_incomplete",
               "billing_unavailable",

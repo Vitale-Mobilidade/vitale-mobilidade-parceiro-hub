@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--partners" in sys.argv: sys.argv.append("--notifications")
 if "--notifications" in sys.argv: sys.argv.append("--seller")
 if "--seller" in sys.argv: sys.argv.append("--launch")
 if "--google" in sys.argv: sys.argv.append("--identity")
@@ -250,6 +251,34 @@ COMMIT;
                 ids=[json.loads(next(line.strip() for line in c.stdout.splitlines() if line.strip().startswith("["))) for c in claims]
                 assert len(ids[0])==len(ids[1])==2 and not set(ids[0]) & set(ids[1]),"Duplicate concurrent mail claim"
                 print("PASS concurrent alert workers claim disjoint batches")
+                if "--partners" in sys.argv:
+                    backup=root/"before-partners.dump"
+                    subprocess.run([str(pg/"pg_dump"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"-d","postgres","-Fc","-f",str(backup)],env=env,check=True,capture_output=True)
+                    subprocess.run([str(pg/"createdb"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"partners_restore"],env=env,check=True,capture_output=True)
+                    subprocess.run([str(pg/"pg_restore"),"-h",str(root),"-p","55439","-U",getpass.getuser(),"-d","partners_restore","--exit-on-error",str(backup)],env=env,check=True,capture_output=True)
+                    restored=subprocess.run([str(pg/"psql"),"-XAt","-h",str(root),"-p","55439","-U",getpass.getuser(),"-d","partners_restore","-c","SELECT count(*) FROM public.member_listing_billing"],env=env,capture_output=True,text=True,check=True)
+                    assert int(restored.stdout.strip())>0
+                    print("PASS synthetic pre-migration backup restored with payment data")
+                    for path in ["supabase/migrations/20261106150000_admin_members_partners.sql","tests/admin-members-partners.sql"]:
+                        result=sql((repo/path).read_text())
+                        if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-5000:]}")
+                        print(f"PASS {path}")
+                    # Concurrent same request is exactly-once; one courtesy cannot publish two bikes.
+                    grant="SELECT public.admin_community_manage('00000000-0000-4000-8000-000000000001','grant','{\"userId\":\"00000000-0000-4000-8000-000000000091\",\"requestId\":\"00000000-0000-4000-8000-000000000889\",\"quantity\":1,\"reason\":\"Parceria concorrente\"}');"
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                        concurrent_grants=list(executor.map(sql,[grant,grant]))
+                    assert all(x.returncode==0 for x in concurrent_grants),str([x.stderr for x in concurrent_grants])
+                    for target in targets: sql("UPDATE public.member_bike_listings SET status='draft',confirmed_phone='5511999999998',contact_confirmed_at=now() WHERE id='"+target+"';")
+                    race_commands=["BEGIN; SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000091',false); SELECT public.member_classifieds('claim_period','{\"id\":\""+target+"\",\"orderId\":\""+sql("SELECT id FROM public.member_listing_courtesies WHERE request_id='00000000-0000-4000-8000-000000000889';").stdout.splitlines()[-3].strip()+"\"}'); SELECT public.member_classifieds('publish','{\"id\":\""+target+"\",\"contactConsent\":true}'); COMMIT;" for target in targets]
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                        concurrent_claims=list(executor.map(sql,race_commands))
+                    assert sum(x.returncode==0 for x in concurrent_claims)==1,str([x.stderr for x in concurrent_claims])
+                    print("PASS concurrent grant idempotency and courtesy claim/publication serialize")
+                    rollback=sql((repo/"supabase/rollback/20261106150000_admin_members_partners.sql").read_text())
+                    assert rollback.returncode==0,rollback.stderr
+                    invariant=sql("SELECT NOT has_function_privilege('service_role','public.admin_community_manage(uuid,text,jsonb)','EXECUTE') AND (SELECT count(*)>0 FROM public.member_listing_courtesies);")
+                    assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+                    print("PASS partner rollback blocks new grants and retains existing benefits and audit")
                 count=sql("SELECT count(*) FROM public.member_operation_alerts;").stdout
                 rollback=sql((repo/"supabase/rollback/20261106013000_member_operation_alerts.sql").read_text())
                 assert rollback.returncode==0,rollback.stderr

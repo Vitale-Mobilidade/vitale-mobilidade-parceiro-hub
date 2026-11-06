@@ -37,9 +37,13 @@ export function ListingBillingPanel({
   onChange,
   onLockChange,
   published = false,
+  courtesy = false,
+  courtesyExpiresAt,
 }: {
   listingId: string;
   published?: boolean;
+  courtesy?: boolean;
+  courtesyExpiresAt?: string | null;
   ready: boolean;
   locked: boolean;
   active: boolean;
@@ -56,7 +60,12 @@ export function ListingBillingPanel({
     [confirmCancel, setConfirmCancel] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [periods, setPeriods] = useState<
-    Array<{ id: string; listingTitle: string; paidUntil: string | null }>
+    Array<{
+      id: string;
+      listingTitle: string;
+      paidUntil: string | null;
+      kind: "paid" | "courtesy";
+    }>
   >([]);
   const [periodsLoaded, setPeriodsLoaded] = useState(false),
     [periodsError, setPeriodsError] = useState(false),
@@ -72,6 +81,7 @@ export function ListingBillingPanel({
           .array(
             z.object({
               id: z.string().uuid(),
+              kind: z.enum(["paid", "courtesy"]).default("paid"),
               listingTitle: z.string(),
               paidUntil: z.string().nullable(),
             }),
@@ -92,6 +102,8 @@ export function ListingBillingPanel({
       current = false;
     };
   }, [listingId, active, periodRetry]);
+  const hasCourtesy = courtesy || periods.some((p) => p.kind === "courtesy");
+  const hasBenefit = hasCourtesy || periods.length > 0;
   const [now, setNow] = useState(Date.now);
   const clockOffset = useRef(0);
   const previous = useRef<string | undefined>(undefined),
@@ -294,13 +306,14 @@ export function ListingBillingPanel({
         </AlertDialogContent>
       </AlertDialog>
       <h4 id="listing-billing-title" className="text-xl font-bold text-ink">
-        R$150 para anunciar por 90 dias
+        {hasCourtesy
+          ? "Cortesia para anunciar por 90 dias"
+          : "R$150 para anunciar por 90 dias"}
       </h4>
       <p className="mt-2 text-sm text-muted-foreground">
-        Pagamento único por Pix ou cartão, diretamente no Asaas em uma nova aba.
-        Os 90 dias corridos começam na primeira publicação após a confirmação.
-        Pausar ou editar mantém o vencimento original. Não há renovação
-        automática.
+        {hasCourtesy
+          ? "Você recebeu uma cortesia da Vitale. Cada unidade permite uma bike ativa por 90 dias corridos a partir da primeira publicação, sem pagamento. Pausar ou trocar a bike mantém a data final."
+          : "Pagamento único por Pix ou cartão, diretamente no Asaas em uma nova aba. Os 90 dias corridos começam na primeira publicação após a confirmação. Pausar ou editar mantém o vencimento original. Não há renovação automática."}
       </p>
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-900">
@@ -324,6 +337,7 @@ export function ListingBillingPanel({
             perfil e WhatsApp verificado neste anúncio para receber contatos de
             compradores.
             {status !== "active" &&
+              !hasBenefit &&
               " Aceito o pagamento único de R$150 por 90 dias de exibição, sem renovação automática."}
           </span>
         </label>
@@ -334,7 +348,15 @@ export function ListingBillingPanel({
           Preparando seu pagamento…
         </p>
       )}
-      {open && order ? (
+      {courtesy && published ? (
+        <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-4">
+          Anúncio publicado com cortesia
+          {courtesyExpiresAt
+            ? ` até ${new Date(courtesyExpiresAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
+            : ""}
+          . Nenhuma cobrança.
+        </p>
+      ) : open && order ? (
         <div className="mt-5 space-y-4">
           <p role="status" className="rounded-xl bg-surface p-4 font-semibold">
             {status === "active"
@@ -369,6 +391,13 @@ export function ListingBillingPanel({
                 </p>
               )}
             </div>
+          )}
+          {hasCourtesy && status !== "active" && (
+            <p className="rounded-xl bg-emerald-50 p-4 text-sm">
+              Você tem uma cortesia disponível. Cancele o pagamento pendente
+              abaixo antes de usá-la. Se já pagou, aguarde a confirmação
+              automática.
+            </p>
           )}
           {["creating", "pending", "uncertain", "cancel_pending"].includes(
             status ?? "",
@@ -434,6 +463,7 @@ export function ListingBillingPanel({
             </p>
           )}
           {status === "pending" &&
+            !hasCourtesy &&
             (remaining === null || remaining > 0) &&
             order.paymentUrl &&
             safePaymentLink(order.paymentUrl) && (
@@ -476,12 +506,12 @@ export function ListingBillingPanel({
               pagamento único de R$150.
             </p>
           )}
-          {configured === null && (
+          {configured === null && !hasBenefit && (
             <p role="status" className="mt-4 text-sm text-muted-foreground">
               Carregando opções de pagamento…
             </p>
           )}
-          {configured === false && (
+          {configured === false && !hasBenefit && (
             <p role="status" className="mt-4 rounded-xl bg-surface p-4 text-sm">
               O checkout está temporariamente indisponível. Seu rascunho
               continua salvo.
@@ -493,7 +523,9 @@ export function ListingBillingPanel({
           {periods.length > 0 && (
             <div className="mt-5 rounded-xl bg-emerald-50 p-4">
               <p className="font-bold">
-                Você já tem um período pago disponível
+                {hasCourtesy
+                  ? "Você tem uma cortesia disponível"
+                  : "Você já tem um período pago disponível"}
               </p>
               <p className="mt-2 text-sm">
                 Use-o nesta bike sem nova cobrança. A anterior permanece fora do
@@ -529,7 +561,9 @@ export function ListingBillingPanel({
                       .finally(() => setBusy(false));
                   }}
                 >
-                  Publicar no período pago
+                  {period.kind === "courtesy"
+                    ? "Publicar com cortesia"
+                    : "Publicar no período pago"}
                   {period.paidUntil
                     ? ` até ${new Date(period.paidUntil).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
                     : " de 90 dias"}
@@ -557,22 +591,24 @@ export function ListingBillingPanel({
                 Conferindo seus períodos pagos…
               </p>
             ))}
-          <button
-            type="button"
-            disabled={
-              busy ||
-              locked ||
-              !ready ||
-              !contactConsent ||
-              !configured ||
-              !periodsLoaded ||
-              periods.length > 0
-            }
-            className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
-            onClick={() => void checkout()}
-          >
-            {busy ? "Abrindo checkout…" : "Seguir para pagamento de R$150"}
-          </button>
+          {!hasCourtesy && (
+            <button
+              type="button"
+              disabled={
+                busy ||
+                locked ||
+                !ready ||
+                !contactConsent ||
+                !configured ||
+                !periodsLoaded ||
+                periods.length > 0
+              }
+              className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
+              onClick={() => void checkout()}
+            >
+              {busy ? "Abrindo checkout…" : "Seguir para pagamento de R$150"}
+            </button>
+          )}
         </>
       )}
     </section>

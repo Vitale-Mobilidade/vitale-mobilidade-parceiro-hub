@@ -1,8 +1,53 @@
 import { z } from "zod";
-import { listingDraftInputSchema } from "./bike-classifieds";
+import { listingDraftInputSchema, listingSchema } from "./bike-classifieds";
 const uuid = z.string().uuid();
 const id = z.object({ id: uuid }).strict();
+const search = z
+  .object({
+    query: z.string().trim().max(120).default(""),
+    offset: z.number().int().min(0).max(100000).default(0),
+  })
+  .strict();
 export const adminClassifiedsInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("members"), payload: search }).strict(),
+  z
+    .object({
+      action: z.literal("listings"),
+      payload: search
+        .extend({
+          status: z
+            .enum(["all", "draft", "published", "sold", "archived"])
+            .default("all"),
+        })
+        .strict(),
+    })
+    .strict(),
+  z.object({ action: z.literal("member"), payload: id }).strict(),
+  z
+    .object({
+      action: z.literal("grant"),
+      payload: z
+        .object({
+          userId: uuid,
+          requestId: uuid,
+          quantity: z.number().int().min(1).max(10),
+          reason: z.string().trim().min(5).max(300),
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("revoke"),
+      payload: z
+        .object({
+          userId: uuid,
+          courtesyId: uuid,
+          reason: z.string().trim().min(5).max(300),
+        })
+        .strict(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("metrics"),
@@ -66,3 +111,51 @@ export const memberMetricsSchema = z.object({
   ),
 });
 export type MemberMetrics = z.infer<typeof memberMetricsSchema>;
+
+export const adminMemberSchema = z.object({
+  id: uuid,
+  name: z.string(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  joinedAt: z.string(),
+  suspended: z.boolean(),
+  emailVerified: z.boolean(),
+  phoneVerified: z.boolean(),
+  listings: z.number(),
+  activeListings: z.number(),
+  availableCourtesies: z.number(),
+});
+export type AdminMember = z.infer<typeof adminMemberSchema>;
+export const adminListingSchema = listingSchema.extend({
+  owner: adminMemberSchema.nullable(),
+  createdAt: z.string(),
+  entitled: z.boolean(),
+});
+export type AdminListing = z.infer<typeof adminListingSchema>;
+export const courtesySchema = z.object({
+  id: uuid,
+  listingId: uuid.nullable(),
+  reason: z.string(),
+  grantedAt: z.string(),
+  grantedBy: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+  revokeReason: z.string().nullable(),
+});
+export const adminMemberDetailSchema = z.object({
+  member: adminMemberSchema,
+  listings: z.array(adminListingSchema),
+  courtesies: z.array(courtesySchema),
+});
+export type AdminMemberDetail = z.infer<typeof adminMemberDetailSchema>;
+export const adminMembersResultSchema = z.object({
+  total: z.number(),
+  offset: z.number(),
+  items: z.array(adminMemberSchema),
+});
+export const adminListingsResultSchema = z.object({
+  total: z.number(),
+  offset: z.number(),
+  items: z.array(adminListingSchema),
+});

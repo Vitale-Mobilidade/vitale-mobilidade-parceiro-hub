@@ -131,7 +131,7 @@ export const listingSchema = listingInputSchema.extend({
   id: z.string().uuid(),
   status: z.enum(["draft", "published", "sold", "archived"]),
   feeCents: z.literal(15000),
-  feeStatus: z.enum(["pilot_exempt", "required", "paid"]),
+  feeStatus: z.enum(["pilot_exempt", "required", "paid", "courtesy"]),
   displayExpiresAt: z.string().nullable().optional(),
   channelWhatsapp: z.string().nullable().optional(),
   contactConfirmed: z.boolean().default(false),
@@ -178,6 +178,12 @@ export function classifiedsError(error: unknown): string {
   const messages: Record<string, string> = {
     listing_phone_confirmation:
       "Confirme seu WhatsApp na etapa Informações antes de continuar.",
+    courtesy_available:
+      "Você tem uma cortesia disponível. Use-a para publicar sem pagamento.",
+    courtesy_unavailable:
+      "Esta cortesia expirou ou foi revogada. Confira seus benefícios novamente.",
+    period_already_assigned:
+      "Este anúncio já possui um período de exibição disponível.",
     billing_credit_available:
       "Você tem um período pago disponível. Use-o antes de iniciar outro pagamento.",
     period_in_use:

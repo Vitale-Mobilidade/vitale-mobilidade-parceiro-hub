@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { adminClassifiedsInput } from "./admin-classifieds";
 const headers = {
-  "Cache-Control": "no-store",
+  "Cache-Control": "private, no-store",
+  "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
 };
 function database() {
@@ -43,6 +44,44 @@ export async function adminClassifieds(request: Request, dbFactory = database) {
     const input = adminClassifiedsInput.safeParse(JSON.parse(text));
     if (!input.success) return reply({ error: "invalid_input" }, 400);
     const data = input.data;
+    if (
+      ["members", "listings", "member", "grant", "revoke"].includes(data.action)
+    ) {
+      const result = await db.rpc("admin_community_manage", {
+        p_actor: auth.user.id,
+        p_action: data.action,
+        p_payload: "payload" in data ? data.payload : {},
+      });
+      if (result.error) {
+        const safe = [
+          "forbidden",
+          "invalid_input",
+          "member_unavailable",
+          "courtesy_unavailable",
+          "courtesy_limit",
+          "request_conflict",
+        ].includes(result.error.message)
+          ? result.error.message
+          : "community_unavailable";
+        return reply({ error: safe }, safe === "forbidden" ? 403 : 409);
+      }
+      // Sign only the cover; private drafts remain inaccessible to public image routes.
+      const items =
+        data.action === "listings"
+          ? result.data.items
+          : (result.data.listings ?? []);
+      for (const item of items) {
+        const cover = item.images?.find(
+          (a: { status: string }) => a.status === "ready",
+        );
+        if (!cover) continue;
+        const signed = await db.storage
+          .from("member-media")
+          .createSignedUrl(cover.path, 300);
+        if (signed.data?.signedUrl) cover.url = signed.data.signedUrl;
+      }
+      return reply(result.data);
+    }
     if (data.action === "metrics") {
       const result = await db.rpc("admin_member_metrics", {
         p_actor: auth.user.id,
