@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, Flame, Heart, LineChart, Target, TrendingDown } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { memberLoginHref } from "@/lib/member-community";
+import { RADAR_FAVORITES_HREF } from "@/lib/radar-favorites";
 import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
 import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/site/site-ui";
@@ -36,11 +38,18 @@ const INITIAL_CATALOG_SIZE = 12;
 const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const base = useRadarBase();
   const favorites = useRadarFavorites();
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const navigate = useNavigate();
+  const requestedFavorites = useRouterState({
+    select: state => new URLSearchParams(state.location.searchStr).get("favoritos") === "1",
+  });
+  const favoritesOnly = favorites.enabled && requestedFavorites;
+  const setFavoritesOnly = (selected: boolean) => {
+    const search: Record<string, string | number> = Object.fromEntries(new URLSearchParams(window.location.search));
+    if (selected) search.favoritos = 1;
+    else delete search.favoritos;
+    void navigate({ to: base, search: search as never, hash: "todas" });
+  };
   const [alertEntry, setAlertEntry] = useState<RadarEntry | null>(null);
-  useEffect(() => {
-    if (!favorites.authenticated) setFavoritesOnly(false);
-  }, [favorites.authenticated]);
   // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
   const bikes = useMemo<RadarBike[]>(
     () => (initial.ok ? (initial.bikes as unknown as RadarBike[]).map(b => {
@@ -203,9 +212,9 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
         )}
 
         {!error && entries.length > 0 && <div className="responsive-container pt-10" ref={catalogRef}>
-          <section aria-label="Catálogo acompanhado" className="scroll-mt-24">
+          <section aria-label="Catálogo acompanhado" className="scroll-mt-24 [&_h2]:scroll-mt-24">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-              <SectionHeading id="todas" title={`Todas as bikes monitoradas (${filtered.length})`} />
+              <SectionHeading id="todas" title={favoritesOnly ? `Bikes favoritas${favorites.loading || favorites.unavailable || !favorites.authenticated ? "" : ` (${filtered.length})`}` : `Todas as bikes monitoradas (${filtered.length})`} />
               <div className="flex flex-wrap items-center gap-2">
                 {categories.length > 0 && <><label htmlFor="radar-category" className="text-sm text-muted-foreground">Uso / categoria</label><select id="radar-category" value={category} onChange={e => { setCategory(e.target.value); setChip(null); }} className="h-11 rounded-lg border border-line bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-action"><option value="">Todas</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></>}
                 <label htmlFor="radar-sort" className="text-sm text-muted-foreground">Ordenar por</label>
@@ -227,7 +236,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                     type="button"
                     aria-pressed={favoritesOnly}
                     disabled={favorites.loading || favorites.unavailable}
-                    onClick={() => setFavoritesOnly(value => !value)}
+                    onClick={() => setFavoritesOnly(!favoritesOnly)}
                     className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action disabled:opacity-50 ${favoritesOnly ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}
                   >
                     <Heart className="h-4 w-4" aria-hidden="true" /> Meus favoritos
@@ -249,7 +258,14 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                 )}
               </div>
             )}
-            {filtered.length ? (
+            {favoritesOnly && favorites.loading ? (
+              <p role="status" className="rounded-lg bg-surface p-6 text-muted-foreground">Carregando suas bikes favoritas…</p>
+            ) : favoritesOnly && !favorites.authenticated ? (
+              <div className="rounded-lg bg-surface p-6 text-muted-foreground">
+                <p>Entre na sua conta para ver suas bikes favoritas.</p>
+                <a href={memberLoginHref(RADAR_FAVORITES_HREF)} className="mt-2 inline-flex min-h-11 items-center font-semibold text-action underline">Entrar para ver favoritas</a>
+              </div>
+            ) : favoritesOnly && favorites.unavailable ? null : filtered.length ? (
               <>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleEntries.map(entry => <RadarBikeCard key={entry.id} entry={entry}
                   favorite={favorites.enabled ? {

@@ -97,6 +97,8 @@ export function memberReturnPath(value: unknown): string {
         !/[<>]/.test(val)
       )
         safe.append(key, val);
+    if (path === "/radar" && url.searchParams.get("favoritos") === "1")
+      safe.set("favoritos", "1");
     if (path === "/conta/anuncios" && url.searchParams.get("novo") === "1")
       safe.set("novo", "1");
     const hash = /^#[a-zA-Z0-9_-]{1,100}$/.test(url.hash) ? url.hash : "";

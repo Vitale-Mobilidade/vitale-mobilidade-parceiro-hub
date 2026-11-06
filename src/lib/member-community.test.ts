@@ -27,6 +27,15 @@ describe("reader boundaries", () => {
       ),
     ).toBe("/radar?compare=v9_max%2Cv8_pro#bikes");
   });
+  it("preserves only the public favorite-view flag on a Radar login return", () => {
+    expect(
+      memberReturnPath("/radar?favoritos=1&access_token=secret#todas"),
+    ).toBe("/radar?favoritos=1#todas");
+    expect(memberReturnPath("/radar?favoritos=other#todas")).toBe(
+      "/radar#todas",
+    );
+    expect(memberReturnPath("/conteudos?favoritos=1")).toBe("/conteudos");
+  });
   it("strips credential params from an allowed private destination", () =>
     expect(memberReturnPath("/conta/anuncios?token=secret")).toBe(
       "/conta/anuncios",
