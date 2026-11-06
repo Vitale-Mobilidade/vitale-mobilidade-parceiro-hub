@@ -2,7 +2,8 @@ import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { useRouterState } from "@tanstack/react-router";
 import { memberLoginHref, memberReturnPath } from "@/lib/member-community";
 import { useEffect, useState } from "react";
-import { UserRound } from "lucide-react";
+import { Heart, UserRound } from "lucide-react";
+import { RADAR_FAVORITES_HREF } from "@/lib/radar-favorites";
 import { useMemberSession } from "@/hooks/use-member-session";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -137,6 +138,14 @@ export function AccountMenu() {
               Editar meu perfil
             </a>
           </DropdownMenuItem>
+          {memberPublicNavigationEnabled && (
+            <DropdownMenuItem asChild>
+              <a href={RADAR_FAVORITES_HREF} className="min-h-11">
+                <Heart className="mr-2 h-4 w-4" aria-hidden="true" />
+                Bikes favoritas
+              </a>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
             <a href="/anuncie-sua-bike" className="min-h-11">
               Anuncie sua bike

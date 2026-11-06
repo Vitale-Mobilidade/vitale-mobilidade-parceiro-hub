@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const RADAR_FAVORITES_HREF = "/radar?favoritos=1#todas";
+
 export const favoriteBikeIdSchema = z
   .string()
   .regex(/^[a-z0-9][a-z0-9_-]{0,63}$/);
