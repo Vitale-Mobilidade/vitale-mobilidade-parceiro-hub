@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, Flame, LineChart, Target, TrendingDown } from "lucide-react";
+import { ArrowDown, ArrowRight, Flame, Heart, LineChart, Target, TrendingDown } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { RadarCatalogData } from "@/lib/radar-routes";
 import { useRadarBase } from "@/lib/radar-base";
@@ -7,6 +7,8 @@ import { SiteHeader, SiteFooter, SectionHeading, BikeMedia } from "@/components/
 import { DailyPriceChart } from "@/components/radar/DailyPriceChart";
 import { radarUseLine, shortDiagnosis } from "@/lib/radar-rankings";
 import { BikeSearchCombobox } from "@/components/radar/BikeSearchCombobox";
+import { useRadarFavorites } from "@/hooks/use-radar-favorites";
+import { PriceAlertDialog } from "@/components/radar/PriceAlertDialog";
 import { RadarBikeCard } from "@/components/radar/RadarBikeCard";
 import { ArchivedHistorySection, parseArchived } from "@/components/radar/ArchivedHistorySection";
 import { formatBRL, formatDateBR } from "@/lib/price-tracker";
@@ -23,6 +25,7 @@ import {
   sortEntries,
   type ChipKey,
   type RadarBike,
+  type RadarEntry,
   type SortKey,
 } from "@/lib/radar-rankings";
 
@@ -32,6 +35,12 @@ const INITIAL_CATALOG_SIZE = 12;
 
 const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const base = useRadarBase();
+  const favorites = useRadarFavorites();
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [alertEntry, setAlertEntry] = useState<RadarEntry | null>(null);
+  useEffect(() => {
+    if (!favorites.authenticated) setFavoritesOnly(false);
+  }, [favorites.authenticated]);
   // Dados reais vêm do loader (SSR + hidratação); sem segunda chamada no cliente.
   const bikes = useMemo<RadarBike[]>(
     () => (initial.ok ? (initial.bikes as unknown as RadarBike[]).map(b => {
@@ -68,14 +77,14 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
   const filtered = useMemo(() => {
     const bySearch = searchEntries(entries, query);
     const byChips = bySearch.filter((e) => matchesChips(e, chip ? [chip] : []) && (!category || normalizeText(e.category ?? "") === normalizeText(category)));
-    return sortEntries(byChips, sort);
-  }, [entries, query, chip, sort, category]);
+    return sortEntries(favoritesOnly ? byChips.filter(e => favorites.savedIds.has(e.id)) : byChips, sort);
+  }, [entries, query, chip, sort, category, favoritesOnly, favorites.savedIds]);
 
   const visibleEntries = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_CATALOG_SIZE);
-  }, [query, chip, sort, category]);
+  }, [query, chip, sort, category, favoritesOnly]);
 
   const trackingSince = useMemo(() => {
     const dates = entries.map((e) => e.firstObservedAt).filter(Boolean) as string[];
@@ -207,9 +216,49 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
               ? "Mais relevantes: bikes com mais cliques para ofertas nos últimos 30 dias."
               : "A ordenação por cliques está indisponível no momento. As bikes aparecem em ordem alfabética."}</p>}
             <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filtro rápido — escolha uma opção">{CHIPS.map(option => <button key={option} type="button" aria-pressed={chip === option} onClick={() => toggleChip(option)} className={`min-h-11 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action ${chip === option ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}>{CHIP_LABEL[option]}</button>)}{(chip || category) && <button type="button" onClick={() => { setChip(null); setCategory(""); }} className="min-h-11 px-3 text-sm font-semibold text-action underline">Limpar filtros</button>}</div>
+            {favorites.enabled && (
+              <div className="mb-5 space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Gostou de uma bike? Salve nos favoritos ou cadastre um alerta
+                  para acompanhar o preço que você procura.
+                </p>
+                {favorites.authenticated && (
+                  <button
+                    type="button"
+                    aria-pressed={favoritesOnly}
+                    disabled={favorites.loading || favorites.unavailable}
+                    onClick={() => setFavoritesOnly(value => !value)}
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm focus-visible:ring-2 focus-visible:ring-action disabled:opacity-50 ${favoritesOnly ? "border-action bg-action text-primary-foreground" : "border-line bg-card text-ink"}`}
+                  >
+                    <Heart className="h-4 w-4" aria-hidden="true" /> Meus favoritos
+                    {" "}({favorites.savedIds.size})
+                  </button>
+                )}
+                {favorites.authenticated && favorites.loading && (
+                  <p role="status" className="text-sm text-muted-foreground">
+                    Carregando favoritos…
+                  </p>
+                )}
+                {favorites.error && (
+                  <div role="alert" className="text-sm text-destructive">
+                    {favorites.error}{" "}
+                    <button type="button" onClick={favorites.retry} className="min-h-11 font-semibold underline">
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {filtered.length ? (
               <>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleEntries.map(entry => <RadarBikeCard key={entry.id} entry={entry} />)}</div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{visibleEntries.map(entry => <RadarBikeCard key={entry.id} entry={entry}
+                  favorite={favorites.enabled ? {
+                    saved: favorites.savedIds.has(entry.id), busy: favorites.pending.has(entry.id),
+                    disabled: favorites.loading || favorites.unavailable,
+                    error: favorites.errors[entry.id], onToggle: () => void favorites.toggle(entry.id),
+                  } : undefined}
+                  onPriceAlert={() => { trackRadar("radar_alert_opened", { bike_id: entry.id, source: "catalog" }); setAlertEntry(entry); }}
+                />)}</div>
                 {visibleEntries.length < filtered.length && (
                   <div className="mt-7 flex justify-center">
                     <button type="button" onClick={() => setVisibleCount(count => count + INITIAL_CATALOG_SIZE)} className="min-h-12 rounded-xl border border-action px-6 font-bold text-action hover:bg-mint/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2">
@@ -218,7 +267,7 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
                   </div>
                 )}
               </>
-            ) : <p className="rounded-lg bg-surface p-6 text-muted-foreground">Nenhuma bike encontrada com esses filtros. <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChip(null); setCategory(""); }}>Ver todas as bikes</button></p>}
+            ) : <p className="rounded-lg bg-surface p-6 text-muted-foreground">{favoritesOnly ? "Nenhuma bike favoritada corresponde a esses filtros. Use o coração nos cards para salvar suas bikes." : "Nenhuma bike encontrada com esses filtros."} <button type="button" className="font-semibold text-action underline" onClick={() => { setQuery(""); setChip(null); setCategory(""); setFavoritesOnly(false); }}>Ver todas as bikes</button></p>}
           </section>
         </div>}
 
@@ -255,6 +304,16 @@ const Acompanhamento = ({ initial }: { initial: RadarCatalogData }) => {
         </div>
       </main>
 
+      {alertEntry && (
+        <PriceAlertDialog
+          key={alertEntry.id}
+          open
+          onOpenChange={(open) => { if (!open) setAlertEntry(null); }}
+          bikeId={alertEntry.id}
+          bikeName={alertEntry.name}
+          currentPrice={alertEntry.currentPrice}
+        />
+      )}
       <SiteFooter />
     </div>
   );

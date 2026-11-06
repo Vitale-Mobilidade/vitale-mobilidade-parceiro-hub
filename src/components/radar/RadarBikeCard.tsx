@@ -1,5 +1,5 @@
 import { Link } from "@/lib/router-compat";
-import { LineChart } from "lucide-react";
+import { BellRing, Heart, LineChart, LoaderCircle } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
 import {
   radarUseLine,
@@ -11,21 +11,37 @@ import { useRadarBase } from "@/lib/radar-base";
 interface Props {
   entry: RadarEntry;
   highlight?: boolean;
+  favorite?: {
+    saved: boolean;
+    busy: boolean;
+    disabled: boolean;
+    error?: string;
+    onToggle: () => void;
+  };
+  onPriceAlert?: () => void;
 }
 
-export function RadarBikeCard({ entry, highlight = false }: Props) {
+export function RadarBikeCard({
+  entry,
+  highlight = false,
+  favorite,
+  onPriceAlert,
+}: Props) {
   const base = useRadarBase();
   const savings =
     entry.savingsAbs !== null && entry.savingsAbs > 0 ? entry.savingsAbs : null;
   const useLine = radarUseLine(entry);
 
   return (
-    <article className="h-full">
+    <article
+      id={`bike-${entry.id}`}
+      className={`group relative flex h-full scroll-mt-28 flex-col overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+        highlight ? "border-primary/30" : "border-border/60"
+      }`}
+    >
       <Link
         to={`${base}/${entry.id}`}
-        className={`group flex h-full flex-col overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 ${
-          highlight ? "border-primary/30" : "border-border/60"
-        }`}
+        className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action"
       >
         <div
           className={`flex items-center justify-center overflow-hidden bg-surface ${highlight ? "h-64" : "h-52"}`}
@@ -100,13 +116,62 @@ export function RadarBikeCard({ entry, highlight = false }: Props) {
               <LineChart className="h-4 w-4" aria-hidden="true" /> Ver bike e
               histórico
             </span>
-            <p className="text-xs text-muted-foreground">
-              Status: oferta atual registrada no Radar. Preço e disponibilidade
-              podem mudar.
-            </p>
           </div>
         </div>
       </Link>
+      <div className="space-y-2 px-5 pb-5">
+        <div className="flex items-center gap-2">
+          {onPriceAlert && (
+            <button
+              type="button"
+              onClick={onPriceAlert}
+              aria-label={`Cadastrar alerta de preço para ${entry.name}`}
+              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-action bg-mint/20 px-3 py-2 text-sm font-semibold text-action hover:bg-mint/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+            >
+              <BellRing className="h-4 w-4 shrink-0" aria-hidden="true" />{" "}
+              Alerta de preço
+            </button>
+          )}
+          {favorite && (
+            <button
+              type="button"
+              aria-label={`${favorite.saved ? "Remover dos favoritos" : "Favoritar"}: ${entry.name}`}
+              title={
+                favorite.saved
+                  ? "Remover dos favoritos"
+                  : "Salvar nos favoritos — requer login"
+              }
+              aria-pressed={favorite.saved}
+              aria-busy={favorite.busy}
+              disabled={favorite.disabled || favorite.busy}
+              onClick={favorite.onToggle}
+              className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:opacity-50 ${favorite.saved ? "border-action bg-action text-primary-foreground" : "border-line text-action hover:bg-mint/20"}`}
+            >
+              {favorite.busy ? (
+                <LoaderCircle
+                  className="h-5 w-5 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Heart
+                  className="h-5 w-5"
+                  fill={favorite.saved ? "currentColor" : "none"}
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          )}
+        </div>
+        {favorite?.error && (
+          <p role="alert" className="text-xs text-destructive">
+            {favorite.error}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Status: oferta atual registrada no Radar. Preço e disponibilidade
+          podem mudar.
+        </p>
+      </div>
     </article>
   );
 }

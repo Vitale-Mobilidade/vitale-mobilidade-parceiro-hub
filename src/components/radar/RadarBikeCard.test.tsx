@@ -28,7 +28,18 @@ describe("RadarBikeCard", () => {
       metrics: { typicalPrice: 6731 },
     } as RadarEntry;
 
-    const html = renderToStaticMarkup(<RadarBikeCard entry={entry} />);
+    const html = renderToStaticMarkup(
+      <RadarBikeCard
+        entry={entry}
+        onPriceAlert={() => {}}
+        favorite={{
+          saved: true,
+          busy: false,
+          disabled: false,
+          onToggle: () => {},
+        }}
+      />,
+    );
     const link = html.match(
       /<a\b[^>]*href="\/radar\/v9_pro"[^>]*>([\s\S]*?)<\/a>/,
     );
@@ -38,5 +49,12 @@ describe("RadarBikeCard", () => {
     expect(link![1]).toContain("V9 Pro");
     expect(link![1]).toContain("Ver bike e histórico");
     expect(link![1]).not.toContain("<a ");
+    expect(link![1]).not.toContain("<button");
+    expect(html).toContain(
+      'aria-label="Cadastrar alerta de preço para V9 Pro"',
+    );
+    expect(html).toContain('aria-label="Remover dos favoritos: V9 Pro"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Alerta de preço");
   });
 });
