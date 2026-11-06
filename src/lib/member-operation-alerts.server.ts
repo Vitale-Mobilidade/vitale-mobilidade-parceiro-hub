@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+const OPERATION_ALERT_COPY = "lucasvitale@hotmail.com";
+
 const eventSchema = z.object({
   id: z.string().uuid(),
   lease_token: z.string().uuid(),
@@ -64,6 +66,9 @@ export function operationAlertMessage(alert: Alert) {
   return {
     from: alert.delivery_from,
     to: [alert.delivery_to],
+    ...(alert.delivery_to.toLowerCase() !== OPERATION_ALERT_COPY
+      ? { cc: [OPERATION_ALERT_COPY] }
+      : {}),
     subject,
     text: `${subject}\n\n${lines.join("\n")}\n\n${action}: ${url}\nPainel: https://vitalemobilidade.com/admin/comunidade`,
     html: `<div style="font-family:Arial,sans-serif;color:#143d32;max-width:600px;margin:auto;padding:28px"><p style="font-weight:bold">VITALE MOBILIDADE</p><h1 style="font-size:24px">${escape(subject)}</h1>${lines.map((line) => `<p style="line-height:1.6">${escape(line)}</p>`).join("")}<p style="margin-top:28px"><a href="${url}" style="display:inline-block;background:#087b57;color:white;padding:14px 20px;border-radius:8px;text-decoration:none;font-weight:bold">${action}</a></p><p style="font-size:12px;color:#687a73">Aviso administrativo da Vitale Mobilidade.</p></div>`,

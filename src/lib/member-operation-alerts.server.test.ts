@@ -50,6 +50,7 @@ describe("administrative member alerts", () => {
       "https://vitalemobilidade.com/admin/comunidade",
     );
     expect(body.to).toEqual(["owner@example.invalid"]);
+    expect(body.cc).toEqual(["lucasvitale@hotmail.com"]);
   });
   it("includes actual paid listing and original expiry, without card or phone data", () => {
     const paid = {
@@ -65,6 +66,7 @@ describe("administrative member alerts", () => {
     };
     const body = operationAlertMessage(paid);
     expect(body.subject).toContain("anúncio publicado");
+    expect(body.cc).toEqual(["lucasvitale@hotmail.com"]);
     expect(body.text).toContain("R$150,00");
     expect(body.text).toContain("03/02/2027, 22:30");
     expect(body.html).toContain("&lt;script&gt;");
@@ -87,6 +89,14 @@ describe("administrative member alerts", () => {
     expect(db.rpc).not.toHaveBeenCalled();
     expect(request).not.toHaveBeenCalled();
   });
+  it("does not duplicate Lucas when he is the primary recipient", () => {
+    const body = operationAlertMessage({
+      ...base,
+      delivery_to: "LUCASVITALE@HOTMAIL.COM",
+    });
+    expect(body.to).toEqual(["LUCASVITALE@HOTMAIL.COM"]);
+    expect(body.cc).toBeUndefined();
+  });
   it("sends through the existing gateway with a stable event key and acknowledges acceptance", async () => {
     vi.stubEnv("LOVABLE_API_KEY", "synthetic-gateway");
     const db = database(),
@@ -106,6 +116,7 @@ describe("administrative member alerts", () => {
     });
     expect(options.redirect).toBe("manual");
     expect(JSON.parse(options.body).to).toEqual([base.delivery_to]);
+    expect(JSON.parse(options.body).cc).toEqual(["lucasvitale@hotmail.com"]);
     expect(db.rpc).toHaveBeenLastCalledWith("member_operation_alert_finish", {
       p_id: base.id,
       p_lease: base.lease_token,
@@ -187,6 +198,7 @@ describe("administrative member alerts", () => {
     );
     await deliverMemberOperationAlerts(db, request);
     expect((request.mock.calls[0][1] as RequestInit).body).toBe(original);
+    expect(JSON.parse(original)).not.toHaveProperty("cc");
   });
   it("mail or queue acknowledgement failure never throws into billing", async () => {
     const db = database();
