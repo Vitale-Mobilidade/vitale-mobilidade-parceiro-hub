@@ -6,12 +6,14 @@ no TCP listener, Supabase secrets, production data, SMTP or external integration
 """
 import concurrent.futures
 import getpass
+import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 
+if "--notifications" in sys.argv: sys.argv.append("--seller")
 if "--seller" in sys.argv: sys.argv.append("--launch")
 if "--google" in sys.argv: sys.argv.append("--identity")
 if "--launch" in sys.argv: sys.argv.append("--classifieds")
@@ -237,6 +239,24 @@ COMMIT;
             refund=sql("UPDATE public.member_identity_verifications SET phone_number='+5511999999998' WHERE user_id='00000000-0000-4000-8000-000000000091'; UPDATE public.member_bike_listings SET status='published',contact_consent_at=now() WHERE id=(SELECT listing_id FROM public.member_listing_billing WHERE user_id='00000000-0000-4000-8000-000000000091' LIMIT 1); UPDATE public.member_listing_payment_cycles SET status='REFUNDED',paid=false; SELECT public.member_billing_recalculate(id) FROM public.member_listing_billing; SELECT count(*)=0 FROM public.member_bike_listings WHERE id IN ('00000000-0000-4000-8000-000000000781','00000000-0000-4000-8000-000000000782') AND status='published';")
             assert refund.returncode==0 and " t" in refund.stdout,refund.stderr
             print("PASS refund reconciliation withdraws the reassigned bike")
+            if "--notifications" in sys.argv:
+                for path in ["supabase/migrations/20261106013000_member_operation_alerts.sql","tests/member-operation-alerts.sql"]:
+                    result=sql((repo/path).read_text())
+                    if result.returncode: raise RuntimeError(f"{path}: {result.stderr[-4000:]}")
+                    print(f"PASS {path}")
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    claims=list(executor.map(sql,["SELECT jsonb_agg(id) FROM public.member_operation_alert_claim();"]*2))
+                assert all(c.returncode==0 for c in claims),str([c.stderr for c in claims])
+                ids=[json.loads(next(line.strip() for line in c.stdout.splitlines() if line.strip().startswith("["))) for c in claims]
+                assert len(ids[0])==len(ids[1])==2 and not set(ids[0]) & set(ids[1]),"Duplicate concurrent mail claim"
+                print("PASS concurrent alert workers claim disjoint batches")
+                count=sql("SELECT count(*) FROM public.member_operation_alerts;").stdout
+                rollback=sql((repo/"supabase/rollback/20261106013000_member_operation_alerts.sql").read_text())
+                assert rollback.returncode==0,rollback.stderr
+                invariant=sql("SELECT NOT enabled AND NOT has_function_privilege('service_role','public.member_operation_alert_claim()','EXECUTE') FROM public.member_operation_alert_settings;")
+                assert invariant.returncode==0 and " t" in invariant.stdout,invariant.stderr
+                assert sql("SELECT count(*) FROM public.member_operation_alerts;").stdout==count,"Rollback lost alert history"
+                print("PASS alert rollback disables delivery and preserves private history")
             rollback=sql((repo/"supabase/rollback/20261105230000_classifieds_seller_experience.sql").read_text())
             assert rollback.returncode==0,rollback.stderr
             invariant=sql("SELECT NOT has_function_privilege('anon','public.member_listing_track(uuid,text,uuid)','EXECUTE') AND to_regprocedure('public.member_classifieds(text,jsonb)') IS NOT NULL AND (SELECT count(*)>0 FROM public.member_listing_period_transfers);")

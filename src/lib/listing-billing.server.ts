@@ -1,6 +1,7 @@
 import { CHECKOUT_WINDOW_MINUTES, CHECKOUT_WINDOW_MS } from "./checkout-window";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "node:crypto";
+import { deliverMemberOperationAlerts } from "./member-operation-alerts.server";
 import { z } from "zod";
 import {
   AsaasClient,
@@ -634,6 +635,7 @@ export async function listingBillingWorker(request: Request) {
     );
     if (error || authorized !== true)
       return result({ error: "forbidden" }, 403);
+    await deliverMemberOperationAlerts(db);
     if (!process.env.ASAAS_API_KEY || !process.env.ASAAS_WEBHOOK_TOKEN)
       return result({ ok: false, configured: false }, 503);
     const api = provider();
