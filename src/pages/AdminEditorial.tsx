@@ -37,6 +37,8 @@ import { composeCover } from "@/lib/cover-compose";
 import { isEditorialCoverUrl } from "../../supabase/functions/_shared/editorial-cover";
 import type { EditorialBrief } from "../../supabase/functions/_shared/editorial-foundation";
 import { Growth } from "@/components/admin/GrowthDashboard";
+import { adminClassifiedsCall } from "@/lib/admin-classifieds-api";
+import { memberMetricsSchema } from "@/lib/admin-classifieds";
 export { Growth } from "@/components/admin/GrowthDashboard";
 
 
@@ -119,6 +121,11 @@ function Overview({ role }: { role: AdminRole }) {
   const audience = useQuery({ queryKey: ["admin", "newsletter", "operation"], queryFn: () => newsletterCall<NewsletterAdminState>(), enabled: role === "admin", staleTime: 60_000, retry: false });
   const metrics = useQuery({ queryKey: ["admin", "newsletter", "metrics"], queryFn: () => newsletterCall<NewsletterMetrics>("metrics"), enabled: role === "admin", staleTime: 60_000, retry: false });
   const data = overview.data ?? null;
+  const community = useQuery({
+    queryKey: ["admin", "community", "overview"],
+    queryFn: async () => memberMetricsSchema.parse(await adminClassifiedsCall("metrics", { days: 1 })),
+    enabled: role === "admin", staleTime: 60_000, retry: false,
+  });
   const error = overview.error ? queryError(overview.error, "Não foi possível carregar a operação.") : "";
   const videoCatalogCount = videoCatalog.data?.length ?? null;
   return (
@@ -151,12 +158,12 @@ function Overview({ role }: { role: AdminRole }) {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {[
               ["Vídeos na planilha", videoCatalogCount ?? "—"],
-              ["Com artigo", data.videosWithArticle ?? "—"],
               ["Artigos publicados", data.articles.published ?? 0],
               ["Bikes no catálogo", data.bikes],
               ...(role === "admin" ? [
                 ["Newsletter · total de cadastros", audience.data?.audience.total ?? "—"],
                 ["Radar · pessoas com alertas ativos", metrics.data?.radarPeople ?? "—"],
+                ["Usuários cadastrados", community.data?.members ?? "—"],
               ] : []),
             ].map(([label, value]) => (
               label === "Radar · pessoas com alertas ativos"
@@ -168,8 +175,9 @@ function Overview({ role }: { role: AdminRole }) {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Newsletter: total histórico de cadastros; ativos e descadastrados no painel Newsletter. Radar: pessoas distintas por telefone com alerta ativo e consentimento; não representa mensagens entregues.
+            Usuários cadastrados: perfis que concluíram o cadastro na comunidade. Newsletter: total histórico de cadastros; ativos e descadastrados no painel Newsletter. Radar: pessoas distintas por telefone com alerta ativo e consentimento; não representa mensagens entregues.
           </p>
+          {role === "admin" && community.isError && <Notice danger>Não foi possível carregar os usuários cadastrados. <button className="underline" onClick={() => void community.refetch()}>Tentar novamente</button></Notice>}
           {role === "admin" && (audience.isError || metrics.isError) && <Notice danger>Não foi possível carregar parte das métricas de audiência. <button className="underline" onClick={() => { void audience.refetch(); void metrics.refetch(); }}>Tentar novamente</button></Notice>}
           <div className={`${PANEL} mt-5`}>
             <h2 className="text-lg font-semibold">Sincronização da planilha</h2>
