@@ -1278,6 +1278,27 @@ export type Database = {
           },
         ]
       }
+      member_account_removals: {
+        Row: {
+          actor_id: string
+          completed_at: string | null
+          requested_at: string
+          user_id: string
+        }
+        Insert: {
+          actor_id: string
+          completed_at?: string | null
+          requested_at?: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string
+          completed_at?: string | null
+          requested_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       member_article_comments: {
         Row: {
           article_id: string
@@ -1334,13 +1355,18 @@ export type Database = {
           battery: string
           bike_id: string | null
           brand: string
+          channel_expires_at: string | null
+          channel_whatsapp: string | null
           city: string
           condition: string
+          confirmed_phone: string | null
+          contact_confirmed_at: string | null
           contact_consent_at: string | null
           created_at: string
           description: string
           fee_cents: number
           fee_status: string
+          first_published_at: string | null
           id: string
           invoice: boolean
           maintenance: string
@@ -1349,23 +1375,30 @@ export type Database = {
           model_year: number | null
           price_cents: number
           published_at: string | null
+          seller_kind: string
           state: string
           status: string
           title: string
           updated_at: string
           user_id: string
+          whatsapp_message: string
         }
         Insert: {
           battery?: string
           bike_id?: string | null
           brand?: string
+          channel_expires_at?: string | null
+          channel_whatsapp?: string | null
           city?: string
           condition?: string
+          confirmed_phone?: string | null
+          contact_confirmed_at?: string | null
           contact_consent_at?: string | null
           created_at?: string
           description?: string
           fee_cents?: number
           fee_status?: string
+          first_published_at?: string | null
           id?: string
           invoice?: boolean
           maintenance?: string
@@ -1374,23 +1407,30 @@ export type Database = {
           model_year?: number | null
           price_cents?: number
           published_at?: string | null
+          seller_kind?: string
           state?: string
           status?: string
           title?: string
           updated_at?: string
           user_id: string
+          whatsapp_message?: string
         }
         Update: {
           battery?: string
           bike_id?: string | null
           brand?: string
+          channel_expires_at?: string | null
+          channel_whatsapp?: string | null
           city?: string
           condition?: string
+          confirmed_phone?: string | null
+          contact_confirmed_at?: string | null
           contact_consent_at?: string | null
           created_at?: string
           description?: string
           fee_cents?: number
           fee_status?: string
+          first_published_at?: string | null
           id?: string
           invoice?: boolean
           maintenance?: string
@@ -1399,11 +1439,13 @@ export type Database = {
           model_year?: number | null
           price_cents?: number
           published_at?: string | null
+          seller_kind?: string
           state?: string
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
+          whatsapp_message?: string
         }
         Relationships: [
           {
@@ -1511,6 +1553,7 @@ export type Database = {
           enabled: boolean
           listing_fee_cents: number
           pilot_user_id: string | null
+          public_enabled: boolean
           singleton: boolean
         }
         Insert: {
@@ -1518,6 +1561,7 @@ export type Database = {
           enabled?: boolean
           listing_fee_cents?: number
           pilot_user_id?: string | null
+          public_enabled?: boolean
           singleton?: boolean
         }
         Update: {
@@ -1525,6 +1569,7 @@ export type Database = {
           enabled?: boolean
           listing_fee_cents?: number
           pilot_user_id?: string | null
+          public_enabled?: boolean
           singleton?: boolean
         }
         Relationships: []
@@ -1543,6 +1588,61 @@ export type Database = {
           singleton?: boolean
         }
         Relationships: []
+      }
+      member_courtesy_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          courtesy_id: string
+          created_at: string
+          from_listing_id: string | null
+          id: number
+          reason: string | null
+          to_listing_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          courtesy_id: string
+          created_at?: string
+          from_listing_id?: string | null
+          id?: never
+          reason?: string | null
+          to_listing_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          courtesy_id?: string
+          created_at?: string
+          from_listing_id?: string | null
+          id?: never
+          reason?: string | null
+          to_listing_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_courtesy_audit_courtesy_id_fkey"
+            columns: ["courtesy_id"]
+            isOneToOne: false
+            referencedRelation: "member_listing_courtesies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_courtesy_audit_from_listing_id_fkey"
+            columns: ["from_listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_courtesy_audit_to_listing_id_fkey"
+            columns: ["to_listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_identity_challenges: {
         Row: {
@@ -1662,6 +1762,7 @@ export type Database = {
           provider_billing_type: string | null
           publish_requested: boolean
           purchase_accepted_at: string | null
+          purchased_listing_id: string
           qr_expires_at: string | null
           renewal_status: string | null
           status: string
@@ -1704,6 +1805,7 @@ export type Database = {
           provider_billing_type?: string | null
           publish_requested?: boolean
           purchase_accepted_at?: string | null
+          purchased_listing_id: string
           qr_expires_at?: string | null
           renewal_status?: string | null
           status?: string
@@ -1746,6 +1848,7 @@ export type Database = {
           provider_billing_type?: string | null
           publish_requested?: boolean
           purchase_accepted_at?: string | null
+          purchased_listing_id?: string
           qr_expires_at?: string | null
           renewal_status?: string | null
           status?: string
@@ -1756,6 +1859,105 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "member_listing_billing_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_listing_billing_purchased_listing_id_fkey"
+            columns: ["purchased_listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_listing_courtesies: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          listing_id: string | null
+          reason: string
+          request_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          started_at: string | null
+          unit: number
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          listing_id?: string | null
+          reason: string
+          request_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          started_at?: string | null
+          unit: number
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          listing_id?: string | null
+          reason?: string
+          request_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          started_at?: string | null
+          unit?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_listing_courtesies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_listing_courtesies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      member_listing_events: {
+        Row: {
+          day: string
+          event: string
+          listing_id: string
+          visitor_key: string
+        }
+        Insert: {
+          day?: string
+          event: string
+          listing_id: string
+          visitor_key: string
+        }
+        Update: {
+          day?: string
+          event?: string
+          listing_id?: string
+          visitor_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_listing_events_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "member_bike_listings"
@@ -1797,6 +1999,55 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "member_listing_billing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_listing_period_transfers: {
+        Row: {
+          from_listing_id: string
+          id: number
+          order_id: string
+          to_listing_id: string
+          transferred_at: string
+          user_id: string
+        }
+        Insert: {
+          from_listing_id: string
+          id?: never
+          order_id: string
+          to_listing_id: string
+          transferred_at?: string
+          user_id: string
+        }
+        Update: {
+          from_listing_id?: string
+          id?: never
+          order_id?: string
+          to_listing_id?: string
+          transferred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_listing_period_transfers_from_listing_id_fkey"
+            columns: ["from_listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_listing_period_transfers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "member_listing_billing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_listing_period_transfers_to_listing_id_fkey"
+            columns: ["to_listing_id"]
+            isOneToOne: false
+            referencedRelation: "member_bike_listings"
             referencedColumns: ["id"]
           },
         ]
@@ -1866,6 +2117,87 @@ export type Database = {
         }
         Relationships: []
       }
+      member_operation_alert_settings: {
+        Row: {
+          enabled: boolean
+          recipient: string | null
+          singleton: boolean
+          starts_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          recipient?: string | null
+          singleton?: boolean
+          starts_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          recipient?: string | null
+          singleton?: boolean
+          starts_at?: string
+        }
+        Relationships: []
+      }
+      member_operation_alerts: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          available_at: string
+          created_at: string
+          delivery_body: string | null
+          delivery_from: string | null
+          delivery_to: string | null
+          error_code: string | null
+          event_kind: string
+          first_attempt_at: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          payload: Json
+          provider_id: string | null
+          source_id: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          delivery_body?: string | null
+          delivery_from?: string | null
+          delivery_to?: string | null
+          error_code?: string | null
+          event_kind: string
+          first_attempt_at?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          payload: Json
+          provider_id?: string | null
+          source_id: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          delivery_body?: string | null
+          delivery_from?: string | null
+          delivery_to?: string | null
+          error_code?: string | null
+          event_kind?: string
+          first_attempt_at?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          payload?: Json
+          provider_id?: string | null
+          source_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       member_profiles: {
         Row: {
           avatar_asset_id: string | null
@@ -1929,6 +2261,32 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "newsletter_subscriptions"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_radar_favorites: {
+        Row: {
+          bike_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_radar_favorites_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["bike_id"]
           },
         ]
       }
@@ -2085,6 +2443,30 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      member_reporting_settings: {
+        Row: {
+          excluded_order_ids: string[]
+          note: string
+          singleton: boolean
+          tracking_since: string | null
+          updated_at: string
+        }
+        Insert: {
+          excluded_order_ids?: string[]
+          note?: string
+          singleton?: boolean
+          tracking_since?: string | null
+          updated_at?: string
+        }
+        Update: {
+          excluded_order_ids?: string[]
+          note?: string
+          singleton?: boolean
+          tracking_since?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       newsletter_campaigns: {
         Row: {
@@ -3225,6 +3607,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_channel_classifieds: {
+        Args: { p_action?: string; p_actor: string; p_payload?: Json }
+        Returns: Json
+      }
+      admin_channel_classifieds_before_seller_experience: {
+        Args: { p_action: string; p_actor: string; p_payload?: Json }
+        Returns: Json
+      }
+      admin_community_manage: {
+        Args: { p_action: string; p_actor: string; p_payload?: Json }
+        Returns: Json
+      }
+      admin_community_manage_before_workspace: {
+        Args: { p_action: string; p_actor: string; p_payload?: Json }
+        Returns: Json
+      }
       admin_heatmap: {
         Args: {
           p_days: number
@@ -3242,6 +3640,29 @@ export type Database = {
           p_screen: string
           p_viewport: number
         }
+        Returns: Json
+      }
+      admin_listing_summary: { Args: { p_id: string }; Returns: Json }
+      admin_member_metrics: {
+        Args: { p_actor: string; p_days?: number }
+        Returns: Json
+      }
+      admin_member_metrics_before_reporting_start: {
+        Args: { p_actor: string; p_days?: number }
+        Returns: Json
+      }
+      admin_member_period_metrics: {
+        Args: {
+          p_actor: string
+          p_end?: string
+          p_period?: string
+          p_start?: string
+        }
+        Returns: Json
+      }
+      admin_member_summary: { Args: { p_id: string }; Returns: Json }
+      admin_member_summary_before_workspace: {
+        Args: { p_id: string }
         Returns: Json
       }
       admin_quiz_bike_counts_range: {
@@ -3352,6 +3773,10 @@ export type Database = {
         }
         Returns: Json
       }
+      member_available_periods: {
+        Args: { p_actor: string; p_target: string }
+        Returns: Json
+      }
       member_bike_image_public: { Args: { p_id: string }; Returns: string }
       member_bike_listings_public: {
         Args: { p_id?: string; p_limit?: number; p_offset?: number }
@@ -3408,6 +3833,7 @@ export type Database = {
           provider_billing_type: string | null
           publish_requested: boolean
           purchase_accepted_at: string | null
+          purchased_listing_id: string
           qr_expires_at: string | null
           renewal_status: string | null
           status: string
@@ -3481,6 +3907,7 @@ export type Database = {
           provider_billing_type: string | null
           publish_requested: boolean
           purchase_accepted_at: string | null
+          purchased_listing_id: string
           qr_expires_at: string | null
           renewal_status: string | null
           status: string
@@ -3497,6 +3924,10 @@ export type Database = {
       }
       member_billing_dispatch: { Args: never; Returns: number }
       member_billing_expire_periods: { Args: never; Returns: undefined }
+      member_billing_expire_periods_before_courtesies: {
+        Args: never
+        Returns: undefined
+      }
       member_billing_purchase: {
         Args: {
           p_accepted: boolean
@@ -3506,7 +3937,29 @@ export type Database = {
         }
         Returns: Json
       }
+      member_billing_purchase_before_courtesies: {
+        Args: {
+          p_accepted: boolean
+          p_actor: string
+          p_contact: boolean
+          p_id: string
+        }
+        Returns: Json
+      }
+      member_billing_purchase_before_seller_experience: {
+        Args: {
+          p_accepted: boolean
+          p_actor: string
+          p_contact: boolean
+          p_id: string
+        }
+        Returns: Json
+      }
       member_billing_recalculate: {
+        Args: { p_order: string }
+        Returns: undefined
+      }
+      member_billing_recalculate_before_seller_experience: {
         Args: { p_order: string }
         Returns: undefined
       }
@@ -3521,7 +3974,34 @@ export type Database = {
         }
         Returns: undefined
       }
+      member_billing_record_payment_before_seller_experience: {
+        Args: {
+          p_due: string
+          p_observed: string
+          p_order: string
+          p_paid: boolean
+          p_payment: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      member_claim_period: {
+        Args: { p_actor: string; p_order: string; p_target: string }
+        Returns: undefined
+      }
+      member_claim_period_before_courtesies: {
+        Args: { p_actor: string; p_order: string; p_target: string }
+        Returns: undefined
+      }
       member_classifieds: {
+        Args: { p_action?: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_classifieds_before_courtesies: {
+        Args: { p_action?: string; p_payload?: Json }
+        Returns: Json
+      }
+      member_classifieds_before_seller_experience: {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
       }
@@ -3535,6 +4015,12 @@ export type Database = {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
       }
+      member_courtesy_entitled: { Args: { p_id: string }; Returns: boolean }
+      member_courtesy_periods: {
+        Args: { p_actor: string; p_target: string }
+        Returns: Json
+      }
+      member_google_email: { Args: never; Returns: Json }
       member_identity: {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
@@ -3545,21 +4031,115 @@ export type Database = {
       }
       member_identity_verified: { Args: { p_user: string }; Returns: boolean }
       member_listing_entitled: { Args: { p_id: string }; Returns: boolean }
+      member_listing_entitled_before_courtesies: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      member_listing_has_content: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
+        }
+        Returns: boolean
+      }
       member_listing_json: {
         Args: {
           p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
         }
         Returns: Json
       }
+      member_listing_json_before_courtesies: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
+        }
+        Returns: Json
+      }
+      member_listing_json_before_seller_experience: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["member_bike_listings"]["Row"]
+        }
+        Returns: Json
+      }
+      member_listing_metrics: { Args: { p_id: string }; Returns: Json }
+      member_listing_reorder: {
+        Args: { p_id: string; p_images: Json }
+        Returns: undefined
+      }
+      member_listing_track: {
+        Args: { p_event: string; p_id: string; p_visitor: string }
+        Returns: undefined
+      }
+      member_listing_visible: { Args: { p_id: string }; Returns: boolean }
+      member_listing_visible_before_seller_experience: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
       member_media_access: {
         Args: { p_operation: string; p_path: string }
         Returns: boolean
+      }
+      member_metrics_between: {
+        Args: { p_end: string; p_start: string }
+        Returns: Json
+      }
+      member_operation_alert_claim: {
+        Args: never
+        Returns: {
+          accepted_at: string | null
+          attempts: number
+          available_at: string
+          created_at: string
+          delivery_body: string | null
+          delivery_from: string | null
+          delivery_to: string | null
+          error_code: string | null
+          event_kind: string
+          first_attempt_at: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          payload: Json
+          provider_id: string | null
+          source_id: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "member_operation_alerts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      member_operation_alert_finish: {
+        Args: {
+          p_error?: string
+          p_id: string
+          p_lease: string
+          p_provider?: string
+        }
+        Returns: boolean
+      }
+      member_operation_alert_prepare: {
+        Args: { p_body: string; p_id: string; p_lease: string }
+        Returns: string
       }
       member_password_recovery_budget: {
         Args: { p_email: string; p_fingerprint: string }
         Returns: boolean
       }
+      member_radar_favorites: {
+        Args: { p_action: string; p_bike_id?: string; p_saved?: boolean }
+        Returns: Json
+      }
       member_referrals: { Args: never; Returns: Json }
+      member_reporting_period: {
+        Args: {
+          p_end?: string
+          p_now?: string
+          p_period: string
+          p_start?: string
+        }
+        Returns: Json
+      }
       newsletter_acquire: { Args: never; Returns: string }
       newsletter_authorize: {
         Args: { issued_at: string; signature: string }
