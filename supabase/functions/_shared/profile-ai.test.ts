@@ -155,6 +155,22 @@ describe("buildProfilePrompt", () => {
     expect(user).toContain(BEST_FOR_ENUM[0]);
     expect(user).toContain(TERRAINS_ENUM[0]);
   });
+
+  it("preserva a descrição inteira quando a ficha técnica aparece depois do caractere 2.500", () => {
+    const description = [
+      "Bicicleta elétrica com duas baterias removíveis. ".repeat(90),
+      "Ficha técnica",
+      "Capacidade máxima informada: até aproximadamente 150 kg",
+    ].join("\n");
+
+    const { user } = buildProfilePrompt({
+      id: "z8_pro",
+      name: "Z8 Pro",
+      description,
+    });
+
+    expect(user).toContain(`Descrição: ${description}\n`);
+  });
 });
 
 describe("guarda de jobs legados (regra pura)", () => {
