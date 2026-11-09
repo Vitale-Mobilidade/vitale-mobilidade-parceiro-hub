@@ -2841,6 +2841,51 @@ export type Database = {
         }
         Relationships: []
       }
+      podcast_audio_settings: {
+        Row: {
+          enabled: boolean
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      podcast_video_audio: {
+        Row: {
+          attached_by: string
+          file_name: string
+          object_path: string
+          size_bytes: number
+          upload_id: string
+          uploaded_at: string
+          youtube_id: string
+        }
+        Insert: {
+          attached_by: string
+          file_name: string
+          object_path: string
+          size_bytes: number
+          upload_id: string
+          uploaded_at: string
+          youtube_id: string
+        }
+        Update: {
+          attached_by?: string
+          file_name?: string
+          object_path?: string
+          size_bytes?: number
+          upload_id?: string
+          uploaded_at?: string
+          youtube_id?: string
+        }
+        Relationships: []
+      }
       price_alert_hotpipe_outbox: {
         Row: {
           alert_id: string
@@ -3698,6 +3743,16 @@ export type Database = {
       admin_site_analytics_metrics: { Args: { p_since: string }; Returns: Json }
       admin_site_analytics_range: {
         Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
+      attach_podcast_video_audio: {
+        Args: {
+          p_actor: string
+          p_file_name: string
+          p_size: number
+          p_upload_id: string
+          p_youtube_id: string
+        }
         Returns: Json
       }
       authorize_price_alert_hotpipe: {
