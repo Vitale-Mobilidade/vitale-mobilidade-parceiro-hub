@@ -1,6 +1,14 @@
 // Contrato de metadata SSR (Etapa 2). Base canônica fixa, sem query/UTM/hash.
 export const SITE_URL = "https://vitalemobilidade.com";
 export const SITE_NAME = "Vitale Mobilidade";
+export const SITE_ORGANIZATION_ID = `${SITE_URL}/#organization`;
+export const SITE_DESCRIPTION =
+  "A Vitale Mobilidade é um canal brasileiro no YouTube e um site sobre bicicletas elétricas. Publicamos testes práticos, comparativos e guias, e acompanhamos preços no Radar.";
+export const SITE_FOUNDER = {
+  name: "Lucas Vitale",
+  anchor: "lucas-vitale",
+  profile: "https://www.linkedin.com/in/lucasvitale1/",
+};
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og/vitale-home-20260930-1200x630.jpg`;
 
 /** Each public non-article page has a share card with its own subject in the pixels. */

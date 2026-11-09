@@ -31,6 +31,7 @@ describe("fundação TanStack Start — rotas", () => {
   it.each([
     ["/", "/"],
     ["/videos", "/videos"],
+    ["/sobre", "/sobre"],
     ["/newsletter", "/newsletter"],
     ["/quiz", "/quiz"],
     ["/escolherbike", "/escolherbike"],

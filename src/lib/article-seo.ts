@@ -1,12 +1,12 @@
 import type { PublishedArticle } from "@/components/editorial/ArticleView";
 import type { VideoCard } from "@/lib/videos.functions";
-import { canonicalUrl, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { canonicalUrl, SITE_NAME, SITE_ORGANIZATION_ID } from "@/lib/seo";
 
 export const EDITORIAL_AUTHOR = {
   "@type": "Organization",
   name: SITE_NAME,
-  url: `${SITE_URL}/`,
-  "@id": `${SITE_URL}/#organization`,
+  url: canonicalUrl("/"),
+  "@id": SITE_ORGANIZATION_ID,
 };
 
 /** Build the public source link from a validated ID, never an external catalog URL. */

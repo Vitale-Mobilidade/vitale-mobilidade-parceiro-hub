@@ -22,6 +22,7 @@ import { siteAnalytics } from "@/lib/site-analytics";
 import { trackGooglePageView } from "@/lib/gtm-script";
 import { safeVideos } from "@/lib/videos.functions";
 import { SOCIAL_LINKS } from "@/lib/social-links";
+import { SITE_DESCRIPTION, SITE_FOUNDER, SITE_NAME, SITE_ORGANIZATION_ID, SITE_URL, canonicalUrl } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
 const TITLE = "Vitale Mobilidade | Escolher e acompanhar preços de bikes elétricas";
@@ -32,14 +33,17 @@ const DESCRIPTION =
 const ORG_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "@id": "https://vitalemobilidade.com/#organization",
-  name: "Vitale Mobilidade",
-  url: "https://vitalemobilidade.com/",
-  logo: "https://vitalemobilidade.com/logo-192.webp",
+  "@id": SITE_ORGANIZATION_ID,
+  name: SITE_NAME,
+  url: canonicalUrl("/"),
+  description: SITE_DESCRIPTION,
+  logo: `${SITE_URL}/logo-192.webp`,
+  mainEntityOfPage: { "@id": canonicalUrl("/sobre") },
   founder: {
     "@type": "Person",
-    name: "Lucas Vitale",
-    sameAs: "https://www.linkedin.com/in/lucasvitale1/",
+    name: SITE_FOUNDER.name,
+    url: `${canonicalUrl("/sobre")}#${SITE_FOUNDER.anchor}`,
+    sameAs: SITE_FOUNDER.profile,
   },
   sameAs: SOCIAL_LINKS.map((profile) => profile.url),
 };
@@ -47,10 +51,10 @@ const ORG_JSONLD = {
 const SITE_JSONLD = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "Vitale Mobilidade",
-  url: "https://vitalemobilidade.com/",
+  name: SITE_NAME,
+  url: canonicalUrl("/"),
   inLanguage: "pt-BR",
-  publisher: { "@id": "https://vitalemobilidade.com/#organization" },
+  publisher: { "@id": SITE_ORGANIZATION_ID },
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({

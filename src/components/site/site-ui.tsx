@@ -142,7 +142,7 @@ export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean
     items: {
       label: string;
       href?: string;
-      to?: "/quiz" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos" | "/videos" | "/newsletter";
+      to?: "/quiz" | "/radar" | "/grupodeofertas" | "/ferramentas" | "/conteudos" | "/videos" | "/newsletter" | "/sobre";
     }[];
   }[] = [
     { title: "Conteúdos e vídeos", items: [
@@ -174,6 +174,7 @@ export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean
       { label: "Ver todas as ferramentas →", to: "/ferramentas" },
     ] },
     { title: "Faça parte da Vitale", items: [
+      { label: "Sobre a Vitale Mobilidade", to: "/sobre" },
       { label: "Inscreva-se no YouTube", href: YOUTUBE_SUBSCRIBE },
       { label: "Instagram", href: SOCIAL_LINKS[1].url },
       { label: "TikTok", href: SOCIAL_LINKS[2].url },
