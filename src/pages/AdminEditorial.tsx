@@ -566,6 +566,7 @@ function Videos({ role }: { role: AdminRole }) {
             <form onSubmit={save} className="space-y-4">
               <h2 className="text-lg font-semibold">Editar vídeo</h2>
               <p className="text-xs text-muted-foreground">YouTube ID: {selected.videoId}</p>
+              {role === "admin" && <VideoPodcastAudio key={selected.videoId} videoId={selected.videoId} />}
               <VideoRelatedArticle key={selected.videoId} article={articleMap.get(selected.videoId)} />
               <label className="block text-sm font-medium">
                 Título
@@ -610,7 +611,6 @@ function Videos({ role }: { role: AdminRole }) {
                   placeholder="Cole a transcrição revisada do vídeo."
                 />
               </label>
-              {role === "admin" && <VideoPodcastAudio key={selected.videoId} videoId={selected.videoId} />}
               <div className="flex flex-wrap gap-2">
                 <button className={BTN} disabled={saving}>
                   {saving ? "Salvando…" : "Salvar vídeo"}

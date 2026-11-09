@@ -34,6 +34,12 @@ O aceite é escolher um vídeo, anexar o MP3, recarregar a ficha e ouvir o áudi
 
 ## Gate de release
 
+### Ordem dos campos no Admin
+
+Ajuste pequeno e reversível. O responsável confirmou o primeiro envio no Admin e pediu acesso ao áudio sem percorrer a ficha. Produto, UX e Operação aprovam mostrar o bloco logo após o ID do YouTube, antes do artigo e da transcrição. Arquitetura e QA limitam a mudança à ordem dos elementos no formulário, com a mesma chave e condição de acesso. IA, Segurança e Growth são N/A porque o ajuste não altera geração, permissões nem páginas públicas. O rollback é a volta do bloco à posição anterior.
+
+Revisão local concluída. Produto, UX e Operação conferiram o acesso direto ao bloco na ficha. Arquitetura conferiu a condição de acesso e o vínculo por vídeo. QA validou a ordem no navegador e executou `pnpm validate` com 66 testes e build.
+
 ### Contingência de provisionamento
 
 O comando de criação de bucket do Lovable não oferece a lista de tipos MIME. O Admin cria o bucket pela API de Storage na primeira solicitação de upload feita por um administrador, usando o mesmo limite e mantendo o bucket privado. A migration instala primeiro a política restritiva. A ativação fica em uma configuração privada do banco que começa desligada e permite rollback sem editar segredos. O Admin recusa emitir URLs se o bucket existente estiver fora da configuração esperada.
