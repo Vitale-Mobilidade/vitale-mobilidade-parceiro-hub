@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PainelBikes from "@/pages/PainelBikes";
 import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
 import { VideoRelatedArticle } from "@/components/admin/VideoRelatedArticle";
+import { VideoPodcastAudio } from "@/components/admin/VideoPodcastAudio";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
@@ -391,13 +392,13 @@ export function AdminVideosPage() {
     <AdminShell>
       {(role) => (
         <OnlyEditorial role={role}>
-          <Videos />
+          <Videos role={role} />
         </OnlyEditorial>
       )}
     </AdminShell>
   );
 }
-function Videos() {
+function Videos({ role }: { role: AdminRole }) {
   const queryClient = useQueryClient();
   const sheetQuery = useQuery({
     queryKey: ["admin", "video-catalog"],
@@ -609,6 +610,7 @@ function Videos() {
                   placeholder="Cole a transcrição revisada do vídeo."
                 />
               </label>
+              {role === "admin" && <VideoPodcastAudio key={selected.videoId} videoId={selected.videoId} />}
               <div className="flex flex-wrap gap-2">
                 <button className={BTN} disabled={saving}>
                   {saving ? "Salvando…" : "Salvar vídeo"}
