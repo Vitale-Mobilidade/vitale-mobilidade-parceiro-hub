@@ -10,6 +10,58 @@ type Db = Parameters<typeof handlePodcastAudio>[0];
 
 afterEach(() => vi.unstubAllGlobals());
 
+it("provisions the private MP3 bucket before issuing the first upload URL", async () => {
+  const settings = {
+    public: false,
+    file_size_limit: 52428800,
+    allowed_mime_types: ["audio/mpeg"],
+  };
+  const getBucket = vi
+    .fn()
+    .mockResolvedValueOnce({ data: null })
+    .mockResolvedValueOnce({ data: settings });
+  const createBucket = vi
+    .fn()
+    .mockResolvedValue({ data: { name: "podcast-audio" } });
+  const createSignedUploadUrl = vi
+    .fn()
+    .mockResolvedValue({ data: { token: "test-only" } });
+  const db = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({ data: { youtube_id: youtubeId } }),
+        }),
+      }),
+    }),
+    storage: {
+      from: () => ({ createSignedUploadUrl }),
+      getBucket,
+      createBucket,
+    },
+  } as unknown as Db;
+  const result = await handlePodcastAudio(
+    db,
+    actor,
+    "podcast-audio-reserve",
+    input,
+    true,
+    reply,
+  );
+  expect(result.status).toBe(200);
+  expect(createBucket).toHaveBeenCalledWith("podcast-audio", {
+    public: false,
+    fileSizeLimit: 52428800,
+    allowedMimeTypes: ["audio/mpeg"],
+  });
+  expect(createSignedUploadUrl).toHaveBeenCalledOnce();
+  getBucket.mockResolvedValue({ data: { ...settings, public: true } });
+  await expect(
+    handlePodcastAudio(db, actor, "podcast-audio-reserve", input, true, reply),
+  ).rejects.toThrow("podcast_audio_bucket_configuration_failed");
+  expect(createSignedUploadUrl).toHaveBeenCalledOnce();
+});
+
 it("does not issue upload or preview URLs without the admin role or when disabled", async () => {
   const from = vi.fn();
   const db = { storage: { from } } as unknown as Db;

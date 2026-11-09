@@ -2585,8 +2585,11 @@ Deno.serve(async (req) => {
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
     if (action.startsWith("podcast-audio-")) {
+      const settings = actor.role === "admin"
+        ? await db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle()
+        : null;
       return await handlePodcastAudio(
-        db, actor, action, body, Deno.env.get("PODCAST_AUDIO_ENABLED") === "true",
+        db, actor, action, body, settings?.data?.enabled === true,
         (data, status) => json(req, data, status),
       );
     }
