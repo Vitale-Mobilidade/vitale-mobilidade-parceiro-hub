@@ -107,7 +107,7 @@ uma etapa já encerrada por decisão vigente.
 19. Comparador
 20. Newsletter
 21. Alertas de preço
-22. Podcast
+22. Podcast ([piloto de upload privado](PODCAST_AUDIO_PILOT.md))
 23. Calculadora de economia
 24. Hotpipe IA
 25. Loop de inteligência de conteúdo

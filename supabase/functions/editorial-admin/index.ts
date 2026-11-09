@@ -6,6 +6,7 @@ import { growthRange } from "../_shared/growth-range.ts";
 import { reviewPeers, reviewInputKey, approvedAssessment, repeatedReviewIssues } from "../_shared/editorial-review-cost.ts";
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
+import { handlePodcastAudio } from "./podcast-audio.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { automaticCreationBikeIds, parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
@@ -2583,6 +2584,12 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action.startsWith("podcast-audio-")) {
+      return await handlePodcastAudio(
+        db, actor, action, body, Deno.env.get("PODCAST_AUDIO_ENABLED") === "true",
+        (data, status) => json(req, data, status),
+      );
+    }
     if (action === "sync-video-catalog") {
       if (actor.role !== "admin") return json(req, { error: "Somente Admin pode sincronizar toda a operação." }, 403);
       try { return json(req, await refreshYoutubeQueue(db, actor)); }
