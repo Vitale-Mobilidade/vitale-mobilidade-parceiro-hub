@@ -1,15 +1,25 @@
--- Provision the private bucket through the Lovable Storage UI/API first.
+-- The Admin creates the bucket through the Storage API after these policies are installed.
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
     SELECT 1 FROM storage.buckets
-    WHERE id = 'podcast-audio' AND public IS FALSE
-      AND file_size_limit = 52428800
-      AND allowed_mime_types = ARRAY['audio/mpeg']::text[]
+    WHERE id = 'podcast-audio'
+      AND (public IS DISTINCT FROM FALSE
+        OR file_size_limit IS DISTINCT FROM 52428800
+        OR allowed_mime_types IS DISTINCT FROM ARRAY['audio/mpeg']::text[])
   ) THEN
     RAISE EXCEPTION 'podcast-audio requires a private 50 MiB audio/mpeg bucket';
   END IF;
 END $$;
+
+CREATE TABLE public.podcast_audio_settings (
+  singleton boolean PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+  enabled boolean NOT NULL DEFAULT FALSE
+);
+INSERT INTO public.podcast_audio_settings DEFAULT VALUES;
+ALTER TABLE public.podcast_audio_settings ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.podcast_audio_settings FROM PUBLIC, anon, authenticated, service_role;
+GRANT SELECT ON public.podcast_audio_settings TO service_role;
 
 -- Keep the bucket private even if another feature adds broad Storage policies.
 CREATE POLICY podcast_audio_private ON storage.objects AS RESTRICTIVE

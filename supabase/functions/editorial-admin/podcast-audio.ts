@@ -2,6 +2,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import {
   hasMp3Signature,
   PODCAST_AUDIO_BUCKET,
+  PODCAST_AUDIO_MAX_BYTES,
   validPodcastAudioName,
   validPodcastAudioSize,
 } from "../_shared/podcast-audio-contract.ts";
@@ -12,6 +13,30 @@ const uploadIdPattern =
 const missingAudio = "Envie o MP3 antes de confirmar o anexo.";
 
 type Reply = (data: unknown, status?: number) => Response;
+
+async function verifyOrCreateBucket(
+  storage: SupabaseClient["storage"],
+): Promise<void> {
+  let { data } = await storage.getBucket(PODCAST_AUDIO_BUCKET);
+  if (!data) {
+    await storage.createBucket(PODCAST_AUDIO_BUCKET, {
+      public: false,
+      fileSizeLimit: PODCAST_AUDIO_MAX_BYTES,
+      allowedMimeTypes: ["audio/mpeg"],
+    });
+    // Read the actual configuration even if another request created it first.
+    ({ data } = await storage.getBucket(PODCAST_AUDIO_BUCKET));
+  }
+  if (
+    !data ||
+    data.public !== false ||
+    data.file_size_limit !== PODCAST_AUDIO_MAX_BYTES ||
+    data.allowed_mime_types?.length !== 1 ||
+    data.allowed_mime_types[0] !== "audio/mpeg"
+  ) {
+    throw new Error("podcast_audio_bucket_configuration_failed");
+  }
+}
 
 export async function handlePodcastAudio(
   db: SupabaseClient,
@@ -69,6 +94,7 @@ export async function handlePodcastAudio(
     if (!editorial.data) {
       return reply({ error: "Vídeo não encontrado na biblioteca." }, 404);
     }
+    await verifyOrCreateBucket(db.storage);
     const uploadId = crypto.randomUUID();
     const path = pathFor(uploadId);
     const signed = await storage.createSignedUploadUrl(path, { upsert: false });
