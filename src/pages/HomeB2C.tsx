@@ -22,6 +22,7 @@ import { RadarPanel } from "@/components/home/RadarPanel";
 import type { HomeCard } from "@/lib/home-cards.functions";
 import type { PublishedArticleSummary } from "@/lib/editorial-repository.server";
 import { editorialImageProps } from "@/lib/editorial-images";
+import { SITE_DESCRIPTION } from "@/lib/seo";
 
 /*
  * A Home usa catálogo e artigos publicados das fontes existentes. A newsletter
@@ -56,7 +57,7 @@ export function Hero() {
           Encontre a bike elétrica <span className="text-mint">certa para você</span>
         </h1>
         <p className="entry-lead max-w-xl">
-          Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher.
+          {SITE_DESCRIPTION}
         </p>
         <div className="mt-9 flex max-w-xl flex-col gap-3 sm:flex-row lg:flex-col lg:items-start">
           <Link

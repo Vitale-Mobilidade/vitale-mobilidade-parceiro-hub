@@ -19,6 +19,7 @@ import { Route as PainelBikesRouteImport } from './routes/painel-bikes'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as VendaSuaBikeRouteImport } from './routes/venda-sua-bike'
 import { Route as VideosRouteImport } from './routes/videos'
 import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento/index'
@@ -122,6 +123,11 @@ const QuizRoute = QuizRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendaSuaBikeRoute = VendaSuaBikeRouteImport.update({
@@ -419,6 +425,7 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -552,6 +560,7 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/venda-sua-bike': typeof VendaSuaBikeRoute
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
@@ -620,6 +629,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/sobre'
     | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
@@ -686,6 +696,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/sobre'
     | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
@@ -752,6 +763,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/quiz'
     | '/sitemap.xml'
+    | '/sobre'
     | '/venda-sua-bike'
     | '/videos'
     | '/acompanhamento/$bikeId'
@@ -819,6 +831,7 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   QuizRoute: typeof QuizRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SobreRoute: typeof SobreRoute
   VendaSuaBikeRoute: typeof VendaSuaBikeRoute
   VideosRoute: typeof VideosRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
@@ -944,6 +957,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/venda-sua-bike': {
@@ -1349,6 +1369,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   QuizRoute: QuizRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SobreRoute: SobreRoute,
   VendaSuaBikeRoute: VendaSuaBikeRoute,
   VideosRoute: VideosRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,

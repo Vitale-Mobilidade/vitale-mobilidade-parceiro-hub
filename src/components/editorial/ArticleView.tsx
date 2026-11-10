@@ -522,7 +522,7 @@ export function ArticleView({
         )}
         <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Conteúdo Vitale</p>
         <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Por <a href="/" rel="author" className="font-semibold underline">Vitale Mobilidade</a></p>
+        <p className="mt-3 text-sm text-muted-foreground">Por <a href="/sobre" rel="author" className="font-semibold underline">Vitale Mobilidade</a></p>
         {article.publishedAt && (
           <time dateTime={article.publishedAt} className="mt-3 block text-sm text-muted-foreground">
             Publicado em {new Date(article.publishedAt).toLocaleDateString("pt-BR")}

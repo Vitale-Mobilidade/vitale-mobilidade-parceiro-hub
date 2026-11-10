@@ -2,7 +2,7 @@ import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute } from "@tanstack/react-router";
 import { getPublicBikeListings } from "@/lib/bike-classifieds.functions";
 import HomeB2C from "@/pages/HomeB2C";
-import { pageHead } from "@/lib/seo";
+import { pageHead, SITE_DESCRIPTION } from "@/lib/seo";
 import { getHomeCards } from "@/lib/home-cards.functions";
 import { getPublishedArticles } from "@/lib/editorial.functions";
 
@@ -22,9 +22,8 @@ export const Route = createFileRoute("/")({
   head: () =>
     pageHead({
       path: "/",
-      title: "Encontre a bike elétrica certa para você | Vitale Mobilidade",
-      description:
-        "Testamos bikes, comparamos modelos, acompanhamos preços e criamos ferramentas para ajudar você a escolher sua bike elétrica.",
+      title: "Vitale Mobilidade | Testes e preços de bikes elétricas",
+      description: SITE_DESCRIPTION,
       ogTitle: "Encontre a bike elétrica certa para você",
       ogDescription:
         "Quiz de perfil, Radar com histórico de preços e bikes elétricas monitoradas no Brasil.",

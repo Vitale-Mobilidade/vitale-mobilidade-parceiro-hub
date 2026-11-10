@@ -23,7 +23,11 @@ const video = {
 describe("article source and authorship", () => {
   it("attributes the editorial organization without inventing a personal author", () => {
     expect(articleSchemas(article)[0]).toMatchObject({
-      author: { "@type": "Organization", name: "Vitale Mobilidade" },
+      author: {
+        "@type": "Organization",
+        "@id": "https://vitalemobilidade.com/#organization",
+        name: "Vitale Mobilidade",
+      },
       datePublished: article.publishedAt,
     });
     expect(articleSchemas(article)[0]).not.toHaveProperty("dateModified");

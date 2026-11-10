@@ -21,6 +21,7 @@ describe("sitemap builder", () => {
     }
     expect(STATIC_SITEMAP_PATHS as readonly string[]).not.toContain("/bikes");
     expect(STATIC_SITEMAP_PATHS).toContain("/conteudos");
+    expect(STATIC_SITEMAP_PATHS).toContain("/sobre");
     expect(STATIC_SITEMAP_PATHS).toContain("/quiz");
     expect(
       STATIC_SITEMAP_PATHS.filter((p) => p.startsWith("/calculadoras/")),
