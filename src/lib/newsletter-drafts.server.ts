@@ -45,7 +45,7 @@ export async function newsletterDraftAction(
         db
           .from("newsletter_drafts")
           .select(
-            "id,revision,origin,edition_day,generation_mode,updated_at,content",
+            "id,revision,origin,edition_day,generation_mode,approved_revision,manual_send_until,updated_at,content",
           )
           .order("updated_at", { ascending: false })
           .limit(20),

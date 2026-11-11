@@ -2475,6 +2475,7 @@ export type Database = {
           fingerprint: string
           id: string
           last_error: string | null
+          manual_send_until: string | null
           payload: Json
           resend_id: string | null
           segment: string
@@ -2488,6 +2489,7 @@ export type Database = {
           fingerprint: string
           id?: string
           last_error?: string | null
+          manual_send_until?: string | null
           payload: Json
           resend_id?: string | null
           segment: string
@@ -2501,6 +2503,7 @@ export type Database = {
           fingerprint?: string
           id?: string
           last_error?: string | null
+          manual_send_until?: string | null
           payload?: Json
           resend_id?: string | null
           segment?: string
@@ -2512,6 +2515,9 @@ export type Database = {
       }
       newsletter_drafts: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_revision: number | null
           content: Json
           created_at: string
           edited_by: string | null
@@ -2519,11 +2525,15 @@ export type Database = {
           fingerprint: string | null
           generation_mode: string
           id: string
+          manual_send_until: string | null
           origin: string
           revision: number
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_revision?: number | null
           content: Json
           created_at?: string
           edited_by?: string | null
@@ -2531,11 +2541,15 @@ export type Database = {
           fingerprint?: string | null
           generation_mode?: string
           id?: string
+          manual_send_until?: string | null
           origin: string
           revision?: number
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_revision?: number | null
           content?: Json
           created_at?: string
           edited_by?: string | null
@@ -2543,6 +2557,7 @@ export type Database = {
           fingerprint?: string | null
           generation_mode?: string
           id?: string
+          manual_send_until?: string | null
           origin?: string
           revision?: number
           updated_at?: string

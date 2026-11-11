@@ -1,10 +1,12 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { newsletterTestDb } from "@/test/helpers/newsletter-db";
 const { createClient } = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient }));
 vi.mock("./newsletter-sources.server", () => ({
   automaticNewsletter: vi.fn(),
   validateNewsletterCurrentOffers: vi.fn().mockResolvedValue(undefined),
+  validateScheduledNewsletter: vi.fn().mockResolvedValue(undefined),
 }));
 import {
   newsletterTick,
@@ -683,4 +685,66 @@ it("blocks a campaign with a missing article photo before provider effects", asy
     ),
   ).rejects.toThrow("newsletter_article_image_required");
   expect(request).not.toHaveBeenCalled();
+});
+
+it("forms a manually authorized campaign after hours with the exact reviewed copy", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-09T15:00:00Z"));
+  vi.stubEnv("RESEND_API_KEY", "synthetic-only");
+  vi.stubEnv("LOVABLE_API_KEY", "");
+  const draft = {
+    edition_day: campaign.edition_day,
+    revision: 2,
+    approved_revision: 2,
+    manual_send_until: "2026-10-09T15:30:00Z",
+    generation_mode: "fallback",
+    fingerprint: "manual",
+    content: {
+      ...content,
+      intro: "Os links de cada seção levam aos conteúdos completos.",
+    },
+  };
+  const { db } = newsletterTestDb({
+    newsletter_settings: [{ singleton: true, ...config }],
+    newsletter_drafts: [draft],
+  });
+  db.rpc = vi.fn(async (name: string) => ({
+    data: name === "newsletter_acquire" ? id : true,
+    error: null,
+  }));
+  createClient.mockReturnValue(db);
+  const provider = vi.fn(async (url: string) =>
+    url.includes("/domains?")
+      ? json({
+          data: [{ id, name: "news.hotpipe.com.br", status: "verified" }],
+          has_more: false,
+        })
+      : json({ capabilities: { sending: "enabled" } }),
+  );
+  vi.stubGlobal("fetch", provider);
+  const response = await newsletterTick(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: {
+        "x-worker-signature": "synthetic",
+        "x-worker-issued-at": "1791558000",
+      },
+    }),
+  );
+  expect(await response.json()).toEqual({ ok: true, prepared: true });
+  expect(db.rpc).toHaveBeenCalledWith("newsletter_form_campaign", {
+    p_day: draft.edition_day,
+    p_segment: "general",
+    p_payload: {
+      generationMode: "human",
+      approvedRevision: 2,
+      content: draft.content,
+    },
+    p_fingerprint: draft.fingerprint,
+    tok: id,
+  });
+  expect(provider.mock.calls.every(([url]) => url.includes("/domains"))).toBe(
+    true,
+  );
+  expect(automaticNewsletter).not.toHaveBeenCalled();
 });
