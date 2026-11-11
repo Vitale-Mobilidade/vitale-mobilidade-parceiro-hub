@@ -5,16 +5,25 @@ afterEach(() => vi.unstubAllGlobals());
 
 it("prepares the next attachment for the scheduler without WorkDrive credentials", async () => {
   const video = { youtube_id: "qzaQ3G7PRl8", title: "FT07", published_on: "2026-11-09" };
+  const newer = { youtube_id: "bbbbbbbbbbb", title: "Artigo retirado da publicação", published_on: "2026-11-10" };
   const attachment = { youtube_id: video.youtube_id, object_path: "private/ft07.mp3", size_bytes: 23120427 };
   const readDescription = vi.fn().mockResolvedValue("Descrição original da FT07");
   const upsert = vi.fn().mockResolvedValue({ error: null });
   vi.stubGlobal("Deno", { env: { get: () => undefined } });
   const db = {
     from(table: string) {
-      const rows = table === "podcast_video_audio" ? [attachment] : table === "podcast_episode_queue" ? [] : [video];
+      const rows = table === "podcast_video_audio" ? [attachment]
+        : table === "podcast_episode_queue" ? []
+        : table === "podcast_queue_candidates" ? [newer, video] : [video];
+      let selectedId: string | undefined;
       const query = {
-        select: () => query, eq: () => query, order: () => query,
+        select: () => query, order: () => query,
+        eq: (column: string, value: string) => {
+          if (column === "youtube_id") selectedId = value;
+          return query;
+        },
         limit: async () => ({ data: rows }), single: async () => ({ data: rows[0] }),
+        maybeSingle: async () => ({ data: rows.find((row) => row.youtube_id === selectedId) }),
         is: async () => ({ count: 0 }), upsert,
       };
       return query;
@@ -25,6 +34,7 @@ it("prepares the next attachment for the scheduler without WorkDrive credentials
   expect(upsert).not.toHaveBeenCalled();
   expect(await prepareNextPodcastEpisode(db, actor, readDescription, { useAttachedWithoutWorkDrive: true }))
     .toEqual({ status: "draft" });
+  expect(readDescription).toHaveBeenCalledExactlyOnceWith(video.youtube_id);
   expect(upsert).toHaveBeenCalledWith({
     ...attachment, title: video.title, original_description: "Descrição original da FT07", source_folder_created_at: null,
   }, { onConflict: "youtube_id", ignoreDuplicates: true });
