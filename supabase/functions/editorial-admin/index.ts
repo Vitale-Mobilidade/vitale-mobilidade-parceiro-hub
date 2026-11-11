@@ -1,3 +1,4 @@
+import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 import { ELEMENT_LAYOUT } from "../_shared/heatmap-elements.ts";
 import { parseOfferClickRanks, compareOfferClickRelevance, EDITORIAL_AUDIENCE_PRIORITY } from "../_shared/bike-relevance.ts";
 import { HEATMAP_LAYOUT, heatmapPath } from "../_shared/heatmap.ts";
@@ -6,6 +7,7 @@ import { growthRange } from "../_shared/growth-range.ts";
 import { reviewPeers, reviewInputKey, approvedAssessment, repeatedReviewIssues } from "../_shared/editorial-review-cost.ts";
 import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
+import { handlePodcastWorkDrive } from "./podcast-workdrive.ts";
 import { handlePodcastAudio } from "./podcast-audio.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -135,7 +137,7 @@ import {
 } from "../_shared/editorial-cover.ts";
 
 import { buildStrictVideoCatalog, VIDEO_SHEET_CSV_URL } from "../_shared/video-catalog.ts";
-import { captureYoutubeTranscript, parseCaptionVtt, VITALE_YOUTUBE_CHANNEL } from "../_shared/youtube-transcript.ts";
+import { captureYoutubeTranscript, readYoutubePodcastDescription, parseCaptionVtt, VITALE_YOUTUBE_CHANNEL } from "../_shared/youtube-transcript.ts";
 import { youtubeTokenProvider } from "../_shared/youtube-oauth.ts";
 
 const youtubeAccessToken = youtubeTokenProvider({
@@ -2605,15 +2607,61 @@ Deno.serve(async (req) => {
       return json(req, { error: "youtube_hourly_failed" }, 503);
     }
   }
+  if (body.action === "podcast-tick") {
+    const { data: ownerId, error: authorizationError } = await db.rpc("authorize_podcast_tick", {
+      p_signature: req.headers.get("x-podcast-worker-signature") ?? "",
+      p_issued_at: req.headers.get("x-podcast-worker-issued-at") ?? "",
+    });
+    if (authorizationError || !ownerId) return json(req, { error: "unauthorized" }, 403);
+    try {
+      const [membership, audioSettings] = await Promise.all([
+        db.from("editorial_admin_memberships").select("role,active").eq("user_id", ownerId).maybeSingle(),
+        db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle(),
+      ]);
+      if (membership.error || !membership.data?.active || membership.data.role !== "admin"
+        || audioSettings.error || !audioSettings.data?.enabled)
+        return json(req, { error: "podcast_worker_not_configured" }, 503);
+      const prepared = await prepareNextPodcastEpisode(db, { id: ownerId, role: "admin" },
+        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()));
+      if (prepared.status !== "draft" && prepared.status !== "empty") return json(req, prepared, 503);
+      const released = await db.rpc("release_next_podcast_episode");
+      if (released.error) throw new Error("podcast_release_failed");
+      return json(req, { status: released.data ? "released" : "idle" });
+    } catch {
+      return json(req, { error: "podcast_worker_failed" }, 503);
+    }
+  }
   const actor = await actorFor(db, req);
   if (!actor) return json(req, { error: "Acesso não autorizado." }, 403);
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "podcast-queue-prepare") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      const settings = await db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle();
+      if (settings.error || !settings.data?.enabled)
+        return json(req, { error: "Áudio de podcast indisponível." }, 503);
+      const result = await prepareNextPodcastEpisode(db, actor,
+        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()));
+      return json(req, result);
+    }
+    if (action === "podcast-queue-preview" || action === "podcast-queue-stage") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      if (action === "podcast-queue-stage") {
+        const result = await stageNextPodcastEpisode(db, body.youtubeId,
+          async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()));
+        return json(req, result, result.status === "queue_changed" ? 409 : 200);
+      }
+      return json(req, await previewPodcastQueue(db));
+    }
     if (action.startsWith("podcast-audio-")) {
       const settings = actor.role === "admin"
         ? await db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle()
         : null;
+      if (action === "podcast-audio-workdrive-check" || action === "podcast-audio-workdrive-import") {
+        return await handlePodcastWorkDrive(db, actor, action, body, settings?.data?.enabled === true,
+          (data, status) => json(req, data, status));
+      }
       return await handlePodcastAudio(
         db, actor, action, body, settings?.data?.enabled === true,
         (data, status) => json(req, data, status),

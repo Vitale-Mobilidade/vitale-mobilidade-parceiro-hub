@@ -56,6 +56,7 @@ import { Route as FerramentasMetaEntregasRouteImport } from './routes/ferramenta
 import { Route as FerramentasMotoVsBikeRouteImport } from './routes/ferramentas/moto-vs-bike'
 import { Route as FerramentasTransportePublicoVsBikeRouteImport } from './routes/ferramentas/transporte-publico-vs-bike'
 import { Route as FerramentasVeiculoAlugadoVsBikePropriaRouteImport } from './routes/ferramentas/veiculo-alugado-vs-bike-propria'
+import { Route as PodcastRssDotxmlRouteImport } from './routes/podcast/rss[.]xml'
 import { Route as RadarIndexRouteImport } from './routes/radar/index'
 import { Route as RadarBikeIdRouteImport } from './routes/radar/$bikeId'
 import { Route as VendaSuaBikeIdRouteImport } from './routes/venda-sua-bike_.$id'
@@ -73,6 +74,7 @@ import { Route as ApiPublicNewsletterImageRouteImport } from './routes/api/publi
 import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/public/newsletter-webhook'
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
 import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
+import { Route as PodcastAudioYoutubeIdRouteImport } from './routes/podcast/audio/$youtubeId'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -318,6 +320,11 @@ const FerramentasVeiculoAlugadoVsBikePropriaRoute =
     path: '/ferramentas/veiculo-alugado-vs-bike-propria',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PodcastRssDotxmlRoute = PodcastRssDotxmlRouteImport.update({
+  id: '/podcast/rss.xml',
+  path: '/podcast/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadarIndexRoute = RadarIndexRouteImport.update({
   id: '/radar/',
   path: '/radar/',
@@ -408,6 +415,11 @@ const ApiPublicPriceAlertOutboxRoute =
     path: '/api/public/price-alert-outbox',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PodcastAudioYoutubeIdRoute = PodcastAudioYoutubeIdRouteImport.update({
+  id: '/podcast/audio/$youtubeId',
+  path: '/podcast/audio/$youtubeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -458,6 +470,7 @@ export interface FileRoutesByFullPath {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/podcast/rss.xml': typeof PodcastRssDotxmlRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/venda-sua-bike/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
@@ -478,6 +491,7 @@ export interface FileRoutesByFullPath {
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
+  '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -525,6 +539,7 @@ export interface FileRoutesByTo {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/podcast/rss.xml': typeof PodcastRssDotxmlRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/venda-sua-bike/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento': typeof AcompanhamentoIndexRoute
@@ -545,6 +560,7 @@ export interface FileRoutesByTo {
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
+  '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -593,6 +609,7 @@ export interface FileRoutesById {
   '/ferramentas/moto-vs-bike': typeof FerramentasMotoVsBikeRoute
   '/ferramentas/transporte-publico-vs-bike': typeof FerramentasTransportePublicoVsBikeRoute
   '/ferramentas/veiculo-alugado-vs-bike-propria': typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  '/podcast/rss.xml': typeof PodcastRssDotxmlRoute
   '/radar/$bikeId': typeof RadarBikeIdRoute
   '/venda-sua-bike_/$id': typeof VendaSuaBikeIdRoute
   '/acompanhamento/': typeof AcompanhamentoIndexRoute
@@ -613,6 +630,7 @@ export interface FileRoutesById {
   '/api/public/newsletter-webhook': typeof ApiPublicNewsletterWebhookRoute
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
+  '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -662,6 +680,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/podcast/rss.xml'
     | '/radar/$bikeId'
     | '/venda-sua-bike/$id'
     | '/acompanhamento/'
@@ -682,6 +701,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
+    | '/podcast/audio/$youtubeId'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -729,6 +749,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/podcast/rss.xml'
     | '/radar/$bikeId'
     | '/venda-sua-bike/$id'
     | '/acompanhamento'
@@ -749,6 +770,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
+    | '/podcast/audio/$youtubeId'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
   id:
@@ -796,6 +818,7 @@ export interface FileRouteTypes {
     | '/ferramentas/moto-vs-bike'
     | '/ferramentas/transporte-publico-vs-bike'
     | '/ferramentas/veiculo-alugado-vs-bike-propria'
+    | '/podcast/rss.xml'
     | '/radar/$bikeId'
     | '/venda-sua-bike_/$id'
     | '/acompanhamento/'
@@ -816,6 +839,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-webhook'
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
+    | '/podcast/audio/$youtubeId'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesById: FileRoutesById
@@ -864,6 +888,7 @@ export interface RootRouteChildren {
   FerramentasMotoVsBikeRoute: typeof FerramentasMotoVsBikeRoute
   FerramentasTransportePublicoVsBikeRoute: typeof FerramentasTransportePublicoVsBikeRoute
   FerramentasVeiculoAlugadoVsBikePropriaRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRoute
+  PodcastRssDotxmlRoute: typeof PodcastRssDotxmlRoute
   RadarBikeIdRoute: typeof RadarBikeIdRoute
   VendaSuaBikeIdRoute: typeof VendaSuaBikeIdRoute
   AcompanhamentoIndexRoute: typeof AcompanhamentoIndexRoute
@@ -884,6 +909,7 @@ export interface RootRouteChildren {
   ApiPublicNewsletterWebhookRoute: typeof ApiPublicNewsletterWebhookRoute
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
   ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
+  PodcastAudioYoutubeIdRoute: typeof PodcastAudioYoutubeIdRoute
   AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
 }
 
@@ -1218,6 +1244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FerramentasVeiculoAlugadoVsBikePropriaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/podcast/rss.xml': {
+      id: '/podcast/rss.xml'
+      path: '/podcast/rss.xml'
+      fullPath: '/podcast/rss.xml'
+      preLoaderRoute: typeof PodcastRssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radar/': {
       id: '/radar/'
       path: '/radar'
@@ -1337,6 +1370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPriceAlertOutboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/podcast/audio/$youtubeId': {
+      id: '/podcast/audio/$youtubeId'
+      path: '/podcast/audio/$youtubeId'
+      fullPath: '/podcast/audio/$youtubeId'
+      preLoaderRoute: typeof PodcastAudioYoutubeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/conteudos/$id/preview': {
       id: '/admin/conteudos/$id/preview'
       path: '/preview'
@@ -1405,6 +1445,7 @@ const rootRouteChildren: RootRouteChildren = {
     FerramentasTransportePublicoVsBikeRoute,
   FerramentasVeiculoAlugadoVsBikePropriaRoute:
     FerramentasVeiculoAlugadoVsBikePropriaRoute,
+  PodcastRssDotxmlRoute: PodcastRssDotxmlRoute,
   RadarBikeIdRoute: RadarBikeIdRoute,
   VendaSuaBikeIdRoute: VendaSuaBikeIdRoute,
   AcompanhamentoIndexRoute: AcompanhamentoIndexRoute,
@@ -1426,6 +1467,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicNewsletterWebhookRoute: ApiPublicNewsletterWebhookRoute,
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,
   ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,
+  PodcastAudioYoutubeIdRoute: PodcastAudioYoutubeIdRoute,
   AdminConteudosIndexRoute: AdminConteudosIndexRoute,
 }
 export const routeTree = rootRouteImport

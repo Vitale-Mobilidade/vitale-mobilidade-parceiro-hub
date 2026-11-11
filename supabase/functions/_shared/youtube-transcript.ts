@@ -229,3 +229,17 @@ export async function captureYoutubeTranscript(input: {
     ...parsed,
   };
 }
+
+export async function readYoutubePodcastDescription(
+  videoId: string, accessToken: string, fetcher: typeof fetch = fetch,
+): Promise<string> {
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) throw new TranscriptError("invalid_video_id");
+  const response = await get(fetcher, `${API}/videos?part=snippet&id=${videoId}`, accessToken);
+  const video = (await response.json()).items?.[0];
+  if (video?.id !== videoId || video.snippet?.channelId !== VITALE_YOUTUBE_CHANNEL)
+    throw new TranscriptError("video_outside_authorized_channel");
+  const description = video.snippet.description;
+  if (typeof description !== "string" || !description.trim())
+    throw new TranscriptError("video_description_unavailable");
+  return description;
+}

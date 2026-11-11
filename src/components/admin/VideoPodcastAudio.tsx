@@ -9,6 +9,11 @@ import {
   validPodcastAudioSize,
 } from "../../../supabase/functions/_shared/podcast-audio-contract";
 
+type WorkDriveCandidate = { status: "ready"; fileName: string; size: number; sourceId: string };
+type WorkDriveResult = WorkDriveCandidate | {
+  status: "already_attached" | "imported" | "folder_missing" | "audio_missing" | "review";
+};
+
 type AudioInfo = { fileName: string; size: number };
 type AudioStatus =
   { enabled: false } | { enabled: true; audio: AudioInfo | null };
@@ -27,9 +32,10 @@ export function VideoPodcastAudio({ videoId }: { videoId: string }) {
   });
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [busy, setBusy] = useState<"upload" | "preview" | null>(null);
+  const [busy, setBusy] = useState<"upload" | "preview" | "workdrive" | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [candidate, setCandidate] = useState<WorkDriveCandidate | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const transferred = useRef<{ file: File; uploadId: string } | null>(null);
@@ -138,6 +144,40 @@ export function VideoPodcastAudio({ videoId }: { videoId: string }) {
     }
   }
 
+  async function workDrive(importAudio: boolean) {
+    if (busy || (importAudio && !candidate)) return;
+    setBusy("workdrive");
+    setError("");
+    setMessage("");
+    if (!importAudio) setCandidate(null);
+    try {
+      const result = await adminCall<WorkDriveResult>(
+        importAudio ? "podcast-audio-workdrive-import" : "podcast-audio-workdrive-check",
+        { youtubeId: videoId, sourceId: candidate?.sourceId, size: candidate?.size },
+      );
+      if (result.status === "ready") {
+        setCandidate(result);
+        setMessage(`WorkDrive: ${result.fileName} · ${(result.size / (1024 * 1024)).toFixed(1)} MB`);
+        return;
+      }
+      setCandidate(null);
+      setMessage({
+        already_attached: "Este vídeo já tem áudio no Admin.",
+        imported: "MP3 do WorkDrive anexado.",
+        folder_missing: "Nenhuma pasta corresponde ao vídeo.",
+        audio_missing: "A pasta ainda não tem MP3.",
+        review: "Confira a pasta e deixe um único MP3 final compatível.",
+      }[result.status]);
+      if (result.status === "imported" || result.status === "already_attached")
+        await client.invalidateQueries({ queryKey });
+    } catch (failure) {
+      setCandidate(null);
+      setError(failure instanceof Error ? failure.message : "Não foi possível consultar o WorkDrive.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (status.data?.enabled === false) return null;
   const audio = status.data?.enabled ? status.data.audio : null;
   const label = audio ? "Substituir MP3" : "Anexar MP3";
@@ -185,6 +225,18 @@ export function VideoPodcastAudio({ videoId }: { videoId: string }) {
                     )
                   }
                 />
+              )}
+            </div>
+          )}
+          {!audio && (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className={actionClass} disabled={!!busy} onClick={() => workDrive(false)}>
+                {busy === "workdrive" ? "Consultando WorkDrive…" : "Consultar WorkDrive"}
+              </button>
+              {candidate && (
+                <button type="button" className={actionClass} disabled={!!busy} onClick={() => workDrive(true)}>
+                  Anexar MP3 do WorkDrive
+                </button>
               )}
             </div>
           )}
