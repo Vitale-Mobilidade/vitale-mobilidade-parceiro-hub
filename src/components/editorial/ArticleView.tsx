@@ -1,13 +1,13 @@
 import { spotifyEpisodeId as isSpotifyEpisodeId } from "../../../supabase/functions/_shared/podcast-spotify";
 import { PODCAST_ARTICLE_ANCHOR } from "@/lib/podcast-editorial";
-import { Fragment, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { BikeMedia } from "@/components/site/site-ui";
 import { persistentBikeImage } from "@/lib/bike-catalog";
 import { QuizBanner } from "@/components/site/DecisionBanners";
 import { ArrowRight, BookOpen, Calculator, LineChart } from "lucide-react";
 import { formatBRL } from "@/lib/price-tracker";
-import { composeArticleFlow } from "@/lib/article-flow";
+import { composeArticleFlow, spaceArticleModules, type ArticleFlowItem } from "@/lib/article-flow";
 import { articleSubjectBikes, comparedBikesInTitle } from "@/lib/editorial-discovery";
 import type { ArticleBlock, ArticleFaq } from "../../../supabase/functions/_shared/editorial-contract";
 import type { VideoCard } from "@/lib/videos.functions";
@@ -515,14 +515,28 @@ export function ArticleView({
       ).filter((id): id is string => Boolean(id) && subjectIds.has(id!)),
     ),
   ].slice(0, 2);
-  const flow = composeArticleFlow(article.blocks, radarBikeIds.length > 0);
-  const contentBlocks = planned ? article.blocks : flow.map((item) => item.kind === "block" ? item.block : null);
-  const bodyIndices = contentBlocks.flatMap((block, index) =>
-    block?.type === "text" || block?.type === "pros_cons" ? [index] : []);
-  const podcastIndex = bodyIndices[Math.floor((bodyIndices.length - 1) / 2)] ?? -1;
   const episode = !preview && isSpotifyEpisodeId(spotifyEpisodeId) ? spotifyEpisodeId : null;
-  const podcast = episode && (
-    <section id={PODCAST_ARTICLE_ANCHOR} aria-labelledby="podcast-heading"
+  const baseFlow: ArticleFlowItem[] = planned
+    ? article.blocks.map((block) => ({ kind: "block", block }))
+    : composeArticleFlow(article.blocks, radarBikeIds.length > 0);
+  const flow = spaceArticleModules(baseFlow.filter((item) => {
+    if (item.kind !== "block") return true;
+    const { block } = item;
+    if (block.type === "faq") return article.faq.length > 0;
+    if (block.type === "related") return relatedArticles.some((related) => related.id === block.articleId);
+    if (block.type === "specs" || block.type === "radar") return bikes.some((bike) => bike.bikeId === block.bikeId);
+    if (block.type === "comparator") {
+      const articleIds = new Set([article.primaryBikeId, ...article.relatedBikeIds]);
+      const available = bikes.filter((bike) => articleIds.has(bike.bikeId));
+      return block.planned && (block.bikeIds?.length ?? 0) >= 2
+        ? available.filter((bike) => block.bikeIds!.includes(bike.bikeId)).length >= 2
+        : comparedBikesInTitle(article.title, available).length >= 2;
+    }
+    if (block.type === "tool") return !!block.toolSlug;
+    return block.type !== "cta";
+  }), { hasPodcast: !!episode, hasFaqParagraph: article.faq.some((item) => !!item.answer.trim()) });
+  const podcast = (key: number) => episode && (
+    <section key={key} id={PODCAST_ARTICLE_ANCHOR} aria-labelledby="podcast-heading"
       className="my-10 scroll-mt-24">
       <h2 id="podcast-heading" className="mb-3 text-xl font-bold">Ouça este episódio no Spotify</h2>
       <iframe src={`https://open.spotify.com/embed/episode/${episode}`}
@@ -563,82 +577,64 @@ export function ArticleView({
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
         </p>
-        {planned
-          ? article.blocks.map((block, index) => (
-            <Fragment key={index}>
-              <Block
-                block={block}
-                article={article}
-                bikes={bikes}
-                prices={prices}
-                histories={histories}
-                relatedArticles={relatedArticles}
-              />
-              {index === podcastIndex && podcast}
-            </Fragment>
-            ))
-          : flow.map((item, index) => (
-            <Fragment key={index}>
-              {item.kind === "block" ? (
-                <Block
-                  key={index}
-                  block={item.block}
-                  article={article}
-                  bikes={bikes}
-                  prices={prices}
-                  histories={histories}
-                  relatedArticles={relatedArticles}
-                />
-              ) : item.kind === "radar" ? (
-                <section key={index} aria-labelledby="radar-no-artigo" className="my-12 border-y border-line py-8">
-                  <h2 id="radar-no-artigo" className="text-2xl font-bold">
-                    {radarBikeIds.length === 1 ? "Preço atual da bike" : "Preços atuais das bikes"}
-                  </h2>
-                  <p className="mt-2 text-muted-foreground">
-                    Ofertas e histórico de preços acompanhados pelo Radar Vitale.
-                  </p>
-                  <div className={`mt-5 grid gap-4 ${radarBikeIds.length > 1 ? "sm:grid-cols-2" : ""}`}>
-                    {radarBikeIds.map((id) => (
-                      <BikeDecision
-                        key={id}
-                        bikeId={id}
-                        bikes={bikes}
-                        prices={prices}
-                        histories={histories}
-                        mode="radar"
-                        wide={radarBikeIds.length === 1}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : item.kind === "quiz" ? (
-                <div key={index} className="my-10">
-                  <QuizBanner />
-                </div>
-              ) : (
-                <section
-                  key={index}
-                  className="my-10 flex flex-wrap items-center gap-5 rounded-2xl border border-line bg-surface p-6"
-                >
-                  <Calculator className="h-9 w-9 text-action" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-bold">Quanto você pode economizar no trajeto?</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Compare os custos do seu transporte com uma bike elétrica.
-                    </p>
-                  </div>
-                  <a
-                    href="/ferramentas"
-                    className="inline-flex min-h-11 items-center gap-2 font-bold text-action underline"
-                  >
-                    Explorar calculadoras <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </section>
-              )}
-              {index === podcastIndex && podcast}
-            </Fragment>
-            ))}
-        {podcastIndex < 0 && podcast}
+        {flow.map((item, index) =>
+          item.kind === "podcast" ? podcast(index) : item.kind === "block" ? (
+            <Block
+              key={index}
+              block={item.block}
+              article={article}
+              bikes={bikes}
+              prices={prices}
+              histories={histories}
+              relatedArticles={relatedArticles}
+            />
+          ) : item.kind === "radar" ? (
+            <section key={index} aria-labelledby="radar-no-artigo" className="my-12 border-y border-line py-8">
+              <h2 id="radar-no-artigo" className="text-2xl font-bold">
+                {radarBikeIds.length === 1 ? "Preço atual da bike" : "Preços atuais das bikes"}
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                Ofertas e histórico de preços acompanhados pelo Radar Vitale.
+              </p>
+              <div className={`mt-5 grid gap-4 ${radarBikeIds.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                {radarBikeIds.map((id) => (
+                  <BikeDecision
+                    key={id}
+                    bikeId={id}
+                    bikes={bikes}
+                    prices={prices}
+                    histories={histories}
+                    mode="radar"
+                    wide={radarBikeIds.length === 1}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : item.kind === "quiz" ? (
+            <div key={index} className="my-10">
+              <QuizBanner />
+            </div>
+          ) : (
+            <section
+              key={index}
+              className="my-10 flex flex-wrap items-center gap-5 rounded-2xl border border-line bg-surface p-6"
+            >
+              <Calculator className="h-9 w-9 text-action" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl font-bold">Quanto você pode economizar no trajeto?</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Compare os custos do seu transporte com uma bike elétrica.
+                </p>
+              </div>
+              <a
+                href="/ferramentas"
+                className="inline-flex min-h-11 items-center gap-2 font-bold text-action underline"
+              >
+                Explorar calculadoras <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </section>
+          ),
+        )}
         {!planned && <FaqList faq={article.faq} />}
         {!planned && relatedArticles.length > 0 && (
           <section className="my-10">

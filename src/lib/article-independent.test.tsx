@@ -32,3 +32,19 @@ it("exibe o player na âncora compartilhável no corpo do artigo apenas com epis
   expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} spotifyEpisodeId={episode} preview />))
     .not.toContain('id="podcast"');
 });
+
+it("separa o Spotify e as chamadas no HTML de um artigo planejado", () => {
+  const planned = { ...article, blocks: [
+    { type: "text", planned: true, text: "Primeiro parágrafo editorial." },
+    { type: "text", planned: true, text: "Segundo parágrafo editorial." },
+    { type: "quiz", planned: true },
+    { type: "video", planned: true, heading: "Vídeo complementar" },
+    { type: "text", planned: true, text: "Terceiro parágrafo editorial." },
+    { type: "text", planned: true, text: "Último parágrafo editorial." },
+  ] } satisfies PublishedArticle;
+  const html = renderToStaticMarkup(<ArticleView article={planned} bikes={[]} spotifyEpisodeId="324BQ31Y26a5askghi34ax" />);
+  const widgets = [...html.matchAll(/id="podcast"|aria-label="Quiz de perfil"|<h2[^>]*>Vídeo complementar<\/h2>/g)];
+  expect(widgets).toHaveLength(3);
+  for (let i = 1; i < widgets.length; i++)
+    expect(html.slice(widgets[i - 1].index, widgets[i].index)).toMatch(/<p[^>]*><span>[^<]*parágrafo editorial\.<\/span><\/p>/);
+});
