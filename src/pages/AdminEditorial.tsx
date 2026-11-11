@@ -102,7 +102,7 @@ export function AdminOverviewPage() {
 function Overview({ role }: { role: AdminRole }) {
   const youtube = useQuery({
     queryKey: ["admin", "youtube-status"],
-    queryFn: () => adminCall<{ enabled: boolean; queued: number; running: number; review: number; done: number; waitingCaptions?: number; reviewItems?: { videoId: string; articleId: string | null; retryCapture: boolean }[] }>("youtube-status"),
+    queryFn: () => adminCall<{ enabled: boolean; aiRetryAt?: string | null; queued: number; running: number; review: number; done: number; waitingCaptions?: number; reviewItems?: { videoId: string; articleId: string | null; retryCapture: boolean }[] }>("youtube-status"),
     enabled: role === "admin", refetchInterval: 30_000, retry: false,
   });
   const overview = useQuery({
@@ -137,8 +137,10 @@ function Overview({ role }: { role: AdminRole }) {
         <h2 className="text-lg font-semibold">Artigos automáticos</h2>
         {youtube.data ? <>
           <p className="mt-2 text-sm">{youtube.data.enabled ? "Busca horária ativada" : "Busca horária desativada"} · Pendentes na fila: <strong>{youtube.data.queued}</strong> · Em processamento: <strong>{youtube.data.running}</strong> · Concluídos: <strong>{youtube.data.done}</strong></p>
-          <p className="mt-2 text-sm text-muted-foreground">A fila gera artigo e capa, valida o conteúdo e publica automaticamente. Os resultados aparecem em Artigos.</p>
-          {!!youtube.data.waitingCaptions && <p role="status" className="mt-2 text-sm">{youtube.data.waitingCaptions} vídeo(s) aguardando legenda do YouTube. Nova verificação a cada hora; geração automática quando disponível, sem repetir emails de espera.</p>}
+          {youtube.data.enabled && youtube.data.aiRetryAt
+            ? <p role="status" className="mt-2 text-sm">A importação de vídeos continua. A IA recusou o processamento por saldo. A fila tentará novamente a partir de {new Date(youtube.data.aiRetryAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" })} (São Paulo).</p>
+            : <p className="mt-2 text-sm text-muted-foreground">A fila gera artigo e capa, valida o conteúdo e publica automaticamente. Os resultados aparecem em Artigos.</p>}
+          {!!youtube.data.waitingCaptions && <p role="status" className="mt-2 text-sm">{youtube.data.waitingCaptions} vídeo(s) aguardando legenda do YouTube. A verificação e a geração seguem o agendamento da fila.</p>}
           {youtube.data.review > 0 && <Notice danger>
             <p>{youtube.data.review} geração(ões) precisam de ação para continuar.</p>
             <ul className="mt-2 space-y-2">

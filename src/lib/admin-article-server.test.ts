@@ -23,7 +23,7 @@ import * as relevance from "../../supabase/functions/_shared/bike-relevance";
 // Deno.serve is intercepted and neither credentials nor real connections exist.
 const source = readFileSync(new URL("../../supabase/functions/editorial-admin/index.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(
-  `${source}\nexport { bikeCandidates, dueCaptionRetry, reclaimFailedCapture, rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineWriter(mock) { const previous = generateInto; generateInto = mock; return () => { generateInto = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
+  `${source}\nexport { editorialProgressResponse, bikeCandidates, dueCaptionRetry, reclaimFailedCapture, rejectedDraftCanResume, generateStream, generateInto, stageStream, coverGenerate, coverPreview, generateAutomaticCover, finishQueuedCover, finishQueuedRewrite, finishQueuedCoverRender, finishQueuedPublication, ensureLiteralPublicationEvidence };\nexport function injectOfflineCover(generate, apply) { const previous = [coverGenerate, coverApply]; coverGenerate = generate; coverApply = apply; return () => { [coverGenerate, coverApply] = previous; }; }\nexport function injectPublicationChecks(check, preview, corpus) { const previous = [validate, coverPreview, readDiversityCorpus]; validate = check; coverPreview = preview; readDiversityCorpus = corpus; return () => { [validate, coverPreview, readDiversityCorpus] = previous; }; }\nexport function injectOfflineWriter(mock) { const previous = generateInto; generateInto = mock; return () => { generateInto = previous; }; }\nexport function injectOfflineAI(mock) { aiStructured = mock; }`,
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   },
@@ -36,6 +36,7 @@ const integrationEnv: Record<string, string> = {};
 const offlineCapture = vi.fn();
 const offlineCompose = vi.fn();
 const exports: {
+  editorialProgressResponse?: (req: Request, run: (send: (event: unknown) => void) => Promise<void>) => Response;
   bikeCandidates?: (db: unknown) => Promise<automation.BikeCandidate[]>;
   dueCaptionRetry?: (db: unknown) => Promise<any>;
   reclaimFailedCapture?: (db: unknown, videoId: string, state: string) => Promise<boolean>;
@@ -63,6 +64,7 @@ runInNewContext(code, {
       "npm:@supabase/supabase-js@2": {
         createClient: vi.fn(() => requestDatabase),
       },
+      "./podcast-audio.ts": { handlePodcastAudio: vi.fn() },
       "../_shared/growth-range.ts": growthRangeModule,
       "../_shared/editorial-alert.ts": { EDITORIAL_ALERT_RECIPIENT: "guilherme@hotpipe.com.br", sendEditorialAlert: offlineAlert },
       "../_shared/site-analytics.ts": siteAnalytics,
@@ -742,6 +744,25 @@ describe("piloto integrado — planilha e captura no servidor", () => {
 });
 
 
+it("a disconnected progress reader cannot interrupt a persisted editorial step", async () => {
+  let continueWork!: () => void;
+  const work = new Promise<void>(resolve => { continueWork = resolve; });
+  let finished!: () => void;
+  const saved = new Promise<void>(resolve => { finished = resolve; });
+  const response = exports.editorialProgressResponse!(new Request("https://test.invalid"), async send => {
+    send({ type: "progress" });
+    await work;
+    send({ type: "progress" });
+    finished();
+    send({ type: "done" });
+  });
+  const reader = response.body!.getReader();
+  expect((await reader.read()).done).toBe(false);
+  await reader.cancel();
+  continueWork();
+  await saved;
+});
+
 describe("entrada horária privada", () => {
   it("nega chave ausente antes de consultar membros, planilha ou IA", async () => {
     integrationEnv.YOUTUBE_WORKER_KEY = "a".repeat(40);
@@ -759,22 +780,31 @@ describe("entrada horária privada", () => {
       expect(await response.json()).toEqual({ status: "disabled" });
     } finally { delete integrationEnv.YOUTUBE_WORKER_KEY; }
   });
-  it("automação não gera vídeos que já têm artigo", async () => {
+  it.each([
+    ["active", "youtube-hourly", false],
+    ["paused", "youtube-hourly", true],
+    ["paused", "youtube-drain", true],
+  ])("automation %s on %s respects the pause and does not duplicate articles", async (_mode, action, paused) => {
+    const aiRetryAt = new Date(Date.now() + (paused ? 60_000 : -60_000)).toISOString();
     Object.assign(integrationEnv, { YOUTUBE_WORKER_KEY: "a".repeat(40), YOUTUBE_HOURLY_ENABLED: "true", YOUTUBE_EDITORIAL_ENABLED: "true", YOUTUBE_EDITORIAL_ACTOR_ID: "owner" });
     offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título da planilha,https://youtu.be/abcDEFG1234,V9 Max'));
     offlineCapture.mockClear();
     const rpc = vi.fn(async (name: string) => ({ data: name === "authorize_youtube_editorial_tick" ? { enabled: true, actor_id: "owner" } : null, error: null }));
     requestDatabase = { rpc, from: (table: string) => {
       if (table === "editorial_admin_memberships") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { active: true, role: "admin" }, error: null }) }) }) };
+      if (table === "youtube_editorial_worker_settings") return { select: () => ({ eq: () => ({ single: async () => ({ data: { ai_retry_at: aiRetryAt }, error: null }) }) }) };
       if (table === "editorial_articles") return { select: () => ({ neq: async () => ({ data: [{ video_id: "abcDEFG1234", title: "Título independente" }], error: null }) }) };
       if (table === "youtube_editorial_sources") { const q={select:()=>q,eq:()=>q,is:()=>q,lte:()=>q,order:()=>q,limit:()=>q,maybeSingle:async()=>({data:null,error:null})}; return q; }
       if (table === "editorial_videos") return { select: async () => ({ data: [], error: null }), upsert: async () => ({ error: null }) };
       return { insert: async () => ({ error: null }) };
     } };
     try {
-      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-signature": "a".repeat(64), "x-youtube-worker-issued-at": "1791327600" }, body: JSON.stringify({ action: "youtube-hourly" }) }));
-      expect(await response.json()).toEqual({ status: "idle" });
-      expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
+      const response = await servedHandler(new Request("https://test.invalid", { method: "POST", headers: { "x-youtube-worker-signature": "a".repeat(64), "x-youtube-worker-issued-at": "1791327600" }, body: JSON.stringify({ action }) }));
+      expect(await response.json()).toEqual(paused ? { status: "ai_paused", retryAt: aiRetryAt } : { status: "idle" });
+      if (action === "youtube-hourly") expect(rpc).toHaveBeenCalledWith("ingest_youtube_editorial_snapshot", { video_ids: ["abcDEFG1234"] });
+      else expect(offlineFetch).not.toHaveBeenCalled();
+      if (paused) expect(rpc).not.toHaveBeenCalledWith("claim_youtube_editorial_publication");
+      else expect(rpc).toHaveBeenCalledWith("claim_youtube_editorial_publication");
       expect(offlineCapture).not.toHaveBeenCalled();
     } finally { for (const key of Object.keys(integrationEnv)) delete integrationEnv[key]; }
   });
@@ -1010,10 +1040,11 @@ it("persists the paid background and original captions before composition, leavi
 it("hourly refreshes the spreadsheet before serving a pending cover stage", async () => {
   integrationEnv.YOUTUBE_EDITORIAL_ENABLED = "true";
   offlineFetch = vi.fn(async () => new Response('Data,Titulo,Link Youtube,Bikes\n05/10/2026,Título,https://youtu.be/abcDEFG1234,V9 Max'));
-  const query = (data: unknown) => { const q = { eq: () => q, neq: () => q, in: () => q, maybeSingle: async () => ({ data, error: null }), then: (resolve: (v: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve) }; return q; };
+  const query = (data: unknown) => { const q = { eq: () => q, neq: () => q, in: () => q, maybeSingle: async () => ({ data, error: null }), single: async () => ({ data, error: null }), then: (resolve: (v: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve) }; return q; };
   const rpc = vi.fn(async (name: string) => ({ data: name === "authorize_youtube_editorial_tick" ? { enabled: true, actor_id: "owner" } : name === "claim_youtube_editorial_cover" ? { video_id: "abcDEFG1234", article_id: "draft" } : null, error: null }));
   requestDatabase = { rpc, from: (table: string) => {
     if (table === "editorial_admin_memberships") return { select: () => query({ active: true, role: "admin" }) };
+    if (table === "youtube_editorial_worker_settings") return { select: () => query({ ai_retry_at: null }) };
     if (table === "editorial_articles") return { select: (columns: string) => query(columns === "*" ? null : []) };
     if (table === "editorial_videos") return { select: async () => ({ data: [], error: null }), upsert: async () => ({ error: null }) };
     if (table === "youtube_editorial_sources" || table === "youtube_editorial_inventory") return { update: () => query(null) };
@@ -1050,6 +1081,22 @@ describe("automatic publication uses the leased daily pipeline", () => {
   const req = new Request("http://localhost");
   const lease = { article_id: article.id, video_id: article.video_id };
   const mockChecks = () => exports.injectPublicationChecks!(async () => [], async () => Response.json({ image: "offline-cover" }), async () => ({ items: [], counts: {} }));
+  it("keeps the draft at its publication checkpoint when the provider refuses billing", async () => {
+    const { db, writes, filters } = publicationDb();
+    const restore = mockChecks();
+    exports.injectOfflineAI!(vi.fn(async () => { throw new Error("ai_http_402"); }));
+    offlineAlert.mockClear();
+    try {
+      expect((await exports.finishQueuedPublication!(req, db, { id: "owner" }, lease)).status).toBe(502);
+      const settings = writes.find(write => write.table === "youtube_editorial_worker_settings")?.patch;
+      expect(Object.keys(settings ?? {})).toEqual(["ai_retry_at"]);
+      expect(Date.parse(String(settings?.ai_retry_at))).toBeGreaterThan(Date.now());
+      expect(writes.at(-1)?.patch).toEqual({ state: "publish_pending" });
+      expect(filters).toContainEqual(["youtube_editorial_sources", "state", "publishing"]);
+      expect(writes.some(write => write.table === "editorial_articles")).toBe(false);
+      expect(offlineAlert).not.toHaveBeenCalled();
+    } finally { restore(); }
+  });
   it("campanha perdida recebe rejeição do QA com fonte original e volta para correção limitada", async () => {
     const campaignTranscript = `Black Friday: promoção no Pix e no cartão, sem prazo definido. ${transcript}`;
     const video = { title: "V29 Pro na Black Friday", published_on: "2026-11-30", transcript: campaignTranscript, status: "active" };

@@ -1538,6 +1538,26 @@ async function restoreDraftMode(db: SupabaseClient, actor: Actor, article: Edito
   return data as EditorialArticle;
 }
 
+/** A disconnected progress reader must not throw into the editorial writer. */
+function editorialProgressResponse(req: Request, run: (send: (event: Body) => void) => Promise<void>): Response {
+  const encoder = new TextEncoder();
+  let cancelled = false;
+  const stream = new ReadableStream({
+    async start(controller) {
+      await run(event => {
+        if (!cancelled) controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      });
+      if (!cancelled) controller.close();
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  return new Response(stream, {
+    headers: { ...headers(req), "Content-Type": "application/x-ndjson" },
+  });
+}
+
 /** One stage per request (outline, draft or QA), streamed and checkpointed in editorial_briefs. */
 function stageStream(
   req: Request,
@@ -1546,10 +1566,9 @@ function stageStream(
   body: Body,
   stage: "outline" | "draft" | "qa" | "article",
 ): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (v: Body) => controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));
+  return editorialProgressResponse(
+    req,
+    async (send) => {
       let generationVideoId: string | null = null;
       try {
         if (!uuid(body.id) || !Number.isInteger(body.revision)) throw new Error("invalid_id");
@@ -1608,12 +1627,8 @@ function stageStream(
         if (generationVideoId) await notifyEditorialReview(db, actor, generationVideoId, stageError(errorMessage(e)));
         send({ type: "error", message: stageError(errorMessage(e)) });
       }
-      controller.close();
     },
-  });
-  return new Response(stream, {
-    headers: { ...headers(req), "Content-Type": "application/x-ndjson" },
-  });
+  );
 }
 
 export function stageError(code: string): string {
@@ -1708,13 +1723,11 @@ async function notifyEditorialReview(db: SupabaseClient, actor: Actor, videoId: 
 }
 
 function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Body): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (v: Body) => controller.enqueue(encoder.encode(`${JSON.stringify(v)}\n`));
+  return editorialProgressResponse(
+    req,
+    async (send) => {
       const fail = (message = "Não conseguimos gerar o artigo. Tente novamente.") => {
         send({ type: "error", message });
-        controller.close();
       };
       let reservedVideoId: string | null = null;
       let savedAutomaticArticleId: string | null = null;
@@ -1766,7 +1779,6 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           }
           if (existing && !resumingRejectedDraft) {
             send({ type: "done", article: existing, reused: true });
-            controller.close();
             return;
           }
           if (!resumingRejectedDraft) {
@@ -1814,7 +1826,6 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         let article = previous as EditorialArticle | null;
         if (article?.status === "published") {
           send({ type: "done", article, reused: true });
-          controller.close();
           return;
         }
         if (!article && !reservedVideoId && Deno.env.get("YOUTUBE_EDITORIAL_ENABLED") === "true") {
@@ -1830,7 +1841,6 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
         if (body.action === "generate-from-sheet" && article && !resumingRejectedDraft) {
           await db.from("youtube_editorial_sources").update({ state: "done", article_id: article.id }).eq("video_id", id);
           send({ type: "done", article, reused: true });
-          controller.close();
           return;
         }
         send({ type: "progress", step: "Entendendo conteúdo…" });
@@ -1907,7 +1917,6 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (coverStageError) throw new Error("cover_stage_save_failed");
           // A fresh signed tick gets its own CPU budget; never repeat the completed writer.
           send({ type: "done", article: generated, brief: null, pendingCover: true });
-          controller.close();
           return;
         }
         if (reservedVideoId) {
@@ -1916,8 +1925,9 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (completedError) throw new Error("source_completion_failed");
         }
         send({ type: "done", article: generated, brief: null });
-        controller.close();
       } catch (e) {
+        const code = errorMessage(e);
+        if (code === "ai_http_402") await pauseEditorialAi(db);
         if (reservedVideoId) {
           const waitingForCaptions = errorMessage(e) === "portuguese_captions_pending";
           const patch = waitingForCaptions ? {
@@ -1934,7 +1944,6 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           if (!waitingForCaptions)
             await notifyEditorialReview(db, actor, reservedVideoId, stageError(errorMessage(e)), new Date().toISOString(), savedAutomaticArticleId ?? undefined);
         }
-        const code = errorMessage(e);
         try {
           await log(db, actor, "editorial_generation_failed", "video", String(body.youtubeId ?? "unknown"), {
             code: /^[a-z][a-z0-9_]{2,80}$/.test(code) ? code : "generation_failed",
@@ -1942,17 +1951,11 @@ function generateStream(req: Request, db: SupabaseClient, actor: Actor, body: Bo
           });
         } catch { /* Audit failure must not hide the recoverable generation error. */ }
         console.error("[editorial-admin] generate", errorMessage(e));
-        if (errorMessage(e) === "ai_http_402") {
-          await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
-          return fail("A transcrição original foi salva, mas o saldo de IA do Lovable acabou. Recarregue Cloud/AI para retomar a geração. Nenhum artigo ou capa foi concluído.");
-        }
+        if (code === "ai_http_402") return fail(stageError(code));
         fail(`${stageError(code)}${savedAutomaticArticleId ? ` Artigo salvo: ${savedAutomaticArticleId}. Abra o artigo para continuar sem repetir etapas concluídas.` : ""}`);
       }
     },
-  });
-  return new Response(stream, {
-    headers: { ...headers(req), "Content-Type": "application/x-ndjson" },
-  });
+  );
 }
 
 async function rebuildLayout(
@@ -2256,7 +2259,7 @@ async function finishQueuedRewrite(req: Request, db: SupabaseClient, actor: Acto
     }
     await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "generating");
     await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
-    if (errorMessage(e) === "ai_http_402") await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
+    if (code === "ai_http_402") await pauseEditorialAi(db);
     return json(req, { error: "automatic_rewrite_failed", articleId: lease.article_id }, 502);
   }
 }
@@ -2268,7 +2271,7 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
     if (!article || article.video_id !== lease.video_id || article.status !== "draft" || !article.blocks?.length)
       throw new Error("cover_queue_article_invalid");
     const result = await coverGenerate(req, db, actor, article);
-    if (!result.ok) { if (result.status === 402) await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true); throw new Error("automatic_cover_generation_failed"); }
+    if (!result.ok) throw new Error(result.status === 402 ? "ai_http_402" : "automatic_cover_generation_failed");
     const payload = await result.json();
     const match = typeof payload.background === "string" ? /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(payload.background) : null;
     if (!match || payload.title !== article.title || payload.revision !== article.revision) throw new Error("automatic_cover_response_invalid");
@@ -2285,9 +2288,11 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
     if (saved.error) throw new Error("cover_background_checkpoint_failed");
     return json(req, { status: "cover_render_pending", articleId: article.id, stage: "cover_background" });
   } catch (e) {
-    await log(db, actor, "automatic_cover_failed", "article", lease.article_id, { code: errorMessage(e) });
-    await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_generating");
-    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
+    const code = errorMessage(e);
+    const retry = code === "ai_http_402" && await pauseEditorialAi(db);
+    await log(db, actor, "automatic_cover_failed", "article", lease.article_id, { code });
+    await db.from("youtube_editorial_sources").update({ state: retry ? "cover_pending" : "needs_review" }).eq("video_id", lease.video_id).eq("state", "cover_generating");
+    if (!retry) await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     return json(req, { error: "automatic_cover_failed", articleId: lease.article_id }, 502);
   }
 }
@@ -2423,10 +2428,11 @@ async function finishQueuedPublication(req: Request, db: SupabaseClient, actor: 
     if (completed.error) throw new Error("publication_completion_failed");
     return json(req, { status: "published", articleId: article.id, stage: "publication" });
   } catch (error) {
-    await log(db, actor, "automatic_publication_failed", "article", lease.article_id, { ...report, code: errorMessage(error) });
-    await db.from("youtube_editorial_sources").update({ state: "needs_review" }).eq("video_id", lease.video_id).eq("state", "publishing");
-    await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
-    if (errorMessage(error) === "ai_http_402") await db.from("youtube_editorial_worker_settings").update({ enabled: false }).eq("singleton", true);
+    const code = errorMessage(error);
+    const retry = code === "ai_http_402" && await pauseEditorialAi(db);
+    await log(db, actor, "automatic_publication_failed", "article", lease.article_id, { ...report, code });
+    await db.from("youtube_editorial_sources").update({ state: retry ? "publish_pending" : "needs_review" }).eq("video_id", lease.video_id).eq("state", "publishing");
+    if (!retry) await notifyEditorialReview(db, actor, lease.video_id, "Uma etapa da geração automática precisa de conferência no Admin.");
     return json(req, { error: "automatic_publication_failed", articleId: lease.article_id }, 502);
   }
 }
@@ -2504,6 +2510,22 @@ async function coverApply(
   return json(req, { article: data });
 }
 
+/** An explicit billing refusal pauses paid work while preserving scheduled discovery. */
+async function pauseEditorialAi(db: SupabaseClient): Promise<boolean> {
+  const retryAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+  try {
+    const result = await db.from("youtube_editorial_worker_settings")
+      .update({ ai_retry_at: retryAt }).eq("singleton", true).select("singleton").maybeSingle();
+    if (!result.error && result.data) return true;
+  } catch { /* Keep the stage recoverable if the settings write fails. */ }
+  console.error("[editorial-admin] ai_pause_write_failed");
+  return false;
+}
+
+function editorialAiRetryAt(value: string | null | undefined): string | null {
+  return value && Date.parse(value) > Date.now() ? value : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req) });
   if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
@@ -2536,6 +2558,12 @@ Deno.serve(async (req) => {
       return json(req, { error: "worker_owner_not_configured" }, 503);
     try {
       const owner: Actor = { id: ownerId, role: "admin", email: null };
+      // Discovery must run even if paid work has been paused.
+      let candidate: string | null = body.action === "youtube-hourly" ? (await refreshYoutubeQueue(db, owner)).candidate : null;
+      const settings = await db.from("youtube_editorial_worker_settings").select("ai_retry_at").eq("singleton", true).single();
+      if (settings.error) throw new Error("worker_settings_read_failed");
+      const retryAt = editorialAiRetryAt(settings.data.ai_retry_at);
+      if (retryAt) return json(req, { status: "ai_paused", retryAt });
       const stalls = await db.rpc("reconcile_youtube_editorial_stalls");
       if (stalls.error) throw new Error("stall_reconciliation_failed");
       for (const stalled of (stalls.data ?? [])) {
@@ -2543,8 +2571,6 @@ Deno.serve(async (req) => {
           "A geração ou publicação ficou sem conclusão por mais de 15 minutos. O conteúdo salvo foi preservado e não foi gerado novamente.",
           stalled.state_changed_at, stalled.article_id ?? undefined);
       }
-      // Discovery is never postponed by pending text/cover stages.
-      let candidate: string | null = body.action === "youtube-hourly" ? (await refreshYoutubeQueue(db, owner)).candidate : null;
       const publication = await db.rpc("claim_youtube_editorial_publication");
       if (publication.error) throw new Error("publication_queue_read_failed");
       if (publication.data) return await finishQueuedPublication(req, db, owner, publication.data);
@@ -2606,11 +2632,12 @@ Deno.serve(async (req) => {
         db.from("youtube_editorial_sources").select("video_id,state,article_id,captured_at,caption_retry_at"),
         db.from("editorial_articles").select("video_id").neq("status", "archived"),
       ]);
-      const settings = await db.from("youtube_editorial_worker_settings").select("enabled").eq("singleton", true).maybeSingle();
+      const settings = await db.from("youtube_editorial_worker_settings").select("enabled,ai_retry_at").eq("singleton", true).maybeSingle();
       if (settings.error || inventory.error || sources.error || articles.error) throw new Error("queue_read_failed");
       const occupied = new Set([...(articles.data ?? []).map(row => row.video_id), ...(sources.data ?? []).map(row => row.video_id)]);
       return json(req, {
         enabled: settings.data?.enabled === true,
+        aiRetryAt: editorialAiRetryAt(settings.data?.ai_retry_at),
         queued: (inventory.data ?? []).filter(row => !occupied.has(row.video_id)).length + (sources.data ?? []).filter(row => ["rewrite_pending", "cover_pending", "cover_render_pending", "publish_pending"].includes(row.state)).length,
         running: (sources.data ?? []).filter(row => ["capturing", "generating", "cover_generating", "cover_rendering", "publishing"].includes(row.state)).length,
         waitingCaptions: (sources.data ?? []).filter(row => row.state === "needs_review" && row.caption_retry_at).length,
