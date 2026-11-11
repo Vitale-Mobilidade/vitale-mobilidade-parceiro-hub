@@ -33,13 +33,14 @@ export function buildPodcastRss(episodes: ReleasedPodcastEpisode[], email: strin
 </item>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
 <title>Vitale Mobilidade</title>
 <link>${base}/</link>
 <description>Testes reais de bikes elétricas e conversas sobre mobilidade urbana.</description>
 <language>pt-BR</language>
 <itunes:author>Vitale Mobilidade</itunes:author>
+<itunes:explicit>false</itunes:explicit>
 <itunes:category text="Technology"/>
 <itunes:image href="${base}/podcast-capa.jpg"/>
 ${email ? `<itunes:owner><itunes:name>Vitale Mobilidade</itunes:name><itunes:email>${xml(email)}</itunes:email></itunes:owner>` : ""}
