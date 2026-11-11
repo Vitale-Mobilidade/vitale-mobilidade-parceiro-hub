@@ -2622,7 +2622,8 @@ Deno.serve(async (req) => {
         || audioSettings.error || !audioSettings.data?.enabled)
         return json(req, { error: "podcast_worker_not_configured" }, 503);
       const prepared = await prepareNextPodcastEpisode(db, { id: ownerId, role: "admin" },
-        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()));
+        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()),
+        { useAttachedWithoutWorkDrive: true });
       if (prepared.status !== "draft" && prepared.status !== "empty") return json(req, prepared, 503);
       const released = await db.rpc("release_next_podcast_episode");
       if (released.error) throw new Error("podcast_release_failed");

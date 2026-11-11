@@ -35,26 +35,40 @@ export async function servePodcastAudio(request: Request, youtubeId: string) {
     return new Response(null, { headers: baseHeaders });
   }
   const mediaPath = podcastAudioPath(youtubeId, data.size_bytes);
-  if (mediaPath.startsWith("/podcast/episodios/"))
-    return new Response(null, { status: 307, headers: { ...noStore, Location: mediaPath } });
   const range = request.headers.get("Range");
   if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) {
     baseHeaders.set("Content-Range", `bytes */${data.size_bytes}`);
     return new Response(null, { status: 416, headers: baseHeaders });
   }
-  const storageOrigin = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const storageOrigin = process.env["SUPABASE_URL"];
+  const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!storageOrigin || !serviceKey) return new Response(null, { status: 503, headers: noStore });
   const objectPath = data.object_path.split("/").map(encodeURIComponent).join("/");
   const headers = new Headers({ apikey: serviceKey });
   if (!serviceKey.startsWith("sb_secret_")) headers.set("Authorization", `Bearer ${serviceKey}`);
   if (range) headers.set("Range", range);
-  const upstream = await fetch(
+  let upstream = await fetch(
     new URL(`/storage/v1/object/authenticated/${PODCAST_AUDIO_BUCKET}/${objectPath}`, storageOrigin),
     { headers, redirect: "error", signal: AbortSignal.timeout(20000) },
   ).catch(() => null);
-  if (!upstream || ![200, 206, 416].includes(upstream.status)) {
+  if (!isStorageAudioResponse(upstream, range)) {
     await upstream?.body?.cancel();
+    upstream = null;
+    const { data: signed } = await db.storage.from(PODCAST_AUDIO_BUCKET).createSignedUrl(data.object_path, 60);
+    if (signed?.signedUrl) {
+      const url = new URL(signed.signedUrl);
+      if (url.origin === new URL(storageOrigin).origin) {
+        upstream = await fetch(url, {
+          headers: range ? { Range: range } : undefined,
+          redirect: "error", signal: AbortSignal.timeout(10000),
+        }).catch(() => null);
+      }
+    }
+  }
+  if (!upstream || !isStorageAudioResponse(upstream, range)) {
+    await upstream?.body?.cancel();
+    if (mediaPath.startsWith("/podcast/episodios/"))
+      return new Response(null, { status: 307, headers: { ...noStore, Location: mediaPath } });
     return new Response(null, { status: 503, headers: noStore });
   }
   for (const name of ["Content-Length", "Content-Range"]) {
@@ -62,4 +76,11 @@ export async function servePodcastAudio(request: Request, youtubeId: string) {
     if (value) baseHeaders.set(name, value);
   }
   return new Response(upstream.body, { status: upstream.status, headers: baseHeaders });
+}
+
+function isStorageAudioResponse(response: Response | null, range: string | null): boolean {
+  if (!response) return false;
+  if (range && response.status === 416) return true;
+  return response.status === (range ? 206 : 200)
+    && /^audio\/mpeg(?:;|$)/i.test(response.headers.get("Content-Type") ?? "");
 }

@@ -43,6 +43,7 @@ async function stagePodcastEpisode(
 
 export async function prepareNextPodcastEpisode(
   db: SupabaseClient, actor: { id: string; role: string }, readDescription: (id: string) => Promise<string>,
+  options: { useAttachedWithoutWorkDrive?: boolean } = {},
 ) {
   const { openPodcastWorkDrive, handlePodcastWorkDrive, workDriveTitle } = await import("./podcast-workdrive.ts");
   const [catalog, audios, drafts] = await Promise.all([
@@ -57,7 +58,11 @@ export async function prepareNextPodcastEpisode(
   const remaining = (catalog.data ?? []).filter((row) => !staged.has(row.youtube_id));
   if (!remaining.length) return { status: "empty" };
   const connection = await openPodcastWorkDrive();
-  if (!connection) return { status: "workdrive_unconfigured" };
+  if (!connection) {
+    if (!options.useAttachedWithoutWorkDrive) return { status: "workdrive_unconfigured" };
+    const { candidates } = await previewPodcastQueue(db);
+    return candidates[0] ? stagePodcastEpisode(db, candidates[0], readDescription) : { status: "empty" };
+  }
   const folders = (await connection.list(connection.root)).filter((row) => row.attributes.is_folder);
   const lastRelease = Math.max(0, ...(drafts.data ?? []).map((row) => Date.parse(row.released_at ?? "") || 0));
   const reply = (body: unknown, status?: number) => Response.json(body, { status });
