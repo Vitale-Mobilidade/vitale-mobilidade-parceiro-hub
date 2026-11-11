@@ -1,3 +1,4 @@
+import { publishPodcastOnInstagram, verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
 import { readPodcastDashboard } from "./podcast-dashboard.ts";
 import { syncReleasedSpotifyEpisodes } from "./podcast-spotify.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
@@ -2632,12 +2633,20 @@ Deno.serve(async (req) => {
       if (membership.error || !membership.data?.active || membership.data.role !== "admin"
         || audioSettings.error || !audioSettings.data?.enabled)
         return json(req, { error: "podcast_worker_not_configured" }, 503);
+      // An already released episode can still be waiting for Meta during this slot.
+      const instagramRetry = await publishPodcastOnInstagram(db).catch(() => {
+        console.warn("podcast_instagram_delivery_unavailable");
+        return false;
+      });
+      if (instagramRetry) return json(req, { status: "instagram_checked" });
       const prepared = await prepareNextPodcastEpisode(db, { id: ownerId, role: "admin" },
         async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()),
         { useAttachedWithoutWorkDrive: true });
       if (prepared.status !== "draft" && prepared.status !== "empty") return json(req, prepared, 503);
       const released = await db.rpc("release_next_podcast_episode");
       if (released.error) throw new Error("podcast_release_failed");
+      if (released.data)
+        await publishPodcastOnInstagram(db).catch(() => console.warn("podcast_instagram_delivery_unavailable"));
       await syncReleasedSpotifyEpisodes(db).catch(() => console.warn("podcast_spotify_sync_unavailable"));
       return json(req, { status: released.data ? "released" : "idle" });
     } catch {
@@ -2649,6 +2658,10 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "podcast-instagram-connection") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      return json(req, await verifyPodcastInstagramConnection());
+    }
     if (action === "podcast-dashboard") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       return json(req, await readPodcastDashboard(db, body.historyPage));
