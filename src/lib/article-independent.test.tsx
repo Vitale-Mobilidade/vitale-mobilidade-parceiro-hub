@@ -4,8 +4,9 @@ import { expect, it, vi } from "vitest";
 import { ArticleView, type PublishedArticle } from "../components/editorial/ArticleView";
 vi.mock("@tanstack/react-router", () => ({ Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a> }));
 
+const article = { id:"article", title:"V9 Max para duas pessoas", summary:"Banco alongado e bateria removível.", blocks:[{type:"text", heading:"Bateria",text:"A bateria tem 48 V e 15,6 Ah."},{type:"video", heading:"Veja a V9 Max",videoId:"abcDEFG1234"}], faq:[], relatedBikeIds:[],relatedArticleIds:[],primaryBikeId:null,videoId:"abcDEFG1234",ogImageUrl:null } as unknown as PublishedArticle;
+
 it("renderiza artigo independente sem aviso fixo, preservando vídeo complementar", () => {
-  const article = { id:"article", title:"V9 Max para duas pessoas", summary:"Banco alongado e bateria removível.", blocks:[{type:"text", heading:"Bateria",text:"A bateria tem 48 V e 15,6 Ah."},{type:"video", heading:"Veja a V9 Max",videoId:"abcDEFG1234"}], faq:[], relatedBikeIds:[],relatedArticleIds:[],primaryBikeId:null,videoId:"abcDEFG1234",ogImageUrl:null } as unknown as PublishedArticle;
   const html = renderToStaticMarkup(<ArticleView article={article} bikes={[]} />);
   expect(html).toContain("Banco alongado e bateria removível.");
   expect(html).not.toContain("Fonte em vídeo:");
@@ -18,4 +19,14 @@ it("renderiza artigo independente sem aviso fixo, preservando vídeo complementa
   expect(html).not.toContain("Reproduzir:");
   expect(html).not.toContain("bg-ink/35");
   expect(html).not.toMatch(/Baseado no|vídeo de origem|Os relatos se referem|não garantem o mesmo resultado/);
+});
+
+it("exibe o player na âncora compartilhável apenas quando há áudio público", () => {
+  const path = "/podcast/audio/abcDEFG1234";
+  const rendered = renderToStaticMarkup(<ArticleView article={article} bikes={[]} podcastAudio={path} />);
+  expect(rendered).toContain('id="podcast"');
+  expect(rendered).toMatch(/<audio[^>]*preload="none"[^>]*src="\/podcast\/audio\/abcDEFG1234"/);
+  expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} />)).not.toContain('id="podcast"');
+  expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} podcastAudio={path} preview />))
+    .not.toContain('id="podcast"');
 });

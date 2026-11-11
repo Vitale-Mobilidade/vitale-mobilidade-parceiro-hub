@@ -7,6 +7,17 @@ import { PODCAST_MEDIA_EDGE } from "../../supabase/functions/_shared/podcast-med
 const db: SupabaseClient = supabaseAdmin;
 const noStore = { "Cache-Control": "no-store" };
 
+export async function fetchReleasedPodcastAudio(videoId: string) {
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+  try {
+    const { data, error } = await db.from("podcast_released_episodes")
+      .select("youtube_id").eq("youtube_id", videoId).maybeSingle();
+    return !error && data ? `/podcast/audio/${videoId}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function servePodcastFeed(head: boolean) {
   const { data: settings, error: settingsError } = await db.from("podcast_distribution_settings")
     .select("feed_enabled,verification_email").eq("singleton", true).maybeSingle();

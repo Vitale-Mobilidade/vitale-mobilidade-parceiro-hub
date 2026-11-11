@@ -1,3 +1,4 @@
+import { PODCAST_ARTICLE_ANCHOR } from "@/lib/podcast-editorial";
 import { type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { BikeMedia } from "@/components/site/site-ui";
@@ -477,6 +478,7 @@ export function ArticleView({
   articlesShareContext = true,
   relatedVideos = [],
   preview = false,
+  podcastAudio = null,
 }: {
   article: PublishedArticle;
   bikes: CatalogBike[];
@@ -488,6 +490,7 @@ export function ArticleView({
   relatedVideos?: VideoCard[];
   sourceVideo?: VideoCard | null;
   preview?: boolean;
+  podcastAudio?: string | null;
 }) {
   const planned = article.blocks.some((block) => block.planned);
   const connectedBikes = articleSubjectBikes(
@@ -542,6 +545,15 @@ export function ArticleView({
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
         </p>
+        {!preview && podcastAudio && (
+          <section id={PODCAST_ARTICLE_ANCHOR} aria-labelledby="podcast-heading"
+            className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-surface p-4">
+            <h2 id="podcast-heading" className="mb-3 text-lg font-semibold">Ouça o episódio do podcast</h2>
+            <audio controls preload="none" src={podcastAudio} className="w-full" aria-labelledby="podcast-heading">
+              <a href={podcastAudio} className="underline">Abrir áudio do episódio</a>
+            </audio>
+          </section>
+        )}
         {planned
           ? article.blocks.map((block, index) => (
               <Block

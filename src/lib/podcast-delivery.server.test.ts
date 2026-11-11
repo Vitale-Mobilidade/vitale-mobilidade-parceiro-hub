@@ -32,7 +32,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-import { servePodcastAudio, servePodcastFeed } from "./podcast-delivery.server";
+import { fetchReleasedPodcastAudio, servePodcastAudio, servePodcastFeed } from "./podcast-delivery.server";
 const id = "qzaQ3G7PRl8";
 const request = (init?: RequestInit) => new Request(`https://vitalemobilidade.com/podcast/audio/${id}`, init);
 
@@ -45,6 +45,7 @@ afterEach(() => {
 it("does not expose the feed or sign private media while distribution is disabled", async () => {
   expect((await servePodcastFeed(false)).status).toBe(404);
   expect((await servePodcastAudio(request(), id)).status).toBe(404);
+  expect(await fetchReleasedPodcastAudio(id)).toBeNull();
 
 });
 
@@ -54,6 +55,8 @@ it("serves released metadata and sends audio readers to the media function", asy
     youtube_id: id, title: "V20 Ultra", original_description: "Teste & farol",
     released_at: "2025-11-12T14:45:00Z", object_path: "private/v20.mp3", size_bytes: 15701351,
   };
+  expect(await fetchReleasedPodcastAudio(id)).toBe(`/podcast/audio/${id}`);
+  expect(await fetchReleasedPodcastAudio("invalid/id")).toBeNull();
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain('xmlns:content="http://purl.org/rss/1.0/modules/content/"');
   expect(feed).toContain("<itunes:explicit>false</itunes:explicit>");
@@ -79,6 +82,7 @@ it("keeps the static media fallback for the released pilot", async () => {
   };
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("https://vitalemobilidade.com/podcast/episodios/v20-ultra-farol.mp3");
+  expect(await fetchReleasedPodcastAudio(pilot)).toBe(`/podcast/audio/${pilot}`);
   const result = await servePodcastAudio(new Request("https://vitalemobilidade.com/podcast/audio/" + pilot), pilot);
   expect(result.status).toBe(307);
   expect(result.headers.get("Location")).toBe("/podcast/episodios/v20-ultra-farol.mp3");

@@ -631,7 +631,13 @@ function Videos({ role }: { role: AdminRole }) {
             <form onSubmit={save} className="space-y-4">
               <h2 className="text-lg font-semibold">Editar vídeo</h2>
               <p className="text-xs text-muted-foreground">YouTube ID: {selected.videoId}</p>
-              {role === "admin" && <VideoPodcastAudio key={selected.videoId} videoId={selected.videoId} />}
+              {role === "admin" && (
+                <VideoPodcastAudio
+                  key={selected.videoId}
+                  videoId={selected.videoId}
+                  article={articleMap.get(selected.videoId)}
+                />
+              )}
               <VideoRelatedArticle key={selected.videoId} article={articleMap.get(selected.videoId)} />
               <label className="block text-sm font-medium">
                 Título

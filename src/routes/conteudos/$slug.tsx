@@ -4,8 +4,11 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { ArticleView } from "@/components/editorial/ArticleView";
 import { isEditorialCoverUrl } from "../../../supabase/functions/_shared/editorial-cover";
-import { getPublishedArticleResult } from "@/lib/editorial.functions";
-import { getPublishedArticles } from "@/lib/editorial.functions";
+import {
+  getPublishedArticleResult,
+  getPublishedArticles,
+  getReleasedPodcastAudio,
+} from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
 import { articleSchemas } from "@/lib/article-seo";
@@ -28,13 +31,14 @@ export const Route = createFileRoute("/conteudos/$slug")({
     if (!result.ok) return { ok: false as const };
     const article = result.article;
     if (!article) throw notFound();
-    const [catalog, index, radar, videos] = await Promise.all([
+    const [catalog, index, radar, videos, podcastAudio] = await Promise.all([
       getBikeCatalog(),
       getPublishedArticles(),
       article.primaryBikeId || article.relatedBikeIds.length
         ? getRadarCatalog()
         : Promise.resolve({ ok: false as const }),
       getSheetVideoCatalog(),
+      article.videoId ? getReleasedPodcastAudio({ data: article.videoId }) : null,
     ]);
     const contextualArticles = relatedPublishedArticles(article, index ?? []);
     const connectedIds = new Set(
@@ -89,6 +93,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
     return {
       ok: true as const,
       article,
+      podcastAudio,
       bikes: catalog.ok
         ? catalog.bikes.filter((bike) => connectedIds.has(bike.bikeId))
         : [],
@@ -204,6 +209,7 @@ function ContentDetail() {
       <main>
         <ArticleView
           article={article}
+          podcastAudio={data.podcastAudio}
           bikes={bikes}
           prices={prices}
           histories={histories}
