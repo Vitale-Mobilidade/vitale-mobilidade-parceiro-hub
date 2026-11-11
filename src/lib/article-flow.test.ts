@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeArticleFlow } from "./article-flow";
+import { composeArticleFlow, spaceArticleModules, type ArticleFlowItem } from "./article-flow";
 import { layoutArticle } from "../../supabase/functions/_shared/editorial-automation";
 import type { ArticleBlock } from "../../supabase/functions/_shared/editorial-contract";
 
@@ -20,6 +20,27 @@ describe("ritmo do artigo", () => {
 
   it("não cria preview de preço se não há Bike ligada", () => {
     expect(composeArticleFlow(sections(3), false).map(item => item.kind)).not.toContain("radar");
+  });
+
+  it("separa Spotify, preço, vídeo e Quiz com texto editorial", () => {
+    const [a, b, c, d, e] = sections(5);
+    const item = (block: ArticleBlock): ArticleFlowItem => ({ kind: "block", block });
+    const video = item({ type: "video" });
+    const original: ArticleFlowItem[] = [item(a), video, item(b), item(c), { kind: "radar" }, item(d), { kind: "quiz" }, item(e)];
+    const result = spaceArticleModules(original, { hasPodcast: true, hasFaqParagraph: false });
+    expect(result.filter((entry) => entry.kind === "block" && entry.block.type === "text").map((entry) =>
+      entry.kind === "block" ? entry.block : null)).toEqual([a, b, c, d, e]);
+    expect(result).toHaveLength(original.length + 1);
+    const isModule = (entry: ArticleFlowItem) => entry.kind !== "block" || entry.block.type !== "text";
+    for (let i = 1; i < result.length; i++) expect(isModule(result[i - 1]) && isModule(result[i])).toBe(false);
+  });
+
+  it("não usa título vazio ou lista como parágrafo para empilhar módulos em um artigo curto", () => {
+    const heading: ArticleFlowItem = { kind: "block", block: { type: "text", heading: "Só um título" } };
+    const list: ArticleFlowItem = { kind: "block", block: { type: "text", text: "- Item" } };
+    const result = spaceArticleModules([heading, { kind: "quiz" }, list, { kind: "radar" }],
+      { hasPodcast: true, hasFaqParagraph: false });
+    expect(result).toEqual([{ kind: "podcast" }, heading, list]);
   });
 
   it("gera os próximos blocos de decisão durante o artigo, com vídeo complementar", () => {
