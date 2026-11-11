@@ -13,10 +13,18 @@ export async function verifyPodcastInstagramConnection() {
   }
 }
 
+interface PodcastInstagramClaim {
+  youtube_id: string;
+  claim_token: string;
+  container_id: string | null;
+  slot_at: string;
+}
+
 export async function publishPodcastOnInstagram(db: SupabaseClient) {
-  const { data: claim, error } = await db.rpc("claim_podcast_instagram").maybeSingle();
+  const { data: rawClaim, error } = await db.rpc("claim_podcast_instagram").maybeSingle();
   if (error) throw new Error("podcast_instagram_claim_failed");
-  if (!claim) return false;
+  if (!rawClaim) return false;
+  const claim = rawClaim as PodcastInstagramClaim;
 
   async function save(values: Record<string, string | null>) {
     const { data, error: writeError } = await db.from("podcast_instagram_deliveries").update(values)
