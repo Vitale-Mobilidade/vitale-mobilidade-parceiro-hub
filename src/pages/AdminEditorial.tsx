@@ -435,7 +435,10 @@ function PodcastQueuePanel() {
 
   return (
     <section className="mb-4 rounded-xl border border-line p-4" aria-label="Fila do podcast">
-      <h2 className="font-semibold">Fila do podcast</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold">Fila do podcast</h2>
+        <Link to="/admin/podcasts" className="text-sm font-semibold text-emerald-800 underline">Abrir painel de podcasts</Link>
+      </div>
       {queue.isPending && <p>Consultando a fila…</p>}
       {queue.isError && <p role="alert">Não foi possível consultar a fila.</p>}
       {queue.data && <p>{queue.data.drafts} na fila, aguardando liberação.</p>}

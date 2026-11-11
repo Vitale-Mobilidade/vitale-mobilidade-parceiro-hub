@@ -1,3 +1,4 @@
+import { readPodcastDashboard } from "./podcast-dashboard.ts";
 import { syncReleasedSpotifyEpisodes } from "./podcast-spotify.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
@@ -2648,6 +2649,10 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "podcast-dashboard") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      return json(req, await readPodcastDashboard(db, body.historyPage));
+    }
     if (action === "podcast-queue-prepare") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       const settings = await db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle();
