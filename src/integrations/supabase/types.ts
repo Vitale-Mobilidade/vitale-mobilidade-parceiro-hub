@@ -2902,18 +2902,21 @@ export type Database = {
       podcast_distribution_settings: {
         Row: {
           feed_enabled: boolean
+          instagram_enabled: boolean
           scheduler_enabled: boolean
           singleton: boolean
           verification_email: string | null
         }
         Insert: {
           feed_enabled?: boolean
+          instagram_enabled?: boolean
           scheduler_enabled?: boolean
           singleton?: boolean
           verification_email?: string | null
         }
         Update: {
           feed_enabled?: boolean
+          instagram_enabled?: boolean
           scheduler_enabled?: boolean
           singleton?: boolean
           verification_email?: string | null
@@ -2960,6 +2963,60 @@ export type Database = {
             columns: ["youtube_id"]
             isOneToOne: true
             referencedRelation: "podcast_video_audio"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
+      podcast_instagram_deliveries: {
+        Row: {
+          claim_token: string | null
+          container_id: string | null
+          error_code: string | null
+          lease_until: string | null
+          permalink: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          slot_at: string
+          status: string
+          youtube_id: string
+        }
+        Insert: {
+          claim_token?: string | null
+          container_id?: string | null
+          error_code?: string | null
+          lease_until?: string | null
+          permalink?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          slot_at: string
+          status?: string
+          youtube_id: string
+        }
+        Update: {
+          claim_token?: string | null
+          container_id?: string | null
+          error_code?: string | null
+          lease_until?: string | null
+          permalink?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          slot_at?: string
+          status?: string
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_instagram_deliveries_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_episode_queue"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_instagram_deliveries_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_released_episodes"
             referencedColumns: ["youtube_id"]
           },
         ]
@@ -3971,6 +4028,27 @@ export type Database = {
       authorize_youtube_editorial_tick: {
         Args: { issued_at: string; signature: string; tick_action: string }
         Returns: Json
+      }
+      claim_podcast_instagram: {
+        Args: never
+        Returns: {
+          claim_token: string | null
+          container_id: string | null
+          error_code: string | null
+          lease_until: string | null
+          permalink: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          slot_at: string
+          status: string
+          youtube_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "podcast_instagram_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_price_alert_hotpipe: {
         Args: never
