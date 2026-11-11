@@ -18,3 +18,14 @@ export function podcastArticleCoverSource(value: string | null): URL | null {
   return null;
 }
 
+
+export function podcastCoverPath(article: { slug: string | null; og_image_url: string | null; updated_at: string }, download = false) {
+  if (!article.slug || article.slug.length > 120 || !podcastArticleSlug.test(article.slug)
+    || !podcastArticleCoverSource(article.og_image_url)) return null;
+  const version = Date.parse(article.updated_at);
+  const path = `/podcast/capas/${article.slug}.jpg`;
+  const params = new URLSearchParams({ layout: "2" });
+  if (Number.isFinite(version)) params.set("v", String(version));
+  if (download) params.set("download", "1");
+  return params.size ? `${path}?${params}` : path;
+}

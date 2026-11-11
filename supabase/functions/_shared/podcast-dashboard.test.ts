@@ -20,6 +20,7 @@ it("lê totais e links do catálogo sem consultar o armazenamento nem dados priv
       return json([{ youtube_id: "released", title: "Publicado", released_at: "2026-11-11T20:45:02Z" }], 21);
     }
     if (table === "editorial_articles") return json([{ video_id: "ready", slug: "artigo" }, { video_id: "prepared", slug: "../draft" }]);
+    if (table === "podcast_instagram_deliveries") return json([]);
     if (table === "podcast_spotify_episodes") return json([{ youtube_id: "released", spotify_episode_id: "324BQ31Y26a5askghi34ax" }]);
     throw new Error(`Unexpected table ${table}`);
   });

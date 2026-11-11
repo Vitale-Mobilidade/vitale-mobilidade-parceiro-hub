@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { adminCall } from "@/lib/admin-api";
 import { formatPodcastDateTime, nextPodcastSlot, podcastSlots } from "@/lib/podcast-dashboard-clock";
@@ -13,6 +13,13 @@ import {
 
 const panel = "rounded-2xl border border-line bg-white p-4 sm:p-6";
 const button = "inline-flex min-h-11 items-center rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50";
+const instagramLabels = {
+  pending: "Instagram em processamento",
+  published: "Publicado no Instagram",
+  failed: "Falha ao publicar no Instagram",
+  expired: "Janela do Instagram encerrada",
+  unconfirmed: "Envio ao Instagram sem confirmação",
+};
 const textLink = "inline-flex min-h-11 items-center text-sm font-semibold text-emerald-800 underline";
 
 export default function AdminPodcasts() {
@@ -27,6 +34,17 @@ function PodcastDashboard() {
     staleTime: 30_000,
     retry: false,
   });
+  const instagramCheck = useMutation({
+    mutationFn: () => adminCall<{ status: string }>("podcast-instagram-connection"),
+  });
+  const instagramConnectionMessage = instagramCheck.isError ? "Não foi possível consultar a conexão."
+    : ({
+      verified: "Conta @vitalemobilidade confirmada.",
+      not_configured: "A conexão com o Instagram ainda precisa ser configurada.",
+      wrong_instagram_account: "A conta conectada é diferente de @vitalemobilidade.",
+      meta_authorization: "A autorização da Meta precisa ser renovada.",
+      meta_request: "Não foi possível verificar a conta na Meta.",
+    } as Record<string, string>)[instagramCheck.data?.status ?? ""];
   const data = query.data;
   const agenda = data?.feedEnabled && data.schedulerEnabled;
   return (
@@ -51,6 +69,9 @@ function PodcastDashboard() {
             <div>
               <h2 id="podcast-agenda" className="text-lg font-semibold">Agenda de publicação</h2>
               <p className="mt-2 font-semibold">{!data.feedEnabled ? "RSS desativado" : agenda ? "Agenda habilitada" : "Agenda pausada"}</p>
+              {data.instagramEnabled !== undefined && <p className="mt-1 text-sm">
+                {data.instagramEnabled ? "Instagram automático na mesma janela" : "Instagram automático desativado"}
+              </p>}
               <p className="mt-1 text-sm text-muted-foreground">
                 {podcastSlots.map((slot) => slot.label).join(" · ")} — horário de Brasília.
               </p>
@@ -60,6 +81,12 @@ function PodcastDashboard() {
             </div>
             {data.feedEnabled && <a href="/podcast/rss.xml" target="_blank" rel="noopener noreferrer" className={button}>Abrir RSS</a>}
           </div>
+          {data.instagramEnabled !== undefined && <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" className={button} disabled={instagramCheck.isPending} onClick={() => instagramCheck.mutate()}>
+              {instagramCheck.isPending ? "Verificando…" : "Verificar conta do Instagram"}
+            </button>
+            {instagramConnectionMessage && <p role="status" className="text-sm">{instagramConnectionMessage}</p>}
+          </div>}
           <p className="mt-3 text-sm text-muted-foreground">A fila escolhe um episódio elegível por horário, sem reservar uma data para cada vídeo. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
           <p className="mt-1 text-xs text-muted-foreground">Dados de <time dateTime={data.checkedAt}>{formatPodcastDateTime(data.checkedAt)}</time>, horário de Brasília.</p>
         </section>
@@ -101,6 +128,7 @@ function EpisodeSection({ title, section, kind, empty, children }: {
           <div className="min-w-0">
             <p className="break-words text-sm font-semibold">{item.title}</p>
             {item.releasedAt && <p className="text-sm text-muted-foreground">Publicado em <time dateTime={item.releasedAt}>{formatPodcastDateTime(item.releasedAt)}</time></p>}
+            {item.instagram && <p className="text-sm text-muted-foreground">{instagramLabels[item.instagram.status]}</p>}
             {kind === "prepared" && <p className="text-sm text-muted-foreground">
               {!item.articleSlug ? "Aguardando artigo publicado"
                 : item.slotAt ? <>Janela registrada: <time dateTime={item.slotAt}>{formatPodcastDateTime(item.slotAt)}</time></>
@@ -109,6 +137,7 @@ function EpisodeSection({ title, section, kind, empty, children }: {
           </div>
           <div className="flex flex-wrap gap-x-3">
             {item.articleSlug && <Link className={textLink} to="/conteudos/$slug" params={{ slug: item.articleSlug }}>Ver artigo</Link>}
+            {item.instagram?.permalink && <a className={textLink} href={item.instagram.permalink} target="_blank" rel="noopener noreferrer">Abrir no Instagram</a>}
             {item.spotifyId && <a className={textLink} href={`https://open.spotify.com/episode/${item.spotifyId}`} target="_blank" rel="noopener noreferrer">Abrir no Spotify</a>}
           </div>
         </li>)}

@@ -7,6 +7,7 @@ import {
   type PodcastDashboardSnapshot,
 } from "../_shared/podcast-dashboard-contract.ts";
 import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
+import { validInstagramPermalink } from "../_shared/podcast-instagram.ts";
 import { spotifyEpisodeId } from "../_shared/podcast-spotify.ts";
 
 type Row = { youtube_id: string; title: string; release_at?: string | null; released_at?: string | null };
@@ -15,7 +16,7 @@ export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown)
   const checkedAt = new Date().toISOString();
   const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
   const [settings, audio, ready, prepared, released] = await Promise.all([
-    db.from("podcast_distribution_settings").select("feed_enabled,scheduler_enabled").eq("singleton", true).single(),
+    db.from("podcast_distribution_settings").select("feed_enabled,scheduler_enabled,instagram_enabled").eq("singleton", true).single(),
     db.from("podcast_video_audio").select("youtube_id", { count: "exact", head: true }),
     db.from("podcast_queue_candidates").select("youtube_id,title", { count: "exact" })
       .order("published_on", { ascending: false, nullsFirst: false })
@@ -30,18 +31,32 @@ export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown)
     throw new Error("podcast_dashboard_read_failed");
   const allRows = [...ready.data ?? [], ...prepared.data ?? [], ...released.data ?? []];
   const releasedIds = (released.data ?? []).map((row) => row.youtube_id);
-  const [articles, spotify] = await Promise.all([
+  const [articles, spotify, instagram] = await Promise.all([
     allRows.length ? db.from("editorial_articles").select("video_id,slug")
       .in("video_id", [...new Set(allRows.map((row) => row.youtube_id))])
       .eq("status", "published").lte("published_at", checkedAt) : { data: [], error: null },
     releasedIds.length ? db.from("podcast_spotify_episodes").select("youtube_id,spotify_episode_id")
       .in("youtube_id", releasedIds) : { data: [], error: null },
+    releasedIds.length ? db.from("podcast_instagram_deliveries").select("youtube_id,slot_at,status,permalink,publish_attempted_at")
+      .in("youtube_id", releasedIds) : { data: [], error: null },
   ]);
-  if (articles.error || spotify.error) throw new Error("podcast_dashboard_links_failed");
+  if (articles.error || spotify.error || instagram.error) throw new Error("podcast_dashboard_links_failed");
   const articleSlugs = new Map((articles.data ?? []).flatMap(({ video_id, slug }) =>
     typeof slug === "string" && slug.length <= 120 && podcastArticleSlug.test(slug) ? [[video_id, slug] as const] : []));
   const spotifyIds = new Map((spotify.data ?? []).flatMap(({ youtube_id, spotify_episode_id }) =>
     spotifyEpisodeId(spotify_episode_id) ? [[youtube_id, spotify_episode_id] as const] : []));
+  const instagramResults = new Map<string, NonNullable<PodcastDashboardItem["instagram"]>>();
+  for (const row of instagram.data ?? []) {
+    if (!["pending", "published", "failed"].includes(row.status)) continue;
+    const expired = Date.parse(checkedAt) >= Date.parse(row.slot_at) + 5 * 60_000;
+    const status = row.status === "pending" && expired
+      ? row.publish_attempted_at ? "unconfirmed" : "expired"
+      : row.status;
+    instagramResults.set(row.youtube_id, {
+      status,
+      permalink: validInstagramPermalink(row.permalink) ? row.permalink : null,
+    });
+  }
   function items(rows: Row[] | null): PodcastDashboardItem[] {
     return (rows ?? []).map((row) => ({
       id: row.youtube_id,
@@ -50,12 +65,14 @@ export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown)
       slotAt: row.release_at ?? null,
       releasedAt: row.released_at ?? null,
       spotifyId: row.released_at ? spotifyIds.get(row.youtube_id) ?? null : null,
+      instagram: instagramResults.get(row.youtube_id),
     }));
   }
   return {
     checkedAt,
     feedEnabled: settings.data.feed_enabled === true,
     schedulerEnabled: settings.data.scheduler_enabled === true,
+    instagramEnabled: settings.data.instagram_enabled === true,
     audioCount: audio.count ?? 0,
     ready: { total: ready.count ?? 0, items: items(ready.data) },
     prepared: { total: prepared.count ?? 0, items: items(prepared.data) },

@@ -9,12 +9,14 @@ export type PodcastDashboardItem = {
   slotAt: string | null;
   releasedAt: string | null;
   spotifyId: string | null;
+  instagram?: { status: "pending" | "published" | "failed" | "expired" | "unconfirmed"; permalink: string | null };
 };
 
 export type PodcastDashboardSnapshot = {
   checkedAt: string;
   feedEnabled: boolean;
   schedulerEnabled: boolean;
+  instagramEnabled?: boolean;
   audioCount: number;
   ready: { total: number; items: PodcastDashboardItem[] };
   prepared: { total: number; items: PodcastDashboardItem[] };
