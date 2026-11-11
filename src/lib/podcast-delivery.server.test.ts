@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => ({
   enabled: false,
+  sign: vi.fn(),
   episode: null as null | {
     youtube_id: string; title: string; original_description: string;
     released_at: string; object_path: string; size_bytes: number;
@@ -10,6 +11,7 @@ const fixture = vi.hoisted(() => ({
 
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
+    storage: { from: () => ({ createSignedUrl: fixture.sign }) },
     from(table: string) {
       const query = {
         select: () => query,
@@ -34,6 +36,7 @@ const request = (init?: RequestInit) => new Request(`https://vitalemobilidade.co
 afterEach(() => {
   fixture.enabled = false;
   fixture.episode = null;
+  fixture.sign.mockReset().mockResolvedValue({ data: null });
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -67,7 +70,7 @@ it("serves released metadata and supports HEAD and a byte range without exposing
     expect(headers.get("apikey")).toBe("sb_secret_test");
     expect(headers.get("authorization")).toBeNull();
     return new Response(new Uint8Array([255, 251, 0, 0]), {
-      status: 206, headers: { "Content-Range": "bytes 0-3/15701351", "Content-Length": "4" },
+      status: 206, headers: { "Content-Range": "bytes 0-3/15701351", "Content-Length": "4", "Content-Type": "audio/mpeg" },
     });
   });
   vi.stubGlobal("fetch", fetcher);
@@ -78,7 +81,29 @@ it("serves released metadata and supports HEAD and a byte range without exposing
   expect((await audio.arrayBuffer()).byteLength).toBe(4);
 });
 
-it("uses the static media for the released pilot only", async () => {
+it("streams a signed fallback after the authenticated Storage request fails", async () => {
+  fixture.enabled = true;
+  fixture.episode = {
+    youtube_id: id, title: "FT07", original_description: "Teste",
+    released_at: "2026-11-11T19:35:00Z", object_path: "private/ft07.mp3", size_bytes: 23120427,
+  };
+  vi.stubEnv("SUPABASE_URL", "https://storage.example");
+  vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_test");
+  fixture.sign.mockResolvedValue({ data: { signedUrl: "https://storage.example/signed/ft07" } });
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(new Response(null, { status: 403 }))
+    .mockResolvedValueOnce(new Response(new Uint8Array([255, 251, 0, 0]), {
+      status: 206, headers: { "Content-Type": "audio/mpeg", "Content-Range": "bytes 0-3/23120427" },
+    }));
+  vi.stubGlobal("fetch", fetcher);
+  const audio = await servePodcastAudio(request({ headers: { Range: "bytes=0-3" } }), id);
+  expect(audio.status).toBe(206);
+  expect(fixture.sign).toHaveBeenCalledWith("private/ft07.mp3", 60);
+  expect(fetcher.mock.calls[1][1].headers).toEqual({ Range: "bytes=0-3" });
+  expect(audio.headers.get("Location")).toBeNull();
+});
+
+it("keeps the static media fallback for the released pilot", async () => {
   const pilot = "byk0-p8NedQ";
   fixture.enabled = true;
   fixture.episode = {
@@ -87,6 +112,9 @@ it("uses the static media for the released pilot only", async () => {
   };
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("https://vitalemobilidade.com/podcast/episodios/v20-ultra-farol.mp3");
+  vi.stubEnv("SUPABASE_URL", "https://storage.example");
+  vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_test");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
   const result = await servePodcastAudio(new Request("https://vitalemobilidade.com/podcast/audio/" + pilot), pilot);
   expect(result.status).toBe(307);
   expect(result.headers.get("Location")).toBe("/podcast/episodios/v20-ultra-farol.mp3");
