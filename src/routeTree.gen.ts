@@ -75,6 +75,7 @@ import { Route as ApiPublicNewsletterWebhookRouteImport } from './routes/api/pub
 import { Route as ApiPublicNewsletterWorkerRouteImport } from './routes/api/public/newsletter-worker'
 import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/public/price-alert-outbox'
 import { Route as PodcastAudioYoutubeIdRouteImport } from './routes/podcast/audio/$youtubeId'
+import { Route as PodcastCapasFileRouteImport } from './routes/podcast/capas/$file'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -420,6 +421,11 @@ const PodcastAudioYoutubeIdRoute = PodcastAudioYoutubeIdRouteImport.update({
   path: '/podcast/audio/$youtubeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PodcastCapasFileRoute = PodcastCapasFileRouteImport.update({
+  id: '/podcast/capas/$file',
+  path: '/podcast/capas/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -492,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
+  '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -561,6 +568,7 @@ export interface FileRoutesByTo {
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
+  '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -631,6 +639,7 @@ export interface FileRoutesById {
   '/api/public/newsletter-worker': typeof ApiPublicNewsletterWorkerRoute
   '/api/public/price-alert-outbox': typeof ApiPublicPriceAlertOutboxRoute
   '/podcast/audio/$youtubeId': typeof PodcastAudioYoutubeIdRoute
+  '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
 }
@@ -702,6 +711,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/podcast/audio/$youtubeId'
+    | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -771,6 +781,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/podcast/audio/$youtubeId'
+    | '/podcast/capas/$file'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
   id:
@@ -840,6 +851,7 @@ export interface FileRouteTypes {
     | '/api/public/newsletter-worker'
     | '/api/public/price-alert-outbox'
     | '/podcast/audio/$youtubeId'
+    | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
   fileRoutesById: FileRoutesById
@@ -910,6 +922,7 @@ export interface RootRouteChildren {
   ApiPublicNewsletterWorkerRoute: typeof ApiPublicNewsletterWorkerRoute
   ApiPublicPriceAlertOutboxRoute: typeof ApiPublicPriceAlertOutboxRoute
   PodcastAudioYoutubeIdRoute: typeof PodcastAudioYoutubeIdRoute
+  PodcastCapasFileRoute: typeof PodcastCapasFileRoute
   AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
 }
 
@@ -1377,6 +1390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastAudioYoutubeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/podcast/capas/$file': {
+      id: '/podcast/capas/$file'
+      path: '/podcast/capas/$file'
+      fullPath: '/podcast/capas/$file'
+      preLoaderRoute: typeof PodcastCapasFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/conteudos/$id/preview': {
       id: '/admin/conteudos/$id/preview'
       path: '/preview'
@@ -1468,6 +1488,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicNewsletterWorkerRoute: ApiPublicNewsletterWorkerRoute,
   ApiPublicPriceAlertOutboxRoute: ApiPublicPriceAlertOutboxRoute,
   PodcastAudioYoutubeIdRoute: PodcastAudioYoutubeIdRoute,
+  PodcastCapasFileRoute: PodcastCapasFileRoute,
   AdminConteudosIndexRoute: AdminConteudosIndexRoute,
 }
 export const routeTree = rootRouteImport
