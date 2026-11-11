@@ -39,12 +39,17 @@ export async function servePodcastAudio(request: Request, youtubeId: string) {
     baseHeaders.set("Content-Range", `bytes */${data.size_bytes}`);
     return new Response(null, { status: 416, headers: baseHeaders });
   }
-  const signed = await db.storage.from(PODCAST_AUDIO_BUCKET).createSignedUrl(data.object_path, 60);
-  if (signed.error || !signed.data) return new Response(null, { status: 503, headers: noStore });
-  const upstream = await fetch(signed.data.signedUrl, {
-    headers: range ? { Range: range } : {},
-    redirect: "error", signal: request.signal,
-  }).catch(() => null);
+  const storageOrigin = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!storageOrigin || !serviceKey) return new Response(null, { status: 503, headers: noStore });
+  const objectPath = data.object_path.split("/").map(encodeURIComponent).join("/");
+  const headers = new Headers({ apikey: serviceKey });
+  if (!serviceKey.startsWith("sb_secret_")) headers.set("Authorization", `Bearer ${serviceKey}`);
+  if (range) headers.set("Range", range);
+  const upstream = await fetch(
+    new URL(`/storage/v1/object/authenticated/${PODCAST_AUDIO_BUCKET}/${objectPath}`, storageOrigin),
+    { headers, redirect: "error", signal: AbortSignal.timeout(20000) },
+  ).catch(() => null);
   if (!upstream || ![200, 206, 416].includes(upstream.status)) {
     await upstream?.body?.cancel();
     return new Response(null, { status: 503, headers: noStore });

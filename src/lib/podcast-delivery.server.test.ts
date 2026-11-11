@@ -6,7 +6,6 @@ const fixture = vi.hoisted(() => ({
     youtube_id: string; title: string; original_description: string;
     released_at: string; object_path: string; size_bytes: number;
   },
-  sign: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client.server", () => ({
@@ -25,7 +24,6 @@ vi.mock("@/integrations/supabase/client.server", () => ({
       };
       return query;
     },
-    storage: { from: () => ({ createSignedUrl: fixture.sign }) },
   },
 }));
 
@@ -36,14 +34,14 @@ const request = (init?: RequestInit) => new Request(`https://vitalemobilidade.co
 afterEach(() => {
   fixture.enabled = false;
   fixture.episode = null;
-  fixture.sign.mockReset();
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 
 it("does not expose the feed or sign private media while distribution is disabled", async () => {
   expect((await servePodcastFeed(false)).status).toBe(404);
   expect((await servePodcastAudio(request(), id)).status).toBe(404);
-  expect(fixture.sign).not.toHaveBeenCalled();
+
 });
 
 it("serves released metadata and supports HEAD and a byte range without exposing the signed URL", async () => {
@@ -58,10 +56,14 @@ it("serves released metadata and supports HEAD and a byte range without exposing
   expect(feed).not.toContain(fixture.episode.object_path);
   const head = await servePodcastAudio(request({ method: "HEAD" }), id);
   expect(head.headers.get("Content-Length")).toBe("15701351");
-  expect(fixture.sign).not.toHaveBeenCalled();
-  fixture.sign.mockResolvedValue({ data: { signedUrl: "https://storage.example/audio" } });
-  const fetcher = vi.fn(async (_url: string, init: RequestInit) => {
-    expect(init.headers).toEqual({ Range: "bytes=0-3" });
+  vi.stubEnv("SUPABASE_URL", "https://storage.example");
+  vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_test");
+  const fetcher = vi.fn(async (url: URL, init: RequestInit) => {
+    expect(url.href).toBe("https://storage.example/storage/v1/object/authenticated/podcast-audio/private/v20.mp3");
+    const headers = new Headers(init.headers);
+    expect(headers.get("range")).toBe("bytes=0-3");
+    expect(headers.get("apikey")).toBe("sb_secret_test");
+    expect(headers.get("authorization")).toBeNull();
     return new Response(new Uint8Array([255, 251, 0, 0]), {
       status: 206, headers: { "Content-Range": "bytes 0-3/15701351", "Content-Length": "4" },
     });
