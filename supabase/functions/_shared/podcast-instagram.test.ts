@@ -8,7 +8,7 @@ const article = {
 
 it("reuses the RSS cover and episode summary, respecting the caption limit", () => {
   const post = instagramPodcastPost("Teste da FT07", { ...article, summary: "Resumo ".repeat(1000) });
-  expect(post?.image_url).toContain("https://vitalemobilidade.com/podcast/capas/teste-ft07.jpg?layout=2&v=");
+  expect(post?.image_url).toContain("https://vitalemobilidade.com/podcast/capas/teste-ft07.v3.jpg?layout=3&v=");
   expect(post?.caption).toMatch(/Teste da FT07\n\nResumo/);
   expect([...post!.caption].length).toBeLessThanOrEqual(2200);
   expect(instagramPodcastPost("Teste", { ...article, og_image_url: null })).toBeNull();
