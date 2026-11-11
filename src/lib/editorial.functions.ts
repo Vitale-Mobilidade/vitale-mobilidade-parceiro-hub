@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fetchReleasedPodcastAudio } from "./podcast-delivery.server";
 import {
   fetchPublishedArticle,
   fetchPublishedArticleResult,
@@ -21,3 +22,7 @@ export const getPublishedArticles = createServerFn({ method: "GET" }).handler(
 export const getPublishedArticlesForBike = createServerFn({ method: "GET" })
   .inputValidator((v: unknown) => (typeof v === "string" ? v : ""))
   .handler(async ({ data }) => fetchPublishedArticlesForBike(data));
+
+export const getReleasedPodcastAudio = createServerFn({ method: "GET" })
+  .inputValidator((v: unknown) => (typeof v === "string" ? v : ""))
+  .handler(async ({ data }) => fetchReleasedPodcastAudio(data));

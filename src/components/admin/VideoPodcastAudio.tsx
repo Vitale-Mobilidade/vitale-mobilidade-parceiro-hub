@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { adminCall } from "@/lib/admin-api";
+import { adminCall, type ArticleRow } from "@/lib/admin-api";
+import { getReleasedPodcastAudio } from "@/lib/editorial.functions";
+import { podcastArticleEpisodeUrl } from "@/lib/podcast-editorial";
 import {
   hasMp3Signature,
   PODCAST_AUDIO_BUCKET,
@@ -21,7 +23,10 @@ type AudioStatus =
 const actionClass =
   "rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50";
 
-export function VideoPodcastAudio({ videoId }: { videoId: string }) {
+export function VideoPodcastAudio({ videoId, article }: {
+  videoId: string;
+  article?: ArticleRow;
+}) {
   const client = useQueryClient();
   const queryKey = ["admin", "podcast-audio", videoId] as const;
   const status = useQuery({
@@ -30,6 +35,17 @@ export function VideoPodcastAudio({ videoId }: { videoId: string }) {
       adminCall<AudioStatus>("podcast-audio-status", { youtubeId: videoId }),
     retry: false,
   });
+  const articleEpisodeUrl = article?.status === "published" && article.slug
+    ? podcastArticleEpisodeUrl(article.slug)
+    : null;
+  const release = useQuery({
+    queryKey: ["admin", "podcast-episode-link", videoId],
+    queryFn: () => getReleasedPodcastAudio({ data: videoId }),
+    enabled: !!articleEpisodeUrl && status.data?.enabled === true,
+    retry: false,
+  });
+  const episodeUrl = release.data ? articleEpisodeUrl : null;
+  const [copyFeedback, setCopyFeedback] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState<"upload" | "preview" | "workdrive" | null>(null);
@@ -199,6 +215,31 @@ export function VideoPodcastAudio({ videoId }: { videoId: string }) {
       )}
       {status.data?.enabled && !status.isError && (
         <>
+          {episodeUrl && (
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold">
+                Link do episódio
+                <input readOnly value={episodeUrl} onFocus={(event) => event.currentTarget.select()}
+                  className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal" />
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <a href={episodeUrl} target="_blank" rel="noopener noreferrer" className={actionClass}>
+                  Abrir episódio
+                </a>
+                <button type="button" className={actionClass} onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(episodeUrl);
+                    setCopyFeedback("Link copiado.");
+                  } catch {
+                    setCopyFeedback("Selecione o endereço para copiar o link.");
+                  }
+                }}>
+                  Copiar link
+                </button>
+              </div>
+              <p role="status" className="text-xs">{copyFeedback}</p>
+            </div>
+          )}
           {audio && (
             <div className="space-y-2">
               <p className="break-all text-sm">
