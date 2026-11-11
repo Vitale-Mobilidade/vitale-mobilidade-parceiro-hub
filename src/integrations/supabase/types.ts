@@ -918,6 +918,13 @@ export type Database = {
             referencedRelation: "editorial_videos"
             referencedColumns: ["youtube_id"]
           },
+          {
+            foreignKeyName: "editorial_articles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_queue_candidates"
+            referencedColumns: ["youtube_id"]
+          },
         ]
       }
       editorial_audit_logs: {
@@ -1006,6 +1013,13 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_briefs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_queue_candidates"
             referencedColumns: ["youtube_id"]
           },
         ]
@@ -2871,6 +2885,71 @@ export type Database = {
         }
         Relationships: []
       }
+      podcast_distribution_settings: {
+        Row: {
+          feed_enabled: boolean
+          scheduler_enabled: boolean
+          singleton: boolean
+          verification_email: string | null
+        }
+        Insert: {
+          feed_enabled?: boolean
+          scheduler_enabled?: boolean
+          singleton?: boolean
+          verification_email?: string | null
+        }
+        Update: {
+          feed_enabled?: boolean
+          scheduler_enabled?: boolean
+          singleton?: boolean
+          verification_email?: string | null
+        }
+        Relationships: []
+      }
+      podcast_episode_queue: {
+        Row: {
+          created_at: string
+          object_path: string
+          original_description: string
+          release_at: string | null
+          released_at: string | null
+          size_bytes: number
+          source_folder_created_at: string | null
+          title: string
+          youtube_id: string
+        }
+        Insert: {
+          created_at?: string
+          object_path: string
+          original_description: string
+          release_at?: string | null
+          released_at?: string | null
+          size_bytes: number
+          source_folder_created_at?: string | null
+          title: string
+          youtube_id: string
+        }
+        Update: {
+          created_at?: string
+          object_path?: string
+          original_description?: string
+          release_at?: string | null
+          released_at?: string | null
+          size_bytes?: number
+          source_folder_created_at?: string | null
+          title?: string
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_episode_queue_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_video_audio"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
       podcast_video_audio: {
         Row: {
           attached_by: string
@@ -2898,6 +2977,24 @@ export type Database = {
           upload_id?: string
           uploaded_at?: string
           youtube_id?: string
+        }
+        Relationships: []
+      }
+      podcast_worker_credentials: {
+        Row: {
+          actor_id: string | null
+          signing_key: string
+          singleton: boolean
+        }
+        Insert: {
+          actor_id?: string | null
+          signing_key?: string
+          singleton?: boolean
+        }
+        Update: {
+          actor_id?: string | null
+          signing_key?: string
+          singleton?: boolean
         }
         Relationships: []
       }
@@ -3667,7 +3764,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      podcast_queue_candidates: {
+        Row: {
+          published_on: string | null
+          title: string | null
+          uploaded_at: string | null
+          youtube_id: string | null
+        }
+        Relationships: []
+      }
+      podcast_released_episodes: {
+        Row: {
+          object_path: string | null
+          original_description: string | null
+          released_at: string | null
+          size_bytes: number | null
+          title: string | null
+          youtube_id: string | null
+        }
+        Insert: {
+          object_path?: string | null
+          original_description?: string | null
+          released_at?: string | null
+          size_bytes?: number | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Update: {
+          object_path?: string | null
+          original_description?: string | null
+          released_at?: string | null
+          size_bytes?: number | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_episode_queue_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_video_audio"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_channel_classifieds: {
@@ -3773,6 +3913,10 @@ export type Database = {
         }
         Returns: Json
       }
+      authorize_podcast_tick: {
+        Args: { p_issued_at: string; p_signature: string }
+        Returns: string
+      }
       authorize_price_alert_hotpipe: {
         Args: { issued_at: string; signature: string }
         Returns: boolean
@@ -3808,6 +3952,7 @@ export type Database = {
       claim_youtube_editorial_cover_render: { Args: never; Returns: Json }
       claim_youtube_editorial_publication: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
+      dispatch_podcast_tick: { Args: never; Returns: number }
       dispatch_price_alert_hotpipe: { Args: never; Returns: number }
       dispatch_youtube_editorial_tick: {
         Args: { tick_action: string }
@@ -3831,6 +3976,16 @@ export type Database = {
           bike_id: string
           relevance_rank: number
         }[]
+      }
+      import_podcast_video_audio: {
+        Args: {
+          p_actor: string
+          p_file_name: string
+          p_size: number
+          p_upload_id: string
+          p_youtube_id: string
+        }
+        Returns: Json
       }
       ingest_youtube_editorial_snapshot: {
         Args: { video_ids: string[] }
@@ -4304,6 +4459,10 @@ export type Database = {
           p_target_path: string
         }
         Returns: undefined
+      }
+      release_next_podcast_episode: {
+        Args: { p_now?: string }
+        Returns: string
       }
       track_quiz_funnel_session: {
         Args: {
