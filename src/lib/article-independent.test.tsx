@@ -21,12 +21,14 @@ it("renderiza artigo independente sem aviso fixo, preservando vídeo complementa
   expect(html).not.toMatch(/Baseado no|vídeo de origem|Os relatos se referem|não garantem o mesmo resultado/);
 });
 
-it("exibe o player na âncora compartilhável apenas quando há áudio público", () => {
-  const path = "/podcast/audio/abcDEFG1234";
-  const rendered = renderToStaticMarkup(<ArticleView article={article} bikes={[]} podcastAudio={path} />);
+it("exibe o player na âncora compartilhável no corpo do artigo apenas com episódio no Spotify", () => {
+  const episode = "324BQ31Y26a5askghi34ax";
+  const rendered = renderToStaticMarkup(<ArticleView article={article} bikes={[]} spotifyEpisodeId={episode} />);
   expect(rendered).toContain('id="podcast"');
-  expect(rendered).toMatch(/<audio[^>]*preload="none"[^>]*src="\/podcast\/audio\/abcDEFG1234"/);
+  expect(rendered).toContain(`https://open.spotify.com/embed/episode/${episode}`);
+  expect(rendered).not.toContain("<audio");
+  expect(rendered.indexOf("A bateria tem")).toBeLessThan(rendered.indexOf('id="podcast"'));
   expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} />)).not.toContain('id="podcast"');
-  expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} podcastAudio={path} preview />))
+  expect(renderToStaticMarkup(<ArticleView article={article} bikes={[]} spotifyEpisodeId={episode} preview />))
     .not.toContain('id="podcast"');
 });

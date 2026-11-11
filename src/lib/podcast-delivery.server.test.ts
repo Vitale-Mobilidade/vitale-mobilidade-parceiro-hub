@@ -5,7 +5,7 @@ const fixture = vi.hoisted(() => ({
   article: null as null | { video_id: string; slug: string; title: string; summary: string; og_image_url: string; updated_at: string },
   episode: null as null | {
     youtube_id: string; title: string; original_description: string;
-    released_at: string; object_path: string; size_bytes: number;
+    released_at: string; object_path: string; size_bytes: number; spotify_episode_id?: string;
   },
 }));
 
@@ -32,7 +32,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-import { fetchReleasedPodcastAudio, servePodcastAudio, servePodcastFeed } from "./podcast-delivery.server";
+import { fetchReleasedSpotifyEpisode, servePodcastAudio, servePodcastFeed } from "./podcast-delivery.server";
 const id = "qzaQ3G7PRl8";
 const request = (init?: RequestInit) => new Request(`https://vitalemobilidade.com/podcast/audio/${id}`, init);
 
@@ -45,7 +45,7 @@ afterEach(() => {
 it("does not expose the feed or sign private media while distribution is disabled", async () => {
   expect((await servePodcastFeed(false)).status).toBe(404);
   expect((await servePodcastAudio(request(), id)).status).toBe(404);
-  expect(await fetchReleasedPodcastAudio(id)).toBeNull();
+  expect(await fetchReleasedSpotifyEpisode(id)).toBeNull();
 
 });
 
@@ -55,8 +55,10 @@ it("serves released metadata and sends audio readers to the media function", asy
     youtube_id: id, title: "V20 Ultra", original_description: "Teste & farol",
     released_at: "2025-11-12T14:45:00Z", object_path: "private/v20.mp3", size_bytes: 15701351,
   };
-  expect(await fetchReleasedPodcastAudio(id)).toBe(`/podcast/audio/${id}`);
-  expect(await fetchReleasedPodcastAudio("invalid/id")).toBeNull();
+  expect(await fetchReleasedSpotifyEpisode(id)).toBeNull();
+  fixture.episode.spotify_episode_id = "324BQ31Y26a5askghi34ax";
+  expect(await fetchReleasedSpotifyEpisode(id)).toBe("324BQ31Y26a5askghi34ax");
+  expect(await fetchReleasedSpotifyEpisode("invalid/id")).toBeNull();
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain('xmlns:content="http://purl.org/rss/1.0/modules/content/"');
   expect(feed).toContain("<itunes:explicit>false</itunes:explicit>");
@@ -82,7 +84,6 @@ it("keeps the static media fallback for the released pilot", async () => {
   };
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("https://vitalemobilidade.com/podcast/episodios/v20-ultra-farol.mp3");
-  expect(await fetchReleasedPodcastAudio(pilot)).toBe(`/podcast/audio/${pilot}`);
   const result = await servePodcastAudio(new Request("https://vitalemobilidade.com/podcast/audio/" + pilot), pilot);
   expect(result.status).toBe(307);
   expect(result.headers.get("Location")).toBe("/podcast/episodios/v20-ultra-farol.mp3");
@@ -102,7 +103,7 @@ it("gives a released episode its published article, cover and readable show note
   };
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("<link>https://vitalemobilidade.com/conteudos/teste-ft07</link>");
-  expect(feed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.jpg?v=');
+  expect(feed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.jpg?layout=2&amp;v=');
   expect(feed).toContain("utm_source=origem&amp;amp;utm_content=ft07");
   expect(feed).toContain("Fazer o quiz&lt;/a&gt;&lt;/p&gt;\n&lt;p&gt;Resumo do artigo &amp;amp; contexto.&lt;/p&gt;\n&lt;p&gt;Opções de compra");
   expect(feed.match(/escolherbike/g)).toHaveLength(1);

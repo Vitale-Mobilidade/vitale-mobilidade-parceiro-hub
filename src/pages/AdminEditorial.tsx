@@ -633,12 +633,12 @@ function Videos({ role }: { role: AdminRole }) {
               <p className="text-xs text-muted-foreground">YouTube ID: {selected.videoId}</p>
               {role === "admin" && (
                 <VideoPodcastAudio
-                  key={selected.videoId}
+                  key={`podcast:${selected.videoId}`}
                   videoId={selected.videoId}
                   article={articleMap.get(selected.videoId)}
                 />
               )}
-              <VideoRelatedArticle key={selected.videoId} article={articleMap.get(selected.videoId)} />
+              <VideoRelatedArticle key={`article:${selected.videoId}`} article={articleMap.get(selected.videoId)} />
               <label className="block text-sm font-medium">
                 Título
                 <input className={`${INPUT} mt-1`} value={title} onChange={(e) => setTitle(e.target.value)} required />

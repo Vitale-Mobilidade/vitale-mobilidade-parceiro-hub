@@ -10,22 +10,15 @@ import {
   COVER_HEIGHT,
 } from "../editorial-cover.ts";
 import { interFontBase64 } from "./assets.ts";
-const W = COVER_WIDTH,
-  H = COVER_HEIGHT;
 const MAX_INPUT = 12 * 1024 * 1024;
 const MAX_PIXELS = 4_200_000;
 let fontBytes: Uint8Array | undefined;
 type Raster = { width: number; height: number; buffer: Uint8Array };
 
-function decode(background: string): Raster {
-  const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
-    background,
-  );
-  if (!match || match[2].length > Math.ceil(MAX_INPUT / 3) * 4)
-    throw new Error("cover_background_invalid");
-  const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
+function decode(bytes: Uint8Array, format: "png" | "jpeg"): Raster {
+  if (bytes.length > MAX_INPUT) throw new Error("cover_background_invalid");
   let dimensions: { width: number; height: number } | null = null;
-  if (match[1] === "jpeg") dimensions = inspectJpeg(bytes);
+  if (format === "jpeg") dimensions = inspectJpeg(bytes);
   else if (
     bytes.length >= 24 &&
     bytes
@@ -42,7 +35,7 @@ function decode(background: string): Raster {
     dimensions.width * dimensions.height > MAX_PIXELS
   )
     throw new Error("cover_background_dimensions_invalid");
-  if (match[1] === "png") {
+  if (format === "png") {
     const image = png.decode(bytes);
     return {
       width: image.width,
@@ -67,7 +60,7 @@ function decode(background: string): Raster {
   }
   return { width: image.width, height: image.height, buffer };
 }
-function fitBackground(source: Raster): Uint8Array {
+function fitBackground(source: Raster, W: number, H: number): Uint8Array {
   const out = new Uint8Array(W * H * 4);
   const scale = Math.max(W / source.width, H / source.height);
   const ox = (source.width - W / scale) / 2,
@@ -108,6 +101,8 @@ function composite(
   text: Raster,
   x: number,
   y: number,
+  W: number,
+  H: number,
   shadow = false,
 ) {
   for (let sy = 0; sy < text.height; sy++)
@@ -142,10 +137,29 @@ function rasterText(
     layout.free();
   }
 }
-export async function composeServerCover(
-  background: string,
+export async function composeServerCover(background: string, title: string) {
+  const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(background);
+  if (!match || match[2].length > Math.ceil(MAX_INPUT / 3) * 4)
+    throw new Error("cover_background_invalid");
+  const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
+  return composeCover(decode(bytes, match[1] === "png" ? "png" : "jpeg"), title, false);
+}
+
+export async function composeSquarePodcastCover(
+  background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" } | null,
   title: string,
-): Promise<{ bytes: Uint8Array; title: string; lines: string[] }> {
+) {
+  const source = background
+    ? decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg")
+    : { width: 1, height: 1, buffer: new Uint8Array([13, 89, 67, 255]) };
+  return composeCover(source, title, true);
+}
+
+function composeCover(source: Raster, title: string, square: boolean) {
+  const W = square ? 1400 : COVER_WIDTH, H = square ? 1400 : COVER_HEIGHT;
+  const inset = square ? 100 : 64;
+  const bottom = square ? 108 : 64;
+  const top = square ? 88 : 56;
   if (!title.trim() || title.length > 200)
     throw new Error("cover_title_invalid");
   fontBytes ??= Uint8Array.from(atob(interFontBase64), (char) =>
@@ -167,35 +181,36 @@ export async function composeServerCover(
       if (!advances.has(key)) advances.set(key, font(size).metrics(char, size).advance_width);
       return total + advances.get(key)!;
     }, 0);
-    let sizes = [76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
+    let sizes = [ ...(square ? [112, 104, 96, 88, 82] : []), 76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
     let fit: ReturnType<typeof fitTitle> = null;
     let lines: Raster[] = [];
     // Glyph advances can under-estimate the final raster bounds. Validate actual lines and shrink without cutting text.
     while (sizes.length) {
-      const candidate = fitTitle(title, measure, W - 128, 3, sizes);
+      const candidate = fitTitle(title, measure, W - 2 * inset, square ? 4 : 3, sizes);
       if (!candidate) break;
       const rendered = candidate.lines.map(line => rasterText(font(candidate.size), line, candidate.size));
-      if (rendered.every(line => line.width <= W - 128)) { fit = candidate; lines = rendered; break; }
+      if (rendered.every(line => line.width <= W - 2 * inset)) { fit = candidate; lines = rendered; break; }
       sizes = sizes.filter(size => size < candidate.size);
     }
     if (!fit) throw new Error("cover_title_does_not_fit");
-    const out = fitBackground(decode(background));
-    const brand = rasterText(font(26), "Vitale Mobilidade", 26);
+    const out = fitBackground(source, W, H);
+    const brandSize = square ? 34 : 26;
+    const brand = rasterText(font(brandSize), square ? "VITALE MOBILIDADE  •  PODCAST" : "Vitale Mobilidade", brandSize);
     const pillWidth = brand.width + 44;
     for (let y = 0; y < 52; y++)
       for (let x = 0; x < pillWidth; x++) {
         const cx = Math.max(26, Math.min(pillWidth - 26, x)),
           cy = 26;
         if ((x - cx) ** 2 + (y - cy) ** 2 > 26 ** 2) continue;
-        out.set([4, 120, 87, 255], ((56 + y) * W + 64 + x) * 4);
+        out.set([4, 120, 87, 255], ((top + y) * W + inset + x) * 4);
       }
-    composite(out, brand, 86, 56 + Math.floor((52 - brand.height) / 2));
+    composite(out, brand, inset + 22, top + Math.floor((52 - brand.height) / 2), W, H);
     const lineHeight = Math.round(fit.size * 1.15);
     for (let i = 0; i < fit.lines.length; i++) {
       const line = lines[i];
-      const y = H - 64 - lineHeight * (fit.lines.length - 1 - i) - line.height;
-      composite(out, line, 66, y + 3, true);
-      composite(out, line, 64, y);
+      const y = H - bottom - lineHeight * (fit.lines.length - 1 - i) - line.height;
+      composite(out, line, inset + 2, y + 3, W, H, true);
+      composite(out, line, inset, y, W, H);
     }
     for (const quality of [88, 80, 70, 60]) {
       const bytes = jpeg.encode(out, W, H, quality);

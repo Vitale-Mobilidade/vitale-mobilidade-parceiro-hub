@@ -1,5 +1,6 @@
+import { spotifyEpisodeId as isSpotifyEpisodeId } from "../../../supabase/functions/_shared/podcast-spotify";
 import { PODCAST_ARTICLE_ANCHOR } from "@/lib/podcast-editorial";
-import { type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { CatalogBike } from "@/lib/editorial-bikes";
 import { BikeMedia } from "@/components/site/site-ui";
 import { persistentBikeImage } from "@/lib/bike-catalog";
@@ -478,7 +479,7 @@ export function ArticleView({
   articlesShareContext = true,
   relatedVideos = [],
   preview = false,
-  podcastAudio = null,
+  spotifyEpisodeId = null,
 }: {
   article: PublishedArticle;
   bikes: CatalogBike[];
@@ -490,7 +491,7 @@ export function ArticleView({
   relatedVideos?: VideoCard[];
   sourceVideo?: VideoCard | null;
   preview?: boolean;
-  podcastAudio?: string | null;
+  spotifyEpisodeId?: string | null;
 }) {
   const planned = article.blocks.some((block) => block.planned);
   const connectedBikes = articleSubjectBikes(
@@ -515,6 +516,23 @@ export function ArticleView({
     ),
   ].slice(0, 2);
   const flow = composeArticleFlow(article.blocks, radarBikeIds.length > 0);
+  const contentBlocks = planned ? article.blocks : flow.map((item) => item.kind === "block" ? item.block : null);
+  const bodyIndices = contentBlocks.flatMap((block, index) =>
+    block?.type === "text" || block?.type === "pros_cons" ? [index] : []);
+  const podcastIndex = bodyIndices[Math.floor((bodyIndices.length - 1) / 2)] ?? -1;
+  const episode = !preview && isSpotifyEpisodeId(spotifyEpisodeId) ? spotifyEpisodeId : null;
+  const podcast = episode && (
+    <section id={PODCAST_ARTICLE_ANCHOR} aria-labelledby="podcast-heading"
+      className="my-10 scroll-mt-24">
+      <h2 id="podcast-heading" className="mb-3 text-xl font-bold">Ouça este episódio no Spotify</h2>
+      <iframe src={`https://open.spotify.com/embed/episode/${episode}`}
+        title="Player do episódio no Spotify" height={152} width="100%" loading="lazy"
+        className="rounded-xl border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
+      <a href={`https://open.spotify.com/episode/${episode}`} className="mt-2 inline-block text-sm text-action underline">
+        Abrir no Spotify
+      </a>
+    </section>
+  );
   return (
     <div className="responsive-container grid gap-10 py-10 text-foreground lg:grid-cols-[minmax(0,1fr)_280px] xl:gap-14">
       <article className="min-w-0 max-w-3xl">
@@ -545,19 +563,10 @@ export function ArticleView({
         <p className="mt-7 text-xl leading-8 text-muted-foreground">
           <InlineText value={article.summary} />
         </p>
-        {!preview && podcastAudio && (
-          <section id={PODCAST_ARTICLE_ANCHOR} aria-labelledby="podcast-heading"
-            className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-surface p-4">
-            <h2 id="podcast-heading" className="mb-3 text-lg font-semibold">Ouça o episódio do podcast</h2>
-            <audio controls preload="none" src={podcastAudio} className="w-full" aria-labelledby="podcast-heading">
-              <a href={podcastAudio} className="underline">Abrir áudio do episódio</a>
-            </audio>
-          </section>
-        )}
         {planned
           ? article.blocks.map((block, index) => (
+            <Fragment key={index}>
               <Block
-                key={index}
                 block={block}
                 article={article}
                 bikes={bikes}
@@ -565,9 +574,12 @@ export function ArticleView({
                 histories={histories}
                 relatedArticles={relatedArticles}
               />
+              {index === podcastIndex && podcast}
+            </Fragment>
             ))
-          : flow.map((item, index) =>
-              item.kind === "block" ? (
+          : flow.map((item, index) => (
+            <Fragment key={index}>
+              {item.kind === "block" ? (
                 <Block
                   key={index}
                   block={item.block}
@@ -622,8 +634,11 @@ export function ArticleView({
                     Explorar calculadoras <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </a>
                 </section>
-              ),
-            )}
+              )}
+              {index === podcastIndex && podcast}
+            </Fragment>
+            ))}
+        {podcastIndex < 0 && podcast}
         {!planned && <FaqList faq={article.faq} />}
         {!planned && relatedArticles.length > 0 && (
           <section className="my-10">

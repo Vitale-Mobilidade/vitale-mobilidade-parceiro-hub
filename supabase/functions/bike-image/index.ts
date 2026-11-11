@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
       const url = Deno.env.get("SUPABASE_URL");
       const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       if (!url || !key) return json({ error: "config" }, 500);
-      return servePodcastCover(req, params, createClient(url, key), url);
+      return servePodcastCover(req, params, createClient(url, key));
     }
     return json({ error: "invalid_type" }, 400);
   }

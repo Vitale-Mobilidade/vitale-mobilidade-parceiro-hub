@@ -1,23 +1,25 @@
 import jpeg from "jpeg-js";
 import { expect, it } from "vitest";
 import { inspectJpeg } from "../../supabase/functions/_shared/editorial-cover";
-import { squarePodcastArtwork } from "../../supabase/functions/_shared/podcast-artwork";
+import { composeSquarePodcastCover } from "../../supabase/functions/_shared/cover-renderer/index";
 import { servePodcastArtwork } from "./podcast-artwork.server";
 import { podcastArticleCoverSource } from "./podcast-editorial";
 
-it("preserves both sides of the article cover in a square JPEG", () => {
+it("composes a separate square JPEG with a full-bleed photo", async () => {
   const source = new Uint8Array([
     240, 10, 20, 255, 240, 10, 20, 255, 10, 20, 240, 255, 10, 20, 240, 255,
     240, 10, 20, 255, 240, 10, 20, 255, 10, 20, 240, 255, 10, 20, 240, 255,
   ]);
   const landscape = jpeg.encode({ data: source, width: 4, height: 2 }, 100).data;
-  const art = squarePodcastArtwork(landscape, jpeg);
+  const { bytes: art, lines } = await composeSquarePodcastCover({ bytes: landscape, mime: "image/jpeg" }, "Mangosteen FT07 em teste");
+  expect(lines.join(" ")).toBe("Mangosteen FT07 em teste");
   expect(inspectJpeg(art)).toEqual({ width: 1400, height: 1400 });
   const pixels = jpeg.decode(art, { useTArray: true }).data;
   const pixel = (x: number, y: number) => pixels.subarray((y * 1400 + x) * 4, (y * 1400 + x) * 4 + 3);
-  expect(pixel(50, 700)[0]).toBeGreaterThan(220);
-  expect(pixel(1350, 700)[2]).toBeGreaterThan(220);
-  expect(pixel(700, 50)[1]).toBeLessThan(60);
+  expect(pixel(50, 700)[0]).toBeGreaterThan(150);
+  expect(pixel(1350, 700)[2]).toBeGreaterThan(150);
+  expect(pixel(50, 50)[0]).toBeGreaterThan(220);
+  expect(pixel(1350, 50)[2]).toBeGreaterThan(220);
 });
 
 it("limits artwork requests to public article cover routes", () => {
