@@ -29,7 +29,9 @@ function linkNotes(line: string) {
   }).join("");
 }
 
-function formatOriginalNotes(notes: string) {
+const divider = /^[_—–=-]{3,}$/;
+
+function formatOriginalNotes(lines: string[]) {
   const paragraphs: string[] = [];
   let specs: string[] = [];
   const finishSpecs = () => {
@@ -37,8 +39,8 @@ function formatOriginalNotes(notes: string) {
     else if (specs.length) paragraphs.push(`<p>${specs[0]}</p>`);
     specs = [];
   };
-  for (const line of notes.split(/\r\n|\n|\r/).map((item) => item.trim())) {
-    if (!line || /^[_—–=-]{3,}$/.test(line)) {
+  for (const line of lines) {
+    if (!line || divider.test(line)) {
       finishSpecs();
     } else if (/^[\p{L}][\p{L}\p{N}\s+()/.-]{0,35}:\s+(?!https?:)/u.test(line)) {
       specs.push(linkNotes(line));
@@ -55,6 +57,28 @@ function formatOriginalNotes(notes: string) {
   return paragraphs.join("\n");
 }
 
+function arrangeEpisodeNotes(description: string) {
+  const lines = description.split(/\r\n|\n|\r/).map((line) => line.trim());
+  const quizUrl = /https:\/\/vitalemobilidade\.com\/escolherbike\/?(?:\?[^\s<>"']*)?(?=\s|$)/;
+  let quiz: string | undefined;
+  const rest: string[] = [];
+  for (const line of lines) {
+    const match = quizUrl.exec(line);
+    if (match) {
+      quiz ??= match[0];
+      if (/quer ajuda.*escolher/i.test(rest.at(-1) ?? "")) rest.pop();
+    } else {
+      rest.push(line);
+    }
+  }
+  const split = rest.findIndex((line) => divider.test(line));
+  return {
+    quiz: quiz ?? `${base}/escolherbike`,
+    intro: formatOriginalNotes(split >= 0 ? rest.slice(0, split) : rest),
+    details: split >= 0 ? formatOriginalNotes(rest.slice(split + 1)) : "",
+  };
+}
+
 export function buildPodcastRss(
   episodes: ReleasedPodcastEpisode[], email: string | null,
   articles: ReadonlyMap<string, PodcastArticle> = new Map(),
@@ -66,11 +90,14 @@ export function buildPodcastRss(
     const article = match && podcastArticleSlug.test(match.slug) && match.slug.length <= 120 ? match : undefined;
     const articleUrl = article ? `${base}/conteudos/${article.slug}` : null;
     const art = article ? podcastCoverPath(article) : null;
+    const { quiz, intro, details } = arrangeEpisodeNotes(episode.original_description);
     const notes = [
+      `<p>🧠 Quer ajuda para escolher a elétrica ideal pro seu perfil (sem jogar dinheiro fora)? 👉 <a href="${xml(quiz)}">Fazer o quiz</a></p>`,
       article?.summary?.trim() ? `<p>${xml(article.summary.trim())}</p>` : "",
-      articleUrl && article ? `<p><strong>Leia o artigo completo</strong><br><a href="${xml(articleUrl)}">${xml(article.title)}</a></p>` : "",
-      formatOriginalNotes(episode.original_description),
-      `<p><a href="${xml(original)}">Assista ao vídeo original</a></p>`,
+      intro,
+      `<p>👉 <a href="${xml(original)}">Análise completa em vídeo</a></p>`,
+      articleUrl && article ? `<p>👉 Artigo sobre o episódio: <a href="${xml(articleUrl)}">${xml(article.title)}</a></p>` : "",
+      details ? `<p><strong>Ficha da bike</strong></p>\n${details}` : "",
     ].filter(Boolean).join("\n");
     return `<item>
 <title>${xml(episode.title)}</title>

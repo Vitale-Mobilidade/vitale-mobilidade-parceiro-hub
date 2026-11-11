@@ -27,8 +27,9 @@ export function podcastArticleCoverSource(value: string | null): URL | null {
   return null;
 }
 
-export function podcastCoverPath(article: PodcastArticle) {
-  if (!podcastArticleCoverSource(article.og_image_url)) return null;
+export function podcastCoverPath(article: { slug: string | null; og_image_url: string | null; updated_at: string }) {
+  if (!article.slug || article.slug.length > 120 || !podcastArticleSlug.test(article.slug)
+    || !podcastArticleCoverSource(article.og_image_url)) return null;
   const version = Date.parse(article.updated_at);
   const path = `/podcast/capas/${article.slug}.jpg`;
   return Number.isFinite(version) ? `${path}?v=${version}` : path;

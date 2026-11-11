@@ -89,7 +89,7 @@ it("gives a released episode its published article, cover and readable show note
   fixture.enabled = true;
   fixture.episode = {
     youtube_id: id, title: "FT07", released_at: "2026-11-11T20:45:02Z",
-    original_description: "Opções de compra <script>\nhttps://example.com/?a=1&b=2\n\nBateria: 60 V\nMotor: 2.000 W",
+    original_description: "🧠 Quer ajuda para escolher a elétrica?\n👉 https://vitalemobilidade.com/escolherbike?utm_source=origem&utm_content=ft07\n\nOpções de compra <script>\nhttps://example.com/?a=1&b=2\n______\nBateria: 60 V\nMotor: 2.000 W",
     object_path: "private/ft07.mp3", size_bytes: 23120427,
   };
   fixture.article = {
@@ -99,7 +99,11 @@ it("gives a released episode its published article, cover and readable show note
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("<link>https://vitalemobilidade.com/conteudos/teste-ft07</link>");
   expect(feed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.jpg?v=');
-  expect(feed).toContain("&lt;p&gt;Resumo do artigo &amp;amp; contexto.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Leia o artigo completo");
+  expect(feed).toContain("utm_source=origem&amp;amp;utm_content=ft07");
+  expect(feed).toContain("Fazer o quiz&lt;/a&gt;&lt;/p&gt;\n&lt;p&gt;Resumo do artigo &amp;amp; contexto.&lt;/p&gt;\n&lt;p&gt;Opções de compra");
+  expect(feed.match(/escolherbike/g)).toHaveLength(1);
+  expect(feed.indexOf("Análise completa em vídeo")).toBeLessThan(feed.indexOf("Artigo sobre o episódio"));
+  expect(feed.indexOf("Artigo sobre o episódio")).toBeLessThan(feed.indexOf("Ficha da bike"));
   expect(feed).toContain("&lt;ul&gt;&lt;li&gt;Bateria: 60 V&lt;/li&gt;&lt;li&gt;Motor: 2.000 W&lt;/li&gt;&lt;/ul&gt;");
   expect(feed).toContain("https://example.com/?a=1&amp;amp;b=2");
   expect(feed).toContain("&amp;lt;script&amp;gt;");
