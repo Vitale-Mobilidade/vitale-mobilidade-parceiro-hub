@@ -25,12 +25,18 @@ export function instagramPodcastPost(title: string, article: Parameters<typeof p
   return { image_url: new URL(coverPath, "https://vitalemobilidade.com").href, caption: [intro, excerpt, call].join("\n\n") };
 }
 
-export type InstagramSettings = { token: string; version: string };
+export type InstagramSettings = { token: string; version: string; accountId?: string };
 
 export function readInstagramSettings(get: (name: string) => string | undefined): InstagramSettings | null {
   const token = get("PODCAST_INSTAGRAM_ACCESS_TOKEN")?.trim();
   const version = get("PODCAST_INSTAGRAM_API_VERSION")?.trim();
-  return token && version && /^v[0-9]{2}\.0$/.test(version) ? { token, version } : null;
+  const accountId = get("PODCAST_INSTAGRAM_ACCOUNT_ID")?.trim();
+  if (!token || !version || !/^v[0-9]{2}\.0$/.test(version)) return null;
+  if (accountId !== undefined) {
+    if (!numericId(accountId)) return null;
+    return { token, version, accountId };
+  }
+  return { token, version };
 }
 
 export class InstagramRequestError extends Error {
@@ -38,8 +44,10 @@ export class InstagramRequestError extends Error {
 }
 
 export function instagramPublisher(settings: InstagramSettings, fetcher = fetch) {
+  const graphHost = settings.accountId ? "graph.facebook.com" : "graph.instagram.com";
+
   async function request(path: string, payload?: Record<string, string>, fields?: string) {
-    const url = new URL(`https://graph.instagram.com/${settings.version}/${path}`);
+    const url = new URL(`https://${graphHost}/${settings.version}/${path}`);
     if (fields) url.searchParams.set("fields", fields);
     const response = await fetcher(url, {
       method: payload ? "POST" : "GET",
@@ -59,10 +67,24 @@ export function instagramPublisher(settings: InstagramSettings, fetcher = fetch)
 
   return {
     async account() {
-      const data = await request("me", undefined, "user_id,username");
-      if (data.username !== accountName || !numericId(data.user_id))
+      const data = settings.accountId
+        ? await request(settings.accountId, undefined, "id,username")
+        : await request("me", undefined, "user_id,username");
+      const accountId = settings.accountId ? data.id : data.user_id;
+      if (data.username !== accountName || !numericId(accountId) ||
+        (settings.accountId && accountId !== settings.accountId)) {
         throw new InstagramRequestError("wrong_instagram_account", true);
-      return data.user_id;
+      }
+      return accountId;
+    },
+    async checkPublishingAccess(account: string) {
+      if (settings.accountId) {
+        const result = await request(`${account}/content_publishing_limit`, undefined, "quota_usage");
+        const quota = Array.isArray(result.data) ? result.data[0]?.quota_usage : undefined;
+        if (typeof quota !== "number" || !Number.isFinite(quota) || quota < 0) {
+          throw new InstagramRequestError("meta_request", false);
+        }
+      }
     },
     async create(account: string, post: NonNullable<ReturnType<typeof instagramPodcastPost>>) {
       const data = await request(`${account}/media`, post);

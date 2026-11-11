@@ -6,7 +6,8 @@ export async function verifyPodcastInstagramConnection() {
   if (!settings) return { status: "not_configured" };
   const instagram = instagramPublisher(settings);
   try {
-    await instagram.account();
+    const account = await instagram.account();
+    await instagram.checkPublishingAccess(account);
     return { status: "verified" };
   } catch (failure) {
     return { status: failure instanceof InstagramRequestError ? failure.code : "meta_request" };
