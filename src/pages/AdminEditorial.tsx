@@ -1482,7 +1482,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     )
     .slice(0, 4);
   const publicUrl = article.slug ? `/conteudos/${article.slug}` : null;
-  const squareCover = status === "published" ? podcastCoverPath(article) : null;
+  const squareCover = status === "published" ? podcastCoverPath(article, true) : null;
   const set = (next: Partial<EditDraft>) => setDraft((d) => (d ? { ...d, ...next } : d));
   return (
     <>

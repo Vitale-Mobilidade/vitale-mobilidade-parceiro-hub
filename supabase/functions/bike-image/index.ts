@@ -2,6 +2,7 @@
 // Recebe apenas bike_id validado, busca asset ready e serve o arquivo do bucket
 // privado via service role. Nenhum caminho arbitrário é aceito.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { servePodcastCover } from "./podcast-artwork.ts";
 import { sanitizeBikeId } from "../_shared/image-safety.ts";
 import { articleReferencesCover, COVER_BUCKET, coverObjectPath, isCoverUuid } from "../_shared/editorial-cover.ts";
 
@@ -53,6 +54,12 @@ Deno.serve(async (req: Request) => {
   const params = new URL(req.url).searchParams;
   if (params.has("type")) {
     if (params.get("type") === "editorial-cover") return serveEditorialCover(req, params);
+    if (params.get("type") === "podcast-cover") {
+      const url = Deno.env.get("SUPABASE_URL");
+      const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (!url || !key) return json({ error: "config" }, 500);
+      return servePodcastCover(req, params, createClient(url, key), url);
+    }
     return json({ error: "invalid_type" }, 400);
   }
 
