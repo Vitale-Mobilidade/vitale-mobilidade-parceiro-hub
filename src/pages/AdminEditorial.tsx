@@ -8,6 +8,7 @@ import PainelBikes from "@/pages/PainelBikes";
 import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
 import { VideoRelatedArticle } from "@/components/admin/VideoRelatedArticle";
 import { VideoPodcastAudio } from "@/components/admin/VideoPodcastAudio";
+import { podcastCoverPath } from "@/lib/podcast-editorial";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
@@ -1481,6 +1482,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
     )
     .slice(0, 4);
   const publicUrl = article.slug ? `/conteudos/${article.slug}` : null;
+  const squareCover = status === "published" ? podcastCoverPath(article) : null;
   const set = (next: Partial<EditDraft>) => setDraft((d) => (d ? { ...d, ...next } : d));
   return (
     <>
@@ -1554,6 +1556,16 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
               >
                 Gerar nova capa com IA
               </button>
+              {squareCover && (
+                <a
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                  href={squareCover}
+                  download={`${article.slug}-capa-quadrada.jpg`}
+                  onClick={() => setOpenMenu(null)}
+                >
+                  Baixar capa quadrada para podcast e Instagram
+                </a>
+              )}
               {draft && (
                 <p className="px-3 py-2 text-xs text-muted-foreground">
                   Salve ou cancele a edição para trocar a capa usando as bikes salvas.
