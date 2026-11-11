@@ -28,7 +28,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 }));
 
 import { servePodcastAudio, servePodcastFeed } from "./podcast-delivery.server";
-const id = "byk0-p8NedQ";
+const id = "qzaQ3G7PRl8";
 const request = (init?: RequestInit) => new Request(`https://vitalemobilidade.com/podcast/audio/${id}`, init);
 
 afterEach(() => {
@@ -74,4 +74,18 @@ it("serves released metadata and supports HEAD and a byte range without exposing
   expect(audio.headers.get("Content-Range")).toBe("bytes 0-3/15701351");
   expect(audio.headers.get("Location")).toBeNull();
   expect((await audio.arrayBuffer()).byteLength).toBe(4);
+});
+
+it("uses the static media for the released pilot only", async () => {
+  const pilot = "byk0-p8NedQ";
+  fixture.enabled = true;
+  fixture.episode = {
+    youtube_id: pilot, title: "V20 Ultra", original_description: "Teste de farol",
+    released_at: "2026-11-11T19:35:00Z", object_path: "private/v20.mp3", size_bytes: 15701351,
+  };
+  const feed = await (await servePodcastFeed(false)).text();
+  expect(feed).toContain("https://vitalemobilidade.com/podcast/episodios/v20-ultra-farol.mp3");
+  const result = await servePodcastAudio(new Request("https://vitalemobilidade.com/podcast/audio/" + pilot), pilot);
+  expect(result.status).toBe(307);
+  expect(result.headers.get("Location")).toBe("/podcast/episodios/v20-ultra-farol.mp3");
 });

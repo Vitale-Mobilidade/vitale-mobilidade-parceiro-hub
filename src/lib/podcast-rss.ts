@@ -7,6 +7,12 @@ export type ReleasedPodcastEpisode = {
 };
 
 const base = "https://vitalemobilidade.com";
+export function podcastAudioPath(youtubeId: string, size: number): string {
+  if (youtubeId === "byk0-p8NedQ" && size === 15701351)
+    return "/podcast/episodios/v20-ultra-farol.mp3";
+  return `/podcast/audio/${encodeURIComponent(youtubeId)}`;
+}
+
 const xml = (value: string) => value
   .replace(/[^\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd\u{10000}-\u{10ffff}]/gu, "")
   .replace(/[&<>"']/g, (char) => ({
@@ -23,7 +29,7 @@ export function buildPodcastRss(episodes: ReleasedPodcastEpisode[], email: strin
 <guid isPermaLink="false">vitale:youtube:${xml(id)}</guid>
 <description>${xml(episode.original_description + "\n\nVídeo original no YouTube: " + youtube)}</description>
 <pubDate>${new Date(episode.released_at).toUTCString()}</pubDate>
-<enclosure url="${base}/podcast/audio/${encodeURIComponent(id)}" length="${episode.size_bytes}" type="audio/mpeg"/>
+<enclosure url="${base}${podcastAudioPath(id, episode.size_bytes)}" length="${episode.size_bytes}" type="audio/mpeg"/>
 </item>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>
