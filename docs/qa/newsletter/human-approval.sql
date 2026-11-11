@@ -78,3 +78,44 @@ BEGIN
   END IF;
 END $$;
 ROLLBACK;
+
+-- A confirmed manual #14 may precede Friday by under 46 hours.
+BEGIN;
+UPDATE newsletter_settings SET enabled=true WHERE singleton;
+INSERT INTO newsletter_subscriptions(person_name,email,consent_text,consent_version)
+VALUES ('Eligible','eligible@example.test','Consent','v2');
+DO $$
+DECLARE
+  tok uuid := newsletter_acquire();
+  previous uuid;
+  other_recent uuid;
+  friday uuid;
+  friday_clock constant timestamptz := '2026-11-13 06:30:00-03';
+BEGIN
+  INSERT INTO newsletter_campaigns(edition_day,segment,payload,fingerprint,status,submitted_at,manual_send_until)
+  VALUES('2026-11-11','general','{"generationMode":"human","content":{"editionNumber":14}}',
+    'wednesday','submitted','2026-11-11 12:30:00-03','2026-11-11 13:00:00-03')
+  RETURNING id INTO previous;
+  INSERT INTO newsletter_recipients(campaign_id,subscription_id,edition_day,consent_at)
+    SELECT previous,id,'2026-11-11',consent_at FROM newsletter_subscriptions;
+  IF newsletter_form_campaign('2026-11-13','general','{}','friday',tok,friday_clock) IS NOT NULL THEN
+    RAISE EXCEPTION 'unconfirmed Wednesday campaign was exempted';
+  END IF;
+  UPDATE newsletter_campaigns SET status='sent',sent_at='2026-11-11 12:31:00-03' WHERE id=previous;
+  INSERT INTO newsletter_campaigns(edition_day,segment,payload,fingerprint,status,submitted_at)
+  VALUES('2026-11-12','general','{}','thursday','uncertain','2026-11-12 12:00:00-03')
+  RETURNING id INTO other_recent;
+  IF newsletter_form_campaign('2026-11-13','general','{}','friday',tok,friday_clock) IS NOT NULL THEN
+    RAISE EXCEPTION 'unrelated recent campaign was exempted';
+  END IF;
+  UPDATE newsletter_campaigns SET status='failed' WHERE id=other_recent;
+  friday := newsletter_form_campaign('2026-11-13','general','{}','friday',tok,friday_clock);
+  IF friday IS NULL OR (SELECT count(*) FROM newsletter_recipients WHERE campaign_id=friday) <> 1 THEN
+    RAISE EXCEPTION 'regular Friday claim or audience is blocked';
+  END IF;
+  UPDATE newsletter_campaigns SET status='sent',submitted_at='2026-11-15 12:00:00-03' WHERE id=previous;
+  IF newsletter_form_campaign('2026-11-16','general','{}','monday',tok,'2026-11-16 06:30:00-03') IS NOT NULL THEN
+    RAISE EXCEPTION 'exception leaked into Monday';
+  END IF;
+END $$;
+ROLLBACK;
