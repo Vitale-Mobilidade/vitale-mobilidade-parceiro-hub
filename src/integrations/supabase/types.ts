@@ -922,6 +922,13 @@ export type Database = {
             foreignKeyName: "editorial_articles_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
+            referencedRelation: "podcast_article_ready_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_articles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
             referencedRelation: "podcast_queue_candidates"
             referencedColumns: ["youtube_id"]
           },
@@ -1013,6 +1020,13 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_briefs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_article_ready_videos"
             referencedColumns: ["youtube_id"]
           },
           {
@@ -3764,6 +3778,24 @@ export type Database = {
       }
     }
     Views: {
+      podcast_article_ready_videos: {
+        Row: {
+          published_on: string | null
+          title: string | null
+          youtube_id: string | null
+        }
+        Insert: {
+          published_on?: string | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Update: {
+          published_on?: string | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Relationships: []
+      }
       podcast_queue_candidates: {
         Row: {
           published_on: string | null
