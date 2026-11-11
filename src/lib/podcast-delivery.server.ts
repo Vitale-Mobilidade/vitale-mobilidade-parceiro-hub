@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { buildPodcastRss } from "./podcast-rss";
+import { buildPodcastRss, podcastAudioPath } from "./podcast-rss";
 import { PODCAST_AUDIO_BUCKET } from "../../supabase/functions/_shared/podcast-audio-contract";
 
 const db: SupabaseClient = supabaseAdmin;
@@ -34,6 +34,9 @@ export async function servePodcastAudio(request: Request, youtubeId: string) {
     baseHeaders.set("Content-Length", String(data.size_bytes));
     return new Response(null, { headers: baseHeaders });
   }
+  const mediaPath = podcastAudioPath(youtubeId, data.size_bytes);
+  if (mediaPath.startsWith("/podcast/episodios/"))
+    return new Response(null, { status: 307, headers: { ...noStore, Location: mediaPath } });
   const range = request.headers.get("Range");
   if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) {
     baseHeaders.set("Content-Range", `bytes */${data.size_bytes}`);
