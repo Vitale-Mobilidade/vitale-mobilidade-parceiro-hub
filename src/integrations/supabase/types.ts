@@ -922,6 +922,13 @@ export type Database = {
             foreignKeyName: "editorial_articles_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
+            referencedRelation: "podcast_article_ready_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_articles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
             referencedRelation: "podcast_queue_candidates"
             referencedColumns: ["youtube_id"]
           },
@@ -1013,6 +1020,13 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_briefs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_article_ready_videos"
             referencedColumns: ["youtube_id"]
           },
           {
@@ -2950,6 +2964,36 @@ export type Database = {
           },
         ]
       }
+      podcast_spotify_episodes: {
+        Row: {
+          spotify_episode_id: string
+          youtube_id: string
+        }
+        Insert: {
+          spotify_episode_id: string
+          youtube_id: string
+        }
+        Update: {
+          spotify_episode_id?: string
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_spotify_episodes_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_episode_queue"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_spotify_episodes_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_released_episodes"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
       podcast_video_audio: {
         Row: {
           attached_by: string
@@ -3764,6 +3808,24 @@ export type Database = {
       }
     }
     Views: {
+      podcast_article_ready_videos: {
+        Row: {
+          published_on: string | null
+          title: string | null
+          youtube_id: string | null
+        }
+        Insert: {
+          published_on?: string | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Update: {
+          published_on?: string | null
+          title?: string | null
+          youtube_id?: string | null
+        }
+        Relationships: []
+      }
       podcast_queue_candidates: {
         Row: {
           published_on: string | null
@@ -3779,24 +3841,9 @@ export type Database = {
           original_description: string | null
           released_at: string | null
           size_bytes: number | null
+          spotify_episode_id: string | null
           title: string | null
           youtube_id: string | null
-        }
-        Insert: {
-          object_path?: string | null
-          original_description?: string | null
-          released_at?: string | null
-          size_bytes?: number | null
-          title?: string | null
-          youtube_id?: string | null
-        }
-        Update: {
-          object_path?: string | null
-          original_description?: string | null
-          released_at?: string | null
-          size_bytes?: number | null
-          title?: string | null
-          youtube_id?: string | null
         }
         Relationships: [
           {
@@ -4424,6 +4471,7 @@ export type Database = {
         Args: { actor_id: string; p_enabled: boolean }
         Returns: undefined
       }
+      podcast_release_slot: { Args: { p_now: string }; Returns: string }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
         Returns: Json
