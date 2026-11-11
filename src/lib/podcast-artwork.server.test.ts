@@ -20,6 +20,8 @@ it("composes a separate square JPEG with a full-bleed photo", async () => {
   expect(pixel(1350, 700)[2]).toBeGreaterThan(150);
   expect(pixel(50, 50)[0]).toBeGreaterThan(220);
   expect(pixel(1350, 50)[2]).toBeGreaterThan(220);
+  // The former Podcast label extended the green badge into this part of the photo.
+  expect(pixel(550, 114)[0]).toBeGreaterThan(100);
 });
 
 it("limits artwork requests to public article cover routes", () => {
@@ -35,4 +37,14 @@ it("routes inline and download requests to the same square cover", () => {
   expect(inline.status).toBe(307);
   expect(download.headers.get("Location")).toBe(inline.headers.get("Location") + "&download=1");
   expect(servePodcastArtwork(new Request(path), "../teste-ft07.jpg").status).toBe(404);
+});
+
+
+it("resolve o novo arquivo e encaminha a versão para o cache da função de imagens", () => {
+  const url = "https://vitalemobilidade.com/podcast/capas/teste-ft07.v3.jpg?layout=3&download=1";
+  const response = servePodcastArtwork(new Request(url), "teste-ft07.v3.jpg");
+  const destination = new URL(response.headers.get("Location")!);
+  expect(destination.searchParams.get("slug")).toBe("teste-ft07");
+  expect(destination.searchParams.get("layout")).toBe("3");
+  expect(destination.searchParams.get("download")).toBe("1");
 });

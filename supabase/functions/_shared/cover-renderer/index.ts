@@ -195,7 +195,7 @@ function composeCover(source: Raster, title: string, square: boolean) {
     if (!fit) throw new Error("cover_title_does_not_fit");
     const out = fitBackground(source, W, H);
     const brandSize = square ? 34 : 26;
-    const brand = rasterText(font(brandSize), square ? "VITALE MOBILIDADE  •  PODCAST" : "Vitale Mobilidade", brandSize);
+    const brand = rasterText(font(brandSize), square ? "VITALE MOBILIDADE" : "Vitale Mobilidade", brandSize);
     const pillWidth = brand.width + 44;
     for (let y = 0; y < 52; y++)
       for (let x = 0; x < pillWidth; x++) {

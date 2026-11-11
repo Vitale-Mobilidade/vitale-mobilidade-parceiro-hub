@@ -103,7 +103,7 @@ it("gives a released episode its published article, cover and readable show note
   };
   const feed = await (await servePodcastFeed(false)).text();
   expect(feed).toContain("<link>https://vitalemobilidade.com/conteudos/teste-ft07</link>");
-  expect(feed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.jpg?layout=2&amp;v=');
+  expect(feed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.v3.jpg?layout=3&amp;v=');
   expect(feed).toContain("utm_source=origem&amp;amp;utm_content=ft07");
   expect(feed).toContain("Fazer o quiz&lt;/a&gt;&lt;/p&gt;\n&lt;p&gt;Resumo do artigo &amp;amp; contexto.&lt;/p&gt;\n&lt;p&gt;Opções de compra");
   expect(feed.match(/escolherbike/g)).toHaveLength(1);
