@@ -25,11 +25,16 @@ export async function prepareNewsletterDraft(
   let draft = await required(
     db
       .from("newsletter_drafts")
-      .select("id,revision,edited_by,generation_mode")
+      .select("id,revision,edited_by,generation_mode,approved_revision")
       .eq("edition_day", day)
       .maybeSingle(),
   );
-  if (draft && (draft.edited_by || draft.generation_mode !== "fallback"))
+  if (
+    draft &&
+    (draft.edited_by ||
+      draft.approved_revision === draft.revision ||
+      draft.generation_mode !== "fallback")
+  )
     return { ok: true, draftPrepared: false };
   const state = await required(
     db
@@ -126,7 +131,7 @@ export async function prepareNewsletterDraft(
             generation_mode: "fallback",
             edited_by: null,
           })
-          .select("id,revision,edited_by,generation_mode")
+          .select("id,revision,edited_by,generation_mode,approved_revision")
           .single(),
       );
       created = true;

@@ -241,6 +241,19 @@ export function newsletterWindow(now: Date): {
   };
 }
 
+export function newsletterSendAllowed(
+  day: string,
+  manualUntil: string | null | undefined,
+  now: Date,
+) {
+  const window = newsletterWindow(now);
+  return (
+    window.day === day &&
+    (window.due ||
+      (manualUntil != null && Date.parse(manualUntil) > now.getTime()))
+  );
+}
+
 /** Email-safe tables and inline styles; the model never creates markup or URLs. */
 export function renderEditorialNewsletter(
   input: NewsletterContent,

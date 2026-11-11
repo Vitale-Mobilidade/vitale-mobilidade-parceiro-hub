@@ -356,8 +356,9 @@ export async function automaticNewsletter(
 export async function validateScheduledNewsletter(
   content: NewsletterContent,
   history: NewsletterContent[],
+  mode?: string,
 ) {
-  assertNewsletterEditorial(content);
+  assertNewsletterEditorial(content, mode);
   assertNewsletterArticleImages(content);
   validateNewsletterBikeFocus(content);
   const [articles, videos, catalog] = await Promise.all([
@@ -391,9 +392,10 @@ export async function validateScheduledNewsletter(
   if (currentSources.some((id) => usedSources.has(id)))
     throw new Error("newsletter_source_already_used");
   validateNewsletterSelection(content, history, articles, videos, catalog);
-  await validateNewsletterCurrentOffers(content);
+  await validateNewsletterCurrentOffers(content, mode);
   validateNewsletterNovelty(content, history);
   if (
+    mode !== "human" &&
     content.articles.some((a) =>
       a.paragraphs?.some(
         (p) =>
@@ -408,8 +410,9 @@ export async function validateScheduledNewsletter(
 /** Re-read atomic current offers immediately before delivery, including frozen campaigns. */
 export async function validateNewsletterCurrentOffers(
   content: NewsletterContent,
+  mode?: string,
 ) {
-  assertNewsletterEditorial(content);
+  assertNewsletterEditorial(content, mode);
   const [radar, catalog, articles, videos] = await Promise.all([
     fetchTrackerSplit(),
     fetchBikeCatalogFromDb(),

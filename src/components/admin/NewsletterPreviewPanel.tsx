@@ -1,12 +1,14 @@
 import { previewTheme } from "@/lib/newsletter-theme";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { NewsletterPreview } from "@/lib/newsletter-api";
 export function NewsletterPreviewPanel({
   preview,
   onClose,
+  actions,
 }: {
   preview: NewsletterPreview;
   onClose: () => void;
+  actions?: ReactNode;
 }) {
   const [dark, setDark] = useState(false),
     [mobile, setMobile] = useState(false);
@@ -67,6 +69,7 @@ export function NewsletterPreviewPanel({
           }}
         />
       </div>
+      {actions}
     </section>
   );
 }

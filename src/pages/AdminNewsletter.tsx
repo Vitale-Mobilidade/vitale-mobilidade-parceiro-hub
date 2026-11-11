@@ -31,6 +31,7 @@ function NewsletterOperation() {
   const qc = useQueryClient();
   const [editionPreview, setEditionPreview] =
     useState<NewsletterPreview | null>(null);
+  const [approvalError, setApprovalError] = useState("");
   const [activeDay, setActiveDay] = useState<string | null>(null);
   const drafts = useQuery({
     queryKey: ["admin", "newsletter", "drafts"],
@@ -44,12 +45,14 @@ function NewsletterOperation() {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+  const now = Date.now();
   async function viewEdition(
     action: "campaign_preview" | "edition_preview",
     id: string,
   ) {
     setBusy(true);
     setError("");
+    setApprovalError("");
     try {
       setEditionPreview(
         await newsletterCall<NewsletterPreview>(action, { id }),
@@ -123,6 +126,57 @@ function NewsletterOperation() {
     staleTime: 60_000,
   });
   const data = query.data;
+  const previewIdentity = editionPreview?.draft;
+  const previewDraft = drafts.data?.drafts.find(
+    (draft) =>
+      draft.id === previewIdentity?.id &&
+      draft.revision === previewIdentity.revision,
+  );
+  const previewDay = previewDraft?.edition_day;
+  const previewStart = previewDay
+    ? Date.parse(`${previewDay}T06:30:00-03:00`)
+    : NaN;
+  const previewApproved =
+    previewDraft != null &&
+    previewDraft.approved_revision === previewDraft.revision;
+  const previewRequested =
+    previewApproved && Date.parse(previewDraft.manual_send_until ?? "") > now;
+  const previewFrozen = data?.campaigns.some(
+    (campaign) => campaign.edition_day === previewIdentity?.day,
+  );
+  async function approvePreview(sendNow: boolean) {
+    if (!previewIdentity) return;
+    if (
+      sendNow &&
+      !window.confirm(
+        "Solicitar o envio desta revisão aos assinantes elegíveis agora? O intervalo mínimo de 46 horas entre campanhas se aplica aos próximos envios.",
+      )
+    )
+      return;
+    setBusy(true);
+    setApprovalError("");
+    setNotice("");
+    try {
+      await newsletterCall(sendNow ? "draft_send_now" : "draft_approve", {
+        id: previewIdentity.id,
+        revision: previewIdentity.revision,
+      });
+      await qc.invalidateQueries({ queryKey: ["admin", "newsletter"] });
+      setNotice(
+        sendNow
+          ? "Envio solicitado. Acompanhe o processamento no histórico."
+          : "Revisão aprovada para o horário programado.",
+      );
+    } catch (error) {
+      setApprovalError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível aprovar a edição.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const reportsVersion =
     data?.campaigns
       .map((c) => `${c.id}:${c.resend_id ?? ""}:${c.status}`)
@@ -470,25 +524,40 @@ function NewsletterOperation() {
                       ),
                   )
                   .sort((a, b) => a.edition_day!.localeCompare(b.edition_day!))
-                  .map((d) => (
-                    <div key={d.id} className="mt-3 border-t pt-3">
-                      <p className="font-medium">{d.content.subject}</p>
-                      <p className="text-sm">
-                        Envio previsto:{" "}
-                        {d.edition_day!.split("-").reverse().join("/")} às 06h30
-                        · São Paulo
-                      </p>
-                      <button
-                        className={button + " mt-2"}
-                        disabled={busy}
-                        onClick={() =>
-                          void viewEdition("edition_preview", d.id)
-                        }
-                      >
-                        Visualizar conteúdo e HTML
-                      </button>
-                    </div>
-                  ))}
+                  .map((d) => {
+                    const day = d.edition_day!;
+                    const approved = d.approved_revision === d.revision;
+                    const requested =
+                      approved && Date.parse(d.manual_send_until ?? "") > now;
+                    const closed = now >= Date.parse(`${day}T08:30:00-03:00`);
+                    const status = requested
+                      ? "Envio solicitado"
+                      : closed
+                        ? "Janela de envio encerrada"
+                        : approved
+                          ? "Aprovada"
+                          : d.generation_mode === "fallback"
+                            ? "Bloqueada · aguarda aprovação"
+                            : "Envio previsto";
+                    return (
+                      <div key={d.id} className="mt-3 border-t pt-3">
+                        <p className="font-medium">{d.content.subject}</p>
+                        <p className="text-sm">
+                          {status} · {day.split("-").reverse().join("/")} às
+                          06h30 · São Paulo
+                        </p>
+                        <button
+                          className={button + " mt-2"}
+                          disabled={busy}
+                          onClick={() =>
+                            void viewEdition("edition_preview", d.id)
+                          }
+                        >
+                          Visualizar conteúdo e HTML
+                        </button>
+                      </div>
+                    );
+                  })}
               </>
             )}
             <details className="mt-3">
@@ -507,6 +576,54 @@ function NewsletterOperation() {
               key={editionPreview.html}
               preview={editionPreview}
               onClose={() => setEditionPreview(null)}
+              actions={
+                previewIdentity?.day && !previewDraft && !previewFrozen ? (
+                  <p role="status">
+                    A edição mudou. Abra a prévia atual para aprovar.
+                  </p>
+                ) : (
+                  previewDay &&
+                  !previewFrozen && (
+                    <div className="flex flex-wrap gap-3">
+                      {!previewApproved &&
+                        previewDay >= today &&
+                        now < previewStart + 120 * 60_000 && (
+                          <button
+                            className={button}
+                            disabled={busy}
+                            onClick={() => void approvePreview(false)}
+                          >
+                            Aprovar newsletter
+                          </button>
+                        )}
+                      {!previewRequested &&
+                        data.settings.enabled &&
+                        previewDay === today &&
+                        now >= previewStart && (
+                          <button
+                            className={button}
+                            disabled={busy}
+                            onClick={() => void approvePreview(true)}
+                          >
+                            {previewApproved
+                              ? "Enviar agora"
+                              : "Aprovar e enviar agora"}
+                          </button>
+                        )}
+                      {previewRequested && (
+                        <p role="status">
+                          Envio solicitado. Acompanhe o processamento no
+                          histórico.
+                        </p>
+                      )}
+                      {previewApproved && !previewRequested && (
+                        <p role="status">Revisão aprovada.</p>
+                      )}
+                      {approvalError && <p role="alert">{approvalError}</p>}
+                    </div>
+                  )
+                )
+              }
             />
           )}
           <details className="rounded-xl border bg-white p-5">

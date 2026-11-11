@@ -25,10 +25,11 @@ export function assertNewsletterEditorial(
   if (!newsletterReaderTopic(text))
     throw new Error("newsletter_filming_topic_excluded");
   if (
-    mode === "fallback" ||
-    /Resumo publicado:|O conteúdo completo está no link desta seção\.|Os links de cada seção levam aos conteúdos completos\./i.test(
-      text,
-    )
+    mode !== "human" &&
+    (mode === "fallback" ||
+      /Resumo publicado:|O conteúdo completo está no link desta seção\.|Os links de cada seção levam aos conteúdos completos\./i.test(
+        text,
+      ))
   )
     throw new Error("newsletter_editorial_approval_required");
 }

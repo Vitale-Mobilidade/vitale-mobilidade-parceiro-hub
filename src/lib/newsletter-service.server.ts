@@ -22,6 +22,7 @@ import { newsletterPreparation } from "./newsletter-preparation";
 import { newsletterDraftContentSchema } from "./newsletter-drafts";
 import {
   newsletterWindow,
+  newsletterSendAllowed,
   renderResendNewsletter,
   type NewsletterContent,
   type NewsletterSegment,
@@ -53,6 +54,7 @@ type Campaign = {
   status: string;
   payload: { content: NewsletterContent; generationMode?: string };
   resend_id: string | null;
+  manual_send_until?: string | null;
 };
 type Recipient = {
   id: string;
@@ -218,7 +220,10 @@ export async function processNewsletterCampaign(
   }
   assertNewsletterEditorial(c.payload.content, c.payload.generationMode);
   assertNewsletterArticleImages(c.payload.content);
-  await validateNewsletterCurrentOffers(c.payload.content);
+  await validateNewsletterCurrentOffers(
+    c.payload.content,
+    c.payload.generationMode,
+  );
   if (c.segment !== "general") throw new Error("legacy_segment_campaign");
   const segment = await ensureSegment(db, resend, s, c.segment);
   let live = await currentRecipients(db, c.id);
@@ -315,10 +320,7 @@ export async function processNewsletterCampaign(
     c.resend_id = created.id;
     await updateCampaign(db, c.id, { status: "ready", resend_id: created.id });
   }
-  if (
-    !newsletterWindow(new Date()).due ||
-    c.edition_day !== newsletterWindow(new Date()).day
-  )
+  if (!newsletterSendAllowed(c.edition_day, c.manual_send_until, new Date()))
     return;
   // Final safety boundary: active settings + current consent + exact audience before submission.
   const fresh = await settings(db);
@@ -334,8 +336,13 @@ export async function processNewsletterCampaign(
     JSON.stringify(expected)
   )
     return;
-  await validateNewsletterCurrentOffers(c.payload.content);
+  await validateNewsletterCurrentOffers(
+    c.payload.content,
+    c.payload.generationMode,
+  );
   await renew(db, tok);
+  if (!newsletterSendAllowed(c.edition_day, c.manual_send_until, new Date()))
+    return;
   await updateCampaign(db, c.id, {
     status: "submitting",
     submitted_at: new Date().toISOString(),
@@ -401,7 +408,21 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const clock = newsletterWindow(new Date());
     const preparation = newsletterPreparation(new Date());
     tok = await lock(db);
-    if (!clock.due || !s.enabled) {
+    const requested =
+      s.enabled && !clock.due && [1, 3, 5].includes(clock.weekday)
+        ? await must(
+            db
+              .from("newsletter_drafts")
+              .select("revision,approved_revision,manual_send_until")
+              .eq("edition_day", clock.day)
+              .maybeSingle(),
+          )
+        : null;
+    const manualDue =
+      requested != null &&
+      requested.approved_revision === requested.revision &&
+      newsletterSendAllowed(clock.day, requested.manual_send_until, new Date());
+    if ((!clock.due && !manualDue) || !s.enabled) {
       editorialPhase = true;
       if (await processNewsletterRewrite(db, tok))
         return Response.json({ ok: true, rewriteProcessed: true });
@@ -453,7 +474,9 @@ export async function newsletterTick(request: Request): Promise<Response> {
     const unfinished = ((await must(
       db
         .from("newsletter_campaigns")
-        .select("id,edition_day,segment,status,payload,resend_id")
+        .select(
+          "id,edition_day,segment,status,payload,resend_id,manual_send_until",
+        )
         .in("status", [
           "syncing",
           "creating",
@@ -465,7 +488,26 @@ export async function newsletterTick(request: Request): Promise<Response> {
         .limit(1),
     )) ?? []) as Campaign[];
     if (unfinished.length) {
-      if (unfinished[0].edition_day !== newsletterWindow(new Date()).day) {
+      const campaign = unfinished[0];
+      if (campaign.manual_send_until) {
+        if (
+          ["creating", "submitting", "uncertain"].includes(campaign.status) ||
+          newsletterSendAllowed(
+            campaign.edition_day,
+            campaign.manual_send_until,
+            new Date(),
+          )
+        ) {
+          await processNewsletterCampaign(db, resend, s, campaign, tok);
+        } else {
+          await updateCampaign(db, campaign.id, {
+            status: "paused",
+            last_error: "newsletter_manual_window_expired",
+          });
+        }
+        return Response.json({ ok: true });
+      }
+      if (campaign.edition_day !== newsletterWindow(new Date()).day) {
         await updateCampaign(db, unfinished[0].id, {
           status: "paused",
           last_error: "missed_sending_window",
@@ -499,7 +541,8 @@ export async function newsletterTick(request: Request): Promise<Response> {
       );
     }
     const window = newsletterWindow(new Date());
-    if (!window.due) return Response.json({ ok: true, due: false });
+    if (!window.due && (!manualDue || clock.day !== window.day))
+      return Response.json({ ok: true, due: false });
     // Once all cohorts exist for the day, never pay to rewrite the same edition on every cron tick.
     const existing = await must(
       db
@@ -509,19 +552,16 @@ export async function newsletterTick(request: Request): Promise<Response> {
     );
     if ((existing?.length ?? 0) > 0)
       return Response.json({ ok: true, prepared: false });
-    const saved = existing?.find(
-      (c: { payload?: { content?: NewsletterContent } }) => c.payload?.content,
+    const draft = await must(
+      db
+        .from("newsletter_drafts")
+        .select(
+          "id,revision,content,fingerprint,generation_mode,approved_revision,manual_send_until",
+        )
+        .eq("edition_day", window.day)
+        .maybeSingle(),
     );
-    const draft = saved
-      ? null
-      : await must(
-          db
-            .from("newsletter_drafts")
-            .select("id,revision,content,fingerprint,generation_mode")
-            .eq("edition_day", window.day)
-            .maybeSingle(),
-        );
-    if (!saved && !draft) {
+    if (!draft) {
       editorialPhase = true;
       const history = await newsletterHistory(db, window.day);
       const number = await must(db.rpc("newsletter_next_edition_number"));
@@ -537,65 +577,82 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ),
       );
     }
-    let edition: { content: NewsletterContent; fingerprint: string };
-    if (saved)
-      edition = {
-        content: saved.payload.content,
-        fingerprint: saved.fingerprint,
-      };
-    else {
-      editorialPhase = true;
-      const history = await newsletterHistory(db, window.day);
-      if (!draft?.fingerprint)
-        throw new Error("newsletter_scheduled_draft_invalid");
-      assertNewsletterEditorial(draft.content, draft.generation_mode);
-      edition = {
-        content: newsletterDraftContentSchema.parse(draft.content),
-        fingerprint: draft.fingerprint,
-      };
-      const recovered = await recoverNewsletterAvailability(edition.content);
-      if (recovered.changed) {
-        await notifyNewsletterError(
-          db,
-          window.day,
-          "newsletter_optional_content_recovered",
-        );
-        edition = {
-          content: recovered.content,
-          fingerprint: createHash("sha256")
-            .update(JSON.stringify(recovered.content))
-            .digest("hex"),
-        };
-      }
-      await validateScheduledNewsletter(
-        edition.content,
-        history.map((p) => p.payload.content),
+    editorialPhase = true;
+    const history = await newsletterHistory(db, window.day);
+    if (!draft.fingerprint)
+      throw new Error("newsletter_scheduled_draft_invalid");
+    const approved = draft.approved_revision === draft.revision;
+    if (
+      !window.due &&
+      (!approved ||
+        !newsletterSendAllowed(window.day, draft.manual_send_until, new Date()))
+    )
+      return Response.json({ ok: true, due: false });
+    const content = newsletterDraftContentSchema.parse(draft.content);
+    const mode = approved ? "human" : draft.generation_mode;
+    assertNewsletterEditorial(content, mode);
+    let edition: { content: NewsletterContent; fingerprint: string } = {
+      content: approved ? draft.content : content,
+      fingerprint: draft.fingerprint,
+    };
+    const recovered = approved
+      ? null
+      : await recoverNewsletterAvailability(content);
+    if (recovered?.changed) {
+      await notifyNewsletterError(
+        db,
+        window.day,
+        "newsletter_optional_content_recovered",
       );
-      if (recovered.changed) {
-        const updated = await must(
-          db
-            .from("newsletter_drafts")
-            .update({
-              content: edition.content,
-              fingerprint: edition.fingerprint,
-              revision: draft.revision + 1,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", draft.id)
-            .eq("revision", draft.revision)
-            .select("id")
-            .maybeSingle(),
-        );
-        if (!updated) throw new Error("newsletter_draft_conflict");
-      }
-      editorialPhase = false;
+      edition = {
+        content: recovered.content,
+        fingerprint: createHash("sha256")
+          .update(JSON.stringify(recovered.content))
+          .digest("hex"),
+      };
     }
+    await validateScheduledNewsletter(
+      edition.content,
+      history.map((p) => p.payload.content),
+      mode,
+    );
+    if (recovered?.changed) {
+      const updated = await must(
+        db
+          .from("newsletter_drafts")
+          .update({
+            content: edition.content,
+            fingerprint: edition.fingerprint,
+            revision: draft.revision + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", draft.id)
+          .eq("revision", draft.revision)
+          .select("id")
+          .maybeSingle(),
+      );
+      if (!updated) throw new Error("newsletter_draft_conflict");
+    }
+    await renew(db, tok);
+    if (
+      !newsletterSendAllowed(
+        window.day,
+        approved ? draft.manual_send_until : null,
+        new Date(),
+      )
+    )
+      return Response.json({ ok: true, due: false });
+    editorialPhase = false;
     for (const group of GROUPS)
       await must(
         db.rpc("newsletter_form_campaign", {
           p_day: window.day,
           p_segment: group,
-          p_payload: { content: edition.content, generationMode: "agent" },
+          p_payload: {
+            content: edition.content,
+            generationMode: approved ? "human" : "agent",
+            ...(approved ? { approvedRevision: draft.revision } : {}),
+          },
           p_fingerprint: edition.fingerprint,
           tok,
         }),
@@ -745,7 +802,7 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
       const draft = await must(
         db
           .from("newsletter_drafts")
-          .select("content")
+          .select("id,revision,edition_day,content")
           .eq("id", input.id)
           .single(),
       );
@@ -755,6 +812,11 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
           ...renderResendNewsletter(draft.content),
           subject: draft.content.subject,
           source: "draft",
+          draft: {
+            id: draft.id,
+            revision: draft.revision,
+            day: draft.edition_day,
+          },
         },
         { headers },
       );
@@ -825,6 +887,14 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
       ) {
         return Response.json(
           await newsletterRewriteAction(db, auth.user.id, body),
+          { headers },
+        );
+      }
+      if (body.action === "draft_approve" || body.action === "draft_send_now") {
+        const { approveNewsletterDraft } =
+          await import("./newsletter-approval.server");
+        return Response.json(
+          await approveNewsletterDraft(db, auth.user.id, tok, body),
           { headers },
         );
       }

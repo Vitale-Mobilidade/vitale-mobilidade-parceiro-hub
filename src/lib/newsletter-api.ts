@@ -51,7 +51,15 @@ export async function newsletterCall<T>(
       newsletter_article_image_required:
         "Envio bloqueado: um artigo está sem imagem válida. Corrija a capa antes de enviar.",
       newsletter_editorial_approval_required:
-        "Envio bloqueado: a edição precisa de redação e aprovação editorial. Regere pelo agente.",
+        "Envio bloqueado: aprove a edição pela prévia ou peça uma nova versão ao agente.",
+      newsletter_approval_window_closed:
+        "A janela programada encerrou. Use Enviar agora se a edição ainda for de hoje.",
+      newsletter_manual_send_unavailable:
+        "O envio imediato está disponível para a edição de hoje a partir das 06h30 de São Paulo.",
+      newsletter_manual_send_paused:
+        "A automação está pausada. Ative a automação antes de solicitar o envio.",
+      newsletter_generic_fallback_review_required:
+        "A edição de contingência precisa de revisão humana.",
       newsletter_offer_unavailable:
         "Envio bloqueado: uma bike desta edição está sem oferta vigente. Regere a seleção.",
       newsletter_campaign_unavailable:
@@ -177,6 +185,7 @@ export type NewsletterPreview = {
   text?: string;
   subject?: string;
   source?: "provider" | "snapshot" | "draft";
+  draft?: { id: string; revision: number; day: string | null };
 };
 
 export type NewsletterEngagement = {
