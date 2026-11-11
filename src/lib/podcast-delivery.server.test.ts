@@ -51,6 +51,8 @@ it("serves released metadata and supports HEAD and a byte range without exposing
     released_at: "2025-11-12T14:45:00Z", object_path: "private/v20.mp3", size_bytes: 15701351,
   };
   const feed = await (await servePodcastFeed(false)).text();
+  expect(feed).toContain('xmlns:content="http://purl.org/rss/1.0/modules/content/"');
+  expect(feed).toContain("<itunes:explicit>false</itunes:explicit>");
   expect(feed).toContain("Teste &amp; farol");
   expect(feed).toContain(`https://www.youtube.com/watch?v=${id}`);
   expect(feed).not.toContain(fixture.episode.object_path);
