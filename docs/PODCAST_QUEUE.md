@@ -1,0 +1,11 @@
+# Fila e RSS do podcast
+
+Mudança estrutural. Revisão prévia: Produto prioriza o vídeo novo mais recente com áudio; Arquitetura mantém um registro por ID no Supabase integrado e usa URLs estáveis; Segurança mantém os MP3 privados até liberação explícita; Operação usa São Paulo e preserva anexos; UX indica o próximo candidato no Admin; Growth usa um RSS único; IA não se aplica; QA valida isolamento, ordenação, XML e mídia. O primeiro corte mantém a rotina sem registro no cron e sem episódios agendados.
+
+O botão Buscar no WorkDrive e preparar próximo consulta a pasta de vídeos, reutiliza a sessão de leitura e importa um único MP3. Pastas criadas após a última publicação têm prioridade. Se faltarem pastas novas com MP3, a ordem usa a data do vídeo no YouTube. Antes da primeira publicação, essa data ordena o acervo. O rascunho guarda a descrição integral do canal, o ID do vídeo e uma referência fixa ao MP3 privado.
+
+A rotina assinada do Supabase pode chamar a mesma preparação nos horários de 11h45 e 17h45 de São Paulo. Uma janela de cinco minutos admite nova tentativa. O banco reserva um único episódio por horário e só libera quando o RSS e o agendador estiverem habilitados. As migrações deixam ambos desligados, sem registrar o cron. O feed e a mídia retornam 404 enquanto estiverem desligados, e o RSS usa URLs estáveis que só entregam episódios liberados.
+
+Validação local: o XML da V20 Ultra preservou descrição, link e tamanho do MP3. PostgreSQL confirmou ausência de liberação por padrão, prioridade, fallback e proteção contra repetição no mesmo horário. O teste da rotina confirmou assinatura válida, rejeição de assinatura inválida ou expirada e sigilo da chave. Testes da entrega cobriram RSS desligado, HEAD e Range sem expor o link assinado. A simulação do WorkDrive confirmou a prioridade de pasta nova e o fallback pela data do vídeo.
+
+Revisão final: Produto, Arquitetura, Segurança, Operação, UX, Growth e QA passaram no ensaio local. IA não se aplica. A implantação exige testar as credenciais de leitura do WorkDrive no Lovable e o envio real de um MP3, aplicar as migrações com os controles desligados e testar as rotas no ambiente publicado antes de qualquer ativação. Para pausar a distribuição, desligue o agendador. Para fechar o acesso ao feed e à mídia, desligue o feed. Preserve os áudios e rascunhos durante a reversão.

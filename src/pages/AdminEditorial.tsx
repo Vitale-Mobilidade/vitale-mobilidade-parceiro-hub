@@ -400,6 +400,67 @@ export function AdminVideosPage() {
     </AdminShell>
   );
 }
+function PodcastQueuePanel() {
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const queue = useQuery({
+    queryKey: ["admin", "podcast-queue"],
+    queryFn: () => adminCall<{ candidates: { youtube_id: string; title: string }[]; drafts: number }>("podcast-queue-preview"),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const next = queue.data?.candidates[0];
+
+  async function stage(consultWorkDrive = false) {
+    if (busy || (!next && !consultWorkDrive)) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await adminCall<{ status: string }>(
+        consultWorkDrive ? "podcast-queue-prepare" : "podcast-queue-stage",
+        { youtubeId: next?.youtube_id },
+      );
+      setMessage(result.status === "draft" ? "Episódio salvo como rascunho."
+        : result.status === "workdrive_unconfigured" ? "Configure a conexão de leitura do WorkDrive."
+        : result.status === "empty" ? "Nenhum MP3 pronto foi encontrado."
+        : "A fila mudou. Confira o próximo episódio.");
+    } catch (failure) {
+      setMessage(failure instanceof Error ? failure.message : "Não foi possível criar o rascunho.");
+    } finally {
+      await queue.refetch();
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-4 rounded-xl border border-line p-4" aria-label="Fila do podcast">
+      <h2 className="font-semibold">Fila do podcast</h2>
+      {queue.isPending && <p>Consultando a fila…</p>}
+      {queue.isError && <p role="alert">Não foi possível consultar a fila.</p>}
+      {queue.data && <p>{queue.data.drafts} na fila, aguardando liberação.</p>}
+      {queue.data && !next && <p>Nenhum áudio pronto para entrar na fila.</p>}
+      {next && (
+        <>
+          <p>Próximo episódio sugerido: {next.title}</p>
+          <button type="button" disabled={busy || queue.isFetching} onClick={() => void stage()}
+            className="mt-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50">
+            {busy ? "Salvando…" : "Adicionar como rascunho"}
+          </button>
+        </>
+      )}
+      <button type="button" disabled={busy || queue.isFetching} onClick={() => void queue.refetch()}
+        className="ml-2 mt-2 rounded-lg border border-line px-3 py-2 text-sm disabled:opacity-50">
+        Atualizar fila
+      </button>
+      <button type="button" disabled={busy || queue.isFetching} onClick={() => void stage(true)}
+        className="ml-2 mt-2 rounded-lg border border-line px-3 py-2 text-sm disabled:opacity-50">
+        Buscar no WorkDrive e preparar próximo
+      </button>
+      {message && <p role="status">{message}</p>}
+    </section>
+  );
+}
+
 function Videos({ role }: { role: AdminRole }) {
   const queryClient = useQueryClient();
   const sheetQuery = useQuery({
@@ -507,6 +568,7 @@ function Videos({ role }: { role: AdminRole }) {
         title="Biblioteca de vídeos"
         detail="A aba Videos Youtube é a fonte de descoberta; transcrições e relações editoriais ficam no Admin."
       />
+      {role === "admin" && <PodcastQueuePanel />}
       {(error || readError) && <Notice danger>{error || readError}</Notice>}
       {message && <Notice>{message}</Notice>}
       {(sheetQuery.isPending || workspaceQuery.isPending) && items.length === 0 && (
