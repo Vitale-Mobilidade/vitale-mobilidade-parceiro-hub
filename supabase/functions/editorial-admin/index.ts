@@ -1,3 +1,4 @@
+import { syncReleasedSpotifyEpisodes } from "./podcast-spotify.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 import { ELEMENT_LAYOUT } from "../_shared/heatmap-elements.ts";
@@ -2636,6 +2637,7 @@ Deno.serve(async (req) => {
       if (prepared.status !== "draft" && prepared.status !== "empty") return json(req, prepared, 503);
       const released = await db.rpc("release_next_podcast_episode");
       if (released.error) throw new Error("podcast_release_failed");
+      await syncReleasedSpotifyEpisodes(db).catch(() => console.warn("podcast_spotify_sync_unavailable"));
       return json(req, { status: released.data ? "released" : "idle" });
     } catch {
       return json(req, { error: "podcast_worker_failed" }, 503);

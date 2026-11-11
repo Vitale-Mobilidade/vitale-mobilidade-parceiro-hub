@@ -7,6 +7,7 @@ export function servePodcastArtwork(request: Request, file: string) {
   const destination = new URL(PODCAST_ARTWORK_EDGE);
   destination.searchParams.set("type", "podcast-cover");
   destination.searchParams.set("slug", slug);
+  if (incoming.searchParams.get("layout") === "2") destination.searchParams.set("layout", "2");
   const version = incoming.searchParams.get("v");
   if (version && /^\d{1,14}$/.test(version)) destination.searchParams.set("v", version);
   if (incoming.searchParams.get("download") === "1") destination.searchParams.set("download", "1");

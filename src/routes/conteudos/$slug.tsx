@@ -7,7 +7,7 @@ import { isEditorialCoverUrl } from "../../../supabase/functions/_shared/editori
 import {
   getPublishedArticleResult,
   getPublishedArticles,
-  getReleasedPodcastAudio,
+  getReleasedSpotifyEpisode,
 } from "@/lib/editorial.functions";
 import { getBikeCatalog } from "@/lib/editorial-bikes.functions";
 import { getSheetVideoCatalog } from "@/lib/videos.functions";
@@ -31,14 +31,14 @@ export const Route = createFileRoute("/conteudos/$slug")({
     if (!result.ok) return { ok: false as const };
     const article = result.article;
     if (!article) throw notFound();
-    const [catalog, index, radar, videos, podcastAudio] = await Promise.all([
+    const [catalog, index, radar, videos, spotifyEpisodeId] = await Promise.all([
       getBikeCatalog(),
       getPublishedArticles(),
       article.primaryBikeId || article.relatedBikeIds.length
         ? getRadarCatalog()
         : Promise.resolve({ ok: false as const }),
       getSheetVideoCatalog(),
-      article.videoId ? getReleasedPodcastAudio({ data: article.videoId }) : null,
+      article.videoId ? getReleasedSpotifyEpisode({ data: article.videoId }) : null,
     ]);
     const contextualArticles = relatedPublishedArticles(article, index ?? []);
     const connectedIds = new Set(
@@ -93,7 +93,7 @@ export const Route = createFileRoute("/conteudos/$slug")({
     return {
       ok: true as const,
       article,
-      podcastAudio,
+      spotifyEpisodeId,
       bikes: catalog.ok
         ? catalog.bikes.filter((bike) => connectedIds.has(bike.bikeId))
         : [],
@@ -209,7 +209,7 @@ function ContentDetail() {
       <main>
         <ArticleView
           article={article}
-          podcastAudio={data.podcastAudio}
+          spotifyEpisodeId={data.spotifyEpisodeId}
           bikes={bikes}
           prices={prices}
           histories={histories}

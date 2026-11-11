@@ -4,15 +4,17 @@ import { buildPodcastRss, podcastAudioPath, type ReleasedPodcastEpisode } from "
 import type { PodcastArticle } from "./podcast-editorial";
 import { PODCAST_MEDIA_EDGE } from "../../supabase/functions/_shared/podcast-media-contract";
 
+import { spotifyEpisodeId } from "../../supabase/functions/_shared/podcast-spotify";
+
 const db: SupabaseClient = supabaseAdmin;
 const noStore = { "Cache-Control": "no-store" };
 
-export async function fetchReleasedPodcastAudio(videoId: string) {
+export async function fetchReleasedSpotifyEpisode(videoId: string) {
   if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
   try {
     const { data, error } = await db.from("podcast_released_episodes")
-      .select("youtube_id").eq("youtube_id", videoId).maybeSingle();
-    return !error && data ? `/podcast/audio/${videoId}` : null;
+      .select("spotify_episode_id").eq("youtube_id", videoId).maybeSingle();
+    return !error && spotifyEpisodeId(data?.spotify_episode_id) ? data.spotify_episode_id : null;
   } catch {
     return null;
   }

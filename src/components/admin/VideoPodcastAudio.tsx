@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { adminCall, type ArticleRow } from "@/lib/admin-api";
-import { getReleasedPodcastAudio } from "@/lib/editorial.functions";
+import { getReleasedSpotifyEpisode } from "@/lib/editorial.functions";
 import { podcastArticleEpisodeUrl } from "@/lib/podcast-editorial";
 import {
   hasMp3Signature,
@@ -40,7 +40,7 @@ export function VideoPodcastAudio({ videoId, article }: {
     : null;
   const release = useQuery({
     queryKey: ["admin", "podcast-episode-link", videoId],
-    queryFn: () => getReleasedPodcastAudio({ data: videoId }),
+    queryFn: () => getReleasedSpotifyEpisode({ data: videoId }),
     enabled: !!articleEpisodeUrl && status.data?.enabled === true,
     retry: false,
   });
