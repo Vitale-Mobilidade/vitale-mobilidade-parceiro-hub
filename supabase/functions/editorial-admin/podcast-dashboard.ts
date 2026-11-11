@@ -1,0 +1,64 @@
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import {
+  podcastHistoryPage,
+  PODCAST_HISTORY_PAGE_SIZE,
+  PODCAST_QUEUE_DISPLAY_LIMIT,
+  type PodcastDashboardItem,
+  type PodcastDashboardSnapshot,
+} from "../_shared/podcast-dashboard-contract.ts";
+import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
+import { spotifyEpisodeId } from "../_shared/podcast-spotify.ts";
+
+type Row = { youtube_id: string; title: string; release_at?: string | null; released_at?: string | null };
+
+export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown): Promise<PodcastDashboardSnapshot> {
+  const checkedAt = new Date().toISOString();
+  const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
+  const [settings, audio, ready, prepared, released] = await Promise.all([
+    db.from("podcast_distribution_settings").select("feed_enabled,scheduler_enabled").eq("singleton", true).single(),
+    db.from("podcast_video_audio").select("youtube_id", { count: "exact", head: true }),
+    db.from("podcast_queue_candidates").select("youtube_id,title", { count: "exact" })
+      .order("published_on", { ascending: false, nullsFirst: false })
+      .order("uploaded_at", { ascending: false }).order("youtube_id").limit(PODCAST_QUEUE_DISPLAY_LIMIT),
+    db.from("podcast_episode_queue").select("youtube_id,title,release_at", { count: "exact" })
+      .is("released_at", null).order("created_at", { ascending: false }).order("youtube_id").limit(PODCAST_QUEUE_DISPLAY_LIMIT),
+    db.from("podcast_episode_queue").select("youtube_id,title,release_at,released_at", { count: "exact" })
+      .not("released_at", "is", null).order("released_at", { ascending: false }).order("youtube_id")
+      .range(offset, offset + PODCAST_HISTORY_PAGE_SIZE - 1),
+  ]);
+  if ([settings, audio, ready, prepared, released].some((result) => result.error) || !settings.data)
+    throw new Error("podcast_dashboard_read_failed");
+  const allRows = [...ready.data ?? [], ...prepared.data ?? [], ...released.data ?? []];
+  const releasedIds = (released.data ?? []).map((row) => row.youtube_id);
+  const [articles, spotify] = await Promise.all([
+    allRows.length ? db.from("editorial_articles").select("video_id,slug")
+      .in("video_id", [...new Set(allRows.map((row) => row.youtube_id))])
+      .eq("status", "published").lte("published_at", checkedAt) : { data: [], error: null },
+    releasedIds.length ? db.from("podcast_spotify_episodes").select("youtube_id,spotify_episode_id")
+      .in("youtube_id", releasedIds) : { data: [], error: null },
+  ]);
+  if (articles.error || spotify.error) throw new Error("podcast_dashboard_links_failed");
+  const articleSlugs = new Map((articles.data ?? []).flatMap(({ video_id, slug }) =>
+    typeof slug === "string" && slug.length <= 120 && podcastArticleSlug.test(slug) ? [[video_id, slug] as const] : []));
+  const spotifyIds = new Map((spotify.data ?? []).flatMap(({ youtube_id, spotify_episode_id }) =>
+    spotifyEpisodeId(spotify_episode_id) ? [[youtube_id, spotify_episode_id] as const] : []));
+  function items(rows: Row[] | null): PodcastDashboardItem[] {
+    return (rows ?? []).map((row) => ({
+      id: row.youtube_id,
+      title: row.title,
+      articleSlug: articleSlugs.get(row.youtube_id) ?? null,
+      slotAt: row.release_at ?? null,
+      releasedAt: row.released_at ?? null,
+      spotifyId: row.released_at ? spotifyIds.get(row.youtube_id) ?? null : null,
+    }));
+  }
+  return {
+    checkedAt,
+    feedEnabled: settings.data.feed_enabled === true,
+    schedulerEnabled: settings.data.scheduler_enabled === true,
+    audioCount: audio.count ?? 0,
+    ready: { total: ready.count ?? 0, items: items(ready.data) },
+    prepared: { total: prepared.count ?? 0, items: items(prepared.data) },
+    released: { total: released.count ?? 0, items: items(released.data) },
+  };
+}

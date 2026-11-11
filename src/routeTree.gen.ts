@@ -33,6 +33,7 @@ import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
+import { Route as AdminPodcastsRouteImport } from './routes/admin/podcasts'
 import { Route as AdminRadarRouteImport } from './routes/admin/radar'
 import { Route as AdminVideosRouteImport } from './routes/admin/videos'
 import { Route as CalculadorasCarroVsBikeRouteImport } from './routes/calculadoras/carro-vs-bike'
@@ -196,6 +197,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
 const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
   id: '/admin/newsletter',
   path: '/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPodcastsRoute = AdminPodcastsRouteImport.update({
+  id: '/admin/podcasts',
+  path: '/admin/podcasts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRadarRoute = AdminRadarRouteImport.update({
@@ -455,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/podcasts': typeof AdminPodcastsRoute
   '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -525,6 +532,7 @@ export interface FileRoutesByTo {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/podcasts': typeof AdminPodcastsRoute
   '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -596,6 +604,7 @@ export interface FileRoutesById {
   '/admin/ia': typeof AdminIaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
+  '/admin/podcasts': typeof AdminPodcastsRoute
   '/admin/radar': typeof AdminRadarRoute
   '/admin/videos': typeof AdminVideosRoute
   '/calculadoras/carro-vs-bike': typeof CalculadorasCarroVsBikeRoute
@@ -668,6 +677,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/podcasts'
     | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
@@ -738,6 +748,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/podcasts'
     | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
@@ -808,6 +819,7 @@ export interface FileRouteTypes {
     | '/admin/ia'
     | '/admin/logs'
     | '/admin/newsletter'
+    | '/admin/podcasts'
     | '/admin/radar'
     | '/admin/videos'
     | '/calculadoras/carro-vs-bike'
@@ -879,6 +891,7 @@ export interface RootRouteChildren {
   AdminIaRoute: typeof AdminIaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminNewsletterRoute: typeof AdminNewsletterRoute
+  AdminPodcastsRoute: typeof AdminPodcastsRoute
   AdminRadarRoute: typeof AdminRadarRoute
   AdminVideosRoute: typeof AdminVideosRoute
   CalculadorasCarroVsBikeRoute: typeof CalculadorasCarroVsBikeRoute
@@ -1094,6 +1107,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/newsletter'
       fullPath: '/admin/newsletter'
       preLoaderRoute: typeof AdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/podcasts': {
+      id: '/admin/podcasts'
+      path: '/admin/podcasts'
+      fullPath: '/admin/podcasts'
+      preLoaderRoute: typeof AdminPodcastsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/radar': {
@@ -1441,6 +1461,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIaRoute: AdminIaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminNewsletterRoute: AdminNewsletterRoute,
+  AdminPodcastsRoute: AdminPodcastsRoute,
   AdminRadarRoute: AdminRadarRoute,
   AdminVideosRoute: AdminVideosRoute,
   CalculadorasCarroVsBikeRoute: CalculadorasCarroVsBikeRoute,

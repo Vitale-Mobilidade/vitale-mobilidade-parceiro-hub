@@ -1,0 +1,37 @@
+import { createClient } from "@supabase/supabase-js";
+import { expect, it, vi } from "vitest";
+import { readPodcastDashboard } from "../editorial-admin/podcast-dashboard";
+import { PODCAST_HISTORY_PAGE_SIZE, podcastHistoryPage } from "./podcast-dashboard-contract";
+
+it("lê totais e links do catálogo sem consultar o armazenamento nem dados privados", async () => {
+  const fetchMock = vi.fn(async (request: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(request.toString());
+    expect(url.searchParams.get("select")).not.toMatch(/object_path|credential|token|attached_by/);
+    const table = url.pathname.split("/").at(-1);
+    const json = (body: unknown, count = 1) => Response.json(body, { headers: { "Content-Range": `0-0/${count}` } });
+    if (table === "podcast_distribution_settings") return json({ feed_enabled: true, scheduler_enabled: true });
+    if (table === "podcast_video_audio" && init?.method === "HEAD")
+      return new Response(null, { headers: { "Content-Range": "*/12" } });
+    if (table === "podcast_queue_candidates") return json([{ youtube_id: "ready", title: "Elegível" }], 9);
+    if (table === "podcast_episode_queue" && url.searchParams.get("released_at") === "is.null")
+      return json([{ youtube_id: "prepared", title: "Preparado" }]);
+    if (table === "podcast_episode_queue") {
+      expect(url.searchParams.get("offset")).toBe(String(PODCAST_HISTORY_PAGE_SIZE));
+      return json([{ youtube_id: "released", title: "Publicado", released_at: "2026-11-11T20:45:02Z" }], 21);
+    }
+    if (table === "editorial_articles") return json([{ video_id: "ready", slug: "artigo" }, { video_id: "prepared", slug: "../draft" }]);
+    if (table === "podcast_spotify_episodes") return json([{ youtube_id: "released", spotify_episode_id: "324BQ31Y26a5askghi34ax" }]);
+    throw new Error(`Unexpected table ${table}`);
+  });
+  const db = createClient("https://example.invalid", "test", {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchMock as typeof fetch },
+  });
+  const data = await readPodcastDashboard(db as never, 1);
+  expect(data.audioCount).toBe(12);
+  expect(data.ready).toMatchObject({ total: 9, items: [{ articleSlug: "artigo" }] });
+  expect(data.prepared).toMatchObject({ total: 1, items: [{ articleSlug: null, spotifyId: null }] });
+  expect(data.released).toMatchObject({ total: 21, items: [{ spotifyId: "324BQ31Y26a5askghi34ax" }] });
+  expect(podcastHistoryPage(-1)).toBe(0);
+  expect(podcastHistoryPage(99_999)).toBe(999);
+});

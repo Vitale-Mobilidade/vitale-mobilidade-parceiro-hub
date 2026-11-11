@@ -1,0 +1,119 @@
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { adminCall } from "@/lib/admin-api";
+import { formatPodcastDateTime, nextPodcastSlot, podcastSlots } from "@/lib/podcast-dashboard-clock";
+import {
+  PODCAST_HISTORY_PAGE_SIZE,
+  PODCAST_MAX_HISTORY_PAGE,
+  type PodcastDashboardItem,
+  type PodcastDashboardSnapshot,
+} from "../../supabase/functions/_shared/podcast-dashboard-contract";
+
+const panel = "rounded-2xl border border-line bg-white p-4 sm:p-6";
+const button = "inline-flex min-h-11 items-center rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50";
+const textLink = "inline-flex min-h-11 items-center text-sm font-semibold text-emerald-800 underline";
+
+export default function AdminPodcasts() {
+  return <AdminShell>{(role) => role === "admin" ? <PodcastDashboard /> : <p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;
+}
+
+function PodcastDashboard() {
+  const [page, setPage] = useState(0);
+  const query = useQuery({
+    queryKey: ["admin", "podcast-dashboard", page],
+    queryFn: () => adminCall<PodcastDashboardSnapshot>("podcast-dashboard", { historyPage: page }),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const data = query.data;
+  const agenda = data?.feedEnabled && data.schedulerEnabled;
+  return (
+    <div className="space-y-5">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Podcasts</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Acompanhe a fila e as publicações do podcast da Vitale.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/admin/videos" className={button}>Gerenciar áudios</Link>
+          <button className={button} type="button" disabled={query.isFetching} onClick={() => void query.refetch()}>
+            {query.isFetching ? "Consultando…" : "Atualizar"}
+          </button>
+        </div>
+      </header>
+      {query.isPending && <p role="status">Consultando a fila do podcast…</p>}
+      {query.isError && <p role="alert">Não foi possível atualizar o painel. Tente novamente.</p>}
+      {data && <>
+        <section className={panel} aria-labelledby="podcast-agenda">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 id="podcast-agenda" className="text-lg font-semibold">Agenda de publicação</h2>
+              <p className="mt-2 font-semibold">{!data.feedEnabled ? "RSS desativado" : agenda ? "Agenda habilitada" : "Agenda pausada"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {podcastSlots.map((slot) => slot.label).join(" · ")} — horário de Brasília.
+              </p>
+              {agenda && <p className="mt-2 text-sm">
+                Próxima janela prevista: <strong>{nextPodcastSlot(data.checkedAt)}</strong>
+              </p>}
+            </div>
+            {data.feedEnabled && <a href="/podcast/rss.xml" target="_blank" rel="noopener noreferrer" className={button}>Abrir RSS</a>}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">A fila escolhe um episódio elegível por horário, sem reservar uma data para cada vídeo. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Dados de <time dateTime={data.checkedAt}>{formatPodcastDateTime(data.checkedAt)}</time>, horário de Brasília.</p>
+        </section>
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[["MP3 anexados", data.audioCount], ["A preparar", data.ready.total], ["Preparados", data.prepared.total], ["Publicados no RSS", data.released.total]].map(([label, count]) => (
+            <div key={label} className="rounded-xl border border-line bg-white p-3 sm:p-4">
+              <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+              <dd className="mt-1 text-2xl font-bold tabular-nums">{count}</dd>
+            </div>
+          ))}
+        </dl>
+        <EpisodeSection title="Preparados" section={data.prepared} kind="prepared" empty="Ainda não há episódios preparados." />
+        <EpisodeSection title="A preparar" section={data.ready} kind="ready" empty="Nenhum vídeo com MP3 e artigo publicado aguarda preparação." />
+        <EpisodeSection title="Histórico de publicações" section={data.released} kind="released" empty={page ? "Nenhum episódio nesta página." : "Ainda não há episódios publicados."}>
+          {data.released.total > PODCAST_HISTORY_PAGE_SIZE && <nav aria-label="Páginas do histórico" className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="button" className={button} disabled={page === 0 || query.isFetching} onClick={() => setPage(page - 1)}>Mais recentes</button>
+            <span className="text-sm">Página {page + 1}</span>
+            <button type="button" className={button} disabled={page >= PODCAST_MAX_HISTORY_PAGE || (page + 1) * PODCAST_HISTORY_PAGE_SIZE >= data.released.total || query.isFetching} onClick={() => setPage(page + 1)}>Mais antigos</button>
+          </nav>}
+        </EpisodeSection>
+      </>}
+    </div>
+  );
+}
+
+function EpisodeSection({ title, section, kind, empty, children }: {
+  title: string; section: { total: number; items: PodcastDashboardItem[] }; kind: "prepared" | "ready" | "released"; empty: string;
+  children?: React.ReactNode;
+}) {
+  return <section className={panel} aria-labelledby={`podcasts-${kind}`}>
+    <h2 id={`podcasts-${kind}`} className="text-lg font-semibold">{title}</h2>
+    {kind === "released" && <p className="mt-1 text-sm text-muted-foreground">
+      O link do Spotify aparece quando o episódio é identificado. Apple Podcasts, Amazon Music e Deezer ainda não têm confirmação automática neste painel.
+    </p>}
+    {kind === "ready" && section.total > 0 && <p className="mt-1 text-sm text-muted-foreground">Lista dos vídeos elegíveis no catálogo. A ordem pode mudar até a publicação.</p>}
+    {section.items.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">{empty}</p> :
+      <ul className="mt-3 divide-y divide-line border-y border-line">
+        {section.items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-4 py-3">
+          <div className="min-w-0">
+            <p className="break-words text-sm font-semibold">{item.title}</p>
+            {item.releasedAt && <p className="text-sm text-muted-foreground">Publicado em <time dateTime={item.releasedAt}>{formatPodcastDateTime(item.releasedAt)}</time></p>}
+            {kind === "prepared" && <p className="text-sm text-muted-foreground">
+              {!item.articleSlug ? "Aguardando artigo publicado"
+                : item.slotAt ? <>Janela registrada: <time dateTime={item.slotAt}>{formatPodcastDateTime(item.slotAt)}</time></>
+                : "Aguardando uma janela da agenda"}
+            </p>}
+          </div>
+          <div className="flex flex-wrap gap-x-3">
+            {item.articleSlug && <Link className={textLink} to="/conteudos/$slug" params={{ slug: item.articleSlug }}>Ver artigo</Link>}
+            {item.spotifyId && <a className={textLink} href={`https://open.spotify.com/episode/${item.spotifyId}`} target="_blank" rel="noopener noreferrer">Abrir no Spotify</a>}
+          </div>
+        </li>)}
+      </ul>}
+    {section.items.length < section.total && kind !== "released" && <p className="mt-3 text-sm text-muted-foreground">Exibindo {section.items.length} de {section.total}.</p>}
+    {children}
+  </section>;
+}
