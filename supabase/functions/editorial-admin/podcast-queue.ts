@@ -26,6 +26,10 @@ async function stagePodcastEpisode(
   db: SupabaseClient, video: { youtube_id: string; title: string },
   readDescription: (id: string) => Promise<string>, folderCreatedAt?: number,
 ) {
+  const { data: ready, error: articleError } = await db.from("podcast_article_ready_videos")
+    .select("youtube_id").eq("youtube_id", video.youtube_id).maybeSingle();
+  if (articleError) throw new Error("podcast_article_read_failed");
+  if (!ready) return { status: "queue_changed" };
   const [description, audio] = await Promise.all([
     readDescription(video.youtube_id),
     db.from("podcast_video_audio").select("object_path,size_bytes").eq("youtube_id", video.youtube_id).single(),
@@ -47,7 +51,7 @@ export async function prepareNextPodcastEpisode(
 ) {
   const { openPodcastWorkDrive, handlePodcastWorkDrive, workDriveTitle } = await import("./podcast-workdrive.ts");
   const [catalog, audios, drafts] = await Promise.all([
-    db.from("editorial_videos").select("youtube_id,title,published_on").eq("status", "active")
+    db.from("podcast_article_ready_videos").select("youtube_id,title,published_on")
       .order("published_on", { ascending: false, nullsFirst: false }).order("youtube_id").limit(1000),
     db.from("podcast_video_audio").select("youtube_id").limit(1000),
     db.from("podcast_episode_queue").select("youtube_id,released_at").limit(1000),
@@ -61,7 +65,11 @@ export async function prepareNextPodcastEpisode(
   if (!connection) {
     if (!options.useAttachedWithoutWorkDrive) return { status: "workdrive_unconfigured" };
     const { candidates } = await previewPodcastQueue(db);
-    return candidates[0] ? stagePodcastEpisode(db, candidates[0], readDescription) : { status: "empty" };
+    for (const candidate of candidates) {
+      const stagedEpisode = await stagePodcastEpisode(db, candidate, readDescription);
+      if (stagedEpisode.status === "draft") return stagedEpisode;
+    }
+    return { status: "empty" };
   }
   const folders = (await connection.list(connection.root)).filter((row) => row.attributes.is_folder);
   const lastRelease = Math.max(0, ...(drafts.data ?? []).map((row) => Date.parse(row.released_at ?? "") || 0));
@@ -96,7 +104,8 @@ export async function prepareNextPodcastEpisode(
         if (!imported.ok) throw new Error("podcast_workdrive_import_failed");
       }
     }
-    return stagePodcastEpisode(db, video, readDescription, created);
+    const stagedEpisode = await stagePodcastEpisode(db, video, readDescription, created);
+    if (stagedEpisode.status === "draft") return stagedEpisode;
   }
   return { status: "empty" };
 }

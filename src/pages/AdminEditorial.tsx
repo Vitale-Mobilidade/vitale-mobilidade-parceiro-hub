@@ -423,7 +423,7 @@ function PodcastQueuePanel() {
       );
       setMessage(result.status === "draft" ? "Episódio salvo como rascunho."
         : result.status === "workdrive_unconfigured" ? "Configure a conexão de leitura do WorkDrive."
-        : result.status === "empty" ? "Nenhum MP3 pronto foi encontrado."
+        : result.status === "empty" ? "Nenhum episódio com MP3 e artigo publicado foi encontrado."
         : "A fila mudou. Confira o próximo episódio.");
     } catch (failure) {
       setMessage(failure instanceof Error ? failure.message : "Não foi possível criar o rascunho.");
@@ -439,7 +439,7 @@ function PodcastQueuePanel() {
       {queue.isPending && <p>Consultando a fila…</p>}
       {queue.isError && <p role="alert">Não foi possível consultar a fila.</p>}
       {queue.data && <p>{queue.data.drafts} na fila, aguardando liberação.</p>}
-      {queue.data && !next && <p>Nenhum áudio pronto para entrar na fila.</p>}
+      {queue.data && !next && <p>Nenhum vídeo com MP3 e artigo publicado disponível para entrar na fila.</p>}
       {next && (
         <>
           <p>Próximo episódio sugerido: {next.title}</p>
