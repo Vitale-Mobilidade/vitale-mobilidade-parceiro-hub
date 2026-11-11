@@ -1,3 +1,4 @@
+import { serveReleasedPodcastMedia } from "./podcast-media.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 import { ELEMENT_LAYOUT } from "../_shared/heatmap-elements.ts";
 import { parseOfferClickRanks, compareOfferClickRelevance, EDITORIAL_AUDIENCE_PRIORITY } from "../_shared/bike-relevance.ts";
@@ -2530,6 +2531,14 @@ function editorialAiRetryAt(value: string | null | undefined): string | null {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req) });
+  if (req.method === "GET" || req.method === "HEAD") {
+    const mediaId = /\/editorial-admin\/podcast\/audio\/([A-Za-z0-9_-]{11})$/.exec(new URL(req.url).pathname)?.[1];
+    if (mediaId && SUPABASE_URL && SERVICE_KEY) {
+      return serveReleasedPodcastMedia(req, mediaId, createClient(SUPABASE_URL, SERVICE_KEY, {
+        auth: { persistSession: false },
+      }));
+    }
+  }
   if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
   if (!SUPABASE_URL || !SERVICE_KEY) return json(req, { error: "not_configured" }, 503);
   // 6 MB: a 4 MB JPG cover travels base64-encoded (~5.4 MB); other actions still trim their own fields.
