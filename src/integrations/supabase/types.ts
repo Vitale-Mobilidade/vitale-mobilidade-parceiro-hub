@@ -3644,18 +3644,21 @@ export type Database = {
       youtube_editorial_worker_settings: {
         Row: {
           actor_id: string
+          ai_retry_at: string | null
           enabled: boolean
           signing_key: string
           singleton: boolean
         }
         Insert: {
           actor_id: string
+          ai_retry_at?: string | null
           enabled?: boolean
           signing_key?: string
           singleton?: boolean
         }
         Update: {
           actor_id?: string
+          ai_retry_at?: string | null
           enabled?: boolean
           signing_key?: string
           singleton?: boolean
