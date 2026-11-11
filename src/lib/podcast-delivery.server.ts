@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { buildPodcastRss, podcastAudioPath } from "./podcast-rss";
-import { PODCAST_AUDIO_BUCKET } from "../../supabase/functions/_shared/podcast-audio-contract";
+import { PODCAST_MEDIA_EDGE } from "../../supabase/functions/_shared/podcast-media-contract";
 
 const db: SupabaseClient = supabaseAdmin;
 const noStore = { "Cache-Control": "no-store" };
@@ -40,47 +40,7 @@ export async function servePodcastAudio(request: Request, youtubeId: string) {
     baseHeaders.set("Content-Range", `bytes */${data.size_bytes}`);
     return new Response(null, { status: 416, headers: baseHeaders });
   }
-  const storageOrigin = process.env["SUPABASE_URL"];
-  const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!storageOrigin || !serviceKey) return new Response(null, { status: 503, headers: noStore });
-  const objectPath = data.object_path.split("/").map(encodeURIComponent).join("/");
-  const headers = new Headers({ apikey: serviceKey });
-  if (!serviceKey.startsWith("sb_secret_")) headers.set("Authorization", `Bearer ${serviceKey}`);
-  if (range) headers.set("Range", range);
-  let upstream = await fetch(
-    new URL(`/storage/v1/object/authenticated/${PODCAST_AUDIO_BUCKET}/${objectPath}`, storageOrigin),
-    { headers, redirect: "error", signal: AbortSignal.timeout(20000) },
-  ).catch(() => null);
-  if (!isStorageAudioResponse(upstream, range)) {
-    await upstream?.body?.cancel();
-    upstream = null;
-    const { data: signed } = await db.storage.from(PODCAST_AUDIO_BUCKET).createSignedUrl(data.object_path, 60);
-    if (signed?.signedUrl) {
-      const url = new URL(signed.signedUrl);
-      if (url.origin === new URL(storageOrigin).origin) {
-        upstream = await fetch(url, {
-          headers: range ? { Range: range } : undefined,
-          redirect: "error", signal: AbortSignal.timeout(10000),
-        }).catch(() => null);
-      }
-    }
-  }
-  if (!upstream || !isStorageAudioResponse(upstream, range)) {
-    await upstream?.body?.cancel();
-    if (mediaPath.startsWith("/podcast/episodios/"))
-      return new Response(null, { status: 307, headers: { ...noStore, Location: mediaPath } });
-    return new Response(null, { status: 503, headers: noStore });
-  }
-  for (const name of ["Content-Length", "Content-Range"]) {
-    const value = upstream.headers.get(name);
-    if (value) baseHeaders.set(name, value);
-  }
-  return new Response(upstream.body, { status: upstream.status, headers: baseHeaders });
-}
-
-function isStorageAudioResponse(response: Response | null, range: string | null): boolean {
-  if (!response) return false;
-  if (range && response.status === 416) return true;
-  return response.status === (range ? 206 : 200)
-    && /^audio\/mpeg(?:;|$)/i.test(response.headers.get("Content-Type") ?? "");
+  const location = mediaPath.startsWith("/podcast/episodios/")
+    ? mediaPath : `${PODCAST_MEDIA_EDGE}/${encodeURIComponent(youtubeId)}`;
+  return new Response(null, { status: 307, headers: { ...noStore, Location: location } });
 }
