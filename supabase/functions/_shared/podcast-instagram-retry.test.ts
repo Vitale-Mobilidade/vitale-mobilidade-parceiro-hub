@@ -47,8 +47,8 @@ it("reenvia a entrega de um horário encerrado uma vez e guarda o link confirmad
   const db = createClient("https://db.example.com", "service-test", {
     global: { fetch: (url, request) => delivery(new URL(String(url)), request) },
   });
-  await expect(publishPodcastOnInstagram(db, episodeId)).resolves.toEqual({ status: "published" });
-  await expect(publishPodcastOnInstagram(db, episodeId)).resolves.toEqual({ status: "unavailable" });
+  await expect(publishPodcastOnInstagram(db, { episodeId })).resolves.toEqual({ status: "published" });
+  await expect(publishPodcastOnInstagram(db, { episodeId })).resolves.toEqual({ status: "unavailable" });
   expect(meta.mock.calls.filter(([url]) => String(url).endsWith("/media_publish"))).toHaveLength(1);
   expect(writes).toContainEqual({ container_id: "456" });
   expect(writes).toContainEqual(expect.objectContaining({ status: "published", permalink: "https://www.instagram.com/p/abc/" }));

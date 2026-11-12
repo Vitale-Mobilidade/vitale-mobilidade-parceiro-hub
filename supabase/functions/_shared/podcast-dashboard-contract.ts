@@ -2,6 +2,12 @@ export const PODCAST_HISTORY_PAGE_SIZE = 20;
 export const PODCAST_QUEUE_DISPLAY_LIMIT = 40;
 export const PODCAST_MAX_HISTORY_PAGE = 999;
 
+export type PodcastInstagramDraft = {
+  id: string;
+  title: string;
+  scheduledAt: string | null;
+};
+
 export type PodcastDashboardItem = {
   id: string;
   title: string;

@@ -20,16 +20,18 @@ interface PodcastInstagramClaim {
   claim_token: string;
   container_id: string | null;
   slot_at: string;
+  scheduled_at?: string | null;
 }
 
-export async function publishPodcastOnInstagram(db: SupabaseClient, retryEpisodeId?: string) {
-  const { data: rawClaim, error } = retryEpisodeId
-    ? await claimInstagramRetry(db, retryEpisodeId)
+export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { episodeId: string } | "scheduled") {
+  const { data: rawClaim, error } = mode === "scheduled"
+    ? await db.rpc("claim_scheduled_podcast_instagram").maybeSingle()
+    : mode ? await claimInstagramRetry(db, mode.episodeId)
     : await db.rpc("claim_podcast_instagram").maybeSingle();
   if (error) throw new Error("podcast_instagram_claim_failed");
   if (!rawClaim) return { status: "unavailable" as const };
   const claim = rawClaim as PodcastInstagramClaim;
-  const slotClosed = () => !retryEpisodeId && Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000;
+  const slotClosed = () => !mode && Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000;
 
   async function save(values: Record<string, string | null>) {
     const { data, error: writeError } = await db.from("podcast_instagram_deliveries").update(values)
@@ -88,9 +90,16 @@ export async function publishPodcastOnInstagram(db: SupabaseClient, retryEpisode
     const errorCode = failure instanceof InstagramRequestError ? failure.code : "request_unconfirmed";
     const status = failure instanceof InstagramRequestError && failure.terminal ? "failed" : "pending";
     await finish(status, { error_code: errorCode });
-    if (status === "failed" && !retryEpisodeId) await notifyPodcastError(db, "Instagram", claim.slot_at, errorCode);
+    if (mode === "scheduled" || (status === "failed" && !mode)) {
+      await notifyPodcastError(db, "Instagram", claim.scheduled_at ?? claim.slot_at, errorCode);
+    }
     return { status, code: errorCode };
   }
+}
+
+export async function publishScheduledPodcastInstagram(db: SupabaseClient) {
+  const results = await Promise.all(Array.from({ length: 3 }, () => publishPodcastOnInstagram(db, "scheduled")));
+  return { status: "instagram-schedule", published: results.filter((result) => result.status === "published").length };
 }
 
 async function claimInstagramRetry(db: SupabaseClient, episodeId: string) {
