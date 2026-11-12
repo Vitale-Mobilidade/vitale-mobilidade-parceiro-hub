@@ -5,12 +5,32 @@ import {
   PODCAST_QUEUE_DISPLAY_LIMIT,
   type PodcastDashboardItem,
   type PodcastDashboardSnapshot,
+  type PodcastInstagramDraft,
 } from "../_shared/podcast-dashboard-contract.ts";
 import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
 import { validInstagramPermalink } from "../_shared/podcast-instagram.ts";
 import { spotifyEpisodeId } from "../_shared/podcast-spotify.ts";
 
 type Row = { youtube_id: string; title: string; release_at?: string | null; released_at?: string | null };
+
+export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: unknown) {
+  const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
+  const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
+  const { data, error, count } = await db.from("podcast_instagram_deliveries")
+    .select("youtube_id,scheduled_at,podcast_episode_queue!inner(title)", { count: "exact" })
+    .eq("status", "pending").is("publish_attempted_at", null).lte("slot_at", cutoff)
+    .not("podcast_episode_queue.released_at", "is", null)
+    .not("podcast_episode_queue.prepared_instagram_post", "is", null)
+    .order("scheduled_at", { ascending: true, nullsFirst: false })
+    .order("slot_at", { ascending: false }).order("youtube_id")
+    .range(offset, offset + PODCAST_HISTORY_PAGE_SIZE - 1);
+  if (error) throw new Error("podcast_instagram_drafts_read_failed");
+  type DraftRow = { youtube_id: string; scheduled_at: string | null; podcast_episode_queue: { title: string } };
+  const items: PodcastInstagramDraft[] = ((data ?? []) as unknown as DraftRow[]).map((row) => ({
+    id: row.youtube_id, title: row.podcast_episode_queue.title, scheduledAt: row.scheduled_at,
+  }));
+  return { total: count ?? 0, items };
+}
 
 export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown): Promise<PodcastDashboardSnapshot> {
   const checkedAt = new Date().toISOString();
