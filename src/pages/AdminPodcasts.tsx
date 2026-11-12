@@ -37,6 +37,16 @@ function PodcastDashboard() {
   const instagramCheck = useMutation({
     mutationFn: () => adminCall<{ status: string }>("podcast-instagram-connection"),
   });
+  const instagramRetry = useMutation({
+    mutationFn: (episode: PodcastDashboardItem) =>
+      adminCall<{ status: string; code?: string }>("podcast-instagram-retry", { youtubeId: episode.id }),
+    onSettled: () => query.refetch(),
+  });
+  const retryMessage = instagramRetry.isError ? "Não foi possível concluir o envio. Atualize o histórico antes de tentar de novo."
+    : instagramRetry.data?.status === "published" ? "Publicado no Instagram."
+    : instagramRetry.data?.code === "meta_processing" ? "A Meta ainda está processando a imagem. Tente novamente em instantes."
+    : instagramRetry.data?.status === "unavailable" ? "Este episódio não está disponível para reenvio."
+    : instagramRetry.data ? "O Instagram ainda não confirmou o envio. Confira o histórico." : null;
   const instagramConnectionMessage = instagramCheck.isError ? "Não foi possível consultar a conexão."
     : ({
       verified: "Conta @vitalemobilidade confirmada.",
@@ -100,7 +110,11 @@ function PodcastDashboard() {
         </dl>
         <EpisodeSection title="Preparados" section={data.prepared} kind="prepared" empty="Ainda não há episódios preparados." />
         <EpisodeSection title="A preparar" section={data.ready} kind="ready" empty="Nenhum vídeo com MP3 e artigo publicado aguarda preparação." />
-        <EpisodeSection title="Histórico de publicações" section={data.released} kind="released" empty={page ? "Nenhum episódio nesta página." : "Ainda não há episódios publicados."}>
+        <EpisodeSection title="Histórico de publicações" section={data.released} kind="released" empty={page ? "Nenhum episódio nesta página." : "Ainda não há episódios publicados."}
+          retryInstagram={data.feedEnabled && data.instagramEnabled ? (item) => {
+            if (window.confirm(`Enviar “${item.title}” ao Instagram da Vitale agora?`)) instagramRetry.mutate(item);
+          } : undefined} retryPending={instagramRetry.isPending}>
+          {retryMessage && <p role="status" className="mt-3 text-sm">{retryMessage}</p>}
           {data.released.total > PODCAST_HISTORY_PAGE_SIZE && <nav aria-label="Páginas do histórico" className="mt-3 flex flex-wrap items-center gap-3">
             <button type="button" className={button} disabled={page === 0 || query.isFetching} onClick={() => setPage(page - 1)}>Mais recentes</button>
             <span className="text-sm">Página {page + 1}</span>
@@ -112,9 +126,11 @@ function PodcastDashboard() {
   );
 }
 
-function EpisodeSection({ title, section, kind, empty, children }: {
+function EpisodeSection({ title, section, kind, empty, children, retryInstagram, retryPending }: {
   title: string; section: { total: number; items: PodcastDashboardItem[] }; kind: "prepared" | "ready" | "released"; empty: string;
   children?: React.ReactNode;
+  retryInstagram?: (item: PodcastDashboardItem) => void;
+  retryPending?: boolean;
 }) {
   return <section className={panel} aria-labelledby={`podcasts-${kind}`}>
     <h2 id={`podcasts-${kind}`} className="text-lg font-semibold">{title}</h2>
@@ -138,6 +154,10 @@ function EpisodeSection({ title, section, kind, empty, children }: {
           <div className="flex flex-wrap gap-x-3">
             {item.articleSlug && <Link className={textLink} to="/conteudos/$slug" params={{ slug: item.articleSlug }}>Ver artigo</Link>}
             {item.instagram?.permalink && <a className={textLink} href={item.instagram.permalink} target="_blank" rel="noopener noreferrer">Abrir no Instagram</a>}
+            {retryInstagram && item.instagram?.status === "expired" &&
+              <button type="button" className={button} disabled={retryPending} onClick={() => retryInstagram(item)}>
+                Tentar enviar ao Instagram
+              </button>}
             {item.spotifyId && <a className={textLink} href={`https://open.spotify.com/episode/${item.spotifyId}`} target="_blank" rel="noopener noreferrer">Abrir no Spotify</a>}
           </div>
         </li>)}

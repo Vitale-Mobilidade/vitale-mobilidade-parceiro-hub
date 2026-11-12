@@ -22,11 +22,14 @@ interface PodcastInstagramClaim {
   slot_at: string;
 }
 
-export async function publishPodcastOnInstagram(db: SupabaseClient) {
-  const { data: rawClaim, error } = await db.rpc("claim_podcast_instagram").maybeSingle();
+export async function publishPodcastOnInstagram(db: SupabaseClient, retryEpisodeId?: string) {
+  const { data: rawClaim, error } = retryEpisodeId
+    ? await claimInstagramRetry(db, retryEpisodeId)
+    : await db.rpc("claim_podcast_instagram").maybeSingle();
   if (error) throw new Error("podcast_instagram_claim_failed");
-  if (!rawClaim) return false;
+  if (!rawClaim) return { status: "unavailable" as const };
   const claim = rawClaim as PodcastInstagramClaim;
+  const slotClosed = () => !retryEpisodeId && Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000;
 
   async function save(values: Record<string, string | null>) {
     const { data, error: writeError } = await db.from("podcast_instagram_deliveries").update(values)
@@ -61,30 +64,46 @@ export async function publishPodcastOnInstagram(db: SupabaseClient) {
     const status = await instagram.status(container);
     if (status === "PUBLISHED") {
       await finish("published", { published_at: new Date().toISOString(), error_code: null });
-      return true;
+      return { status: "published" as const };
     }
     if (status === "EXPIRED" || status === "ERROR") throw new InstagramRequestError("meta_container_failed", true);
     if (status !== "FINISHED") {
       await finish("pending", { error_code: "meta_processing" });
-      return true;
+      return { status: "pending" as const, code: "meta_processing" };
     }
-    if (Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000) {
+    if (slotClosed()) {
       await finish("pending", { error_code: "slot_closed" });
-      return true;
+      return { status: "pending" as const, code: "slot_closed" };
     }
     await save({ publish_attempted_at: new Date().toISOString() });
-    if (Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000) {
+    if (slotClosed()) {
       await finish("pending", { error_code: "slot_closed" });
-      return true;
+      return { status: "pending" as const, code: "slot_closed" };
     }
     const media = await instagram.publish(account, container);
     const permalink = await instagram.permalink(media).catch(() => null);
     await finish("published", { published_at: new Date().toISOString(), permalink, error_code: null });
+    return { status: "published" as const };
   } catch (failure) {
     const errorCode = failure instanceof InstagramRequestError ? failure.code : "request_unconfirmed";
     const status = failure instanceof InstagramRequestError && failure.terminal ? "failed" : "pending";
     await finish(status, { error_code: errorCode });
-    if (status === "failed") await notifyPodcastError(db, "Instagram", claim.slot_at, errorCode);
+    if (status === "failed" && !retryEpisodeId) await notifyPodcastError(db, "Instagram", claim.slot_at, errorCode);
+    return { status, code: errorCode };
   }
-  return true;
+}
+
+async function claimInstagramRetry(db: SupabaseClient, episodeId: string) {
+  const settings = await db.from("podcast_distribution_settings")
+    .select("feed_enabled,instagram_enabled").eq("singleton", true).maybeSingle();
+  if (settings.error || !settings.data?.feed_enabled || !settings.data.instagram_enabled) {
+    return { data: null, error: settings.error };
+  }
+  const now = Date.now();
+  return await db.from("podcast_instagram_deliveries")
+    .update({ claim_token: crypto.randomUUID(), lease_until: new Date(now + 60_000).toISOString() })
+    .eq("youtube_id", episodeId).eq("status", "pending").is("publish_attempted_at", null)
+    .lte("slot_at", new Date(now - 5 * 60_000).toISOString())
+    .or(`lease_until.is.null,lease_until.lte.${new Date(now).toISOString()}`)
+    .select("youtube_id,claim_token,container_id,slot_at").maybeSingle();
 }
