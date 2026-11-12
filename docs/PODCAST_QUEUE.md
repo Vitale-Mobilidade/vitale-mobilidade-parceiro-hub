@@ -69,3 +69,30 @@ Configuração: usar um token de usuário do Instagram Login da conta profission
 Revisão final: Produto (Pass, episódio e janela compartilhados); Arquitetura (Pass, fila transacional e retomada pelo disparo existente); Segurança (Pass, credencial só no servidor, perfil fixo e ACL restrita); Operação (Pass, ativação separada e estados no histórico); UX (Pass, indicador de configuração e verificação da conta); Growth (Pass, imagem 1:1 do RSS e legenda editorial); IA (N/A, composição determinística); QA (Pass, 14 testes direcionados, 68 testes e build no `pnpm validate`, ensaio PostgreSQL 17 de publicação, retomada, bloqueio de duplicatas e acesso). O envio real depende da autorização da Meta e da próxima janela ativa.
 
 Revisão da assinatura da arte quadrada: Produto e UX adotam somente Vitale Mobilidade no selo superior para reutilizar a peça no Instagram. Arquitetura usa um nome de arquivo novo para evitar a imagem anterior no cache. Growth preserva a arte, o título e a URL do episódio. Operação mantém compatibilidade com downloads antigos. Segurança e IA não se aplicam. QA verifica a capa quadrada e o endereço atualizado no RSS. Rollback: restaurar o frontend e a função de imagens anteriores.
+
+### Login Unificado da Meta
+
+Mudança estrutural no cliente da API do Instagram. O painel da Meta informa que apps novos usam Login Unificado. O app Vitale Publicacoes pertence ao portfólio Vitale Mobilidade.
+
+| Perspectiva | Impacto e risco | Dependência e recomendação |
+| --- | --- | --- |
+| Produto | Mantém a publicação do episódio no perfil oficial. Uma associação errada publicaria em outro perfil. | Verificar o perfil e a permissão antes de ativar. |
+| Arquitetura | O token do usuário do sistema usa o Graph do Facebook e requer o ID do Instagram. | Usar origem fixa e ID explícito. Preservar a configuração existente do Instagram Login. |
+| IA | O texto vem da composição editorial existente. | N/A. Nenhuma alteração de modelo, prompt ou conteúdo. |
+| Segurança | O token e o identificador ficam no backend. Um token de outro ativo não deve passar. | Restringir a autorização ao ativo da Vitale e conferir o ID e nome pela API antes de qualquer envio. |
+| UX | O operador continua usando o botão de verificação do painel. | Manter estados existentes, inclusive autorização recusada. |
+| Operação | A nova autorização depende da Meta. Uma credencial inválida pode impedir o envio. | Verificar a capacidade de publicação sem criar mídia e ativar somente após a validação real. |
+| Growth | Mantém capa, legenda, janela e endereço do artigo. | Prosseguir sem alterar o RSS ou republicar episódios anteriores. |
+| PMO/QA | O novo fluxo depende de configuração externa. | Testar ambos os hosts, erros de identidade, verificação sem mutação e payload existente. Validar com a Meta antes de ativar. |
+
+Decisão: usar um ID explícito para a conta no Login Unificado e preservar o cliente do Instagram Login quando esse ID estiver ausente. Não inferir o ativo pela conta pessoal de quem autentica. A implantação atualiza apenas a função administrativa. A reversão desativa o Instagram e restaura a função anterior.
+
+Para Login Unificado, salvar o token da Meta em `PODCAST_INSTAGRAM_ACCESS_TOKEN`, a versão em `PODCAST_INSTAGRAM_API_VERSION` e o ID numérico do perfil profissional em `PODCAST_INSTAGRAM_ACCOUNT_ID`. Configurar `instagram_basic` e `instagram_content_publish` para o ativo da Vitale e seguir as dependências que a Meta exibir para essas permissões. O botão Verificar conta do Instagram faz duas leituras: identidade e limite de publicação. O acesso para leitura da conta, sozinho, não confirma a publicação. Ativar `instagram_enabled` apenas após a confirmação pelo painel. Se o ID não for configurado, permanece o procedimento anterior para tokens emitidos por Instagram Login.
+
+Revisão posterior local: Produto (Pass, perfil fixo e mesma janela), Arquitetura (Pass, API escolhida pela configuração e host fixo), IA (N/A, composição existente), Segurança (Pass, token no servidor, conferência de identidade e nenhum envio na verificação), UX (Pass, mesmos controles e estados), Operação (Pass, separação entre verificação e ativação), Growth (Pass, mesma capa, legenda e RSS), PMO/QA (Pass, cinco testes direcionados e `pnpm validate` com 68 testes e build). A autorização da Meta, a validação da conta em produção e a ativação são verificações operacionais pendentes.
+
+### Legenda dos próximos posts do Instagram
+
+Revisão prévia. O ajuste é localizado na legenda da integração. Produto adota apenas o resumo do artigo e a chamada para a bio. Arquitetura mantém a geração no cliente atual. Segurança mantém permissões e credenciais e remove URLs eventualmente presentes no resumo. UX usa dois parágrafos e elimina chamadas repetidas. Operação aplica a regra apenas a novos envios. Growth mantém uma única chamada para ação, com destino definido pelo perfil. IA não se aplica. QA verifica capa, resumo, remoção de URLs, chamada e limite de caracteres. A decisão mantém a fila e o RSS independentes da legenda. Para reverter, restaurar a função anterior.
+
+Revisão final. Produto (Pass, resumo e chamada para a bio), Arquitetura (Pass, legenda composta na função existente), Segurança (Pass, remoção de URLs e mesmo escopo de acesso), UX (Pass, texto separado da chamada), Operação (Pass, apenas contêineres novos recebem a legenda), Growth (Pass, uma chamada para ação e mesma capa), IA (N/A, usa o resumo já publicado), QA (Pass, seis testes direcionados e `pnpm validate` com 68 testes e build). A revisão em produção depende do deploy da função e da validação da Meta.

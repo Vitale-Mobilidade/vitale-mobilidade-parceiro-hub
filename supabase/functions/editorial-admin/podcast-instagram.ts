@@ -6,7 +6,8 @@ export async function verifyPodcastInstagramConnection() {
   if (!settings) return { status: "not_configured" };
   const instagram = instagramPublisher(settings);
   try {
-    await instagram.account();
+    const account = await instagram.account();
+    await instagram.checkPublishingAccess(account);
     return { status: "verified" };
   } catch (failure) {
     return { status: failure instanceof InstagramRequestError ? failure.code : "meta_request" };
@@ -44,12 +45,12 @@ export async function publishPodcastOnInstagram(db: SupabaseClient) {
     let container: string | null = claim.container_id;
     if (!container) {
       const [episode, article] = await Promise.all([
-        db.from("podcast_released_episodes").select("title").eq("youtube_id", claim.youtube_id).maybeSingle(),
+        db.from("podcast_released_episodes").select("youtube_id").eq("youtube_id", claim.youtube_id).maybeSingle(),
         db.from("editorial_articles").select("slug,summary,og_image_url,updated_at")
           .eq("video_id", claim.youtube_id).eq("status", "published").lte("published_at", new Date().toISOString()).maybeSingle(),
       ]);
       if (episode.error || article.error) throw new Error("podcast_instagram_article_read_failed");
-      const post = episode.data && article.data ? instagramPodcastPost(episode.data.title, article.data) : null;
+      const post = episode.data && article.data ? instagramPodcastPost(article.data) : null;
       if (!post) throw new InstagramRequestError("cover_or_summary_missing", true);
       container = await instagram.create(account, post);
       // Reuse this container if Meta takes longer than one tick or a response is lost.
