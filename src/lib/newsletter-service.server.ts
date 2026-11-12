@@ -413,13 +413,16 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ? await must(
             db
               .from("newsletter_drafts")
-              .select("revision,approved_revision,manual_send_until")
+              .select(
+                "revision,approved_revision,manual_send_until,schedule_hold",
+              )
               .eq("edition_day", clock.day)
               .maybeSingle(),
           )
         : null;
     const manualDue =
       requested != null &&
+      !requested.schedule_hold &&
       requested.approved_revision === requested.revision &&
       newsletterSendAllowed(clock.day, requested.manual_send_until, new Date());
     if ((!clock.due && !manualDue) || !s.enabled) {
@@ -556,7 +559,7 @@ export async function newsletterTick(request: Request): Promise<Response> {
       db
         .from("newsletter_drafts")
         .select(
-          "id,revision,content,fingerprint,generation_mode,approved_revision,manual_send_until",
+          "id,revision,content,fingerprint,generation_mode,approved_revision,manual_send_until,schedule_hold",
         )
         .eq("edition_day", window.day)
         .maybeSingle(),
@@ -577,6 +580,8 @@ export async function newsletterTick(request: Request): Promise<Response> {
         ),
       );
     }
+    if (draft.schedule_hold)
+      return Response.json({ ok: true, prepared: false, held: true });
     editorialPhase = true;
     const history = await newsletterHistory(db, window.day);
     if (!draft.fingerprint)
@@ -890,7 +895,14 @@ export async function newsletterAdmin(request: Request): Promise<Response> {
           { headers },
         );
       }
-      if (body.action === "draft_approve" || body.action === "draft_send_now") {
+      if (
+        [
+          "draft_approve",
+          "draft_send_now",
+          "draft_unschedule",
+          "draft_reschedule",
+        ].includes(body.action)
+      ) {
         const { approveNewsletterDraft } =
           await import("./newsletter-approval.server");
         return Response.json(

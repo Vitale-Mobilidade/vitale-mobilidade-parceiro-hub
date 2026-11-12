@@ -32,6 +32,8 @@ export type NewsletterDraft = {
   origin: string;
   edition_day?: string | null;
   generation_mode?: "agent" | "fallback";
+  fingerprint?: string | null;
+  schedule_hold?: boolean;
   approved_revision?: number | null;
   manual_send_until?: string | null;
   updated_at: string;

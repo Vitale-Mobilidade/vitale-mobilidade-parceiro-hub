@@ -26,6 +26,7 @@ export function NewsletterPreviewPanel({
           Fechar visualização
         </button>
       </div>
+      {actions}
       <p className="text-sm text-muted-foreground">
         {preview.source === "provider"
           ? "HTML original salvo no Resend · somente leitura."
@@ -69,7 +70,6 @@ export function NewsletterPreviewPanel({
           }}
         />
       </div>
-      {actions}
     </section>
   );
 }

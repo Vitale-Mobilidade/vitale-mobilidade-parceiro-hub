@@ -129,6 +129,10 @@ export async function newsletterCall<T>(
         "A proposta ainda não está pronta ou não está mais disponível.",
       newsletter_rewrite_too_late:
         "Pedidos por IA e aplicação de proposta precisam ocorrer antes das 06h20 do dia do envio.",
+      newsletter_reschedule_window_open:
+        "O horário programado já chegou. Para liberar a edição de hoje, use Enviar agora.",
+      newsletter_draft_hold_required: "Desagende esta edição antes de editar.",
+      newsletter_draft_held: "Esta edição está desagendada.",
       newsletter_draft_frozen:
         "As campanhas desta edição já começaram a ser preparadas. O conteúdo está congelado.",
       newsletter_campaign_not_sent:

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { newsletterDraftNeedsHold } from "./newsletter-schedule";
 import { assertRewriteTime } from "./newsletter-rewrites.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -45,7 +47,7 @@ export async function newsletterDraftAction(
         db
           .from("newsletter_drafts")
           .select(
-            "id,revision,origin,edition_day,generation_mode,approved_revision,manual_send_until,updated_at,content",
+            "id,revision,origin,edition_day,generation_mode,fingerprint,schedule_hold,approved_revision,manual_send_until,updated_at,content",
           )
           .order("updated_at", { ascending: false })
           .limit(20),
@@ -80,7 +82,7 @@ export async function newsletterDraftAction(
     db
       .from("newsletter_drafts")
       .select(
-        "id,revision,origin,edition_day,generation_mode,updated_at,content",
+        "id,revision,origin,edition_day,generation_mode,fingerprint,schedule_hold,approved_revision,updated_at,content",
       )
       .eq("id", key.id)
       .single(),
@@ -95,6 +97,8 @@ export async function newsletterDraftAction(
   if (body.action !== "draft_save") throw new Error("invalid_action");
   if (draft.edition_day) {
     assertRewriteTime(draft.edition_day);
+    if (newsletterDraftNeedsHold(draft))
+      throw new Error("newsletter_draft_hold_required");
     const campaigns = await required(
       db
         .from("newsletter_campaigns")
@@ -109,6 +113,13 @@ export async function newsletterDraftAction(
       .from("newsletter_drafts")
       .update({
         content,
+        ...(draft.edition_day
+          ? {
+              fingerprint: createHash("sha256")
+                .update(JSON.stringify(content))
+                .digest("hex"),
+            }
+          : {}),
         revision: key.revision + 1,
         edited_by: userId,
         updated_at: new Date().toISOString(),
@@ -116,7 +127,7 @@ export async function newsletterDraftAction(
       .eq("id", key.id)
       .eq("revision", key.revision)
       .select(
-        "id,revision,origin,edition_day,generation_mode,updated_at,content",
+        "id,revision,origin,edition_day,generation_mode,fingerprint,schedule_hold,approved_revision,updated_at,content",
       )
       .maybeSingle(),
   );
