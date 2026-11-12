@@ -119,3 +119,22 @@ O worker prepara até seis janelas em horário de Brasília e verifica se aparec
 Os avisos usam o mesmo remetente e destinatário operacional da newsletter. O e-mail identifica a etapa, o motivo e o painel. Há avisos para falhas de preparação, autorização da Meta e janelas de publicação perdidas ou sem confirmação. O histórico e a chave de idempotência evitam repetir o mesmo aviso. O catálogo de cada aplicativo continua com sua própria atualização.
 
 Revisão posterior local: Produto (Pass, até seis previsões e reposição automática), Arquitetura (Pass, preparação e liberação separadas, capa versionada no armazenamento existente), Segurança (Pass, views e operações restritas ao backend, e-mail sem dados do episódio), UX (Pass, previsões individuais e fila em preparação), Operação (Pass, destinatário da newsletter, aviso após a janela e deduplicação), Growth (Pass, mesmas URLs, distribuição e texto da bio), IA (N/A, usa o resumo existente), PMO/QA (Pass, 21 testes direcionados, `pnpm validate`, verificação Deno dos módulos e ensaio PostgreSQL 17). Depois do deploy, conferir a primeira reposição automática, a entrega da capa e o estado no painel. Os testes de e-mail usam transporte simulado. Aplicar fora de uma janela de publicação para que o worker novo tenha tempo para preparar a fila.
+
+### Entrega ao Instagram após o primeiro horário automático
+
+Revisão estrutural prévia (integração Meta):
+
+| Perspectiva | Impacto, risco, dependência e recomendação |
+| --- | --- |
+| Produto | Preservar a mesma publicação do RSS e a mesma janela; evitar posts duplicados ou fora de hora. Manter a regra do agendador. |
+| Arquitetura | Reduzir o envio da capa a um JPEG público direto, usando a função que já serve a imagem. A entrega observada parou antes de confirmar o contêiner; o redirecionamento é uma hipótese, sem confirmação da Meta. |
+| IA | N/A: capa e legenda continuam vindas do material preparado; sem nova geração. |
+| Segurança | Aceitar somente a rota de capa da Vitale com slug e versão válidos; o destino é fixo, sem repassar URLs arbitrárias ou conteúdo de erros da Meta. |
+| UX | Preservar a interface e tornar os avisos de falha específicos por etapa. |
+| Operação | Manter o alerta e o limite de tentativas da janela. Diagnosticar conta, criação, status e publicação separadamente; nenhuma republicação retroativa. |
+| Growth | O catálogo e os endereços do RSS ficam intactos para não duplicar episódios; Spotify, Deezer e Amazon já consumiram o item. A Apple ainda mostrava o piloto. |
+| QA | Testar a requisição real montada para a Meta, rejeição de URLs incorretas, classificação de falhas e uso da mesma capa; validar a aplicação e verificar o JPEG público por GET. |
+
+Decisão: corrigir a entrega de mídia e distinguir falhas de rede, resposta e rejeição na função existente. Preservar agenda, credencial e RSS. Sem migração, alteração de conta ou envio retroativo. O teste com a Meta depende da próxima janela após o deploy; rollback pela versão anterior de `editorial-admin`.
+
+Revisão posterior: Produto (Pass, mesmo episódio e janela, sem reenvio retroativo), Arquitetura (Pass, JPEG direto e montagem da chamada validados), IA (N/A, reaproveita o material já salvo), Segurança (Pass, origem e caminho limitados e resposta externa não incluída no diagnóstico), UX (Pass, aviso identifica a fase sem alterar a interface), Operação (Pass, motivos específicos e prazo de tentativa preservado), Growth (Pass, RSS verificado com GUIDs e endereços únicos, HEAD 200 e GET parcial 206 do MP3), PMO/QA (Pass, 12 testes direcionados, `pnpm validate` com 68 testes e build, `deno check` e GET do JPEG 1400 × 1400 sem redirecionamento). O caso das 6h15 tinha cinco chamadas do worker, entrega sem contêiner e alerta registrado. A causa exata da resposta original permanece desconhecida; homologar a criação de mídia na próxima janela após autorização. A atualização do catálogo da Apple pode ser solicitada pelo Podcasts Connect sem editar o RSS.

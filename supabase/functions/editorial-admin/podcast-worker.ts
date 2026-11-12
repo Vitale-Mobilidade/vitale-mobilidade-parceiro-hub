@@ -14,8 +14,7 @@ async function checkClosedWindow(db: SupabaseClient, slot: string) {
   if (episode.error || instagram.error) throw new Error("podcast_delivery_check_failed");
   if (!episode.data?.released_at) await notifyPodcastError(db, "RSS", slot, "podcast_slot_missed");
   if (instagram.data && instagram.data.status !== "published") {
-    await notifyPodcastError(db, "Instagram", slot, instagram.data.status === "failed"
-      ? instagram.data.error_code ?? "podcast_instagram_failed" : "podcast_instagram_unconfirmed");
+    await notifyPodcastError(db, "Instagram", slot, instagram.data.error_code ?? "podcast_instagram_unconfirmed");
   }
 }
 
