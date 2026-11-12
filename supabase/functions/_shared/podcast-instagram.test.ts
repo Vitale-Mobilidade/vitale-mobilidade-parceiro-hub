@@ -35,9 +35,40 @@ it("uses the authorized account and publishes a single image container", async (
   expect(await instagram.status(container)).toBe("FINISHED");
   expect(await instagram.publish(account, container)).toBe("789");
   expect(String(fetcher.mock.calls[1][0])).toBe("https://graph.instagram.com/v25.0/123/media");
-  expect(fetcher.mock.calls[1][1]?.body?.toString()).toBe(new URLSearchParams(post).toString());
+  const imageRequest = new URLSearchParams(fetcher.mock.calls[1][1]?.body as URLSearchParams);
+  expect(imageRequest.get("image_url")).toBe(
+    "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=podcast-cover&slug=teste-ft07&layout=3&v=1794427200000",
+  );
+  expect(imageRequest.get("caption")).toBe(post.caption);
   expect(String(fetcher.mock.calls[3][0])).toBe("https://graph.instagram.com/v25.0/123/media_publish");
   expect(fetcher.mock.calls[3][1]?.body?.toString()).toBe("creation_id=456");
+});
+
+it("refuses to send media with a cover URL outside the episode artwork route", async () => {
+  const fetcher = vi.fn<typeof fetch>();
+  const publisher = instagramPublisher({ token: "test", version: "v25.0" }, fetcher);
+  const post = instagramPodcastPost(article)!;
+  for (const image_url of [
+    post.image_url.replace("vitalemobilidade.com", "example.com"),
+    post.image_url.replace("/podcast/capas/", "/outro/"),
+    post.image_url.replace(/v=\d+/, "v=abc"),
+  ]) {
+    await expect(publisher.create("123", { ...post, image_url })).rejects.toMatchObject({
+      code: "podcast_instagram_draft_missing", terminal: true,
+    });
+  }
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+it("distinguishes delivery transport, malformed responses, and Meta rejection without exposing the response", async () => {
+  const fetcher = vi.fn<typeof fetch>()
+    .mockRejectedValueOnce(new TypeError("private provider detail"))
+    .mockResolvedValueOnce(new Response("private HTML", { status: 502 }))
+    .mockResolvedValueOnce(Response.json({ error: { code: 100, message: "private provider detail" } }, { status: 400 }));
+  const publisher = instagramPublisher({ token: "test", version: "v25.0" }, fetcher);
+  for (const code of ["meta_create_transport", "meta_create_response", "meta_create_rejected"]) {
+    await expect(publisher.create("123", instagramPodcastPost(article)!)).rejects.toMatchObject({ code, terminal: false });
+  }
 });
 
 it("blocks a token for a different account and requires an explicit API version", async () => {

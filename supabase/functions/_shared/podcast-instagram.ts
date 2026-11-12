@@ -1,4 +1,4 @@
-import { podcastCoverPath } from "./podcast-artwork-contract.ts";
+import { PODCAST_ARTWORK_EDGE, podcastCoverPath } from "./podcast-artwork-contract.ts";
 
 const MAX_CAPTION = 2200;
 const accountName = "vitalemobilidade";
@@ -46,24 +46,52 @@ export class InstagramRequestError extends Error {
   constructor(public readonly code: string, public readonly terminal: boolean) { super(code); }
 }
 
+export function directInstagramCoverUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    const match = /^\/podcast\/capas\/([a-z0-9]+(?:-[a-z0-9]+)*)\.v3\.jpg$/.exec(url.pathname);
+    const version = url.searchParams.get("v");
+    if (url.origin !== "https://vitalemobilidade.com" || url.username || url.password || url.hash ||
+      !match || match[1].length > 120 || url.searchParams.get("layout") !== "3" ||
+      !version || !/^\d{1,14}$/.test(version)) return null;
+    const direct = new URL(PODCAST_ARTWORK_EDGE);
+    direct.search = new URLSearchParams({ type: "podcast-cover", slug: match[1], layout: "3", v: version }).toString();
+    return direct.href;
+  } catch {
+    return null;
+  }
+}
+
 export function instagramPublisher(settings: InstagramSettings, fetcher = fetch) {
   const graphHost = settings.accountId ? "graph.facebook.com" : "graph.instagram.com";
 
-  async function request(path: string, payload?: Record<string, string>, fields?: string) {
+  async function request(step: "account" | "access" | "create" | "status" | "publish" | "permalink",
+    path: string, payload?: Record<string, string>, fields?: string) {
     const url = new URL(`https://${graphHost}/${settings.version}/${path}`);
     if (fields) url.searchParams.set("fields", fields);
-    const response = await fetcher(url, {
-      method: payload ? "POST" : "GET",
-      headers: { Authorization: `Bearer ${settings.token}` },
-      body: payload ? new URLSearchParams(payload) : undefined,
-      redirect: "error",
-      signal: AbortSignal.timeout(6000),
-    });
-    const data = await response.json();
+    let response: Response;
+    try {
+      response = await fetcher(url, {
+        method: payload ? "POST" : "GET",
+        headers: { Authorization: `Bearer ${settings.token}` },
+        body: payload ? new URLSearchParams(payload) : undefined,
+        redirect: "error",
+        signal: AbortSignal.timeout(step === "create" ? 12_000 : 6_000),
+      });
+    } catch {
+      throw new InstagramRequestError(`meta_${step}_transport`, false);
+    }
+    if (response.status === 401 || response.status === 403) throw new InstagramRequestError("meta_authorization", true);
+    const result: unknown = await response.json()
+      .catch(() => { throw new InstagramRequestError(`meta_${step}_response`, false); });
+    if (!result || typeof result !== "object" || Array.isArray(result)) {
+      throw new InstagramRequestError(`meta_${step}_response`, false);
+    }
+    const data = result as Record<string, unknown>;
     if (!response.ok || data.error) {
-      const code = Number(data.error?.code);
-      const permission = [10, 190, 200].includes(code) || [401, 403].includes(response.status);
-      throw new InstagramRequestError(permission ? "meta_authorization" : "meta_request", permission);
+      const code = data.error && typeof data.error === "object" && "code" in data.error ? Number(data.error.code) : 0;
+      const permission = [10, 190, 200].includes(code);
+      throw new InstagramRequestError(permission ? "meta_authorization" : `meta_${step}_rejected`, permission);
     }
     return data as Record<string, unknown>;
   }
@@ -71,8 +99,8 @@ export function instagramPublisher(settings: InstagramSettings, fetcher = fetch)
   return {
     async account() {
       const data = settings.accountId
-        ? await request(settings.accountId, undefined, "id,username")
-        : await request("me", undefined, "user_id,username");
+        ? await request("account", settings.accountId, undefined, "id,username")
+        : await request("account", "me", undefined, "user_id,username");
       const accountId = settings.accountId ? data.id : data.user_id;
       if (data.username !== accountName || !numericId(accountId) ||
         (settings.accountId && accountId !== settings.accountId)) {
@@ -82,7 +110,7 @@ export function instagramPublisher(settings: InstagramSettings, fetcher = fetch)
     },
     async checkPublishingAccess(account: string) {
       if (settings.accountId) {
-        const result = await request(`${account}/content_publishing_limit`, undefined, "quota_usage");
+        const result = await request("access", `${account}/content_publishing_limit`, undefined, "quota_usage");
         const quota = Array.isArray(result.data) ? result.data[0]?.quota_usage : undefined;
         if (typeof quota !== "number" || !Number.isFinite(quota) || quota < 0) {
           throw new InstagramRequestError("meta_request", false);
@@ -90,21 +118,23 @@ export function instagramPublisher(settings: InstagramSettings, fetcher = fetch)
       }
     },
     async create(account: string, post: NonNullable<ReturnType<typeof instagramPodcastPost>>) {
-      const data = await request(`${account}/media`, post);
+      const image_url = directInstagramCoverUrl(post.image_url);
+      if (!image_url) throw new InstagramRequestError("podcast_instagram_draft_missing", true);
+      const data = await request("create", `${account}/media`, { ...post, image_url });
       if (!numericId(data.id)) throw new InstagramRequestError("meta_container_missing", false);
       return data.id;
     },
     async status(container: string) {
-      const data = await request(container, undefined, "status_code");
+      const data = await request("status", container, undefined, "status_code");
       return data.status_code;
     },
     async publish(account: string, container: string) {
-      const data = await request(`${account}/media_publish`, { creation_id: container });
+      const data = await request("publish", `${account}/media_publish`, { creation_id: container });
       if (!numericId(data.id)) throw new InstagramRequestError("meta_publish_unconfirmed", false);
       return data.id;
     },
     async permalink(mediaId: string) {
-      const data = await request(mediaId, undefined, "permalink");
+      const data = await request("permalink", mediaId, undefined, "permalink");
       return validInstagramPermalink(data.permalink) ? data.permalink : null;
     },
   };
