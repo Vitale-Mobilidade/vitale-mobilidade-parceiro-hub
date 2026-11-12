@@ -1,4 +1,4 @@
-import { verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
+import { publishPodcastOnInstagram, verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
 import { readPodcastDashboard } from "./podcast-dashboard.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
 import { runPodcastTick } from "./podcast-worker.ts";
@@ -2650,6 +2650,12 @@ Deno.serve(async (req) => {
     if (action === "podcast-instagram-connection") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       return json(req, await verifyPodcastInstagramConnection());
+    }
+    if (action === "podcast-instagram-retry") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      if (typeof body.youtubeId !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(body.youtubeId))
+        return json(req, { error: "Episódio inválido." }, 400);
+      return json(req, await publishPodcastOnInstagram(db, body.youtubeId));
     }
     if (action === "podcast-dashboard") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
