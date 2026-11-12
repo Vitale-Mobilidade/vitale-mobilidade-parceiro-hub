@@ -4,7 +4,13 @@ import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
+export function NewsletterSignup({
+  compact = false,
+  hideWhenSignedIn = true,
+}: {
+  compact?: boolean;
+  hideWhenSignedIn?: boolean;
+}) {
   const { session } = useMemberSession();
   const id = useId();
   const [name, setName] = useState("");
@@ -55,7 +61,7 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
     }
   };
 
-  if (session) return null;
+  if (hideWhenSignedIn && session) return null;
   return (
     <section
       aria-labelledby={compact ? undefined : "newsletter"}
