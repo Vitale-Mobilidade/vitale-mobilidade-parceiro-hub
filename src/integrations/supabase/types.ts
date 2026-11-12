@@ -2928,6 +2928,9 @@ export type Database = {
           created_at: string
           object_path: string
           original_description: string
+          preparation_attempted_at: string | null
+          prepared_article_version: string | null
+          prepared_instagram_post: Json | null
           release_at: string | null
           released_at: string | null
           size_bytes: number
@@ -2939,6 +2942,9 @@ export type Database = {
           created_at?: string
           object_path: string
           original_description: string
+          preparation_attempted_at?: string | null
+          prepared_article_version?: string | null
+          prepared_instagram_post?: Json | null
           release_at?: string | null
           released_at?: string | null
           size_bytes: number
@@ -2950,6 +2956,9 @@ export type Database = {
           created_at?: string
           object_path?: string
           original_description?: string
+          preparation_attempted_at?: string | null
+          prepared_article_version?: string | null
+          prepared_instagram_post?: Json | null
           release_at?: string | null
           released_at?: string | null
           size_bytes?: number
@@ -3016,6 +3025,20 @@ export type Database = {
             foreignKeyName: "podcast_instagram_deliveries_youtube_id_fkey"
             columns: ["youtube_id"]
             isOneToOne: true
+            referencedRelation: "podcast_pending_preparation"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_instagram_deliveries_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_prepared_episodes"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_instagram_deliveries_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
             referencedRelation: "podcast_released_episodes"
             referencedColumns: ["youtube_id"]
           },
@@ -3040,6 +3063,20 @@ export type Database = {
             columns: ["youtube_id"]
             isOneToOne: true
             referencedRelation: "podcast_episode_queue"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_spotify_episodes_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_pending_preparation"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "podcast_spotify_episodes_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_prepared_episodes"
             referencedColumns: ["youtube_id"]
           },
           {
@@ -3883,6 +3920,41 @@ export type Database = {
         }
         Relationships: []
       }
+      podcast_pending_preparation: {
+        Row: {
+          created_at: string | null
+          preparation_attempted_at: string | null
+          title: string | null
+          youtube_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_episode_queue_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_video_audio"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
+      podcast_prepared_episodes: {
+        Row: {
+          position: number | null
+          published_on: string | null
+          source_folder_created_at: string | null
+          title: string | null
+          youtube_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_episode_queue_youtube_id_fkey"
+            columns: ["youtube_id"]
+            isOneToOne: true
+            referencedRelation: "podcast_video_audio"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
       podcast_queue_candidates: {
         Row: {
           published_on: string | null
@@ -4550,6 +4622,8 @@ export type Database = {
         Returns: undefined
       }
       podcast_release_slot: { Args: { p_now: string }; Returns: string }
+      podcast_upcoming_windows: { Args: never; Returns: string[] }
+      podcast_worker_windows: { Args: never; Returns: Json }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
         Returns: Json
