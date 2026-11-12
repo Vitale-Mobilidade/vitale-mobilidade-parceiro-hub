@@ -67,3 +67,33 @@ Decisão consolidada. Remover o pop-up e seus dependentes exclusivos. Manter tod
 | PMO/QA | Pass | `pnpm validate` passou com tipos, 68 regressões e build SSR. Os 2 testes da landing também passaram. |
 
 Pronto localmente. Integrar e publicar após autorização explícita para esse escopo. O smoke usa sessão sintética e resposta de inscrição interceptada. Para rollback, reverter o delta integrado e republicar pelo projeto existente do Lovable.
+
+## Correção do escopo após a publicação
+
+O responsável esclareceu que o pop-up deve continuar para visitantes sem login, respeitando os gatilhos e limites anteriores. O bloco fixo continua visível para todos.
+
+| Perspectiva | Revisão prévia da correção |
+| --- | --- |
+| Produto | Restaurar o convite para visitantes elegíveis e manter os formulários fixos. |
+| Arquitetura | Recuperar o pop-up anterior e a sinalização de inscrição entre as superfícies. Aguardar o estado de autenticação antes de ativar o convite. |
+| IA | N/A. Assistente e geração editorial fora do escopo. |
+| Segurança | Manter aceite explícito e endpoint existente. O pop-up não deve abrir enquanto a sessão está sendo verificada. |
+| UX | Com login, só o bloco fixo. Sem login, bloco fixo e pop-up conforme os gatilhos, rotas e limites anteriores. |
+| CX | Preservar dispensa temporária e encerramento após inscrição. Testar com dados sintéticos. |
+| Growth | Recuperar o convite anônimo e preservar a captação nos rodapés e na landing. |
+| PMO/QA | Demonstrar o mesmo gatilho com e sem sessão, validar o aceite e rodar o gate. |
+
+Decisão. Restaurar apenas o pop-up e seus mecanismos de supressão. O formulário compartilhado continua sem condição de sessão. Rollback por reversão do commit desta correção e nova publicação no mesmo projeto.
+
+| Perspectiva | Revisão posterior |
+| --- | --- |
+| Produto | Pass. Visitante elegível recebe o convite e o bloco fixo. Conta conectada mantém o bloco fixo. |
+| Arquitetura | Pass. Gatilho aguarda a resolução da sessão. O formulário fixo não consulta sessão. |
+| IA | N/A. Sem alteração em assistente ou geração. |
+| Segurança | Pass. O navegador bloqueou a inscrição sem aceite. O endpoint e o tratamento de dados continuam os existentes. |
+| UX | Pass. No Chrome, o mesmo gesto abriu o pop-up sem login e não abriu com sessão simulada. O formulário fixo apareceu nos dois casos e em celular com sessão. |
+| CX | Pass. Dispensar o pop-up encerrou o diálogo e impediu reabertura imediata. Envio do formulário fixo validado com resposta simulada. |
+| Growth | Pass. Os limites e as rotas do convite anterior foram restaurados. O cadastro fixo permanece independente de sessão. |
+| PMO/QA | Pass. Cinco testes dirigidos e `pnpm validate` com 68 regressões, verificação de tipos e build. |
+
+Conferir o comportamento na publicação. Nenhuma escrita em dados de produção é necessária para a verificação.

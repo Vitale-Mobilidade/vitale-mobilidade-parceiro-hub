@@ -1,3 +1,4 @@
+import { NEWSLETTER_SUBSCRIBED_KEY } from "@/lib/newsletter-exit";
 import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
@@ -38,6 +39,12 @@ export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
       );
       if (fnError || (data as { ok?: boolean } | null)?.ok !== true)
         throw new Error("signup failed");
+      try {
+        localStorage.setItem(NEWSLETTER_SUBSCRIBED_KEY, "1");
+      } catch {
+        /* Storage unavailable. */
+      }
+      window.dispatchEvent(new Event("vitale-newsletter-subscribed"));
       setStatus("done");
     } catch {
       setStatus("idle");
