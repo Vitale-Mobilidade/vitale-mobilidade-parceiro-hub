@@ -2985,6 +2985,7 @@ export type Database = {
           permalink: string | null
           publish_attempted_at: string | null
           published_at: string | null
+          scheduled_at: string | null
           slot_at: string
           status: string
           youtube_id: string
@@ -2997,6 +2998,7 @@ export type Database = {
           permalink?: string | null
           publish_attempted_at?: string | null
           published_at?: string | null
+          scheduled_at?: string | null
           slot_at: string
           status?: string
           youtube_id: string
@@ -3009,6 +3011,7 @@ export type Database = {
           permalink?: string | null
           publish_attempted_at?: string | null
           published_at?: string | null
+          scheduled_at?: string | null
           slot_at?: string
           status?: string
           youtube_id?: string
@@ -4111,6 +4114,7 @@ export type Database = {
           permalink: string | null
           publish_attempted_at: string | null
           published_at: string | null
+          scheduled_at: string | null
           slot_at: string
           status: string
           youtube_id: string
@@ -4145,10 +4149,33 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_scheduled_podcast_instagram: {
+        Args: never
+        Returns: {
+          claim_token: string | null
+          container_id: string | null
+          error_code: string | null
+          lease_until: string | null
+          permalink: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          scheduled_at: string | null
+          slot_at: string
+          status: string
+          youtube_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "podcast_instagram_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_youtube_editorial_cover: { Args: never; Returns: Json }
       claim_youtube_editorial_cover_render: { Args: never; Returns: Json }
       claim_youtube_editorial_publication: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
+      dispatch_podcast_instagram_schedule: { Args: never; Returns: number }
       dispatch_podcast_tick: { Args: never; Returns: number }
       dispatch_price_alert_hotpipe: { Args: never; Returns: number }
       dispatch_youtube_editorial_tick: {
@@ -4662,6 +4689,10 @@ export type Database = {
       }
       release_next_podcast_episode: {
         Args: { p_now?: string }
+        Returns: string
+      }
+      schedule_podcast_instagram_delivery: {
+        Args: { p_episode_id: string; p_local_time: string }
         Returns: string
       }
       track_quiz_funnel_session: {
