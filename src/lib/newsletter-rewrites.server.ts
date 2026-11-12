@@ -1,3 +1,4 @@
+import { newsletterDraftNeedsHold } from "./newsletter-schedule";
 import { newsletterHistory as rewriteHistory } from "./newsletter-edition-history.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -40,6 +41,8 @@ async function draftForRewrite(
   if (!draft || draft.revision !== revision)
     throw new Error("newsletter_draft_conflict");
   assertRewriteTime(draft.edition_day);
+  if (newsletterDraftNeedsHold(draft))
+    throw new Error("newsletter_draft_hold_required");
   const campaigns = await must(
     db
       .from("newsletter_campaigns")
@@ -141,7 +144,7 @@ export async function newsletterRewriteAction(
       .eq("id", job.draft_id)
       .eq("revision", job.base_revision)
       .select(
-        "id,revision,origin,edition_day,generation_mode,updated_at,content",
+        "id,revision,origin,edition_day,generation_mode,fingerprint,schedule_hold,approved_revision,updated_at,content",
       )
       .maybeSingle(),
   );

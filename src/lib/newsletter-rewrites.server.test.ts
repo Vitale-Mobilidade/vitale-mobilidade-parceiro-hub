@@ -25,6 +25,8 @@ function fixture() {
         edition_day: "2026-10-19",
         content,
         fingerprint: "old",
+        generation_mode: "agent",
+        schedule_hold: true,
       },
     ],
     newsletter_campaigns: [],

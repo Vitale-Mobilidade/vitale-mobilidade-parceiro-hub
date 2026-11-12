@@ -3,6 +3,8 @@ import { NewsletterCampaignResults } from "@/components/admin/NewsletterCampaign
 import type { NewsletterDraft } from "@/lib/newsletter-drafts";
 import { NewsletterDraftEditor } from "@/components/admin/NewsletterDraftEditor";
 import { useState } from "react";
+import { newsletterSchedule } from "@/lib/newsletter-schedule";
+import { newsletterWindow } from "@/lib/newsletter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -27,6 +29,28 @@ const statuses: Record<string, string> = {
   paused: "Pausada · conferir",
   skipped: "Sem novidades ou destinatários",
 };
+function scheduleLabel(draft: NewsletterDraft, enabled: boolean, now: Date) {
+  const day = draft.edition_day?.split("-").reverse().join("/");
+  const slot = `${day} às 06h30 · São Paulo`;
+  switch (newsletterSchedule(draft, enabled, now).status) {
+    case "scheduled":
+      return `Agendada para ${slot} · ${draft.approved_revision === draft.revision ? "aprovação manual" : "aprovação automática"}`;
+    case "in_window":
+      return `Janela de envio aberta · aguardando processamento · ${slot}`;
+    case "held":
+      return "Desagendada · fora da fila até reagendar";
+    case "review":
+      return `Envio bloqueado · aguarda aprovação · horário previsto: ${slot}`;
+    case "paused":
+      return `Automação pausada · horário previsto: ${slot}`;
+    case "closed":
+      return "Janela de envio encerrada";
+    case "requested":
+      return "Envio solicitado · acompanhe pelo histórico";
+    default:
+      return "Envio bloqueado · edição sem agendamento válido";
+  }
+}
 function NewsletterOperation() {
   const qc = useQueryClient();
   const [editionPreview, setEditionPreview] =
@@ -39,13 +63,9 @@ function NewsletterOperation() {
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-  const now = Date.now();
+  const now = new Date();
+  const today = newsletterWindow(now).day;
+  const [editTarget, setEditTarget] = useState<NewsletterDraft | null>(null);
   async function viewEdition(
     action: "campaign_preview" | "edition_preview",
     id: string,
@@ -132,24 +152,45 @@ function NewsletterOperation() {
       draft.id === previewIdentity?.id &&
       draft.revision === previewIdentity.revision,
   );
-  const previewDay = previewDraft?.edition_day;
-  const previewStart = previewDay
-    ? Date.parse(`${previewDay}T06:30:00-03:00`)
-    : NaN;
-  const previewApproved =
-    previewDraft != null &&
-    previewDraft.approved_revision === previewDraft.revision;
-  const previewRequested =
-    previewApproved && Date.parse(previewDraft.manual_send_until ?? "") > now;
-  const previewFrozen = data?.campaigns.some(
+  const enabled = data?.settings.enabled === true;
+  const previewFrozen = data?.campaigns.find(
     (campaign) => campaign.edition_day === previewIdentity?.day,
   );
-  async function approvePreview(sendNow: boolean) {
-    if (!previewIdentity) return;
+
+  function openEditor(draft: NewsletterDraft) {
+    setEditTarget(draft);
+    setEditionPreview(null);
+    requestAnimationFrame(() => {
+      const details = document.getElementById("newsletter-draft-editor");
+      if (!(details instanceof HTMLDetailsElement)) return;
+      details.open = true;
+      const target = details.querySelector<HTMLElement>(
+        "#newsletter-drafts-title",
+      );
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "start" });
+    });
+  }
+
+  async function changeSchedule(
+    draft: NewsletterDraft,
+    name:
+      | "draft_approve"
+      | "draft_send_now"
+      | "draft_unschedule"
+      | "draft_reschedule",
+  ) {
     if (
-      sendNow &&
+      name === "draft_send_now" &&
       !window.confirm(
         "Solicitar o envio desta revisão aos assinantes elegíveis agora? O intervalo mínimo de 46 horas entre campanhas se aplica aos próximos envios.",
+      )
+    )
+      return;
+    if (
+      name === "draft_unschedule" &&
+      !window.confirm(
+        "Desagendar esta edição? Ela ficará fora da fila até você reagendar ou solicitar o envio.",
       )
     )
       return;
@@ -157,25 +198,89 @@ function NewsletterOperation() {
     setApprovalError("");
     setNotice("");
     try {
-      await newsletterCall(sendNow ? "draft_send_now" : "draft_approve", {
-        id: previewIdentity.id,
-        revision: previewIdentity.revision,
+      const result = await newsletterCall<{ revision?: number }>(name, {
+        id: draft.id,
+        revision: draft.revision,
       });
       await qc.invalidateQueries({ queryKey: ["admin", "newsletter"] });
+      if (name === "draft_unschedule" && result.revision) {
+        openEditor({
+          ...draft,
+          revision: result.revision,
+          schedule_hold: true,
+          approved_revision: null,
+          manual_send_until: null,
+        });
+      }
       setNotice(
-        sendNow
-          ? "Envio solicitado. Acompanhe o processamento no histórico."
-          : "Revisão aprovada para o horário programado.",
+        name === "draft_unschedule"
+          ? "Edição desagendada. Salvar os ajustes não retoma o envio."
+          : name === "draft_send_now"
+            ? "Envio solicitado. Acompanhe o processamento no histórico."
+            : "Revisão aprovada. Confira o estado da agenda nesta edição.",
       );
     } catch (error) {
       setApprovalError(
         error instanceof Error
           ? error.message
-          : "Não foi possível aprovar a edição.",
+          : "Não foi possível atualizar a edição.",
       );
     } finally {
       setBusy(false);
     }
+  }
+
+  function editionActions(draft: NewsletterDraft, preview = false) {
+    const state = newsletterSchedule(draft, enabled, now);
+    return (
+      <div className="flex flex-wrap gap-2">
+        {state.canHold && (
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => void changeSchedule(draft, "draft_unschedule")}
+          >
+            Desagendar e editar
+          </button>
+        )}
+        {state.canEdit && (
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => openEditor(draft)}
+          >
+            Editar rascunho
+          </button>
+        )}
+        {preview && state.canApprove && (
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => void changeSchedule(draft, "draft_approve")}
+          >
+            Aprovar newsletter
+          </button>
+        )}
+        {preview && state.canReschedule && (
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => void changeSchedule(draft, "draft_reschedule")}
+          >
+            Reagendar
+          </button>
+        )}
+        {preview && state.canSendNow && (
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => void changeSchedule(draft, "draft_send_now")}
+          >
+            {state.approved ? "Enviar agora" : "Aprovar e enviar agora"}
+          </button>
+        )}
+      </div>
+    );
   }
   const reportsVersion =
     data?.campaigns
@@ -525,26 +630,11 @@ function NewsletterOperation() {
                   )
                   .sort((a, b) => a.edition_day!.localeCompare(b.edition_day!))
                   .map((d) => {
-                    const day = d.edition_day!;
-                    const approved = d.approved_revision === d.revision;
-                    const requested =
-                      approved && Date.parse(d.manual_send_until ?? "") > now;
-                    const closed = now >= Date.parse(`${day}T08:30:00-03:00`);
-                    const status = requested
-                      ? "Envio solicitado"
-                      : closed
-                        ? "Janela de envio encerrada"
-                        : approved
-                          ? "Aprovada"
-                          : d.generation_mode === "fallback"
-                            ? "Bloqueada · aguarda aprovação"
-                            : "Envio previsto";
                     return (
                       <div key={d.id} className="mt-3 border-t pt-3">
                         <p className="font-medium">{d.content.subject}</p>
                         <p className="text-sm">
-                          {status} · {day.split("-").reverse().join("/")} às
-                          06h30 · São Paulo
+                          {scheduleLabel(d, enabled, now)}
                         </p>
                         <button
                           className={button + " mt-2"}
@@ -555,17 +645,29 @@ function NewsletterOperation() {
                         >
                           Visualizar conteúdo e HTML
                         </button>
+                        {!editionPreview && (
+                          <div className="mt-2">{editionActions(d)}</div>
+                        )}
                       </div>
                     );
                   })}
               </>
             )}
-            <details className="mt-3">
+            {!editionPreview && approvalError && (
+              <p role="alert">{approvalError}</p>
+            )}
+            <details id="newsletter-draft-editor" className="mt-3">
               <summary className="cursor-pointer text-sm underline">
                 Ajustar textos de próximas edições
               </summary>
               <div className="mt-3">
                 <NewsletterDraftEditor
+                  key={
+                    editTarget
+                      ? `${editTarget.id}:${editTarget.revision}`
+                      : "editor"
+                  }
+                  initialDraft={editTarget}
                   lockedDays={data.campaigns.map((c) => c.edition_day)}
                 />
               </div>
@@ -577,51 +679,21 @@ function NewsletterOperation() {
               preview={editionPreview}
               onClose={() => setEditionPreview(null)}
               actions={
-                previewIdentity?.day && !previewDraft && !previewFrozen ? (
-                  <p role="status">
-                    A edição mudou. Abra a prévia atual para aprovar.
-                  </p>
-                ) : (
-                  previewDay &&
-                  !previewFrozen && (
-                    <div className="flex flex-wrap gap-3">
-                      {!previewApproved &&
-                        previewDay >= today &&
-                        now < previewStart + 120 * 60_000 && (
-                          <button
-                            className={button}
-                            disabled={busy}
-                            onClick={() => void approvePreview(false)}
-                          >
-                            Aprovar newsletter
-                          </button>
-                        )}
-                      {!previewRequested &&
-                        data.settings.enabled &&
-                        previewDay === today &&
-                        now >= previewStart && (
-                          <button
-                            className={button}
-                            disabled={busy}
-                            onClick={() => void approvePreview(true)}
-                          >
-                            {previewApproved
-                              ? "Enviar agora"
-                              : "Aprovar e enviar agora"}
-                          </button>
-                        )}
-                      {previewRequested && (
-                        <p role="status">
-                          Envio solicitado. Acompanhe o processamento no
-                          histórico.
-                        </p>
-                      )}
-                      {previewApproved && !previewRequested && (
-                        <p role="status">Revisão aprovada.</p>
-                      )}
-                      {approvalError && <p role="alert">{approvalError}</p>}
-                    </div>
-                  )
+                previewIdentity?.day && (
+                  <div className="space-y-2">
+                    <p role="status" className="font-medium">
+                      {previewFrozen
+                        ? (statuses[previewFrozen.status] ??
+                          previewFrozen.status)
+                        : previewDraft
+                          ? scheduleLabel(previewDraft, enabled, now)
+                          : "A edição mudou. Abra a prévia da revisão atual."}
+                    </p>
+                    {previewDraft &&
+                      !previewFrozen &&
+                      editionActions(previewDraft, true)}
+                    {approvalError && <p role="alert">{approvalError}</p>}
+                  </div>
                 )
               }
             />

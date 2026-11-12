@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { newsletterDraftNeedsHold } from "@/lib/newsletter-schedule";
 import { newsletterCall } from "@/lib/newsletter-api";
 import {
   editableNewsletter,
@@ -12,7 +13,8 @@ const button =
   "rounded-lg border border-line px-4 py-2 font-medium disabled:opacity-50";
 export function NewsletterDraftEditor({
   lockedDays = [],
-}: { lockedDays?: string[] } = {}) {
+  initialDraft = null,
+}: { lockedDays?: string[]; initialDraft?: NewsletterDraft | null } = {}) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
@@ -20,8 +22,10 @@ export function NewsletterDraftEditor({
     day: "2-digit",
   }).format(new Date());
   const qc = useQueryClient();
-  const [draft, setDraft] = useState<NewsletterDraft | null>(null),
-    [edit, setEdit] = useState<NewsletterEdit | null>(null);
+  const [draft, setDraft] = useState<NewsletterDraft | null>(initialDraft),
+    [edit, setEdit] = useState<NewsletterEdit | null>(
+      initialDraft ? editableNewsletter(initialDraft.content) : null,
+    );
   const [html, setHtml] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
@@ -43,6 +47,12 @@ export function NewsletterDraftEditor({
     staleTime: 15000,
     refetchInterval: 30_000,
   });
+  const currentDraft =
+    drafts.data?.drafts.find((d) => d.id === draft?.id) ?? draft;
+  const canEdit =
+    currentDraft &&
+    !newsletterDraftNeedsHold(currentDraft) &&
+    !lockedDays.includes(currentDraft.edition_day ?? "");
   function open(d: NewsletterDraft) {
     setPrompt("");
     setDraft(d);
@@ -140,15 +150,20 @@ export function NewsletterDraftEditor({
       className="space-y-4 rounded-xl border border-line bg-white p-5"
       aria-labelledby="newsletter-drafts-title"
     >
-      <h2 id="newsletter-drafts-title" className="text-xl font-bold">
+      <h2
+        id="newsletter-drafts-title"
+        tabIndex={-1}
+        className="text-xl font-bold"
+      >
         Próximas edições
       </h2>
       <p className="text-sm text-ink-muted">
         Abra uma edição para ajustar assunto e textos sem gerar tudo novamente.
         Salvar não envia e não altera campanhas já enviadas. Os links, imagens e
-        preços continuam ligados às fontes. Rascunhos com data de envio são
-        usados pela automação; salve os ajustes antes das 06h20. Ao começar a
-        preparar as campanhas, o conteúdo daquela edição fica congelado.
+        preços continuam ligados às fontes. Desagende antes de ajustar uma
+        edição agendada. Salve os ajustes até as 06h20 do dia do envio e volte à
+        lista para reagendar. O conteúdo fica congelado quando a campanha
+        começa.
       </p>
       {drafts.data?.preparations
         ?.filter((p) => p.last_error)
@@ -178,6 +193,7 @@ export function NewsletterDraftEditor({
           (d) =>
             d.edition_day &&
             d.edition_day >= today &&
+            !newsletterDraftNeedsHold(d) &&
             !lockedDays.includes(d.edition_day),
         ) && (
           <p className="text-sm text-muted-foreground">
@@ -191,6 +207,7 @@ export function NewsletterDraftEditor({
             (d) =>
               d.edition_day &&
               d.edition_day >= today &&
+              !newsletterDraftNeedsHold(d) &&
               !lockedDays.includes(d.edition_day),
           )
           .map((d) => (
@@ -201,24 +218,17 @@ export function NewsletterDraftEditor({
                 onClick={() => open(d)}
               >
                 {d.content.subject}
-                {d.edition_day && (
-                  <span className="block text-xs">
-                    Envio previsto:{" "}
-                    {d.edition_day.split("-").reverse().join("/")} às 06h30 (São
-                    Paulo)
-                  </span>
-                )}
-                {d.generation_mode === "fallback" && (
-                  <span className="block text-xs">
-                    Envio bloqueado: contingência sem aprovação editorial
-                  </span>
-                )}
+                <span className="block text-xs">
+                  {d.schedule_hold
+                    ? "Desagendada · salvar não retoma o envio"
+                    : "Rascunho · aguarda aprovação para entrar na fila"}
+                </span>
                 <span className="ml-2 text-xs">· Revisão {d.revision}</span>
               </button>
             </li>
           ))}
       </ul>
-      {draft && edit && !lockedDays.includes(draft.edition_day ?? "") && (
+      {draft && edit && canEdit && (
         <fieldset disabled={busy} className="space-y-4 border-t pt-4">
           <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
             <label className="block">

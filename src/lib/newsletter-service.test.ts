@@ -748,3 +748,54 @@ it("forms a manually authorized campaign after hours with the exact reviewed cop
   );
   expect(automaticNewsletter).not.toHaveBeenCalled();
 });
+
+it("leaves a descheduled edition out of campaign formation during its send window", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-09T09:40:00Z"));
+  vi.stubEnv("RESEND_API_KEY", "synthetic-only");
+  const { db, writes } = newsletterTestDb({
+    newsletter_settings: [{ ...config, singleton: true }],
+    newsletter_drafts: [
+      {
+        ...campaign,
+        content,
+        fingerprint: "saved",
+        generation_mode: "agent",
+        revision: 3,
+        schedule_hold: true,
+      },
+    ],
+  });
+  const rpc = vi.spyOn(db, "rpc");
+  createClient.mockReturnValue(db);
+  const request = vi.fn(async (url: string) => {
+    if (url.includes("/domains?"))
+      return json({
+        data: [{ id, name: "news.hotpipe.com.br", status: "verified" }],
+        has_more: false,
+      });
+    if (url.includes(`/domains/${id}`))
+      return json({ capabilities: { sending: "enabled" } });
+    throw new Error("unexpected_provider_call");
+  });
+  vi.stubGlobal("fetch", request);
+  const result = await newsletterTick(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: {
+        "x-worker-signature": "synthetic",
+        "x-worker-issued-at": "1791403200",
+      },
+    }),
+  );
+  expect(await result.json()).toEqual({
+    ok: true,
+    prepared: false,
+    held: true,
+  });
+  expect(
+    rpc.mock.calls.some(([name]) => name === "newsletter_form_campaign"),
+  ).toBe(false);
+  expect(automaticNewsletter).not.toHaveBeenCalled();
+  expect(writes).toHaveLength(0);
+});
