@@ -1,6 +1,7 @@
-import { publishPodcastOnInstagram, verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
+import { verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
 import { readPodcastDashboard } from "./podcast-dashboard.ts";
-import { syncReleasedSpotifyEpisodes } from "./podcast-spotify.ts";
+import { notifyPodcastError } from "./podcast-alert.ts";
+import { runPodcastTick } from "./podcast-worker.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 import { ELEMENT_LAYOUT } from "../_shared/heatmap-elements.ts";
@@ -2631,24 +2632,12 @@ Deno.serve(async (req) => {
         db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle(),
       ]);
       if (membership.error || !membership.data?.active || membership.data.role !== "admin"
-        || audioSettings.error || !audioSettings.data?.enabled)
+        || audioSettings.error || !audioSettings.data?.enabled) {
+        await notifyPodcastError(db, "preparação", new Date().toISOString().slice(0, 10), "podcast_worker_not_configured");
         return json(req, { error: "podcast_worker_not_configured" }, 503);
-      // An already released episode can still be waiting for Meta during this slot.
-      const instagramRetry = await publishPodcastOnInstagram(db).catch(() => {
-        console.warn("podcast_instagram_delivery_unavailable");
-        return false;
-      });
-      if (instagramRetry) return json(req, { status: "instagram_checked" });
-      const prepared = await prepareNextPodcastEpisode(db, { id: ownerId, role: "admin" },
-        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken()),
-        { useAttachedWithoutWorkDrive: true });
-      if (prepared.status !== "draft" && prepared.status !== "empty") return json(req, prepared, 503);
-      const released = await db.rpc("release_next_podcast_episode");
-      if (released.error) throw new Error("podcast_release_failed");
-      if (released.data)
-        await publishPodcastOnInstagram(db).catch(() => console.warn("podcast_instagram_delivery_unavailable"));
-      await syncReleasedSpotifyEpisodes(db).catch(() => console.warn("podcast_spotify_sync_unavailable"));
-      return json(req, { status: released.data ? "released" : "idle" });
+      }
+      return json(req, await runPodcastTick(db, { id: ownerId, role: "admin" },
+        async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken())));
     } catch {
       return json(req, { error: "podcast_worker_failed" }, 503);
     }

@@ -33,7 +33,7 @@ it("prepares the next attachment for the scheduler without WorkDrive credentials
   expect(await prepareNextPodcastEpisode(db, actor, readDescription)).toEqual({ status: "workdrive_unconfigured" });
   expect(upsert).not.toHaveBeenCalled();
   expect(await prepareNextPodcastEpisode(db, actor, readDescription, { useAttachedWithoutWorkDrive: true }))
-    .toEqual({ status: "draft" });
+    .toEqual({ status: "draft", youtubeId: video.youtube_id });
   expect(readDescription).toHaveBeenCalledExactlyOnceWith(video.youtube_id);
   expect(upsert).toHaveBeenCalledWith({
     ...attachment, title: video.title, original_description: "Descrição original da FT07", source_folder_created_at: null,

@@ -87,7 +87,7 @@ function PodcastDashboard() {
             </button>
             {instagramConnectionMessage && <p role="status" className="text-sm">{instagramConnectionMessage}</p>}
           </div>}
-          <p className="mt-3 text-sm text-muted-foreground">A fila escolhe um episódio elegível por horário, sem reservar uma data para cada vídeo. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
+          <p className="mt-3 text-sm text-muted-foreground">O Lovable prepara os episódios com capa quadrada e legenda e mostra até seis janelas previstas. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
           <p className="mt-1 text-xs text-muted-foreground">Dados de <time dateTime={data.checkedAt}>{formatPodcastDateTime(data.checkedAt)}</time>, horário de Brasília.</p>
         </section>
         <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -131,7 +131,7 @@ function EpisodeSection({ title, section, kind, empty, children }: {
             {item.instagram && <p className="text-sm text-muted-foreground">{instagramLabels[item.instagram.status]}</p>}
             {kind === "prepared" && <p className="text-sm text-muted-foreground">
               {!item.articleSlug ? "Aguardando artigo publicado"
-                : item.slotAt ? <>Janela registrada: <time dateTime={item.slotAt}>{formatPodcastDateTime(item.slotAt)}</time></>
+                : item.slotAt ? <>Publicação prevista em <time dateTime={item.slotAt}>{formatPodcastDateTime(item.slotAt)}</time></>
                 : "Aguardando uma janela da agenda"}
             </p>}
           </div>

@@ -42,12 +42,12 @@ async function stagePodcastEpisode(
     { onConflict: "youtube_id", ignoreDuplicates: true },
   );
   if (error) throw new Error("podcast_queue_write_failed");
-  return { status: "draft" };
+  return { status: "draft", youtubeId: video.youtube_id };
 }
 
 export async function prepareNextPodcastEpisode(
   db: SupabaseClient, actor: { id: string; role: string }, readDescription: (id: string) => Promise<string>,
-  options: { useAttachedWithoutWorkDrive?: boolean } = {},
+  options: { useAttachedWithoutWorkDrive?: boolean; aheadOf?: { publishedOn: string | null; folderCreatedAt: string | null } } = {},
 ) {
   const { openPodcastWorkDrive, handlePodcastWorkDrive, workDriveTitle } = await import("./podcast-workdrive.ts");
   const [catalog, audios, drafts] = await Promise.all([
@@ -61,18 +61,28 @@ export async function prepareNextPodcastEpisode(
   const staged = new Set(drafts.data?.map((row) => row.youtube_id));
   const remaining = (catalog.data ?? []).filter((row) => !staged.has(row.youtube_id));
   if (!remaining.length) return { status: "empty" };
+  const lastRelease = Math.max(0, ...(drafts.data ?? []).map((row) => Date.parse(row.released_at ?? "") || 0));
+  function isAhead(publishedOn: string | null, folderCreatedAt = 0) {
+    if (!options.aheadOf) return true;
+    const currentFolder = Date.parse(options.aheadOf.folderCreatedAt ?? "") || 0;
+    const fresh = lastRelease > 0 && folderCreatedAt > lastRelease;
+    const currentFresh = lastRelease > 0 && currentFolder > lastRelease;
+    if (fresh !== currentFresh) return fresh;
+    if (fresh && folderCreatedAt !== currentFolder) return folderCreatedAt > currentFolder;
+    return (publishedOn ?? "") > (options.aheadOf.publishedOn ?? "");
+  }
   const connection = await openPodcastWorkDrive();
   if (!connection) {
     if (!options.useAttachedWithoutWorkDrive) return { status: "workdrive_unconfigured" };
     const { candidates } = await previewPodcastQueue(db);
     for (const candidate of candidates) {
+      if (!isAhead(candidate.published_on)) continue;
       const stagedEpisode = await stagePodcastEpisode(db, candidate, readDescription);
       if (stagedEpisode.status === "draft") return stagedEpisode;
     }
     return { status: "empty" };
   }
   const folders = (await connection.list(connection.root)).filter((row) => row.attributes.is_folder);
-  const lastRelease = Math.max(0, ...(drafts.data ?? []).map((row) => Date.parse(row.released_at ?? "") || 0));
   const reply = (body: unknown, status?: number) => Response.json(body, { status });
 
   const choices = remaining.map((video) => {
@@ -90,6 +100,7 @@ export async function prepareNextPodcastEpisode(
     || b.created - a.created || a.video.youtube_id.localeCompare(b.video.youtube_id));
 
   for (const { video, hasFolder, created } of choices) {
+    if (!isAhead(video.published_on, created)) continue;
     const id = video.youtube_id;
     if (!attached.has(id)) {
       if (!hasFolder) continue;
