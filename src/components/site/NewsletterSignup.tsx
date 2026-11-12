@@ -1,17 +1,9 @@
-import { useMemberSession } from "@/hooks/use-member-session";
 import { captureQuizAttribution } from "@/lib/quiz-attribution";
 import { useId, useState, type FormEvent } from "react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function NewsletterSignup({
-  compact = false,
-  hideWhenSignedIn = true,
-}: {
-  compact?: boolean;
-  hideWhenSignedIn?: boolean;
-}) {
-  const { session } = useMemberSession();
+export function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const id = useId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,12 +38,6 @@ export function NewsletterSignup({
       );
       if (fnError || (data as { ok?: boolean } | null)?.ok !== true)
         throw new Error("signup failed");
-      try {
-        localStorage.setItem("vitale-newsletter-subscribed", "1");
-      } catch {
-        /* Storage unavailable. */
-      }
-      window.dispatchEvent(new Event("vitale-newsletter-subscribed"));
       setStatus("done");
     } catch {
       setStatus("idle");
@@ -61,7 +47,6 @@ export function NewsletterSignup({
     }
   };
 
-  if (hideWhenSignedIn && session) return null;
   return (
     <section
       aria-labelledby={compact ? undefined : "newsletter"}

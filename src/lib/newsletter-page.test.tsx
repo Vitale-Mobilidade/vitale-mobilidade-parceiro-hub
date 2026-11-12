@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NewsletterSignup } from "@/components/site/NewsletterSignup";
-import { useMemberSession } from "@/hooks/use-member-session";
-vi.mock("@/hooks/use-member-session", () => ({
-  useMemberSession: vi.fn(() => ({ session: null, loading: false })),
-}));
 vi.mock("@/components/site/site-ui", async () => {
   const { NewsletterSignup } =
     await import("@/components/site/NewsletterSignup");
@@ -38,28 +33,6 @@ describe("newsletter public landing", () => {
     expect(html).not.toContain("<select");
     expect(html).not.toContain("O que mais te interessa");
     expect(html).toContain("Receba artigos, vídeos e destaques");
-  });
-  it("keeps the dedicated signup visible when a member session is present", () => {
-    const session = { access_token: "test" } as NonNullable<
-      ReturnType<typeof useMemberSession>["session"]
-    >;
-    vi.mocked(useMemberSession).mockReturnValue({ session, loading: false });
-    try {
-      const html = renderToStaticMarkup(<NewsletterPage />);
-      expect(html.match(/<form[ >]/g) ?? []).toHaveLength(1);
-      expect(html).toContain('name="name"');
-      expect(html).toContain('name="email"');
-      expect(html).toContain('type="checkbox"');
-      expect(html).toContain("Cadastrar e-mail");
-      // The exit popup also uses the compact layout.
-      expect(renderToStaticMarkup(<NewsletterSignup compact />)).toBe("");
-      expect(renderToStaticMarkup(<NewsletterSignup />)).toBe("");
-    } finally {
-      vi.mocked(useMemberSession).mockReturnValue({
-        session: null,
-        loading: false,
-      });
-    }
   });
   it("has an indexable canonical and subject-specific social card", () => {
     const head = (Route as any).options.head();

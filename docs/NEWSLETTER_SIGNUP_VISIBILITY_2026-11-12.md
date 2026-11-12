@@ -33,3 +33,37 @@ Decisão: a rota dedicada exibe o formulário mesmo com sessão ativa; popup, ro
 | PMO/QA | Pass | A regressão falhou antes do reparo e os 3 testes da landing passaram depois. `pnpm validate` passou: tipos, 68 regressões e build SSR. `git diff --check` sem erros; lint do componente limpo e sem novos apontamentos nos outros arquivos. |
 
 Smoke em Chrome local com serviço de inscrição interceptado e dados sintéticos. Em produção, foi inspecionado somente o HTML público; a correção está no branch local e depende de autorização explícita para integrar em `main` e publicar no Lovable. Depois da publicação, conferir a visibilidade com e sem sessão, sem gravar contato de teste. Para rollback, reverter apenas o commit da correção no GitHub e republicar pelo mesmo projeto Lovable.
+
+## Ampliação de escopo solicitada em 12/11
+
+O responsável pediu que a inscrição fixa também apareça nas demais páginas e que o pop-up automático seja retirado. A mesma regra de sessão oculta todos os usos do formulário compartilhado. A raiz ainda monta o pop-up para visitantes anônimos em rotas elegíveis.
+
+Revisão prévia da mudança relevante:
+
+| Perspectiva | Impacto, risco, dependência e recomendação |
+| --- | --- |
+| Produto | Manter a captação voluntária nas posições existentes. Retirar o convite automático conforme solicitado. |
+| Arquitetura | Remover a condição de sessão do formulário e desmontar o pop-up na raiz. Retirar listeners e preferências que só serviam ao pop-up. Preservar SSR e a composição de rotas. |
+| IA | N/A. O pop-up de newsletter é distinto do assistente. |
+| Segurança | A visibilidade independe da sessão. Preservar campos manuais, aceite obrigatório, tratamento de supressões e endpoint existente. |
+| UX | Mostrar o bloco fixo no rodapé, no resultado do Quiz e no topo da página dedicada. Preservar as posições e evitar duplicação. |
+| CX | Verificar desktop e celular com contas sintéticas e envio interceptado. |
+| Growth | A remoção reduz convites automáticos conforme solicitado. Preservar a captação nos blocos fixos e a metadata. |
+| PMO/QA | Testar a landing e o rodapé real após a hidratação. Verificar os antigos gatilhos do pop-up e rodar o gate do projeto. |
+
+Decisão consolidada. Remover o pop-up e seus dependentes exclusivos. Manter todos os formulários fixos existentes visíveis com ou sem sessão, sem criar novos pontos de captação. Aceite por inspeção de rotas e smoke local. Banco, campanhas e integrações fora do escopo. Rollback por reversão dos commits de frontend, sem migration.
+
+### Revisão posterior do escopo ampliado
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Formulários fixos disponíveis em ambas as condições de sessão. Convite automático removido da raiz. |
+| Arquitetura | Pass | Formulário presente no SSR. Componente fixo não consulta sessão. Não há referências ao código do pop-up ou aos seus listeners. |
+| IA | N/A | Assistente e geração editorial fora do escopo. |
+| Segurança | Pass | Teste de navegador confirmou bloqueio sem aceite e envio simulado somente após consentimento. |
+| UX | Pass | Smoke no Chrome em desktop e celular na Home, Newsletter, Sobre, Conteúdos e Ferramentas. Gatilhos antigos de saída do cursor e retorno ao topo não abriram o pop-up. Posição no resultado do Quiz confirmada no código. |
+| CX | Pass | Confirmação exibida após resposta simulada. Verificação não criou contatos. |
+| Growth | Pass | Testes da landing mantêm metadados e um único formulário. Rodapé real mantém o bloco na posição existente. |
+| PMO/QA | Pass | `pnpm validate` passou com tipos, 68 regressões e build SSR. Os 2 testes da landing também passaram. |
+
+Pronto localmente. Integrar e publicar após autorização explícita para esse escopo. O smoke usa sessão sintética e resposta de inscrição interceptada. Para rollback, reverter o delta integrado e republicar pelo projeto existente do Lovable.
