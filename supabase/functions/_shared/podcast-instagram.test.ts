@@ -7,11 +7,19 @@ const article = {
 };
 
 it("reuses the RSS cover and episode summary, respecting the caption limit", () => {
-  const post = instagramPodcastPost("Teste da FT07", { ...article, summary: "Resumo ".repeat(1000) });
+  const post = instagramPodcastPost({ ...article, summary: "Resumo ".repeat(1000) });
   expect(post?.image_url).toContain("https://vitalemobilidade.com/podcast/capas/teste-ft07.v3.jpg?layout=3&v=");
-  expect(post?.caption).toMatch(/Teste da FT07\n\nResumo/);
+  expect(post?.caption).toMatch(/^Resumo(?: Resumo)*…\n\nSaiba mais no link da Bio$/);
   expect([...post!.caption].length).toBeLessThanOrEqual(2200);
-  expect(instagramPodcastPost("Teste", { ...article, og_image_url: null })).toBeNull();
+  expect(instagramPodcastPost({ ...article, og_image_url: null })).toBeNull();
+});
+
+it("uses only the article summary and bio call, without URLs", () => {
+  const post = instagramPodcastPost({
+    ...article,
+    summary: "A FT07 foi testada. [Leia a análise](https://example.com/artigo). https://example.com/quiz?ref=ig www.example.com vitalemobilidade.com",
+  });
+  expect(post?.caption).toBe("A FT07 foi testada. Leia a análise.\n\nSaiba mais no link da Bio");
 });
 
 it("uses the authorized account and publishes a single image container", async () => {
@@ -22,7 +30,7 @@ it("uses the authorized account and publishes a single image container", async (
     .mockResolvedValueOnce(Response.json({ id: "789" }));
   const instagram = instagramPublisher({ token: "test", version: "v25.0" }, fetcher);
   const account = await instagram.account();
-  const post = instagramPodcastPost("Teste da FT07", article)!;
+  const post = instagramPodcastPost(article)!;
   const container = await instagram.create(account, post);
   expect(await instagram.status(container)).toBe("FINISHED");
   expect(await instagram.publish(account, container)).toBe("789");
@@ -57,7 +65,7 @@ it("verifies publication access and sends photos through the Meta Graph for Unif
   const instagram = instagramPublisher(settings!, fetcher);
   const account = await instagram.account();
   await instagram.checkPublishingAccess(account);
-  const container = await instagram.create(account, instagramPodcastPost("Teste da FT07", article)!);
+  const container = await instagram.create(account, instagramPodcastPost(article)!);
   await expect(instagram.publish(account, container)).resolves.toBe("789");
   expect(fetcher.mock.calls.map(([url, init]) => [String(url), init?.method])).toEqual([
     ["https://graph.facebook.com/v25.0/123?fields=id%2Cusername", "GET"],

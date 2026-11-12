@@ -5,24 +5,27 @@ const accountName = "vitalemobilidade";
 const numericId = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9]{1,30}$/.test(value);
 
-function tidy(text: string) {
-  return text.replace(/\s+/g, " ").trim();
+function summaryWithoutLinks(text: string) {
+  return text
+    .replace(/\[([^\]]+)\]\((?:https?:\/\/|www\.)[^)\s]+\)/gi, "$1")
+    .replace(/\b(?:(?:https?:\/\/|www\.)[^\s<>]+|(?:[a-z0-9-]+\.)+[a-z]{2,24}\b(?:\/[^\s<>]*)?)/gi,
+      (url) => url.match(/[.,!?;:]+$/)?.[0] ?? "")
+    .replace(/\s+([.,!?;:])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export function instagramPodcastPost(title: string, article: Parameters<typeof podcastCoverPath>[0] & { summary: string }) {
+export function instagramPodcastPost(article: Parameters<typeof podcastCoverPath>[0] & { summary: string }) {
   const coverPath = podcastCoverPath(article);
-  const heading = tidy(title);
-  const summary = tidy(article.summary);
-  if (!coverPath || !heading || !summary) return null;
-  const intro = `🎙️ ${heading}`;
-  const call = "Ouça o episódio no podcast da Vitale Mobilidade e leia a análise em vitalemobilidade.com.";
-  const available = MAX_CAPTION - [...intro + call].length - 4;
-  if (available < 80) return null;
+  const summary = summaryWithoutLinks(article.summary);
+  if (!coverPath || !summary) return null;
+  const call = "Saiba mais no link da Bio";
+  const available = MAX_CAPTION - call.length - 2;
   const characters = [...summary];
   const excerpt = characters.length > available
     ? characters.slice(0, available - 1).join("").replace(/\s+\S*$/, "") + "…"
     : summary;
-  return { image_url: new URL(coverPath, "https://vitalemobilidade.com").href, caption: [intro, excerpt, call].join("\n\n") };
+  return { image_url: new URL(coverPath, "https://vitalemobilidade.com").href, caption: [excerpt, call].join("\n\n") };
 }
 
 export type InstagramSettings = { token: string; version: string; accountId?: string };
