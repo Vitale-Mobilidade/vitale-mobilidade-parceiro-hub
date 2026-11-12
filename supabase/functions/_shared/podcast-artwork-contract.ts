@@ -3,6 +3,11 @@ import { isCoverUuid } from "./editorial-cover.ts";
 export const PODCAST_ARTWORK_EDGE = "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image";
 export const podcastArticleSlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+export function preparedPodcastCoverPath(articleId: string, version: string) {
+  return isCoverUuid(articleId) && /^\d{1,14}$/.test(version)
+    ? `${articleId}/podcast-covers/v3-${version}.jpg` : null;
+}
+
 export function podcastArticleCoverSource(value: string | null): URL | null {
   if (!value) return null;
   try {

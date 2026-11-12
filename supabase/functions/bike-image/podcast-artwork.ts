@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
-import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
+import { podcastArticleSlug, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
 
 export async function servePodcastCover(req: Request, params: URLSearchParams, db: SupabaseClient) {
   const slug = params.get("slug") ?? "";
@@ -18,6 +18,15 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
   if (params.get("download") === "1") headers.set("Content-Disposition", `attachment; filename="${slug}-capa-quadrada.jpg"`);
   if (req.method === "HEAD") return new Response(null, { headers });
   try {
+    const preparedPath = params.get("layout") === "3"
+      ? preparedPodcastCoverPath(article.id, params.get("v") ?? "") : null;
+    if (preparedPath) {
+      const { data: prepared } = await db.storage.from(COVER_BUCKET).download(preparedPath);
+      if (prepared && prepared.size <= 8 * 1024 * 1024) {
+        headers.set("Content-Length", String(prepared.size));
+        return new Response(prepared, { headers });
+      }
+    }
     let background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" } | null = null;
     if (article.video_id) {
       const { data, error: sourceError } = await db.from("youtube_editorial_sources")
@@ -25,8 +34,8 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
         .eq("video_id", article.video_id).maybeSingle();
       if (sourceError) return new Response(null, { status: 503 });
       const source = data?.cover_background;
-      const path = source?.path;
-      if (typeof path === "string") {
+      if (source && typeof source === "object" && !Array.isArray(source) && typeof source.path === "string") {
+        const path = source.path;
         const root = `${article.id}/backgrounds/`;
         const fileName = path.startsWith(root) ? path.slice(root.length) : "";
         const id = fileName.slice(0, -4);

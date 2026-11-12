@@ -96,3 +96,26 @@ Revisão posterior local: Produto (Pass, perfil fixo e mesma janela), Arquitetur
 Revisão prévia. O ajuste é localizado na legenda da integração. Produto adota apenas o resumo do artigo e a chamada para a bio. Arquitetura mantém a geração no cliente atual. Segurança mantém permissões e credenciais e remove URLs eventualmente presentes no resumo. UX usa dois parágrafos e elimina chamadas repetidas. Operação aplica a regra apenas a novos envios. Growth mantém uma única chamada para ação, com destino definido pelo perfil. IA não se aplica. QA verifica capa, resumo, remoção de URLs, chamada e limite de caracteres. A decisão mantém a fila e o RSS independentes da legenda. Para reverter, restaurar a função anterior.
 
 Revisão final. Produto (Pass, resumo e chamada para a bio), Arquitetura (Pass, legenda composta na função existente), Segurança (Pass, remoção de URLs e mesmo escopo de acesso), UX (Pass, texto separado da chamada), Operação (Pass, apenas contêineres novos recebem a legenda), Growth (Pass, uma chamada para ação e mesma capa), IA (N/A, usa o resumo já publicado), QA (Pass, seis testes direcionados e `pnpm validate` com 68 testes e build). A revisão em produção depende do deploy da função e da validação da Meta.
+
+### Preparação antecipada e alertas
+
+Mudança estrutural no agendador, no armazenamento de capas e na operação do Admin. Decisão prévia pelas oito perspectivas:
+
+| Perspectiva | Impacto, risco, dependência e decisão |
+| --- | --- |
+| Produto | Mostrar até seis episódios previstos, mantendo a prioridade editorial e a dependência de artigo publicado. O horário é previsão até a liberação. |
+| Arquitetura | Separar preparação de publicação. Usar o worker autenticado existente, uma fila preparada e a regra SQL comum para calcular janelas. |
+| Segurança | Manter áudio, legenda em preparação e arte armazenada em áreas privadas. Servir JPEG somente pela rota existente de artigo publicado e enviar alertas operacionais sem credenciais ou conteúdo privado. |
+| UX | Exibir os horários previstos de cada episódio e o estado de preparação no Admin. |
+| CX e operação | Usar destinatário, remetente, Resend, chave de idempotência e link de diagnóstico no padrão da newsletter. Distinguir preparação, RSS e Instagram para facilitar recuperação. |
+| Growth | Preservar o RSS, a distribuição, a capa quadrada compartilhada e a legenda com chamada para a bio. |
+| IA | N/A. Reutilizar o resumo e o compositor de imagens já existentes, sem nova geração por IA. |
+| PMO e QA | Ensaiar o banco, testar cálculo das janelas, preparação e alertas sem efeitos externos, validar a aplicação e exigir aprovação de produção. |
+
+A capa fica pronta na preparação e pode ser reaproveitada pela rota existente. A Meta recebe o pedido de publicação na janela, pois contêineres têm vida útil limitada e a fila pode mudar. Uma falha no Instagram não deve apagar um episódio já publicado no RSS. Reversão: restaurar a programação e as funções SQL anteriores e republicar as funções e o site anteriores, preservando episódios, capas e auditoria.
+
+O worker prepara até seis janelas em horário de Brasília e verifica se apareceu um candidato de maior prioridade perto da janela. O Admin mostra a previsão de cada episódio pronto. Um artigo editado volta à preparação antes de poder sair. Durante a preparação, o Lovable verifica o MP3, compõe e salva o JPEG 1400 × 1400 no bucket editorial privado e guarda a legenda sem URLs. A rota pública existente serve a versão preparada enquanto o artigo estiver publicado.
+
+Os avisos usam o mesmo remetente e destinatário operacional da newsletter. O e-mail identifica a etapa, o motivo e o painel. Há avisos para falhas de preparação, autorização da Meta e janelas de publicação perdidas ou sem confirmação. O histórico e a chave de idempotência evitam repetir o mesmo aviso. O catálogo de cada aplicativo continua com sua própria atualização.
+
+Revisão posterior local: Produto (Pass, até seis previsões e reposição automática), Arquitetura (Pass, preparação e liberação separadas, capa versionada no armazenamento existente), Segurança (Pass, views e operações restritas ao backend, e-mail sem dados do episódio), UX (Pass, previsões individuais e fila em preparação), Operação (Pass, destinatário da newsletter, aviso após a janela e deduplicação), Growth (Pass, mesmas URLs, distribuição e texto da bio), IA (N/A, usa o resumo existente), PMO/QA (Pass, 21 testes direcionados, `pnpm validate`, verificação Deno dos módulos e ensaio PostgreSQL 17). Depois do deploy, conferir a primeira reposição automática, a entrega da capa e o estado no painel. Os testes de e-mail usam transporte simulado. Aplicar fora de uma janela de publicação para que o worker novo tenha tempo para preparar a fila.
