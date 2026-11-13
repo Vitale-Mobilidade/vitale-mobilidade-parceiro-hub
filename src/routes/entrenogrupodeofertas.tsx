@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { OffersGroupGoogleAdsConsent } from "@/components/site/OffersGroupGoogleAdsConsent";
+import { useState } from "react";
+import { formatBRL } from "@/lib/price-tracker";
+import v9Max from "@/assets/bikes/v9-max.avif";
+import gt2000 from "@/assets/bikes/gt2000.avif";
 import ft03 from "@/assets/bikes/ft03.avif";
+import v20Ultra from "@/assets/bikes/v20-ultra-landing.webp";
 import {
   OFFERS_GROUP_ADS_CONSENT_ENABLED,
   OFFERS_GROUP_LANDING_PATH,
   trackOffersGroupCta,
-  type OffersGroupCtaPosition,
 } from "@/lib/offers-group-landing";
 import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 import {
@@ -52,17 +56,17 @@ export const Route = createFileRoute("/entrenogrupodeofertas")({
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current";
 
-function GroupLink({ position }: { position: OffersGroupCtaPosition }) {
+function GroupLink() {
   return (
     <a
       href={canonicalUrl(OFFERS_GROUP_URL)}
       rel="noreferrer"
       onClick={(event) => {
-        if (event.nativeEvent.isTrusted) trackOffersGroupCta(position);
+        if (event.nativeEvent.isTrusted) trackOffersGroupCta("hero");
       }}
       onAuxClick={(event) => {
         if (event.button === 1 && event.nativeEvent.isTrusted)
-          trackOffersGroupCta(position);
+          trackOffersGroupCta("hero");
       }}
       className={`inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-mint px-4 py-3 text-center text-base leading-tight font-bold text-ink hover:bg-mint/90 sm:w-auto sm:px-6 ${focus}`}
     >
@@ -72,23 +76,92 @@ function GroupLink({ position }: { position: OffersGroupCtaPosition }) {
   );
 }
 
-const FAQ = [
+// Public Radar snapshot of the 30-day range, checked on 13/11/2026.
+const bikes = [
+  { id: "v9_max", name: "V9 Max", image: v9Max, high: 6919, low: 5888 },
+  { id: "gt2000", name: "GT2000", image: gt2000, high: 10000, low: 9408 },
+  { id: "ft03", name: "FT03", image: ft03, high: 8399, low: 5916 },
   {
-    question: "Como faço para entrar no grupo?",
-    answer:
-      "Toque no botão, abra o convite no WhatsApp e confirme sua entrada por lá. Você não precisa preencher cadastro no site da Vitale.",
-  },
-  {
-    question: "Onde eu compro a bicicleta?",
-    answer:
-      "A compra é feita no Mercado Livre, pelo anúncio da oferta. O grupo serve para acompanhar as indicações da Vitale.",
-  },
-  {
-    question: "Como confiro o preço e a disponibilidade?",
-    answer:
-      "Abra a oferta no Mercado Livre e confira a versão da bike, o preço, o estoque e o frete para seu CEP. As condições podem mudar depois que a mensagem é publicada.",
+    id: "v20_ultra",
+    name: "V20 Ultra",
+    image: v20Ultra,
+    high: 7799,
+    low: 7019,
   },
 ];
+
+const percent = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+
+function OffersCarousel() {
+  const [active, setActive] = useState(0);
+  const bike = bikes[active];
+  const savings = ((bike.high - bike.low) / bike.high) * 100;
+
+  function move(step: number) {
+    setActive((current) => (current + step + bikes.length) % bikes.length);
+  }
+
+  return (
+    <section
+      aria-label="Ofertas do Radar de preços"
+      className="min-w-0 rounded-3xl bg-logo-surface p-3 text-ink sm:p-4"
+    >
+      <div aria-live="polite" aria-atomic="true">
+        <div className="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl bg-white sm:h-64">
+          <img
+            src={bike.image}
+            alt={`Bicicleta elétrica ${bike.name}`}
+            width={480}
+            height={320}
+            decoding="async"
+            className="h-full w-full object-contain p-2"
+          />
+          <span className="absolute top-2 left-2 rounded-lg bg-mint px-2.5 py-1.5 text-sm font-bold text-ink">
+            {percent.format(savings)}% de diferença
+          </span>
+        </div>
+        <div className="px-2 pt-3">
+          <h2 className="text-lg font-bold">{bike.name}</h2>
+          <p className="text-xl font-bold text-action">
+            {formatBRL(bike.high)} → {formatBRL(bike.low)}
+          </p>
+          <p className="mt-1 text-xs text-ink/80">
+            Do maior ao menor preço no Radar em 30 dias, até 13/11/2026.
+          </p>
+          <a
+            className={`inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-4 ${focus}`}
+            href={`/radar/${bike.id}`}
+          >
+            Ver preço e histórico no Radar
+          </a>
+        </div>
+      </div>
+      {bikes.length > 1 && (
+        <div className="flex items-center justify-between border-t border-line px-2 pt-1">
+          <button
+            type="button"
+            onClick={() => move(-1)}
+            aria-label="Oferta anterior"
+            className={`grid size-11 place-items-center rounded-full ${focus}`}
+          >
+            <ChevronLeft aria-hidden="true" className="size-5" />
+          </button>
+          <span className="text-sm font-medium">
+            {active + 1} de {bikes.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => move(1)}
+            aria-label="Próxima oferta"
+            className={`grid size-11 place-items-center rounded-full ${focus}`}
+          >
+            <ChevronRight aria-hidden="true" className="size-5" />
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function OffersGroupLanding() {
   return (
@@ -111,155 +184,50 @@ function OffersGroupLanding() {
         </div>
       </header>
 
-      <main>
-        <section className="bg-ink text-ink-foreground">
-          <div className="mx-auto max-w-6xl px-5 pt-10 pb-12 sm:px-8 sm:pt-16 sm:pb-20">
+      <main className="bg-ink text-ink-foreground">
+        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-6 sm:px-8 sm:py-10 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-10 lg:gap-14 lg:py-14">
+          <div className="md:pt-6">
             <p className="text-xs font-bold tracking-widest text-mint uppercase sm:text-sm">
               Grupo de ofertas da Vitale
             </p>
-            <h1 className="mt-4 max-w-4xl text-[2rem] leading-[1.1] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="mt-3 text-[1.9rem] leading-[1.1] font-extrabold tracking-tight text-balance sm:text-5xl">
               {TITLE}
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-foreground/90 sm:text-lg">
+            <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-foreground/90 sm:text-lg">
               {DESCRIPTION}
             </p>
-            <div className="mt-6 sm:mt-8">
-              <GroupLink position="hero" />
-              <p className="mt-3 text-sm leading-relaxed text-ink-foreground/80">
-                O convite abre no WhatsApp. A compra é no Mercado Livre.
-              </p>
+            <div className="mt-4 sm:mt-6">
+              <GroupLink />
+            </div>
+            <div className="hidden md:block">
               {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
-                <OffersGroupGoogleAdsConsent />
+                <a
+                  href="#preferencias"
+                  className="mt-3 inline-flex min-h-11 items-center text-sm text-ink-foreground/90 underline"
+                >
+                  Preferências de medição
+                </a>
               )}
             </div>
           </div>
-        </section>
-
-        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
-          <section
-            aria-labelledby="como-funciona"
-            className="grid items-start gap-7 lg:grid-cols-[1fr_1fr] lg:gap-14"
-          >
-            <div>
-              <h2
-                id="como-funciona"
-                className="text-2xl font-extrabold tracking-tight sm:text-3xl"
-              >
-                Como a curadoria funciona
-              </h2>
-              <p className="mt-3 max-w-xl leading-relaxed">
-                A Vitale seleciona ofertas de bikes elétricas no Mercado Livre.
-                Antes de comprar, use o nome do modelo e a versão anunciada para
-                comparar com outras opções.
-              </p>
-              <ol className="mt-6 space-y-4">
-                {[
-                  [
-                    "No grupo",
-                    "Veja o modelo, o preço informado na publicação e o link da oferta.",
-                  ],
-                  [
-                    "No anúncio",
-                    "Confira se é a versão que você procura e veja o preço, o estoque e o frete para seu endereço.",
-                  ],
-                ].map(([label, detail], index) => (
-                  <li key={label} className="flex items-start gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-sm font-bold text-mint"
-                    >
-                      {index + 1}
-                    </span>
-                    <p className="leading-relaxed">
-                      <strong>{label}:</strong> {detail}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-              <a
-                href="/radar"
-                className={`mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-action underline underline-offset-4 ${focus}`}
-              >
-                Compare modelos no Radar{" "}
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </a>
+          <OffersCarousel />
+          {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
+            <div id="preferencias" className="scroll-mt-4 md:col-span-2">
+              <OffersGroupGoogleAdsConsent />
             </div>
-
-            <figure className="overflow-hidden rounded-2xl border border-line bg-card">
-              <div className="grid place-items-center bg-logo-surface px-6 py-3">
-                <img
-                  src={ft03}
-                  alt="Bicicleta elétrica Mangosteen FT03"
-                  width={800}
-                  height={697}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-44 w-full object-contain sm:h-52"
-                />
-              </div>
-              <figcaption className="border-t border-line p-5 sm:p-6">
-                <p className="text-xs font-bold tracking-wider text-action uppercase">
-                  Exemplo ilustrativo
-                </p>
-                <p className="mt-1 text-xl font-bold">Mangosteen FT03</p>
-                <dl className="mt-3 space-y-2 text-sm leading-relaxed">
-                  <div>
-                    <dt className="inline font-semibold">Preço:</dt>{" "}
-                    <dd className="inline">
-                      a mensagem indica o valor visto na publicação.
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline font-semibold">Oferta:</dt>{" "}
-                    <dd className="inline">
-                      a mensagem leva ao anúncio no Mercado Livre.
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-4 text-sm font-semibold">
-                  Este exemplo não é uma oferta ativa.
-                </p>
-              </figcaption>
-            </figure>
-          </section>
-
-          <section
-            aria-labelledby="perguntas"
-            className="mt-12 border-t border-line pt-9 sm:mt-16"
-          >
-            <h2
-              id="perguntas"
-              className="text-2xl font-extrabold tracking-tight sm:text-3xl"
-            >
-              Perguntas frequentes
-            </h2>
-            <dl className="mt-5 grid gap-3 lg:grid-cols-3">
-              {FAQ.map(({ question, answer }) => (
-                <div
-                  key={question}
-                  className="rounded-xl border border-line bg-card p-4 sm:p-5"
-                >
-                  <dt className="font-bold">{question}</dt>
-                  <dd className="mt-2 leading-relaxed">{answer}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-7">
-              <GroupLink position="after_faq" />
-            </div>
-          </section>
+          )}
         </div>
       </main>
 
-      <footer className="border-t border-line bg-logo-surface">
-        <div className="mx-auto max-w-6xl px-5 py-6 text-sm leading-relaxed sm:px-8">
+      <footer className="border-t border-white/15 bg-ink text-ink-foreground">
+        <div className="mx-auto max-w-6xl px-5 py-3 text-sm leading-relaxed sm:px-8">
           <p>
             A Vitale pode receber uma comissão quando você compra pelos links de
             afiliado.
           </p>
           <a
             href="/privacidade"
-            className={`mt-2 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-4 ${focus}`}
+            className={`mt-2 inline-flex min-h-11 items-center font-semibold text-mint underline underline-offset-4 ${focus}`}
           >
             Privacidade e uso de dados
           </a>

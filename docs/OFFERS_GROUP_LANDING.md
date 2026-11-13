@@ -116,3 +116,24 @@ Parecer: GO para revisão do código com a flag desativada. NO-GO para ativaçã
 ### Liberação autorizada do consentimento — 13/11/2026
 
 Na conta Google Ads 521-126-5158 foi criada a ação manual **Clique no CTA do grupo de ofertas (WhatsApp)**, com contagem Uma, valor zero, otimização secundária e conversões otimizadas desativadas. O Google exibiu o ID `AW-18172764323` e o label `8g1VCP_H_7cdEKPBudlD`. A autorização do responsável cobre a publicação do controle nessa landing e a ativação da tag após preview no Tag Assistant. O controle pode ir ao ar primeiro para testar a tag em condições reais. Nenhuma tag Ads entra no contêiner público nessa primeira etapa. A flag passa a habilitar o controle por padrão e aceita `false` como desligamento.
+
+### Revisão prévia — hero com ofertas do Radar
+
+Mudança estrutural por usar o Radar como fonte. Produto: atende o pedido de uma única seção, com CTA principal e referência de valor própria. CTO: reusar repositório e cálculo do Radar em SSR, retornar só os cartões, manter 200 e CTA se faltar catálogo. IA: N/A, sem geração. Segurança: nenhum preço manual, credencial ou link de convite novo. UX: desktop em duas colunas, mobile com CTA primeiro, carrossel manual acessível. CX: preservar rota administrada. Growth: exibir percentual somente quando verificável e explicitar o preço típico como referência, sem chamar de desconto do lojista. QA: testar contrato SSR, variações de catálogo, mobile, teclado e conversão exclusiva do CTA.
+
+Trade-off: os percentuais sugeridos são exemplos; o Radar compara com o preço típico observado, então o selo usa essa comparação. Priorizar relevância entre ofertas elegíveis. Sem elegíveis, mostrar modelos sem percentual quando houver catálogo e link para o Radar quando indisponível. Rollback: reverter a revisão da landing; para suspender medição, pausar as tags dedicadas e desligar o controle pela flag.
+
+### Decisão atualizada — quatro exemplos históricos
+
+O responsável fixou a ordem V9 Max, GT2000, FT03, V20 Ultra e solicitou números estáticos. Os cartões usam o maior e o menor preços registrados exibidos nas páginas públicas do Radar, no recorte padrão de 30 dias, consultado em 13/11/2026. A diferença é calculada como (maior − menor) ÷ maior. Os valores ilustram a variação histórica e têm link para o detalhe da Bike. As três fotos Vitale usam as versões AVIF do catálogo no repositório porque os URLs antigos enviados retornaram 404. A foto da V20 Ultra foi fornecida pelo responsável. Nenhum loader de Radar ou Supabase foi acrescentado à landing.
+
+| Perspectiva | Revisão do hero |
+| --- | --- |
+| Produto | Pass. Um hero, um CTA de WhatsApp e quatro exemplos históricos na ordem solicitada. |
+| CTO | Pass. HTML SSR com a primeira foto e carrossel local, sem dependência de catálogo em runtime. |
+| IA | N/A. Dados e fotos de fontes identificadas. |
+| Segurança | Pass. Sem preço prometido, histórico rotulado e CTA com URL limpa. |
+| UX/UI | Pass. Navegação por teclado, quatro imagens verificadas e CTA dentro da dobra em 320 × 568 e 1440 × 900. |
+| CX | Pass. Link existente e administração do convite preservados. |
+| Growth | Pass para o hero. Cada modelo tem link ao detalhe e a variação publicada tem referência de cálculo e data. A entrega da tag continua sujeita ao teste separado. |
+| PMO/QA | Pass. SSR 200 com e sem UTM, lint da rota, pnpm validate e smoke do carrossel. Rollback por revert da revisão. |
