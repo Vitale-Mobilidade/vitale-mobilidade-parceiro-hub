@@ -1,4 +1,3 @@
-import { OFFERS_GROUP_ADS_CONSENT_ENABLED } from "@/lib/offers-group-landing";
 import { newsletterReferralsEnabled } from "@/lib/newsletter-referrals";
 import { memberAccountsEnabled } from "@/lib/member-accounts-feature";
 import { createFileRoute } from "@tanstack/react-router";
@@ -33,29 +32,9 @@ function PrivacyPage() {
         <p className="mt-5 leading-relaxed">
           Você pode usar o site, consultar o Radar, fazer o Quiz e abrir links de ofertas sem um aviso de aceite de
           cookies. Usamos Google Analytics para medir o uso das páginas, com cookies analíticos e sem publicidade ou
-          remarketing.
-          {OFFERS_GROUP_ADS_CONSENT_ENABLED
-            ? " A medição opcional do Google Ads funciona na página do grupo de ofertas."
-            : " Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação."}
+          remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
         </p>
         <div className="mt-8 space-y-6 leading-relaxed">
-          {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
-            <section id="medicao-google-ofertas" className="scroll-mt-28">
-              <h2 className="text-xl font-bold">Medição do grupo de ofertas no Google Ads</h2>
-              <p>
-                Se você permitir a medição na página do grupo, o Google Ads pode usar cookies
-                e o código do clique no anúncio para associar esse anúncio a um clique no botão
-                do WhatsApp. O código fica no site e não segue para o convite. A medição do botão
-                não informa se você entrou no grupo. Não enviamos nome, e-mail ou telefone.
-              </p>
-              <p className="mt-3">
-                Você pode recusar ou retirar a permissão na{" "}
-                <a className="underline" href="/entrenogrupodeofertas">página do grupo</a>.
-                O convite continua disponível. Veja como o Google trata esses dados na{" "}
-                <a className="underline" href="https://policies.google.com/privacy">política do Google</a>.
-              </p>
-            </section>
-          )}
           {newsletterReferralsEnabled && <section>
             <h2 className="text-xl font-bold">Convites para a comunidade</h2>
             <p>Cada membro pode compartilhar um convite pessoal. Contamos acessos agregados, que podem incluir mais de uma visita da mesma pessoa. Um novo membro só conta como indicação depois de criar sua conta e concluir a adesão à comunidade. O indicador acompanha totais e resultados por dia, sem nomes ou e-mails dos convidados.</p>
