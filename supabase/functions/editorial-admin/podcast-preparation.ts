@@ -2,7 +2,6 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { COVER_BUCKET, inspectJpeg } from "../_shared/editorial-cover.ts";
 import { PODCAST_ARTWORK_EDGE, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
 import { PODCAST_AUDIO_BUCKET } from "../_shared/podcast-audio-contract.ts";
-import { instagramPodcastPost } from "../_shared/podcast-instagram.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 
@@ -20,10 +19,9 @@ export async function preparePodcastDraft(db: SupabaseClient, youtubeId: string)
   ]);
   if (article.error || episode.error) throw new Error("podcast_queue_read_failed");
   if (!episode.data || !article.data) throw new Error("podcast_article_unavailable");
-  const post = instagramPodcastPost(article.data);
   const version = String(Date.parse(article.data.updated_at));
   const path = preparedPodcastCoverPath(article.data.id, version);
-  if (!post || !path) throw new Error("podcast_cover_or_summary_missing");
+  if (!article.data.slug || !path) throw new Error("podcast_cover_missing");
   const audio = await db.storage.from(PODCAST_AUDIO_BUCKET).info(episode.data.object_path);
   if (audio.error || !audio.data) throw new Error("podcast_queue_audio_missing");
 
@@ -45,7 +43,7 @@ export async function preparePodcastDraft(db: SupabaseClient, youtubeId: string)
   if (upload.error) throw new Error("podcast_cover_save_failed");
 
   const updated = await db.from("podcast_episode_queue").update({
-    prepared_article_version: article.data.updated_at, prepared_instagram_post: post,
+    prepared_article_version: article.data.updated_at, prepared_cover_path: path,
   }).eq("youtube_id", youtubeId).is("released_at", null);
   if (updated.error) throw new Error("podcast_queue_write_failed");
 }

@@ -1,0 +1,8 @@
+import { supabase } from '@/integrations/supabase/client';
+export async function adminHeaders(){const {data}=await supabase.auth.getSession();if(!data.session)throw Error('Sessão expirada. Entre novamente.');return {Authorization:`Bearer ${data.session.access_token}`};}
+export async function instagramCall<T>(input:Record<string,unknown>,onProgress?:(state:string)=>void):Promise<T>{
+ const response=await fetch('/api/admin/instagram',{method:'POST',headers:{...await adminHeaders(),'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store'});
+ if(response.headers.get('Content-Type')?.includes('application/x-ndjson')&&response.body){let buffer='';const reader=response.body.pipeThrough(new TextDecoderStream()).getReader();let result:unknown;for(;;){const chunk=await reader.read();if(chunk.done)break;buffer+=chunk.value;let cut;while((cut=buffer.indexOf('\n'))>=0){const event=JSON.parse(buffer.slice(0,cut));buffer=buffer.slice(cut+1);if(event.error)throw Error(event.error);if(event.state)onProgress?.(`${event.state} · ${event.assets} artes`);if(event.done)result=event;}}if(!result)throw Error('Processamento sem confirmação. Atualize o rascunho antes de retomar.');return result as T;}
+ const data=await response.json();if(!response.ok)throw Error(data.error??'Não foi possível concluir.');return data;
+}
+export async function assetBlob(id:string,position:number){const response=await fetch(`/api/admin/instagram/${id}/${position}`,{headers:await adminHeaders(),cache:'no-store'});if(!response.ok)throw Error('Arte privada indisponível.');return response.blob();}

@@ -32,6 +32,7 @@ import { Route as AdminComunidadeRouteImport } from './routes/admin/comunidade'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
 import { Route as AdminGrupoDeOfertasRouteImport } from './routes/admin/grupo-de-ofertas'
 import { Route as AdminIaRouteImport } from './routes/admin/ia'
+import { Route as AdminInstagramRouteImport } from './routes/admin/instagram'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
 import { Route as AdminPodcastsRouteImport } from './routes/admin/podcasts'
@@ -66,6 +67,7 @@ import { Route as AdminConteudosIndexRouteImport } from './routes/admin/conteudo
 import { Route as AdminConteudosIdRouteImport } from './routes/admin/conteudos/$id'
 import { Route as AdminConteudosNovoRouteImport } from './routes/admin/conteudos/novo'
 import { Route as ApiAdminClassifiedsRouteImport } from './routes/api/admin/classifieds'
+import { Route as ApiAdminInstagramRouteImport } from './routes/api/admin/instagram'
 import { Route as ApiAdminNewsletterRouteImport } from './routes/api/admin/newsletter'
 import { Route as ApiAdminRadarAlertsRouteImport } from './routes/api/admin/radar-alerts'
 import { Route as ApiMemberListingBillingRouteImport } from './routes/api/member/listing-billing'
@@ -79,6 +81,9 @@ import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/publ
 import { Route as PodcastAudioYoutubeIdRouteImport } from './routes/podcast/audio/$youtubeId'
 import { Route as PodcastCapasFileRouteImport } from './routes/podcast/capas/$file'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
+import { Route as ApiPublicInstagramTickRouteImport } from './routes/api/public/instagram/tick'
+import { Route as ApiAdminInstagramIdPositionRouteImport } from './routes/api/admin/instagram/$id/$position'
+import { Route as ApiPublicInstagramMediaIdPositionRouteImport } from './routes/api/public/instagram/media/$id/$position'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -193,6 +198,11 @@ const AdminGrupoDeOfertasRoute = AdminGrupoDeOfertasRouteImport.update({
 const AdminIaRoute = AdminIaRouteImport.update({
   id: '/admin/ia',
   path: '/admin/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminInstagramRoute = AdminInstagramRouteImport.update({
+  id: '/admin/instagram',
+  path: '/admin/instagram',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLogsRoute = AdminLogsRouteImport.update({
@@ -373,6 +383,11 @@ const ApiAdminClassifiedsRoute = ApiAdminClassifiedsRouteImport.update({
   path: '/api/admin/classifieds',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminInstagramRoute = ApiAdminInstagramRouteImport.update({
+  id: '/api/admin/instagram',
+  path: '/api/admin/instagram',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminNewsletterRoute = ApiAdminNewsletterRouteImport.update({
   id: '/api/admin/newsletter',
   path: '/api/admin/newsletter',
@@ -443,6 +458,23 @@ const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
   path: '/preview',
   getParentRoute: () => AdminConteudosIdRoute,
 } as any)
+const ApiPublicInstagramTickRoute = ApiPublicInstagramTickRouteImport.update({
+  id: '/api/public/instagram/tick',
+  path: '/api/public/instagram/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminInstagramIdPositionRoute =
+  ApiAdminInstagramIdPositionRouteImport.update({
+    id: '/$id/$position',
+    path: '/$id/$position',
+    getParentRoute: () => ApiAdminInstagramRoute,
+  } as any)
+const ApiPublicInstagramMediaIdPositionRoute =
+  ApiPublicInstagramMediaIdPositionRouteImport.update({
+    id: '/api/public/instagram/media/$id/$position',
+    path: '/api/public/instagram/media/$id/$position',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -466,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
+  '/admin/instagram': typeof AdminInstagramRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/podcasts': typeof AdminPodcastsRoute
@@ -501,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
+  '/api/admin/instagram': typeof ApiAdminInstagramRouteWithChildren
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -515,6 +549,9 @@ export interface FileRoutesByFullPath {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
+  '/api/admin/instagram/$id/$position': typeof ApiAdminInstagramIdPositionRoute
+  '/api/public/instagram/media/$id/$position': typeof ApiPublicInstagramMediaIdPositionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -538,6 +575,7 @@ export interface FileRoutesByTo {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
+  '/admin/instagram': typeof AdminInstagramRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/podcasts': typeof AdminPodcastsRoute
@@ -573,6 +611,7 @@ export interface FileRoutesByTo {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
+  '/api/admin/instagram': typeof ApiAdminInstagramRouteWithChildren
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -587,6 +626,9 @@ export interface FileRoutesByTo {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
+  '/api/admin/instagram/$id/$position': typeof ApiAdminInstagramIdPositionRoute
+  '/api/public/instagram/media/$id/$position': typeof ApiPublicInstagramMediaIdPositionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -611,6 +653,7 @@ export interface FileRoutesById {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/grupo-de-ofertas': typeof AdminGrupoDeOfertasRoute
   '/admin/ia': typeof AdminIaRoute
+  '/admin/instagram': typeof AdminInstagramRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/podcasts': typeof AdminPodcastsRoute
@@ -646,6 +689,7 @@ export interface FileRoutesById {
   '/admin/conteudos/$id': typeof AdminConteudosIdRouteWithChildren
   '/admin/conteudos/novo': typeof AdminConteudosNovoRoute
   '/api/admin/classifieds': typeof ApiAdminClassifiedsRoute
+  '/api/admin/instagram': typeof ApiAdminInstagramRouteWithChildren
   '/api/admin/newsletter': typeof ApiAdminNewsletterRoute
   '/api/admin/radar-alerts': typeof ApiAdminRadarAlertsRoute
   '/api/member/listing-billing': typeof ApiMemberListingBillingRoute
@@ -660,6 +704,9 @@ export interface FileRoutesById {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
+  '/api/admin/instagram/$id/$position': typeof ApiAdminInstagramIdPositionRoute
+  '/api/public/instagram/media/$id/$position': typeof ApiPublicInstagramMediaIdPositionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -685,6 +732,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
+    | '/admin/instagram'
     | '/admin/logs'
     | '/admin/newsletter'
     | '/admin/podcasts'
@@ -720,6 +768,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/classifieds'
+    | '/api/admin/instagram'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -734,6 +783,9 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
+    | '/api/public/instagram/tick'
+    | '/api/admin/instagram/$id/$position'
+    | '/api/public/instagram/media/$id/$position'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -757,6 +809,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
+    | '/admin/instagram'
     | '/admin/logs'
     | '/admin/newsletter'
     | '/admin/podcasts'
@@ -792,6 +845,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/classifieds'
+    | '/api/admin/instagram'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -806,6 +860,9 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
+    | '/api/public/instagram/tick'
+    | '/api/admin/instagram/$id/$position'
+    | '/api/public/instagram/media/$id/$position'
   id:
     | '__root__'
     | '/'
@@ -829,6 +886,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/grupo-de-ofertas'
     | '/admin/ia'
+    | '/admin/instagram'
     | '/admin/logs'
     | '/admin/newsletter'
     | '/admin/podcasts'
@@ -864,6 +922,7 @@ export interface FileRouteTypes {
     | '/admin/conteudos/$id'
     | '/admin/conteudos/novo'
     | '/api/admin/classifieds'
+    | '/api/admin/instagram'
     | '/api/admin/newsletter'
     | '/api/admin/radar-alerts'
     | '/api/member/listing-billing'
@@ -878,6 +937,9 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
+    | '/api/public/instagram/tick'
+    | '/api/admin/instagram/$id/$position'
+    | '/api/public/instagram/media/$id/$position'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -902,6 +964,7 @@ export interface RootRouteChildren {
   AdminGrowthRoute: typeof AdminGrowthRoute
   AdminGrupoDeOfertasRoute: typeof AdminGrupoDeOfertasRoute
   AdminIaRoute: typeof AdminIaRoute
+  AdminInstagramRoute: typeof AdminInstagramRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminPodcastsRoute: typeof AdminPodcastsRoute
@@ -937,6 +1000,7 @@ export interface RootRouteChildren {
   AdminConteudosIdRoute: typeof AdminConteudosIdRouteWithChildren
   AdminConteudosNovoRoute: typeof AdminConteudosNovoRoute
   ApiAdminClassifiedsRoute: typeof ApiAdminClassifiedsRoute
+  ApiAdminInstagramRoute: typeof ApiAdminInstagramRouteWithChildren
   ApiAdminNewsletterRoute: typeof ApiAdminNewsletterRoute
   ApiAdminRadarAlertsRoute: typeof ApiAdminRadarAlertsRoute
   ApiMemberListingBillingRoute: typeof ApiMemberListingBillingRoute
@@ -950,6 +1014,8 @@ export interface RootRouteChildren {
   PodcastAudioYoutubeIdRoute: typeof PodcastAudioYoutubeIdRoute
   PodcastCapasFileRoute: typeof PodcastCapasFileRoute
   AdminConteudosIndexRoute: typeof AdminConteudosIndexRoute
+  ApiPublicInstagramTickRoute: typeof ApiPublicInstagramTickRoute
+  ApiPublicInstagramMediaIdPositionRoute: typeof ApiPublicInstagramMediaIdPositionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1113,6 +1179,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/ia'
       fullPath: '/admin/ia'
       preLoaderRoute: typeof AdminIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/instagram': {
+      id: '/admin/instagram'
+      path: '/admin/instagram'
+      fullPath: '/admin/instagram'
+      preLoaderRoute: typeof AdminInstagramRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/logs': {
@@ -1353,6 +1426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminClassifiedsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/instagram': {
+      id: '/api/admin/instagram'
+      path: '/api/admin/instagram'
+      fullPath: '/api/admin/instagram'
+      preLoaderRoute: typeof ApiAdminInstagramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/newsletter': {
       id: '/api/admin/newsletter'
       path: '/api/admin/newsletter'
@@ -1444,6 +1524,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConteudosIdPreviewRouteImport
       parentRoute: typeof AdminConteudosIdRoute
     }
+    '/api/public/instagram/tick': {
+      id: '/api/public/instagram/tick'
+      path: '/api/public/instagram/tick'
+      fullPath: '/api/public/instagram/tick'
+      preLoaderRoute: typeof ApiPublicInstagramTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/instagram/$id/$position': {
+      id: '/api/admin/instagram/$id/$position'
+      path: '/$id/$position'
+      fullPath: '/api/admin/instagram/$id/$position'
+      preLoaderRoute: typeof ApiAdminInstagramIdPositionRouteImport
+      parentRoute: typeof ApiAdminInstagramRoute
+    }
+    '/api/public/instagram/media/$id/$position': {
+      id: '/api/public/instagram/media/$id/$position'
+      path: '/api/public/instagram/media/$id/$position'
+      fullPath: '/api/public/instagram/media/$id/$position'
+      preLoaderRoute: typeof ApiPublicInstagramMediaIdPositionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1457,6 +1558,17 @@ const AdminConteudosIdRouteChildren: AdminConteudosIdRouteChildren = {
 
 const AdminConteudosIdRouteWithChildren =
   AdminConteudosIdRoute._addFileChildren(AdminConteudosIdRouteChildren)
+
+interface ApiAdminInstagramRouteChildren {
+  ApiAdminInstagramIdPositionRoute: typeof ApiAdminInstagramIdPositionRoute
+}
+
+const ApiAdminInstagramRouteChildren: ApiAdminInstagramRouteChildren = {
+  ApiAdminInstagramIdPositionRoute: ApiAdminInstagramIdPositionRoute,
+}
+
+const ApiAdminInstagramRouteWithChildren =
+  ApiAdminInstagramRoute._addFileChildren(ApiAdminInstagramRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1480,6 +1592,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGrowthRoute: AdminGrowthRoute,
   AdminGrupoDeOfertasRoute: AdminGrupoDeOfertasRoute,
   AdminIaRoute: AdminIaRoute,
+  AdminInstagramRoute: AdminInstagramRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminNewsletterRoute: AdminNewsletterRoute,
   AdminPodcastsRoute: AdminPodcastsRoute,
@@ -1518,6 +1631,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConteudosIdRoute: AdminConteudosIdRouteWithChildren,
   AdminConteudosNovoRoute: AdminConteudosNovoRoute,
   ApiAdminClassifiedsRoute: ApiAdminClassifiedsRoute,
+  ApiAdminInstagramRoute: ApiAdminInstagramRouteWithChildren,
   ApiAdminNewsletterRoute: ApiAdminNewsletterRoute,
   ApiAdminRadarAlertsRoute: ApiAdminRadarAlertsRoute,
   ApiMemberListingBillingRoute: ApiMemberListingBillingRoute,
@@ -1532,6 +1646,9 @@ const rootRouteChildren: RootRouteChildren = {
   PodcastAudioYoutubeIdRoute: PodcastAudioYoutubeIdRoute,
   PodcastCapasFileRoute: PodcastCapasFileRoute,
   AdminConteudosIndexRoute: AdminConteudosIndexRoute,
+  ApiPublicInstagramTickRoute: ApiPublicInstagramTickRoute,
+  ApiPublicInstagramMediaIdPositionRoute:
+    ApiPublicInstagramMediaIdPositionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
