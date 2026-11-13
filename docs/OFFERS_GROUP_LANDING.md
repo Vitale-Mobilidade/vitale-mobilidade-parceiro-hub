@@ -112,3 +112,7 @@ Usar somente a versão de preview de um workspace isolado. Confirmar no Tag Assi
 | PMO/QA | Pass local | Gate `pnpm validate` (69 testes, TypeScript e build), 28 testes direcionados e smoke com quatro estados no Chrome. |
 
 Parecer: GO para revisão do código com a flag desativada. NO-GO para ativação publicitária enquanto a conta `521-126-5158` não expuser um AW e label verificados e o preview não confirmar a entrega. Nenhuma publicação desta etapa, alteração nas contas ou inclusão de Pixel/CAPI.
+
+### Liberação autorizada do consentimento — 13/11/2026
+
+Na conta Google Ads 521-126-5158 foi criada a ação manual **Clique no CTA do grupo de ofertas (WhatsApp)**, com contagem Uma, valor zero, otimização secundária e conversões otimizadas desativadas. O Google exibiu o ID `AW-18172764323` e o label `8g1VCP_H_7cdEKPBudlD`. A autorização do responsável cobre a publicação do controle nessa landing e a ativação da tag após preview no Tag Assistant. O controle pode ir ao ar primeiro para testar a tag em condições reais. Nenhuma tag Ads entra no contêiner público nessa primeira etapa. A flag passa a habilitar o controle por padrão e aceita `false` como desligamento.

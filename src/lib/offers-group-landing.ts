@@ -5,7 +5,7 @@ export function isOffersGroupLanding(path: string): boolean {
 }
 
 export const OFFERS_GROUP_ADS_CONSENT_ENABLED =
-  import.meta.env.VITE_OFFERS_GROUP_GOOGLE_ADS_CONSENT === "true";
+  import.meta.env.VITE_OFFERS_GROUP_GOOGLE_ADS_CONSENT !== "false";
 
 let googleAdsGranted = false;
 
