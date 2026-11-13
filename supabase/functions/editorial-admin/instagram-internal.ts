@@ -62,6 +62,22 @@ export async function handleInstagramInternal(req: Request, db: SupabaseClient, 
     if (body.probe === true && release) {
       try { const { renderSlide } = await decodeAndRender(); renderer = renderSlide(null).bytes.length > 0; } catch { renderer = false; }
     }
+    // Optional real-photo smoke: compose cover + final in memory with a catalog photo; never uploads.
+    if (body.probe === true && release && typeof body.probeBikeId === "string" && /^[a-z0-9_-]{1,64}$/.test(body.probeBikeId)) {
+      try {
+        const { renderSlide, containPhoto } = await decodeAndRender();
+        const { inspectJpeg } = await import("../_shared/editorial-cover.ts");
+        const t0 = performance.now(), photo = await photoFor(db, body.probeBikeId);
+        if (!photo) return reply({ release, ai: !!env.aiKey, renderer, photo: null });
+        const t1 = performance.now();
+        const cover = renderSlide({ title: "Teste de composição", body: "Foto real inteira do catálogo.", layout: "opening", theme: "petroleum", bikeIds: [], scene: null, alt: "" }, [photo]);
+        const t2 = performance.now(), final = renderSlide(null), t3 = performance.now();
+        const box = containPhoto(new Uint8Array(1080 * 1350 * 4), photo, 72, 440, 936, 510);
+        return reply({ release, ai: !!env.aiKey, renderer, photo: { width: photo.width, height: photo.height }, box,
+          cover: inspectJpeg(cover.bytes), final: { ...inspectJpeg(final.bytes), actions: final.actions },
+          ms: { photo: Math.round(t1 - t0), cover: Math.round(t2 - t1), final: Math.round(t3 - t2) } });
+      } catch (error) { return reply({ release, renderer, error: error instanceof Error ? error.message.slice(0, 80) : "probe_failed" }, 500); }
+    }
     return reply({ release, ai: !!env.aiKey, renderer });
   }
   if (!release) return reply({ error: "instagram_release_disabled" }, 409);

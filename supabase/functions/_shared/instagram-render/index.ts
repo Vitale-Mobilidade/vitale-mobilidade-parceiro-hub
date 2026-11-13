@@ -61,26 +61,34 @@ export async function decodePhoto(bytes:Uint8Array,_mime?:string):Promise<Raster
 export function containPhoto(out:Uint8Array,photo:Raster,x:number,y:number,w:number,h:number){
  const scale=Math.min(w/photo.width,h/photo.height),rw=Math.max(1,Math.floor(photo.width*scale)),rh=Math.max(1,Math.floor(photo.height*scale));
  const ox=x+Math.floor((w-rw)/2),oy=y+Math.floor((h-rh)/2);
- for(let py=0;py<rh;py++)for(let px=0;px<rw;px++){
-  const at=(Math.min(photo.height-1,Math.floor(py/scale))*photo.width+Math.min(photo.width-1,Math.floor(px/scale)))*4;
-  const to=((oy+py)*WIDTH+ox+px)*4,a=photo.buffer[at+3]/255;
-  for(let c=0;c<3;c++)out[to+c]=out[to+c]*(1-a)+photo.buffer[at+c]*a;
- }
+ const cols=new Int32Array(rw);for(let px=0;px<rw;px++)cols[px]=Math.min(photo.width-1,Math.floor(px/scale))*4;
+ const src=photo.buffer;
+ for(let py=0;py<rh;py++){const row=Math.min(photo.height-1,Math.floor(py/scale))*photo.width*4;let to=((oy+py)*WIDTH+ox)*4;
+  for(let px=0;px<rw;px++,to+=4){const at=row+cols[px],a8=src[at+3];
+   if(a8===255){out[to]=src[at];out[to+1]=src[at+1];out[to+2]=src[at+2];}
+   else if(a8){const a=a8/255;out[to]=out[to]*(1-a)+src[at]*a;out[to+1]=out[to+1]*(1-a)+src[at+1]*a;out[to+2]=out[to+2]*(1-a)+src[at+2]*a;}}}
  return {x:ox,y:oy,width:rw,height:rh};
 }
 let fontBytes:Uint8Array|undefined;
+// Reused per isolate: font parsing per size dominated CPU. Bounded (single instance).
+const fontCache=new Map<number,Font>();let sharedLayout:Layout|undefined;
+// One parsed font serves every size: metrics/append receive the pixel size explicitly.
+function font(_size:number){let f=fontCache.get(0);if(!f){fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));f=new Font(64,fontBytes);fontCache.set(0,f);}return f;}
+function layout(){return sharedLayout??=new Layout();}
+const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
+function rgba(c:readonly number[]){return littleEndian?((255<<24)|(c[2]<<16)|(c[1]<<8)|c[0])>>>0:((c[0]<<24)|(c[1]<<16)|(c[2]<<8)|255)>>>0;}
 export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null){
  const theme=slide?.theme??'deep',color=palette[theme],ink=theme==='light'?palette.deep:palette.light;
- const out=new Uint8Array(WIDTH*HEIGHT*4);for(let p=0;p<out.length;p+=4)out.set([...color,255],p);
- fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));const fonts:Font[]=[];
- function rectangle(x:number,y:number,w:number,h:number,c:readonly number[]){for(let py=Math.max(0,y);py<Math.min(HEIGHT,y+h);py++)for(let px=Math.max(0,x);px<Math.min(WIDTH,x+w);px++)out.set([...c,255],(py*WIDTH+px)*4);}
+ const out=new Uint8Array(WIDTH*HEIGHT*4),px32=new Uint32Array(out.buffer);px32.fill(rgba(color));
+ fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));
+ function rectangle(x:number,y:number,w:number,h:number,c:readonly number[]){const v=rgba(c),x0=Math.max(0,x),x1=Math.min(WIDTH,x+w);if(x1<=x0)return;for(let py=Math.max(0,y);py<Math.min(HEIGHT,y+h);py++)px32.fill(v,py*WIDTH+x0,py*WIDTH+x1);}
  function text(value:string,x:number,y:number,maxWidth:number,maxHeight:number,preferred:number,c:readonly number[]){
   for(let size=preferred;size>=22;size-=2){
-   const f=new Font(size,fontBytes!);fonts.push(f);const words=value.split(/\s+/),lines:string[]=[];let line='';
+   const f=font(size);const words=value.split(/\s+/),lines:string[]=[];let line='';
    const width=(s:string)=>[...s].reduce((n,ch)=>n+f.metrics(ch,size).advance_width,0);
    for(const word of words){if(width(word)>maxWidth){line='';lines.length=1000;break;}const candidate=line?`${line} ${word}`:word;if(width(candidate)>maxWidth){lines.push(line);line=word;}else line=candidate;}
    if(line)lines.push(line);if(lines.length*size*1.22>maxHeight)continue;
-   const rasters=lines.map(s=>{const l=new Layout();try{l.reset({wrap_style:'word',vertical_align:'top',horizontal_align:'left'});l.append(f,s,{scale:size});return l.rasterize(c[0],c[1],c[2]);}finally{l.free();}});
+   const rasters=lines.map(s=>{const l=layout();{l.reset({wrap_style:'word',vertical_align:'top',horizontal_align:'left'});l.append(f,s,{scale:size});return l.rasterize(c[0],c[1],c[2]);}});
    if(rasters.some(r=>r.width>maxWidth))continue;
    for(let i=0;i<rasters.length;i++){const r=rasters[i];const yy=Math.round(y+i*size*1.22);for(let py=0;py<r.height;py++)for(let px=0;px<r.width;px++){const at=(py*r.width+px)*4,to=((yy+py)*WIDTH+x+px)*4,a=r.buffer[at+3]/255;if(yy+py>=HEIGHT||x+px>=WIDTH)continue;for(let ch=0;ch<3;ch++)out[to+ch]=out[to+ch]*(1-a)+r.buffer[at+ch]*a;}}
    return;
@@ -117,7 +125,7 @@ export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|nul
   const exif=Uint8Array.from([255,225,0,46,69,120,105,102,0,0,73,73,42,0,8,0,0,0,1,0,105,135,4,0,1,0,0,0,26,0,0,0,0,0,0,0,1,0,1,160,3,0,1,0,0,0,1,0]);
   const final=new Uint8Array(bytes.length+exif.length);final.set(bytes.slice(0,2));final.set(exif,2);final.set(bytes.slice(2),2+exif.length);
   return {bytes:final,actions:slide?[]:[...FINAL_ACTIONS],width:WIDTH,height:HEIGHT};
- }finally{fonts.forEach(f=>f.free());}
+ }finally{}
 }
 export function slideGeometry(layout:Slide['layout'],media:boolean){
  if(!media)return {photoY:470,photoHeight:480,bodyY:485,bodyHeight:660};
