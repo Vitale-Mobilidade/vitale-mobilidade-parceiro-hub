@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PublicTrafficChart } from "./PublicTrafficChart";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { adminCall, type AdminGrowth } from "@/lib/admin-api";
 import { quizFunnelStages, safeRate } from "@/lib/admin-growth";
@@ -238,13 +239,12 @@ export function Growth() {
               timeZone: "America/Sao_Paulo",
             })}
           </p>
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <PublicTrafficChart
+            traffic={data.sitewide.publicTraffic}
+            generatedAt={data.generatedAt}
+          />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {[
-              [
-                "Visualizações de páginas",
-                data.sitewide.available ? number(data.sitewide.pageViews) : "—",
-                "Volume de páginas abertas, incluindo repetições",
-              ],
               [
                 "Cliques em ofertas",
                 data.sitewide.available

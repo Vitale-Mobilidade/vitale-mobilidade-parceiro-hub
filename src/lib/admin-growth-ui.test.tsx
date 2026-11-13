@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Growth } from "@/pages/AdminEditorial";
+import { PublicTrafficChart } from "@/components/admin/PublicTrafficChart";
 import type { AdminGrowth } from "./admin-api";
 
 const data: AdminGrowth = {
@@ -174,5 +175,44 @@ describe("Admin Growth v2 UI", () => {
     }
     expect(funnel).toContain(">20</span>");
     expect(funnel).toContain(">10</span>");
+  });
+});
+
+describe("Public traffic comparison", () => {
+  it("shows both periods and excludes today and its matching day from the change", () => {
+    const html = renderToStaticMarkup(
+      <PublicTrafficChart
+        generatedAt="2026-10-09T01:30:00Z"
+        traffic={{
+          coverageSince: "2026-10-05",
+          days: [
+            { date: "2026-10-07", views: 120, previousDate: "2026-10-05", previousViews: 100 },
+            { date: "2026-10-08", views: 5, previousDate: "2026-10-06", previousViews: 110 },
+          ],
+        }}
+      />,
+    );
+    expect(html).toContain("Visualizações públicas por dia");
+    expect(html).toContain("07/10/2026 a 08/10/2026");
+    expect(html).toContain("05/10/2026 a 06/10/2026");
+    expect(html).toContain("hoje parcial");
+    expect(html).toContain("+20%");
+    expect(html).toContain("Ver valores por dia");
+  });
+
+  it("distinguishes unavailable analytics, missing history and a measured zero", () => {
+    const generatedAt = "2026-10-09T12:00:00Z";
+    const day = { date: "2026-10-07", views: null, previousDate: "2026-10-06", previousViews: null };
+    expect(renderToStaticMarkup(<PublicTrafficChart generatedAt={generatedAt} traffic={null} />))
+      .toContain("temporariamente indisponível");
+    expect(renderToStaticMarkup(<PublicTrafficChart generatedAt={generatedAt} traffic={{ coverageSince: null, days: [day] }} />))
+      .toContain("Sem histórico");
+    const zero = renderToStaticMarkup(
+      <PublicTrafficChart generatedAt={generatedAt}
+        traffic={{ coverageSince: day.previousDate, days: [{ ...day, views: 7, previousViews: 0 }] }}
+      />,
+    );
+    expect(zero).toContain("Sem visualizações na base anterior");
+    expect(zero).toContain(">0<");
   });
 });

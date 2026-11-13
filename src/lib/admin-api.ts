@@ -47,6 +47,16 @@ export type QuizFunnelMetrics = {
   purchaseClicks: number;
   identifiedClickers: number;
 };
+export type PublicTraffic = {
+  coverageSince: string | null;
+  days: {
+    date: string;
+    views: number | null;
+    previousDate: string;
+    previousViews: number | null;
+  }[];
+};
+
 export type AdminGrowth = {
   startDate?: string;
   endDate?: string;
@@ -67,6 +77,7 @@ export type AdminGrowth = {
     status: "active" | "no_coverage" | "unavailable";
     coverageSince: string | null;
     pageViews: number;
+    publicTraffic?: PublicTraffic | null;
     bikeClicks: number;
     affiliateClicks: number;
     pages: { path: string; views: number }[];
