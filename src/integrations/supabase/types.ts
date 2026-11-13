@@ -922,6 +922,13 @@ export type Database = {
             foreignKeyName: "editorial_articles_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["video_id"]
+          },
+          {
+            foreignKeyName: "editorial_articles_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
             referencedRelation: "podcast_article_ready_videos"
             referencedColumns: ["youtube_id"]
           },
@@ -1016,11 +1023,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "editorial_briefs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: true
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["article_id"]
+          },
+          {
             foreignKeyName: "editorial_briefs_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "editorial_videos"
             referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "editorial_briefs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["video_id"]
           },
           {
             foreignKeyName: "editorial_briefs_video_id_fkey"
@@ -1082,6 +1103,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editorial_articles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_compiler_runs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "editorial_compiler_runs_prompt_version_fkey"
@@ -1256,6 +1284,172 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_carousel_jobs: {
+        Row: {
+          album_id: string | null
+          approved_by: string | null
+          approved_revision: number | null
+          article_id: string
+          assets: Json
+          children: Json
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          media_expires_at: string | null
+          media_id: string | null
+          media_token_hash: string | null
+          permalink: string | null
+          publish_attempted: boolean
+          publish_attempted_at: string | null
+          revision: number
+          scene_attempted: boolean
+          scene_omitted: boolean
+          scene_path: string | null
+          script: Json | null
+          script_attempted: boolean
+          source: Json
+          state: string
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          album_id?: string | null
+          approved_by?: string | null
+          approved_revision?: number | null
+          article_id: string
+          assets?: Json
+          children?: Json
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          media_expires_at?: string | null
+          media_id?: string | null
+          media_token_hash?: string | null
+          permalink?: string | null
+          publish_attempted?: boolean
+          publish_attempted_at?: string | null
+          revision?: number
+          scene_attempted?: boolean
+          scene_omitted?: boolean
+          scene_path?: string | null
+          script?: Json | null
+          script_attempted?: boolean
+          source: Json
+          state?: string
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          album_id?: string | null
+          approved_by?: string | null
+          approved_revision?: number | null
+          article_id?: string
+          assets?: Json
+          children?: Json
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          media_expires_at?: string | null
+          media_id?: string | null
+          media_token_hash?: string | null
+          permalink?: string | null
+          publish_attempted?: boolean
+          publish_attempted_at?: string | null
+          revision?: number
+          scene_attempted?: boolean
+          scene_omitted?: boolean
+          scene_path?: string | null
+          script?: Json | null
+          script_attempted?: boolean
+          source?: Json
+          state?: string
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_carousel_jobs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instagram_carousel_jobs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "instagram_carousel_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "instagram_carousel_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["video_id"]
+          },
+          {
+            foreignKeyName: "instagram_carousel_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_article_ready_videos"
+            referencedColumns: ["youtube_id"]
+          },
+          {
+            foreignKeyName: "instagram_carousel_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_queue_candidates"
+            referencedColumns: ["youtube_id"]
+          },
+        ]
+      }
+      instagram_carousel_settings: {
+        Row: {
+          activated_at: string | null
+          automation_enabled: boolean
+          cursor_at: string | null
+          generation_enabled: boolean
+          paused_reason: string | null
+          publishing_enabled: boolean
+          singleton: boolean
+        }
+        Insert: {
+          activated_at?: string | null
+          automation_enabled?: boolean
+          cursor_at?: string | null
+          generation_enabled?: boolean
+          paused_reason?: string | null
+          publishing_enabled?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          activated_at?: string | null
+          automation_enabled?: boolean
+          cursor_at?: string | null
+          generation_enabled?: boolean
+          paused_reason?: string | null
+          publishing_enabled?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
@@ -1368,6 +1562,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editorial_articles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_article_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "member_article_comments_user_id_fkey"
@@ -2933,6 +3134,7 @@ export type Database = {
           original_description: string
           preparation_attempted_at: string | null
           prepared_article_version: string | null
+          prepared_cover_path: string | null
           prepared_instagram_post: Json | null
           release_at: string | null
           released_at: string | null
@@ -2947,6 +3149,7 @@ export type Database = {
           original_description: string
           preparation_attempted_at?: string | null
           prepared_article_version?: string | null
+          prepared_cover_path?: string | null
           prepared_instagram_post?: Json | null
           release_at?: string | null
           released_at?: string | null
@@ -2961,6 +3164,7 @@ export type Database = {
           original_description?: string
           preparation_attempted_at?: string | null
           prepared_article_version?: string | null
+          prepared_cover_path?: string | null
           prepared_instagram_post?: Json | null
           release_at?: string | null
           released_at?: string | null
@@ -3895,6 +4099,13 @@ export type Database = {
             referencedRelation: "editorial_articles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "youtube_editorial_sources_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_carousel_sources"
+            referencedColumns: ["article_id"]
+          },
         ]
       }
       youtube_editorial_worker_settings: {
@@ -3923,6 +4134,21 @@ export type Database = {
       }
     }
     Views: {
+      instagram_carousel_sources: {
+        Row: {
+          article_id: string | null
+          article_slug: string | null
+          article_title: string | null
+          bike_ids: string[] | null
+          eligible_at: string | null
+          published_at: string | null
+          transcript: string | null
+          video_date: string | null
+          video_id: string | null
+          video_title: string | null
+        }
+        Relationships: []
+      }
       podcast_article_ready_videos: {
         Row: {
           published_on: string | null
@@ -4130,6 +4356,45 @@ export type Database = {
         Args: { issued_at: string; signature: string; tick_action: string }
         Returns: Json
       }
+      claim_instagram_carousel: {
+        Args: { p_id: string; p_revision: number; p_token: string }
+        Returns: {
+          album_id: string | null
+          approved_by: string | null
+          approved_revision: number | null
+          article_id: string
+          assets: Json
+          children: Json
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          media_expires_at: string | null
+          media_id: string | null
+          media_token_hash: string | null
+          permalink: string | null
+          publish_attempted: boolean
+          publish_attempted_at: string | null
+          revision: number
+          scene_attempted: boolean
+          scene_omitted: boolean
+          scene_path: string | null
+          script: Json | null
+          script_attempted: boolean
+          source: Json
+          state: string
+          updated_at: string
+          video_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "instagram_carousel_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_podcast_instagram: {
         Args: never
         Returns: {
@@ -4201,6 +4466,7 @@ export type Database = {
       claim_youtube_editorial_cover_render: { Args: never; Returns: Json }
       claim_youtube_editorial_publication: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
+      discover_instagram_carousels: { Args: never; Returns: number }
       dispatch_podcast_instagram_schedule: { Args: never; Returns: number }
       dispatch_podcast_tick: { Args: never; Returns: number }
       dispatch_price_alert_hotpipe: { Args: never; Returns: number }
