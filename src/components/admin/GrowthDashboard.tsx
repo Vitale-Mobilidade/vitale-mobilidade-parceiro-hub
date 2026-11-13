@@ -60,7 +60,7 @@ function Ranking({
   );
 }
 export function Growth() {
-  const [preset, setPreset] = useState("30");
+  const [preset, setPreset] = useState("7");
   const today = saoPauloDay();
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
