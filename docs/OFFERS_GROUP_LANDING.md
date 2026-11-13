@@ -137,3 +137,7 @@ O responsável fixou a ordem V9 Max, GT2000, FT03, V20 Ultra e solicitou número
 | CX | Pass. Link existente e administração do convite preservados. |
 | Growth | Pass para o hero. Cada modelo tem link ao detalhe e a variação publicada tem referência de cálculo e data. A entrega da tag continua sujeita ao teste separado. |
 | PMO/QA | Pass. SSR 200 com e sem UTM, lint da rota, pnpm validate e smoke do carrossel. Rollback por revert da revisão. |
+
+### Atualização dos percentuais históricos
+
+O responsável pediu os maiores intervalos comprováveis e uma apresentação direta. O hero permanece com as quatro bikes na ordem aprovada e passa a usar os extremos do histórico completo (`minObserved` / `maxObserved`), presentes nos dados SSR públicos das páginas de cada modelo, consultados em 13/11/2026. V9 Max 25,4%, GT2000 7,1%, FT03 33,2% e V20 Ultra 10%. Produto/UX: mesma jornada e texto curto. CTO/Segurança: dados fixos e sem novas integrações ou preço promocional vigente. CX: CTA preservado. Growth: bases e links verificáveis. IA: N/A. QA: repetir gate e verificar as quatro fotos e selos. Rollback: reverter esta revisão.

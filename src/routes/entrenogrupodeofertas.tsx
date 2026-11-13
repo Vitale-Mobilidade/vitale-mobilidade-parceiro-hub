@@ -76,11 +76,11 @@ function GroupLink() {
   );
 }
 
-// Public Radar snapshot of the 30-day range, checked on 13/11/2026.
+// Public Radar snapshot of the full historical range, checked on 13/11/2026.
 const bikes = [
-  { id: "v9_max", name: "V9 Max", image: v9Max, high: 6919, low: 5888 },
-  { id: "gt2000", name: "GT2000", image: gt2000, high: 10000, low: 9408 },
-  { id: "ft03", name: "FT03", image: ft03, high: 8399, low: 5916 },
+  { id: "v9_max", name: "V9 Max", image: v9Max, high: 7890, low: 5888 },
+  { id: "gt2000", name: "GT2000", image: gt2000, high: 10087, low: 9375 },
+  { id: "ft03", name: "FT03", image: ft03, high: 8399, low: 5609 },
   {
     id: "v20_ultra",
     name: "V20 Ultra",
@@ -126,7 +126,7 @@ function OffersCarousel() {
             {formatBRL(bike.high)} → {formatBRL(bike.low)}
           </p>
           <p className="mt-1 text-xs text-ink/80">
-            Do maior ao menor preço no Radar em 30 dias, até 13/11/2026.
+            Maior e menor preço registrados no Radar até 13/11/2026.
           </p>
           <a
             className={`inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-4 ${focus}`}
