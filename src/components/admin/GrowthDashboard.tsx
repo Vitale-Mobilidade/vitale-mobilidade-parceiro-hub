@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { PublicTrafficChart } from "./PublicTrafficChart";
+import { TrafficPeakMap } from "./TrafficPeakMap";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { adminCall, type AdminGrowth } from "@/lib/admin-api";
 import { quizFunnelStages, safeRate } from "@/lib/admin-growth";
@@ -241,7 +242,12 @@ export function Growth() {
           </p>
           <PublicTrafficChart
             traffic={data.sitewide.publicTraffic}
+            trafficHours={data.sitewide.trafficHours}
             generatedAt={data.generatedAt}
+          />
+          <TrafficPeakMap
+            traffic={data.sitewide.trafficHours}
+            day={data.rangeDays === 1 ? data.startDate : undefined}
           />
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {[

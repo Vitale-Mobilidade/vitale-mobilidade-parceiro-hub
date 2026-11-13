@@ -99,6 +99,13 @@
       "when": 1794603600000,
       "tag": "0013_admin_public_traffic",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794606000000,
+      "tag": "0014_growth_hourly_traffic",
+      "breakpoints": true
     }
   ]
 }

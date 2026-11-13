@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Growth } from "@/pages/AdminEditorial";
 import { PublicTrafficChart } from "@/components/admin/PublicTrafficChart";
+import { TrafficPeakMap } from "@/components/admin/TrafficPeakMap";
 import type { AdminGrowth } from "./admin-api";
 
 const data: AdminGrowth = {
@@ -214,5 +215,49 @@ describe("Public traffic comparison", () => {
     );
     expect(zero).toContain("Sem visualizações na base anterior");
     expect(zero).toContain(">0<");
+  });
+});
+
+describe("Hourly public traffic", () => {
+  it("calculates a long-range change only from matching covered days", () => {
+    const html = renderToStaticMarkup(
+      <PublicTrafficChart generatedAt="2026-11-13T12:00:00Z"
+        traffic={{ coverageSince: "2026-10-08", days: [
+          { date: "2026-11-10", views: 10000, previousDate: "2026-11-07", previousViews: null },
+          { date: "2026-11-11", views: 150, previousDate: "2026-11-08", previousViews: 100 },
+          { date: "2026-11-12", views: 90, previousDate: "2026-11-09", previousViews: 100 },
+        ] }}
+      />,
+    );
+    expect(html).toContain("2 de 3 dias fechados com dados nos dois períodos");
+    expect(html).toContain("+20%");
+    expect(html).toContain("+50%");
+  });
+
+  it("compares only equivalent closed hours today and displays covered heatmap cells", () => {
+    const trafficHours = {
+      coverageSince: "2026-11-01T10:00:00", currentHour: "2026-11-13T09:00:00",
+      hours: [
+        { hour: 8, views: 30, previousViews: 20 },
+        { hour: 9, views: 5, previousViews: 20 },
+        { hour: 10, views: null, previousViews: 18 },
+      ],
+      heatmap: [{ weekday: 5, hour: 8, average: 30, samples: 1 }],
+    };
+    const html = renderToStaticMarkup(
+      <PublicTrafficChart generatedAt="2026-11-13T12:30:00Z" trafficHours={trafficHours}
+        traffic={{ coverageSince: "2026-10-08", days: [
+          { date: "2026-11-13", views: 35, previousDate: "2026-11-12", previousViews: 100 },
+        ] }}
+      />,
+    );
+    expect(html).toContain("Visualizações públicas por hora");
+    expect(html).toContain("+50%");
+    expect(html).toContain("1 de 1 horas fechadas comparadas");
+    expect(html).not.toContain("-75%");
+    const heatmap = renderToStaticMarkup(<TrafficPeakMap traffic={trafficHours} day="2026-11-13" />);
+    expect(heatmap).toContain("Mapa de calor de acessos");
+    expect(heatmap).toContain("30 visualizações · 1 ocorrência");
+    expect(heatmap).toContain("Sem cobertura");
   });
 });
