@@ -34,7 +34,7 @@ describe("mensuração da landing do grupo de ofertas", () => {
     vi.stubGlobal("window", browser);
     trackOffersGroupCta("hero");
     location.search = "";
-    trackOffersGroupCta("after_faq");
+    trackOffersGroupCta("carousel");
     expect(browser.dataLayer).toEqual([
       {
         event: "offers_group_cta_click",
@@ -48,7 +48,7 @@ describe("mensuração da landing do grupo de ofertas", () => {
       {
         event: "offers_group_cta_click",
         page_path: "/entrenogrupodeofertas",
-        cta_position: "after_faq",
+        cta_position: "carousel",
         utm_source: null,
         utm_medium: null,
         utm_campaign: null,
