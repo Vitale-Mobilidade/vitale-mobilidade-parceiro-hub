@@ -80,6 +80,11 @@ export type AdminGrowth = {
   quizBikesAvailable: boolean;
   quizBikesStatus: "active" | "unavailable";
   sitewide: {
+    offersGroupFunnel?: {
+      origin: "google" | "meta" | "unattributed";
+      views: number;
+      clicks: number;
+    }[] | null;
     available: boolean;
     status: "active" | "no_coverage" | "unavailable";
     coverageSince: string | null;

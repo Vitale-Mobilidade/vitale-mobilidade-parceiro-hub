@@ -1,4 +1,7 @@
-export const OFFERS_GROUP_LANDING_PATH = "/entrenogrupodeofertas";
+import { OFFERS_GROUP_LANDING_PATH } from "../../supabase/functions/_shared/site-analytics";
+import { siteAnalytics } from "./site-analytics";
+
+export { OFFERS_GROUP_LANDING_PATH };
 
 export function isOffersGroupLanding(path: string): boolean {
   return path.replace(/\/$/, "") === OFFERS_GROUP_LANDING_PATH;
@@ -33,6 +36,7 @@ export function trackOffersGroupCta(position: OffersGroupCtaPosition): void {
   try {
     const url = new URL(window.location.href);
     if (!isOffersGroupLanding(url.pathname)) return;
+    siteAnalytics.offersCta(url.href);
     const w = window as Window & { dataLayer?: unknown[] };
     (w.dataLayer ??= []).push({
       event: "offers_group_cta_click",

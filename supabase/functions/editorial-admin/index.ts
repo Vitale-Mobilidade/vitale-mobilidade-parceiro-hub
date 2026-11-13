@@ -2778,12 +2778,13 @@ Deno.serve(async (req) => {
       try { range = growthRange(body); }
       catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
       const { rangeDays, startDate, endDate, since, until, untilDay } = range;
-      const [funnel, quizBikeMetrics, siteMetrics, publicTraffic, trafficHours] = await Promise.all([
+      const [funnel, quizBikeMetrics, siteMetrics, publicTraffic, trafficHours, offersGroupFunnel] = await Promise.all([
         db.rpc("admin_quiz_funnel_range", { p_since: since, p_until: until }),
         db.rpc("admin_quiz_bikes_range", { p_since: since, p_until: until }),
         db.rpc("admin_site_analytics_range", { p_since: startDate, p_until: untilDay }),
         db.rpc("admin_public_traffic", { p_start: startDate, p_end: endDate }),
         db.rpc("admin_public_traffic_hours", { p_start: startDate, p_end: endDate }),
+        db.rpc("admin_offers_group_funnel", { p_start: startDate, p_end: endDate }),
       ]);
       if (funnel.error)
         throw new Error(`growth_read_failed:${funnel.error.code ?? "unknown"}`);
@@ -2827,6 +2828,7 @@ Deno.serve(async (req) => {
           pageViews: Number(site?.pageViews) || 0,
           publicTraffic: publicTraffic.error ? null : publicTraffic.data,
           trafficHours: trafficHours.error ? null : trafficHours.data,
+          offersGroupFunnel: offersGroupFunnel.error ? null : offersGroupFunnel.data,
           bikeClicks: Number(site?.bikeClicks) || 0,
           affiliateClicks: Number(site?.affiliateClicks) || 0,
           pages: Array.isArray(site?.pages) ? site.pages : [],

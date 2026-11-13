@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { OffersGroupFunnel } from "./OffersGroupFunnel";
 import { PublicTrafficChart } from "./PublicTrafficChart";
 import { TrafficPeakMap } from "./TrafficPeakMap";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -240,6 +241,7 @@ export function Growth() {
               timeZone: "America/Sao_Paulo",
             })}
           </p>
+          <OffersGroupFunnel rows={data.sitewide.offersGroupFunnel} />
           <PublicTrafficChart
             traffic={data.sitewide.publicTraffic}
             trafficHours={data.sitewide.trafficHours}

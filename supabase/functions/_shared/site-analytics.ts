@@ -2,11 +2,23 @@ export const SITE_ANALYTICS_EVENTS = [
   "page_view",
   "bike_click",
   "affiliate_click",
+  "offers_landing_view",
+  "offers_cta_click",
 ] as const;
 export type SiteAnalyticsEvent = (typeof SITE_ANALYTICS_EVENTS)[number];
 
+export const OFFERS_GROUP_LANDING_PATH = "/entrenogrupodeofertas";
+export const OFFERS_ORIGINS = ["google", "meta", "unattributed"] as const;
+export type OffersOrigin = (typeof OFFERS_ORIGINS)[number];
+export type OffersFunnelEvent = "offers_landing_view" | "offers_cta_click";
+
 export type SiteAnalyticsHit =
   | { event: "page_view"; sourcePath: string }
+  | {
+      event: OffersFunnelEvent;
+      sourcePath: typeof OFFERS_GROUP_LANDING_PATH;
+      origin: OffersOrigin;
+    }
   | {
       event: "bike_click";
       sourcePath: string;
@@ -31,6 +43,7 @@ const STATIC_PATHS = new Set([
   "/ferramentas",
   "/privacidade",
   "/grupodeofertas",
+  OFFERS_GROUP_LANDING_PATH,
   "/bikes",
   "/acompanhamento",
   "/calculadoras/carro-vs-bike",
@@ -99,6 +112,14 @@ export function validateSiteAnalyticsHit(
   if (event === "page_view") {
     return exactKeys(input, ["event", "sourcePath"])
       ? { event, sourcePath }
+      : null;
+  }
+  if (event === "offers_landing_view" || event === "offers_cta_click") {
+    const origin = OFFERS_ORIGINS.find((value) => value === input.origin);
+    return sourcePath === OFFERS_GROUP_LANDING_PATH &&
+      origin &&
+      exactKeys(input, ["event", "sourcePath", "origin"])
+      ? { event, sourcePath, origin }
       : null;
   }
   const bikeId = typeof input.bikeId === "string" ? input.bikeId : "";
