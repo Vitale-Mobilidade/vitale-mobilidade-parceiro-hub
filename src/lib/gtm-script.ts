@@ -1,3 +1,5 @@
+import { isOffersGroupLanding, offersGroupCampaign } from "./offers-group-landing";
+
 /** Start the public analytics container on the initial document load. */
 export const GTM_SNIPPET = `if (!location.pathname.startsWith('/admin')) (function(w,d,s,l,i){
 w[l]=w[l]||[];w.gtag=w.gtag||function(){w[l].push(arguments)};
@@ -82,7 +84,9 @@ export function trackGooglePageView(href: string): void {
     const w = window as AnalyticsWindow;
     const url = new URL(href);
     const permittedHost = /^(www\.)?vitalemobilidade\.com$/.test(window.location.hostname);
-    const publicPage = url.origin === window.location.origin && PUBLIC_PATH.test(url.pathname);
+    const offersLanding = isOffersGroupLanding(url.pathname);
+    const publicPage =
+      url.origin === window.location.origin && (offersLanding || PUBLIC_PATH.test(url.pathname));
     if (!permittedHost || !publicPage || googleAnalyticsDisabled()) {
       w["ga-disable-G-LXMH4RWQHV"] = true;
       if (w.__vitaleGa4) w.__vitaleGa4.lastPath = null;
@@ -105,8 +109,13 @@ export function trackGooglePageView(href: string): void {
       cookie_flags: "SameSite=Lax;Secure",
     };
     // Campaign codes only: never forward arbitrary search, form answers or tokens.
+    const campaign = offersLanding ? offersGroupCampaign(url.search) : null;
     for (const key of ["source", "medium", "campaign", "content", "term"] as const) {
-      const value = url.searchParams.get(`utm_${key}`);
+      if (campaign && key === "term") continue;
+      const value =
+        campaign && key !== "term"
+          ? campaign[`utm_${key}`]
+          : url.searchParams.get(`utm_${key}`);
       if (value && /^[a-z0-9][a-z0-9_.-]{0,99}$/i.test(value)) {
         settings[key === "campaign" ? "campaign_name" : `campaign_${key}`] = value;
       }

@@ -19,6 +19,7 @@ import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { NewsletterExitPopup } from "@/components/site/NewsletterExitPopup";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { siteAnalytics } from "@/lib/site-analytics";
+import { isOffersGroupLanding } from "@/lib/offers-group-landing";
 import { trackGooglePageView } from "@/lib/gtm-script";
 import { safeVideos } from "@/lib/videos.functions";
 import { SOCIAL_LINKS } from "@/lib/social-links";
@@ -60,12 +61,15 @@ const SITE_JSONLD = {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   search: { middlewares: [preserveCampaignSearch] },
   loader: ({ location }) =>
-    location.pathname.startsWith("/admin") || location.pathname.startsWith("/quiz") || isMemberPrivatePath(location.pathname)
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/quiz") ||
+    isOffersGroupLanding(location.pathname) ||
+    isMemberPrivatePath(location.pathname)
       ? { footerVideos: [] }
       : safeVideos({ limit: 4 }).then((footerVideos) => ({ footerVideos })),
   beforeLoad: () => {
     // Salva a entrada antes de qualquer navegação cliente, incluindo até o Quiz.
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin") && !isMemberPrivatePath(window.location.pathname)) {
+    if (typeof window !== "undefined" && shouldCaptureQuizAttribution(window.location.pathname)) {
       captureQuizAttribution();
     }
   },
@@ -131,12 +135,19 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function shouldCaptureQuizAttribution(path: string) {
+  return (
+    !path.startsWith("/admin") && !isMemberPrivatePath(path) && !isOffersGroupLanding(path)
+  );
+}
+
 function RootComponent() {
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const href = useRouterState({ select: (s) => s.location.href });
   const privateAccount = isMemberPrivatePath(path);
-  const excluded = path.startsWith("/quiz") || privateAccount;
+  const offersLanding = isOffersGroupLanding(path);
+  const excluded = path.startsWith("/quiz") || privateAccount || offersLanding;
   useEffect(
     () =>
       startHeatmap(
@@ -149,7 +160,7 @@ function RootComponent() {
   );
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
-    if (!window.location.pathname.startsWith("/admin") && !isMemberPrivatePath(window.location.pathname)) captureQuizAttribution();
+    if (shouldCaptureQuizAttribution(window.location.pathname)) captureQuizAttribution();
     if (!isMemberPrivatePath(window.location.pathname)) {
       siteAnalytics.pageView(window.location.href);
       trackGooglePageView(window.location.href);
@@ -181,7 +192,7 @@ function RootComponent() {
           <HotPipeWidget />
         </div>
       )}
-      {!privateAccount && <NewsletterExitPopup path={path} />}
+      {!privateAccount && !offersLanding && <NewsletterExitPopup path={path} />}
     </QueryClientProvider>
   );
 }

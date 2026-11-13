@@ -21,6 +21,7 @@ export function socialImageForPath(path: string): string {
     "/conteudos": "vitale-conteudos",
     "/ferramentas": "vitale-ferramentas",
     "/grupodeofertas": "grupo-de-ofertas",
+    "/entrenogrupodeofertas": "grupo-de-ofertas",
     "/privacidade": "privacidade",
     "/newsletter": "newsletter",
   };

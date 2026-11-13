@@ -268,3 +268,39 @@ describe("GA4 público sem publicidade", () => {
     expect(() => view()).not.toThrow();
   });
 });
+
+describe("landing do grupo de ofertas no GTM existente", () => {
+  const href =
+    "https://vitalemobilidade.com/entrenogrupodeofertas?utm_source=google&utm_medium=cpc" +
+    "&utm_campaign=grupo_bikes&utm_content=11987654321&utm_term=private&gclid=qa";
+
+  it("mede somente a visita com atribuição sanitizada e publicidade negada", () => {
+    const { window, view, storage } = browser(href);
+    storage.set("vitale_cookie_consent_v1", '{"version":1,"analytics":true,"marketing":true}');
+    view();
+    expect(commands(window.dataLayer)).toContainEqual([
+      "consent",
+      "default",
+      expect.objectContaining({ ad_storage: "denied", ad_user_data: "denied" }),
+    ]);
+    const settings = commands(window.dataLayer).find(
+      (command) => command[0] === "set" && typeof command[1] === "object",
+    )?.[1];
+    expect(settings).toMatchObject({
+      page_location: "https://vitalemobilidade.com/entrenogrupodeofertas",
+      campaign_source: "google",
+      campaign_medium: "cpc",
+      campaign_name: "grupo_bikes",
+    });
+    expect(JSON.stringify(window.dataLayer)).not.toMatch(/gclid|private|11987654321|offers_group_cta_click/);
+    expect(views(window.dataLayer).map((command) => command[1])).toEqual(["page_view"]);
+  });
+
+  it("respeita a recusa analítica e não carrega o GTM", () => {
+    const { window, view, storage, appendChild } = browser(href);
+    storage.set("vitale_ga4_disabled_v1", "true");
+    view();
+    expect(appendChild).not.toHaveBeenCalled();
+    expect(window.dataLayer).toHaveLength(0);
+  });
+});
