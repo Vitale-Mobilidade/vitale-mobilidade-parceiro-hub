@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export { WIDTH,HEIGHT,FINAL_ACTIONS } from '../../../supabase/functions/_shared/instagram-render/contract';
-const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0),kind:z.enum(['observation','estimate','measurement','context'])});
+const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0).optional(),kind:z.enum(['observation','estimate','measurement','context'])});
 export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().min(1).max(320),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1)}).strict();
 export const scriptSchema=z.object({topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
 export type Script=z.infer<typeof scriptSchema>; export type Slide=z.infer<typeof slideSchema>;
@@ -12,6 +12,8 @@ export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnab
 const external=/https?:|www\.|link\s+(?:da|na)\s+bio|\b(?:acesse|leia|ouça)\b.*\b(?:podcast|site|artigo)\b/i;
 export function validateScript(raw:unknown,source:Source):Script{
  const s=scriptSchema.parse(raw);
+ // Cover gets a real catalog photo when an eligible bike exists (Edge resolves the stored photo).
+ if(s.slides[0]&&!s.slides[0].bikeIds.length&&source.bikeIds[0])s.slides[0].bikeIds=[source.bikeIds[0]];
  if(s.slides[0]?.layout!=='opening'||s.slides.at(-1)?.layout!=='conclusion')throw Error('instagram_narrative_incomplete');
  if(s.slides.filter(x=>x.scene).length>1)throw Error('instagram_scene_limit');
  for(const slide of s.slides){
@@ -22,9 +24,16 @@ export function validateScript(raw:unknown,source:Source):Script{
  if(external.test(s.caption))throw Error('instagram_external_cta');
  checkEvidence(s.captionEvidence,s.caption,source);return s;
 }
+/** Server-side offset: keep the hinted start only on an exact literal match, else first exact indexOf; never fuzzy. */
+export function locateQuote(transcript:string,quote:string,hint?:number){
+ if(typeof hint==='number'&&hint>=0&&transcript.slice(hint,hint+quote.length)===quote)return hint;
+ return transcript.indexOf(quote);
+}
 function checkEvidence(items:z.infer<typeof evidence>[],text:string,source:Source){
  for(const e of items){
-  if(source.transcript.slice(e.start,e.start+e.quote.length)!==e.quote||!text.includes(e.claim))throw Error('instagram_evidence_invalid');
+  const start=locateQuote(source.transcript,e.quote,e.start);
+  if(start<0||!text.includes(e.claim))throw Error('instagram_evidence_invalid');
+  e.start=start;
   if(e.kind==='measurement'&&/estimad|até|aproximad/i.test(e.quote))throw Error('instagram_estimate_as_measurement');
   if(e.kind==='estimate'&&!/estimad|até|aproximad/i.test(e.claim))throw Error('instagram_estimate_unqualified');
   if((e.claim.match(/\d+(?:[.,]\d+)?/g)??[]).some(n=>!e.quote.includes(n)))throw Error('instagram_number_unsupported');
