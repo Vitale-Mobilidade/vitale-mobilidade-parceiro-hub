@@ -3706,6 +3706,21 @@ export type Database = {
         }
         Relationships: []
       }
+      site_analytics_hourly: {
+        Row: {
+          hour_start: string
+          views: number
+        }
+        Insert: {
+          hour_start: string
+          views: number
+        }
+        Update: {
+          hour_start?: string
+          views?: number
+        }
+        Relationships: []
+      }
       worker_events: {
         Row: {
           bike_id: string | null
@@ -4051,6 +4066,10 @@ export type Database = {
         Returns: Json
       }
       admin_public_traffic: {
+        Args: { p_end: string; p_start: string }
+        Returns: Json
+      }
+      admin_public_traffic_hours: {
         Args: { p_end: string; p_start: string }
         Returns: Json
       }
