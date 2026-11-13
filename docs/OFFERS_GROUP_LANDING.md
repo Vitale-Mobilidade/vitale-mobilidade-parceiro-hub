@@ -141,3 +141,20 @@ O responsável fixou a ordem V9 Max, GT2000, FT03, V20 Ultra e solicitou número
 ### Atualização dos percentuais históricos
 
 O responsável pediu os maiores intervalos comprováveis e uma apresentação direta. O hero permanece com as quatro bikes na ordem aprovada e passa a usar os extremos do histórico completo (`minObserved` / `maxObserved`), presentes nos dados SSR públicos das páginas de cada modelo, consultados em 13/11/2026. V9 Max 25,4%, GT2000 7,1%, FT03 33,2% e V20 Ultra 10%. Produto/UX: mesma jornada e texto curto. CTO/Segurança: dados fixos e sem novas integrações ou preço promocional vigente. CX: CTA preservado. Growth: bases e links verificáveis. IA: N/A. QA: repetir gate e verificar as quatro fotos e selos. Rollback: reverter esta revisão.
+
+### Revisão prévia — landing com um único link
+
+Mudança estrutural pelo desligamento da integração publicitária nesta rota. Decisão do responsável: manter somente o hero e o carrossel de quatro fotos com nome e percentual, sem preços, links ao Radar, rodapé ou controles de medição. Produto: foco no convite. CTO: manter SSR e navegação HTML. IA: N/A. Segurança: retirar consentimento publicitário desta entrega e não publicar o rascunho GTM, manter o evento local de clique com campos mínimos. UX: logo sem link e um CTA, setas de carrossel por teclado. CX: preservar o convite administrado. Growth: manter percentuais verificáveis sem prometer oferta vigente; UTM não é conversão. PMO: validar mobile, quatro cartões, um link visível e ausência de consentimento publicitário. Rollback: reverter o PR; qualquer retomada da medição requer consentimento válido e revisão antes de publicar a tag.
+
+| Perspectiva | Revisão do hero simplificado |
+| --- | --- |
+| Produto | Pass. Hero e quatro bicicletas, com o convite como único link visível da landing. |
+| CTO | Pass. SSR preservado; carrossel local sem consulta ao catálogo. |
+| IA | N/A. Sem mudanças em agentes ou conteúdo gerado. |
+| Segurança | Pass. Controle de publicidade retirado, política restaurada e nova tag não publicada. |
+| UX/UI | Pass. Fotos, nomes e percentuais verificados por teclado em 320 × 568 e 1440 × 900. |
+| CX | Pass. CTA apontando para o convite administrado, sem alteração na rota 302. |
+| Growth | Pass para o hero. O selo mostra variação histórica verificável sem divulgar preço. A medição publicitária fica fora da versão, conforme a decisão do responsável. |
+| PMO/QA | Pass. `pnpm validate`, lint da rota e smoke de mobile e desktop. |
+
+O Tag Assistant confirmou um disparo no clique consentido, nenhum na visita ou no clique recusado, e Vinculador apenas após aceite, todos no rascunho GTM antes da mudança de escopo. Após a remoção do aceite, o rascunho fica fora de produção e a versão pública permanece 16. A ação do Google Ads permanece secundária. Não liberar campanhas com base no teste do rascunho. UTMs classificam origem; uma contagem de redirecionamentos seria uma métrica interna, separada da conversão publicitária.

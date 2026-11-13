@@ -1,14 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
-import { OffersGroupGoogleAdsConsent } from "@/components/site/OffersGroupGoogleAdsConsent";
 import { useState } from "react";
-import { formatBRL } from "@/lib/price-tracker";
 import v9Max from "@/assets/bikes/v9-max.avif";
 import gt2000 from "@/assets/bikes/gt2000.avif";
 import ft03 from "@/assets/bikes/ft03.avif";
 import v20Ultra from "@/assets/bikes/v20-ultra-landing.webp";
 import {
-  OFFERS_GROUP_ADS_CONSENT_ENABLED,
   OFFERS_GROUP_LANDING_PATH,
   trackOffersGroupCta,
 } from "@/lib/offers-group-landing";
@@ -78,11 +75,10 @@ function GroupLink() {
 
 // Public Radar snapshot of the full historical range, checked on 13/11/2026.
 const bikes = [
-  { id: "v9_max", name: "V9 Max", image: v9Max, high: 7890, low: 5888 },
-  { id: "gt2000", name: "GT2000", image: gt2000, high: 10087, low: 9375 },
-  { id: "ft03", name: "FT03", image: ft03, high: 8399, low: 5609 },
+  { name: "V9 Max", image: v9Max, high: 7890, low: 5888 },
+  { name: "GT2000", image: gt2000, high: 10087, low: 9375 },
+  { name: "FT03", image: ft03, high: 8399, low: 5609 },
   {
-    id: "v20_ultra",
     name: "V20 Ultra",
     image: v20Ultra,
     high: 7799,
@@ -103,7 +99,7 @@ function OffersCarousel() {
 
   return (
     <section
-      aria-label="Ofertas do Radar de preços"
+      aria-label="Bicicletas elétricas"
       className="min-w-0 rounded-3xl bg-logo-surface p-3 text-ink sm:p-4"
     >
       <div aria-live="polite" aria-atomic="true">
@@ -117,23 +113,11 @@ function OffersCarousel() {
             className="h-full w-full object-contain p-2"
           />
           <span className="absolute top-2 left-2 rounded-lg bg-mint px-2.5 py-1.5 text-sm font-bold text-ink">
-            {percent.format(savings)}% de diferença
+            {percent.format(savings)}% de variação
           </span>
         </div>
         <div className="px-2 pt-3">
           <h2 className="text-lg font-bold">{bike.name}</h2>
-          <p className="text-xl font-bold text-action">
-            {formatBRL(bike.high)} → {formatBRL(bike.low)}
-          </p>
-          <p className="mt-1 text-xs text-ink/80">
-            Maior e menor preço registrados no Radar até 13/11/2026.
-          </p>
-          <a
-            className={`inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-4 ${focus}`}
-            href={`/radar/${bike.id}`}
-          >
-            Ver preço e histórico no Radar
-          </a>
         </div>
       </div>
       {bikes.length > 1 && (
@@ -165,14 +149,10 @@ function OffersCarousel() {
 
 function OffersGroupLanding() {
   return (
-    <div className="offers-group-landing min-h-screen bg-surface text-ink">
+    <div className="offers-group-landing min-h-screen bg-ink text-ink-foreground">
       <header className="border-b border-white/15 bg-ink text-ink-foreground">
         <div className="mx-auto max-w-6xl px-5 py-3 sm:px-8 sm:py-4">
-          <a
-            href="/"
-            aria-label="Vitale Mobilidade — início"
-            className={`flex h-11 w-32 items-center justify-center rounded-md bg-logo-surface p-1.5 sm:h-14 sm:w-40 ${focus}`}
-          >
+          <div className="flex h-11 w-32 items-center justify-center rounded-md bg-logo-surface p-1.5 sm:h-14 sm:w-40">
             <img
               src="/vitale-logo-464.avif"
               alt="Vitale Mobilidade"
@@ -180,7 +160,7 @@ function OffersGroupLanding() {
               height={152}
               className="h-full w-full object-contain"
             />
-          </a>
+          </div>
         </div>
       </header>
 
@@ -199,40 +179,10 @@ function OffersGroupLanding() {
             <div className="mt-4 sm:mt-6">
               <GroupLink />
             </div>
-            <div className="hidden md:block">
-              {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
-                <a
-                  href="#preferencias"
-                  className="mt-3 inline-flex min-h-11 items-center text-sm text-ink-foreground/90 underline"
-                >
-                  Preferências de medição
-                </a>
-              )}
-            </div>
           </div>
           <OffersCarousel />
-          {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
-            <div id="preferencias" className="scroll-mt-4 md:col-span-2">
-              <OffersGroupGoogleAdsConsent />
-            </div>
-          )}
         </div>
       </main>
-
-      <footer className="border-t border-white/15 bg-ink text-ink-foreground">
-        <div className="mx-auto max-w-6xl px-5 py-3 text-sm leading-relaxed sm:px-8">
-          <p>
-            A Vitale pode receber uma comissão quando você compra pelos links de
-            afiliado.
-          </p>
-          <a
-            href="/privacidade"
-            className={`mt-2 inline-flex min-h-11 items-center font-semibold text-mint underline underline-offset-4 ${focus}`}
-          >
-            Privacidade e uso de dados
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
