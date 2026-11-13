@@ -1,9 +1,11 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram independente — 13/11/2026
-- [ ] Release autorizado em 13/11: bloqueado no histórico aplicado de Growth (`admin_public_traffic` já existe); requer reconciliação autorizada do journal antes de reaplicar SQL exato.
-- [ ] Bucket privado/MIME, gate e geração: aguardam migration; API oficial disponível não aceita allowed_mime_types.
-- [ ] Publicar Hub e editorial-admin; gerar um único rascunho por sessão admin: aguardam migration e bucket completos.
+- [x] SQL aplicado pelo proprietário e verificado em 13/11; sem reaplicar migrations/journals; 4 podcasts preparados preservados.
+- [x] Bucket instagram-carousels privado, 12582912 bytes; MIME não configurável pela ferramenta, restrição no escritor mantida.
+- [x] Variável INSTAGRAM_CAROUSEL_RELEASE_ENABLED=true salva; somente editorial-admin implantada (SHA 3eb1c2a4756a418a3ac26d92590efe9e0665ec15278042460421972ba68abc7e).
+- [ ] Publicar Hub: ferramenta desativada por preferência de aprovação; proprietário usará publicação autorizada pelo conector/UI.
+- [ ] Habilitar somente generation_enabled após confirmação do app publicado; publishing_enabled/automation_enabled continuam false. Proprietário gera pelo navegador; nenhum job criado.
 - [x] Corrigir fixture WebP 1150×1082/quadro 600×564 em y118; 36 testes dirigidos passaram em 13/11 22:22 UTC.
 - [ ] Contrato, fonte elegível, estados persistidos e migrations somente versionadas.
 - [ ] Geração Gemini protegida, JPEGs determinísticos e envio Meta aprovado/idempotente.
