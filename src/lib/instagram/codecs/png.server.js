@@ -1,5 +1,5 @@
 // ImageScript 1.3.0, MIT option; loader adapted to embedded assets. See LICENSE-MIT.
-import wasm_mod from "./png.wasm?module";
+import { codecModule } from '../codec-modules';
 let ref = { deref() { } };
 
 
@@ -10,7 +10,7 @@ function wasm() {
   const {
     wfree, walloc, decode, memory,
     width: wwidth, height: wheight,
-  } = new WebAssembly.Instance(wasm_mod, {
+  } = new WebAssembly.Instance(codecModule('png'), {
     env: {
       emscripten_notify_memory_growth() {
         u8 = new Uint8Array(memory.buffer);

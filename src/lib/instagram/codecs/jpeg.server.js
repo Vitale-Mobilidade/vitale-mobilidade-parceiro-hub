@@ -1,11 +1,11 @@
 // ImageScript 1.3.0, MIT option; loader adapted to embedded assets. See LICENSE-MIT.
-import wasm_mod from "./jpeg.wasm?module";
+import { codecModule } from '../codec-modules';
 let ref = { deref() {} };
 
 
 
 function wasm() {
-  return ref.deref() || (ref = new WeakRef(new WebAssembly.Instance(wasm_mod).exports)).deref();
+  return ref.deref() || (ref = new WeakRef(new WebAssembly.Instance(codecModule('jpeg')).exports)).deref();
 }
 
 class mem {

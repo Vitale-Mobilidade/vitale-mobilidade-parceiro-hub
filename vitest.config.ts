@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 
 // Config isolada da build (sem plugins do app): testes rodam em Node, sem rede.
 export default defineConfig({
-  // Only the isolated Node test runner compiles bytes; Workers import modules statically.
-  plugins: [{name:'instagram-wasm-test',enforce:'pre',load(id){if(!id.endsWith('.wasm?module'))return;const b64=readFileSync(id.slice(0,-7)).toString('base64');return `export default new WebAssembly.Module(Uint8Array.from(atob(${JSON.stringify(b64)}),c=>c.charCodeAt(0)));`;}}],
+  // Only isolated Node tests preload codecs; no binary enters the app bundle.
+  plugins: [{name:'instagram-wasm-test',enforce:'pre',transform(code,id){if(!id.endsWith('/instagram/codec-modules.ts'))return;return code+['jpeg','png','font','webp'].map(name=>`\nregisterCodec('${name}',new WebAssembly.Module(Uint8Array.from(atob('${readFileSync(`public/wasm/instagram/${name}.wasm`).toString('base64')}'),c=>c.charCodeAt(0))));`).join('');}}],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },

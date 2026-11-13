@@ -1,11 +1,14 @@
 import { validateScript,hash,type Job,type Source,type Script,type Asset } from './contract';
 import { decodePhoto,photoFormat,renderSlide,type Raster } from './render.server';
+import { codecsReady } from './codec-modules';
 export const BUCKET='instagram-carousels';
 export type Store={save:(patch:Partial<Job>)=>Promise<void>;upload:(path:string,bytes:Uint8Array,mime:string)=>Promise<void>;download:(path:string)=>Promise<Uint8Array>;photo:(id:string)=>Promise<Raster|null>};
 export type Generator={script:(source:Source)=>Promise<Script>;scene:(prompt:string)=>Promise<Uint8Array>};
 export async function prepare(job:Job,store:Store,ai:Generator,omitScene=false){
  const save=async(patch:Partial<Job>)=>{await store.save(patch);Object.assign(job,patch);};
  if(['approved','publishing','uncertain','published'].includes(job.state))return;
+ // Fail before any paid request until a supported rendering runtime is wired.
+ if(!codecsReady())throw Error('instagram_render_runtime_unavailable');
  if(omitScene)await save({scene_omitted:true});
  if(!job.script){
   if(job.script_attempted)throw Error('instagram_script_uncertain_no_replay');

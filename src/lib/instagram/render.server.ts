@@ -6,7 +6,7 @@ import { interFontBase64 } from '../../../supabase/functions/_shared/cover-rende
 import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
 import { WIDTH,HEIGHT,FINAL_ACTIONS,type Slide } from './contract';
 import decodeWebp, { init as initWebp } from '@jsquash/webp/decode';
-import webpModule from './codecs/webp.wasm?module';
+import { codecModule } from './codec-modules';
 export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],mint:[55,230,163],action:[11,121,81]} as const;
 export type Raster={width:number;height:number;buffer:Uint8Array};
 let webpReady:Promise<void>|undefined;
@@ -40,7 +40,7 @@ export async function decodePhoto(bytes:Uint8Array,_mime?:string):Promise<Raster
  const mime=photoFormat(bytes);
  if(mime==='image/webp'){
   const d=webpDimensions(bytes);bounded(d.width,d.height);
-  webpReady??=initWebp({instantiateWasm(imports:WebAssembly.Imports,callback:(instance:WebAssembly.Instance)=>void){const instance=new WebAssembly.Instance(webpModule,imports);callback(instance);return instance.exports;}});
+  webpReady??=initWebp({instantiateWasm(imports:WebAssembly.Imports,callback:(instance:WebAssembly.Instance)=>void){const instance=new WebAssembly.Instance(codecModule('webp'),imports);callback(instance);return instance.exports;}});
   await webpReady;
   const img=await decodeWebp(new Uint8Array(bytes).buffer);bounded(img.width,img.height);
   if(img.width!==d.width||img.height!==d.height)throw Error('instagram_photo_dimensions');
