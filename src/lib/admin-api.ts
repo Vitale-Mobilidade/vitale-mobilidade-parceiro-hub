@@ -57,6 +57,13 @@ export type PublicTraffic = {
   }[];
 };
 
+export type TrafficHours = {
+  coverageSince: string | null;
+  currentHour: string;
+  hours: { hour: number; views: number | null; previousViews: number | null }[];
+  heatmap: { weekday: number; hour: number; average: number; samples: number }[];
+};
+
 export type AdminGrowth = {
   startDate?: string;
   endDate?: string;
@@ -78,6 +85,7 @@ export type AdminGrowth = {
     coverageSince: string | null;
     pageViews: number;
     publicTraffic?: PublicTraffic | null;
+    trafficHours?: TrafficHours | null;
     bikeClicks: number;
     affiliateClicks: number;
     pages: { path: string; views: number }[];

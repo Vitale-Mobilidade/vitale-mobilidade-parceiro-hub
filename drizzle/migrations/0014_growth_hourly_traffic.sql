@@ -1,0 +1,115 @@
+-- Local calendar hours in America/Sao_Paulo. No paths or visitor identifiers.
+create table public.site_analytics_hourly (
+  hour_start timestamp primary key,
+  views bigint not null check (views > 0)
+);
+
+--> statement-breakpoint
+alter table public.site_analytics_hourly enable row level security;
+--> statement-breakpoint
+revoke all on table public.site_analytics_hourly from public, anon, authenticated;
+--> statement-breakpoint
+grant select, insert, update, delete on table public.site_analytics_hourly to service_role;
+
+--> statement-breakpoint
+create function public.record_public_traffic_hour()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  bucket timestamp := date_trunc('hour', now() at time zone 'America/Sao_Paulo');
+  increment bigint;
+  updated_views bigint;
+begin
+  increment := case when tg_op = 'INSERT' then new.event_count else new.event_count - old.event_count end;
+  if increment <= 0 then return null; end if;
+
+  insert into public.site_analytics_hourly (hour_start, views)
+  values (bucket, increment)
+  on conflict (hour_start) do update set views = public.site_analytics_hourly.views + excluded.views
+  returning views into updated_views;
+
+  -- A new hour is the only time the total equals this positive increment.
+  if updated_views = increment then
+    delete from public.site_analytics_hourly where hour_start < date_trunc('day', bucket) - interval '365 days';
+  end if;
+
+  return null;
+end;
+$$;
+
+--> statement-breakpoint
+revoke all on function public.record_public_traffic_hour() from public, anon, authenticated;
+--> statement-breakpoint
+grant execute on function public.record_public_traffic_hour() to service_role;
+
+--> statement-breakpoint
+create trigger record_public_traffic_hour
+after insert or update of event_count on public.site_analytics_daily
+for each row
+when (
+  new.event_name = 'page_view'
+  and new.source_path !~* '^/(admin|painel-bikes|conta|newsletter/confirmar)(/|$)'
+  and new.day = (now() at time zone 'America/Sao_Paulo')::date
+)
+execute function public.record_public_traffic_hour();
+
+--> statement-breakpoint
+create function public.admin_public_traffic_hours(p_start date, p_end date)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with clock as (
+    select date_trunc('hour', now() at time zone 'America/Sao_Paulo') as current_hour
+  ), bounds as (
+    select p_start::timestamp as start_at, (p_end + 1)::timestamp as end_at, current_hour
+    from clock
+    where p_end - p_start between 0 and 365 and p_start >= date '2020-01-01'
+      and p_end <= current_hour::date
+  ), coverage as (
+    select min(hour_start) as first_hour, max(hour_start) as last_hour
+    from public.site_analytics_hourly
+  ), hours as (
+    select series.bucket,
+           case when series.bucket > coverage.first_hour and series.bucket <= coverage.last_hour
+                then coalesce(hourly.views, 0) end as views
+    from bounds
+    cross join coverage
+    cross join lateral generate_series(
+      case when p_start = p_end then start_at - interval '1 day' else start_at end,
+      end_at - interval '1 hour', interval '1 hour'
+    ) as series(bucket)
+    left join public.site_analytics_hourly hourly on hourly.hour_start = series.bucket
+  ), heatmap as (
+    select extract(isodow from bucket)::int as weekday, extract(hour from bucket)::int as hour,
+           round(avg(views), 1) as average, count(*) as samples
+    from hours cross join bounds
+    where views is not null and bucket >= start_at and bucket < current_hour
+    group by 1, 2
+  )
+  select jsonb_build_object(
+    'coverageSince', (select first_hour from coverage),
+    'currentHour', (select current_hour from clock),
+    'hours', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'hour', extract(hour from selected.bucket)::int,
+        'views', selected.views,
+        'previousViews', previous.views
+      ) order by selected.bucket)
+      from hours selected
+      left join hours previous on previous.bucket = selected.bucket - interval '1 day'
+      where p_start = p_end and selected.bucket >= p_start::timestamp
+    ), '[]'::jsonb),
+    'heatmap', coalesce((select jsonb_agg(to_jsonb(heatmap) order by weekday, hour) from heatmap), '[]'::jsonb)
+  );
+$$;
+
+--> statement-breakpoint
+revoke all on function public.admin_public_traffic_hours(date, date) from public, anon, authenticated;
+--> statement-breakpoint
+grant execute on function public.admin_public_traffic_hours(date, date) to service_role;
