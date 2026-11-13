@@ -1,6 +1,8 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram independente — 13/11/2026
+- [x] Causa produção confirmada: WebAssembly.Module dinâmico proibido; codecs Instagram estáticos, imports pós-auth e JSON 401 adicionados.
+- [ ] Validação Worker hospedado e snapshot admin real: aguardam publicação/preview do novo commit e sessão admin; sem flags/IA/Meta.
 - [x] SQL aplicado pelo proprietário e verificado em 13/11; sem reaplicar migrations/journals; 4 podcasts preparados preservados.
 - [x] Bucket instagram-carousels privado, 12582912 bytes; MIME não configurável pela ferramenta, restrição no escritor mantida.
 - [x] Variável INSTAGRAM_CAROUSEL_RELEASE_ENABLED=true salva; somente editorial-admin implantada (SHA 3eb1c2a4756a418a3ac26d92590efe9e0665ec15278042460421972ba68abc7e).

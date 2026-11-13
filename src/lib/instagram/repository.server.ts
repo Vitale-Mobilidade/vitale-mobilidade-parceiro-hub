@@ -1,7 +1,7 @@
 import { createClient,type SupabaseClient } from '@supabase/supabase-js';
 import { type Source,type Job } from './contract';
-import { BUCKET,type Store } from './workflow.server';
-import { decodePhoto } from './render.server';
+import type { Store } from './workflow.server';
+const BUCKET='instagram-carousels';
 export function createDb(){const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw Error('database_not_configured');return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});}
 export async function authorize(request:Request,db:SupabaseClient){
  const token=request.headers.get('Authorization')?.match(/^Bearer (.+)$/)?.[1];if(!token||token.length>4000)return null;
@@ -25,7 +25,7 @@ export function store(db:SupabaseClient,job:Job):Store{
   async photo(id){const asset=await db.from('bike_assets').select('storage_path,content_type').eq('bike_id',id).eq('status','ready').not('storage_path','is',null).maybeSingle();if(asset.error||!asset.data?.storage_path)return null;
    const res=await db.storage.from('bike-images').download(asset.data.storage_path);if(res.error||!res.data)return null;
    if(res.data.size>12*1024*1024)return null;
-   try{return await decodePhoto(new Uint8Array(await res.data.arrayBuffer()),asset.data.content_type??res.data.type);}catch{return null;}
+   try{const {decodePhoto}=await import('./render.server');return await decodePhoto(new Uint8Array(await res.data.arrayBuffer()),asset.data.content_type??res.data.type);}catch{return null;}
   },
  };
 }

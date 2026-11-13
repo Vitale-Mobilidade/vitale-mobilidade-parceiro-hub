@@ -1,15 +1,13 @@
 import { z } from 'zod';
 import { hash,type Job,type Snapshot } from './contract';
 import { createDb,authorize,releaseEnabled,settings,source,claim,store } from './repository.server';
-import { prepare,approvable,publish,publicationFailureState } from './workflow.server';
-import { gateway,GatewayError } from './gateway.server';
-import { carouselPublisher,readInstagramSettings } from './meta.server';
 import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
 const headers={'Cache-Control':'private, no-store','Vary':'Authorization','X-Robots-Tag':'noindex, nofollow','X-Content-Type-Options':'nosniff'};
 const input=z.object({action:z.enum(['snapshot','discover','generate','resume','approve','reconcile','publish','pause']),id:z.string().uuid().optional(),revision:z.number().int().positive().optional(),videoId:z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),articleId:z.string().uuid().optional(),omitScene:z.boolean().optional()}).strict();
 export async function instagramAdmin(request:Request,dbFactory=createDb,verifiedSchedulerActor?:string){
  const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
  if(request.method!=='POST')return reply({error:'method_not_allowed'},405);
+ if(!verifiedSchedulerActor&&!request.headers.get('Authorization')?.match(/^Bearer .+$/))return reply({error:'authentication_required'},401);
  try{
   const db=dbFactory(),actor=verifiedSchedulerActor??await authorize(request,db);if(!actor)return reply({error:'Acesso restrito a administradores.'},403);
   const text=await request.text();if(text.length>4096)return reply({error:'Requisição inválida.'},413);const data=input.parse(JSON.parse(text));
@@ -42,6 +40,8 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
    if(!cfg.generation_enabled){await save({lease_token:null,lease_until:null});throw Error('instagram_generation_disabled');}
    const key=process.env.LOVABLE_API_KEY;
    if(!key){await save({lease_token:null,lease_until:null});throw Error('ai_not_configured');}
+   const {prepare}=await import('./workflow.server');
+   const {gateway,GatewayError}=await import('./gateway.server');
    // Live progress belongs to this explicit action; no effect on route load.
    const encoder=new TextEncoder();let alive=true;
    const body=new ReadableStream({async start(controller){
@@ -61,12 +61,14 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
    return new Response(body,{headers:{...headers,'Content-Type':'application/x-ndjson'}});
   }
   try{
+   const {approvable,publish}=await import('./workflow.server');
    if(data.action==='approve'){
     if(!approvable(job))throw Error('instagram_review_required');
     for(const a of job.assets){const bytes=await storage.download(a.path),d=inspectJpeg(bytes);if(d?.width!==1080||d.height!==1350||await hash(bytes)!==a.sha256)throw Error('instagram_asset_validation_failed');}
     await save({state:'approved',approved_revision:job.revision,approved_by:actor,error_code:null,error_message:null});
    }else{
     if(!cfg.publishing_enabled)throw Error('instagram_publication_disabled');
+    const {carouselPublisher,readInstagramSettings}=await import('./meta.server');
     const metaSettings=readInstagramSettings(name=>process.env[name]);if(!metaSettings)throw Error('instagram_meta_not_configured');
     const meta=carouselPublisher(metaSettings);
     if(data.action==='reconcile'){
@@ -85,7 +87,7 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
     }
    }
    await save({lease_token:null,lease_until:null});return reply({status:job.state,id:job.id});
-  }catch(error){const code=error instanceof Error?error.message:'instagram_operation_failed';await save({state:publicationFailureState(job),error_code:code,lease_token:null,lease_until:null}).catch(()=>{});return reply({error:code},409);}
+  }catch(error){const code=error instanceof Error?error.message:'instagram_operation_failed';await save({state:job.state==='published'?'published':job.publish_attempted?'uncertain':job.state,error_code:code,lease_token:null,lease_until:null}).catch(()=>{});return reply({error:code},409);}
  }catch(error){return reply({error:error instanceof Error?error.message:'instagram_unavailable'},409);}
 }
 export async function instagramAsset(request:Request,id:string,position:string,publicMedia=false,dbFactory=createDb){

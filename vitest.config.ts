@@ -1,8 +1,11 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+import { readFileSync } from 'node:fs';
 
 // Config isolada da build (sem plugins do app): testes rodam em Node, sem rede.
 export default defineConfig({
+  // Only the isolated Node test runner compiles bytes; Workers import modules statically.
+  plugins: [{name:'instagram-wasm-test',enforce:'pre',load(id){if(!id.endsWith('.wasm?module'))return;const b64=readFileSync(id.slice(0,-7)).toString('base64');return `export default new WebAssembly.Module(Uint8Array.from(atob(${JSON.stringify(b64)}),c=>c.charCodeAt(0)));`;}}],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },

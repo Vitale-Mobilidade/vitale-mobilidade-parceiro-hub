@@ -1,12 +1,12 @@
 /** Pure raster compositor; photos are contained, never regenerated or cropped. */
-import * as jpeg from '../../../supabase/functions/_shared/cover-renderer/vendor/jpeg.js';
-import * as png from '../../../supabase/functions/_shared/cover-renderer/vendor/png.js';
-import { Font, Layout } from '../../../supabase/functions/_shared/cover-renderer/vendor/font.js';
+import * as jpeg from './codecs/jpeg.server.js';
+import * as png from './codecs/png.server.js';
+import { Font, Layout } from './codecs/font.server.js';
 import { interFontBase64 } from '../../../supabase/functions/_shared/cover-renderer/assets.ts';
 import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
 import { WIDTH,HEIGHT,FINAL_ACTIONS,type Slide } from './contract';
 import decodeWebp, { init as initWebp } from '@jsquash/webp/decode';
-import { webpDecoderBase64 } from './webp-wasm.server';
+import webpModule from './codecs/webp.wasm?module';
 export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],mint:[55,230,163],action:[11,121,81]} as const;
 export type Raster={width:number;height:number;buffer:Uint8Array};
 let webpReady:Promise<void>|undefined;
@@ -40,7 +40,7 @@ export async function decodePhoto(bytes:Uint8Array,_mime?:string):Promise<Raster
  const mime=photoFormat(bytes);
  if(mime==='image/webp'){
   const d=webpDimensions(bytes);bounded(d.width,d.height);
-  webpReady??=initWebp({wasmBinary:Uint8Array.from(atob(webpDecoderBase64),c=>c.charCodeAt(0))});
+  webpReady??=initWebp({instantiateWasm(imports:WebAssembly.Imports,callback:(instance:WebAssembly.Instance)=>void){const instance=new WebAssembly.Instance(webpModule,imports);callback(instance);return instance.exports;}});
   await webpReady;
   const img=await decodeWebp(new Uint8Array(bytes).buffer);bounded(img.width,img.height);
   if(img.width!==d.width||img.height!==d.height)throw Error('instagram_photo_dimensions');
