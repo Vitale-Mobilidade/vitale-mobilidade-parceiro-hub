@@ -4,6 +4,15 @@ export function isOffersGroupLanding(path: string): boolean {
   return path.replace(/\/$/, "") === OFFERS_GROUP_LANDING_PATH;
 }
 
+export const OFFERS_GROUP_ADS_CONSENT_ENABLED =
+  import.meta.env.VITE_OFFERS_GROUP_GOOGLE_ADS_CONSENT !== "false";
+
+let googleAdsGranted = false;
+
+export function setOffersGroupAdsEventConsent(granted: boolean) {
+  googleAdsGranted = granted;
+}
+
 const CAMPAIGN_FIELDS = ["source", "medium", "campaign", "content"] as const;
 type CampaignField = (typeof CAMPAIGN_FIELDS)[number];
 type CampaignValues = Record<`utm_${CampaignField}`, string | null>;
@@ -38,6 +47,9 @@ export function trackOffersGroupCta(position: OffersGroupCtaPosition): void {
       event: "offers_group_cta_click",
       page_path: OFFERS_GROUP_LANDING_PATH,
       cta_position: position,
+      ...(OFFERS_GROUP_ADS_CONSENT_ENABLED
+        ? { vitale_offers_google_ads: googleAdsGranted }
+        : {}),
       ...offersGroupCampaign(url.search),
     });
   } catch {

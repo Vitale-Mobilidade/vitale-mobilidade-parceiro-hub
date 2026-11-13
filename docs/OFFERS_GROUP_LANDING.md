@@ -65,3 +65,75 @@ Referências de destino: [incompatibilidade de destino](https://support.google.c
 - A fonte Inter é local, subconjunto latino, sob SIL OFL (licença incluída). Foto aprovada: `src/assets/bikes/ft03.avif`, associada à FT03 em `src/data/bikes.ts`. O OG reutiliza a peça pública do grupo.
 - Parecer: **GO condicionado para publicar apenas a página** após revisão e autorização explícita de merge e deploy Lovable. **NO-GO para publicidade** até política e consentimento válidos, confirmação de IDs e validação em preview nas plataformas. O site atual ainda não serve a landing; não usar como destino de veiculação antes do smoke produtivo.
 - Publicação proposta: integrar o PR e publicar o projeto Lovable ativo, sem custo externo previsto nem alteração de banco ou configuração GTM. Risco baixo e reversível; smoke pós-release com/sem UTMs, AdsBot, CTA e 302. Se falhar, reverter o PR e republicar a última versão aprovada.
+
+## Publicação da landing — 13/11/2026
+
+O PR #134 foi integrado no commit `13409148feed6d6f18a59d23396ba11fc4b80211`, sincronizado no projeto Lovable e publicado no deployment `ca3f4a7d-9f71-4a06-b3e2-6d0cdc9e8de0`. O domínio público respondeu HTTP 200 com e sem UTMs. O GTM permaneceu na versão 16, com publicidade pausada.
+
+## Revisão prévia — consentimento Google Ads restrito à landing
+
+Classificação estrutural pela integração publicitária. Base: merge do PR #134. Escopo local: escolha explícita de medição Google Ads na landing, atualização da política quando o recurso estiver habilitado e contrato de acionamento do Google via GTM. O recurso começa desabilitado. Para ativar, confirmar conta, ação, ID AW e label e validar o rascunho do GTM. Não há trabalho em Meta neste recorte.
+
+| Perspectiva | Impacto, risco, dependência e decisão |
+| --- | --- |
+| Produto | Medir o CTA da campanha. O consentimento opcional preserva o acesso ao convite e o objetivo do clique. Prosseguir. |
+| CTO | Reusar o GTM existente e separar a inicialização do container da preferência analítica. Exigir consentimento negado antes das tags e um evento distinto para preparar a atribuição. |
+| IA | N/A. Sem automação ou processamento de conteúdo. |
+| Segurança | Escolha de marketing dedicada, recusa por padrão e em GPC/DNT. Não reaproveitar preferência legada. Restringir a aplicação à rota e à origem produtiva. |
+| UX | O CTA deve continuar na primeira dobra. Preferência acessível e abaixo do CTA, com possibilidade de revogação e link para a política. |
+| CX | Não altera o convite nem o admin. Verificar clique com consentimento recusado ou indisponível. |
+| Growth | Sem aceite, zero requests publicitários. Com aceite, Google tag/Linker antes do clique e uma tag de conversão por ação, sem GA4 importado. IDs precisam de confirmação. |
+| PMO | Entrega local e teste proporcional. Release exige validação de preview e autorização do escopo de publicidade. |
+
+Decisão: inicializar Ads apenas após aceite e validar rota, origem, estado e evento no GTM. Não atrasar navegação para aguardar uma tag. Rollback: desligar a flag e pausar as tags específicas da landing.
+
+### Preview de consentimento Google
+
+A flag de build `VITE_OFFERS_GROUP_GOOGLE_ADS_CONSENT=true` expõe o controle na landing e a descrição na política. O aceite vale na aba e pode ser revogado no mesmo controle. A opção analítica continua independente. GPC e DNT impedem a ativação. Com a flag ausente, o evento conserva o contrato publicado no PR #134.
+
+| Tag em GTM | Acionamento |
+| --- | --- |
+| Google tag Ads ou Conversion Linker, se necessário | Evento personalizado `offers_group_google_ads_ready`, `Page Hostname = vitalemobilidade.com`, `Page Path` corresponde a `^/entrenogrupodeofertas/?$`, DLV `page_path = /entrenogrupodeofertas`, DLV `vitale_offers_google_ads = true`. Exigir `ad_storage` e `ad_user_data`. Inicialização apenas para atribuição. Sem PageView publicitário ou linker entre domínios. |
+| Conversão Google Ads | Evento personalizado `offers_group_cta_click`, mesmos filtros e consentimento, mais DLV `cta_position` em `^(hero\|after_faq)$`. Disparar uma vez por evento, com o ID AW e o label verificados. Sem importar o mesmo clique via GA4. |
+
+Usar somente a versão de preview de um workspace isolado. Confirmar no Tag Assistant que a atualização de Consent Mode foi processada antes do acionamento, que a inicialização preserva a atribuição apenas após aceite, que a recusa/revogação bloqueia o envio e que a visita não conta como conversão. O bloqueio duplo usa tanto o consentimento do GTM quanto o valor presente em cada evento do app. Conferir a recusa analítica com publicidade concedida e a ausência de ativação em todas as demais rotas. Usar conversão secundária de teste e o mínimo de parâmetros. A política do site e o estado negado de personalização devem continuar coerentes com os dados observados na rede.
+
+### Revisão posterior — preview Google
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Escolha opcional, CTA principal disponível antes do controle. |
+| CTO | Pass | Fila e contêiner existentes reutilizados. No Chrome com mock, um GTM por documento e inicialização separada do clique. |
+| IA | N/A | Sem alterações em modelos, agentes ou automações. |
+| Segurança | Pass local | GTM começa com publicidade negada. Recusa, revogação, GPC e analytics recusado verificados no Chrome com mock. |
+| UX/UI | Pass | CTA inteiro na dobra em 320 × 568 em todos os estados ensaiados. |
+| CX | Pass | Navegação limpa para a rota existente em todos os estados. |
+| Growth | Pass local | Payload habilitado apenas no clique consentido. A validação real da atribuição e da conversão aguarda acesso à ação Google Ads e Tag Assistant. |
+| PMO/QA | Pass local | Gate `pnpm validate` (69 testes, TypeScript e build), 28 testes direcionados e smoke com quatro estados no Chrome. |
+
+Parecer: GO para revisão do código com a flag desativada. NO-GO para ativação publicitária enquanto a conta `521-126-5158` não expuser um AW e label verificados e o preview não confirmar a entrega. Nenhuma publicação desta etapa, alteração nas contas ou inclusão de Pixel/CAPI.
+
+### Liberação autorizada do consentimento — 13/11/2026
+
+Na conta Google Ads 521-126-5158 foi criada a ação manual **Clique no CTA do grupo de ofertas (WhatsApp)**, com contagem Uma, valor zero, otimização secundária e conversões otimizadas desativadas. O Google exibiu o ID `AW-18172764323` e o label `8g1VCP_H_7cdEKPBudlD`. A autorização do responsável cobre a publicação do controle nessa landing e a ativação da tag após preview no Tag Assistant. O controle pode ir ao ar primeiro para testar a tag em condições reais. Nenhuma tag Ads entra no contêiner público nessa primeira etapa. A flag passa a habilitar o controle por padrão e aceita `false` como desligamento.
+
+### Revisão prévia — hero com ofertas do Radar
+
+Mudança estrutural por usar o Radar como fonte. Produto: atende o pedido de uma única seção, com CTA principal e referência de valor própria. CTO: reusar repositório e cálculo do Radar em SSR, retornar só os cartões, manter 200 e CTA se faltar catálogo. IA: N/A, sem geração. Segurança: nenhum preço manual, credencial ou link de convite novo. UX: desktop em duas colunas, mobile com CTA primeiro, carrossel manual acessível. CX: preservar rota administrada. Growth: exibir percentual somente quando verificável e explicitar o preço típico como referência, sem chamar de desconto do lojista. QA: testar contrato SSR, variações de catálogo, mobile, teclado e conversão exclusiva do CTA.
+
+Trade-off: os percentuais sugeridos são exemplos; o Radar compara com o preço típico observado, então o selo usa essa comparação. Priorizar relevância entre ofertas elegíveis. Sem elegíveis, mostrar modelos sem percentual quando houver catálogo e link para o Radar quando indisponível. Rollback: reverter a revisão da landing; para suspender medição, pausar as tags dedicadas e desligar o controle pela flag.
+
+### Decisão atualizada — quatro exemplos históricos
+
+O responsável fixou a ordem V9 Max, GT2000, FT03, V20 Ultra e solicitou números estáticos. Os cartões usam o maior e o menor preços registrados exibidos nas páginas públicas do Radar, no recorte padrão de 30 dias, consultado em 13/11/2026. A diferença é calculada como (maior − menor) ÷ maior. Os valores ilustram a variação histórica e têm link para o detalhe da Bike. As três fotos Vitale usam as versões AVIF do catálogo no repositório porque os URLs antigos enviados retornaram 404. A foto da V20 Ultra foi fornecida pelo responsável. Nenhum loader de Radar ou Supabase foi acrescentado à landing.
+
+| Perspectiva | Revisão do hero |
+| --- | --- |
+| Produto | Pass. Um hero, um CTA de WhatsApp e quatro exemplos históricos na ordem solicitada. |
+| CTO | Pass. HTML SSR com a primeira foto e carrossel local, sem dependência de catálogo em runtime. |
+| IA | N/A. Dados e fotos de fontes identificadas. |
+| Segurança | Pass. Sem preço prometido, histórico rotulado e CTA com URL limpa. |
+| UX/UI | Pass. Navegação por teclado, quatro imagens verificadas e CTA dentro da dobra em 320 × 568 e 1440 × 900. |
+| CX | Pass. Link existente e administração do convite preservados. |
+| Growth | Pass para o hero. Cada modelo tem link ao detalhe e a variação publicada tem referência de cálculo e data. A entrega da tag continua sujeita ao teste separado. |
+| PMO/QA | Pass. SSR 200 com e sem UTM, lint da rota, pnpm validate e smoke do carrossel. Rollback por revert da revisão. |
