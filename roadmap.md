@@ -1,6 +1,10 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram independente — 13/11/2026
+- [ ] Release autorizado em 13/11: bloqueado no histórico aplicado de Growth (`admin_public_traffic` já existe); requer reconciliação autorizada do journal antes de reaplicar SQL exato.
+- [ ] Bucket privado/MIME, gate e geração: aguardam migration; API oficial disponível não aceita allowed_mime_types.
+- [ ] Publicar Hub e editorial-admin; gerar um único rascunho por sessão admin: aguardam migration e bucket completos.
+- [x] Corrigir fixture WebP 1150×1082/quadro 600×564 em y118; 36 testes dirigidos passaram em 13/11 22:22 UTC.
 - [ ] Contrato, fonte elegível, estados persistidos e migrations somente versionadas.
 - [ ] Geração Gemini protegida, JPEGs determinísticos e envio Meta aprovado/idempotente.
 - [ ] Admin Instagram e retirada dos comandos sociais do podcast.

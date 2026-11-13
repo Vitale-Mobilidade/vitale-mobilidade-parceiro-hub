@@ -7,11 +7,12 @@ it('decodes a real catalog WebP with its complete dimensions despite stale MIME'
  const bytes=new Uint8Array(await readFile('src/assets/bikes/v20-ultra-landing.webp'));
  expect(photoFormat(bytes)).toBe('image/webp');
  const p=await decodePhoto(bytes,'image/jpeg');
- expect(p.width).toBe(600);expect(p.height).toBe(600);
- expect(p.buffer.length).toBe(600*600*4);
- const out=new Uint8Array(1080*1350*4);expect(containPhoto(out,p,0,0,600,800)).toEqual({x:0,y:100,width:600,height:600});
- for(const [x,y] of [[0,0],[599,0],[0,599],[599,599]]){
-  const from=(y*p.width+x)*4,to=((y+100)*1080+x)*4;
+ expect(p.width).toBe(1150);expect(p.height).toBe(1082);
+ expect(p.buffer.length).toBe(1150*1082*4);
+ const out=new Uint8Array(1080*1350*4);expect(containPhoto(out,p,0,0,600,800)).toEqual({x:0,y:118,width:600,height:564});
+ const scale=600/1150;
+ for(const [x,y] of [[0,0],[599,0],[0,563],[599,563]]){
+  const from=(Math.floor(y/scale)*p.width+Math.floor(x/scale))*4,to=((y+118)*1080+x)*4;
   for(let c=0;c<3;c++)expect(out[to+c]).toBe(Math.trunc(p.buffer[from+c]*p.buffer[from+3]/255));
  }
 });
