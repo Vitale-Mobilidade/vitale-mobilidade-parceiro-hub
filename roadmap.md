@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram editorial direction revision 3 — no release
+- [ ] Share article cover model/reference/payload without changing article behavior; mock parity tests.
+- [ ] Preserve v1/v2, add explanatory interiors and deterministic six-JPEG private review at 390px.
+- [ ] Directed validation, pnpm validate attempt, eight perspectives and rollback; commit. No paid calls or production actions.
+
 # Instagram art direction v2 — preview only
 - [x] Correct visual delivery: six existing JPEGs versioned under docs/preview with local imports; file validation and isolated gallery passed. Full route blocked by unrelated SSR React error, documented in preview README; no release.
 - [x] Versioned editorial skill and injected short prompt; compatible v1/v2 validation.

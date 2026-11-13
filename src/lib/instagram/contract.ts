@@ -2,8 +2,8 @@ import { z } from 'zod';
 export { WIDTH,HEIGHT,FINAL_ACTIONS } from '../../../supabase/functions/_shared/instagram-render/contract';
 const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0).optional(),kind:z.enum(['observation','estimate','measurement','context'])});
 const concept=z.object({module:z.enum(['cover','beam','load','route','battery','comparison','decision']),intent:z.string().trim().min(1).max(180),metric:z.object({value:z.string().trim().min(1).max(24),label:z.string().trim().min(1).max(80)}).strict().optional()}).strict();
-export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().max(320),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light','warm']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1),concept:concept.optional()}).strict();
-export const scriptSchema=z.object({artVersion:z.literal(2).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
+export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().max(650),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light','warm']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1),concept:concept.optional()}).strict();
+export const scriptSchema=z.object({artVersion:z.union([z.literal(2),z.literal(3)]).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
 export type Script=z.infer<typeof scriptSchema>; export type Slide=z.infer<typeof slideSchema>;
 export type Source={videoId:string;videoTitle:string;videoDate:string;transcript:string;articleId:string;articleTitle:string;articleSlug:string;publishedAt:string;bikeIds:string[];eligibleAt:string};
 export type Asset={position:number;path:string;alt:string;sha256:string;missingBikeIds:string[];photoHashes?:string[]};
@@ -17,14 +17,14 @@ export function validateScript(raw:unknown,source:Source):Script{
  if(s.slides[0]&&!s.slides[0].bikeIds.length&&source.bikeIds[0])s.slides[0].bikeIds=[source.bikeIds[0]];
  if(s.slides[0]?.layout!=='opening'||s.slides.at(-1)?.layout!=='conclusion')throw Error('instagram_narrative_incomplete');
  if(s.slides.filter(x=>x.scene).length>1)throw Error('instagram_scene_limit');
- if(s.artVersion===2){
+ if(s.artVersion===2||s.artVersion===3){
   const words=(text:string)=>text.trim()?text.trim().split(/\s+/).length:0;
   const photoIds=new Set<string>();
   for(const [i,slide] of s.slides.entries()){
    if(!slide.concept)throw Error('instagram_concept_required');
    if(i===0&&(slide.concept.module!=='cover'||words(slide.title)>7||slide.body))throw Error('instagram_cover_density');
-   if(i>0&&(slide.concept.module==='cover'||words(slide.title)>8||words(slide.body)>25))throw Error('instagram_slide_density');
-   if(slide.scene)throw Error('instagram_v2_scene_disabled');
+   if(i>0&&(slide.concept.module==='cover'||words(slide.title)>8||words(slide.body)>(s.artVersion===3?70:25)))throw Error('instagram_slide_density');
+   if(slide.scene&&(s.artVersion===2||i!==0))throw Error('instagram_v2_scene_disabled');
    for(const id of slide.bikeIds){if(photoIds.has(id))throw Error('instagram_repeated_photo');photoIds.add(id);}
    if(i>0&&slide.bikeIds.length)throw Error('instagram_graphic_photo_unsupported');
    const metric=slide.concept.metric;
@@ -36,7 +36,7 @@ export function validateScript(raw:unknown,source:Source):Script{
    }
    if(i>0&&!slide.bikeIds.length&&/\b(?:foto|fotografia|close|detalhe do banco)\b/i.test(slide.alt))throw Error('instagram_alt_unfaithful');
   }
- }else if(s.slides.some(x=>!x.body||x.concept||x.theme==='warm'))throw Error('instagram_art_version_required');
+ }else if(s.slides.some(x=>!x.body||x.body.length>320||x.concept||x.theme==='warm'))throw Error('instagram_art_version_required');
  for(const slide of s.slides){
   if(external.test(`${slide.title} ${slide.body}`))throw Error('instagram_external_cta');
   if(slide.bikeIds.some(id=>!source.bikeIds.includes(id)))throw Error('instagram_unrelated_bike');

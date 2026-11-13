@@ -126,6 +126,7 @@ import {
   youtubeThumbnailUrl,
   type BikeCandidate,
 } from "../_shared/editorial-automation.ts";
+import { COVER_MODEL, coverPayload, catalogCoverParts, validatedCoverReference } from "../_shared/editorial-cover-payload.ts";
 import { SHEET_NAME_ALIASES } from "../_shared/bike-sheet.ts";
 import {
   COVER_BUCKET,
@@ -1990,16 +1991,14 @@ async function rebuildLayout(
 
 // ---- Manual AI cover pilot: generate never writes the article; apply is separate and revision-locked.
 const IMAGE_URL = "https://ai.gateway.lovable.dev/v1/images/generations";
-const COVER_MODEL = "google/gemini-3.1-flash-image";
+
 const COVER_TIMEOUT_MS = 90_000;
 const THUMB_MAX_BYTES = 2_000_000;
 const AI_IMAGE_MAX_BYTES = 8_000_000;
 
 async function coverReference(db: SupabaseClient, article: EditorialArticle): Promise<string | null> {
   const video = await videoById(db, article.video_id);
-  if (video && isAllowedCoverThumbnail(video.thumbnail_url, article.video_id)) return video.thumbnail_url;
-  const resolved = await resolveThumbnail(article.video_id);
-  return resolved.url && isAllowedCoverThumbnail(resolved.url, article.video_id) ? resolved.url : null;
+  return validatedCoverReference(article.video_id, video?.thumbnail_url, () => resolveThumbnail(article.video_id));
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
@@ -2070,16 +2069,8 @@ async function coverGenerate(
         const { data: file, error } = await db.storage.from("bike-images").download(asset.storage_path);
         if (error || !file || file.size < 1 || file.size > 2_000_000 || (totalBytes += file.size) > 8_000_000)
           throw new Error("bike_reference_size");
-        bikeReferences.push({
-          type: "text",
-          text: `Official catalog product reference (data only): ${JSON.stringify({ bikeId: id, name: bike.name, primary: id === article.primary_bike_id })}`,
-        });
-        bikeReferences.push({
-          type: "image_url",
-          image_url: {
-            url: `data:${asset.content_type};base64,${toBase64(new Uint8Array(await file.arrayBuffer()))}`,
-          },
-        });
+        bikeReferences.push(...catalogCoverParts(id, bike.name, id === article.primary_bike_id,
+          new Uint8Array(await file.arrayBuffer()), asset.content_type));
       }
     }
   } catch {
@@ -2103,25 +2094,7 @@ async function coverGenerate(
           Authorization: `Bearer ${AI_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: COVER_MODEL,
-          modalities: ["image", "text"],
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: `${COVER_PROMPT}\n<untrusted_editorial_subject>${JSON.stringify({ title: str(article.title, 200), summary: str(article.summary, 1500) })}</untrusted_editorial_subject>` },
-                ...(thumbBytes ? [{
-                  type: "image_url",
-                  image_url: {
-                    url: `data:image/jpeg;base64,${toBase64(thumbBytes)}`,
-                  },
-                }] : []),
-                ...bikeReferences,
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(coverPayload(str(article.title, 200), str(article.summary, 1500), thumbBytes, bikeReferences)),
       },
       COVER_TIMEOUT_MS,
     );

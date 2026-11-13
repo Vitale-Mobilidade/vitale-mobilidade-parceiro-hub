@@ -30,7 +30,7 @@ export async function prepare(job:Job,store:Store,studio:Studio,omitScene=false)
   if(job.assets.some(a=>a.position===position))continue;
   const r=await studio.render(job,position);
   if(r?.position!==position||r.path!==assetPath(job.id,job.revision,position)||!/^[a-f0-9]{64}$/.test(r.sha256)||typeof r.alt!=='string'||!Array.isArray(r.missingBikeIds)||!Array.isArray(r.photoHashes))throw Error('instagram_render_invalid');
-  const asset:Asset={position,path:r.path,sha256:r.sha256,alt:script.artVersion===2?r.alt:script.slides[position-1]?.alt??r.alt,missingBikeIds:r.missingBikeIds.map(String),photoHashes:r.photoHashes.map(String)};
+  const asset:Asset={position,path:r.path,sha256:r.sha256,alt:script.artVersion? r.alt:script.slides[position-1]?.alt??r.alt,missingBikeIds:r.missingBikeIds.map(String),photoHashes:r.photoHashes.map(String)};
   await save({assets:[...job.assets,asset].sort((a,b)=>a.position-b.position)});
  }
  await save({state:'review',error_code:null,error_message:null});
