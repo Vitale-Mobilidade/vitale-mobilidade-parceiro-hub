@@ -2,7 +2,7 @@
 
 # Instagram independente — 13/11/2026
 - [x] Remover imports WASM de source; binários em public/wasm, loader exclusivo navegador; snapshot mantém JSON/auth sem codecs.
-- [ ] Integrar composição compatível ao workflow: servidor pausa antes de IA, pois este stack rejeita WASM tanto dinâmico quanto importado.
+- [x] Composição e IA movidas para ação privada `instagram-internal` da editorial-admin (Deno); rota do navegador removida; testes Deno + e2e mock + validate.
 - [ ] Validação Worker hospedado e snapshot admin real: aguardam publicação/preview do novo commit e sessão admin; sem flags/IA/Meta.
 - [x] SQL aplicado pelo proprietário e verificado em 13/11; sem reaplicar migrations/journals; 4 podcasts preparados preservados.
 - [x] Bucket instagram-carousels privado, 12582912 bytes; MIME não configurável pela ferramenta, restrição no escritor mantida.

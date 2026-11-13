@@ -1,10 +1,10 @@
 import { beforeEach,expect,it,vi } from 'vitest';
 import { jobFixture,sourceFixture } from './fixtures.test-support';
 const f=vi.hoisted(()=>({authorize:vi.fn(),settings:vi.fn(),source:vi.fn(),createDb:vi.fn()}));
-vi.mock('./repository.server',()=>({createDb:f.createDb,authorize:f.authorize,settings:f.settings,source:f.source,releaseEnabled:()=>true,claim:vi.fn(),store:vi.fn()}));
+vi.mock('./repository.server',()=>({createDb:f.createDb,authorize:f.authorize,settings:f.settings,source:f.source,releaseEnabled:async()=>true,claim:vi.fn(),store:vi.fn()}));
 // Any pipeline import before snapshot completes is a regression.
 vi.mock('./workflow.server',()=>{throw Error('snapshot_loaded_render_pipeline');});
-vi.mock('./gateway.server',()=>{throw Error('snapshot_loaded_paid_gateway');});
+vi.mock('./edge.server',()=>{throw Error('snapshot_loaded_edge_studio');});
 vi.mock('./meta.server',()=>{throw Error('snapshot_loaded_meta');});
 import { instagramAdmin } from './admin.server';
 beforeEach(()=>vi.clearAllMocks());

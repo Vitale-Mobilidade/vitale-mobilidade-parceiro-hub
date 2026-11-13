@@ -47,3 +47,11 @@ Correção runtime de 13/11: logs publicados confirmaram `CompileError: WebAssem
 - CX: ausência de bike/cenário não usa thumbnail ou imagem sintetizada; pode concluir tipograficamente.
 - Growth: quatro ações determinísticas no encerramento; sem link da bio, site, artigo ou podcast.
 - PMO: release separado, migrations não aplicadas, validação simulada e rollback restrito registrados.
+## Compositor no Edge — 13/11/2026
+- Decisão: TanStack (Worker) mantém autenticação admin, workflow, checkpoints CAS/lease, aprovação e Meta. Roteiro/cenário Gemini e decode/composição JPEG rodam na ação privada `instagram-internal` da `editorial-admin` (Deno, mesmo ImageScript das capas; WebP via @jsquash/webp 1.5.0 embutido). Nenhuma função nova.
+- Contrato server-to-server: header `x-instagram-internal-key` = chave de serviço do servidor (comparação em tempo constante; se o formato diferir entre runtimes, prova por uso no endpoint admin, sem retornar dados), corpo ≤ 2 KB com apenas `op`, `jobId`, `revision`, `lease`, `position`, `runId`. O Edge relê o job pelo lease vigente e resolve sozinho fonte, slide, cenário (`{job}/r{rev}/scene.(jpg|png)`), fotos `bike_assets` e caminho `{job}/r{rev}/NN.jpg`. Operações: `runtime` (somente leitura: release, IA configurada e probe do compositor em memória), `script`, `scene` (exigem `generation_enabled` e sem pausa), `render` (sem IA).
+- Retomada/deduplicação: fotos já usadas são recalculadas no Edge a partir dos checkpoints persistidos; cenário gerado no máximo uma vez por revisão; roteiro nunca é repetido após tentativa incerta.
+- Rota alternativa do navegador e binários `public/wasm/instagram` foram removidos.
+- Custo por geração: 1 chamada de roteiro + no máximo 1 cenário; render ~0,3 s de CPU por slide no Edge (medido localmente em Deno).
+- Testes: `deno test -A supabase/functions/_shared/instagram-render/render_test.ts` (fixtures WebP/PNG/JPEG reais) e `deno test -A --sloppy-imports --no-check supabase/functions/editorial-admin/instagram-internal_test.ts` (Hub → cliente Edge → ação privada → compositor real, IA/DB/Storage simulados).
+- Rollback: reimplantar `editorial-admin` do commit anterior e manter `generation_enabled=false`; nenhuma mudança de banco.

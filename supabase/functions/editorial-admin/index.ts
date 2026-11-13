@@ -13,6 +13,7 @@ import { independentVideoQueue } from "../_shared/youtube-backlog.ts";
 import { parseQuizBikeMetrics } from "../_shared/admin-growth.ts";
 import { handlePodcastWorkDrive } from "./podcast-workdrive.ts";
 import { handlePodcastAudio } from "./podcast-audio.ts";
+import { handleInstagramInternal } from "./instagram-internal.ts";
 /** Editorial admin API. Never deploy before the matching migration and role provisioning. */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { automaticCreationBikeIds, parseCreationBikeIds } from "../_shared/editorial-create-input.ts";
@@ -2618,6 +2619,13 @@ Deno.serve(async (req) => {
     } catch {
       return json(req, { error: "youtube_hourly_failed" }, 503);
     }
+  }
+  // Hub server-to-server carousel rendering/AI; never reachable with a user JWT alone.
+  if (body.action === "instagram-internal") {
+    return handleInstagramInternal(req, db, body, {
+      url: SUPABASE_URL, serviceKey: SERVICE_KEY, aiKey: AI_KEY,
+      releaseFlag: Deno.env.get("INSTAGRAM_CAROUSEL_RELEASE_ENABLED"),
+    });
   }
   if (body.action === "podcast-tick") {
     // Legacy social cron must never publish alongside independent carousels.

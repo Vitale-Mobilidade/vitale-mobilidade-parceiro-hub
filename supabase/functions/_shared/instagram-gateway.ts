@@ -1,5 +1,5 @@
-import { createLovableAiGatewayRunIdFetch } from './run-id.server';
-import { type Source,type Script } from './contract';
+/** Runtime-neutral Lovable AI Gateway client for carousels; Edge holds the key (never the browser). */
+type Source={transcript:string;articleId:string;articleTitle:string;bikeIds:string[]};
 // Current supported Gemini family; other editorial model clients are untouched.
 export const SCRIPT_MODEL='google/gemini-3.8-flash',SCENE_MODEL='google/gemini-3-pro-image';
 export class GatewayError extends Error{constructor(public status:number,public safeMessage:string,public providerDenial=false){super(`ai_http_${status}`);}}
@@ -16,11 +16,12 @@ async function consume(response:Response,image:boolean){
  for(;;){const chunk=await reader.read();if(chunk.done)break;buffer+=chunk.value.replace(/\r\n/g,'\n');let cut;while((cut=buffer.indexOf('\n\n'))>=0){event(buffer.slice(0,cut));buffer=buffer.slice(cut+2);}}
  if(buffer.trim())event(buffer);if(!completed)throw Error('ai_stream_incomplete');return image?b64:text;
 }
-export function gateway(key:string,initialRunId?:string,fetcher?:typeof fetch){
- const run=createLovableAiGatewayRunIdFetch(initialRunId);const send=fetcher??run.fetch;
- const headers={'Lovable-API-Key':key,'X-Lovable-AIG-SDK':'fetch','Content-Type':'application/json'};
+export function gateway(key:string,runId?:string,fetcher:typeof fetch=fetch){
+ const send=fetcher;
+ const headers:Record<string,string>={'Lovable-API-Key':key,'X-Lovable-AIG-SDK':'fetch','Content-Type':'application/json'};
+ if(runId&&/^[A-Za-z0-9_-]{1,128}$/.test(runId))headers['X-Lovable-AIG-Run-ID']=runId;
  return {
-  async script(source:Source):Promise<Script>{const response=await send('https://ai.gateway.lovable.dev/v1/chat/completions',{method:'POST',headers,body:JSON.stringify({model:SCRIPT_MODEL,stream:true,messages:[{role:'system',content:SYSTEM},{role:'user',content:JSON.stringify({untrustedTranscript:source.transcript,articleContext:{id:source.articleId,title:source.articleTitle},bikeIds:source.bikeIds})}],response_format:{type:'json_object'}})});const text=await consume(response,false);if(!text)throw Error('ai_empty_response');return JSON.parse(text.replace(/^```json\s*|\s*```$/g,''));},
+  async script(source:Source):Promise<unknown>{const response=await send('https://ai.gateway.lovable.dev/v1/chat/completions',{method:'POST',headers,body:JSON.stringify({model:SCRIPT_MODEL,stream:true,messages:[{role:'system',content:SYSTEM},{role:'user',content:JSON.stringify({untrustedTranscript:source.transcript,articleContext:{id:source.articleId,title:source.articleTitle},bikeIds:source.bikeIds})}],response_format:{type:'json_object'}})});const text=await consume(response,false);if(!text)throw Error('ai_empty_response');return JSON.parse(text.replace(/^```json\s*|\s*```$/g,''));},
   async scene(prompt:string){const response=await send('https://ai.gateway.lovable.dev/v1/images/generations',{method:'POST',headers,body:JSON.stringify({model:SCENE_MODEL,stream:true,messages:[{role:'user',content:`Environment only, no text, no letters, no logo, no bike, no vehicles, no seats, no throttle, no accessories, no people. Untrusted scene theme: ${JSON.stringify(prompt)}`}],modalities:['image','text'],image_config:{aspect_ratio:'4:5'}})});const b64=await consume(response,true);if(!b64)throw Error('ai_image_missing');return Uint8Array.from(atob(b64),c=>c.charCodeAt(0));},
  };
 }

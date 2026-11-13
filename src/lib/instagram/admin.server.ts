@@ -11,7 +11,7 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
  try{
   const db=dbFactory(),actor=verifiedSchedulerActor??await authorize(request,db);if(!actor)return reply({error:'Acesso restrito a administradores.'},403);
   const text=await request.text();if(text.length>4096)return reply({error:'Requisição inválida.'},413);const data=input.parse(JSON.parse(text));
-  if(!releaseEnabled())return data.action==='snapshot'?reply({available:false,generationEnabled:false,publishingEnabled:false,automationEnabled:false,source:null,jobs:[]} satisfies Snapshot):reply({error:'Release ainda não autorizado. Geração e publicação estão desligadas.'},409);
+  if(!await releaseEnabled())return data.action==='snapshot'?reply({available:false,generationEnabled:false,publishingEnabled:false,automationEnabled:false,source:null,jobs:[]} satisfies Snapshot):reply({error:'Release ainda não autorizado. Geração e publicação estão desligadas.'},409);
   const cfg=await settings(db);
   if(data.action==='snapshot'){
    const [selected,jobs]=await Promise.all([source(db),db.from('instagram_carousel_jobs').select('*').order('created_at',{ascending:false}).limit(40)]);if(jobs.error)throw Error('instagram_jobs_unavailable');
@@ -38,22 +38,21 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
   const save=async(patch:Partial<Job>)=>{await storage.save(patch);Object.assign(job,patch);};
   if(data.action==='generate'||data.action==='resume'||data.action==='discover'){
    if(!cfg.generation_enabled){await save({lease_token:null,lease_until:null});throw Error('instagram_generation_disabled');}
-   const key=process.env.LOVABLE_API_KEY;
-   if(!key){await save({lease_token:null,lease_until:null});throw Error('ai_not_configured');}
    const {prepare}=await import('./workflow.server');
-   const {gateway,GatewayError}=await import('./gateway.server');
+   // Paid AI and JPEG composition run in Edge with its own secret; this Worker never loads WASM.
+   const {edge,EdgeAiError}=await import('./edge.server');
    // Live progress belongs to this explicit action; no effect on route load.
    const encoder=new TextEncoder();let alive=true;
    const body=new ReadableStream({async start(controller){
     const emit=(event:unknown)=>{if(alive)try{controller.enqueue(encoder.encode(JSON.stringify(event)+'\n'));}catch{alive=false;}};
     try{
      const progressStore={...storage,async save(patch:Partial<Job>){await save(patch);emit({state:job.state,assets:job.assets.length,id:job.id});}};
-     await prepare(job,progressStore,gateway(key,request.headers.get('X-Lovable-AIG-Run-ID')??undefined),data.omitScene===true);
+     await prepare(job,progressStore,edge(request.headers.get('X-Lovable-AIG-Run-ID')??undefined),data.omitScene===true);
      await save({lease_token:null,lease_until:null});emit({done:true,id:job.id});
     }catch(error){
      const code=error instanceof Error?error.message:'instagram_generation_failed';
-     const message=error instanceof GatewayError?error.safeMessage:code;
-     const terminal=error instanceof GatewayError&&([402,403].includes(error.status)||error.providerDenial);
+     const message=error instanceof EdgeAiError?error.safeMessage:code;
+     const terminal=error instanceof EdgeAiError&&([402,403].includes(error.status)||error.providerDenial);
      if(terminal)await db.from('instagram_carousel_settings').update({paused_reason:code}).eq('singleton',true);
      await save({state:'blocked',error_code:code,error_message:message,lease_token:null,lease_until:null}).catch(()=>{});emit({error:message});
     }finally{if(alive)controller.close();}
@@ -93,7 +92,7 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
 export async function instagramAsset(request:Request,id:string,position:string,publicMedia=false,dbFactory=createDb){
  if(!/^[a-f0-9-]{36}$/.test(id)||! /^[1-7]$/.test(position))return new Response(null,{status:404,headers});
  try{
-  if(!releaseEnabled())return new Response(null,{status:404,headers});const db=dbFactory();
+  if(!await releaseEnabled())return new Response(null,{status:404,headers});const db=dbFactory();
   if(!publicMedia&&!await authorize(request,db))return new Response(null,{status:403,headers});
   const result=await db.from('instagram_carousel_jobs').select('*').eq('id',id).single();const job=result.data as Job|null;if(result.error||!job)return new Response(null,{status:404,headers});
   if(publicMedia){const cfg=await settings(db),token=new URL(request.url).searchParams.get('token');if(!cfg.publishing_enabled||cfg.paused_reason||!token||token.length>100||!job.media_token_hash||await hash(token)!==job.media_token_hash||!job.media_expires_at||Date.parse(job.media_expires_at)<=Date.now()||job.approved_revision!==job.revision||!job.approved_by||!['approved','publishing','uncertain'].includes(job.state))return new Response(null,{status:404,headers});}

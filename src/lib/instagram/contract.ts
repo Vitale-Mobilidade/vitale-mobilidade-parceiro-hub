@@ -1,6 +1,5 @@
 import { z } from 'zod';
-export const WIDTH=1080, HEIGHT=1350;
-export const FINAL_ACTIONS=['Curta','Compartilhe','Comente','Salve'] as const;
+export { WIDTH,HEIGHT,FINAL_ACTIONS } from '../../../supabase/functions/_shared/instagram-render/contract';
 const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0),kind:z.enum(['observation','estimate','measurement','context'])});
 export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().min(1).max(320),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1)}).strict();
 export const scriptSchema=z.object({topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();

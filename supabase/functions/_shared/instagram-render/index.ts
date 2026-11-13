@@ -1,12 +1,13 @@
-/** Pure raster compositor; photos are contained, never regenerated or cropped. */
-import * as jpeg from './codecs/jpeg.server.js';
-import * as png from './codecs/png.server.js';
-import { Font, Layout } from './codecs/font.server.js';
-import { interFontBase64 } from '../../../supabase/functions/_shared/cover-renderer/assets.ts';
-import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
-import { WIDTH,HEIGHT,FINAL_ACTIONS,type Slide } from './contract';
-import decodeWebp, { init as initWebp } from '@jsquash/webp/decode';
-import { codecModule } from './codec-modules';
+/** Edge-only raster compositor (Deno). Photos are contained, never regenerated or cropped.
+ * Never import from the Hub/Worker bundle: ImageScript compiles WebAssembly at load. */
+import * as jpeg from "../cover-renderer/vendor/jpeg.js";
+import * as png from "../cover-renderer/vendor/png.js";
+import { Font, Layout } from "../cover-renderer/vendor/font.js";
+import { interFontBase64 } from "../cover-renderer/assets.ts";
+import { inspectJpeg } from "../editorial-cover.ts";
+import { WIDTH, HEIGHT, FINAL_ACTIONS, type RenderSlide as Slide } from "./contract.ts";
+import decodeWebp, { init as initWebp } from "npm:@jsquash/webp@1.5.0/decode.js";
+import { webpDecoderBase64 } from "./webp-wasm.ts";
 export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],mint:[55,230,163],action:[11,121,81]} as const;
 export type Raster={width:number;height:number;buffer:Uint8Array};
 let webpReady:Promise<void>|undefined;
@@ -40,7 +41,7 @@ export async function decodePhoto(bytes:Uint8Array,_mime?:string):Promise<Raster
  const mime=photoFormat(bytes);
  if(mime==='image/webp'){
   const d=webpDimensions(bytes);bounded(d.width,d.height);
-  webpReady??=initWebp({instantiateWasm(imports:WebAssembly.Imports,callback:(instance:WebAssembly.Instance)=>void){const instance=new WebAssembly.Instance(codecModule('webp'),imports);callback(instance);return instance.exports;}});
+  webpReady??=Promise.resolve(initWebp(new WebAssembly.Module(Uint8Array.from(atob(webpDecoderBase64),c=>c.charCodeAt(0)))));
   await webpReady;
   const img=await decodeWebp(new Uint8Array(bytes).buffer);bounded(img.width,img.height);
   if(img.width!==d.width||img.height!==d.height)throw Error('instagram_photo_dimensions');
@@ -67,14 +68,15 @@ export function containPhoto(out:Uint8Array,photo:Raster,x:number,y:number,w:num
  }
  return {x:ox,y:oy,width:rw,height:rh};
 }
+let fontBytes:Uint8Array|undefined;
 export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null){
  const theme=slide?.theme??'deep',color=palette[theme],ink=theme==='light'?palette.deep:palette.light;
  const out=new Uint8Array(WIDTH*HEIGHT*4);for(let p=0;p<out.length;p+=4)out.set([...color,255],p);
- const fontBytes=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));const fonts:Font[]=[];
+ fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));const fonts:Font[]=[];
  function rectangle(x:number,y:number,w:number,h:number,c:readonly number[]){for(let py=Math.max(0,y);py<Math.min(HEIGHT,y+h);py++)for(let px=Math.max(0,x);px<Math.min(WIDTH,x+w);px++)out.set([...c,255],(py*WIDTH+px)*4);}
  function text(value:string,x:number,y:number,maxWidth:number,maxHeight:number,preferred:number,c:readonly number[]){
   for(let size=preferred;size>=22;size-=2){
-   const f=new Font(size,fontBytes);fonts.push(f);const words=value.split(/\s+/),lines:string[]=[];let line='';
+   const f=new Font(size,fontBytes!);fonts.push(f);const words=value.split(/\s+/),lines:string[]=[];let line='';
    const width=(s:string)=>[...s].reduce((n,ch)=>n+f.metrics(ch,size).advance_width,0);
    for(const word of words){if(width(word)>maxWidth){line='';lines.length=1000;break;}const candidate=line?`${line} ${word}`:word;if(width(candidate)>maxWidth){lines.push(line);line=word;}else line=candidate;}
    if(line)lines.push(line);if(lines.length*size*1.22>maxHeight)continue;

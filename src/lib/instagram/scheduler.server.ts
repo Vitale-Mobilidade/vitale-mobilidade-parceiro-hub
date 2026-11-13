@@ -2,7 +2,7 @@ import { createDb,releaseEnabled } from './repository.server';
 import { instagramAdmin } from './admin.server';
 import { hash } from './contract';
 export async function instagramTick(request:Request){
- if(!releaseEnabled())return Response.json({error:'disabled'},{status:403});
+ if(!await releaseEnabled())return Response.json({error:'disabled'},{status:403});
  const key=process.env.INSTAGRAM_SCHEDULER_SIGNING_KEY,owner=process.env.INSTAGRAM_SCHEDULER_OWNER_ID;
  const issued=request.headers.get('x-instagram-issued-at'),signature=request.headers.get('x-instagram-signature');
  if(!key||!owner||!issued||!/^\d{10}$/.test(issued)||!signature||! /^[a-f0-9]{64}$/.test(signature)||Math.abs(Date.now()/1000-Number(issued))>60)return Response.json({error:'unauthorized'},{status:403});
