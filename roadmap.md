@@ -1,6 +1,7 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram art direction v2 — preview only
+- [x] Correct visual delivery: six existing JPEGs versioned under docs/preview with local imports; file validation and isolated gallery passed. Full route blocked by unrelated SSR React error, documented in preview README; no release.
 - [x] Versioned editorial skill and injected short prompt; compatible v1/v2 validation.
 - [x] Deterministic Edge graphic modules, cached licensed fonts and bounded CPU; verified cover provenance/fallback.
 - [x] Six-slide V9 Max sandbox JPEG preview, feed/contact-sheet inspection and focused tests.
