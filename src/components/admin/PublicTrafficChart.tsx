@@ -200,11 +200,7 @@ function TrafficSeries({
           <ComposedChart
             data={points}
             margin={{ top: 8, right: 18, left: 0, bottom: 0 }}
-            title={
-              hasHourly
-                ? "Comparação horária de visualizações públicas"
-                : "Comparação diária de visualizações públicas"
-            }
+            aria-labelledby="public-traffic-title"
             accessibilityLayer
           >
             <CartesianGrid

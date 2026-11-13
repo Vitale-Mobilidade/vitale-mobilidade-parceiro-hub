@@ -38,3 +38,9 @@ Classificação estrutural por envolver a coleta Supabase e a consulta administr
 A validação local usou o conjunto de dependências disponível no workspace. Uma tentativa de instalar o pacote Lovable 2.27.1 em checkout limpo encontrou a política local de idade mínima do pnpm. Na publicação, conferir o build do commit efetivo no ambiente Lovable.
 
 A publicação desta etapa exige autorização para gravar os novos contadores no Supabase integrado, implantar a Edge administrativa e publicar a interface. O risco é médio porque o trigger passa a executar na gravação de pageviews. O custo externo estimado é baixo. Conferir a coleta após implantação e desativar o trigger se houver regressão de gravação.
+
+## Ajuste do gráfico e do filtro inicial
+
+Revisão prévia de mudança pequena, restrita à interface administrativa. Produto e Growth aprovam a leitura semanal ao abrir o painel. Arquitetura aprova reutilizar o filtro e o contrato existentes. UX/UI mantém o nome acessível do gráfico e a caixa de valores, removendo o balão nativo que os cobre. CX aprova manter a seleção dos demais períodos disponível. PMO/QA pede verificação do filtro inicial e do gráfico no navegador. Segurança e IA são N/A porque o ajuste não envolve autenticação, permissões ou agentes. Rollback pela versão anterior da interface.
+
+Revisão posterior. Produto e Growth **Pass** pela abertura em 7 dias, confirmada no Chrome. Arquitetura **Pass** pela reutilização do filtro. UX/UI **Pass** porque a camada do gráfico mantém o nome acessível e o hover exibe os dois valores sem título nativo. CX **Pass** pela seleção de 30 dias conferida no painel. PMO/QA **Pass** com 8 testes direcionados, 69 testes e build em `pnpm validate`. Segurança e IA permanecem **N/A**. Publicação da interface aguarda autorização.

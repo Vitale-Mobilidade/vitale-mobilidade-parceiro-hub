@@ -7,7 +7,7 @@ import { TrafficPeakMap } from "@/components/admin/TrafficPeakMap";
 import type { AdminGrowth } from "./admin-api";
 
 const data: AdminGrowth = {
-  rangeDays: 30,
+  rangeDays: 7,
   generatedAt: "2026-10-08T18:00:00Z",
   funnel: {
     since: "2026-09-08T00:00:00Z",
@@ -84,7 +84,7 @@ describe("Admin Growth v2 UI", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    client.setQueryData(["admin", "growth", 30], data);
+    client.setQueryData(["admin", "growth", 7], data);
     const html = renderToStaticMarkup(
       <QueryClientProvider client={client}>
         <Growth />
@@ -115,7 +115,7 @@ describe("Admin Growth v2 UI", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    client.setQueryData(["admin", "growth", 30], {
+    client.setQueryData(["admin", "growth", 7], {
       ...data,
       quizBikesAvailable: false,
       quizBikesStatus: "unavailable",
@@ -131,7 +131,7 @@ describe("Admin Growth v2 UI", () => {
   });
   it("does not infer missing page origins from traffic or show unavailable as zero", () => {
     const client = new QueryClient();
-    client.setQueryData(["admin", "growth", 30], {
+    client.setQueryData(["admin", "growth", 7], {
       ...data,
       sitewide: { ...data.sitewide, pageClicks: undefined },
     });
@@ -146,7 +146,7 @@ describe("Admin Growth v2 UI", () => {
   });
   it("keeps every stage conversion and loss visible without hover or disclosure", () => {
     const client = new QueryClient();
-    client.setQueryData(["admin", "growth", 30], data);
+    client.setQueryData(["admin", "growth", 7], data);
     const html = renderToStaticMarkup(
       <QueryClientProvider client={client}>
         <Growth />
