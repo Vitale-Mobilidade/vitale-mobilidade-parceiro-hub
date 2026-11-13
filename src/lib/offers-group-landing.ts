@@ -27,7 +27,7 @@ export function offersGroupCampaign(search: string): CampaignValues {
   return values;
 }
 
-export type OffersGroupCtaPosition = "hero" | "after_faq";
+export type OffersGroupCtaPosition = "hero" | "carousel";
 
 export function trackOffersGroupCta(position: OffersGroupCtaPosition): void {
   try {

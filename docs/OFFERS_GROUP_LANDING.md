@@ -158,3 +158,9 @@ Mudança estrutural pelo desligamento da integração publicitária nesta rota. 
 | PMO/QA | Pass. `pnpm validate`, lint da rota e smoke de mobile e desktop. |
 
 O Tag Assistant confirmou um disparo no clique consentido, nenhum na visita ou no clique recusado, e Vinculador apenas após aceite, todos no rascunho GTM antes da mudança de escopo. Após a remoção do aceite, o rascunho fica fora de produção e a versão pública permanece 16. A ação do Google Ads permanece secundária. Não liberar campanhas com base no teste do rascunho. UTMs classificam origem; uma contagem de redirecionamentos seria uma métrica interna, separada da conversão publicitária.
+
+### Revisão prévia — interação no carrossel
+
+Classificação estrutural pelo evento de clique do convite e pela referência comercial dos selos. Produto: manter o grupo como único destino. CTO: reutilizar Embla e o link HTML existente. IA: N/A. Segurança: não ativar Ads ou modificar o 302. UX: autoplay pausável, movimento reduzido, setas e arraste sem abertura acidental. CX: a foto abre o mesmo convite. Growth: reaproveitar os extremos verificados do Radar, arredondando para baixo e identificando a referência histórica. QA: testar autoplay, arraste e clique, além do gate. Rollback: reverter o PR.
+
+Revisão posterior da interação. Produto Pass, carrossel e botão levam ao mesmo convite. CTO Pass, HTML estático e Embla existente. IA N/A. Segurança Pass, sem nova tag ou parâmetro de destino. UX Pass, mouse, toque e teclado, autoplay pausável e preferência por movimento reduzido. CX Pass, arraste não abre o convite. Growth Pass, um evento por clique, posição `carousel`, e referências históricas verificadas arredondadas para baixo. PMO Pass após `pnpm validate`, lint e smoke. A tag Ads permanece em rascunho. O filtro de posição do rascunho precisa de nova revisão caso a foto também passe a contar como conversão em uma entrega futura.
