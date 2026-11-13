@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, MessageCircle } from "lucide-react";
+import { OffersGroupGoogleAdsConsent } from "@/components/site/OffersGroupGoogleAdsConsent";
 import ft03 from "@/assets/bikes/ft03.avif";
 import {
+  OFFERS_GROUP_ADS_CONSENT_ENABLED,
   OFFERS_GROUP_LANDING_PATH,
   trackOffersGroupCta,
   type OffersGroupCtaPosition,
@@ -126,6 +128,9 @@ function OffersGroupLanding() {
               <p className="mt-3 text-sm leading-relaxed text-ink-foreground/80">
                 O convite abre no WhatsApp. A compra é no Mercado Livre.
               </p>
+              {OFFERS_GROUP_ADS_CONSENT_ENABLED && (
+                <OffersGroupGoogleAdsConsent />
+              )}
             </div>
           </div>
         </section>
