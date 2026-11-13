@@ -2556,6 +2556,7 @@ export type Database = {
           manual_send_until: string | null
           origin: string
           revision: number
+          schedule_hold: boolean
           updated_at: string
         }
         Insert: {
@@ -2572,6 +2573,7 @@ export type Database = {
           manual_send_until?: string | null
           origin: string
           revision?: number
+          schedule_hold?: boolean
           updated_at?: string
         }
         Update: {
@@ -2588,6 +2590,7 @@ export type Database = {
           manual_send_until?: string | null
           origin?: string
           revision?: number
+          schedule_hold?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -4045,6 +4048,10 @@ export type Database = {
       admin_member_summary: { Args: { p_id: string }; Returns: Json }
       admin_member_summary_before_workspace: {
         Args: { p_id: string }
+        Returns: Json
+      }
+      admin_public_traffic: {
+        Args: { p_end: string; p_start: string }
         Returns: Json
       }
       admin_quiz_bike_counts_range: {
