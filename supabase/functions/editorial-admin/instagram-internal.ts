@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { assetPath, FINAL_ALT, scenePathPattern, type RenderSlide } from "../_shared/instagram-render/contract.ts";
 import { gateway, GatewayError } from "../_shared/instagram-gateway.ts";
+import { trustedArticleOriginal } from '../_shared/instagram-render/provenance.ts';
 
 const BUCKET = "instagram-carousels";
 const MAX_BODY = 2048;
@@ -12,8 +13,8 @@ type Env = { url: string; serviceKey: string; aiKey: string; releaseFlag: string
 type Asset = { position: number; missingBikeIds?: string[]; photoHashes?: string[] };
 type Job = {
   id: string; revision: number; state: string; lease_token: string | null; lease_until: string | null;
-  source: { transcript: string; articleId: string; articleTitle: string; bikeIds: string[] };
-  script: { slides: RenderSlide[] } | null; assets: Asset[]; scene_path: string | null;
+  source: { transcript: string; articleId: string; articleTitle: string; bikeIds: string[]; videoId?:string };
+  script: { slides: RenderSlide[]; artVersion?:2 } | null; assets: Asset[]; scene_path: string | null;
   scene_attempted: boolean; script_attempted: boolean; scene_omitted: boolean;
 };
 const reply = (data: unknown, status = 200) =>
@@ -144,11 +145,18 @@ export async function handleInstagramInternal(req: Request, db: SupabaseClient, 
       if (usedHashes.has(fingerprint)) continue;
       usedHashes.add(fingerprint); photoHashes.push(fingerprint); photos.push(photo);
     }
-    const rendered = renderSlide(slide, photos, slide?.scene ? scene : null);
+    let articleOriginal=null;
+    if(job.script?.artVersion===2&&position===1&&slide?.bikeIds[0]&&job.source.videoId){
+      const source=await db.from('youtube_editorial_sources').select('capture').eq('video_id',job.source.videoId).eq('article_id',job.source.articleId).maybeSingle();
+      const path=trustedArticleOriginal(job.source.articleId,slide.bikeIds[0],source.data?.capture?.coverBackground);
+      if(path){const file=await db.storage.from('editorial-covers').download(path);if(file.data&&file.data.size<=12*1024*1024)try{articleOriginal=await decodePhoto(new Uint8Array(await file.data.arrayBuffer()));}catch{/* Fail closed to the whole catalog photograph. */}}
+    }
+    const rendered = renderSlide(slide, photos, slide?.scene ? scene : null,{artVersion:job.script?.artVersion,articleOriginal});
     const path = assetPath(job.id, job.revision, position);
     const up = await db.storage.from(BUCKET).upload(path, rendered.bytes, { contentType: "image/jpeg", upsert: true });
     if (up.error) return reply({ error: "instagram_asset_save_failed" }, 503);
-    return reply({ position, path, sha256: await hex(rendered.bytes), alt: slide?.alt ?? FINAL_ALT, missingBikeIds, photoHashes });
+    const alt=job.script?.artVersion===2&&position===1?(articleOriginal?'Bicicleta inteira na ambientação original verificada do artigo.':photos.length?'Foto real inteira da bicicleta do catálogo sobre fundo gráfico contextual.':'Manchete sobre fundo gráfico, sem foto disponível.'):slide?.alt??FINAL_ALT;
+    return reply({ position, path, sha256: await hex(rendered.bytes), alt, missingBikeIds, photoHashes });
   } catch (error) {
     return reply({ error: error instanceof Error && /^instagram_[a-z_]+$/.test(error.message) ? error.message : "instagram_render_failed" }, 422);
   }

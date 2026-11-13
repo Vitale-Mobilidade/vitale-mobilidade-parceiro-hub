@@ -8,7 +8,8 @@ import { inspectJpeg } from "../editorial-cover.ts";
 import { WIDTH, HEIGHT, FINAL_ACTIONS, type RenderSlide as Slide } from "./contract.ts";
 import decodeWebp, { init as initWebp } from "npm:@jsquash/webp@1.5.0/decode.js";
 import { webpDecoderBase64 } from "./webp-wasm.ts";
-export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],mint:[55,230,163],action:[11,121,81]} as const;
+import { renderArtV2 } from './art-v2.ts';
+export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],warm:[251,249,248],mint:[55,230,163],action:[11,121,81]} as const;
 export type Raster={width:number;height:number;buffer:Uint8Array};
 let webpReady:Promise<void>|undefined;
 export function photoFormat(bytes:Uint8Array):'image/png'|'image/jpeg'|'image/webp'{
@@ -77,7 +78,8 @@ function font(_size:number){let f=fontCache.get(0);if(!f){fontBytes??=Uint8Array
 function layout(){return sharedLayout??=new Layout();}
 const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 function rgba(c:readonly number[]){return littleEndian?((255<<24)|(c[2]<<16)|(c[1]<<8)|c[0])>>>0:((c[0]<<24)|(c[1]<<16)|(c[2]<<8)|255)>>>0;}
-export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null){
+export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null,options:{artVersion?:2;articleOriginal?:Raster|null}={}){
+ if(options.artVersion===2)return encodeSlide(renderArtV2(slide,photos,options.articleOriginal??null,containPhoto),slide);
  const theme=slide?.theme??'deep',color=palette[theme],ink=theme==='light'?palette.deep:palette.light;
  const out=new Uint8Array(WIDTH*HEIGHT*4),px32=new Uint32Array(out.buffer);px32.fill(rgba(color));
  fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));
@@ -120,12 +122,15 @@ export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|nul
    if(slide.layout==='conclusion')rectangle(72,440,936,6,palette.mint);
    text(slide.body,72,geometry.bodyY,936,geometry.bodyHeight,slide.layout==='numbers'?62:42,ink);
   }
+  return encodeSlide(out,slide);
+ }finally{}
+}
+function encodeSlide(out:Uint8Array,slide:Slide|null){
   const bytes=jpeg.encode(out,WIDTH,HEIGHT,88);if(inspectJpeg(bytes)?.width!==WIDTH)throw Error('instagram_render_invalid');
   // JPEG RGB encoding uses sRGB samples; Exif ColorSpace=1 declares sRGB explicitly.
   const exif=Uint8Array.from([255,225,0,46,69,120,105,102,0,0,73,73,42,0,8,0,0,0,1,0,105,135,4,0,1,0,0,0,26,0,0,0,0,0,0,0,1,0,1,160,3,0,1,0,0,0,1,0]);
   const final=new Uint8Array(bytes.length+exif.length);final.set(bytes.slice(0,2));final.set(exif,2);final.set(bytes.slice(2),2+exif.length);
   return {bytes:final,actions:slide?[]:[...FINAL_ACTIONS],width:WIDTH,height:HEIGHT};
- }finally{}
 }
 export function slideGeometry(layout:Slide['layout'],media:boolean){
  if(!media)return {photoY:470,photoHeight:480,bodyY:485,bodyHeight:660};

@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram art direction v2 — preview only
+- [x] Versioned editorial skill and injected short prompt; compatible v1/v2 validation.
+- [x] Deterministic Edge graphic modules, cached licensed fonts and bounded CPU; verified cover provenance/fallback.
+- [x] Six-slide V9 Max sandbox JPEG preview, feed/contact-sheet inspection and focused tests.
+- [x] Eight-perspective review, directed validation and rollback; commit recorded at delivery. No release or production writes. pnpm validate blocked by implicit install/esbuild policy, documented in docs/INSTAGRAM_ART_V2_REVIEW.md.
+
 # Instagram independente — 13/11/2026
 - [x] Remover imports WASM de source; binários em public/wasm, loader exclusivo navegador; snapshot mantém JSON/auth sem codecs.
 - [x] Composição e IA movidas para ação privada `instagram-internal` da editorial-admin (Deno); rota do navegador removida; testes Deno + e2e mock + validate.

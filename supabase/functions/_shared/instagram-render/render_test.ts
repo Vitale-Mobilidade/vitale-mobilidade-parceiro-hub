@@ -2,9 +2,31 @@
 import { assert, assertEquals, assertRejects } from "jsr:@std/assert@1";
 import { containPhoto, decodePhoto, photoFormat, renderSlide, slideGeometry } from "./index.ts";
 import { inspectJpeg } from "../editorial-cover.ts";
+import { catalogCutout } from './art-v2.ts';
+import { previewScript } from '../../../../src/lib/instagram/art-v2.fixture.ts';
 const root = new URL("../../../../", import.meta.url);
 const read = (path: string) => Deno.readFile(new URL(path, root));
 const slide = { title: "Ladeira no teste", body: "Neste teste a bike subiu a ladeira.", layout: "review" as const, theme: "petroleum" as const, bikeIds: ["bike1"], scene: null, alt: "Foto real." };
+
+Deno.test('v2 keeps full raster dimensions and enclosed white bike details in cutout',()=>{
+ const buffer=new Uint8Array(20*20*4).fill(255);
+ for(let y=3;y<17;y++)for(let x=3;x<17;x++){const p=(y*20+x)*4;buffer[p]=0;buffer[p+1]=0;buffer[p+2]=0;}
+ buffer.set([255,255,255,255],(10*20+10)*4);
+ const r=catalogCutout({width:20,height:20,buffer});
+ assertEquals([r.width,r.height],[20,20]);assertEquals(r.buffer[3],0);assertEquals(r.buffer[(10*20+10)*4+3],255);assertEquals(buffer[3],255);
+});
+Deno.test('six v2 full-size slides stay below sandbox CPU guard, fixed ending, v1 stable',async()=>{
+ const photo=await decodePhoto(await read('src/assets/bikes/v9-max.jpg'));
+ const v1=renderSlide(slide,[photo]).bytes;
+ // Warm cached fonts once; guard detects accidental re-parsing or per-pixel allocation regressions.
+ renderSlide(null,[],null,{artVersion:2});
+ for(let i=0;i<=previewScript.slides.length;i++){
+  const t=performance.now();const r=renderSlide(previewScript.slides[i]??null,i===0?[photo]:[],null,{artVersion:2});
+  assert(performance.now()-t<1000,'sandbox per-slide budget exceeded');assertEquals(inspectJpeg(r.bytes),{width:1080,height:1350});
+  if(i===previewScript.slides.length)assertEquals(r.actions,['Curta','Compartilhe','Comente','Salve']);
+ }
+ assertEquals(renderSlide(slide,[photo]).bytes,v1);
+});
 
 Deno.test("decodes a real catalog WebP with complete dimensions and contains it without crop", async () => {
   const bytes = await read("src/assets/bikes/v20-ultra-landing.webp");

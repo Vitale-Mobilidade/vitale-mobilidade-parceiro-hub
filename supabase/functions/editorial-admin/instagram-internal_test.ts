@@ -7,6 +7,7 @@ import { edge } from "../../../src/lib/instagram/edge.server.ts";
 import { jobFixture, scriptFixture } from "../../../src/lib/instagram/fixtures.test-support.ts";
 import { inspectJpeg } from "../_shared/editorial-cover.ts";
 import type { Job } from "../../../src/lib/instagram/contract.ts";
+import { previewScript,previewSource } from '../../../src/lib/instagram/art-v2.fixture.ts';
 
 const KEY = "sb_secret_test_only", URL_ = "https://edge.invalid";
 const env = { url: URL_, serviceKey: KEY, aiKey: "ai-test", releaseFlag: "true" };
@@ -40,7 +41,7 @@ function world(job: Job, opts: { generation?: boolean; photos?: Record<string, U
         async upload(path: string, bytes: Uint8Array) { assertEquals(bucket, "instagram-carousels"); files.set(path, bytes); uploads.push(path); return { error: null }; },
         async download(path: string) {
           const bytes = bucket === "bike-images" ? opts.photos?.[path.replace(/\.webp$/, "")] : files.get(path);
-          return bytes ? { data: new Blob([bytes]), error: null } : { data: null, error: { message: "missing" } };
+          return bytes ? { data: new Blob([new Uint8Array(bytes).buffer]), error: null } : { data: null, error: { message: "missing" } };
         },
       }),
     },
@@ -62,7 +63,7 @@ function stubAi(script: unknown, image?: Uint8Array) {
     const url = String(input); hits.push(url);
     if (!url.startsWith("https://ai.gateway.lovable.dev/")) throw Error("unexpected network");
     const frame = url.endsWith("/images/generations")
-      ? `data: ${JSON.stringify({ type: "image_generation.completed", b64_json: btoa(String.fromCharCode(...image!)) })}\n\n`
+      ? `data: ${JSON.stringify({ type: "image_generation.completed", b64_json: btoa(String.fromCharCode(...(image??new Uint8Array()))) })}\n\n`
       : `data: ${JSON.stringify({ choices: [{ delta: { content: JSON.stringify(script) }, finish_reason: "stop" }] })}\n\n`;
     return new Response(new Blob([frame]).stream(), { status: 200 });
   }) as typeof fetch;
@@ -71,16 +72,27 @@ function stubAi(script: unknown, image?: Uint8Array) {
 function leased() { const job = jobFixture(); job.lease_token = crypto.randomUUID(); job.lease_until = new Date(Date.now() + 600000).toISOString(); return job; }
 Deno.env.set("SUPABASE_URL", URL_); Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", KEY);
 
+Deno.test('v2 full mock: grounded script, six actual JPEGs, one photo, checkpoint resume with zero paid calls',async()=>{
+ const job=leased();job.source=structuredClone(previewSource);job.video_id=previewSource.videoId;job.article_id=previewSource.articleId;
+ job.script=structuredClone(previewScript);job.script_attempted=true;job.state='rendering';
+ const w=world(job,{photos:{v9_max:photo}});
+ await prepare(job,w.store,w.studio);assertEquals(job.state,'review');assertEquals(job.assets.length,6);
+ assertEquals(w.calls.filter(op=>op==='script'||op==='scene'),[]);
+ assertEquals(job.assets.flatMap(a=>a.photoHashes??[]).length,1);
+ for(const asset of job.assets){const bytes=w.files.get(asset.path);assert(bytes);assertEquals(inspectJpeg(bytes),{width:1080,height:1350});}
+ const before=w.uploads.length;await prepare(job,w.store,w.studio);assertEquals(w.uploads.length,before);
+});
+
 Deno.test("full mock run: 4 JPEG 1080x1350, real photo once, fixed final slide, review state", async () => {
   const job = leased(), w = world(job, { photos: { bike1: photo } }), ai = stubAi(scriptFixture);
   try { await prepare(job, w.store, w.studio); } finally { ai.restore(); }
   assertEquals(job.state, "review"); assertEquals(job.assets.length, 4); assert(approvable(job));
-  for (const a of job.assets) assertEquals(inspectJpeg(w.files.get(a.path)!), { width: 1080, height: 1350 });
+  for (const a of job.assets) { const bytes=w.files.get(a.path);assert(bytes);assertEquals(inspectJpeg(bytes), { width: 1080, height: 1350 }); }
   assertEquals(job.assets.flatMap(a => a.photoHashes ?? []).length, 1);
   assertEquals(job.assets[3].alt, "Curta, Compartilhe, Comente e Salve. @vitalemobilidade.");
   assertEquals(ai.hits.length, 1);
   await Deno.mkdir("/tmp/browser/instagram", { recursive: true });
-  for (const a of job.assets) await Deno.writeFile(`/tmp/browser/instagram/e2e-${a.position}.jpg`, w.files.get(a.path)!);
+  for (const a of job.assets) {const bytes=w.files.get(a.path);assert(bytes);await Deno.writeFile(`/tmp/browser/instagram/e2e-${a.position}.jpg`, bytes);}
 });
 Deno.test("missing catalog photo is explicit and still completes without a scene", async () => {
   const job = leased(), w = world(job), ai = stubAi(scriptFixture);
