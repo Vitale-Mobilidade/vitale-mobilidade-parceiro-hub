@@ -9,7 +9,6 @@ import {
   PODCAST_MAX_HISTORY_PAGE,
   type PodcastDashboardItem,
   type PodcastDashboardSnapshot,
-  type PodcastInstagramDraft,
 } from "../../supabase/functions/_shared/podcast-dashboard-contract";
 
 const panel = "rounded-2xl border border-line bg-white p-4 sm:p-6";
@@ -29,34 +28,12 @@ export default function AdminPodcasts() {
 
 function PodcastDashboard() {
   const [page, setPage] = useState(0);
-  const [showInstagramDrafts, setShowInstagramDrafts] = useState(false);
   const query = useQuery({
     queryKey: ["admin", "podcast-dashboard", page],
     queryFn: () => adminCall<PodcastDashboardSnapshot>("podcast-dashboard", { historyPage: page }),
     staleTime: 30_000,
     retry: false,
   });
-  const instagramCheck = useMutation({
-    mutationFn: () => adminCall<{ status: string }>("podcast-instagram-connection"),
-  });
-  const instagramRetry = useMutation({
-    mutationFn: (episode: { id: string }) =>
-      adminCall<{ status: string; code?: string }>("podcast-instagram-retry", { youtubeId: episode.id }),
-    onSettled: () => query.refetch(),
-  });
-  const retryMessage = instagramRetry.isError ? "Não foi possível concluir o envio. Atualize o histórico antes de tentar de novo."
-    : instagramRetry.data?.status === "published" ? "Publicado no Instagram."
-    : instagramRetry.data?.code === "meta_processing" ? "A Meta ainda está processando a imagem. Tente novamente em instantes."
-    : instagramRetry.data?.status === "unavailable" ? "Este episódio não está disponível para reenvio."
-    : instagramRetry.data ? "O Instagram ainda não confirmou o envio. Confira o histórico." : null;
-  const instagramConnectionMessage = instagramCheck.isError ? "Não foi possível consultar a conexão."
-    : ({
-      verified: "Conta @vitalemobilidade confirmada.",
-      not_configured: "A conexão com o Instagram ainda precisa ser configurada.",
-      wrong_instagram_account: "A conta conectada é diferente de @vitalemobilidade.",
-      meta_authorization: "A autorização da Meta precisa ser renovada.",
-      meta_request: "Não foi possível verificar a conta na Meta.",
-    } as Record<string, string>)[instagramCheck.data?.status ?? ""];
   const data = query.data;
   const agenda = data?.feedEnabled && data.schedulerEnabled;
   return (
@@ -68,8 +45,6 @@ function PodcastDashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/admin/videos" className={button}>Gerenciar áudios</Link>
-          <button className={button} type="button" aria-expanded={showInstagramDrafts}
-            onClick={() => setShowInstagramDrafts((open) => !open)}>Posts do Instagram</button>
           <button className={button} type="button" disabled={query.isFetching} onClick={() => void query.refetch()}>
             {query.isFetching ? "Consultando…" : "Atualizar"}
           </button>
@@ -77,17 +52,12 @@ function PodcastDashboard() {
       </header>
       {query.isPending && <p role="status">Consultando a fila do podcast…</p>}
       {query.isError && <p role="alert">Não foi possível atualizar o painel. Tente novamente.</p>}
-      {showInstagramDrafts && <InstagramDrafts enabled={data?.feedEnabled === true && data.instagramEnabled === true}
-        schedulerEnabled={data?.schedulerEnabled === true} onPublished={() => void query.refetch()} />}
       {data && <>
         <section className={panel} aria-labelledby="podcast-agenda">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 id="podcast-agenda" className="text-lg font-semibold">Agenda de publicação</h2>
               <p className="mt-2 font-semibold">{!data.feedEnabled ? "RSS desativado" : agenda ? "Agenda habilitada" : "Agenda pausada"}</p>
-              {data.instagramEnabled !== undefined && <p className="mt-1 text-sm">
-                {data.instagramEnabled ? "Instagram automático na mesma janela" : "Instagram automático desativado"}
-              </p>}
               <p className="mt-1 text-sm text-muted-foreground">
                 {podcastSlots.map((slot) => slot.label).join(" · ")} — horário de Brasília.
               </p>
@@ -97,13 +67,7 @@ function PodcastDashboard() {
             </div>
             {data.feedEnabled && <a href="/podcast/rss.xml" target="_blank" rel="noopener noreferrer" className={button}>Abrir RSS</a>}
           </div>
-          {data.instagramEnabled !== undefined && <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" className={button} disabled={instagramCheck.isPending} onClick={() => instagramCheck.mutate()}>
-              {instagramCheck.isPending ? "Verificando…" : "Verificar conta do Instagram"}
-            </button>
-            {instagramConnectionMessage && <p role="status" className="text-sm">{instagramConnectionMessage}</p>}
-          </div>}
-          <p className="mt-3 text-sm text-muted-foreground">O Lovable prepara os episódios com capa quadrada e legenda e mostra até seis janelas previstas. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
+          <p className="mt-3 text-sm text-muted-foreground">O Lovable prepara os episódios com capa quadrada própria e mostra até seis janelas previstas. Cada aplicativo atualiza o RSS no seu próprio ritmo.</p>
           <p className="mt-1 text-xs text-muted-foreground">Dados de <time dateTime={data.checkedAt}>{formatPodcastDateTime(data.checkedAt)}</time>, horário de Brasília.</p>
         </section>
         <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -117,10 +81,7 @@ function PodcastDashboard() {
         <EpisodeSection title="Preparados" section={data.prepared} kind="prepared" empty="Ainda não há episódios preparados." />
         <EpisodeSection title="A preparar" section={data.ready} kind="ready" empty="Nenhum vídeo com MP3 e artigo publicado aguarda preparação." />
         <EpisodeSection title="Histórico de publicações" section={data.released} kind="released" empty={page ? "Nenhum episódio nesta página." : "Ainda não há episódios publicados."}
-          retryInstagram={data.feedEnabled && data.instagramEnabled ? (item) => {
-            if (window.confirm(`Enviar “${item.title}” ao Instagram da Vitale agora?`)) instagramRetry.mutate(item);
-          } : undefined} retryPending={instagramRetry.isPending}>
-          {retryMessage && <p role="status" className="mt-3 text-sm">{retryMessage}</p>}
+          >
           {data.released.total > PODCAST_HISTORY_PAGE_SIZE && <nav aria-label="Páginas do histórico" className="mt-3 flex flex-wrap items-center gap-3">
             <button type="button" className={button} disabled={page === 0 || query.isFetching} onClick={() => setPage(page - 1)}>Mais recentes</button>
             <span className="text-sm">Página {page + 1}</span>
@@ -132,88 +93,9 @@ function PodcastDashboard() {
   );
 }
 
-function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
-  enabled: boolean;
-  schedulerEnabled: boolean;
-  onPublished: () => void;
-}) {
-  const [page, setPage] = useState(0);
-  const [selection, setSelection] = useState<PodcastInstagramDraft | null>(null);
-  const [localTime, setLocalTime] = useState("");
-  const drafts = useQuery({
-    queryKey: ["admin", "podcast-instagram-drafts", page],
-    queryFn: () => adminCall<{ total: number; items: PodcastInstagramDraft[] }>("podcast-instagram-drafts", { page }),
-    retry: false,
-  });
-  const delivery = useMutation({
-    mutationFn: ({ id, scheduled }: { id: string; scheduled: boolean }) => scheduled
-      ? adminCall<{ status: string; code?: string; scheduledAt?: string }>("podcast-instagram-schedule", { youtubeId: id, localTime })
-      : adminCall<{ status: string; code?: string; scheduledAt?: string }>("podcast-instagram-retry", { youtubeId: id }),
-    onSettled: async (result) => {
-      if (result?.status === "published" || result?.status === "scheduled") setSelection(null);
-      if (result?.status === "published") onPublished();
-      await drafts.refetch();
-    },
-  });
-  const result = delivery.data;
-  const feedback = delivery.isError ? "Não foi possível concluir. Atualize a lista antes de tentar de novo."
-    : result?.status === "published" ? "Publicado no Instagram."
-    : result?.status === "scheduled" && result.scheduledAt
-    ? `Agendado para ${formatPodcastDateTime(result.scheduledAt)}, horário de Brasília.`
-    : result?.code === "meta_processing" ? "A Meta ainda está processando a imagem. Tente novamente em instantes."
-    : result?.status === "unavailable" ? "A entrega ou o horário escolhido não está mais disponível."
-    : result ? "O Instagram ainda não confirmou o envio. Confira o histórico." : null;
-
-  return <section className={panel} aria-labelledby="podcasts-instagram-drafts">
-    <h2 id="podcasts-instagram-drafts" className="text-lg font-semibold">Posts prontos para o Instagram</h2>
-    <p className="mt-1 text-sm text-muted-foreground">Episódios no RSS com capa e legenda prontos para recuperar o envio.</p>
-    {drafts.isPending && <p role="status" className="mt-3 text-sm">Consultando posts…</p>}
-    {drafts.isError && <p role="alert" className="mt-3 text-sm">Não foi possível carregar os posts.</p>}
-    {drafts.data && drafts.data.items.length === 0 && <p className="mt-3 text-sm">Nenhum post disponível nesta página.</p>}
-    {!!drafts.data?.items.length && <ul className="mt-3 divide-y divide-line border-y border-line">
-      {drafts.data.items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-        <div>
-          <p className="text-sm font-semibold">{item.title}</p>
-          {item.scheduledAt && <p className="text-sm text-muted-foreground">
-            {Date.parse(item.scheduledAt) + 15 * 60_000 < Date.now() ? "Horário encerrado" : "Agendado"} em{" "}
-            <time dateTime={item.scheduledAt}>{formatPodcastDateTime(item.scheduledAt)}</time>
-          </p>}
-        </div>
-        <button type="button" className={button} aria-pressed={selection?.id === item.id} disabled={delivery.isPending}
-          onClick={() => { setSelection(item); setLocalTime(""); delivery.reset(); }}>Selecionar</button>
-      </li>)}
-    </ul>}
-    {(page > 0 || (drafts.data?.total ?? 0) > PODCAST_HISTORY_PAGE_SIZE) && <nav aria-label="Páginas dos posts" className="mt-3 flex gap-3">
-      <button className={button} type="button" disabled={page === 0 || drafts.isFetching} onClick={() => { setSelection(null); setPage(page - 1); }}>Anteriores</button>
-      <button className={button} type="button" disabled={drafts.isFetching || (page + 1) * PODCAST_HISTORY_PAGE_SIZE >= (drafts.data?.total ?? 0)}
-        onClick={() => { setSelection(null); setPage(page + 1); }}>Próximos</button>
-    </nav>}
-    {selection && <div className="mt-4 space-y-3">
-      <p className="text-sm font-semibold">{selection.title}</p>
-      <button type="button" className={button} disabled={!enabled || delivery.isPending} onClick={() => {
-        if (window.confirm(`Publicar “${selection.title}” no Instagram da Vitale agora?`)) delivery.mutate({ id: selection.id, scheduled: false });
-      }}>Publicar agora</button>
-      <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => {
-        event.preventDefault();
-        delivery.mutate({ id: selection.id, scheduled: true });
-      }}>
-        <label className="grid gap-1 text-sm">Data e hora de Brasília
-          <input type="datetime-local" required value={localTime} onChange={(event) => setLocalTime(event.target.value)}
-            className="min-h-11 rounded-lg border border-line px-3" />
-        </label>
-        <button type="submit" className={button} disabled={!enabled || !schedulerEnabled || !localTime || delivery.isPending}>Agendar</button>
-      </form>
-      {enabled && !schedulerEnabled && <p className="text-sm text-muted-foreground">O agendador está pausado.</p>}
-    </div>}
-    {feedback && <p role="status" className="mt-3 text-sm">{feedback}</p>}
-  </section>;
-}
-
-function EpisodeSection({ title, section, kind, empty, children, retryInstagram, retryPending }: {
+function EpisodeSection({ title, section, kind, empty, children }: {
   title: string; section: { total: number; items: PodcastDashboardItem[] }; kind: "prepared" | "ready" | "released"; empty: string;
   children?: React.ReactNode;
-  retryInstagram?: (item: PodcastDashboardItem) => void;
-  retryPending?: boolean;
 }) {
   return <section className={panel} aria-labelledby={`podcasts-${kind}`}>
     <h2 id={`podcasts-${kind}`} className="text-lg font-semibold">{title}</h2>
@@ -237,10 +119,6 @@ function EpisodeSection({ title, section, kind, empty, children, retryInstagram,
           <div className="flex flex-wrap gap-x-3">
             {item.articleSlug && <Link className={textLink} to="/conteudos/$slug" params={{ slug: item.articleSlug }}>Ver artigo</Link>}
             {item.instagram?.permalink && <a className={textLink} href={item.instagram.permalink} target="_blank" rel="noopener noreferrer">Abrir no Instagram</a>}
-            {retryInstagram && item.instagram?.status === "expired" &&
-              <button type="button" className={button} disabled={retryPending} onClick={() => retryInstagram(item)}>
-                Tentar enviar ao Instagram
-              </button>}
             {item.spotifyId && <a className={textLink} href={`https://open.spotify.com/episode/${item.spotifyId}`} target="_blank" rel="noopener noreferrer">Abrir no Spotify</a>}
           </div>
         </li>)}

@@ -7,3 +7,7 @@ Legacy `/bikes/$slug` URLs permanently redirect to `/radar/$bikeId`; public bike
 Newsletter content is composed by the existing server writer and validated independently; opening policy and deterministic Radar cards belong to the content contract/renderer, never to a separate writer or database schema. This keeps generation, pricing and delivery responsibilities isolated.
 
 Bike relevance follows [docs/BIKE_RELEVANCE_POLICY.md](docs/BIKE_RELEVANCE_POLICY.md): offer CTA clicks over the last 30 Sao Paulo calendar days, via the shared ranking RPC. Use it across Radar, Home, newsletter curation and grounded editorial context. Context, verified offers, source fidelity and rotation take precedence over popularity; never repeat sent article/video sources to fill an edition or force a popular bike into an unrelated transcript.
+
+Independent Instagram carousels live in server-only TanStack modules with persistent CAS/lease checkpoints; podcast workers must not generate or publish social posts, so RSS release never depends on social AI or Meta.
+Instagram photos reuse the installed WebP decoder with embedded WASM and signature/dimension checks; store per-asset photo fingerprints so render recovery never repeats catalog photos or paid generation.
+Keep unapplied release SQL in docs/sql/instagram-release until explicitly approved and promoted by the official migration tool; protected migration journals represent applied database history and must not be bypassed.

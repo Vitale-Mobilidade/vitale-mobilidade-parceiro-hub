@@ -36,12 +36,13 @@ it("publica a fila pronta na janela sem tentar preparar o conteúdo no mesmo hor
   const db = { rpc } as never;
   await expect(runPodcastTick(db, actor, description)).resolves.toEqual({ status: "released" });
   expect(rpc).toHaveBeenCalledWith("release_next_podcast_episode");
-  expect(fake.publish).toHaveBeenCalledWith(db);
+  expect(fake.publish).not.toHaveBeenCalled();
+  expect(fake.verify).not.toHaveBeenCalled();
   expect(fake.fill).not.toHaveBeenCalled();
   expect(fake.alert).not.toHaveBeenCalled();
 });
 
-it("avisa se a Meta não confirmou a postagem após a janela e repõe a fila automaticamente", async () => {
+it("repõe a fila RSS sem depender de confirmação da Meta", async () => {
   const rpc = vi.fn().mockResolvedValue({ data: { closed: slot } });
   const db = {
     rpc,
@@ -55,7 +56,7 @@ it("avisa se a Meta não confirmou a postagem após a janela e repõe a fila aut
     }),
   } as never;
   await expect(runPodcastTick(db, actor, description)).resolves.toEqual({ status: "prepared", ready: 6 });
-  expect(fake.alert).toHaveBeenCalledExactlyOnceWith(db, "Instagram", slot, "podcast_instagram_unconfirmed");
+  expect(fake.alert).not.toHaveBeenCalled();
   expect(fake.fill).toHaveBeenCalledExactlyOnceWith(db, actor, description, false);
   expect(fake.publish).not.toHaveBeenCalled();
   expect(rpc).not.toHaveBeenCalledWith("release_next_podcast_episode");

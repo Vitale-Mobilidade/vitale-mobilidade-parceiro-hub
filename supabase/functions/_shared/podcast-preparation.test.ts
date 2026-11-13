@@ -47,7 +47,7 @@ function fixture(width: number) {
   return { db: db as never, writes, bytes };
 }
 
-it("salva a capa 1:1 no bucket privado antes de confirmar a legenda preparada", async () => {
+it("salva a capa própria 1:1 sem criar legenda social", async () => {
   const f = fixture(1400);
   await preparePodcastDraft(f.db, video);
   expect(f.writes[1]).toMatchObject({
@@ -56,8 +56,9 @@ it("salva a capa 1:1 no bucket privado antes de confirmar a legenda preparada", 
   });
   expect(f.writes[2]?.body).toMatchObject({
     prepared_article_version: articleVersion,
-    prepared_instagram_post: { caption: "Resumo do artigo.\n\nSaiba mais no link da Bio" },
+    prepared_cover_path: `${articleId}/podcast-covers/v3-${Date.parse(articleVersion)}.jpg`,
   });
+  expect(f.writes[2]?.body).not.toHaveProperty("prepared_instagram_post");
 });
 
 it("mantém o episódio fora da fila preparada se o render devolver proporção errada", async () => {

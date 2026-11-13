@@ -1,5 +1,12 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram independente — 13/11/2026
+- [ ] Contrato, fonte elegível, estados persistidos e migrations somente versionadas.
+- [ ] Geração Gemini protegida, JPEGs determinísticos e envio Meta aprovado/idempotente.
+- [ ] Admin Instagram e retirada dos comandos sociais do podcast.
+- [ ] Testes simulados, validação dirigida, revisão das oito perspectivas e commit.
+- [ ] Release: depende de autorização para migration, storage, publicação e gates; sem cron instalado.
+
 - [x] Unificar navegação e rodapé sem links de Bikes ou comparação; usar logo oficial e favicon.
 - [x] Trocar primeiro atalho pelo Quiz e remover bloco de comparação somente da Home.
 - [x] Exibir até três artigos publicados reais; remover a seção independente de vídeos da Home.
