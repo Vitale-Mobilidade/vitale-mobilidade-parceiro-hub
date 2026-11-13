@@ -10,6 +10,7 @@ export const STATIC_SITEMAP_PATHS = [
   "/",
   "/radar",
   "/quiz",
+  "/entrenogrupodeofertas",
   "/ferramentas",
   "/conteudos",
   "/sobre",

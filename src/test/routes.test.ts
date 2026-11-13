@@ -36,6 +36,7 @@ describe("fundação TanStack Start — rotas", () => {
     ["/quiz", "/quiz"],
     ["/escolherbike", "/escolherbike"],
     ["/grupodeofertas", "/grupodeofertas"],
+    ["/entrenogrupodeofertas", "/entrenogrupodeofertas"],
     ["/acompanhamento", "/acompanhamento/"],
     ["/painel-bikes", "/painel-bikes"],
     ["/radar", "/radar/"],
