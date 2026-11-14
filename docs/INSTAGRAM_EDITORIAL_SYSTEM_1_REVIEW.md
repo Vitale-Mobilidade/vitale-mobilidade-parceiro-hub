@@ -16,8 +16,8 @@ All six images loaded at 390px with natural size 1080×1350. Main support 42px g
 **Visual limitation:** B has a verified traffic strip rather than a rich full frame. C–E use supported typography/cards/Lucide, not invented component photographs. They are less photographic than the supplied references, and the narrative still leans on explaining evidence limits rather than enough distinct test discoveries. This is a reviewable implementation, **not owner-approved final art**. No comparative carousel was fabricated: a second corresponding verified source/asset set was not loaded in this scope. Dense 3-card C uses the document's 29px card size and must be checked per actual future script; fail-closed fit remains mandatory.
 
 ## Validation
-- Targeted Instagram Vitest suite (auth, sources, compatibility, no replay, exact model/thumb/catalog/article-cover mock payload, revision approval/publication ordering).
-- Deno v4/v3 render tests and `deno check` of private Edge handler.
+- Targeted Instagram Vitest suite: 62/62 (auth, sources, compatibility, no replay, exact model/thumb/catalog/article-cover mock payload, revision approval/publication ordering).
+- Deno v4/v3 render tests: 2/2; `deno check` of private Edge handler passed.
 - `pnpm --config.verify-deps-before-run=false validate` succeeded with installed dependencies (69 core regression tests, typecheck, build); automatic build signal OK.
 - No real gateway call or hosted Edge invocation; model payload and Meta path mocked only. Snapshot still avoids eager compositor/Meta imports.
 
