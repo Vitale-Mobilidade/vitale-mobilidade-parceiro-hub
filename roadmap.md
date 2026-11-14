@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Single-image Instagram Admin workspace
+- [x] Replace carousel/editorial-review UI with paginated existing podcast queue/delivery list and image/caption detail in /admin/instagram.
+- [x] Remove podcast Instagram management except navigation; preserve hold after RSS, confirmed historical delivery states and predicted-versus-reserved windows.
+- [x] Seventeen focused tests and Deno check passed; desktop/390px mock selection/copy/history/podcast navigation verified, no overflow/page errors; automatic build OK.
+- [ ] Productive backend/read-action deployment remains blocked by unsupported official Growth history reconciliation; Codex Hub Publish only after backend readiness, no carousel activation.
+
 # Growth official reconciliation audit
 - [x] Read-only 0013/0014 function body parity and hourly columns/PK/CHECK/RLS/trigger verified; extra service_role/sandbox_exec table ACL recorded.
 - [x] Official migration_history inspect returned no plan_id and no unique historical tree; no supported exact-version adoption operation available.

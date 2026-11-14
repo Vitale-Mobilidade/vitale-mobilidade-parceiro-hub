@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
-import { readPodcastDashboard, readPodcastInstagramDrafts } from "../editorial-admin/podcast-dashboard";
-import { PODCAST_HISTORY_PAGE_SIZE, podcastHistoryPage } from "./podcast-dashboard-contract";
+import { readPodcastDashboard, readPodcastInstagramDrafts, readPodcastInstagramPosts } from "../editorial-admin/podcast-dashboard";
+import { PODCAST_HISTORY_PAGE_SIZE, podcastHistoryPage, podcastInstagramPostState } from "./podcast-dashboard-contract";
 
 it("lê totais e links do catálogo sem consultar o armazenamento nem dados privados", async () => {
   const fetchMock = vi.fn(async (request: string | URL | Request, init?: RequestInit) => {
@@ -40,6 +40,36 @@ it("lê totais e links do catálogo sem consultar o armazenamento nem dados priv
   expect(data.released).toMatchObject({ total: 21, items: [{ spotifyId: "324BQ31Y26a5askghi34ax" }] });
   expect(podcastHistoryPage(-1)).toBe(0);
   expect(podcastHistoryPage(99_999)).toBe(999);
+});
+
+it("RSS alone is never published on Instagram; hold never becomes scheduled",()=>{
+ expect(podcastInstagramPostState(null,false)).toBe("draft");
+ expect(podcastInstagramPostState({status:"pending",scheduled_at:"2026-11-14T14:45:00Z"},true)).toBe("draft");
+ expect(podcastInstagramPostState({status:"pending",scheduled_at:"2026-11-14T14:45:00Z"},false)).toBe("scheduled");
+ expect(podcastInstagramPostState({status:"failed",scheduled_at:"2026-11-14T14:45:00Z"},false)).toBe("draft");
+ expect(podcastInstagramPostState({status:"published"},false)).toBe("published");
+});
+
+it("reads held post after RSS, V9 prediction and all six confirmed historical posts with bounded metadata",async()=>{
+ const db=createClient("https://example.invalid","test",{global:{fetch:async(input,init)=>{
+  const url=new URL(String(input)),table=url.pathname.split('/').at(-1);
+  if(table==="podcast_upcoming_windows") {expect(init?.method).toBe("POST");return Response.json(["2026-11-14T09:15:00Z"]);}
+  expect(init?.method??"GET").toBe("GET");
+  if(table==="podcast_distribution_settings") return Response.json({feed_enabled:true,instagram_enabled:true,scheduler_enabled:true});
+  if(table==="podcast_prepared_episodes") return Response.json([{youtube_id:"oMk_aatN9pI",position:1}]);
+  expect(url.searchParams.get("limit")).toBe("20");expect(url.searchParams.get("offset")).toBe("0");
+  expect(url.searchParams.get("select")).not.toMatch(/transcript|blocks|credential|token/);
+  return Response.json([
+   {youtube_id:"hvtzaWLnM14",title:"OUXI",released_at:"2026-11-14T14:45:00Z",prepared_instagram_post:{reviewHold:true,caption:"OUXI caption",image_url:"https://example.invalid/ouxi.jpg"},podcast_instagram_deliveries:[{status:"pending",slot_at:"2026-11-14T14:45:00Z"}]},
+   {youtube_id:"oMk_aatN9pI",title:"V9",prepared_instagram_post:{caption:"V9 caption"},podcast_instagram_deliveries:[]},
+   ...Array.from({length:6},(_,i)=>({youtube_id:`history${i}`,title:`Historical ${i}`,prepared_instagram_post:{caption:`Original ${i}`,image_url:`https://example.invalid/old${i}.jpg`},podcast_instagram_deliveries:[{status:"published",published_at:"2026-11-12T20:45:00Z",permalink:"https://www.instagram.com/p/abc/"}]})),
+  ],{headers:{"Content-Range":"0-7/8"}});
+ }}});
+ const data=await readPodcastInstagramPosts(db as never,0);
+ expect(data.total).toBe(8);expect(data.items[0]).toMatchObject({reviewHold:true,state:"draft",caption:"OUXI caption",recoverable:false});
+ expect(data.items[1]).toMatchObject({state:"draft",predictedAt:"2026-11-14T09:15:00Z",scheduledAt:null});
+ expect(data.items.filter(item=>item.state==="published")).toHaveLength(6);
+ expect(data.items[2]).toMatchObject({caption:"Original 0",imageUrl:"https://example.invalid/old0.jpg",permalink:"https://www.instagram.com/p/abc/",recoverable:false});
 });
 
 it("mostra apenas a OUXI futura preparada sem alterar a entrega normal V9", async () => {

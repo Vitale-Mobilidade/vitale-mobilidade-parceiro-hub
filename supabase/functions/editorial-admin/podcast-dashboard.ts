@@ -8,12 +8,49 @@ import {
   type PodcastDashboardSnapshot,
   type PodcastInstagramDraft,
   type PodcastInstagramDraftsSnapshot,
+  type PodcastInstagramPost,
+  type PodcastInstagramPostsSnapshot,
+  podcastInstagramPostState,
 } from "../_shared/podcast-dashboard-contract.ts";
 import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
 import { validInstagramPermalink } from "../_shared/podcast-instagram.ts";
 import { spotifyEpisodeId } from "../_shared/podcast-spotify.ts";
 
 type Row = { youtube_id: string; title: string; release_at?: string | null; released_at?: string | null };
+
+export async function readPodcastInstagramPosts(db: SupabaseClient, rawPage: unknown): Promise<PodcastInstagramPostsSnapshot> {
+  const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
+  const [queue, settings, prepared, windows] = await Promise.all([
+    db.from("podcast_episode_queue").select("youtube_id,title,prepared_instagram_post,release_at,released_at,podcast_instagram_deliveries(status,slot_at,scheduled_at,published_at,permalink,error_code,publish_attempted_at)", {count:"exact"})
+      .or("prepared_instagram_post.not.is.null,released_at.not.is.null")
+      .order("released_at",{ascending:false,nullsFirst:true}).order("created_at",{ascending:false}).order("youtube_id")
+      .range(offset,offset+PODCAST_HISTORY_PAGE_SIZE-1),
+    db.from("podcast_distribution_settings").select("feed_enabled,instagram_enabled,scheduler_enabled").eq("singleton",true).single(),
+    db.from("podcast_prepared_episodes").select("youtube_id,position").order("position").limit(PODCAST_QUEUE_DISPLAY_LIMIT),
+    db.rpc("podcast_upcoming_windows"),
+  ]);
+  if (queue.error || settings.error || prepared.error || windows.error || !settings.data) throw new Error("podcast_instagram_drafts_read_failed");
+  type Delivery = {status:string;slot_at:string;scheduled_at:string|null;published_at:string|null;permalink:string|null;error_code:string|null;publish_attempted_at:string|null};
+  type PostRow = {youtube_id:string;title:string;prepared_instagram_post:{image_url?:string;caption?:string;reviewHold?:boolean}|null;release_at:string|null;released_at:string|null;podcast_instagram_deliveries:Delivery[]|Delivery|null};
+  const predicted = new Map<string,string>();
+  const slots: string[] = Array.isArray(windows.data) ? windows.data : [];
+  if(settings.data.feed_enabled && settings.data.scheduler_enabled) for(const row of prepared.data ?? []) {
+    const index=Number(row.position)-1;
+    if(index>=0 && typeof slots[index]==="string") predicted.set(row.youtube_id,slots[index]);
+  }
+  const items: PodcastInstagramPost[] = ((queue.data ?? []) as unknown as PostRow[]).map(row=>{
+    const delivery=Array.isArray(row.podcast_instagram_deliveries)?row.podcast_instagram_deliveries[0]??null:row.podcast_instagram_deliveries;
+    const post=row.prepared_instagram_post, held=post?.reviewHold===true;
+    const published=delivery?.status==="published";
+    return {id:row.youtube_id,title:row.title,imageUrl:post?.image_url??null,caption:post?.caption??null,reviewHold:held,
+      state:podcastInstagramPostState(delivery,held),scheduledAt:delivery?.scheduled_at??null,
+      predictedAt:!published&&!held?(row.release_at??predicted.get(row.youtube_id)??null):null,
+      publishedAt:published?delivery.published_at:null,permalink:published&&validInstagramPermalink(delivery.permalink)?delivery.permalink:null,
+      errorCode:!published?(delivery?.publish_attempted_at?"request_unconfirmed":delivery?.error_code??(delivery?.status==="failed"?"request_failed":null)):null,
+      recoverable:!held&&delivery?.status==="pending"&&!delivery.publish_attempted_at&&delivery.error_code!=="meta_create_uncertain"&&Date.parse(delivery.slot_at)<=Date.now()-5*60_000};
+  });
+  return {total:queue.count??0,items,feedEnabled:settings.data.feed_enabled,instagramEnabled:settings.data.instagram_enabled,schedulerEnabled:settings.data.scheduler_enabled};
+}
 
 export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: unknown): Promise<PodcastInstagramDraftsSnapshot> {
   const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;

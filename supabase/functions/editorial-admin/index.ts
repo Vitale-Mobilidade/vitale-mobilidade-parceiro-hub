@@ -1,5 +1,5 @@
 import { publishPodcastOnInstagram, publishScheduledPodcastInstagram, verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
-import { readPodcastDashboard, readPodcastInstagramDrafts } from "./podcast-dashboard.ts";
+import { readPodcastDashboard, readPodcastInstagramDrafts, readPodcastInstagramPosts } from "./podcast-dashboard.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
 import { runPodcastTick } from "./podcast-worker.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
@@ -2650,6 +2650,10 @@ Deno.serve(async (req) => {
       });
       if (scheduled.error) throw new Error("podcast_instagram_schedule_failed");
       return json(req, scheduled.data ? { status: "scheduled", scheduledAt: scheduled.data } : { status: "unavailable" });
+    }
+    if (action === "podcast-instagram-posts") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      return json(req, await readPodcastInstagramPosts(db, body.page));
     }
     if (action === "podcast-instagram-drafts") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);

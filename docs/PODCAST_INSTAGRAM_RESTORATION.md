@@ -1,6 +1,10 @@
 # Shared podcast Instagram restoration — staged only
 
 ## Scope and provenance
+Current UI ownership: **/admin/instagram**, existing Instagram navigation. Podcasts retains only a link (and read-only delivery status); carousel/editorial-system-review interface is removed from the workspace, not its saved data. New read-only `podcast-instagram-posts` action is admin-only and paginates existing queue/delivery relations, returns saved image/caption when available and all six published historical records. No new queue/cron, changes to claims, or automatic mutation on navigation. Held OUXI remains visible after RSS; published requires confirmed delivery status, not RSS release or a schedule. Predicted queue windows are explicitly not reserved delivery times; only existing scheduled_at is a reservation. Existing manual recovery/scheduling actions are reused only for eligible expired pending deliveries; held/historical/uncertain posts have no such controls. Copying the complete caption is local only.
+
+Backend release remains blocked by the official history inspection documented in `docs/GROWTH_JOURNAL_RECONCILIATION_AUDIT.md`. Do not deploy or publish frontend alone before backend read action and previously authorized restoration are ready; Codex owns Hub Publish. This workspace is tested with local mocked Admin/API data, not productive hosted acceptance.
+
 Owner correction replaces the independent-post proposal. Compared `5ac2d34^` with HEAD. Restored historical `podcast-worker`, `AdminPodcasts` and the admin/worker actions selectively; retained current preparation improvements (attached audio, RSS `prepared_cover_path`), Growth and all other changes.
 
 Removed only previous-round `8e3ee77` independent post modules, new workspace, routes, dispatcher, SQL and their integration hooks. No branch reset; no production changes. Historical carousel rows/IDs remain intact and their admin mutations now return authenticated 410; images and caption stay readable.

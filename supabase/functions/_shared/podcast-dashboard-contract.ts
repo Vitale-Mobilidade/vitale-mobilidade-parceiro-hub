@@ -19,6 +19,28 @@ export type PodcastInstagramDraft = {
   reviewHold?: boolean;
 };
 
+export type PodcastInstagramPost = PodcastInstagramDraft & {
+  state: "draft" | "scheduled" | "published";
+  predictedAt: string | null;
+  publishedAt: string | null;
+  permalink: string | null;
+  errorCode: string | null;
+  recoverable: boolean;
+};
+
+export type PodcastInstagramPostsSnapshot = {
+  total: number;
+  items: PodcastInstagramPost[];
+  feedEnabled: boolean;
+  instagramEnabled: boolean;
+  schedulerEnabled: boolean;
+};
+
+export function podcastInstagramPostState(delivery: {status: string; scheduled_at?: string | null; publish_attempted_at?: string | null} | null, held: boolean): PodcastInstagramPost["state"] {
+  if (delivery?.status === "published") return "published";
+  return !held && delivery?.status === "pending" && !delivery.publish_attempted_at && delivery.scheduled_at ? "scheduled" : "draft";
+}
+
 export type PodcastDashboardItem = {
   id: string;
   title: string;
