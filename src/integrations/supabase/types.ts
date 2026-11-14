@@ -3148,6 +3148,36 @@ export type Database = {
           },
         ]
       }
+      offers_group_funnel_daily: {
+        Row: {
+          bike_id: string
+          campaign: string
+          day: string
+          event_count: number
+          event_name: string
+          origin: string
+          surface: string
+        }
+        Insert: {
+          bike_id: string
+          campaign: string
+          day: string
+          event_count: number
+          event_name: string
+          origin: string
+          surface: string
+        }
+        Update: {
+          bike_id?: string
+          campaign?: string
+          day?: string
+          event_count?: number
+          event_name?: string
+          origin?: string
+          surface?: string
+        }
+        Relationships: []
+      }
       offers_group_settings: {
         Row: {
           active_group_id: number
@@ -4375,6 +4405,10 @@ export type Database = {
         Args: { p_id: string }
         Returns: Json
       }
+      admin_offers_group_funnel: {
+        Args: { p_end: string; p_start: string }
+        Returns: Json
+      }
       admin_public_traffic: {
         Args: { p_end: string; p_start: string }
         Returns: Json
@@ -5084,6 +5118,15 @@ export type Database = {
           p_path: string
           p_screen: string
           p_viewport: number
+        }
+        Returns: undefined
+      }
+      record_offers_group_funnel: {
+        Args: {
+          p_bike_id: string
+          p_event_name: string
+          p_origin: string
+          p_surface: string
         }
         Returns: undefined
       }
