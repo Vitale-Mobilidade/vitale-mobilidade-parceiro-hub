@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
+import { articleReferencesCover, coverObjectPath, COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
 import { podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
 
 export async function servePodcastCover(req: Request, params: URLSearchParams, db: SupabaseClient) {
   const portrait = params.get("layout") === "4";
   const slug = params.get("slug") ?? "";
   if (slug.length > 120 || !podcastArticleSlug.test(slug)) return new Response(null, { status: 404 });
-  const { data: article, error } = await db.from("editorial_articles").select("id,video_id,title,updated_at")
+  const { data: article, error } = await db.from("editorial_articles").select("id,video_id,title,updated_at,og_image_url")
     .eq("slug", slug).eq("status", "published").maybeSingle();
   if (error) return new Response(null, { status: 503 });
   if (!article || !isCoverUuid(article.id)) return new Response(null, { status: 404 });
@@ -46,12 +46,26 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
           : fileName.endsWith(".jpg") && source.mime === "image/jpeg" ? "image/jpeg" : null;
         if (isCoverUuid(id) && mime) {
           const { data: file, error: fileError } = await db.storage.from(COVER_BUCKET).download(path);
-          if (fileError || !file || file.size > 12 * 1024 * 1024) return new Response(null, { status: 503 });
-          background = { bytes: new Uint8Array(await file.arrayBuffer()), mime };
+          if (file && !fileError && file.size <= 12 * 1024 * 1024)
+            background = { bytes: new Uint8Array(await file.arrayBuffer()), mime };
+          else if (!portrait) return new Response(null, { status: 503 });
         }
       }
     }
-    if (portrait && !background) return new Response(null, { status: 422, headers: { "X-Media-Error": "podcast_instagram_original_missing" } });
+    if (portrait && !background) {
+      // Never fetch arbitrary URLs: exact published cover identity, same origin, private Storage only.
+      let fileId: string | null = null;
+      try { fileId = new URL(article.og_image_url).searchParams.get("file"); } catch { /* fail closed */ }
+      if (!isCoverUuid(fileId) || !articleReferencesCover(article.og_image_url, new URL(req.url).origin, article.id, fileId))
+        return new Response(null, { status: 422, headers: { "X-Media-Error": "podcast_instagram_original_missing" } });
+      const { data: published, error: publishedError } = await db.storage.from(COVER_BUCKET).download(coverObjectPath(article.id, fileId));
+      if (publishedError || !published || published.size > 12 * 1024 * 1024)
+        return new Response(null, { status: 422, headers: { "X-Media-Error": "podcast_instagram_original_missing" } });
+      const { containPublishedInstagramCover } = await import("../_shared/cover-renderer/index.ts");
+      const { bytes } = await containPublishedInstagramCover(new Uint8Array(await published.arrayBuffer()));
+      headers.set("Content-Length", String(bytes.byteLength));
+      return new Response(Uint8Array.from(bytes), { headers });
+    }
     const { composeSquarePodcastCover, composeInstagramPostCover } = await import("../_shared/cover-renderer/index.ts");
     const { bytes } = portrait && background
       ? await composeInstagramPostCover(background, article.title.normalize("NFC"))

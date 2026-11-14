@@ -22,6 +22,25 @@ it("uses only the article summary and bio call, without URLs", () => {
   expect(post?.caption).toBe("A FT07 foi testada. Leia a análise.\n\nSaiba mais no link da Bio");
 });
 
+it("reuses grounded published analysis, benefits and verdict verbatim, retaining estimates", () => {
+  const texts = ["O quadro facilita o acesso.", "A autonomia de 40 km é uma estimativa, não uma medição.", "O veredito depende do trajeto."];
+  const post = instagramPodcastPost({...article, blocks: texts.map(text => ({type:"text",text,sourceExcerpt:"Trecho da fonte já revisado no artigo."}))});
+  expect(post?.caption).toBe([...texts,"Saiba mais no link da Bio"].join("\n\n"));
+});
+
+it("never adds ungrounded blocks, factual truncations or duplicate claims; summary is the honest fallback", () => {
+  const post = instagramPodcastPost({...article, blocks:[
+    {type:"text",text:"100 km sem evidência",sourceExcerpt:""},
+    {type:"cta",text:"Compre agora",sourceExcerpt:"Fonte"},
+    {type:"text",text:"Estimativa ".repeat(300),sourceExcerpt:"Fonte"},
+  ]});
+  expect(post?.caption).toBe("Resumo do artigo.\n\nSaiba mais no link da Bio");
+  const duplicate = {type:"pros_cons",text:"Há ressalvas para subidas.",sourceExcerpt:"Fonte"};
+  const grounded = instagramPodcastPost({...article,blocks:[duplicate,duplicate]});
+  expect(grounded?.caption).toBe("Há ressalvas para subidas.\n\nSaiba mais no link da Bio");
+  expect([...(grounded?.caption ?? "")].length).toBeLessThanOrEqual(2200);
+});
+
 it("uses the authorized account and publishes a single image container", async () => {
   const fetcher = vi.fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json({ username: "vitalemobilidade", user_id: "123" }))

@@ -1,10 +1,16 @@
 # Ajuste estrito da Home e navegação
 
+# Final shared Instagram correction — based on 707081b
+- [x] Fix JSONB compare-and-swap serialization and scheduled uncertain-create exclusion.
+- [x] Reuse grounded published blocks and original cover; whole published JPEG fallback without duplicate title.
+- [x] 36 offline tests, PostgreSQL 17 uncertainty regression, Deno checks, automatic build OK; mock Admin preview inspected at 390px; commit prepared for Codex review.
+- [ ] Publish/migrate/activate/first real send and second-post review: blocked until Codex reviews this commit and coordinates the release; no production action in this turn.
+
 # Restore shared podcast Instagram — owner scope correction
 - [x] Withdraw previous independent-post queue/Admin/dispatcher only; preserve third-party HEAD and historical jobs.
 - [x] Restore legacy preparation/worker/client/Admin; separate versioned IG JPEG 1080×1350 and RSS 1400×1400, no new AI.
 - [x] Review-only definitions restore existing functions/view, same cron/windows, no retroactive inserts or uncertain replay.
-- [ ] Focused mock/media tests, visual safe margins and release/rollback record.
+- [x] Focused mock/media tests, visual safe margins and release/rollback record.
 - [ ] Production acceptance awaits separately approved definition backup/SQL/isolated releases and pending-job visual review; no production writes in this build.
 
 # Instagram ending-question incident — 14/11

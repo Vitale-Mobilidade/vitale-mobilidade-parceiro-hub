@@ -6,11 +6,11 @@ const version = "2026-11-12T02:00:00.000Z";
 afterEach(() => vi.unstubAllGlobals());
 
 function fixture(width = 1080, saveFails = false) {
-  const writes: Array<{path:string;body:unknown}> = [];
+  const writes: Array<{path:string;body:unknown;filter?:string|null}> = [];
   const db = createClient("https://db.example.com", "mock", {global:{fetch:async(input,init)=>{
     const path = new URL(String(input)).pathname;
     if(path.endsWith("podcast_episode_queue")) {
-      if(init?.method === "PATCH") { writes.push({path,body:JSON.parse(String(init.body))});return saveFails ? Response.json({message:"save failed"},{status:500}) : Response.json([{youtube_id:"abcdefghijk"}]); }
+      if(init?.method === "PATCH") { writes.push({path,body:JSON.parse(String(init.body)),filter:new URL(String(input)).searchParams.get("prepared_instagram_post")});return saveFails ? Response.json({message:"save failed"},{status:500}) : Response.json([{youtube_id:"abcdefghijk"}]); }
       return Response.json([{prepared_article_version:version,prepared_instagram_post:{image_url:"legacy.v3.jpg",caption:"Legenda original fundamentada."}}]);
     }
     if(path.endsWith("editorial_articles")) return Response.json([{id,slug:"mobylette",summary:"Resumo",updated_at:version,og_image_url:"https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg"}]);
@@ -27,6 +27,7 @@ it("adapts only versioned IG media, keeps legacy caption and never writes square
  expect(post.caption).toBe("Legenda original fundamentada.");expect(post.image_url).toContain("mobylette.ig4.jpg?layout=4");
  expect(f.writes[0].path).toContain(`${id}/podcast-instagram/v4-${Date.parse(version)}.jpg`);
  expect(f.writes[1].body).toEqual({prepared_instagram_post:post});
+ expect(f.writes[1].filter).toBe('eq.'+JSON.stringify({image_url:"legacy.v3.jpg",caption:"Legenda original fundamentada."}));
  expect(f.writes).toHaveLength(2);
 });
 it("wrong image dimensions never save media or change the prepared post",async()=>{

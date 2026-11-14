@@ -9,7 +9,7 @@ export async function preparePodcastInstagramArtwork(db: SupabaseClient, youtube
     .select("prepared_article_version,prepared_instagram_post").eq("youtube_id", youtubeId).maybeSingle();
   if (episode.error || !episode.data) throw new Error("podcast_instagram_episode_missing");
   const article = await db.from("editorial_articles")
-    .select("id,slug,og_image_url,summary,updated_at").eq("video_id", youtubeId)
+    .select("id,slug,og_image_url,summary,blocks,updated_at").eq("video_id", youtubeId)
     .eq("status", "published").eq("updated_at", episode.data.prepared_article_version).maybeSingle();
   if (article.error || !article.data) throw new Error("podcast_instagram_article_version_changed");
   const version = String(Date.parse(article.data.updated_at));
@@ -45,7 +45,7 @@ export async function preparePodcastInstagramArtwork(db: SupabaseClient, youtube
   const post = { image_url, caption };
   let write = db.from("podcast_episode_queue").update({ prepared_instagram_post: post })
     .eq("youtube_id", youtubeId).eq("prepared_article_version", article.data.updated_at);
-  write = prior === null ? write.is("prepared_instagram_post", null) : write.eq("prepared_instagram_post", prior);
+  write = prior === null ? write.is("prepared_instagram_post", null) : write.eq("prepared_instagram_post", JSON.stringify(prior));
   const saved = await write.select("youtube_id").maybeSingle();
   if (saved.error || !saved.data) throw new Error("podcast_instagram_cover_record_failed");
   return post;

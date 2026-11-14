@@ -48,4 +48,6 @@ it("review SQL restores only existing definitions, blocks uncertain replay and h
   expect(sql).toContain("error_code IS DISTINCT FROM 'meta_create_uncertain'");
   expect(sql).toContain("OLD.released_at IS NULL");
   expect(sql).toContain("ON CONFLICT (youtube_id) DO NOTHING");
+  const scheduled = sql.split("CREATE OR REPLACE FUNCTION public.claim_scheduled_podcast_instagram()")[1]?.split("CREATE OR REPLACE FUNCTION")[0];
+  expect(scheduled).toContain("d.error_code IS DISTINCT FROM 'meta_create_uncertain'");
 });

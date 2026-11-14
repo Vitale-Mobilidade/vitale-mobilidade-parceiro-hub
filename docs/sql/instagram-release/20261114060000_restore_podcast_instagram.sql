@@ -67,6 +67,7 @@ RETURNS SETOF public.podcast_instagram_deliveries LANGUAGE sql SECURITY DEFINER 
   WITH next_delivery AS (
     SELECT d.youtube_id FROM public.podcast_instagram_deliveries d
     WHERE d.status = 'pending' AND d.publish_attempted_at IS NULL
+      AND d.error_code IS DISTINCT FROM 'meta_create_uncertain'
       AND d.scheduled_at BETWEEN now() - interval '15 minutes' AND now()
       AND (d.lease_until IS NULL OR d.lease_until <= now())
       AND EXISTS (SELECT 1 FROM public.podcast_distribution_settings

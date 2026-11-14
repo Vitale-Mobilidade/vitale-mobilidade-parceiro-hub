@@ -243,3 +243,22 @@ function composeCover(source: Raster, title: string, square: boolean, portrait =
 export async function composeInstagramPostCover(background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" }, title: string) {
   return composeCover(decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg"), title, false, true);
 }
+
+/** Safe fallback: entire published JPEG, including its existing title/brand, inside the grid. */
+export async function containPublishedInstagramCover(bytes: Uint8Array) {
+  const source = decode(bytes, "jpeg");
+  const W = 1080, H = 1350, inset = 120;
+  const out = new Uint8Array(W * H * 4);
+  for (let p = 0; p < out.length; p += 4) out.set([6, 24, 18, 255], p);
+  const scale = Math.min((W - 2 * inset) / source.width, (H - 2 * inset) / source.height);
+  const width = Math.round(source.width * scale), height = Math.round(source.height * scale);
+  const left = Math.floor((W - width) / 2), top = Math.floor((H - height) / 2);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const sx = Math.min(source.width - 1, Math.floor(x / scale));
+    const sy = Math.min(source.height - 1, Math.floor(y / scale));
+    out.set(source.buffer.subarray((sy * source.width + sx) * 4, (sy * source.width + sx) * 4 + 4), ((top + y) * W + left + x) * 4);
+  }
+  const encoded = jpeg.encode(out, W, H, 88);
+  if (encoded.length > COVER_MAX_BYTES) throw new Error("cover_output_too_large");
+  return { bytes: encoded };
+}

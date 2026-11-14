@@ -15,17 +15,26 @@ function summaryWithoutLinks(text: string) {
     .trim();
 }
 
-export function instagramPodcastPost(article: Parameters<typeof podcastCoverPath>[0] & { summary: string }) {
+export function instagramPodcastPost(article: Parameters<typeof podcastCoverPath>[0] & { summary: string; blocks?: unknown }) {
   const coverPath = podcastCoverPath(article);
   const summary = summaryWithoutLinks(article.summary);
   if (!coverPath || !summary) return null;
   const call = "Saiba mais no link da Bio";
   const available = MAX_CAPTION - call.length - 2;
+  // Published text only, with its existing evidence; never invent, split or relabel claims.
+  const grounded = Array.isArray(article.blocks) ? article.blocks.filter(block =>
+    block && typeof block === "object" && ["text", "pros_cons"].includes(block.type) &&
+    typeof block.text === "string" && typeof block.sourceExcerpt === "string" && block.sourceExcerpt.trim()
+  ).map(block => summaryWithoutLinks(block.text)).filter(Boolean) : [];
+  const paragraphs: string[] = [];
+  for (const text of grounded) {
+    if (!paragraphs.includes(text) && [...[...paragraphs, text].join("\n\n")].length <= available) paragraphs.push(text);
+  }
   const characters = [...summary];
   const excerpt = characters.length > available
     ? characters.slice(0, available - 1).join("").replace(/\s+\S*$/, "") + "…"
     : summary;
-  return { image_url: new URL(coverPath.replace(".v3.jpg", ".ig4.jpg").replace("layout=3", "layout=4"), "https://vitalemobilidade.com").href, caption: [excerpt, call].join("\n\n") };
+  return { image_url: new URL(coverPath.replace(".v3.jpg", ".ig4.jpg").replace("layout=3", "layout=4"), "https://vitalemobilidade.com").href, caption: [...(paragraphs.length ? paragraphs : [excerpt]), call].join("\n\n") };
 }
 
 export type InstagramSettings = { token: string; version: string; accountId?: string };
