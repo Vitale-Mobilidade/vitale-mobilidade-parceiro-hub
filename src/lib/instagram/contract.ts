@@ -11,7 +11,7 @@ export type Source={videoId:string;videoTitle:string;videoDate:string;transcript
 export type Asset={position:number;path:string;alt:string;sha256:string;missingBikeIds:string[];photoHashes?:string[]};
 export type State='queued'|'scripting'|'scene'|'rendering'|'review'|'approved'|'publishing'|'uncertain'|'published'|'blocked';
 export type Job={id:string;video_id:string;article_id:string;state:State;revision:number;source:Source;script:Script|null;assets:Asset[];scene_path:string|null;scene_attempted:boolean;script_attempted:boolean;scene_omitted:boolean;approved_revision:number|null;approved_by:string|null;lease_token:string|null;lease_until:string|null;error_code:string|null;error_message:string|null;children:string[];album_id:string|null;publish_attempted:boolean;publish_attempted_at?:string|null;media_id:string|null;permalink:string|null;media_token_hash:string|null;media_expires_at:string|null;created_at:string};
-export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnabled:boolean;automationEnabled:boolean;source:Source|null;jobs:Job[]};
+export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnabled:boolean;automationEnabled:boolean;schedulingEnabled?:boolean;schedules?:import('./schedule').InstagramSchedule[];source:Source|null;jobs:Job[]};
 const external=/https?:|www\.|link\s+(?:da|na)\s+bio|\b(?:acesse|leia|ouça)\b.*\b(?:podcast|site|artigo)\b/i;
 export function validateScript(raw:unknown,source:Source):Script{
  const s=scriptSchema.parse(raw);

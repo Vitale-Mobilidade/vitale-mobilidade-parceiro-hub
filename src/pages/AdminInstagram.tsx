@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { instagramCall,assetBlob } from '@/lib/instagram/api';
 import { type Snapshot,type Job,type Asset } from '@/lib/instagram/contract';
 import InstagramEditorialReview from '@/components/admin/InstagramEditorialReview';
+import {InstagramSchedule} from '@/components/admin/InstagramSchedule';
 const labels:Record<string,string>={queued:'Na fila',scripting:'Roteiro em preparação',scene:'Ambientação',rendering:'Compondo artes',review:'Aguardando revisão',approved:'Aprovado',publishing:'Preparando álbum',uncertain:'Envio sem confirmação',published:'Publicado',blocked:'Requer atenção'};
 export default function AdminInstagram(){return <AdminShell>{role=>role==='admin'?<InstagramWorkspace/>:<p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;}
 function PrivateImage({job,asset}:{job:Job;asset:Asset}){
@@ -41,10 +42,11 @@ export function InstagramWorkspace(){
     <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
      {['queued','scripting','scene','rendering','blocked'].includes(job.state)&&<><Button disabled={busy||!data.generationEnabled} variant="outline" onClick={()=>act('resume')}><RefreshCw/>Retomar</Button><Button disabled={busy||!data.generationEnabled} variant="outline" onClick={()=>act('resume',{omitScene:true})}><ImageIcon/>Concluir sem cenário</Button></>}
      {job.state==='review'&&<><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>Revisei artes, legenda e evidências</label><Button disabled={busy||!reviewed} onClick={()=>act('approve')}><Check/>Aprovar revisão {job.revision}</Button></>}
-     {['approved','publishing'].includes(job.state)&&!job.publish_attempted&&<Button disabled={busy||!data.publishingEnabled} onClick={()=>{if(window.confirm('Publicar esta revisão aprovada no Instagram da Vitale?'))act('publish');}}><Send/>Publicar no Instagram</Button>}
+     {['approved','publishing'].includes(job.state)&&!job.publish_attempted&&<Button disabled={busy||!data.publishingEnabled||data.schedules?.some(s=>s.job_id===job.id&&s.revision===job.revision&&['pending','running','uncertain'].includes(s.state))} onClick={()=>{if(window.confirm('Publicar esta revisão aprovada no Instagram da Vitale?'))act('publish');}}><Send/>Publicar no Instagram</Button>}
      {job.state==='uncertain'&&<Button disabled={busy||!data.publishingEnabled} variant="outline" onClick={()=>act('reconcile')}><RefreshCw/>Conferir envio sem repetir</Button>}
      {job.permalink&&<Button asChild variant="outline"><a href={job.permalink} target="_blank" rel="noopener noreferrer">Abrir no Instagram</a></Button>}
     </div>
+    <InstagramSchedule key={`${job.id}-${job.revision}`} job={job} schedule={data.schedules?.find(s=>s.job_id===job.id&&s.revision===job.revision)} enabled={data.schedulingEnabled===true&&data.publishingEnabled} busy={busy} act={act}/>
    </section>:<p className="text-sm text-muted-foreground">Selecione ou prepare um rascunho.</p>}</div>
   </>}
   {progress&&<p role="status" className="text-sm">{progress}</p>}{feedback&&<p role="status" className="break-words text-sm">{feedback}</p>}

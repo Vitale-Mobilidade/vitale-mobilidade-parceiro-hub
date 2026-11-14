@@ -1,0 +1,40 @@
+# R4 and scheduled publication — preparation, not release
+
+## Verified delivery
+Six 1080×1350 JPEGs in Files `vitale-v9-noite-r4/slide-01.jpg`–`slide-06.jpg`, inspected together at 390px. These are sandbox compositions, **not** an imported Admin revision. No new AI image calls. Original bicycle pixels are cropped from `public/vitale-logo-email.png`, visually the identical mark used in the small favicon. No lightning icon. Existing generated photographs retain known product-geometry differences; the lamp detail is synthetic, not verified component photography or evidence of measured light output. Facts remain from the existing reviewed R3 copy; range remains an estimate.
+
+Context list is more compact and reveals the frame/handlebar/lamp; comparison cards move below the central lane; lamp copy is left of the focal point. Reusable artVersion 4 compositor adds continuous contextual environment/full-bleed shading, fine dark type edging and original signature. Existing persisted assets and v1–v3 dispatch are untouched. This does **not** claim pixel parity between the Python R4 compositions and the generic Edge layout.
+
+Local private manifest: `/tmp/instagram-system/review-r4/manifest.json`. Existing dev-only authenticated sandbox handler can read it using `INSTAGRAM_SANDBOX_DIRECTORY` in an isolated local environment. It is not production Storage or an Admin job. No Storage transfer was demonstrated: the recorded backend serves both preview and production, so uploading there would violate this preparation's no-production-write restriction. A Files attachment is not an Admin review.
+
+## Scheduling contract
+Date/time input is São Paulo (UTC−03:00), calendar-valid and strictly future. Exact approved revision, script, ordered assets/paths/hashes and approval actor form a SHA-256 fingerprint. Private schedule table uses atomic `FOR UPDATE SKIP LOCKED` claims and CAS checkpoint by lease. Cancel/reagendamento lock job and schedule and are refused after reservation begins. Manual publish is retained but blocked while a pending/running/uncertain schedule exists. Approval and generation paths are preserved.
+
+Worker `/api/public/instagram/scheduled` validates purpose-bound timestamped HMAC (`<issued>:instagram-publish`), release gate and active admin scheduler owner before reading queue. Separate `INSTAGRAM_SCHEDULING_ENABLED=true` **and** persistent `scheduling_enabled=true`, publication flag, unpaused state are required; absent flags mean off. It validates schedule actor remains admin and rechecks fingerprint inside the job lease immediately before the existing publication flow. No Facebook scheduled timestamp is sent to Meta; the worker invokes the normal carousel publisher at due time.
+
+One reserved item per tick. Up to 30 minutes late is eligible; beyond that mark blocked for a new explicit future schedule. Intent is persisted before `media_publish`; timeout never retries publication. Expired running lease becomes uncertain, never pending. Confirmed publication survives permalink failure. Schedule errors are recorded on queue; existing job retains children/album/media checkpoints and error codes. Existing media endpoint supplies short-lived hash-scoped URLs, not public bucket URLs.
+Only a confirmed `meta_processing` response before publication intent returns to pending to reuse container checkpoints; transport timeout, unreadable response or lost worker remains uncertain. Validation: 32 focused Vitest + 77 route/Radar/editorial regressions, 2 Deno tests, PostgreSQL 17 isolated schedule/cancel/reschedule/due/duplicate/expired-lease/private-grants assertions; typecheck and automatic build OK. Anonymous local snapshot JSON 401; scheduler JSON 403. No signed-in UI flow is claimed validated.
+
+## Release steps still NOT performed
+1. Review diff; authorize and apply **only** pending `docs/sql/instagram-release/20261114030000_instagram_scheduling.sql` through official migration tool, byte-for-byte. No journals modified, no cron SQL in migration.
+2. Authorize Hub publication and isolated `editorial-admin` renderer release. Do not enable discovery automation.
+3. Reconfirm existing Meta credentials and canonical `INSTAGRAM_PUBLIC_ORIGIN=https://vitalemobilidade.com`. Secret listing confirms `PODCAST_INSTAGRAM_ACCESS_TOKEN`, account/version, `LOVABLE_API_KEY` and carousel release gate exist, not validity or runtime access. Scheduler signing key, scheduler owner ID, scheduling flag and public-origin variable were absent from the listing; no values were minted/set in this turn. Use the managed scheduling credential repair (`cron_auth`) before any managed HTTP callback installation, then its documented helper/auth contract. Current custom HMAC endpoint requires a scheduler capable of generating its signature; do **not** install a static unsigned callback or assume cron_auth is compatible. If using managed callback, adapt/validate its auth recipe before activation.
+4. Register one authenticated minute-level callback only after separate activation authorization. A minute cadence is 1,440 checks/day, up to ~60s dispatch delay plus Meta processing, and can increase Cloud recurring cost even when idle. No actual job has been installed. Queue-backed provider delay-until can replace polling when supported.
+5. Import R4 to a **new** private revision via separately authorized isolated storage/revision operation, preserving revision 1. Validate all six bytes/dimensions/hashes/alt/caption and reset approval. No current import UI/server action is claimed implemented by this change; current `(video_id,article_id)` uniqueness and revision-scoped asset access require a dedicated reviewed revision operation. Never overwrite r1 paths. Until then owner can review Files only.
+6. Obtain explicit human approval for exact final art. In isolated sandbox authenticate as owner, demonstrate schedule→reagendamento→cancel and actual worker readback; Meta remains mocked. Hosted authenticated flow was not tested this turn (no owner session used). Only after all acceptance, separately authorize gates and one real future date/time. No real date supplied here.
+
+## Rollback
+Turn scheduling env/persistent gates off and stop callback; cancel pending schedules through Admin before reservation. Retain queue/media history and uncertain rows. Revert source commit only after safe pause; do not drop schedules or replay uncertain Meta publication. Restore prior renderer for new work; existing r1 assets remain intact. No migrations or settings need rolling back from this turn because none applied.
+
+## Eight-perspective review
+- Product: exact approved art, independent discovery/scheduling; import is explicitly pending.
+- CTO: same Meta/media path, private queue, immutable fingerprint, lock/CAS; no duplicated publishing API.
+- AI: zero paid/image calls; provenance internal and synthetic geometry limitation retained.
+- Security: purpose-bound HMAC, admin recheck, private table, bounded validated inputs, fail closed gates.
+- UX: São Paulo date/time, Agendar/Reagendar/Cancelar, exact revision/status; disabled until activation.
+- CX: explicit late/uncertain states; no silent retry or false permalink success.
+- Growth: no external CTA, unchanged podcast/Growth/public pages; original final signature.
+- PMO: staged SQL/deploy/auth/cron/import/approval checklist, rollback and honest validation boundaries.
+
+## Cost and validation
+Zero Gemini/Meta real calls, no upload, no production DB write, no deployment or publication. Monetary sandbox/Cloud cost not metered by tools; no claim of provider-wide zero cost. Focused Vitest, existing route/Radar regressions, Deno render and PostgreSQL 17 isolated rules are run; automatic Lovable build is checked. `pnpm validate` includes manual typecheck/build commands prohibited by this environment, so it is not run as a whole; allowed `oj typecheck --noEmit`, targeted tests and harness build are the substitute, not a claim that pnpm validate ran.

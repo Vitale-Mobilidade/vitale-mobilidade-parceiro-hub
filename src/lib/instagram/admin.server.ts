@@ -3,8 +3,8 @@ import { hash,type Job,type Snapshot } from './contract';
 import { createDb,authorize,releaseEnabled,settings,source,claim,store } from './repository.server';
 import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
 const headers={'Cache-Control':'private, no-store','Vary':'Authorization','X-Robots-Tag':'noindex, nofollow','X-Content-Type-Options':'nosniff'};
-const input=z.object({action:z.enum(['snapshot','discover','generate','resume','approve','reconcile','publish','pause']),id:z.string().uuid().optional(),revision:z.number().int().positive().optional(),videoId:z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),articleId:z.string().uuid().optional(),omitScene:z.boolean().optional()}).strict();
-export async function instagramAdmin(request:Request,dbFactory=createDb,verifiedSchedulerActor?:string){
+const input=z.object({action:z.enum(['snapshot','discover','generate','resume','approve','reconcile','publish','pause','schedule','cancel-schedule']),localTime:z.string().max(16).optional(),id:z.string().uuid().optional(),revision:z.number().int().positive().optional(),videoId:z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),articleId:z.string().uuid().optional(),omitScene:z.boolean().optional()}).strict();
+export async function instagramAdmin(request:Request,dbFactory=createDb,verifiedSchedulerActor?:string,verifiedScheduleId?:string){
  const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
  if(request.method!=='POST')return reply({error:'method_not_allowed'},405);
  if(!verifiedSchedulerActor&&!request.headers.get('Authorization')?.match(/^Bearer .+$/))return reply({error:'authentication_required'},401);
@@ -15,9 +15,16 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
   const cfg=await settings(db);
   if(data.action==='snapshot'){
    const [selected,jobs]=await Promise.all([source(db),db.from('instagram_carousel_jobs').select('*').order('created_at',{ascending:false}).limit(40)]);if(jobs.error)throw Error('instagram_jobs_unavailable');
-   return reply({available:true,generationEnabled:cfg.generation_enabled&&!cfg.paused_reason,publishingEnabled:cfg.publishing_enabled&&!cfg.paused_reason,automationEnabled:cfg.automation_enabled,source:selected,jobs:(jobs.data??[]).map(({media_token_hash,lease_token,...job})=>({...job,media_token_hash:null,lease_token:null}))});
+   const schedules=cfg.scheduling_enabled!==undefined?await db.from('instagram_carousel_schedules').select('id,job_id,revision,fingerprint,due_at,state,actor_id,error_code').order('created_at',{ascending:false}).limit(40):{data:[],error:null};
+   if(schedules.error)throw Error('instagram_schedules_unavailable');
+   return reply({available:true,generationEnabled:cfg.generation_enabled&&!cfg.paused_reason,publishingEnabled:cfg.publishing_enabled&&!cfg.paused_reason,automationEnabled:cfg.automation_enabled,schedulingEnabled:cfg.scheduling_enabled===true&&process.env.INSTAGRAM_SCHEDULING_ENABLED==='true'&&!cfg.paused_reason,schedules:schedules.data??[],source:selected,jobs:(jobs.data??[]).map(({media_token_hash,lease_token,...job})=>({...job,media_token_hash:null,lease_token:null}))});
   }
   if(data.action==='pause'){const res=await db.from('instagram_carousel_settings').update({generation_enabled:false,publishing_enabled:false,automation_enabled:false,paused_reason:'owner_pause'}).eq('singleton',true);if(res.error)throw Error('instagram_pause_failed');return reply({status:'paused'});}
+  if(data.action==='schedule'||data.action==='cancel-schedule'){
+   if(!data.id||!data.revision)throw Error('instagram_job_required');
+   if(data.action==='schedule'&&(cfg.paused_reason||!cfg.scheduling_enabled||!cfg.publishing_enabled||process.env.INSTAGRAM_SCHEDULING_ENABLED!=='true'))throw Error('instagram_scheduling_disabled');
+   const {manageSchedule}=await import('./schedule.server');return reply(await manageSchedule(db,actor,data.id,data.revision,data.localTime,data.action==='cancel-schedule'));
+  }
   if(cfg.paused_reason)throw Error('instagram_paused');
   let id=data.id,revision=data.revision;
   if(data.action==='discover'){
@@ -60,6 +67,14 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
    return new Response(body,{headers:{...headers,'Content-Type':'application/x-ndjson'}});
   }
   try{
+   if(data.action==='publish'&&cfg.scheduling_enabled!==undefined){
+    const pending=await db.from('instagram_carousel_schedules').select('*').eq('job_id',job.id).eq('revision',job.revision).in('state',['pending','running','uncertain']).maybeSingle();
+    if(pending.error)throw Error('instagram_schedule_check_failed');
+    if(verifiedScheduleId){
+     const {approvedFingerprint}=await import('./schedule');
+     if(pending.data?.id!==verifiedScheduleId||pending.data.state!=='running'||Date.parse(pending.data.due_at)>Date.now()||pending.data.fingerprint!==await approvedFingerprint(job))throw Error('instagram_schedule_changed');
+    }else if(pending.data)throw Error('instagram_cancel_schedule_before_manual_publish');
+   }
    const {approvable,publish}=await import('./workflow.server');
    if(data.action==='approve'){
     if(!approvable(job))throw Error('instagram_review_required');

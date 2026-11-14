@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram R4 + scheduling — preparation only
+- [x] Six R4 JPEGs in Files, 1080×1350, inspected at 390px, no new AI.
+- [x] Reusable compositor/signature, scheduling UI/API/pending SQL/authenticated worker, 32 focused + 77 regression tests, 2 Deno tests, isolated PostgreSQL rules, typecheck and automatic build.
+- [ ] Activation and private R4 revision import await separately authorized isolated storage, release and approved art. No production writes/deploy/Meta.
+
 # Instagram Editorial System 1.0 — preparation only
 - [x] Fixed Inter/token/component masters A–F, versioned contract/source classification; preserve v1–v3/article/podcast.
 - [x] Six real sandbox renders and 390px visual evidence; authenticated-only review code, no new art binaries in Git.

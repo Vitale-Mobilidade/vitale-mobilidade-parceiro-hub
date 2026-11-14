@@ -1,0 +1,5 @@
+import {DayPicker} from 'react-day-picker';
+import {cn} from '@/lib/utils';
+export function Calendar({className,...props}:React.ComponentProps<typeof DayPicker>){
+ return <DayPicker {...props} className={cn('p-3 pointer-events-auto',className)} classNames={{month_caption:'flex h-10 items-center justify-center font-semibold',months:'relative',nav:'absolute inset-x-0 top-0 flex justify-between',button_previous:'h-9 w-9 border border-border rounded-md text-primary',button_next:'h-9 w-9 border border-border rounded-md text-primary',month_grid:'w-full border-collapse',weekday:'text-muted-foreground text-xs h-8 w-9',day:'h-9 w-9 text-center',day_button:'h-9 w-9 rounded-md hover:bg-accent',selected:'bg-primary text-primary-foreground rounded-md',disabled:'text-muted-foreground opacity-40',today:'font-bold text-primary'}}/>;
+}

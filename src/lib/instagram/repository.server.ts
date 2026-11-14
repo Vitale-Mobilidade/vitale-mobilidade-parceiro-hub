@@ -12,7 +12,7 @@ export async function authorize(request:Request,db:SupabaseClient){
 /** Hub env gate first; if the Worker cannot see it, ask Edge read-only (its configured secret). */
 export async function releaseEnabled(confirm:()=>Promise<boolean>=edgeRelease){if(process.env.INSTAGRAM_CAROUSEL_RELEASE_ENABLED==='true')return true;try{return await confirm();}catch{return false;}}
 async function edgeRelease(){const {edge,edgeConfigured}=await import('./edge.server');return edgeConfigured()&&(await edge().runtime(false)).release;}
-export async function settings(db:SupabaseClient){const row=await db.from('instagram_carousel_settings').select('generation_enabled,publishing_enabled,automation_enabled,activated_at,cursor_at,paused_reason').eq('singleton',true).single();if(row.error)throw Error('instagram_release_pending');return row.data;}
+export async function settings(db:SupabaseClient){const row=await db.from('instagram_carousel_settings').select('*').eq('singleton',true).single();if(row.error)throw Error('instagram_release_pending');return row.data;}
 export async function source(db:SupabaseClient):Promise<Source|null>{
  const row=await db.from('instagram_carousel_sources').select('*').order('video_date',{ascending:false}).order('video_id').order('article_id').limit(1).maybeSingle();
  if(row.error)throw Error('instagram_source_unavailable');const s=row.data;

@@ -9,3 +9,10 @@ Deno.test('fixed v4 masters render six JPEGs within CPU guard and preserve v1–
  assertEquals(renderSlide(null).bytes,before[0]);assertEquals(renderSlide(null,[],null,{artVersion:2}).bytes,before[1]);assertEquals(renderSlide(null,[],null,{artVersion:3}).bytes,before[2]);
  assertEquals(S.margin,64);assertEquals(S.cardRadius,24);assertEquals(S.type.support,42);
 });
+Deno.test('photographic v4 masters fit source copy and keep full-bleed output dimensions',()=>{
+ const p={width:2,height:2,buffer:new Uint8Array([70,90,80,255,70,90,80,255,70,90,80,255,70,90,80,255])};
+ for(let i=0;i<=previewScript.slides.length;i++){
+  const r=renderSlide(previewScript.slides[i]??null,[],p,{artVersion:4,endingTitle:previewScript.endingTitle,endingBody:previewScript.endingBody,endingQuestion:previewScript.endingQuestion});
+  assertEquals([r.width,r.height],[1080,1350]);
+ }
+});
