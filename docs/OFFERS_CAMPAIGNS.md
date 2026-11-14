@@ -43,3 +43,20 @@ No GTM, validar a ação secundária Google Ads da conta 521-126-5158 com o mesm
 O responsável substituiu o fluxo de duas abas pelo convite na aba atual. Produto e UX priorizam uma única ação. Arquitetura reutiliza o link HTML do convite. Segurança elimina a abertura de janelas e URLs de lojistas da landing. Operação mantém o convite administrado. Growth conserva as contagens por posição e modelo e o consentimento para Ads. QA verifica os destinos renderizados e o clique no navegador. IA não se aplica. O Radar continua fornecendo os dados de preço dos cards. Rollback por revert da revisão.
 
 Revisão posterior: Produto, Arquitetura, Segurança, UX, Operação, Growth e QA **Pass**. Todos os links de fotos e botões dos cards apontam ao mesmo convite, e o teste de navegador verificou foto do destaque, foto da grade e botão da grade com uma única aba. Os 22 testes de medição e os 69 testes do gate passaram, assim como TypeScript e build. IA **N/A**.
+
+### Meta Pixel na landing
+
+Mudança estrutural. O Gerenciador de Eventos confirmou o conjunto Vitale Mobilidade Pixel 1012221744823940 e a conta compartilhada VitaleMobilidade1 924744493952295. O conjunto já recebe eventos de navegador e servidor e tem correspondência automática de site ativa.
+
+| Perspectiva | Decisão prévia |
+| --- | --- |
+| Produto | Medir clique que encaminha ao convite. |
+| CTO | Pixel dedicado à landing, carregado por consentimento e com evento explícito. |
+| IA | N/A. Sem automação ou inferência de eventos. |
+| Segurança | Consentimento único com Google Ads e Meta identificados. A escolha anterior do Google não concede permissão à Meta. Desabilitar configuração automática somente nesta inicialização, manter o Pixel fora de outras rotas e validar o tráfego e os campos do evento. |
+| UX | Preservar convite imediato sem aceite e espera total limitada a 500 ms quando aplicável. |
+| Operação | Preservar as integrações existentes do conjunto e conferir Eventos de teste. |
+| Growth | Conversão personalizada pelo evento OffersGroupCtaClick. Sem evento PageView ou importação offline. |
+| QA | Verificar clique, recusa, revogação, URL, parâmetros e ausência de duplicação antes de publicar. |
+
+Rollback pela reversão do código da landing e arquivamento da conversão personalizada. Configuração global do Pixel permanece sob controle do Gerenciador de Eventos.

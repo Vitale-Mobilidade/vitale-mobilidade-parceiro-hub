@@ -1,3 +1,7 @@
+import {
+  offersMetaConsentGranted,
+  trackOffersMetaClick,
+} from "./offers-meta-pixel";
 import { OFFERS_GROUP_LANDING_PATH } from "../../supabase/functions/_shared/site-analytics";
 import { siteAnalytics } from "./site-analytics";
 
@@ -86,9 +90,19 @@ export function handleOffersGroupCta(
     siteAnalytics.offersCta(window.location.href);
   }
   const href = event.currentTarget.href;
-  const canWait = adsConsent && isPlainClick(event);
+  const meta = offersMetaConsentGranted();
+  const canWait = (adsConsent || meta) && isPlainClick(event);
+  if (meta) trackOffersMetaClick(position);
   if (canWait) event.preventDefault();
-  trackGroupInvite(position, canWait ? () => openGroupInvite(href) : undefined);
+  if (canWait && meta) {
+    window.setTimeout(() => openGroupInvite(href), MAX_ADS_WAIT_MS);
+    trackGroupInvite(position);
+  } else {
+    trackGroupInvite(
+      position,
+      canWait ? () => openGroupInvite(href) : undefined,
+    );
+  }
 }
 
 export function trackGroupInvite(
