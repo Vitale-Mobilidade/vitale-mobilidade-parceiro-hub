@@ -1,6 +1,6 @@
 import { useEffect,useState } from 'react';
 import { useMutation,useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link,getRouteApi,useNavigate } from '@tanstack/react-router';
 import { Check,Download,RefreshCw,Send,Pause,Image as ImageIcon,Play,Copy } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,12 @@ function PrivateImage({job,asset}:{job:Job;asset:Asset}){
  return <div className="aspect-[4/5] w-full bg-muted">{url?<img src={url} alt={asset.alt} className="h-full w-full object-contain"/>:<p className="flex h-full items-center justify-center text-sm text-muted-foreground">{error||'Carregando arte…'}</p>}</div>;
 }
 export function InstagramWorkspace(){
- const [selected,setSelected]=useState<string|null>(null),[progress,setProgress]=useState(''),[reviewed,setReviewed]=useState(false),[feedback,setFeedback]=useState(''),[sandbox,setSandbox]=useState(false);
- const query=useQuery({queryKey:['admin','instagram'],queryFn:()=>instagramCall<Snapshot>({action:'snapshot'}),retry:false,staleTime:15000});
- const data=query.data,job=data?.jobs.find(j=>j.id===selected)??data?.jobs[0];
- const mutation=useMutation({mutationFn:(input:Record<string,unknown>)=>instagramCall<{id?:string;status?:string}>(input,setProgress),onSuccess:async(result)=>{if(result.id)setSelected(result.id);setReviewed(false);setFeedback(result.status==='published'?'Publicado no Instagram.':'Estado atualizado.');await query.refetch();},onError:async(error)=>{setFeedback(error.message);await query.refetch();},onSettled:()=>setProgress('')});
+ const {id:selected}=getRouteApi('/admin/instagram').useSearch(),navigate=useNavigate({from:'/admin/instagram'});
+ const [progress,setProgress]=useState(''),[reviewed,setReviewed]=useState(false),[feedback,setFeedback]=useState(''),[sandbox,setSandbox]=useState(false);
+ const query=useQuery({queryKey:['admin','instagram',selected],queryFn:()=>instagramCall<Snapshot>({action:'snapshot',...(selected?{id:selected}:{})}),retry:false,staleTime:15000});
+ const data=query.data,job=selected?data?.jobs.find(j=>j.id===selected):data?.jobs[0];
+ useEffect(()=>{setReviewed(false);setFeedback('');},[selected]);
+ const mutation=useMutation({mutationFn:(input:Record<string,unknown>)=>instagramCall<{id?:string;status?:string}>(input,setProgress),onSuccess:async(result)=>{if(result.id)await navigate({search:prev=>({...prev,id:result.id})});setReviewed(false);setFeedback(result.status==='published'?'Publicado no Instagram.':'Estado atualizado.');await query.refetch();},onError:async(error)=>{setFeedback(error.message);await query.refetch();},onSettled:()=>setProgress('')});
  const busy=mutation.isPending;
  async function download(asset:Asset){if(!job)return;try{const blob=await assetBlob(job.id,asset.position),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${String(asset.position).padStart(2,'0')}-vitale.jpg`;a.click();URL.revokeObjectURL(url);}catch(error){setFeedback(error instanceof Error?error.message:'Download indisponível.');}}
  const act=(action:string,extra:Record<string,unknown>={})=>{if(job)mutation.mutate({action,id:job.id,revision:job.revision,...extra});};
@@ -32,7 +34,7 @@ export function InstagramWorkspace(){
   {data&&!data.available&&<section className="border-y border-border py-6"><h2 className="font-semibold">Release aguardando autorização</h2><p className="mt-2 text-sm text-muted-foreground">Geração, publicação e agendamento estão desligados.</p></section>}
   {data?.available&&<>
    <section className="border-y border-border py-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><h2 className="font-semibold">Fonte selecionada</h2>{data.source?<><p className="mt-2 font-semibold break-words">{data.source.videoTitle}</p><p className="mt-1 text-sm text-muted-foreground">Vídeo de {data.source.videoDate} · transcrição cadastrada</p><Link to="/admin/conteudos/$id" params={{id:data.source.articleId}} className="mt-2 inline-block text-sm text-primary underline">{data.source.articleTitle}</Link><p className="mt-1 text-xs text-muted-foreground">Artigo publicado · {new Date(data.source.publishedAt).toLocaleString('pt-BR')}</p></>:<p className="mt-2 text-sm text-muted-foreground">Nenhum vídeo com transcrição e artigo publicado correspondente é elegível.</p>}</div><Button disabled={busy||!data.source||!data.generationEnabled} onClick={()=>{if(data.source)mutation.mutate({action:'generate',videoId:data.source.videoId,articleId:data.source.articleId});}}><Play/>Gerar rascunho</Button></div></section>
-   <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]"><aside><h2 className="mb-3 font-semibold">Rascunhos</h2>{!data.jobs.length&&<p className="text-sm text-muted-foreground">Nenhum rascunho preparado.</p>}<ul className="space-y-2">{data.jobs.map(item=><li key={item.id}><Button variant={job?.id===item.id?'secondary':'ghost'} className="h-auto w-full justify-start whitespace-normal py-3 text-left" onClick={()=>{setSelected(item.id);setReviewed(false);setFeedback('');}}><span><span className="block">{item.source.videoTitle}</span><span className="mt-1 block text-xs text-muted-foreground">{labels[item.state]} · revisão {item.revision}</span></span></Button></li>)}</ul></aside>
+   <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]"><aside><h2 className="mb-3 font-semibold">Rascunhos</h2>{!data.jobs.length&&<p className="text-sm text-muted-foreground">Nenhum rascunho preparado.</p>}<ul className="space-y-2">{data.jobs.map(item=><li key={item.id}><Button variant={job?.id===item.id?'secondary':'ghost'} className="h-auto w-full justify-start whitespace-normal py-3 text-left" onClick={()=>{void navigate({search:prev=>({...prev,id:item.id})});setReviewed(false);setFeedback('');}}><span><span className="block">{item.source.videoTitle}</span><span className="mt-1 block text-xs text-muted-foreground">{labels[item.state]} · revisão {item.revision}</span></span></Button></li>)}</ul></aside>
    {job?<section className="min-w-0 space-y-5"><header><h2 className="text-xl font-bold break-words">{job.script?.topic??job.source.videoTitle}</h2><p className="mt-1 text-sm text-muted-foreground">{labels[job.state]} · {job.assets.length} artes · revisão {job.revision} · arte v{job.script?.artVersion??1}</p></header>
     {job.error_code&&<p role="alert" className="break-words text-sm text-destructive">{job.error_message??job.error_code}</p>}
     {job.assets.some(a=>a.missingBikeIds.length)&&<p className="text-sm text-muted-foreground">Foto específica indisponível em parte das artes; composição sem substituição da bike.</p>}

@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram on-demand per video
+- [x] Footer breathing room JPEG in Files, inspected at 390px.
+- [x] Batch eligibility, explicit generation by selected video, exact draft URL, existing-pair reuse; 114 Vitest + 2 Deno tests passed, harness build OK.
+- [x] Release/rollback record and mock desktop/mobile UI flow; no production writes, deployment or paid calls.
+- [ ] Published authenticated acceptance requires reviewed release and owner session; click is not claimed active in production. Publishing gate remains off; separate approval required for posting.
+
 # Instagram R4 + scheduling — preparation only
 - [x] Footer-only correction: exact uploaded bike/plug disk, petroleum capsule/mint outline, slide-06-assinatura-final.jpg; slides 01–05 untouched.
 - [x] Six R4 JPEGs in Files, 1080×1350, inspected at 390px, no new AI.

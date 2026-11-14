@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { hash,type Job,type Snapshot } from './contract';
-import { createDb,authorize,releaseEnabled,settings,source,claim,store } from './repository.server';
+import { createDb,authorize,releaseEnabled,settings,source,claim,store,videoEligibility } from './repository.server';
+import { VIDEO_BATCH_LIMIT } from './video-selection';
 import { inspectJpeg } from '../../../supabase/functions/_shared/editorial-cover';
 const headers={'Cache-Control':'private, no-store','Vary':'Authorization','X-Robots-Tag':'noindex, nofollow','X-Content-Type-Options':'nosniff'};
-const input=z.object({action:z.enum(['snapshot','discover','generate','resume','approve','reconcile','publish','pause','schedule','cancel-schedule']),localTime:z.string().max(16).optional(),id:z.string().uuid().optional(),revision:z.number().int().positive().optional(),videoId:z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),articleId:z.string().uuid().optional(),omitScene:z.boolean().optional()}).strict();
+const input=z.object({action:z.enum(['snapshot','video-eligibility','discover','generate','resume','approve','reconcile','publish','pause','schedule','cancel-schedule']),videoIds:z.array(z.string().regex(/^[A-Za-z0-9_-]{11}$/)).max(VIDEO_BATCH_LIMIT).optional(),localTime:z.string().max(16).optional(),id:z.string().uuid().optional(),revision:z.number().int().positive().optional(),videoId:z.string().regex(/^[A-Za-z0-9_-]{11}$/).optional(),articleId:z.string().uuid().optional(),omitScene:z.boolean().optional()}).strict();
 export async function instagramAdmin(request:Request,dbFactory=createDb,verifiedSchedulerActor?:string,verifiedScheduleId?:string){
  const reply=(data:unknown,status=200)=>Response.json(data,{status,headers});
  if(request.method!=='POST')return reply({error:'method_not_allowed'},405);
@@ -13,8 +14,10 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
   const text=await request.text();if(text.length>4096)return reply({error:'Requisição inválida.'},413);const data=input.parse(JSON.parse(text));
   if(!await releaseEnabled())return data.action==='snapshot'?reply({available:false,generationEnabled:false,publishingEnabled:false,automationEnabled:false,source:null,jobs:[]} satisfies Snapshot):reply({error:'Release ainda não autorizado. Geração e publicação estão desligadas.'},409);
   const cfg=await settings(db);
+  if(data.action==='video-eligibility')return reply({generationEnabled:cfg.generation_enabled===true&&!cfg.paused_reason,sources:await videoEligibility(db,data.videoIds??[])});
   if(data.action==='snapshot'){
    const [selected,jobs]=await Promise.all([source(db),db.from('instagram_carousel_jobs').select('*').order('created_at',{ascending:false}).limit(40)]);if(jobs.error)throw Error('instagram_jobs_unavailable');
+   if(data.id&&!jobs.data?.some(j=>j.id===data.id)){const exact=await db.from('instagram_carousel_jobs').select('*').eq('id',data.id).maybeSingle();if(exact.error)throw Error('instagram_jobs_unavailable');if(exact.data)jobs.data=[...(jobs.data??[]),exact.data];}
    const schedules=cfg.scheduling_enabled!==undefined?await db.from('instagram_carousel_schedules').select('id,job_id,revision,fingerprint,due_at,state,actor_id,error_code').order('created_at',{ascending:false}).limit(40):{data:[],error:null};
    if(schedules.error)throw Error('instagram_schedules_unavailable');
    return reply({available:true,generationEnabled:cfg.generation_enabled&&!cfg.paused_reason,publishingEnabled:cfg.publishing_enabled&&!cfg.paused_reason,automationEnabled:cfg.automation_enabled,schedulingEnabled:cfg.scheduling_enabled===true&&process.env.INSTAGRAM_SCHEDULING_ENABLED==='true'&&!cfg.paused_reason,schedules:schedules.data??[],source:selected,jobs:(jobs.data??[]).map(({media_token_hash,lease_token,...job})=>({...job,media_token_hash:null,lease_token:null}))});
@@ -36,15 +39,20 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
   }
   if(data.action==='generate'){
    if(!cfg.generation_enabled)throw Error('instagram_generation_disabled');
-   const selected=await source(db);if(!selected||selected.videoId!==data.videoId||selected.articleId!==data.articleId)throw Error('instagram_source_changed');
-   const res=await db.from('instagram_carousel_jobs').upsert({video_id:selected.videoId,article_id:selected.articleId,source:selected},{onConflict:'video_id,article_id',ignoreDuplicates:true}).select('id,revision').maybeSingle();if(res.error)throw Error('instagram_job_create_failed');
-   const existing=res.data??(await db.from('instagram_carousel_jobs').select('id,revision').eq('video_id',selected.videoId).eq('article_id',selected.articleId).single()).data;
+   if(!data.videoId)throw Error('instagram_video_required');
+   const selected=await source(db,data.videoId,data.articleId);if(!selected||selected.videoId!==data.videoId||(data.articleId&&selected.articleId!==data.articleId))throw Error('instagram_source_changed');
+   const res=await db.from('instagram_carousel_jobs').upsert({video_id:selected.videoId,article_id:selected.articleId,source:selected},{onConflict:'video_id,article_id',ignoreDuplicates:true}).select('id,revision,state').maybeSingle();if(res.error)throw Error('instagram_job_create_failed');
+   const existing=res.data??(await db.from('instagram_carousel_jobs').select('id,revision,state').eq('video_id',selected.videoId).eq('article_id',selected.articleId).single()).data;
+   // An existing pair opens its exact revision; only explicit Resume may continue checkpoints.
+   if(!res.data&&existing)return reply({id:existing.id,status:existing.state,existing:true});
    if(!existing)throw Error('instagram_job_missing');id=existing.id;revision=existing.revision;
   }
   if(!id||!revision)throw Error('instagram_job_required');const job=await claim(db,id,revision),storage=store(db,job);
   const save=async(patch:Partial<Job>)=>{await storage.save(patch);Object.assign(job,patch);};
   if(data.action==='generate'||data.action==='resume'||data.action==='discover'){
    if(!cfg.generation_enabled){await save({lease_token:null,lease_until:null});throw Error('instagram_generation_disabled');}
+   try{const current=await source(db,job.video_id,job.article_id);if(!current)throw Error('instagram_source_changed');}
+   catch(error){await save({lease_token:null,lease_until:null});throw error;}
    const {prepare}=await import('./workflow.server');
    // Paid AI and JPEG composition run in Edge with its own secret; this Worker never loads WASM.
    const {edge,EdgeAiError}=await import('./edge.server');
