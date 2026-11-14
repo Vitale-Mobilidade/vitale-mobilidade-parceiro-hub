@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Single-pilot scope clarification — 04:46 UTC
+- [x] Reuse only existing Mobylette three-format visual pilot; archive remains metadata eligibility, no bulk jobs/images.
+- [x] Pure future planner caps preparation at one next-window post, zero AI calls/no backfill; occupied next window blocks further preparation.
+- [ ] Activation/real sending blocked until correction and pilot validated; actual scheduler integration and admin-session acceptance remain outstanding.
+
 # Independent single-image Instagram increment — owner 14 November 04:40 UTC
 - [x] Independent recent active-video/published-article/transcript source metadata selection with legacy both-path publication dedupe; retain OUXI hold/history, no podcast publish controls.
 - [x] Real local Mobylette original rendered full-bleed in three formats; comparative geometry rejection and private DEV gallery, zero AI.
