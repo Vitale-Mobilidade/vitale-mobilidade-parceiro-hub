@@ -1,6 +1,7 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram R4 + scheduling — preparation only
+- [x] Footer-only correction: exact uploaded bike/plug disk, petroleum capsule/mint outline, slide-06-assinatura-final.jpg; slides 01–05 untouched.
 - [x] Six R4 JPEGs in Files, 1080×1350, inspected at 390px, no new AI.
 - [x] Reusable compositor/signature, scheduling UI/API/pending SQL/authenticated worker, 32 focused + 77 regression tests, 2 Deno tests, isolated PostgreSQL rules, typecheck and automatic build.
 - [ ] Activation and private R4 revision import await separately authorized isolated storage, release and approved art. No production writes/deploy/Meta.

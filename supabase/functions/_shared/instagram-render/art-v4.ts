@@ -46,7 +46,7 @@ export function renderArtV4(slide:RenderSlide|null,photos:Raster[],original:Rast
   rect(64,855,952,2,C.mint);text(ending.question,64,886,952,160,38,'700',accent);
   const names=['heart','message-circle','bookmark','share-2'] as const;
   S.actions.forEach((v,i)=>{const x=64+i*244;icon(names[i],x,1080,42);text(v,x,1140,230,45,27,'600');});
-  round(290,1202,500,78,C.action,39);round(296,1208,66,66,C.white,33);contain(out,{width:SIGNATURE_BIKE.width,height:SIGNATURE_BIKE.height,buffer:Uint8Array.from(atob(SIGNATURE_BIKE.rgba),c=>c.charCodeAt(0))},303,1214,52,52);text('@vitalemobilidade',380,1224,390,45,30,'600');
+  round(290,1202,500,78,C.mint,39);round(292,1204,496,74,C.deep,37);contain(out,{width:SIGNATURE_BIKE.width,height:SIGNATURE_BIKE.height,buffer:Uint8Array.from(atob(SIGNATURE_BIKE.rgba),c=>c.charCodeAt(0))},296,1208,66,66);text('@vitalemobilidade',380,1224,390,45,30,'600');
  }else{
   label(slide.editorialLabel??S.masters[master]);text(slide.title,64,178,952,230,64,'800',ink,1.1);
   if(slide.emphasis)text(slide.emphasis,64,335,952,100,64,'italic',accent,1.1);
