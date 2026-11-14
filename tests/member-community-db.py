@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--fee-50" in sys.argv: sys.argv.append("--partners")
 if "--empty-drafts" in sys.argv: sys.argv.append("--workspace")
 if "--workspace" in sys.argv: sys.argv.append("--partners")
 if "--reporting" in sys.argv: sys.argv.append("--launch")
@@ -325,6 +326,18 @@ COMMIT;
                         result=sql("SELECT NOT has_function_privilege('service_role','public.admin_member_period_metrics(uuid,text,date,date)','EXECUTE') AND (public.admin_community_manage('00000000-0000-4000-8000-000000000001','members')->>'total')::int>0 AND (SELECT count(*)>0 FROM public.member_listing_billing);")
                         assert result.returncode==0 and " t" in result.stdout,result.stderr
                         print("PASS workspace rollback restores prior directory and retains all commercial records")
+                    if "--fee-50" in sys.argv:
+                        existing=sql("SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM public.member_listing_billing o;").stdout
+                        restore=sql((repo/"supabase/migrations/20261114210000_classifieds_fee_50.sql").read_text())
+                        assert restore.returncode==0,restore.stderr
+                        assert sql("SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM public.member_listing_billing o;").stdout==existing
+                        for path in ["tests/classifieds-fee-50.sql","supabase/rollback/20261114210000_classifieds_fee_50.sql"]:
+                            result=sql((repo/path).read_text())
+                            assert result.returncode==0,result.stderr
+                            print(f"PASS {path}")
+                        checks=sql("SELECT listing_fee_cents=15000 AND EXISTS(SELECT 1 FROM public.member_listing_billing WHERE amount_cents=5000 AND paid_until-display_started_at=interval '2160 hours') FROM public.member_classifieds_settings;")
+                        assert checks.returncode==0 and " t" in checks.stdout,checks.stderr
+                        print("PASS rollback switches offer price without changing new paid amount or duration")
                     rollback=sql((repo/"supabase/rollback/20261106150000_admin_members_partners.sql").read_text())
                     assert rollback.returncode==0,rollback.stderr
                     invariant=sql("SELECT NOT has_function_privilege('service_role','public.admin_community_manage(uuid,text,jsonb)','EXECUTE') AND (SELECT count(*)>0 FROM public.member_listing_courtesies);")

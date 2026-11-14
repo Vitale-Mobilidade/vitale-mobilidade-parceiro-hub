@@ -94,9 +94,9 @@ try{
  // Contact was already verified and confirmed in the synthetic profile and listing.
  await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();
  await page.getByRole('heading',{name:'Cortesia para anunciar por 90 dias',exact:true}).waitFor();
- assert.equal(await page.getByRole('button',{name:'Seguir para pagamento de R$150',exact:true}).count(),0);
+ assert.equal(await page.getByRole('button',{name:'Seguir para pagamento de R$50',exact:true}).count(),0);
  await page.getByText('Você tem uma cortesia disponível. Cancele o pagamento pendente abaixo antes de usá-la.',{exact:false}).waitFor();
- assert.equal(await page.getByRole('link',{name:'Seguir para pagamento de R$150',exact:true}).count(),0);
+ assert.equal(await page.getByRole('link',{name:'Seguir para pagamento de R$50',exact:true}).count(),0);
  await page.getByRole('button',{name:'Cancelar pagamento pendente',exact:true}).click();await page.getByRole('alertdialog').getByRole('button',{name:'Cancelar pagamento',exact:true}).click();await page.getByRole('button',{name:'Publicar com cortesia de 90 dias',exact:true}).waitFor();
 
  const checkbox=page.getByTestId('publication-consent').getByRole('checkbox');await checkbox.check();

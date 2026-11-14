@@ -1,3 +1,7 @@
+import {
+  CLASSIFIEDS_FEE_CENTS,
+  classifiedsFeeLabel,
+} from "@/lib/classifieds-price";
 import { z } from "zod";
 import {
   Dialog,
@@ -115,6 +119,9 @@ export function ListingBillingPanel({
     open = Boolean(
       order && !["cancelled", "failed", "expired"].includes(order.status),
     );
+  const paymentLabel = classifiedsFeeLabel(
+    open ? order?.amountCents : undefined,
+  );
   useEffect(() => {
     onLockChange(busy || (open && status !== "active"));
   }, [busy, open, status, onLockChange]);
@@ -211,6 +218,7 @@ export function ListingBillingPanel({
       const data = await listingBillingCall("checkout", listingId, {
         contactConsent,
         purchaseAccepted: contactConsent,
+        expectedAmountCents: CLASSIFIEDS_FEE_CENTS,
       });
       setOrder(data.order);
       await changed.current();
@@ -219,7 +227,7 @@ export function ListingBillingPanel({
           paymentTab.location.replace(data.order.paymentUrl);
         else
           setError(
-            "O checkout está pronto. Use o botão Seguir para pagamento de R$150 para abrir uma nova aba.",
+            "O checkout está pronto. Use o botão de pagamento para abrir uma nova aba.",
           );
       } else
         setError(
@@ -308,7 +316,7 @@ export function ListingBillingPanel({
       <h4 id="listing-billing-title" className="text-xl font-bold text-ink">
         {hasCourtesy
           ? "Cortesia para anunciar por 90 dias"
-          : "R$150 para anunciar por 90 dias"}
+          : `${paymentLabel} para anunciar por 90 dias`}
       </h4>
       <p className="mt-2 text-sm text-muted-foreground">
         {hasCourtesy
@@ -338,7 +346,7 @@ export function ListingBillingPanel({
             compradores.
             {status !== "active" &&
               !hasBenefit &&
-              " Aceito o pagamento único de R$150 por 90 dias de exibição, sem renovação automática."}
+              ` Aceito o pagamento único de ${classifiedsFeeLabel()} por 90 dias de exibição, sem renovação automática.`}
           </span>
         </label>
       )}
@@ -474,7 +482,7 @@ export function ListingBillingPanel({
                 className={`${button} flex w-full sm:ml-auto sm:w-auto`}
               >
                 <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                Seguir para pagamento de R$150
+                Seguir para pagamento de {paymentLabel}
               </a>
             )}
           {status === "cancel_pending" && (
@@ -503,7 +511,7 @@ export function ListingBillingPanel({
           {status === "expired" && (
             <p role="status" className="mt-4 text-sm">
               Os 90 dias terminaram. Para anunciar novamente, faça um novo
-              pagamento único de R$150.
+              pagamento único de {classifiedsFeeLabel()}.
             </p>
           )}
           {configured === null && !hasBenefit && (
@@ -606,7 +614,9 @@ export function ListingBillingPanel({
               className={`${button} mt-5 flex w-full sm:ml-auto sm:w-auto`}
               onClick={() => void checkout()}
             >
-              {busy ? "Abrindo checkout…" : "Seguir para pagamento de R$150"}
+              {busy
+                ? "Abrindo checkout…"
+                : `Seguir para pagamento de ${classifiedsFeeLabel()}`}
             </button>
           )}
         </>

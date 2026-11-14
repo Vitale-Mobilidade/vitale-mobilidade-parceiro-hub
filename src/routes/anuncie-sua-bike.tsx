@@ -1,3 +1,4 @@
+import { classifiedsFeeLabel } from "@/lib/classifieds-price";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader, SiteFooter } from "@/components/site/site-ui";
 import { pageHead } from "@/lib/seo";
@@ -8,8 +9,7 @@ export const Route = createFileRoute("/anuncie-sua-bike")({
       path: "/anuncie-sua-bike",
       title: "Anuncie sua bike | Vitale Mobilidade",
       robots: "noindex, follow",
-      description:
-        "Anuncie sua bicicleta por 90 dias na Vitale. Pagamento único de R$150 por Pix ou cartão, sem renovação automática.",
+      description: `Anuncie sua bicicleta por 90 dias na Vitale. Pagamento único de ${classifiedsFeeLabel()} por Pix ou cartão, sem renovação automática.`,
     }),
   component: () => (
     <div className="min-h-screen bg-background">
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/anuncie-sua-bike")({
           </p>
           <div className="mt-8 rounded-3xl border border-line bg-surface p-6 sm:p-8">
             <h2 className="text-3xl font-bold text-ink">
-              R$150 por 90 dias de exposição
+              {classifiedsFeeLabel()} por 90 dias de exposição
             </h2>
             <p className="mt-3 text-muted-foreground">
               Pagamento único por Pix ou cartão. Sem assinatura ou renovação

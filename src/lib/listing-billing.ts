@@ -1,3 +1,4 @@
+import { isClassifiedsFee } from "./classifieds-price";
 import { z } from "zod";
 export const billingOrderSchema = z.object({
   id: z.string().uuid(),
@@ -12,6 +13,7 @@ export const billingOrderSchema = z.object({
     "failed",
     "expired",
   ]),
+  amountCents: z.number().refine(isClassifiedsFee).optional(),
   paymentUrl: z.string().nullable(),
   checkoutExpiresAt: z.string().nullable().optional(),
   displayStartedAt: z.string().nullable(),
@@ -37,6 +39,8 @@ export const billingMessage = (code: string) =>
       "Você tem um período pago disponível. Use-o para publicar sem nova cobrança.",
     identity_verification_required:
       "Confirme seu e-mail e WhatsApp no perfil para continuar.",
+    billing_price_changed:
+      "O valor para anunciar mudou. Atualize a página para continuar com o preço vigente.",
     billing_consent_required:
       "Aceite o pagamento único e o contato dos compradores para continuar.",
     billing_uncertain:

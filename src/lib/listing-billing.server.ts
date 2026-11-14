@@ -1,3 +1,8 @@
+import {
+  CLASSIFIEDS_FEE_CENTS,
+  LEGACY_CLASSIFIEDS_FEE_CENTS,
+  isClassifiedsFee,
+} from "./classifieds-price";
 import { CHECKOUT_WINDOW_MINUTES, CHECKOUT_WINDOW_MS } from "./checkout-window";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "node:crypto";
@@ -33,6 +38,7 @@ export type BillingOrder = {
   listing_id: string;
   method: string;
   billing_model: string;
+  amount_cents: number;
   paid_at: string | null;
   display_started_at: string | null;
   status: string;
@@ -68,6 +74,7 @@ function projection(order: BillingOrder | null) {
     ? {
         id: order.id,
         method: order.method,
+        amountCents: order.amount_cents,
         status: order.status,
         paymentUrl: safeAsaasPaymentUrl(order.payment_url),
         checkoutExpiresAt: order.checkout_expires_at,
@@ -110,6 +117,7 @@ export async function memberListingBilling(request: Request) {
         listingId: uuid,
         contactConsent: z.boolean().optional(),
         purchaseAccepted: z.boolean().optional(),
+        expectedAmountCents: z.number().int().optional(),
       })
       .strict()
       .parse(JSON.parse(raw));
@@ -146,7 +154,7 @@ export async function memberListingBilling(request: Request) {
           process.env.ASAAS_API_KEY &&
           process.env.ASAAS_WEBHOOK_TOKEN,
         ),
-        amountCents: 15000,
+        amountCents: CLASSIFIEDS_FEE_CENTS,
         displayDays: 90,
         billingModel: "one_time_90d",
         order: projection(await currentOrder(db, listing.id, user.id)),
@@ -178,13 +186,16 @@ export async function memberListingBilling(request: Request) {
     }
     if (!process.env.ASAAS_API_KEY || !process.env.ASAAS_WEBHOOK_TOKEN)
       return result({ error: "billing_unavailable" }, 503);
+    if (input.expectedAmountCents !== CLASSIFIEDS_FEE_CENTS)
+      return result({ error: "billing_price_changed" }, 409);
     const { data: reserved, error: reserveError } = await db.rpc(
-      "member_billing_purchase",
+      "member_billing_purchase_at_price",
       {
         p_actor: user.id,
         p_id: listing.id,
         p_contact: input.contactConsent === true,
         p_accepted: input.purchaseAccepted === true,
+        p_expected_amount: input.expectedAmountCents,
       },
     );
     if (reserveError)
@@ -197,6 +208,7 @@ export async function memberListingBilling(request: Request) {
               "listing_incomplete",
               "billing_unavailable",
               "billing_consent_required",
+              "billing_price_changed",
             ].find((code) => reserveError.message.includes(code)) ??
             "billing_unavailable",
         },
@@ -217,7 +229,12 @@ export async function memberListingBilling(request: Request) {
       if (!data?.length) throw new Error("billing_cancelled");
       started = true;
       const startedAt = Date.now();
-      const checkout = await createHostedCheckout(api, order.id, listing.title);
+      const checkout = await createHostedCheckout(
+        api,
+        order.id,
+        listing.title,
+        order.amount_cents,
+      );
       await saveOrder(db, order.id, {
         checkout_id: checkout.id,
         payment_url: checkout.url,
@@ -271,7 +288,9 @@ export async function createHostedCheckout(
   api: AsaasClient,
   reference: string,
   title: string,
+  amountCents = CLASSIFIEDS_FEE_CENTS,
 ) {
+  if (!isClassifiedsFee(amountCents)) throw new AsaasFault(503);
   const c = await api.call<{ id: string; link?: string }>(
     "/checkouts",
     "POST",
@@ -290,7 +309,7 @@ export async function createHostedCheckout(
           name: "Anúncio de bike na Vitale",
           description: `90 dias de exibição. ${title.slice(0, 100)}`,
           quantity: 1,
-          value: 150,
+          value: amountCents / 100,
         },
       ],
     },
@@ -419,7 +438,8 @@ export async function reconcilePayment(
     order.billing_model !== "one_time_90d" ||
     order.method !== "hosted" ||
     p.id !== id ||
-    Number(p.value) !== 150 ||
+    !isClassifiedsFee(order.amount_cents) ||
+    Number(p.value) !== order.amount_cents / 100 ||
     !/^\d{4}-\d{2}-\d{2}$/.test(String(p.dueDate)) ||
     !order.checkout_id ||
     p.checkoutSession !== order.checkout_id ||
@@ -463,7 +483,7 @@ export async function reconcilePayment(
     p_order: order.id,
     p_payment: id,
     p_status: status,
-    p_paid: !risk && !refund && paidAsaasCycle(p),
+    p_paid: !risk && !refund && paidAsaasCycle(p, order.amount_cents),
     p_due: p.dueDate,
     p_observed: observed,
   });
@@ -570,7 +590,7 @@ export async function retireLegacyListingLink(
   const matches = links.data.filter(
     (l) =>
       String(l.name).trim().toLowerCase() === "anuncie sua bike" &&
-      Number(l.value) === 150 &&
+      Number(l.value) === LEGACY_CLASSIFIEDS_FEE_CENTS / 100 &&
       l.chargeType === "RECURRENT" &&
       l.active === true,
   );

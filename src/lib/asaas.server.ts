@@ -76,10 +76,13 @@ export function safeAsaasPaymentUrl(value: unknown): string | null {
     return null;
   }
 }
-export function paidAsaasCycle(payment: Record<string, unknown>): boolean {
+export function paidAsaasCycle(
+  payment: Record<string, unknown>,
+  amountCents: number,
+): boolean {
   return (
     payment.deleted !== true &&
-    Number(payment.value) === 150 &&
+    Number(payment.value) === amountCents / 100 &&
     ((payment.billingType === "CREDIT_CARD" &&
       ["CONFIRMED", "RECEIVED"].includes(String(payment.status))) ||
       (payment.billingType === "PIX" && payment.status === "RECEIVED"))

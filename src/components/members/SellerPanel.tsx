@@ -1,3 +1,4 @@
+import { classifiedsFeeLabel } from "@/lib/classifieds-price";
 import { useEffect, useState } from "react";
 import { Bike, Camera, MessageCircle, PencilLine } from "lucide-react";
 import { classifiedsCall } from "@/lib/bike-classifieds-api";
@@ -32,8 +33,8 @@ export function SellerPanel() {
         diretamente com os interessados.
       </p>
       <p className="mt-3 font-semibold text-ink">
-        Pagamento único de R$150 por 90 dias de exposição, sem renovação
-        automática.
+        Pagamento único de {classifiedsFeeLabel()} por 90 dias de exposição, sem
+        renovação automática.
       </p>
       <ul className="mt-5 space-y-3 text-sm">
         <li className="flex gap-3">
