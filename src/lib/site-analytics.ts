@@ -1,5 +1,7 @@
 import {
+  OFFERS_GROUP_LANDING_PATH,
   publicAnalyticsPath,
+  type OffersFunnelEvent,
   type SiteAnalyticsHit,
 } from "../../supabase/functions/_shared/site-analytics";
 
@@ -39,7 +41,29 @@ export function makeSiteAnalytics(
     }
   };
 
+  const offersEvent = (url: URL, event: OffersFunnelEvent) => {
+    const sourcePath = publicAnalyticsPath(url.pathname);
+    if (sourcePath !== OFFERS_GROUP_LANDING_PATH) return;
+    const one = (key: string) => {
+      const values = url.searchParams.getAll(key);
+      return values.length === 1 ? values[0] : null;
+    };
+    const source = one("utm_source");
+    const paidPilot =
+      one("utm_medium") === "paid" &&
+      one("utm_campaign") === "vitale_grupo_ofertas";
+    const origin =
+      paidPilot && (source === "google" || source === "meta")
+        ? source
+        : "unattributed";
+    emit({ event, sourcePath, origin });
+  };
+
   return {
+    offersCta(href: string) {
+      const url = productionUrl(href);
+      if (url) offersEvent(url, "offers_cta_click");
+    },
     pageView(href: string) {
       if (!enabled) return;
       const url = productionUrl(href);
@@ -47,6 +71,9 @@ export function makeSiteAnalytics(
       if (!sourcePath || sourcePath === lastPage) return;
       lastPage = sourcePath;
       emit({ event: "page_view", sourcePath });
+      if (url && sourcePath === OFFERS_GROUP_LANDING_PATH) {
+        offersEvent(url, "offers_landing_view");
+      }
     },
     bikeClick(sourceHref: string, targetHref: string) {
       if (!enabled) return;

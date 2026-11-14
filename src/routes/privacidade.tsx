@@ -127,6 +127,11 @@ function PrivacyPage() {
               por até um minuto e nunca gravada nos totais. Os totais antigos são removidos na próxima gravação após 365
               dias. Registros técnicos da infraestrutura seguem as políticas dos provedores.
             </p>
+            <p className="mt-3">
+              Na página do Grupo de Ofertas, também contamos visualizações e cliques no botão do WhatsApp.
+              Os totais são separados em Google Ads, Meta Ads ou origem não identificada. Guardamos apenas a
+              categoria da origem, sem parâmetros completos do anúncio ou dados do WhatsApp.
+            </p>
           </section>
           <section>
             <h2 className="text-xl font-bold">Mapa agregado de interação</h2>

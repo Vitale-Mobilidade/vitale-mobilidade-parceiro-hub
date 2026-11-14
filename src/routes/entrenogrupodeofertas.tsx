@@ -7,7 +7,7 @@ import {
   Play,
 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import v9Max from "@/assets/bikes/v9-max.avif";
 import gt2000 from "@/assets/bikes/gt2000.avif";
 import ft03 from "@/assets/bikes/ft03.avif";
@@ -60,17 +60,17 @@ export const Route = createFileRoute("/entrenogrupodeofertas")({
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current";
 
-function GroupLink() {
+function GroupLink({ position = "hero" }: { position?: "hero" | "sticky" }) {
   return (
     <a
       href={canonicalUrl(OFFERS_GROUP_URL)}
       rel="noreferrer"
       onClick={(event) => {
-        if (event.nativeEvent.isTrusted) trackOffersGroupCta("hero");
+        if (event.nativeEvent.isTrusted) trackOffersGroupCta(position);
       }}
       onAuxClick={(event) => {
         if (event.button === 1 && event.nativeEvent.isTrusted)
-          trackOffersGroupCta("hero");
+          trackOffersGroupCta(position);
       }}
       className={`inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-mint px-4 py-3 text-center text-base leading-tight font-bold text-ink hover:bg-mint/90 sm:w-auto sm:px-6 ${focus}`}
     >
@@ -235,6 +235,19 @@ function OffersCarousel() {
 }
 
 function OffersGroupLanding() {
+  const primaryAction = useRef<HTMLDivElement>(null);
+  const [showStickyAction, setShowStickyAction] = useState(false);
+
+  useEffect(() => {
+    const action = primaryAction.current;
+    if (!action || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setShowStickyAction(!entry.isIntersecting && entry.boundingClientRect.bottom <= 0);
+    });
+    observer.observe(action);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="offers-group-landing min-h-screen bg-ink text-ink-foreground">
       <header className="border-b border-white/15 bg-ink text-ink-foreground">
@@ -251,7 +264,7 @@ function OffersGroupLanding() {
         </div>
       </header>
 
-      <main className="bg-ink text-ink-foreground">
+      <main className="bg-ink pb-24 text-ink-foreground sm:pb-0">
         <div className="mx-auto grid max-w-6xl gap-6 px-5 py-6 sm:px-8 sm:py-10 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-10 lg:gap-14 lg:py-14">
           <div className="md:pt-6">
             <p className="text-xs font-bold tracking-widest text-mint uppercase sm:text-sm">
@@ -263,13 +276,22 @@ function OffersGroupLanding() {
             <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-foreground/90 sm:text-lg">
               {DESCRIPTION}
             </p>
-            <div className="mt-4 sm:mt-6">
+            <div ref={primaryAction} className="mt-4 sm:mt-6">
               <GroupLink />
+              <p className="mt-2 text-sm text-ink-foreground/85">
+                O WhatsApp abre o convite. Toque em “Entrar no grupo” para confirmar.
+              </p>
             </div>
           </div>
           <OffersCarousel />
         </div>
       </main>
+
+      {showStickyAction && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-ink px-5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden">
+          <GroupLink position="sticky" />
+        </div>
+      )}
     </div>
   );
 }
