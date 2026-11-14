@@ -22,9 +22,8 @@ export function offersMetaAvailable() {
   if (url.origin + url.pathname.replace(/\/$/, "") !== LANDING_URL || url.hash)
     return false;
   // The SDK reports the browser URL. Admit campaign codes and click IDs, never arbitrary parameters.
-  if (url.searchParams.get("vitale_meta_test") !== "1") return false;
   const accepted =
-    /^(utm_source|utm_medium|utm_campaign|utm_content|fbclid|gclid|gbraid|wbraid|vitale_meta_test)$/;
+    /^(utm_source|utm_medium|utm_campaign|utm_content|fbclid|gclid|gbraid|wbraid)$/;
   for (const [key, value] of url.searchParams) {
     if (
       !accepted.test(key) ||

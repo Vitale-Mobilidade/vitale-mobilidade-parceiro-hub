@@ -60,3 +60,7 @@ Mudança estrutural. O Gerenciador de Eventos confirmou o conjunto Vitale Mobili
 | QA | Verificar clique, recusa, revogação, URL, parâmetros e ausência de duplicação antes de publicar. |
 
 Rollback pela reversão do código da landing e arquivamento da conversão personalizada. Configuração global do Pixel permanece sob controle do Gerenciador de Eventos.
+
+### Revisão do evento da Meta
+
+A Meta recebeu o clique da landing e colocou `OffersGroupCtaClick` em **Gerencie o bloqueio de eventos → Ação necessária**. Após a aprovação individual, o evento passou a **Confirmado por você**. As permissões do domínio já constavam como permitidas. Um novo clique com consentimento abriu o convite e apareceu em Eventos de teste como Processado, com origem Navegador às 11h05 de 14/11. A liberação do evento para visitantes mantém o aceite único. A criação da conversão personalizada depende da atualização do seletor na Meta. O rollback republica a versão do piloto, restrita a um endereço de teste.
