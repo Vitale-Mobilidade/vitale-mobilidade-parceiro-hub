@@ -1,4 +1,10 @@
-export const OFFERS_GROUP_LANDING_PATH = "/entrenogrupodeofertas";
+import {
+  OFFERS_GROUP_LANDING_PATH,
+  type OffersSurface,
+} from "../../supabase/functions/_shared/site-analytics";
+import { siteAnalytics } from "./site-analytics";
+
+export { OFFERS_GROUP_LANDING_PATH };
 
 export function isOffersGroupLanding(path: string): boolean {
   return path.replace(/\/$/, "") === OFFERS_GROUP_LANDING_PATH;
@@ -68,10 +74,11 @@ export function openGroupInvite(href: string) {
 
 export function handleOffersGroupCta(
   event: LinkClick,
-  position: OffersGroupCtaPosition,
+  position: "hero" | "sticky" | "grid",
 ) {
   if (!event.nativeEvent.isTrusted || event.defaultPrevented) return;
   if (event.button !== 0 && event.button !== 1) return;
+  siteAnalytics.offersCta(window.location.href);
   const href = event.currentTarget.href;
   const canWait = adsConsent && isPlainOfferClick(event);
   if (canWait) event.preventDefault();
@@ -108,4 +115,8 @@ export function trackGroupInvite(
     if (timer !== undefined) finish();
     else open?.();
   }
+}
+
+export function trackOffersGroupOffer(bikeId: string, position: OffersSurface) {
+  siteAnalytics.offersOffer(window.location.href, bikeId, position);
 }

@@ -10,7 +10,7 @@ import {
 } from "../../supabase/functions/_shared/site-analytics";
 
 describe("site analytics contract", () => {
-  it("aceita somente os três payloads mínimos e rejeita PII/campos extras", () => {
+  it("aceita payloads mínimos e rejeita PII/campos extras", () => {
     expect(
       validateSiteAnalyticsHit({ event: "page_view", sourcePath: "/radar" }),
     ).toEqual({
@@ -99,6 +99,70 @@ describe("site analytics tracker", () => {
       "radar_detail",
     );
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("separa visitas e cliques da landing por origem do piloto, sem enviar identificadores", () => {
+    const analytics = makeSiteAnalytics("https://collector.test", true, send);
+    const landing = "https://vitalemobilidade.com/entrenogrupodeofertas";
+    const google =
+      landing +
+      "?utm_source=google&utm_medium=paid&utm_campaign=vitale_grupo_ofertas&gclid=private";
+    const meta =
+      landing +
+      "?utm_source=meta&utm_medium=paid&utm_campaign=vitale_grupo_ofertas&fbclid=private";
+    analytics.pageView(google);
+    analytics.pageView(google + "#faq");
+    analytics.offersCta(google);
+    analytics.offersCta(meta);
+    analytics.offersCta(meta + "&utm_source=google");
+    analytics.offersCta("https://vitalemobilidade.com/radar");
+    expect(
+      send.mock.calls.map((call) => JSON.parse(call[1].body as string)),
+    ).toEqual([
+      { event: "page_view", sourcePath: "/entrenogrupodeofertas" },
+      {
+        event: "offers_landing_view",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "google",
+      },
+      {
+        event: "offers_cta_click",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "google",
+      },
+      {
+        event: "offers_cta_click",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "meta",
+      },
+      {
+        event: "offers_cta_click",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "unattributed",
+      },
+    ]);
+    expect(
+      validateSiteAnalyticsHit({
+        event: "offers_cta_click",
+        sourcePath: "/radar",
+        origin: "google",
+      }),
+    ).toBeNull();
+    expect(
+      validateSiteAnalyticsHit({
+        event: "offers_cta_click",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "email",
+      }),
+    ).toBeNull();
+    expect(
+      validateSiteAnalyticsHit({
+        event: "offers_cta_click",
+        sourcePath: "/entrenogrupodeofertas",
+        origin: "meta",
+        fbclid: "private",
+      }),
+    ).toBeNull();
   });
 
   it("deduplica a mesma página, conta A-B-A e nunca envia query/hash", () => {

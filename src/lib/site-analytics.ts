@@ -1,5 +1,9 @@
 import {
+  OFFERS_GROUP_LANDING_PATH,
   publicAnalyticsPath,
+  OFFERS_CAMPAIGN,
+  type OffersFunnelEvent,
+  type OffersSurface,
   type SiteAnalyticsHit,
 } from "../../supabase/functions/_shared/site-analytics";
 
@@ -39,7 +43,39 @@ export function makeSiteAnalytics(
     }
   };
 
+  const offersEvent = (
+    url: URL,
+    event: OffersFunnelEvent | "offers_offer_click",
+    offer?: { bikeId: string; position: OffersSurface },
+  ) => {
+    const sourcePath = publicAnalyticsPath(url.pathname);
+    if (sourcePath !== OFFERS_GROUP_LANDING_PATH) return;
+    const one = (key: string) => {
+      const values = url.searchParams.getAll(key);
+      return values.length === 1 ? values[0] : null;
+    };
+    const source = one("utm_source");
+    const paidPilot =
+      one("utm_medium") === "paid" && one("utm_campaign") === OFFERS_CAMPAIGN;
+    const origin =
+      paidPilot && (source === "google" || source === "meta")
+        ? source
+        : "unattributed";
+    if (event === "offers_offer_click") {
+      if (offer && /^[a-z0-9_]{1,64}$/.test(offer.bikeId))
+        emit({ event, sourcePath, origin, ...offer });
+    } else emit({ event, sourcePath, origin });
+  };
+
   return {
+    offersOffer(href: string, bikeId: string, position: OffersSurface) {
+      const url = productionUrl(href);
+      if (url) offersEvent(url, "offers_offer_click", { bikeId, position });
+    },
+    offersCta(href: string) {
+      const url = productionUrl(href);
+      if (url) offersEvent(url, "offers_cta_click");
+    },
     pageView(href: string) {
       if (!enabled) return;
       const url = productionUrl(href);
@@ -47,6 +83,9 @@ export function makeSiteAnalytics(
       if (!sourcePath || sourcePath === lastPage) return;
       lastPage = sourcePath;
       emit({ event: "page_view", sourcePath });
+      if (url && sourcePath === OFFERS_GROUP_LANDING_PATH) {
+        offersEvent(url, "offers_landing_view");
+      }
     },
     bikeClick(sourceHref: string, targetHref: string) {
       if (!enabled) return;

@@ -51,14 +51,14 @@ function hasCurrentOffer(item: unknown): boolean {
  *  - archived: bikes sem oferta atual, mas com observações já registradas.
  * A elegibilidade do Quiz não é mais aplicada aqui (contrato da RPC).
  */
-export async function fetchTrackerSplit(): Promise<RadarResult<{ active: unknown[]; archived: unknown[] }>> {
+export async function fetchTrackerSplit(includeUnobserved = false): Promise<RadarResult<{ active: unknown[]; archived: unknown[] }>> {
   const r = await callRpc<unknown>("get_price_tracker_catalog", {});
   if (!r.ok || !Array.isArray(r.data)) return { ok: false };
   const records = r.data.map(resolveBikeRecordImage);
   const active = records.filter(hasCurrentOffer);
   const archived = records.filter((item) => {
     const x = item as { observations?: unknown };
-    return !hasCurrentOffer(item) && typeof x.observations === "number" && x.observations > 0;
+    return !hasCurrentOffer(item) && (includeUnobserved || (typeof x.observations === "number" && x.observations > 0));
   });
   return { ok: true, data: { active, archived } };
 }
@@ -70,11 +70,11 @@ export async function fetchTrackerCatalog(): Promise<RadarResult<unknown[]>> {
 }
 
 /** Ranking usado só onde há ordenação por relevância; sitemap/jobs não dependem de analytics. */
-export async function fetchRankedTrackerSplit(): Promise<
+export async function fetchRankedTrackerSplit({ includeUnobserved = false } = {}): Promise<
   RadarResult<{ active: unknown[]; archived: unknown[]; relevanceAvailable: boolean }>
 > {
   const [catalog, ranks] = await Promise.all([
-    fetchTrackerSplit(),
+    fetchTrackerSplit(includeUnobserved),
     callRpc<unknown>("get_radar_offer_click_ranks_30d", {}),
   ]);
   if (!catalog.ok) return { ok: false };

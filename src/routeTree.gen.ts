@@ -27,6 +27,7 @@ import { Route as AcompanhamentoIndexRouteImport } from './routes/acompanhamento
 import { Route as AcompanhamentoBikeIdRouteImport } from './routes/acompanhamento/$bikeId'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBikesRouteImport } from './routes/admin/bikes'
+import { Route as AdminCampanhasRouteImport } from './routes/admin/campanhas'
 import { Route as AdminComentariosRouteImport } from './routes/admin/comentarios'
 import { Route as AdminComunidadeRouteImport } from './routes/admin/comunidade'
 import { Route as AdminGrowthRouteImport } from './routes/admin/growth'
@@ -176,6 +177,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminBikesRoute = AdminBikesRouteImport.update({
   id: '/admin/bikes',
   path: '/admin/bikes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCampanhasRoute = AdminCampanhasRouteImport.update({
+  id: '/admin/campanhas',
+  path: '/admin/campanhas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminComentariosRoute = AdminComentariosRouteImport.update({
@@ -513,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -593,6 +600,7 @@ export interface FileRoutesByTo {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -674,6 +682,7 @@ export interface FileRoutesById {
   '/videos': typeof VideosRoute
   '/acompanhamento/$bikeId': typeof AcompanhamentoBikeIdRoute
   '/admin/bikes': typeof AdminBikesRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/comentarios': typeof AdminComentariosRoute
   '/admin/comunidade': typeof AdminComunidadeRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -756,6 +765,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/campanhas'
     | '/admin/comentarios'
     | '/admin/comunidade'
     | '/admin/growth'
@@ -836,6 +846,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/campanhas'
     | '/admin/comentarios'
     | '/admin/comunidade'
     | '/admin/growth'
@@ -916,6 +927,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/acompanhamento/$bikeId'
     | '/admin/bikes'
+    | '/admin/campanhas'
     | '/admin/comentarios'
     | '/admin/comunidade'
     | '/admin/growth'
@@ -997,6 +1009,7 @@ export interface RootRouteChildren {
   VideosRoute: typeof VideosRoute
   AcompanhamentoBikeIdRoute: typeof AcompanhamentoBikeIdRoute
   AdminBikesRoute: typeof AdminBikesRoute
+  AdminCampanhasRoute: typeof AdminCampanhasRoute
   AdminComentariosRoute: typeof AdminComentariosRoute
   AdminComunidadeRoute: typeof AdminComunidadeRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
@@ -1183,6 +1196,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/bikes'
       fullPath: '/admin/bikes'
       preLoaderRoute: typeof AdminBikesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/campanhas': {
+      id: '/admin/campanhas'
+      path: '/admin/campanhas'
+      fullPath: '/admin/campanhas'
+      preLoaderRoute: typeof AdminCampanhasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/comentarios': {
@@ -1651,6 +1671,7 @@ const rootRouteChildren: RootRouteChildren = {
   VideosRoute: VideosRoute,
   AcompanhamentoBikeIdRoute: AcompanhamentoBikeIdRoute,
   AdminBikesRoute: AdminBikesRoute,
+  AdminCampanhasRoute: AdminCampanhasRoute,
   AdminComentariosRoute: AdminComentariosRoute,
   AdminComunidadeRoute: AdminComunidadeRoute,
   AdminGrowthRoute: AdminGrowthRoute,

@@ -33,9 +33,7 @@ describe("mensuração da landing do grupo de ofertas", () => {
 
   it("aguarda até 500 ms apenas quando há consentimento", () => {
     vi.useFakeTimers();
-    const location = new URL(
-      "https://vitalemobilidade.com/entrenogrupodeofertas?gclid=private",
-    );
+    const location = new URL("https://vitalemobilidade.com/entrenogrupodeofertas?gclid=private");
     const dataLayer: Array<{ eventCallback: () => void }> = [];
     const open = vi.fn();
     vi.stubGlobal("window", { location, dataLayer, setTimeout, clearTimeout });
@@ -45,16 +43,14 @@ describe("mensuração da landing do grupo de ofertas", () => {
 
     setOffersGroupAdsEventConsent(true);
     trackGroupInvite("carousel", open);
-    expect(dataLayer).toEqual([
-      {
-        event: "offers_group_cta_click",
-        page_path: "/entrenogrupodeofertas",
-        cta_position: "carousel",
-        vitale_offers_google_ads: true,
-        eventCallback: expect.any(Function),
-        eventTimeout: 500,
-      },
-    ]);
+    expect(dataLayer).toEqual([{
+      event: "offers_group_cta_click",
+      page_path: "/entrenogrupodeofertas",
+      cta_position: "carousel",
+      vitale_offers_google_ads: true,
+      eventCallback: expect.any(Function),
+      eventTimeout: 500,
+    }]);
     vi.advanceTimersByTime(499);
     expect(open).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(1);
@@ -68,11 +64,7 @@ describe("mensuração da landing do grupo de ofertas", () => {
   });
 
   it("ignora outras rotas e abre o convite mesmo quando a fila falha", () => {
-    const dataLayer = {
-      push: vi.fn(() => {
-        throw new Error("indisponível");
-      }),
-    };
+    const dataLayer = { push: vi.fn(() => { throw new Error("indisponível"); }) };
     const location = new URL("https://vitalemobilidade.com/grupodeofertas");
     const open = vi.fn();
     vi.stubGlobal("window", { location, dataLayer, setTimeout, clearTimeout });

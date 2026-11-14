@@ -2,11 +2,34 @@ export const SITE_ANALYTICS_EVENTS = [
   "page_view",
   "bike_click",
   "affiliate_click",
+  "offers_landing_view",
+  "offers_cta_click",
+  "offers_offer_click",
 ] as const;
 export type SiteAnalyticsEvent = (typeof SITE_ANALYTICS_EVENTS)[number];
 
+export const OFFERS_GROUP_LANDING_PATH = "/entrenogrupodeofertas";
+export const OFFERS_ORIGINS = ["google", "meta", "unattributed"] as const;
+export type OffersOrigin = (typeof OFFERS_ORIGINS)[number];
+export type OffersFunnelEvent = "offers_landing_view" | "offers_cta_click";
+export type OffersSurface = "hero" | "grid";
+export const OFFERS_CAMPAIGN = "vitale_grupo_ofertas";
+
+
 export type SiteAnalyticsHit =
   | { event: "page_view"; sourcePath: string }
+  | {
+      event: OffersFunnelEvent;
+      sourcePath: typeof OFFERS_GROUP_LANDING_PATH;
+      origin: OffersOrigin;
+    }
+  | {
+      event: "offers_offer_click";
+      sourcePath: typeof OFFERS_GROUP_LANDING_PATH;
+      origin: OffersOrigin;
+      position: OffersSurface;
+      bikeId: string;
+    }
   | {
       event: "bike_click";
       sourcePath: string;
@@ -31,6 +54,7 @@ const STATIC_PATHS = new Set([
   "/ferramentas",
   "/privacidade",
   "/grupodeofertas",
+  OFFERS_GROUP_LANDING_PATH,
   "/bikes",
   "/acompanhamento",
   "/calculadoras/carro-vs-bike",
@@ -101,8 +125,25 @@ export function validateSiteAnalyticsHit(
       ? { event, sourcePath }
       : null;
   }
+  if (event === "offers_landing_view" || event === "offers_cta_click") {
+    const origin = OFFERS_ORIGINS.find((value) => value === input.origin);
+    return sourcePath === OFFERS_GROUP_LANDING_PATH &&
+      origin &&
+      exactKeys(input, ["event", "sourcePath", "origin"])
+      ? { event, sourcePath, origin }
+      : null;
+  }
   const bikeId = typeof input.bikeId === "string" ? input.bikeId : "";
   if (!BIKE_ID_RE.test(bikeId)) return null;
+  if (event === "offers_offer_click") {
+    const origin = OFFERS_ORIGINS.find((value) => value === input.origin);
+    const position = input.position;
+    return sourcePath === OFFERS_GROUP_LANDING_PATH && origin &&
+      (position === "hero" || position === "grid") &&
+      exactKeys(input, ["event", "sourcePath", "origin", "position", "bikeId"])
+      ? { event, sourcePath, origin, position, bikeId }
+      : null;
+  }
   if (event === "bike_click") {
     const targetPath = publicAnalyticsPath(input.targetPath);
     if (!targetPath || targetPath !== `/radar/${bikeId}`) return null;
