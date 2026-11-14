@@ -30,7 +30,7 @@ export function offersGroupCampaign(search: string): CampaignValues {
   return values;
 }
 
-export type OffersGroupCtaPosition = "hero" | "carousel";
+export type OffersGroupCtaPosition = "hero" | "carousel" | "sticky";
 
 export function trackOffersGroupCta(position: OffersGroupCtaPosition): void {
   try {
