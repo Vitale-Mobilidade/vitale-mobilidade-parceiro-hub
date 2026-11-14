@@ -19,6 +19,6 @@ export function VideoInstagramAction({source,enabled,refresh}:{source?:VideoElig
   {!source&&<p className="text-xs text-muted-foreground">Requer vídeo ativo, transcrição e artigo publicado.</p>}
   {source&&!enabled&&!id&&<p className="text-xs text-muted-foreground">Geração indisponível ou pausada.</p>}
   {progress&&<p role="status" className="text-sm break-words">{progress}</p>}
-  {error&&<p role="alert" className="text-sm text-destructive break-words">{error} Abra o rascunho antes de retomar.</p>}
+  {error&&<p role="alert" className="text-sm text-destructive break-words">{error} Abra o rascunho para ver a situação.</p>}
  </section>;
 }

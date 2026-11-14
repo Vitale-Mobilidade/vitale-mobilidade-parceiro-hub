@@ -1,4 +1,6 @@
 import { validateScript,type Job,type Asset } from './contract';
+import { normalizeFreshScript } from './normalize';
+import { ZodError } from 'zod';
 import { assetPath,scenePathPattern } from '../../../supabase/functions/_shared/instagram-render/contract';
 import type { RenderedAsset,Runtime } from './edge.server';
 export const BUCKET='instagram-carousels';
@@ -10,14 +12,27 @@ export async function prepare(job:Job,store:Store,studio:Studio,omitScene=false)
  if(['approved','publishing','uncertain','published'].includes(job.state))return;
  // Fail closed before any paid request unless Edge confirms release, AI key and a working compositor.
  if(!job.script){const rt=await studio.runtime(true);if(!rt.release)throw Error('instagram_release_disabled');if(!rt.renderer)throw Error('instagram_render_runtime_unavailable');if(!rt.ai)throw Error('ai_not_configured');}
- if(omitScene)await save({scene_omitted:true});
  if(!job.script){
   if(job.script_attempted)throw Error('instagram_script_uncertain_no_replay');
+  // A new script is only requested on a clean draft: no art, scene or publication.
+  if(job.assets.length||job.scene_path||job.scene_attempted||job.publish_attempted||job.children.length||job.album_id)throw Error('instagram_script_retry_unsafe');
   await save({state:'scripting',script_attempted:true});
-  const script=validateScript(await studio.script(job),job.source);
+  // Transport/timeout/incomplete Edge errors propagate with script_attempted=true: never replayed.
+  const raw=await studio.script(job);
+  let script;
+  try{script=validateScript(normalizeFreshScript(raw),job.source);}
+  catch(error){
+   // A complete response was received and rejected: no usable paid output exists, so an
+   // explicit Resume may request again. If this checkpoint cannot be saved, it stays uncertain.
+   const detail=rejectionDetail(error);
+   await save({state:'blocked',script_attempted:false,error_code:'instagram_script_rejected',error_message:`Roteiro recebido e reprovado na validação (${detail}). Use Retomar para pedir um novo roteiro.`});
+   throw new ScriptRejected(detail);
+  }
   await save({script,state:'scene'});
  }
  const script=validateScript(job.script,job.source),sceneSlide=script.slides.find(s=>s.scene);
+ // Concluding without scene applies only to an existing script whose scene step was attempted.
+ if(omitScene&&sceneSlide?.scene&&job.scene_attempted&&!job.scene_path&&!job.scene_omitted)await save({scene_omitted:true});
  if(sceneSlide?.scene&&!job.scene_omitted&&!job.scene_path){
   if(job.scene_attempted)throw Error('instagram_scene_uncertain_continue_without_scene');
   await save({state:'scene',scene_attempted:true});
@@ -62,3 +77,9 @@ export async function publish(job:Job,save:(patch:Partial<Job>)=>Promise<void>,p
  catch{await persist({error_code:'meta_permalink_pending',error_message:'Publicação confirmada; link ainda indisponível.'});}
 }
 export function publicationFailureState(job:Job){return job.state==='published'?'published':job.publish_attempted?'uncertain':job.state;}
+export class ScriptRejected extends Error{constructor(public detail:string){super('instagram_script_rejected');}}
+/** Short, non-JSON reason: first schema path or the stable validation code. */
+export function rejectionDetail(error:unknown){
+ if(error instanceof ZodError){const i=error.issues[0];return `${i?.path.join('.')||'roteiro'}: formato`.slice(0,80);}
+ const m=error instanceof Error?error.message:'';return /^[a-z0-9_]{3,80}$/.test(m)?m:'formato';
+}
