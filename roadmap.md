@@ -1,9 +1,11 @@
 # Ajuste estrito da Home e navegação
 
 # Instagram editorial direction revision 3 — no release
-- [ ] Share article cover model/reference/payload without changing article behavior; mock parity tests.
-- [ ] Preserve v1/v2, add explanatory interiors and deterministic six-JPEG private review at 390px.
-- [ ] Directed validation, pnpm validate attempt, eight perspectives and rollback; commit. No paid calls or production actions.
+- Resumed from 6207ec7: finish shared cover wiring, generic annotations and six local v3 JPEGs in this session; no real Gemini/Meta or production operations.
+- [x] Share article cover model/reference/payload without changing article behavior; mock parity tests.
+- [x] Preserve v1/v2, add explanatory interiors and deterministic six-JPEG private review at 390px.
+- [x] Directed validation, pnpm validate attempt (tooling blocked), eight perspectives and rollback; commit. No paid calls or production actions.
+- [ ] Full hosted authenticated review/generation verification: requires separately authorized release; local full route returned empty, isolated gallery verified. No real AI permitted this stage.
 
 # Instagram art direction v2 — preview only
 - [x] Correct visual delivery: six existing JPEGs versioned under docs/preview with local imports; file validation and isolated gallery passed. Full route blocked by unrelated SSR React error, documented in preview README; no release.

@@ -8,6 +8,7 @@ import { jobFixture, scriptFixture } from "../../../src/lib/instagram/fixtures.t
 import { inspectJpeg } from "../_shared/editorial-cover.ts";
 import type { Job } from "../../../src/lib/instagram/contract.ts";
 import { previewScript,previewSource } from '../../../src/lib/instagram/art-v2.fixture.ts';
+import { previewScript as v3Script } from '../../../src/lib/instagram/art-v3.fixture.ts';
 
 const KEY = "sb_secret_test_only", URL_ = "https://edge.invalid";
 const env = { url: URL_, serviceKey: KEY, aiKey: "ai-test", releaseFlag: "true" };
@@ -33,6 +34,7 @@ function world(job: Job, opts: { generation?: boolean; photos?: Record<string, U
     table === "instagram_carousel_jobs" ? [structuredClone(job) as unknown as Record<string, unknown>]
       : table === "instagram_carousel_settings" ? [{ singleton: true, ...settings }]
       : table === "bike_assets" ? Object.keys(opts.photos ?? {}).map(id => ({ bike_id: id, status: "ready", storage_path: `${id}.webp` }))
+      : table === "editorial_videos" ? [{youtube_id:'AHHPeeQE11k',thumbnail_url:'https://i.ytimg.com/vi/AHHPeeQE11k/maxresdefault.jpg'}]
       : [];
   const db = {
     from: query,
@@ -82,6 +84,32 @@ Deno.test('v2 full mock: grounded script, six actual JPEGs, one photo, checkpoin
  for(const asset of job.assets){const bytes=w.files.get(asset.path);assert(bytes);assertEquals(inspectJpeg(bytes),{width:1080,height:1350});}
  const before=w.uploads.length;await prepare(job,w.store,w.studio);assertEquals(w.uploads.length,before);
 });
+
+Deno.test('v3 leased cover uses shared model/validated thumb/catalog once, renders six JPEGs and resumes without replay',async()=>{
+ const job=leased();job.source=structuredClone(previewSource);job.script=structuredClone(v3Script);
+ job.script.slides[0].scene='Night urban environment';job.script_attempted=true;job.state='scene';
+ const catalog=await Deno.readFile(new URL('../../../src/assets/bikes/v9-max.jpg',import.meta.url));
+ const thumb=renderSlideForThumb();const w=world(job,{photos:{v9_max:catalog}});
+ const original=globalThis.fetch;let paid=0;
+ globalThis.fetch=(async(input:RequestInfo|URL,init?:RequestInit)=>{
+  const url=String(input);
+  if(url==='https://i.ytimg.com/vi/AHHPeeQE11k/maxresdefault.jpg')return new Response(new Uint8Array(thumb).buffer,{headers:{'Content-Type':'image/jpeg'}});
+  if(url==='https://ai.gateway.lovable.dev/v1/images/generations'){
+   paid++;const p=JSON.parse(String(init?.body));assertEquals(p.model,'google/gemini-3.1-flash-image');assertEquals(p.image_config.aspect_ratio,'4:5');
+   assert(p.messages[0].content[1].image_url.url.startsWith('data:image/jpeg;'));
+   assert(p.messages[0].content[2].text.includes('v9_max'));assert(p.messages[0].content[3].image_url.url.startsWith('data:image/'));
+   return new Response(`data: ${JSON.stringify({type:'image_generation.completed',b64_json:btoa(String.fromCharCode(...pngScene))})}\n\n`);
+  }throw Error('unexpected network');
+ }) as typeof fetch;
+ try{
+  await prepare(job,w.store,w.studio);assertEquals(job.state,'review');assertEquals(job.assets.length,6);assertEquals(paid,1);
+  for(const a of job.assets){const b=w.files.get(a.path);assert(b);assertEquals(inspectJpeg(b),{width:1080,height:1350});}
+  await prepare(job,w.store,w.studio);assertEquals(paid,1);
+  job.assets=[];job.state='rendering';await prepare(job,w.store,w.studio);assertEquals(paid,1);
+ }finally{globalThis.fetch=original;}
+});
+import {renderSlide} from '../_shared/instagram-render/index.ts';
+function renderSlideForThumb(){return renderSlide(null).bytes;}
 
 Deno.test("full mock run: 4 JPEG 1080x1350, real photo once, fixed final slide, review state", async () => {
   const job = leased(), w = world(job, { photos: { bike1: photo } }), ai = stubAi(scriptFixture);

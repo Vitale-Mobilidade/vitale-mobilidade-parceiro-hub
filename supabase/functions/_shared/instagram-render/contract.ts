@@ -4,7 +4,7 @@ export const FINAL_ACTIONS = ["Curta", "Compartilhe", "Comente", "Salve"] as con
 export type Layout = "opening" | "review" | "comparison" | "numbers" | "diagram" | "conclusion";
 export type Theme = "petroleum" | "deep" | "light" | "warm";
 export type GraphicModule = "cover" | "beam" | "load" | "route" | "battery" | "comparison" | "decision";
-export type Concept = { module: GraphicModule; intent: string; metric?: { value: string; label: string } };
+export type Concept = { module: GraphicModule; intent: string; metric?: { value: string; label: string }; annotations?: { label: string; text: string }[] };
 export type RenderSlide = { title: string; body: string; layout: Layout; theme: Theme; bikeIds: string[]; scene: string | null; alt: string; concept?: Concept };
 export const FINAL_ALT = "Curta, Compartilhe, Comente e Salve. @vitalemobilidade.";
 export function assetPath(jobId: string, revision: number, position: number) {

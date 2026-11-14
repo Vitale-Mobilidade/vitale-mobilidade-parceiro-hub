@@ -79,8 +79,8 @@ function font(_size:number){let f=fontCache.get(0);if(!f){fontBytes??=Uint8Array
 function layout(){return sharedLayout??=new Layout();}
 const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 function rgba(c:readonly number[]){return littleEndian?((255<<24)|(c[2]<<16)|(c[1]<<8)|c[0])>>>0:((c[0]<<24)|(c[1]<<16)|(c[2]<<8)|255)>>>0;}
-export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null,options:{artVersion?:2|3;articleOriginal?:Raster|null}={}){
- if(options.artVersion===3)return encodeSlide(renderArtV3(slide,photos,options.articleOriginal??null,containPhoto),slide);
+export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null,options:{artVersion?:2|3;articleOriginal?:Raster|null;endingQuestion?:string}={}){
+ if(options.artVersion===3)return encodeSlide(renderArtV3(slide,photos,options.articleOriginal??null,containPhoto,scene,options.endingQuestion),slide);
  if(options.artVersion===2)return encodeSlide(renderArtV2(slide,photos,options.articleOriginal??null,containPhoto),slide);
  const theme=slide?.theme??'deep',color=palette[theme],ink=theme==='light'?palette.deep:palette.light;
  const out=new Uint8Array(WIDTH*HEIGHT*4),px32=new Uint32Array(out.buffer);px32.fill(rgba(color));

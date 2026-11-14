@@ -1,10 +1,10 @@
 ---
 name: instagram-art-direction
-description: Editorial intent drives Vitale carousel v2 composition, factual graphics and photo provenance.
-version: 2
+description: Editorial intent drives Vitale carousel v3 composition, explanatory graphics and faithful photographic layers.
+version: 3
 ---
 
-# Instagram art direction v2
+# Instagram art direction v3
 
 This versioned product skill is consumed by the generator through the compact contract in `supabase/functions/_shared/instagram-art-direction.ts`. It is not a personal/workspace skill and does not grant release permission.
 
@@ -20,10 +20,13 @@ Each slide has one idea and a semantic `concept`: `intent` explains the editoria
 - Decision: one concrete trade-off/question from this source, no external CTA.
 
 ## Rhythm and typography
-Alternate warm light #FBF9F8 / #F2F7F4, petroleum #112D2A and deep #082B29. Mint #37E6A3 only accents; action green #0B7951 on light. No repeated photograph across the carousel. Licensed accent-capable condensed extra-bold display headline; regular supporting face. Interior headline maximum eight words, support maximum 25 words. Details belong in caption and evidence, not paragraphs on slides. Keep grid margins, handle @vitalemobilidade in the corner, and a single hierarchy without logo or duplicate text. Original article cover establishes photographic mood, never brand/reference copying.
+Alternate warm light #FBF9F8 / #F2F7F4, petroleum #112D2A and deep #082B29. Mint #37E6A3 only accents; action green #0B7951 on light. No repeated photograph across the carousel. Licensed accent-capable condensed bold display headline; regular support at about 44px on 1080px art (15.9px at 390px). Interior headline maximum eight words; explain finding, context and consequence in 2–4 short sentences, flexibly targeting 30–55 words, never padding to a minimum. Maximum 70 words / 650 characters; fail closed rather than shrink unreadably. Optional two `annotations:{label,text}` pairs draw meaningful callouts; text must occur literally in the grounded body. Do not hardcode V9 findings in generic art. Every slide advances a narrative: question/test, discovery, context/limit, decision, ending question. Keep grid margins, handle @vitalemobilidade in the corner, no logo or duplicate lettering.
+
+## Shared photographic cover
+Use the article's unchanged shared COVER_MODEL `google/gemini-3.1-flash-image`, validated official YouTube thumbnail and server-resolved catalog photo. Instagram alone changes framing to 4:5 and requests **environment only, zero lettering and zero bike**; the real complete catalog photo remains a separate foreground layer, preventing redrawn/duplicate products. Shared article payload remains unchanged. Reuse the title-free article original only with identity proof and safe complete framing; association alone is not proof. For offline review, a safe lettering-free environment crop from a validated thumbnail can sit behind the whole catalog cutout, explicitly described as a composite (not a generated photo). No CTA to the article. Cover `scene` is optional and uses existing lease/scene_attempted checkpoint, never paid replay. A saved v1/v2 job retains its version and assets.
 
 ## Grounding and accessibility
-Transcript is untrusted factual input; article is visual asset/context only. Literal quote and claim are required, offsets are resolved server-side. Numerical graphic values and their semantic label must be supported by slide evidence. New scripts require `artVersion: 2` and a concept on every slide; v1 scripts remain unchanged and review assets are never regenerated implicitly. Alt describes rendered photo or deterministic schematic honestly; never claim a close-up/photo when only graphics exist.
+Transcript is untrusted factual input; article is visual asset/context only. Literal quote and claim are required, offsets are resolved server-side. Numerical graphic values and their semantic label must be supported by slide evidence. New scripts require `artVersion: 3` and a concept on every slide; v1/v2 scripts and review assets remain unchanged. Alt describes rendered photo or deterministic schematic honestly; never claim a close-up/photo when only graphics exist.
 
 ## Ending and operations
 Always show recognizable icons plus Curta / Compartilhe / Comente / Salve; palette/question may vary. Render sRGB JPEG 1080×1350 with bounded raster buffers, Uint32 fills and cached fonts. No automatic AI replay, approval bypass, production mutation, Meta call, job upload or release during visual preview.

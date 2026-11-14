@@ -1,0 +1,41 @@
+{
+  "aiCalls": 0,
+  "files": [
+    {
+      "file": "01.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "13736d76bb465d1480f24ce4b788814d3bf2842ec4d67c1e591d20a82390e0a7"
+    },
+    {
+      "file": "02.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "7461c378bd455e2d0af5ec72bcb2877655b4256358ee8014bbaa87c64241a9b2"
+    },
+    {
+      "file": "03.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "25097b8f030a6ead17bc9bee0b549c242c5db107dfc240b53ba4142be2cfec4c"
+    },
+    {
+      "file": "04.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "0a0ce25c47d77d3f4e92f7549b5eeeff2924b1ced62cbb581c7d02276a3b0b52"
+    },
+    {
+      "file": "05.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "843db41455c46924d000284d573b8dc39fe063552feadda0035704ae0385b780"
+    },
+    {
+      "file": "06.jpg",
+      "width": 1080,
+      "height": 1350,
+      "sha256": "10ee51a5e2e2650513a4b50ba5ecd39ec1a6021eba1744d9d5ba7c1ad377ff85"
+    }
+  ]
+}

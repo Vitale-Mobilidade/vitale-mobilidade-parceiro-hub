@@ -1,9 +1,9 @@
 import { z } from 'zod';
 export { WIDTH,HEIGHT,FINAL_ACTIONS } from '../../../supabase/functions/_shared/instagram-render/contract';
 const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0).optional(),kind:z.enum(['observation','estimate','measurement','context'])});
-const concept=z.object({module:z.enum(['cover','beam','load','route','battery','comparison','decision']),intent:z.string().trim().min(1).max(180),metric:z.object({value:z.string().trim().min(1).max(24),label:z.string().trim().min(1).max(80)}).strict().optional()}).strict();
+const concept=z.object({module:z.enum(['cover','beam','load','route','battery','comparison','decision']),intent:z.string().trim().min(1).max(180),metric:z.object({value:z.string().trim().min(1).max(24),label:z.string().trim().min(1).max(80)}).strict().optional(),annotations:z.array(z.object({label:z.string().trim().min(1).max(40),text:z.string().trim().min(1).max(90)}).strict()).max(2).optional()}).strict();
 export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().max(650),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light','warm']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1),concept:concept.optional()}).strict();
-export const scriptSchema=z.object({artVersion:z.union([z.literal(2),z.literal(3)]).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
+export const scriptSchema=z.object({artVersion:z.union([z.literal(2),z.literal(3)]).optional(),endingQuestion:z.string().trim().min(1).max(100).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
 export type Script=z.infer<typeof scriptSchema>; export type Slide=z.infer<typeof slideSchema>;
 export type Source={videoId:string;videoTitle:string;videoDate:string;transcript:string;articleId:string;articleTitle:string;articleSlug:string;publishedAt:string;bikeIds:string[];eligibleAt:string};
 export type Asset={position:number;path:string;alt:string;sha256:string;missingBikeIds:string[];photoHashes?:string[]};
@@ -13,6 +13,7 @@ export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnab
 const external=/https?:|www\.|link\s+(?:da|na)\s+bio|\b(?:acesse|leia|ouça)\b.*\b(?:podcast|site|artigo)\b/i;
 export function validateScript(raw:unknown,source:Source):Script{
  const s=scriptSchema.parse(raw);
+ if(s.endingQuestion&&(s.artVersion!==3||external.test(s.endingQuestion)))throw Error('instagram_ending_question_invalid');
  // Cover gets a real catalog photo when an eligible bike exists (Edge resolves the stored photo).
  if(s.slides[0]&&!s.slides[0].bikeIds.length&&source.bikeIds[0])s.slides[0].bikeIds=[source.bikeIds[0]];
  if(s.slides[0]?.layout!=='opening'||s.slides.at(-1)?.layout!=='conclusion')throw Error('instagram_narrative_incomplete');
@@ -22,6 +23,10 @@ export function validateScript(raw:unknown,source:Source):Script{
   const photoIds=new Set<string>();
   for(const [i,slide] of s.slides.entries()){
    if(!slide.concept)throw Error('instagram_concept_required');
+   if(slide.concept.annotations){
+    if(s.artVersion!==3)throw Error('instagram_art_version_required');
+    for(const note of slide.concept.annotations)if(!slide.body.includes(note.text)||external.test(note.label))throw Error('instagram_annotation_unsupported');
+   }
    if(i===0&&(slide.concept.module!=='cover'||words(slide.title)>7||slide.body))throw Error('instagram_cover_density');
    if(i>0&&(slide.concept.module==='cover'||words(slide.title)>8||words(slide.body)>(s.artVersion===3?70:25)))throw Error('instagram_slide_density');
    if(slide.scene&&(s.artVersion===2||i!==0))throw Error('instagram_v2_scene_disabled');

@@ -1,6 +1,6 @@
 /** Runtime-neutral Lovable AI Gateway client for carousels; Edge holds the key (never the browser). */
 import { COVER_MODEL, coverPayload, type CoverPart } from './editorial-cover-payload.ts';
-import { ART_DIRECTION_V2 } from './instagram-art-direction.ts';
+import { ART_DIRECTION_V3 } from './instagram-art-direction.ts';
 type Source={transcript:string;articleId:string;articleTitle:string;bikeIds:string[]};
 // Current supported Gemini family; other editorial model clients are untouched.
 export const SCRIPT_MODEL='google/gemini-3.8-flash',SCENE_MODEL=COVER_MODEL;
@@ -23,7 +23,7 @@ export function gateway(key:string,runId?:string,fetcher:typeof fetch=fetch){
  const headers:Record<string,string>={'Lovable-API-Key':key,'X-Lovable-AIG-SDK':'fetch','Content-Type':'application/json'};
  if(runId&&/^[A-Za-z0-9_-]{1,128}$/.test(runId))headers['X-Lovable-AIG-Run-ID']=runId;
  return {
-  async script(source:Source):Promise<unknown>{const response=await send('https://ai.gateway.lovable.dev/v1/chat/completions',{method:'POST',headers,body:JSON.stringify({model:SCRIPT_MODEL,stream:true,messages:[{role:'system',content:`${SYSTEM}\n${ART_DIRECTION_V2}`},{role:'user',content:JSON.stringify({untrustedTranscript:source.transcript,articleContext:{id:source.articleId,title:source.articleTitle},bikeIds:source.bikeIds})}],response_format:{type:'json_object'}})});const text=await consume(response,false);if(!text)throw Error('ai_empty_response');return JSON.parse(text.replace(/^```json\s*|\s*```$/g,''));},
+  async script(source:Source):Promise<unknown>{const response=await send('https://ai.gateway.lovable.dev/v1/chat/completions',{method:'POST',headers,body:JSON.stringify({model:SCRIPT_MODEL,stream:true,messages:[{role:'system',content:`${SYSTEM.replace('Títulos até 100 caracteres, corpo até 320.', 'Títulos até 100 caracteres, corpo até 650.').replace('scene null por padrão; no máximo um cenário, e apenas ambiente sem texto, bike, pessoas, banco ou acessórios.', 'scene null por padrão; no máximo um ambiente de capa sem texto, bike ou pessoas.')}\n${ART_DIRECTION_V3}`},{role:'user',content:JSON.stringify({untrustedTranscript:source.transcript,articleContext:{id:source.articleId,title:source.articleTitle},bikeIds:source.bikeIds})}],response_format:{type:'json_object'}})});const text=await consume(response,false);if(!text)throw Error('ai_empty_response');return JSON.parse(text.replace(/^```json\s*|\s*```$/g,''));},
   async cover(title:string,context:string,thumb:Uint8Array|null,refs:CoverPart[]){
    if(!refs.length)throw Error('instagram_cover_reference_missing');
    const response=await send('https://ai.gateway.lovable.dev/v1/images/generations',{method:'POST',headers,body:JSON.stringify(coverPayload(title,context,thumb,refs,true))});
