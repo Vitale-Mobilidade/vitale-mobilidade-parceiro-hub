@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Growth official reconciliation audit
+- [x] Read-only 0013/0014 function body parity and hourly columns/PK/CHECK/RLS/trigger verified; extra service_role/sandbox_exec table ACL recorded.
+- [x] Official migration_history inspect returned no plan_id and no unique historical tree; no supported exact-version adoption operation available.
+- [ ] Instagram productive release remains blocked until official history reconciliation supports these existing versions; no journal edits or Growth rewrites allowed.
+
 # Productive shared Instagram release with OUXI review hold
 - [x] Preserve JSONB reviewHold through adaptation; both automatic claims skip held queue rows; Admin retains held preview after RSS.
 - [x] Fifteen focused mock tests, disposable PostgreSQL hold/enqueue/claims and Deno checks passed; recoverable backup and productive unchanged-state recheck.
