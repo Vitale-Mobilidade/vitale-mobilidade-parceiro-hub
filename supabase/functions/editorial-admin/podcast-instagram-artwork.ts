@@ -42,7 +42,7 @@ export async function preparePodcastInstagramArtwork(db: SupabaseClient, youtube
     const upload = await db.storage.from(COVER_BUCKET).upload(path, bytes, { contentType: "image/jpeg", upsert: false });
     if (upload.error) throw new Error("podcast_instagram_cover_save_failed");
   }
-  const post = { image_url, caption };
+  const post = { ...(prior && typeof prior === "object" && !Array.isArray(prior) ? prior : {}), image_url, caption };
   let write = db.from("podcast_episode_queue").update({ prepared_instagram_post: post })
     .eq("youtube_id", youtubeId).eq("prepared_article_version", article.data.updated_at);
   write = prior === null ? write.is("prepared_instagram_post", null) : write.eq("prepared_instagram_post", JSON.stringify(prior));

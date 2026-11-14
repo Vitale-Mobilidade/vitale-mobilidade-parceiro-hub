@@ -52,6 +52,13 @@ export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { epi
   }
 
   try {
+    const heldEpisode = await db.from("podcast_episode_queue").select("prepared_instagram_post")
+      .eq("youtube_id", claim.youtube_id).maybeSingle();
+    if (heldEpisode.error) throw new Error("podcast_instagram_draft_missing");
+    if (heldEpisode.data?.prepared_instagram_post?.reviewHold === true) {
+      await finish("pending", { error_code: "review_hold" });
+      return { status: "unavailable" as const, code: "review_hold" };
+    }
     const settings = readInstagramSettings((name) => Deno.env.get(name));
     if (!settings) throw new InstagramRequestError("not_configured", true);
     const instagram = instagramPublisher(settings);

@@ -65,6 +65,7 @@ it("Meta create timeout keeps marker and explicit retry never creates a second c
   const db = createClient("https://db.example.com", "test", { global: { fetch: async (input, init) => {
     const url = new URL(String(input));
     if (url.pathname.endsWith("podcast_distribution_settings")) return Response.json([{feed_enabled:true,instagram_enabled:true}]);
+    if (url.pathname.endsWith("podcast_episode_queue")) return Response.json([{prepared_instagram_post:draft}]);
     if (url.searchParams.has("slot_at")) {
       if (deliveryState.error_code === "meta_create_uncertain") return Response.json([]);
       return Response.json([deliveryState]);
@@ -77,6 +78,19 @@ it("Meta create timeout keeps marker and explicit retry never creates a second c
   await expect(publishPodcastOnInstagram(db,{episodeId})).resolves.toEqual({status:"pending",code:"meta_create_uncertain"});
   await expect(publishPodcastOnInstagram(db,{episodeId})).resolves.toEqual({status:"unavailable"});
   expect(meta.mock.calls.filter(([url])=>String(url).endsWith("/media"))).toHaveLength(1);
+});
+
+it("held OUXI fails closed before any Meta request even if a stale claim reaches the worker",async()=>{
+ const writes: unknown[]=[];
+ const db=createClient("https://db.example.com","test",{global:{fetch:async(input,init)=>{
+  const url=new URL(String(input));
+  if(url.pathname.endsWith("claim_podcast_instagram")) return Response.json([{...claim,youtube_id:"hvtzaWLnM14"}]);
+  if(url.pathname.endsWith("podcast_episode_queue")) return Response.json([{prepared_instagram_post:{...draft,reviewHold:true}}]);
+  writes.push(JSON.parse(String(init?.body)));return Response.json([{youtube_id:"hvtzaWLnM14"}]);
+ }}});
+ const meta=vi.fn();vi.stubGlobal("fetch",meta);
+ await expect(publishPodcastOnInstagram(db)).resolves.toEqual({status:"unavailable",code:"review_hold"});
+ expect(meta).not.toHaveBeenCalled();expect(writes).toContainEqual(expect.objectContaining({status:"pending",error_code:"review_hold",lease_until:null}));
 });
 
 it("confirmed publish attempt is reconciliation-only, never repeats Meta", async()=>{

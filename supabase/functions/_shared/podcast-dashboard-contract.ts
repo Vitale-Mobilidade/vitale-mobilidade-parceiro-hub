@@ -16,6 +16,7 @@ export type PodcastInstagramDraft = {
   scheduledAt: string | null;
   imageUrl?: string | null;
   caption?: string | null;
+  reviewHold?: boolean;
 };
 
 export type PodcastDashboardItem = {

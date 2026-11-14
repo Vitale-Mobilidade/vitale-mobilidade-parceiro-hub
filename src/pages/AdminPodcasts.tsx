@@ -182,7 +182,7 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
         <div className="min-w-0 space-y-3">
           <p className="break-words text-sm font-semibold">{drafts.data.futurePreview.title}</p>
           <p className="break-words whitespace-pre-wrap text-sm">{drafts.data.futurePreview.caption}</p>
-          <p className="text-sm text-muted-foreground">Prévia da fila futura. Sem envio manual nesta seção; a agenda não foi alterada ou bloqueada.</p>
+          <p className="text-sm text-muted-foreground">{drafts.data.futurePreview.reviewHold ? "Aguardando revisão — envio automático bloqueado. RSS segue normal." : "Prévia da fila futura. Sem envio manual nesta seção; sem bloqueio de revisão neste post."}</p>
         </div>
       </div> : <p className="mt-3 text-sm text-muted-foreground">A OUXI ainda não tem capa e legenda preparadas na fila futura.</p>}
     </div>}
@@ -191,6 +191,7 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
       {drafts.data.items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
         <div>
           <p className="text-sm font-semibold">{item.title}</p>
+          {item.reviewHold && <p className="text-sm text-muted-foreground">Aguardando revisão</p>}
           {item.scheduledAt && <p className="text-sm text-muted-foreground">
             {Date.parse(item.scheduledAt) + 15 * 60_000 < Date.now() ? "Horário encerrado" : "Agendado"} em{" "}
             <time dateTime={item.scheduledAt}>{formatPodcastDateTime(item.scheduledAt)}</time>
@@ -209,7 +210,7 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
       <p className="text-sm font-semibold">{selection.title}</p>
       {selection.imageUrl && <img src={selection.imageUrl} alt={selection.title} className="aspect-[4/5] w-full max-w-sm object-contain" />}
       {selection.caption && <p className="max-w-lg whitespace-pre-wrap text-sm">{selection.caption}</p>}
-      <button type="button" className={button} disabled={!enabled || delivery.isPending} onClick={() => {
+      <button type="button" className={button} disabled={selection.reviewHold || !enabled || delivery.isPending} onClick={() => {
         if (window.confirm(`Publicar “${selection.title}” no Instagram da Vitale agora?`)) delivery.mutate({ id: selection.id, scheduled: false });
       }}>Publicar agora</button>
       <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => {
@@ -220,7 +221,7 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
           <input type="datetime-local" required value={localTime} onChange={(event) => setLocalTime(event.target.value)}
             className="min-h-11 rounded-lg border border-line px-3" />
         </label>
-        <button type="submit" className={button} disabled={!enabled || !schedulerEnabled || !localTime || delivery.isPending}>Agendar</button>
+        <button type="submit" className={button} disabled={selection.reviewHold || !enabled || !schedulerEnabled || !localTime || delivery.isPending}>Agendar</button>
       </form>
       {enabled && !schedulerEnabled && <p className="text-sm text-muted-foreground">O agendador está pausado.</p>}
     </div>}

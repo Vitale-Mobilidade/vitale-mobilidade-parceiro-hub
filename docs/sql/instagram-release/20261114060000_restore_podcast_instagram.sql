@@ -23,6 +23,9 @@ RETURNS SETOF public.podcast_instagram_deliveries LANGUAGE sql SECURITY DEFINER 
   SET claim_token = gen_random_uuid(), lease_until = now() + interval '45 seconds'
   WHERE slot_at = public.podcast_release_slot(now()) AND status = 'pending' AND publish_attempted_at IS NULL
     AND error_code IS DISTINCT FROM 'meta_create_uncertain'
+    AND EXISTS (SELECT 1 FROM public.podcast_episode_queue q
+      WHERE q.youtube_id = podcast_instagram_deliveries.youtube_id
+        AND q.prepared_instagram_post->>'reviewHold' IS DISTINCT FROM 'true')
     AND (lease_until IS NULL OR lease_until <= now())
     AND EXISTS (SELECT 1 FROM public.podcast_distribution_settings
       WHERE singleton AND feed_enabled AND scheduler_enabled AND instagram_enabled)
@@ -53,6 +56,7 @@ BEGIN
   FROM public.podcast_episode_queue q
   WHERE d.youtube_id = p_episode_id AND q.youtube_id = d.youtube_id
     AND q.released_at IS NOT NULL AND q.prepared_instagram_post IS NOT NULL
+    AND q.prepared_instagram_post->>'reviewHold' IS DISTINCT FROM 'true'
     AND d.status = 'pending' AND d.publish_attempted_at IS NULL
     AND d.error_code IS DISTINCT FROM 'meta_create_uncertain'
     AND d.slot_at <= now() - interval '5 minutes'
@@ -68,6 +72,9 @@ RETURNS SETOF public.podcast_instagram_deliveries LANGUAGE sql SECURITY DEFINER 
     SELECT d.youtube_id FROM public.podcast_instagram_deliveries d
     WHERE d.status = 'pending' AND d.publish_attempted_at IS NULL
       AND d.error_code IS DISTINCT FROM 'meta_create_uncertain'
+      AND EXISTS (SELECT 1 FROM public.podcast_episode_queue q
+        WHERE q.youtube_id = d.youtube_id
+          AND q.prepared_instagram_post->>'reviewHold' IS DISTINCT FROM 'true')
       AND d.scheduled_at BETWEEN now() - interval '15 minutes' AND now()
       AND (d.lease_until IS NULL OR d.lease_until <= now())
       AND EXISTS (SELECT 1 FROM public.podcast_distribution_settings

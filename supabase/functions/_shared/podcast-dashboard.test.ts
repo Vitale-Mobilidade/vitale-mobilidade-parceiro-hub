@@ -58,8 +58,8 @@ it("mostra apenas a OUXI futura preparada sem alterar a entrega normal V9", asyn
       }
       expect(url.searchParams.get("youtube_id")).toBe("eq.hvtzaWLnM14");
       if (url.pathname.endsWith("podcast_prepared_episodes")) return Response.json({ youtube_id: "hvtzaWLnM14" });
-      expect(url.searchParams.get("released_at")).toBe("is.null");
-      expect(url.searchParams.get("release_at")).toBe("is.null");
+      expect(url.searchParams.has("released_at")).toBe(false);
+      expect(url.searchParams.has("release_at")).toBe(false);
       expect(url.searchParams.get("select")).toBe("youtube_id,title,prepared_instagram_post");
       return Response.json({ youtube_id: "hvtzaWLnM14", title: "OUXI V20 Ultra Max",
         prepared_instagram_post: { image_url: "https://example.invalid/ouxi.jpg", caption: "Legenda já preparada, sem reescrita." } });
@@ -68,18 +68,18 @@ it("mostra apenas a OUXI futura preparada sem alterar a entrega normal V9", asyn
   const result = await readPodcastInstagramDrafts(db as never, 0);
   expect(result.items.map((item) => item.id)).toEqual(["oMk_aatN9pI"]);
   expect(result.futurePreview).toEqual({ id: "hvtzaWLnM14", title: "OUXI V20 Ultra Max", scheduledAt: null,
-    imageUrl: "https://example.invalid/ouxi.jpg", caption: "Legenda já preparada, sem reescrita." });
+    imageUrl: "https://example.invalid/ouxi.jpg", caption: "Legenda já preparada, sem reescrita.", reviewHold: false });
   expect(requests).toHaveLength(3);
 });
 
-it("não consulta nem prepara a OUXI ausente da fila elegível", async () => {
+it("mantém OUXI em revisão visível após RSS mesmo fora da view preparada", async () => {
   const db = createClient("https://example.invalid", "test", {
     auth: { persistSession: false }, global: { fetch: async (input, init) => {
       expect(init?.method ?? "GET").toBe("GET");
       const url = new URL(String(input));
-      expect(url.pathname).not.toContain("podcast_episode_queue");
+      if (url.pathname.endsWith("podcast_episode_queue")) return Response.json({youtube_id:"hvtzaWLnM14",title:"OUXI",prepared_instagram_post:{image_url:"https://example.invalid/ouxi.jpg",caption:"Legenda",reviewHold:true}});
       return Response.json(url.pathname.endsWith("podcast_prepared_episodes") ? null : []);
     } },
   });
-  expect((await readPodcastInstagramDrafts(db as never, 0)).futurePreview).toBeNull();
+  expect((await readPodcastInstagramDrafts(db as never, 0)).futurePreview).toMatchObject({id:"hvtzaWLnM14",reviewHold:true});
 });

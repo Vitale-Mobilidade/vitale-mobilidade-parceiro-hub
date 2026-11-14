@@ -28,11 +28,12 @@ export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: un
     .order("slot_at", { ascending: false }).order("youtube_id")
     .range(offset, offset + PODCAST_HISTORY_PAGE_SIZE - 1);
   if (error) throw new Error("podcast_instagram_drafts_read_failed");
-  type DraftRow = { youtube_id: string; scheduled_at: string | null; podcast_episode_queue: { title: string; prepared_instagram_post?: { image_url?: string; caption?: string } } };
+  type DraftRow = { youtube_id: string; scheduled_at: string | null; podcast_episode_queue: { title: string; prepared_instagram_post?: { image_url?: string; caption?: string; reviewHold?: boolean } } };
   const items: PodcastInstagramDraft[] = ((data ?? []) as unknown as DraftRow[]).map((row) => ({
     id: row.youtube_id, title: row.podcast_episode_queue.title, scheduledAt: row.scheduled_at,
     imageUrl: row.podcast_episode_queue.prepared_instagram_post?.image_url ?? null,
     caption: row.podcast_episode_queue.prepared_instagram_post?.caption ?? null,
+    reviewHold: row.podcast_episode_queue.prepared_instagram_post?.reviewHold === true,
   }));
   // Eligibility comes from the existing prepared view (active video, exact published article revision).
   // Read-only owner acceptance preview; never creates a delivery or calls preparation/Meta.
@@ -40,16 +41,16 @@ export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: un
     .eq("youtube_id", PODCAST_INSTAGRAM_REVIEW_VIDEO).maybeSingle();
   if (eligible.error) throw new Error("podcast_instagram_drafts_read_failed");
   let futurePreview: PodcastInstagramDraft | null = null;
-  if (eligible.data) {
+  {
     const future = await db.from("podcast_episode_queue").select("youtube_id,title,prepared_instagram_post")
-      .eq("youtube_id", PODCAST_INSTAGRAM_REVIEW_VIDEO).is("released_at", null).is("release_at", null)
+      .eq("youtube_id", PODCAST_INSTAGRAM_REVIEW_VIDEO)
       .not("prepared_instagram_post", "is", null).maybeSingle();
     if (future.error) throw new Error("podcast_instagram_drafts_read_failed");
     const post = future.data?.prepared_instagram_post;
-    if (future.data && post && typeof post === "object" && !Array.isArray(post) &&
+    if (future.data && post && typeof post === "object" && !Array.isArray(post) && (eligible.data || post.reviewHold === true) &&
       typeof post.image_url === "string" && typeof post.caption === "string" && post.caption.trim()) {
       futurePreview = { id: future.data.youtube_id, title: future.data.title,
-        scheduledAt: null, imageUrl: post.image_url, caption: post.caption };
+        scheduledAt: null, imageUrl: post.image_url, caption: post.caption, reviewHold: post.reviewHold === true };
     }
   }
   return { total: count ?? 0, items, futurePreview };

@@ -5,13 +5,13 @@ const id = "11223344-1234-1234-1234-123456789abc";
 const version = "2026-11-12T02:00:00.000Z";
 afterEach(() => vi.unstubAllGlobals());
 
-function fixture(width = 1080, saveFails = false) {
+function fixture(width = 1080, saveFails = false, reviewHold = false) {
   const writes: Array<{path:string;body:unknown;filter?:string|null}> = [];
   const db = createClient("https://db.example.com", "mock", {global:{fetch:async(input,init)=>{
     const path = new URL(String(input)).pathname;
     if(path.endsWith("podcast_episode_queue")) {
       if(init?.method === "PATCH") { writes.push({path,body:JSON.parse(String(init.body)),filter:new URL(String(input)).searchParams.get("prepared_instagram_post")});return saveFails ? Response.json({message:"save failed"},{status:500}) : Response.json([{youtube_id:"abcdefghijk"}]); }
-      return Response.json([{prepared_article_version:version,prepared_instagram_post:{image_url:"legacy.v3.jpg",caption:"Legenda original fundamentada."}}]);
+      return Response.json([{prepared_article_version:version,prepared_instagram_post:{image_url:"legacy.v3.jpg",caption:"Legenda original fundamentada.", ...(reviewHold ? {reviewHold:true} : {})}}]);
     }
     if(path.endsWith("editorial_articles")) return Response.json([{id,slug:"mobylette",summary:"Resumo",updated_at:version,og_image_url:"https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg"}]);
     if(init?.method === "POST") {writes.push({path,body:init.body});return Response.json({Key:path});}
@@ -29,6 +29,12 @@ it("adapts only versioned IG media, keeps legacy caption and never writes square
  expect(f.writes[1].body).toEqual({prepared_instagram_post:post});
  expect(f.writes[1].filter).toBe('eq.'+JSON.stringify({image_url:"legacy.v3.jpg",caption:"Legenda original fundamentada."}));
  expect(f.writes).toHaveLength(2);
+});
+it("preserves explicit reviewHold true when adapting the exact prepared revision",async()=>{
+ const f=fixture(1080,false,true);const post=await preparePodcastInstagramArtwork(f.db,"hvtzaWLnM14");
+ expect(post.reviewHold).toBe(true);
+ expect(f.writes[1].body).toEqual({prepared_instagram_post:post});
+ expect(f.writes[1].filter).toContain('"reviewHold":true');
 });
 it("wrong image dimensions never save media or change the prepared post",async()=>{
  const f=fixture(1400);await expect(preparePodcastInstagramArtwork(f.db,"abcdefghijk")).rejects.toThrow("podcast_instagram_cover_invalid");expect(f.writes).toHaveLength(0);

@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Productive shared Instagram release with OUXI review hold
+- [x] Preserve JSONB reviewHold through adaptation; both automatic claims skip held queue rows; Admin retains held preview after RSS.
+- [x] Fifteen focused mock tests, disposable PostgreSQL hold/enqueue/claims and Deno checks passed; recoverable backup and productive unchanged-state recheck.
+- [ ] Official release blocked by Growth 0013/0014 journal divergence: official migration failed 42723, nothing applied; requires safe history reconciliation before CAS conversion/deploy/read-only Meta verification. No productive hold, manual send, Hub publish or new cron.
+
 # Future Instagram acceptance preview — no production hold
 - [x] Show already-prepared OUXI hvtzaWLnM14 image/caption in existing Podcasts → Posts do Instagram, read-only and no queue change.
 - [x] Seven focused tests passed, desktop/390px mock UI without publication controls or overflow, automatic build OK; release instructions recorded.
