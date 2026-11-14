@@ -16,6 +16,7 @@ export type InstagramSingleItem = {
 export type InstagramSingleDashboard = {
   automationEnabled: boolean;
   pilotPending: boolean;
+  firstApprovalPending: boolean;
   total: number;
   counts: Record<string, number>;
   issue: string | null;

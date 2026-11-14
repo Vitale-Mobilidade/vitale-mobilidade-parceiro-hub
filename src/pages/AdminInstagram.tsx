@@ -132,6 +132,29 @@ export function InstagramWorkspace() {
       refresh();
     },
   });
+  const enqueue = useMutation({
+    mutationFn: () =>
+      adminCall<{ status: string; dueAt?: string }>(
+        "instagram-single-queue-next",
+      ),
+    onSuccess: (result) => {
+      const issues: Record<string, string> = {
+        queue_full: "As três próximas janelas já estão reservadas.",
+        source_requires_review: "A próxima fonte precisa de revisão editorial.",
+        no_source: "Não há outro vídeo elegível e inédito.",
+        awaiting_review: "A primeira publicação ainda não foi aprovada.",
+      };
+      setFeedback(
+        result.dueAt
+          ? "Post agendado para " +
+              formatPodcastDateTime(result.dueAt) +
+              " — São Paulo."
+          : (issues[result.status] ??
+              "Atualize a fila para conferir o estado."),
+      );
+      refresh();
+    },
+  });
   const connection = useMutation({
     mutationFn: () =>
       adminCall<{ status: string }>("podcast-instagram-connection"),
@@ -177,7 +200,7 @@ export function InstagramWorkspace() {
       : legacyItems.slice(page * 20, page * 20 + 20);
   const total = view === "current" ? (config?.total ?? 0) : legacyItems.length;
   const item = items.find((x) => x.id === selected) ?? items[0];
-  const error = prepare.error ?? approve.error;
+  const error = prepare.error ?? approve.error ?? enqueue.error;
   const switchView = (target: typeof view) => {
     setView(target);
     setPage(0);
@@ -238,7 +261,7 @@ export function InstagramWorkspace() {
         <p className="mt-1 text-sm text-muted-foreground">
           {podcastSlots.map((slot) => slot.label).join(" · ")} — São Paulo
         </p>
-        {config?.pilotPending && (
+        {config?.firstApprovalPending && (
           <p className="mt-2 text-sm">
             O primeiro envio depende da sua aprovação da capa e da legenda.
           </p>
@@ -288,17 +311,26 @@ export function InstagramWorkspace() {
             <h2 className="font-semibold">Vídeo elegível mais recente</h2>
             <p className="text-sm">{config.source.article_title}</p>
           </div>
-          <Button
-            disabled={
-              prepare.isPending ||
-              Object.entries(config.counts).some(
-                ([key, count]) => key !== "published" && count > 0,
-              )
-            }
-            onClick={() => prepare.mutate(config.source!.video_id)}
-          >
-            {prepare.isPending ? "Preparando…" : "Preparar rascunho"}
-          </Button>
+          {config.automationEnabled && !config.firstApprovalPending ? (
+            <Button
+              disabled={
+                enqueue.isPending ||
+                (config.counts.scheduled ?? 0) +
+                  (config.counts.publishing ?? 0) >=
+                  3
+              }
+              onClick={() => enqueue.mutate()}
+            >
+              {enqueue.isPending ? "Preparando…" : "Colocar na fila"}
+            </Button>
+          ) : (
+            <Button
+              disabled={prepare.isPending || (config.counts.review ?? 0) > 0}
+              onClick={() => prepare.mutate(config.source!.video_id)}
+            >
+              {prepare.isPending ? "Preparando…" : "Preparar rascunho"}
+            </Button>
+          )}
         </section>
       )}
       <div className="flex flex-wrap gap-2" aria-label="Área de posts">
