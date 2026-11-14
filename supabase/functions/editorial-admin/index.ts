@@ -2601,6 +2601,20 @@ Deno.serve(async (req) => {
       releaseFlag: Deno.env.get("INSTAGRAM_CAROUSEL_RELEASE_ENABLED"),
     });
   }
+  if (body.action === "instagram-single-tick") {
+    const verified = await db.rpc("authorize_instagram_single_tick", {
+      p_signature: req.headers.get("x-instagram-single-signature") ?? "",
+      p_issued_at: req.headers.get("x-instagram-single-issued") ?? "",
+    });
+    if (verified.error || verified.data !== true) return json(req, {error:"unauthorized"}, 403);
+    try {
+      const { tickInstagramSingle } = await import("./instagram-single.ts");
+      return json(req, await tickInstagramSingle(db, SUPABASE_URL, name => Deno.env.get(name)));
+    } catch (error) {
+      const code = error instanceof Error && /^instagram_[a-z_]+$/.test(error.message) ? error.message : "instagram_worker_failed";
+      return json(req, {error:code}, 503);
+    }
+  }
   if (body.action === "podcast-tick") {
     const { data: ownerId, error: authorizationError } = await db.rpc("authorize_podcast_tick", {
       p_signature: req.headers.get("x-podcast-worker-signature") ?? "",
@@ -2629,6 +2643,26 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "instagram-single-list" || action === "instagram-single-prepare" || action === "instagram-single-approve") {
+      if (actor.role !== "admin") return json(req, {error:"Acesso restrito a administradores."}, 403);
+      try {
+        const single = await import("./instagram-single.ts");
+        const result = action === "instagram-single-list" ? await single.readInstagramSingle(db, body)
+          : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId)
+          : await single.approveInstagramSingle(db, body.id, body.fingerprint);
+        const response = json(req, result);
+        response.headers.set("Cache-Control", "private, no-store");
+        response.headers.set("Vary", "Origin, Authorization");
+        return response;
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "";
+        return json(req, {error:code === "instagram_framing_review_required"
+          ? "A capa original ainda precisa de enquadramento para Instagram."
+          : code === "instagram_review_changed_or_slot_busy"
+            ? "A revisão mudou ou já há um post reservado. Atualize a lista e confira a fila."
+            : "Não foi possível concluir a operação do Instagram."}, 409);
+      }
+    }
     if (action === "instagram-mobylette-pilot") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       try {

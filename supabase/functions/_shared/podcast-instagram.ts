@@ -71,7 +71,7 @@ export function directInstagramCoverUrl(value: string): string | null {
   }
 }
 
-export function instagramPublisher(settings: InstagramSettings, fetcher = fetch) {
+export function instagramPublisher(settings: InstagramSettings, fetcher = fetch, resolveImageUrl = directInstagramCoverUrl) {
   const graphHost = settings.accountId ? "graph.facebook.com" : "graph.instagram.com";
 
   async function request(step: "account" | "access" | "create" | "status" | "publish" | "permalink",
@@ -127,7 +127,7 @@ export function instagramPublisher(settings: InstagramSettings, fetcher = fetch)
       }
     },
     async create(account: string, post: NonNullable<ReturnType<typeof instagramPodcastPost>>) {
-      const image_url = directInstagramCoverUrl(post.image_url);
+      const image_url = resolveImageUrl(post.image_url);
       if (!image_url) throw new InstagramRequestError("podcast_instagram_draft_missing", true);
       const data = await request("create", `${account}/media`, { ...post, image_url });
       if (!numericId(data.id)) throw new InstagramRequestError("meta_container_missing", false);
