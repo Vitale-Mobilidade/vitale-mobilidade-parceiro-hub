@@ -23,7 +23,7 @@ export function renderArtV4(slide:RenderSlide|null,photos:Raster[],original:Rast
   if(!value)return;const f=font(weight),rows:string[]=[];let row='';const width=(s:string)=>[...s].reduce((n,ch)=>n+f.metrics(ch,size).advance_width,0);
   for(const word of value.split(/\s+/)){if(width(word)>w)throw Error('instagram_text_does_not_fit');const next=row?row+' '+word:word;if(width(next)>w-48){rows.push(row);row=word;}else row=next;}if(row)rows.push(row);
   if(rows.length*size*leading>h)throw Error('instagram_text_does_not_fit');
-  shared??=new Layout();for(const [i,v] of rows.entries()){shared.reset({wrap_style:'word',vertical_align:'top',horizontal_align:'left'});shared.append(f,v,{scale:size});const r=shared.rasterize(...color),yy=Math.round(y+i*size*leading);
+  shared??=new Layout();for(const [i,v] of rows.entries()){shared.reset({wrap_style:'word',vertical_align:'top',horizontal_align:'left'});shared.append(f,v,{scale:size});const r=shared.rasterize(color[0],color[1],color[2]),yy=Math.round(y+i*size*leading);
    if(r.width>w||yy+r.height>y+h)throw Error(`instagram_text_does_not_fit: ${value} ${r.width}x${r.height} in ${w}x${h}`);
    if(photographic)for(let py=0;py<r.height;py++)for(let px=0;px<r.width;px++){const a=r.buffer[(py*r.width+px)*4+3]/255*.6;if(!a)continue;for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2],[2,4]]){const xx=x+px+dx,y2=yy+py+dy;if(xx<0||xx>=W||y2<0||y2>=H)continue;const to=(y2*W+xx)*4;for(let c=0;c<3;c++)out[to+c]=out[to+c]*(1-a)+C.deep[c]*a;}}
    for(let py=0;py<r.height;py++)for(let px=0;px<r.width;px++){const at=(py*r.width+px)*4,to=((yy+py)*W+x+px)*4,a=r.buffer[at+3]/255;if(a)for(let c=0;c<3;c++)out[to+c]=out[to+c]*(1-a)+r.buffer[at+c]*a;}

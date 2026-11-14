@@ -214,10 +214,13 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
   const original = metadata.data?.background;
   if (
     !original ||
+    typeof original !== "object" ||
+    Array.isArray(original) ||
     !isCoverUuid(s.article_id) ||
     typeof original.path !== "string" ||
     !original.path.startsWith(s.article_id + "/") ||
     !framePath.test(original.path) ||
+    typeof original.mime !== "string" ||
     !["image/png", "image/jpeg"].includes(original.mime) ||
     original.title !== article.data.title
   )
@@ -230,7 +233,7 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
         focus: MOBYLETTE_PILOT.evidence.focus,
         subjects: [...MOBYLETTE_PILOT.evidence.subjects],
       }
-    : original.frameEvidence;
+    : original.frameEvidence as FrameEvidence | undefined;
 
   const caption = singleInstagramCaption(
     article.data.summary ?? "",
