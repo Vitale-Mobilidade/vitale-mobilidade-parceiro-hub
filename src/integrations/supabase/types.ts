@@ -4833,6 +4833,16 @@ export type Database = {
         }
         Returns: Json
       }
+      member_billing_purchase_at_price: {
+        Args: {
+          p_accepted: boolean
+          p_actor: string
+          p_contact: boolean
+          p_expected_amount: number
+          p_id: string
+        }
+        Returns: Json
+      }
       member_billing_purchase_before_courtesies: {
         Args: {
           p_accepted: boolean
@@ -4900,6 +4910,10 @@ export type Database = {
       member_classifieds_before_seller_experience: {
         Args: { p_action?: string; p_payload?: Json }
         Returns: Json
+      }
+      member_classifieds_can_draft: {
+        Args: { p_actor: string }
+        Returns: boolean
       }
       member_classifieds_pilot: { Args: { p_actor: string }; Returns: boolean }
       member_classifieds_visible: { Args: { p_user: string }; Returns: boolean }
