@@ -30,3 +30,8 @@ The only offered mutation signature is `lov_database.migration_history({"operati
 
 ## Release consequence
 No further restoration migration attempt, CAS conversion, hold write, Meta request, deployment, activation or Hub Publish was performed. Existing 0013/0014 SQL and journal/snapshots stay untouched. A supported official exact-version adoption/reconciliation operation is required before the planned Instagram restoration release can continue; catalog equivalence alone does not establish applied journal history, particularly with the observed ACL difference.
+
+## Conditional-adoption request — 14 November 2026, 04:27 UTC
+Repeated official inspection confirms 0013/0014 still lack applied database rows and no repair plan is available. Platform migration rules prohibit rewriting existing `drizzle/migrations` SQL into a conditional adoption implementation. The only pending-blocker edit exception permits commenting out every statement while preserving its text and journal entry; that is not equivalent to the owner's requested validated adoption and was not used. Draft history repair is a different exception and does not apply to this main-project release.
+
+Stopped before editing either protected pending file. No conditional SQL or disposable adoption tests were created: such tests would not make a forbidden production migration-file rewrite safe or supported. No original hash/journal/snapshot/grant changed. New Admin Instagram remains intact at `2c8f60f9dd04a7d00d7cad345584d6c438a234d7`. Codex needs a platform-supported exact-object adoption mechanism or an explicit supported pending-file rewrite capability before implementing this proposal; unsupported manual journal repair remains excluded.

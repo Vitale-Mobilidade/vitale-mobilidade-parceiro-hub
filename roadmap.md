@@ -1,5 +1,9 @@
 # Ajuste estrito da Home e navegação
 
+# Conditional Growth adoption proposal — stopped at platform protection
+- [x] Official reinspection confirms 0013/0014 pending; platform rules prohibit conditional rewrite of existing migration files (comment-only blocker exception is not validated adoption).
+- [ ] Conditional adoption implementation/tests blocked by protected pending-file rewrite; existing Admin Instagram preserved, no production action or migration-file/journal edits.
+
 # Single-image Instagram Admin workspace
 - [x] Replace carousel/editorial-review UI with paginated existing podcast queue/delivery list and image/caption detail in /admin/instagram.
 - [x] Remove podcast Instagram management except navigation; preserve hold after RSS, confirmed historical delivery states and predicted-versus-reserved windows.
