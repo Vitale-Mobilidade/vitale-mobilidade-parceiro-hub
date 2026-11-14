@@ -38,6 +38,11 @@ export const moderationCommentSchema = memberCommentSchema
 export type MemberProfile = z.infer<typeof memberProfileSchema>;
 export type MemberComment = z.infer<typeof memberCommentSchema>;
 
+export function classifiedsResumeId(value: unknown): string | undefined {
+  const parsed = z.string().uuid().safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+}
+
 /** Return to a known internal page, never to credentials, external hosts or auth loops. */
 export function memberReturnPath(value: unknown): string {
   if (
@@ -99,8 +104,11 @@ export function memberReturnPath(value: unknown): string {
         safe.append(key, val);
     if (path === "/radar" && url.searchParams.get("favoritos") === "1")
       safe.set("favoritos", "1");
-    if (path === "/conta/anuncios" && url.searchParams.get("novo") === "1")
-      safe.set("novo", "1");
+    if (path === "/conta/anuncios") {
+      const listing = classifiedsResumeId(url.searchParams.get("anuncio"));
+      if (listing) safe.set("anuncio", listing);
+      else if (url.searchParams.get("novo") === "1") safe.set("novo", "1");
+    }
     const hash = /^#[a-zA-Z0-9_-]{1,100}$/.test(url.hash) ? url.hash : "";
     return path + (safe.size ? `?${safe.toString()}` : "") + hash;
   } catch {

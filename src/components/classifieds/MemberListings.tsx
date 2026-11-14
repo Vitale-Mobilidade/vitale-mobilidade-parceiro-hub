@@ -49,13 +49,19 @@ import {
 } from "@/lib/bike-classifieds";
 import { ClassifiedCard } from "./BikeClassifiedsSection";
 import { memberPhone } from "@/lib/member-identity";
-import { memberError } from "@/lib/member-community";
+import { memberError, memberLoginHref } from "@/lib/member-community";
 import { ListingPreview } from "./ListingPreview";
 const field =
   "mt-2 block min-h-12 w-full rounded-xl border border-line bg-white px-3 py-3 text-ink disabled:bg-surface";
 const button =
   "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-action px-5 py-3 font-bold text-white disabled:opacity-50";
-export function MemberListings({ startNew = false }: { startNew?: boolean }) {
+export function MemberListings({
+  startNew = false,
+  resumeId,
+}: {
+  startNew?: boolean;
+  resumeId?: string;
+}) {
   const { session, loading } = useMemberSession();
   const userId = session?.user.id;
   const [account, setAccount] = useState<ClassifiedsAccount | null>(null);
@@ -72,7 +78,7 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
   async function load() {
     const a = classifiedsAccountSchema.parse(await classifiedsCall("account"));
     setAccount(a);
-    if (a.canAdvertise && a.communityJoined) {
+    if (a.canAdvertise) {
       const items = listingSchema.array().parse(await classifiedsCall("mine"));
       const signed = await signedMemberImages(
         items.flatMap((v) => v.images.map((i) => i.path)),
@@ -96,7 +102,7 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
         await classifiedsCall("account"),
       );
       let items: BikeListing[] = [];
-      if (a.canAdvertise && a.communityJoined) {
+      if (a.canAdvertise) {
         items = listingSchema.array().parse(await classifiedsCall("mine"));
         const signed = await signedMemberImages(
           items.flatMap((v) => v.images.map((i) => i.path)),
@@ -107,6 +113,8 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
       if (active) {
         setAccount(a);
         setListings(items);
+        if (resumeId && items.some((item) => item.id === resumeId))
+          setSelected(resumeId);
         setReady(true);
       }
     })().catch((e) => {
@@ -118,7 +126,7 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
     return () => {
       active = false;
     };
-  }, [userId, retry]);
+  }, [userId, retry, resumeId]);
   async function create() {
     setBusy(true);
     setError("");
@@ -142,13 +150,7 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
   }
   const startedNew = useRef(false);
   useEffect(() => {
-    if (
-      startNew &&
-      ready &&
-      account?.canAdvertise &&
-      account.communityJoined &&
-      !startedNew.current
-    ) {
+    if (startNew && ready && account?.canAdvertise && !startedNew.current) {
       startedNew.current = true;
       void create();
     }
@@ -162,11 +164,13 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
           Entre na sua conta para criar e acompanhar seus anúncios.
         </p>
         <a
-          href={
-            startNew
-              ? "/conta?retorno=%2Fconta%2Fanuncios%3Fnovo%3D1"
-              : "/conta?retorno=%2Fconta%2Fanuncios"
-          }
+          href={memberLoginHref(
+            resumeId
+              ? `/conta/anuncios?anuncio=${resumeId}`
+              : startNew
+                ? "/conta/anuncios?novo=1"
+                : "/conta/anuncios",
+          )}
           className={`${button} mt-6`}
         >
           Entrar na minha conta
@@ -205,19 +209,6 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
         </p>
         <a href="/venda-sua-bike" className={`${button} mt-6`}>
           Ver bikes disponíveis
-        </a>
-      </section>
-    );
-  if (!account.communityJoined)
-    return (
-      <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-7">
-        <h1 className="text-3xl font-bold">Complete seu cadastro</h1>
-        <p className="mt-4">Complete seu perfil para começar o anúncio.</p>
-        <a
-          href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
-          className={`${button} mt-6`}
-        >
-          Completar meu perfil
         </a>
       </section>
     );
@@ -303,6 +294,12 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
               onClick={() => {
                 if (editing) setConfirmExit(true);
                 else {
+                  if (resumeId)
+                    window.history.replaceState(
+                      window.history.state,
+                      "",
+                      "/conta/anuncios",
+                    );
                   setSelected(undefined);
                   setNotice("");
                 }
@@ -317,6 +314,8 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
             channel={channel}
             verifiedPhone={account.verifiedPhone ?? undefined}
             canPublish={account.canPublish}
+            communityJoined={account.communityJoined}
+            resumePublication={resumeId === listing.id}
             onChange={load}
             onEditing={setEditing}
             onBusy={setEditorBusy}
@@ -351,6 +350,12 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
             <AlertDialogCancel>Continuar editando</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
+                if (resumeId)
+                  window.history.replaceState(
+                    window.history.state,
+                    "",
+                    "/conta/anuncios",
+                  );
                 setSelected(undefined);
                 setEditing(false);
                 setNotice("");
@@ -374,9 +379,13 @@ export function ListingEditor({
   onBusy,
   actions,
   verifiedPhone,
+  communityJoined = true,
+  resumePublication = false,
 }: {
   listing: BikeListing;
   verifiedPhone?: string;
+  communityJoined?: boolean;
+  resumePublication?: boolean;
   canPublish: boolean;
   channel: boolean;
   onChange: () => Promise<void>;
@@ -408,21 +417,24 @@ export function ListingEditor({
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState(false);
   const [photoProgress, setPhotoProgress] = useState<string>();
-  const [step, setStep] = useState<"photos" | "details" | "publish">("photos");
+
   const [consent, setConsent] = useState(false);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const editorRef = useRef<HTMLDivElement>(null);
   const photosReady =
     listing.images.some((i) => i.status === "ready") &&
     !listing.images.some((i) => i.status === "reserved");
-  const [lastStep, setLastStep] = useState(
-    photosReady
-      ? listingInputSchema.safeParse(listing).success &&
-        (channel || listing.contactConfirmed)
-        ? 2
-        : 1
-      : 0,
+  const initialStep = photosReady
+    ? listingInputSchema.safeParse(listing).success
+      ? 2
+      : 1
+    : 0;
+  const [lastStep, setLastStep] = useState(initialStep);
+  const [step, setStep] = useState<"photos" | "details" | "publish">(
+    resumePublication && initialStep === 2 ? "publish" : "photos",
   );
+  const accountReturn = `/conta/anuncios?anuncio=${listing.id}`;
+  const profileHref = `/conta?modo=perfil&retorno=${encodeURIComponent(accountReturn)}#identity-title`;
   const steps = ["photos", "details", "publish"] as const;
   const draft = listing.status === "draft";
   useEffect(() => {
@@ -490,15 +502,16 @@ export function ListingEditor({
       });
       return false;
     }
+    const confirmedPhone = memberPhone(contactPhone)?.replace("+", "");
     if (
       complete &&
       !channel &&
-      (!canPublish ||
-        !verifiedPhone ||
-        memberPhone(contactPhone)?.replace("+", "") !== verifiedPhone)
+      canPublish &&
+      verifiedPhone &&
+      confirmedPhone !== verifiedPhone
     ) {
       setError(
-        "Para continuar, confirme um WhatsApp validado. Altere e valide o número no seu perfil se necessário.",
+        "Use o WhatsApp validado no perfil ou altere o número na sua conta.",
       );
       return false;
     }
@@ -517,10 +530,14 @@ export function ListingEditor({
         await call("save", {
           id: listing.id,
           ...data.data,
-          ...(!channel && complete
+          ...(!channel &&
+          complete &&
+          canPublish &&
+          verifiedPhone &&
+          confirmedPhone === verifiedPhone
             ? {
                 confirmContact: true,
-                contactPhone: memberPhone(contactPhone)?.replace("+", "") ?? "",
+                contactPhone: verifiedPhone,
               }
             : {}),
         }),
@@ -1145,7 +1162,7 @@ export function ListingEditor({
                   >
                     Como os compradores vão falar com você
                   </h4>
-                  {!channel && (
+                  {!channel && canPublish && (
                     <>
                       <label className="mt-4 block font-semibold">
                         WhatsApp que receberá os contatos
@@ -1172,7 +1189,7 @@ export function ListingEditor({
                         WhatsApp. Ele precisa estar validado no seu perfil.
                       </p>
                       <a
-                        href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
+                        href={profileHref}
                         className="inline-flex min-h-11 items-center font-semibold text-action underline"
                       >
                         Alterar ou validar meu WhatsApp
@@ -1296,18 +1313,67 @@ export function ListingEditor({
                   </button>
                 </p>
               )}
-              {!canPublish && (
-                <p className="mt-3 rounded-lg bg-amber-50 p-4 text-amber-950">
-                  Para publicar,{" "}
+              {!channel && !canPublish && (
+                <div className="mt-3 rounded-lg bg-amber-50 p-4 text-amber-950">
+                  <p className="font-bold">Seu rascunho está salvo.</p>
+                  <p className="mt-1">
+                    {communityJoined
+                      ? "Valide seu e-mail e WhatsApp para seguir ao pagamento."
+                      : "Conclua seu cadastro e valide seu e-mail e WhatsApp para seguir ao pagamento."}
+                  </p>
                   <a
-                    href="/conta?modo=perfil&retorno=%2Fconta%2Fanuncios"
-                    className="font-bold underline"
+                    href={
+                      communityJoined
+                        ? profileHref
+                        : memberLoginHref(accountReturn)
+                    }
+                    className={`${button} mt-4`}
                   >
-                    valide seu e-mail e celular na Minha conta
+                    {communityJoined
+                      ? "Validar e-mail e WhatsApp"
+                      : "Concluir meu cadastro"}
                   </a>
-                  . Você já pode preparar o rascunho.
-                </p>
+                </div>
               )}
+              {!channel &&
+                canPublish &&
+                publishReady &&
+                !listing.contactConfirmed && (
+                  <div className="mt-3 rounded-lg bg-surface p-4">
+                    <p>
+                      Confirme o WhatsApp que receberá as mensagens:{" "}
+                      <strong>+{verifiedPhone}</strong>.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={
+                        busy || dirty || billingLocked || !verifiedPhone
+                      }
+                      className={`${button} mt-4`}
+                      onClick={() =>
+                        void run(
+                          () =>
+                            call("save", {
+                              id: listing.id,
+                              ...listingDraftInputSchema.parse(listing),
+                              whatsappMessage: listing.whatsappMessage,
+                              confirmContact: true,
+                              contactPhone: verifiedPhone ?? "",
+                            }),
+                          "WhatsApp confirmado para este anúncio.",
+                        )
+                      }
+                    >
+                      Usar meu WhatsApp validado
+                    </button>
+                    <a
+                      href={profileHref}
+                      className="ml-4 font-semibold text-action underline"
+                    >
+                      Alterar número
+                    </a>
+                  </div>
+                )}
             </>
           ) : (
             <div className="mt-5 flex flex-wrap gap-4">
@@ -1376,7 +1442,8 @@ export function ListingEditor({
                     "Bike do canal publicada.",
                   ),
               })
-            : (draft || listing.feeStatus !== "pilot_exempt") && (
+            : (canPublish || !draft) &&
+              (draft || listing.feeStatus !== "pilot_exempt") && (
                 <ListingBillingPanel
                   courtesy={listing.feeStatus === "courtesy"}
                   courtesyExpiresAt={listing.displayExpiresAt}
@@ -1386,17 +1453,24 @@ export function ListingEditor({
                   reason={
                     !canPublish
                       ? "Confirme seu e-mail e WhatsApp no perfil para anunciar."
-                      : !publishReady
-                        ? `Complete: ${missingListingFields(listing)
-                            .map((key) => LISTING_FIELD_LABELS[key] ?? key)
-                            .join(
-                              "; ",
-                            )}${!photosReady ? "; ao menos uma foto" : ""}.`
-                        : dirty
-                          ? "Salve as alterações do rascunho antes de continuar."
-                          : ""
+                      : !listing.contactConfirmed && draft
+                        ? "Confirme o WhatsApp que receberá os contatos para continuar."
+                        : !publishReady
+                          ? `Complete: ${missingListingFields(listing)
+                              .map((key) => LISTING_FIELD_LABELS[key] ?? key)
+                              .join(
+                                "; ",
+                              )}${!photosReady ? "; ao menos uma foto" : ""}.`
+                          : dirty
+                            ? "Salve as alterações do rascunho antes de continuar."
+                            : ""
                   }
-                  ready={draft && canPublish && publishReady}
+                  ready={
+                    draft &&
+                    canPublish &&
+                    publishReady &&
+                    listing.contactConfirmed
+                  }
                   locked={busy || dirty}
                   contactConsent={consent}
                   onConsentChange={setConsent}

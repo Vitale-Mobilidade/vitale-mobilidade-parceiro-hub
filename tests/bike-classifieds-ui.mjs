@@ -13,9 +13,10 @@ const expires=Math.floor(Date.now()/1000)+3600;
 const token=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:userId,exp:expires,aud:'authenticated',role:'authenticated'})}.fake`;
 const session={access_token:token,token_type:'bearer',expires_in:3600,expires_at:expires,refresh_token:'local-fake-refresh',user};
 let canAdvertise=true,canPublish=false,avatar=null;
+const identityChannels=new Set();
 let failNextSave=false;let listings=[];const blobs=new Map();const requests=[];
 const profile={displayName:'Conta piloto',suspended:false,createdAt:user.created_at,communityJoinedAt:user.created_at,newsletterSubscribed:true};
-const account=()=>({sellerType:'individual',displayName:profile.displayName,verifiedPhone:canPublish?"5511999999999":null,communityJoined:true,canAdvertise,canPublish,canUploadAvatar:true,avatarId:avatar?.id??null,avatarPath:avatar?.path??null});
+const account=()=>({sellerType:'individual',displayName:profile.displayName,verifiedPhone:canPublish?"5511999999999":null,communityJoined:Boolean(profile.communityJoinedAt),canAdvertise,canPublish,canUploadAvatar:true,avatarId:avatar?.id??null,avatarPath:avatar?.path??null});
 const publicItems=()=>listings.filter(l=>l.status==='published').map(l=>({...l,sellerName:profile.displayName,avatarPath:avatar?.path??null,whatsapp:'5511999999999'}));
 const server=createServer(async(req,res)=>{
  res.setHeader('access-control-allow-origin',origin);res.setHeader('access-control-allow-headers','*');res.setHeader('access-control-allow-methods','POST,GET,PUT,DELETE,OPTIONS');
@@ -25,9 +26,16 @@ const server=createServer(async(req,res)=>{
  const reply=(data,status=200)=>{res.writeHead(status,{'content-type':'application/json'}).end(JSON.stringify(data))};
  if(url.pathname.endsWith('/auth/v1/user'))return reply(user);
  if(url.pathname.endsWith('/auth/v1/logout'))return reply({});
- if(url.pathname.endsWith('/member_community_account'))return reply(profile);
+ if(url.pathname.endsWith('/member_community_account')){
+  if(input.p_action==='join'){profile.displayName=input.p_payload.displayName;profile.communityJoinedAt=new Date().toISOString();}
+  return reply(profile.communityJoinedAt?profile:null);
+ }
+ if(url.pathname.endsWith('/functions/v1/member-identity-code'))return reply({ok:true});
  if(url.pathname.endsWith('/member_referrals'))return reply({enabled:true,code:'a'.repeat(32),visits:0,pending:0,confirmed:0,history:[]});
- if(url.pathname.endsWith('/member_identity'))return reply({emailVerified:canPublish,phoneVerified:canPublish,phoneMasked:canPublish?'+55 •• •••••-9999':null,canInteract:canPublish});
+ if(url.pathname.endsWith('/member_identity')){
+  if(input.p_action==='verify'){identityChannels.add(input.p_payload.channel);canPublish=identityChannels.size===2;}
+  return reply({emailVerified:canPublish||identityChannels.has('email'),phoneVerified:canPublish||identityChannels.has('phone'),phoneMasked:canPublish?'+55 •• •••••-9999':null,canInteract:canPublish});
+ }
  if(url.pathname.endsWith('/member_community')){if(input.p_action==='save_profile'){profile.displayName=input.p_payload.displayName;return reply(profile)}return reply({enabled:true})}
  if(url.pathname.endsWith('/member_bike_listings_public')){let items=publicItems();if(input.p_id)items=items.filter(l=>l.id===input.p_id);return reply({total:items.length,items:items.slice(input.p_offset||0,(input.p_offset||0)+(input.p_limit||12))})}
  if(url.pathname.endsWith('/member_bike_image_public')){const paths=publicItems().flatMap(l=>l.images);const image=paths.find(i=>i.id===input.p_id)??(publicItems().length&&avatar?.id===input.p_id?avatar:null);return reply(image?.path??null)}
@@ -85,6 +93,57 @@ await context.addInitScript(session=>{if(location.hostname==='127.0.0.1'&&locati
 const page=await context.newPage();page.setDefaultTimeout(15000);
 const artifacts=new URL(process.env.CLASSIFIEDS_TEST_ARTIFACTS||'../artifacts/bike-classifieds/',import.meta.url);await mkdir(artifacts,{recursive:true});
 try{
+ if(process.env.CLASSIFIEDS_TEST_ONBOARDING==='true'){
+  profile.communityJoinedAt=null;canPublish=false;
+  await page.goto(`${origin}/anuncie-sua-bike`);
+  await page.getByRole('heading',{name:'R$50 por 90 dias de exposição',exact:true}).waitFor();
+  await page.getByRole('link',{name:'Começar meu anúncio',exact:true}).click();
+  await page.getByRole('tab',{name:'1. Fotos',exact:true}).waitFor();
+  assert.equal(listings.length,1);
+  const file=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');x.fillStyle='#d9f4e5';x.fillRect(0,0,800,600);return c.toDataURL('image/png').split(',')[1]});
+  await page.locator('input[type="file"]').setInputFiles({name:'bike.png',mimeType:'image/png',buffer:Buffer.from(file,'base64')});
+  await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();
+  for(const [label,value] of [
+    ['Título do anúncio','Bike de teste'],['Marca','Marca'],['Modelo','Modelo'],['Cidade','São Paulo'],['Descrição da bike','Descrição sintética da bike de teste.'],
+  ])await page.getByLabel(label,{exact:true}).fill(value);
+  await page.getByLabel('Preço de venda (R$)',{exact:true}).fill('2500');
+  await page.getByLabel('Quilometragem (km)',{exact:true}).fill('30');
+  await page.getByLabel('Estado',{exact:true}).selectOption('SP');
+  await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();
+  const finish=page.getByRole('link',{name:'Concluir meu cadastro',exact:true});
+  await finish.waitFor();
+  assert.equal(listings[0].title,'Bike de teste');
+  assert.equal(billingRequests.length,0);
+  const returnTo='/conta/anuncios?anuncio='+listings[0].id;
+  assert.equal(new URL(await finish.getAttribute('href'),origin).searchParams.get('retorno'),returnTo);
+  await finish.click();
+  await page.getByRole('heading',{name:'Concluir cadastro',exact:true}).waitFor();
+  await page.getByLabel('Nome público',{exact:true}).fill('Anunciante de teste');
+  await page.getByLabel('Celular com WhatsApp e DDD',{exact:true}).fill('11999999999');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Entrar na comunidade',exact:true}).click();
+  await page.getByRole('link',{name:'Confirmar depois e continuar no site',exact:true}).click();
+  await page.getByRole('link',{name:'Validar e-mail e WhatsApp',exact:true}).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get('anuncio'),listings[0].id);
+  await page.getByRole('link',{name:'Validar e-mail e WhatsApp',exact:true}).click();
+  await page.getByRole('button',{name:'Enviar código por e-mail',exact:true}).click();
+  await page.getByLabel('Código recebido por e-mail',{exact:true}).fill('123456');
+  await page.getByRole('button',{name:'Validar e-mail',exact:true}).click();
+  await page.getByLabel('Celular com DDD',{exact:true}).fill('11999999999');
+  await page.getByRole('checkbox',{name:/Aceito receber um código no WhatsApp/}).check();
+  await page.getByRole('button',{name:'Enviar código pelo WhatsApp',exact:true}).click();
+  await page.getByLabel('Código recebido no WhatsApp',{exact:true}).fill('123456');
+  await page.getByRole('button',{name:'Validar celular',exact:true}).click();
+  await page.getByRole('button',{name:'Usar meu WhatsApp validado',exact:true}).click();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Seguir para pagamento de R$50',exact:true}).waitFor();
+  assert(await page.getByRole('button',{name:'Seguir para pagamento de R$50',exact:true}).isEnabled());
+  assert.equal(listings.length,1);
+  assert.equal(listings[0].images.length,1);
+  assert.equal(billingRequests.filter(r=>r.action==='checkout').length,0);
+  assert.deepEqual(errors,[]);
+  console.log('PASS private draft before profile; gated final step; same draft and photo after signup; contact confirmation enables R$50 checkout');
+ } else {
  let response=await page.goto(`${origin}/conta/anuncios`);assert.equal(response.headers()['cache-control'],'private, no-store');assert.match(await page.locator('meta[name="robots"]').last().getAttribute('content'),/noindex/);
  await page.getByRole('heading',{name:'Meus anúncios',exact:true}).waitFor();assert.equal(await page.getByRole('group',{name:'Filtrar anúncios por status'}).count(),0,'first use hides empty filters');assert(!/gestão do canal|Bikes do canal|Nova bike do canal/.test(await page.locator('body').innerText()),'channel owner uses ordinary advertiser controls');await page.getByRole('button',{name:'Criar meu primeiro anúncio'}).click();await page.getByRole('heading',{name:'R$50 por 90 dias de exposição',exact:true}).waitFor();await page.screenshot({path:new URL('seller-conditions-desktop.png',artifacts).pathname,fullPage:true});await page.getByRole('link',{name:'Começar meu anúncio',exact:true}).click();await page.getByRole('button',{name:'Voltar aos anúncios'}).click();assert.equal(await page.getByText('Minha bike',{exact:true}).count(),0,'blank draft hidden');await page.getByRole('button',{name:'Criar meu primeiro anúncio'}).click();await page.getByRole('heading',{name:'R$50 por 90 dias de exposição',exact:true}).waitFor();await page.getByRole('link',{name:'Começar meu anúncio',exact:true}).click();assert.equal(listings.length,1,'new action reuses blank draft');assert(await page.getByRole('tab',{name:'2. Informações',exact:true}).isDisabled(),'cannot skip photos');assert(await page.getByRole('tab',{name:'3. Publicar',exact:true}).isDisabled(),'cannot skip directly to payment');assert(await page.getByRole('button',{name:'Continuar para informações',exact:true}).isDisabled());
  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:new URL('new-editor-desktop.png',artifacts).pathname,fullPage:true});
@@ -123,7 +182,7 @@ try{
  await page.getByRole('button',{name:'Ver prévia',exact:true}).click();await page.getByRole('heading',{name:'V9 Max revisada — anúncio de teste',level:2,exact:true}).waitFor();assert.notEqual(listings[0].title,'V9 Max revisada — anúncio de teste','preview uses unsaved values');await page.screenshot({path:new URL('live-preview-desktop.png',artifacts).pathname,fullPage:true});await page.getByRole('button',{name:'Voltar à edição'}).click();await page.getByRole('tab',{name:'2. Informações',exact:true}).click();assert.equal(await page.getByLabel('Título do anúncio').inputValue(),'V9 Max revisada — anúncio de teste');
  assert.equal(listings[0].title,'V9 Max revisada — anúncio de teste','forward navigation auto-saves pending details');
  await page.getByRole('tab',{name:'1. Fotos',exact:true}).click();await page.getByRole('button',{name:'Usar como capa'}).nth(1).click();await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:new URL('photo-step-desktop.png',artifacts).pathname,fullPage:true});await page.getByRole('status').filter({hasText:'Capa atualizada'}).waitFor();
- await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.getByRole('alert').filter({hasText:'WhatsApp validado'}).waitFor();assert.equal(billingRequests.filter(r=>r.action==='checkout').length,0,'unverified WhatsApp cannot reach payment');canPublish=true;await page.reload();await page.getByRole('button',{name:'Editar anúncio',exact:true}).click();await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();await page.getByLabel('Mensagem que gostaria de receber').fill('Quero saber mais sobre *{bike}*. {link}');assert.match(await page.getByLabel('Prévia da mensagem de contato').innerText(),/V9 Max revisada/);failNextSave=true;await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.getByRole('alert').waitFor();assert(await page.getByRole('tabpanel',{name:'2. Informações',exact:true}).isVisible(),'save failure stays on details');await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.waitForFunction(()=>document.activeElement?.id==='listing-panel-publish');await page.getByRole('checkbox').first().check();await page.getByRole('button',{name:'Seguir para pagamento de R$50'}).waitFor();
+ await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.getByRole('link',{name:'Validar e-mail e WhatsApp',exact:true}).waitFor();assert.equal(billingRequests.filter(r=>r.action==='checkout').length,0,'unverified WhatsApp cannot reach payment');canPublish=true;await page.reload();await page.getByRole('button',{name:'Editar anúncio',exact:true}).click();await page.getByRole('button',{name:'Continuar para informações',exact:true}).click();await page.getByLabel('Mensagem que gostaria de receber').fill('Quero saber mais sobre *{bike}*. {link}');assert.match(await page.getByLabel('Prévia da mensagem de contato').innerText(),/V9 Max revisada/);failNextSave=true;await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.getByRole('alert').waitFor();assert(await page.getByRole('tabpanel',{name:'2. Informações',exact:true}).isVisible(),'save failure stays on details');await page.getByRole('button',{name:'Salvar e continuar',exact:true}).click();await page.waitForFunction(()=>document.activeElement?.id==='listing-panel-publish');await page.getByRole('checkbox').first().check();await page.getByRole('button',{name:'Seguir para pagamento de R$50'}).waitFor();
  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:new URL('editor-desktop.png',artifacts).pathname,fullPage:true});
  await page.getByRole('button',{name:'Ver prévia'}).click();await page.getByText('Prévia do anúncio com os dados que você está preenchendo.',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:/Ver foto/}).count(),5);await page.getByRole('button',{name:'Ver foto 5',exact:true}).click();await page.getByRole('button',{name:'Voltar à edição'}).click();
  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>scrollTo(0,0));assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:new URL('editor-mobile.png',artifacts).pathname,fullPage:true});
@@ -180,4 +239,5 @@ try{
  await page.getByRole('button',{name:'Abrir menu da minha conta'}).click();await page.getByRole('menuitem',{name:'Sair',exact:true}).click();await page.getByRole('button',{name:'Abrir menu da minha conta'}).waitFor({state:'hidden'});await page.getByRole('link',{name:'Entrar',exact:true}).waitFor();assert.equal(await page.locator('header a[href="/venda-sua-bike"]').count(),2);
  const guestContext=await browser.newContext();await guestContext.route('**/*',route=>[origin,backend].includes(new URL(route.request().url()).origin)?route.continue():route.abort());const guest=await guestContext.newPage();await guest.goto(`${origin}/conta?modo=entrar`);await guest.getByLabel('E-mail',{exact:true}).waitFor();await guest.getByLabel('Senha',{exact:true}).waitFor();await guest.getByRole('link',{name:'Entrar',exact:true}).waitFor();assert.equal(await guest.locator('header a[href="/venda-sua-bike"]').count(),2,'public visitor can discover classifieds');listings.forEach(item=>item.status='draft');await guest.goto(`${origin}/`);await guest.getByRole('heading',{name:'Venda sua bike aqui',exact:true}).waitFor();await guest.getByRole('link',{name:'Quer vender sua bike aqui?',exact:true}).waitFor();assert.equal(await guest.locator('section[aria-labelledby="classificados-home"] article').count(),0,'empty launch does not invent listings');assert(!(await guest.locator('section[aria-labelledby="classificados-home"]').innerText()).includes('R$50'),'space fee private');await guest.setViewportSize({width:1440,height:1000});await guest.screenshot({path:new URL('public-empty-home-desktop.png',artifacts).pathname,fullPage:true});await guest.setViewportSize({width:390,height:844});await guest.locator('header details').evaluate(el=>el.open=true);await guest.getByRole('navigation',{name:'Principal (celular)',exact:true}).getByRole('link',{name:'Venda sua bike aqui',exact:true}).waitFor();assert(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await guest.screenshot({path:new URL('public-empty-home-mobile.png',artifacts).pathname,fullPage:true});await guestContext.close();
  assert(!requests.some(r=>/newsletter-interest|member-identity-code|recover|stripe|payment/.test(r.path)),'no marketing, identity transport or payment sends');console.log('PASS seller UX: conditions before draft, validated contact and custom bold message, photo ordering at 320/390px, paid confirmation modal, Todos includes archived, immediate reactivation and paid slot reassignment without second checkout, menu shortcuts, logged-in newsletter suppression, cover OG/share controls and private metric labels');assert.equal(errors.length,0,errors.join('\n'));console.log('PASS local UI: single consent, matching initial/resume CTA, ten-minute countdown based on persisted deadline, expiry never publishes, automatic paid confirmation without refresh, counters for all bounded text fields, trimmed minimum, hard maximum visible, sequential 1>2>3, aligned photo actions, save-and-advance with focus, partial/missing fields and save failure blocked before payment, draft/save, five reencoded uploads, cover/preview, verification gate, hosted Asaas one-time 90-day checkout in new tab, no payer form, confirmation, paid pause/edit/republication, SSR featured-three/all/detail, Home discovery visible with three bikes, public signin visible, responsive header after Quiz, profile photo/name, restricted-account denial; zero real messages or charges');
+ }
 }catch(error){console.error("DEBUG URL",page.url(),"BODY",(await page.locator("body").innerText()).slice(0,2500),"LAST REQUESTS",requests.slice(-5));await page.screenshot({path:new URL("failure.png",artifacts).pathname,fullPage:true});throw error;}finally{await context.close();await browser.close();await new Promise(resolve=>server.close(resolve))}

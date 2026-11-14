@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 
+if "--draft-onboarding" in sys.argv: sys.argv.append("--fee-50")
 if "--fee-50" in sys.argv: sys.argv.append("--partners")
 if "--empty-drafts" in sys.argv: sys.argv.append("--workspace")
 if "--workspace" in sys.argv: sys.argv.append("--partners")
@@ -338,6 +339,18 @@ COMMIT;
                         checks=sql("SELECT listing_fee_cents=15000 AND EXISTS(SELECT 1 FROM public.member_listing_billing WHERE amount_cents=5000 AND paid_until-display_started_at=interval '2160 hours') FROM public.member_classifieds_settings;")
                         assert checks.returncode==0 and " t" in checks.stdout,checks.stderr
                         print("PASS rollback switches offer price without changing new paid amount or duration")
+                    if "--draft-onboarding" in sys.argv:
+                        for path in [
+                            "supabase/migrations/20261114220000_classifieds_draft_before_onboarding.sql",
+                            "tests/classifieds-draft-onboarding.sql",
+                            "supabase/rollback/20261114220000_classifieds_draft_before_onboarding.sql",
+                        ]:
+                            result=sql((repo/path).read_text())
+                            assert result.returncode==0,result.stderr
+                            print(f"PASS {path}")
+                        check=sql("SELECT to_regprocedure('public.member_classifieds_can_draft(uuid)') IS NULL AND EXISTS(SELECT 1 FROM public.member_bike_listings WHERE title='Bike em rascunho');")
+                        assert check.returncode==0 and " t" in check.stdout,check.stderr
+                        print("PASS rollback restores gates and preserves drafts")
                     rollback=sql((repo/"supabase/rollback/20261106150000_admin_members_partners.sql").read_text())
                     assert rollback.returncode==0,rollback.stderr
                     invariant=sql("SELECT NOT has_function_privilege('service_role','public.admin_community_manage(uuid,text,jsonb)','EXECUTE') AND (SELECT count(*)>0 FROM public.member_listing_courtesies);")
