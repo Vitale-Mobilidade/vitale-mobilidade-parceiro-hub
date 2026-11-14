@@ -1,0 +1,13 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+import {sourceFixture} from './fixtures.test-support';
+const f=vi.hoisted(()=>({auth:vi.fn(),source:vi.fn()}));
+vi.mock('./repository.server',()=>({authorize:f.auth,source:f.source,createDb:vi.fn()}));
+import {postAdmin} from './post-admin.server';
+const req=(body:unknown)=>new Request('https://test.invalid',{method:'POST',headers:{Authorization:'Bearer test'},body:JSON.stringify(body)});
+beforeEach(()=>{vi.clearAllMocks();vi.stubEnv('INSTAGRAM_POST_RELEASE_ENABLED','true');f.auth.mockResolvedValue('admin');f.source.mockResolvedValue(sourceFixture);});
+function dbFixture(){const q:any={select:()=>q,eq:()=>q,single:async()=>({data:{generation_enabled:true,publishing_enabled:false,scheduling_enabled:false},error:null})};return {from:vi.fn((_table:string)=>q),rpc:vi.fn()};}
+it('non-admin cannot read new private posts',async()=>{f.auth.mockResolvedValue(null);const db=dbFixture();expect((await postAdmin(req({action:'snapshot'}),()=>db as any)).status).toBe(403);expect(db.from).not.toHaveBeenCalled();});
+it('release disabled returns no posts or sources',async()=>{vi.stubEnv('INSTAGRAM_POST_RELEASE_ENABLED','false');const db=dbFixture();const data=await (await postAdmin(req({action:'snapshot'}),()=>db as any)).json();expect(data.available).toBe(false);expect(data.posts).toEqual([]);expect(db.from).not.toHaveBeenCalled();});
+it('invalid IDs fail before queries',async()=>{const db=dbFixture();expect((await postAdmin(req({action:'generate',videoId:'invalid'}),()=>db as any)).status).toBe(409);expect(db.from).not.toHaveBeenCalled();});
+it('inactive or missing published source prevents enqueue',async()=>{f.source.mockResolvedValue(null);const db=dbFixture();expect((await postAdmin(req({action:'generate',videoId:sourceFixture.videoId}),()=>db as any)).status).toBe(409);expect(db.rpc).not.toHaveBeenCalled();});
+it('existing review opens without claims or paid work for simultaneous requests',async()=>{const db=dbFixture();const config=db.from('instagram_post_settings');const q:any={select:()=>q,eq:()=>q,single:async()=>({data:{revision:2,state:'review'},error:null})};db.from.mockImplementation(table=>table==='instagram_post_settings'?config:q);db.rpc.mockResolvedValue({data:'00000000-0000-0000-0000-000000000002',error:null});const rs=await Promise.all([postAdmin(req({action:'generate',videoId:sourceFixture.videoId}),()=>db as any),postAdmin(req({action:'generate',videoId:sourceFixture.videoId}),()=>db as any)]);for(const r of rs)expect(await r.json()).toEqual({id:'00000000-0000-0000-0000-000000000002',status:'review',existing:true});expect(db.rpc.mock.calls.every(c=>c[0]==='enqueue_instagram_post')).toBe(true);});

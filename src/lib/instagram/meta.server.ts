@@ -11,6 +11,7 @@ export function carouselPublisher(settings:InstagramSettings,fetcher=fetch){
  const id=(data:{id?:string})=>{if(!data.id||!/^\d{1,30}$/.test(data.id))throw new MetaError('meta_id_uncertain');return data.id;};
  return {
   account:base.account,access:base.checkPublishingAccess,status:base.status,publish:base.publish,permalink:base.permalink,
+  async image(account:string,url:string,caption:string,alt:string){return id(await request(`${account}/media`,{image_url:url,caption,alt_text:alt}));},
   async child(account:string,url:string,alt:string){return id(await request(`${account}/media`,{image_url:url,is_carousel_item:'true',alt_text:alt}));},
   async album(account:string,children:string[],caption:string){return id(await request(`${account}/media`,{media_type:'CAROUSEL',children:children.join(','),caption}));},
   async reconcile(account:string,album:string){const status=await base.status(album);if(status!=='PUBLISHED')return null;

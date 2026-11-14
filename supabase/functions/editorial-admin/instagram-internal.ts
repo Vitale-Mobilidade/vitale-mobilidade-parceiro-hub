@@ -10,7 +10,7 @@ import { inspectJpeg, COVER_THUMB_VARIANTS } from '../_shared/editorial-cover.ts
 const BUCKET = "instagram-carousels";
 const MAX_BODY = 2048;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const OPS = new Set(["runtime", "script", "scene", "render"]);
+const OPS = new Set(["runtime", "script", "scene", "render", "post-caption", "post-render"]);
 type Env = { url: string; serviceKey: string; aiKey: string; releaseFlag: string | undefined };
 type Asset = { position: number; missingBikeIds?: string[]; photoHashes?: string[] };
 type Job = {
@@ -121,6 +121,37 @@ export async function handleInstagramInternal(req: Request, db: SupabaseClient, 
     return reply({ release, ai: !!env.aiKey, renderer });
   }
   if (!release) return reply({ error: "instagram_release_disabled" }, 409);
+  if(op==='post-caption'||op==='post-render'){
+    if(Deno.env.get('INSTAGRAM_POST_RELEASE_ENABLED')!=='true')return reply({error:'instagram_post_release_pending'},409);
+    const id=String(body.jobId??''),lease=String(body.lease??''),revision=Number(body.revision);
+    if(!UUID.test(id)||!UUID.test(lease)||!Number.isInteger(revision)||revision<1)return reply({error:'invalid_job'},400);
+    const row=await db.from('instagram_post_jobs').select('*').eq('id',id).eq('revision',revision).eq('lease_token',lease).gt('lease_until',new Date().toISOString()).maybeSingle();
+    if(row.error||!row.data||row.data.state!=='preparing')return reply({error:'instagram_lease_required'},409);
+    const cfg=await db.from('instagram_post_settings').select('*').eq('singleton',true).single();
+    if(cfg.error||!cfg.data?.generation_enabled||cfg.data.paused_reason)return reply({error:'instagram_generation_disabled'},409);
+    const post=row.data;
+    try{
+      const {controlledReferences,confirmedOriginal}=await import('../_shared/instagram-post.ts');
+      if(op==='post-caption'){if(!post.caption_attempted||post.caption)return reply({error:'instagram_checkpoint_mismatch'},409);if(!env.aiKey)return reply({error:'ai_not_configured'},503);return reply({caption:await gateway(env.aiKey).caption(controlledReferences(post.source))});}
+      if(post.asset)return reply({error:'instagram_asset_exists'},409);
+      const article=await db.from('editorial_articles').select('title,og_image_url,video_id').eq('id',post.article_id).eq('status','published').single();
+      if(article.error||article.data?.video_id!==post.video_id||article.data.title!==post.source.articleTitle)return reply({error:'instagram_source_changed'},409);
+      const source=await db.from('youtube_editorial_sources').select('capture').eq('article_id',post.article_id).eq('video_id',post.video_id).maybeSingle();
+      const original=confirmedOriginal(post.article_id,article.data.title,source.data?.capture?.coverBackground);
+      const {articleCoverParts}=await import('../_shared/instagram-render/provenance.ts');
+      const fallback=articleCoverParts(post.article_id,article.data.og_image_url);
+      let path=original?.path??fallback,wholeCover=!original;
+      if(!path)throw Error('instagram_post_original_unverified');
+      let file=await db.storage.from('editorial-covers').download(path);
+      if((file.error||!file.data)&&original&&fallback){path=fallback;wholeCover=true;file=await db.storage.from('editorial-covers').download(path);}
+      if(file.error||!file.data||file.data.size>12*1024*1024)throw Error('instagram_post_original_missing');
+      const {composeInstagramPostCover}=await import('../_shared/cover-renderer/index.ts');
+      const result=await composeInstagramPostCover({bytes:new Uint8Array(await file.data.arrayBuffer()),mime:!wholeCover&&original?original.mime:'image/jpeg'},post.source.articleTitle,wholeCover);
+      const output=`posts/${id}/r${revision}/01.jpg`,upload=await db.storage.from(BUCKET).upload(output,result.bytes,{contentType:'image/jpeg',upsert:true});
+      if(upload.error)throw Error('instagram_asset_save_failed');
+      return reply({asset:{path:output,sha256:await hex(result.bytes),alt:`${post.source.articleTitle}. Mesma fotografia da capa do artigo, título e marca Vitale.`,sourcePath:path,wholeCover}});
+    }catch(error){return reply({error:error instanceof Error&&/^[a-z0-9_]+$/.test(error.message)?error.message:'instagram_post_preparation_failed'},422);}
+  }
   const jobId = String(body.jobId ?? ""), lease = String(body.lease ?? ""), revision = Number(body.revision);
   if (!UUID.test(jobId) || !UUID.test(lease) || !Number.isInteger(revision) || revision < 1) return reply({ error: "invalid_job" }, 400);
   const row = await db.from("instagram_carousel_jobs").select("*").eq("id", jobId).eq("revision", revision)

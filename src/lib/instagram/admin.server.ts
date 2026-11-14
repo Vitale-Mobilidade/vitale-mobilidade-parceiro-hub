@@ -12,6 +12,8 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
  try{
   const db=dbFactory(),actor=verifiedSchedulerActor??await authorize(request,db);if(!actor)return reply({error:'Acesso restrito a administradores.'},403);
   const text=await request.text();if(text.length>4096)return reply({error:'Requisição inválida.'},413);const data=input.parse(JSON.parse(text));
+  // Historical carousels are immutable: neither admin nor old cron can resume/send them.
+  if(!['snapshot'].includes(data.action))return reply({error:'Carrosséis históricos são somente leitura. Use Post de imagem única.'},409);
   if(!await releaseEnabled())return data.action==='snapshot'?reply({available:false,generationEnabled:false,publishingEnabled:false,automationEnabled:false,source:null,jobs:[]} satisfies Snapshot):reply({error:'Release ainda não autorizado. Geração e publicação estão desligadas.'},409);
   const cfg=await settings(db);
   if(data.action==='video-eligibility')return reply({generationEnabled:cfg.generation_enabled===true&&!cfg.paused_reason,sources:await videoEligibility(db,data.videoIds??[])});
@@ -114,6 +116,7 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
  }catch(error){return reply({error:error instanceof Error?error.message:'instagram_unavailable'},409);}
 }
 export async function instagramAsset(request:Request,id:string,position:string,publicMedia=false,dbFactory=createDb){
+ if(publicMedia)return new Response(null,{status:404,headers});
  if(!/^[a-f0-9-]{36}$/.test(id)||! /^[1-7]$/.test(position))return new Response(null,{status:404,headers});
  try{
   if(!await releaseEnabled())return new Response(null,{status:404,headers});const db=dbFactory();

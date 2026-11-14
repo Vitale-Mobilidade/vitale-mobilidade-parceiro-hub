@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram single-image staged release
+- [ ] Independent post pipeline, grounded caption, verified original/whole-cover fallback and private 1080×1350 preview.
+- [ ] Replace new carousel actions; historical jobs read-only, own approved-revision queue and single-image Meta dispatcher with gates off.
+- [ ] Mock tests, timezone/dedupe/uncertainty/media validation, eight-function release/rollback review and commit.
+- [ ] Activation awaits separate official migration/storage, isolated release, managed callback configuration and explicit owner acceptance; no production operation in this build.
+
 # Instagram ending-question incident — 14/11
 - [x] Fresh-only v4 inference and safe internal question, useful Portuguese rejection reason, 112 Instagram mock/regression tests and automatic build OK; release record updated, no production operations.
 - [ ] Codex/owner release and authenticated manual Resume: awaits separate release, no paid call or production state edit in this correction.

@@ -9,8 +9,9 @@ import { instagramCall,assetBlob } from '@/lib/instagram/api';
 import { type Snapshot,type Job,type Asset } from '@/lib/instagram/contract';
 import InstagramEditorialReview from '@/components/admin/InstagramEditorialReview';
 import {InstagramSchedule} from '@/components/admin/InstagramSchedule';
+import InstagramPostWorkspace from '@/components/admin/InstagramPostWorkspace';
 const labels:Record<string,string>={queued:'Na fila',scripting:'Roteiro em preparação',scene:'Ambientação',rendering:'Compondo artes',review:'Aguardando revisão',approved:'Aprovado',publishing:'Preparando álbum',uncertain:'Envio sem confirmação',published:'Publicado',blocked:'Requer atenção'};
-export default function AdminInstagram(){return <AdminShell>{role=>role==='admin'?<InstagramWorkspace/>:<p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;}
+export default function AdminInstagram(){return <AdminShell>{role=>role==='admin'?<InstagramPostWorkspace/>:<p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;}
 function PrivateImage({job,asset}:{job:Job;asset:Asset}){
  const [url,setUrl]=useState(''),[error,setError]=useState('');
  useEffect(()=>{let active=true,objectUrl='';void assetBlob(job.id,asset.position).then(blob=>{objectUrl=URL.createObjectURL(blob);if(active)setUrl(objectUrl);else URL.revokeObjectURL(objectUrl);}).catch(()=>{if(active)setError('Arte indisponível');});return()=>{active=false;if(objectUrl)URL.revokeObjectURL(objectUrl);};},[job.id,job.revision,asset.position]);

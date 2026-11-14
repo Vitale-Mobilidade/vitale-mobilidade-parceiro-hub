@@ -222,3 +222,37 @@ function composeCover(source: Raster, title: string, square: boolean) {
     for (const item of fonts.values()) item.free();
   }
 }
+
+/** Instagram-only 4:5: whole source photograph above separate typography. No crop/stretch. */
+export async function composeInstagramPostCover(background: {bytes:Uint8Array;mime:'image/png'|'image/jpeg'}, title:string, wholeCover=false){
+  const source=decode(background.bytes,background.mime==='image/png'?'png':'jpeg');
+  const W=1080,H=1350,inset=64;
+  const out=new Uint8Array(W*H*4);
+  for(let p=0;p<out.length;p+=4)out.set([6,24,18,255],p);
+  const boxHeight=wholeCover?H:850;
+  const scale=Math.min(W/source.width,boxHeight/source.height);
+  const width=Math.round(source.width*scale),height=Math.round(source.height*scale);
+  const left=Math.floor((W-width)/2),top=Math.floor((boxHeight-height)/2);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const sx=Math.min(source.width-1,Math.floor(x/scale)),sy=Math.min(source.height-1,Math.floor(y/scale));
+    out.set(source.buffer.subarray((sy*source.width+sx)*4,(sy*source.width+sx)*4+4),((top+y)*W+left+x)*4);
+  }
+  let lines:string[]=[];
+  if(!wholeCover){
+    if(!title.trim()||title.length>200)throw Error('cover_title_invalid');
+    fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));
+    const font=new Font(76,fontBytes);
+    try{
+      const measure=(text:string,size:number)=>Array.from(text).reduce((total,c)=>total+font.metrics(c,size).advance_width,0);
+      let sizes=[76,72,68,64,60,56,52,48,44,40,36],rasters:Raster[]=[],fit:ReturnType<typeof fitTitle>=null;
+      while(sizes.length){fit=fitTitle(title,measure,W-2*inset,5,sizes);if(!fit)break;rasters=fit.lines.map(line=>rasterText(font,line,fit?.size??36));if(rasters.every(r=>r.width<=W-2*inset)&&rasters.length*Math.round(fit.size*1.15)<=340)break;sizes=sizes.filter(n=>n<(fit?.size??0));fit=null;}
+      if(!fit)throw Error('cover_title_does_not_fit');lines=fit.lines;
+      const brand=rasterText(font,'VITALE MOBILIDADE',28);
+      for(let y=884;y<940;y++)for(let x=inset;x<Math.min(W-inset,inset+brand.width+44);x++)out.set([4,120,87,255],(y*W+x)*4);
+      composite(out,brand,inset+22,898,W,H);
+      for(const [i,line] of rasters.entries()){const y=980+i*Math.round(fit.size*1.15);composite(out,line,inset+2,y+3,W,H,true);composite(out,line,inset,y,W,H);}
+    }finally{font.free();}
+  }
+  for(const quality of [88,80,70,60]){const bytes=jpeg.encode(out,W,H,quality);if(bytes.length<=COVER_MAX_BYTES)return {bytes,title,lines,wholeCover};}
+  throw Error('cover_output_too_large');
+}
