@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
-import { readPodcastDashboard } from "../editorial-admin/podcast-dashboard";
+import { readPodcastDashboard, readPodcastInstagramDrafts } from "../editorial-admin/podcast-dashboard";
 import { PODCAST_HISTORY_PAGE_SIZE, podcastHistoryPage } from "./podcast-dashboard-contract";
 
 it("lê totais e links do catálogo sem consultar o armazenamento nem dados privados", async () => {
@@ -40,4 +40,46 @@ it("lê totais e links do catálogo sem consultar o armazenamento nem dados priv
   expect(data.released).toMatchObject({ total: 21, items: [{ spotifyId: "324BQ31Y26a5askghi34ax" }] });
   expect(podcastHistoryPage(-1)).toBe(0);
   expect(podcastHistoryPage(99_999)).toBe(999);
+});
+
+it("mostra apenas a OUXI futura preparada sem alterar a entrega normal V9", async () => {
+  const requests: string[] = [];
+  const db = createClient("https://example.invalid", "test", {
+    auth: { persistSession: false }, global: { fetch: async (input, init) => {
+      expect(init?.method ?? "GET").toBe("GET");
+      const url = new URL(String(input));
+      requests.push(url.pathname);
+      if (url.pathname.endsWith("podcast_instagram_deliveries")) {
+        expect(url.searchParams.get("status")).toBe("eq.pending");
+        expect(url.searchParams.get("publish_attempted_at")).toBe("is.null");
+        expect(url.searchParams.get("or")).toContain("meta_create_uncertain");
+        return Response.json([{ youtube_id: "oMk_aatN9pI", scheduled_at: null,
+          podcast_episode_queue: { title: "V9 Max vs V20 Ultra", prepared_instagram_post: { image_url: "https://example.invalid/v9.jpg", caption: "V9 original" } } }]);
+      }
+      expect(url.searchParams.get("youtube_id")).toBe("eq.hvtzaWLnM14");
+      if (url.pathname.endsWith("podcast_prepared_episodes")) return Response.json({ youtube_id: "hvtzaWLnM14" });
+      expect(url.searchParams.get("released_at")).toBe("is.null");
+      expect(url.searchParams.get("release_at")).toBe("is.null");
+      expect(url.searchParams.get("select")).toBe("youtube_id,title,prepared_instagram_post");
+      return Response.json({ youtube_id: "hvtzaWLnM14", title: "OUXI V20 Ultra Max",
+        prepared_instagram_post: { image_url: "https://example.invalid/ouxi.jpg", caption: "Legenda já preparada, sem reescrita." } });
+    } },
+  });
+  const result = await readPodcastInstagramDrafts(db as never, 0);
+  expect(result.items.map((item) => item.id)).toEqual(["oMk_aatN9pI"]);
+  expect(result.futurePreview).toEqual({ id: "hvtzaWLnM14", title: "OUXI V20 Ultra Max", scheduledAt: null,
+    imageUrl: "https://example.invalid/ouxi.jpg", caption: "Legenda já preparada, sem reescrita." });
+  expect(requests).toHaveLength(3);
+});
+
+it("não consulta nem prepara a OUXI ausente da fila elegível", async () => {
+  const db = createClient("https://example.invalid", "test", {
+    auth: { persistSession: false }, global: { fetch: async (input, init) => {
+      expect(init?.method ?? "GET").toBe("GET");
+      const url = new URL(String(input));
+      expect(url.pathname).not.toContain("podcast_episode_queue");
+      return Response.json(url.pathname.endsWith("podcast_prepared_episodes") ? null : []);
+    } },
+  });
+  expect((await readPodcastInstagramDrafts(db as never, 0)).futurePreview).toBeNull();
 });

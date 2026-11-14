@@ -1,5 +1,10 @@
 # Ajuste estrito da Home e navegação
 
+# Future Instagram acceptance preview — no production hold
+- [x] Show already-prepared OUXI hvtzaWLnM14 image/caption in existing Podcasts → Posts do Instagram, read-only and no queue change.
+- [x] Seven focused tests passed, desktop/390px mock UI without publication controls or overflow, automatic build OK; release instructions recorded.
+- [ ] Hosted two-post acceptance requires Codex-coordinated release, preparation verification and owner OUXI review; preview is not a worker hold, production untouched.
+
 # Final shared Instagram correction — based on 707081b
 - [x] Fix JSONB compare-and-swap serialization and scheduled uncertain-create exclusion.
 - [x] Reuse grounded published blocks and original cover; whole published JPEG fallback without duplicate title.

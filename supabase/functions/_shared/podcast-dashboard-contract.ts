@@ -1,6 +1,14 @@
 export const PODCAST_HISTORY_PAGE_SIZE = 20;
 export const PODCAST_QUEUE_DISPLAY_LIMIT = 40;
 export const PODCAST_MAX_HISTORY_PAGE = 999;
+// Owner-selected acceptance preview only; this is not a worker hold or schedule rule.
+export const PODCAST_INSTAGRAM_REVIEW_VIDEO = "hvtzaWLnM14";
+
+export type PodcastInstagramDraftsSnapshot = {
+  total: number;
+  items: PodcastInstagramDraft[];
+  futurePreview?: PodcastInstagramDraft | null;
+};
 
 export type PodcastInstagramDraft = {
   id: string;

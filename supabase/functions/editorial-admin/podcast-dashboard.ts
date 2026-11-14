@@ -3,9 +3,11 @@ import {
   podcastHistoryPage,
   PODCAST_HISTORY_PAGE_SIZE,
   PODCAST_QUEUE_DISPLAY_LIMIT,
+  PODCAST_INSTAGRAM_REVIEW_VIDEO,
   type PodcastDashboardItem,
   type PodcastDashboardSnapshot,
   type PodcastInstagramDraft,
+  type PodcastInstagramDraftsSnapshot,
 } from "../_shared/podcast-dashboard-contract.ts";
 import { podcastArticleSlug } from "../_shared/podcast-artwork-contract.ts";
 import { validInstagramPermalink } from "../_shared/podcast-instagram.ts";
@@ -13,7 +15,7 @@ import { spotifyEpisodeId } from "../_shared/podcast-spotify.ts";
 
 type Row = { youtube_id: string; title: string; release_at?: string | null; released_at?: string | null };
 
-export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: unknown) {
+export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: unknown): Promise<PodcastInstagramDraftsSnapshot> {
   const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
   const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
   const { data, error, count } = await db.from("podcast_instagram_deliveries")
@@ -32,7 +34,25 @@ export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: un
     imageUrl: row.podcast_episode_queue.prepared_instagram_post?.image_url ?? null,
     caption: row.podcast_episode_queue.prepared_instagram_post?.caption ?? null,
   }));
-  return { total: count ?? 0, items };
+  // Eligibility comes from the existing prepared view (active video, exact published article revision).
+  // Read-only owner acceptance preview; never creates a delivery or calls preparation/Meta.
+  const eligible = await db.from("podcast_prepared_episodes").select("youtube_id")
+    .eq("youtube_id", PODCAST_INSTAGRAM_REVIEW_VIDEO).maybeSingle();
+  if (eligible.error) throw new Error("podcast_instagram_drafts_read_failed");
+  let futurePreview: PodcastInstagramDraft | null = null;
+  if (eligible.data) {
+    const future = await db.from("podcast_episode_queue").select("youtube_id,title,prepared_instagram_post")
+      .eq("youtube_id", PODCAST_INSTAGRAM_REVIEW_VIDEO).is("released_at", null).is("release_at", null)
+      .not("prepared_instagram_post", "is", null).maybeSingle();
+    if (future.error) throw new Error("podcast_instagram_drafts_read_failed");
+    const post = future.data?.prepared_instagram_post;
+    if (future.data && post && typeof post === "object" && !Array.isArray(post) &&
+      typeof post.image_url === "string" && typeof post.caption === "string" && post.caption.trim()) {
+      futurePreview = { id: future.data.youtube_id, title: future.data.title,
+        scheduledAt: null, imageUrl: post.image_url, caption: post.caption };
+    }
+  }
+  return { total: count ?? 0, items, futurePreview };
 }
 
 export async function readPodcastDashboard(db: SupabaseClient, rawPage: unknown): Promise<PodcastDashboardSnapshot> {

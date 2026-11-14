@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { Button } from "@/components/ui/button";
 import { adminCall } from "@/lib/admin-api";
 import { formatPodcastDateTime, nextPodcastSlot, podcastSlots } from "@/lib/podcast-dashboard-clock";
 import {
@@ -10,6 +11,7 @@ import {
   type PodcastDashboardItem,
   type PodcastDashboardSnapshot,
   type PodcastInstagramDraft,
+  type PodcastInstagramDraftsSnapshot,
 } from "../../supabase/functions/_shared/podcast-dashboard-contract";
 
 const panel = "rounded-2xl border border-line bg-white p-4 sm:p-6";
@@ -142,7 +144,7 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
   const [localTime, setLocalTime] = useState("");
   const drafts = useQuery({
     queryKey: ["admin", "podcast-instagram-drafts", page],
-    queryFn: () => adminCall<{ total: number; items: PodcastInstagramDraft[] }>("podcast-instagram-drafts", { page }),
+    queryFn: () => adminCall<PodcastInstagramDraftsSnapshot>("podcast-instagram-drafts", { page }),
     retry: false,
   });
   const delivery = useMutation({
@@ -169,6 +171,21 @@ function InstagramDrafts({ enabled, schedulerEnabled, onPublished }: {
     <p className="mt-1 text-sm text-muted-foreground">Episódios no RSS com capa e legenda prontos para recuperar o envio.</p>
     {drafts.isPending && <p role="status" className="mt-3 text-sm">Consultando posts…</p>}
     {drafts.isError && <p role="alert" className="mt-3 text-sm">Não foi possível carregar os posts.</p>}
+    {drafts.data && <div className="mt-4 border-y border-line py-4" aria-labelledby="future-instagram-preview">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 id="future-instagram-preview" className="font-semibold">OUXI V20 Ultra Max — revisão da próxima capa e legenda</h3>
+        <Button variant="outline" type="button" disabled={drafts.isFetching} onClick={() => void drafts.refetch()}>Atualizar prévia</Button>
+      </div>
+      {drafts.data.futurePreview ? <div className="mt-3 grid min-w-0 gap-4 sm:grid-cols-2">
+        <img src={drafts.data.futurePreview.imageUrl ?? undefined} alt={drafts.data.futurePreview.title}
+          className="aspect-[4/5] w-full max-w-sm object-contain" />
+        <div className="min-w-0 space-y-3">
+          <p className="break-words text-sm font-semibold">{drafts.data.futurePreview.title}</p>
+          <p className="break-words whitespace-pre-wrap text-sm">{drafts.data.futurePreview.caption}</p>
+          <p className="text-sm text-muted-foreground">Prévia da fila futura. Sem envio manual nesta seção; a agenda não foi alterada ou bloqueada.</p>
+        </div>
+      </div> : <p className="mt-3 text-sm text-muted-foreground">A OUXI ainda não tem capa e legenda preparadas na fila futura.</p>}
+    </div>}
     {drafts.data && drafts.data.items.length === 0 && <p className="mt-3 text-sm">Nenhum post disponível nesta página.</p>}
     {!!drafts.data?.items.length && <ul className="mt-3 divide-y divide-line border-y border-line">
       {drafts.data.items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3">

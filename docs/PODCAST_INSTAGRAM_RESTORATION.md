@@ -32,6 +32,13 @@ Before create, persist `meta_create_uncertain`; after confirmed container/save c
 6. Codex/owner must coordinate a gated first send and hold the second post for explicit cover/caption review BEFORE activating claims. This patch adds no second-post approval gate: existing schedules alone do not guarantee that hold. Verify exact future slot, no container/publish attempt/uncertain marker, 1080×1350 media and caption in the existing Admin, then reconcile/read back first confirmed delivery and Meta permalink without replay. Until coordinated, keep production unchanged.
 
 ## Rollback
+### Future OUXI acceptance preview (this complement)
+Existing **Admin → Podcasts → Posts do Instagram** also reads the already-prepared `hvtzaWLnM14` from `podcast_prepared_episodes` and the existing queue, only while both `release_at` and `released_at` are null. It displays the saved image and caption unchanged with no publish/schedule buttons. All other future episodes stay out of this section. Missing/ineligible/unprepared OUXI shows a clear empty state. Existing expired-delivery recovery and normal V9 `oMk_aatN9pI` schedule remain unchanged. No `reviewHold` property, SQL, production hold or worker claim change is included: **this is visual review, not a publication lock**.
+
+After Codex review, coordinate the separately authorized Lovable release described above, including the updated `editorial-admin` read helper and Hub. Keep automatic Instagram claims paused/gated during the owner's OUXI review; do not activate both deliveries and assume this preview holds the second. Inspect existing prepared records for the exact two IDs, image 1080×1350, caption, no container/publish attempt or uncertain marker; prepare/adapt only under separate production authorization. Open Posts do Instagram and refresh the OUXI preview, obtain owner approval, then coordinate V9's normal future slot and first-delivery readback. If V9 must run before OUXI approval, Codex must supply/review a separate narrow claim hold before activation; no such guarantee is claimed here. RSS is unchanged. Do not backfill or repeat uncertain/published deliveries.
+
+Rollback of this complement: revert its read/UI changes only; no data or definitions were changed. Local mock review is not hosted/production confirmation. No AI/Meta calls or paid content generation.
+
 First pause only existing Instagram flag with authorization (RSS stays intact); restore backed-up function/view definitions and previous Edge/Hub artifacts. Preserve v4 media, all delivery/container IDs and attempt markers. Never delete history or clear uncertain markers to make replay possible. Do not reinstall carousel dispatch or add another cron.
 
 ## Eight-function review
