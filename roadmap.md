@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Isolated Instagram read release — 14 November 04:29 UTC authorization
+- [x] Official editorial-admin-only deploy succeeded, source SHA-256 4492d56fc2b20dd21bc454789fb45f543dec9045b84a288ee845a9fe0c02608d; no Growth migration executed.
+- [x] Exact-stub guarded update pauses only instagram_enabled; RSS/scheduler true, carousel publishing/automation false, six confirmed histories unchanged; real OUXI caption/hold and comparative caption verified.
+- [ ] Authenticated endpoint acceptance blocked: requesting user has no matching auth account/session; post-read anonymous/invalid bearer both 403, no bypass or manual sends.
+- [ ] Both saved public .ig4.jpg URLs return 404; Codex must verify frontend/artwork serving after publication, not claim preview ready. No other official single-file migration promotion tool available; restoration SQL remains unapplied.
+
 # Conditional Growth adoption proposal — stopped at platform protection
 - [x] Official reinspection confirms 0013/0014 pending; platform rules prohibit conditional rewrite of existing migration files (comment-only blocker exception is not validated adoption).
 - [ ] Conditional adoption implementation/tests blocked by protected pending-file rewrite; existing Admin Instagram preserved, no production action or migration-file/journal edits.
@@ -8,7 +14,7 @@
 - [x] Replace carousel/editorial-review UI with paginated existing podcast queue/delivery list and image/caption detail in /admin/instagram.
 - [x] Remove podcast Instagram management except navigation; preserve hold after RSS, confirmed historical delivery states and predicted-versus-reserved windows.
 - [x] Seventeen focused tests and Deno check passed; desktop/390px mock selection/copy/history/podcast navigation verified, no overflow/page errors; automatic build OK.
-- [ ] Productive backend/read-action deployment remains blocked by unsupported official Growth history reconciliation; Codex Hub Publish only after backend readiness, no carousel activation.
+- [x] Read-action deployed independently of Growth after later explicit authorization; Codex owns frontend publication. Authenticated read/media acceptance still pending, Instagram paused until restoration SQL can apply officially.
 
 # Growth official reconciliation audit
 - [x] Read-only 0013/0014 function body parity and hourly columns/PK/CHECK/RLS/trigger verified; extra service_role/sandbox_exec table ACL recorded.
