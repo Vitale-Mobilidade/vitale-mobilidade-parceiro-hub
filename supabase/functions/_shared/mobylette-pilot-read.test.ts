@@ -1,0 +1,11 @@
+import {createClient} from '@supabase/supabase-js';
+import {expect,it,vi} from 'vitest';
+import {readMobylettePilot} from '../editorial-admin/mobylette-pilot';
+import {MOBYLETTE_PILOT as p} from './mobylette-pilot';
+import jpeg from 'jpeg-js';
+const blocks=[{type:'text',text:'A bateria removível facilita esse processo em apartamentos. Mais.'},{type:'text',text:'Ela era uma escolha menos convincente para quem enfrenta piso muito ruim. Mais.'},{type:'text',text:'A oportunidade de lançamento fazia mais sentido para quem percorre cerca de 20 a 30 km por carga. Mais.'}];
+const render=vi.hoisted(()=>vi.fn());
+vi.mock('./cover-renderer/index.ts',()=>({composeFullBleedCover:render}));
+function fixture(path=p.path){const reads:string[]=[];const db=createClient('https://test.invalid','test',{global:{fetch:async(input,init)=>{const url=new URL(String(input));expect(init?.method??'GET').toBe('GET');reads.push(url.pathname);if(url.pathname.endsWith('editorial_articles'))return Response.json([{title:p.title,blocks}]);if(url.pathname.endsWith('youtube_editorial_sources'))return Response.json([{background:{path,mime:'image/png'}}]);return new Response(new Uint8Array([1,2,3]));}}});return {db,reads};}
+it('reads only existing published article/private original, returns exact dimensions, no jobs or episode',async()=>{render.mockImplementation(async(_b,_t,format)=>{const width=format==='podcast'?1400:1080,height=format==='podcast'?1400:1350;return {bytes:new Uint8Array(jpeg.encode({data:new Uint8Array(width*height*4),width,height},60).data)};});const f=fixture();const result=await readMobylettePilot(f.db as never);expect(result.images.map(i=>[i.width,i.height])).toEqual([[1400,1400],[1080,1350]]);expect(result.state).toBe('review');expect(f.reads).toHaveLength(3);expect(f.reads[2]).toContain('/backgrounds/');});
+it('changed private path fails before Storage/render',async()=>{const f=fixture('other/path.png' as typeof p.path);await expect(readMobylettePilot(f.db as never)).rejects.toThrow('pilot_original_changed');expect(f.reads).toHaveLength(2);});

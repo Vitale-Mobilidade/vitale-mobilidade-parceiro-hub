@@ -198,7 +198,7 @@ function composeCover(source: Raster, title: string, square: boolean, portrait =
       if (!advances.has(key)) advances.set(key, font(size).metrics(char, size).advance_width);
       return total + (advances.get(key) ?? 0);
     }, 0);
-    let sizes = fullBleed ? (portrait ? [52,48,44] : square ? [56,52,48,44] : [40,36]) : [ ...(square ? [112, 104, 96, 88, 82] : []), 76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
+    let sizes = [ ...(square ? [112, 104, 96, 88, 82] : []), 76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
     let fit: ReturnType<typeof fitTitle> = null;
     let lines: Raster[] = [];
     // Glyph advances can under-estimate the final raster bounds. Validate actual lines and shrink without cutting text.
@@ -226,11 +226,6 @@ function composeCover(source: Raster, title: string, square: boolean, portrait =
     for (let i = 0; i < fit.lines.length; i++) {
       const line = lines[i];
       const y = H - bottom - lineHeight * (fit.lines.length - 1 - i) - line.height;
-      if(fullBleed) for(let py=Math.max(0,y-14);py<Math.min(H,y+line.height+14);py++) for(let px=Math.max(0,inset-16);px<Math.min(W,inset+line.width+16);px++) {
-        // Contrast only within glyph bounds, with feathered edges; never blanket-darken the photo.
-        const feather=Math.min(1,(px-inset+16)/16,(inset+line.width+16-px)/16,(py-y+14)/14,(y+line.height+14-py)/14);
-        const at=(py*W+px)*4;for(let c=0;c<3;c++)out[at+c]*=1-0.55*Math.max(0,feather);
-      }
       composite(out, line, inset + 2, y + 3, W, H, true);
       composite(out, line, inset, y, W, H);
     }
@@ -251,7 +246,9 @@ export async function composeFullBleedCover(background:{bytes:Uint8Array;mime:'i
  const frame=fullBleedFrame(source.width,source.height,W,H,evidence),out=new Uint8Array(W*H*4);
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
   const sx=Math.min(source.width-1,Math.floor(frame.x+x/frame.scale)),sy=Math.min(source.height-1,Math.floor(frame.y+y/frame.scale));
-  out.set(source.buffer.subarray((sy*source.width+sx)*4,(sy*source.width+sx)*4+4),(y*W+x)*4);
+  const dark=Math.max(0,(y-H*.35)/(H*.65))*.88;
+  for(let c=0;c<3;c++)out[(y*W+x)*4+c]=source.buffer[(sy*source.width+sx)*4+c]*(1-dark)+[6,24,18][c]*dark;
+  out[(y*W+x)*4+3]=255;
  }
  return composeCover(source,title,format==='podcast',format==='instagram',out);
 }

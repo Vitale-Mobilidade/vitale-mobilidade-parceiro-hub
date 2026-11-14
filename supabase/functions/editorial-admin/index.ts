@@ -2629,6 +2629,19 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (action === "instagram-mobylette-pilot") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      try {
+        const { readMobylettePilot } = await import('./mobylette-pilot.ts');
+        const response = json(req, await readMobylettePilot(db));
+        response.headers.set('Cache-Control', 'private, no-store');
+        response.headers.set('Vary', 'Origin, Authorization');
+        response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+        return response;
+      } catch {
+        return json(req, { error: 'Não foi possível preparar a prévia Mobylette. A fonte publicada ou a imagem original precisa ser conferida. Nenhum envio foi iniciado.' }, 503);
+      }
+    }
     if (action === "podcast-instagram-connection") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       return json(req, await verifyPodcastInstagramConnection());

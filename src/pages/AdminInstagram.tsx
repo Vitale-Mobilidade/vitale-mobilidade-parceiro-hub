@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Copy, RefreshCw, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
@@ -8,6 +8,7 @@ import { formatPodcastDateTime, podcastSlots } from '@/lib/podcast-dashboard-clo
 import { PODCAST_HISTORY_PAGE_SIZE, PODCAST_MAX_HISTORY_PAGE, type PodcastInstagramPostsSnapshot } from '../../supabase/functions/_shared/podcast-dashboard-contract';
 import { adminHeaders } from '@/lib/instagram/api';
 import type { SingleSource } from '@/lib/instagram/single-image';
+import type { MobylettePilot } from '../../supabase/functions/_shared/mobylette-pilot';
 
 export default function AdminInstagram() {
   return <AdminShell>{role => role === 'admin' ? <InstagramWorkspace /> : <p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;
@@ -19,12 +20,7 @@ export function InstagramWorkspace() {
     const r=await fetch('/api/admin/instagram/posts',{method:'POST',headers:{...await adminHeaders(),'Content-Type':'application/json'},body:JSON.stringify({action:'snapshot'})});
     if(!r.ok)throw Error('Fontes indisponíveis');return r.json() as Promise<{sources:SingleSource[];generationEnabled:boolean}>;
   },retry:false});
-  const [previews,setPreviews]=useState<Array<{position:number;url:string;format:string}>>([]);
-  useEffect(()=>{if(!import.meta.env.DEV)return;let live=true;const urls:string[]=[];
-    void (async()=>{const h=await adminHeaders();const r=await fetch('/api/admin/instagram/sandbox',{headers:h});if(!r.ok)return;const manifest=await r.json();if(manifest.kind!=='single-image-v5')return;
-      const assets=await Promise.all(manifest.assets.map(async(a:{position:number;format:string})=>{const response=await fetch(`/api/admin/instagram/sandbox?position=${a.position}`,{headers:h});if(!response.ok)throw Error('private_media_unavailable');const url=URL.createObjectURL(await response.blob());urls.push(url);return {...a,url};}));if(live)setPreviews(assets);
-    })().catch(()=>{});return()=>{live=false;urls.forEach(URL.revokeObjectURL);};
-  },[]);
+  const pilot=useQuery({queryKey:['admin','instagram-mobylette-pilot'],queryFn:()=>adminCall<MobylettePilot>('instagram-mobylette-pilot'),retry:false,staleTime:Infinity,refetchOnWindowFocus:false});
   const query=useQuery({queryKey:['admin','podcast-instagram-posts',page],queryFn:()=>adminCall<PodcastInstagramPostsSnapshot>('podcast-instagram-posts',{page}),retry:false,staleTime:30_000});
   const data=query.data, item=data?.items.find(post=>post.id===selected)??data?.items[0];
   const connection=useMutation({mutationFn:()=>adminCall<{status:string}>('podcast-instagram-connection')});
@@ -43,7 +39,13 @@ export function InstagramWorkspace() {
       {independent.data?.sources.slice(0,2).map(source=><div key={source.articleId} className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><p className="break-words font-medium">{source.title}</p><p className="text-sm text-muted-foreground">Fonte elegível · {formatPodcastDateTime(source.publishedAt)}</p></div><Button disabled>Gerar post simples</Button></div>)}
       <p className="text-sm text-muted-foreground">Geração e agendamento aguardam migração e revisão. Nenhum envio automático ativo.</p>
     </section>
-    {previews.length>0&&<section className="space-y-3"><h2 className="font-semibold">Mobylette · revisão local da capa original</h2><div className="grid gap-4 lg:grid-cols-3">{previews.map(a=><figure key={a.position}><img src={a.url} alt="Mobylette inteira na fotografia original com título e marca" className="h-auto w-full"/><figcaption className="mt-2 text-sm text-muted-foreground">{a.format==='article'?'Artigo · 1280×720':a.format==='podcast'?'Podcast · 1400×1400':'Instagram · 1080×1350'}</figcaption></figure>)}</div></section>}
+    <section className="space-y-3 border-b border-border pb-5" aria-label="Revisão Mobylette">
+      <h2 className="text-xl font-bold">Mobylette · Aguardando revisão</h2>
+      {pilot.isPending&&<p role="status">Preparando prévia privada da imagem original…</p>}
+      {pilot.isError&&<p role="alert" className="text-destructive">Não foi possível abrir a imagem original e a legenda. Nenhum envio foi iniciado.</p>}
+      {pilot.data&&<><p className="break-words font-medium">{pilot.data.title}</p><div className="grid gap-4 md:grid-cols-2">{pilot.data.images.map(a=><figure key={a.format} className="max-w-md"><img src={a.dataUrl} alt="Caloi Mobylette inteira na fotografia original, com título e marca Vitale Mobilidade" width={a.width} height={a.height} className="h-auto w-full"/><figcaption className="mt-2 text-sm text-muted-foreground">{a.format==='instagram'?'Instagram':'Quadrada'} · {a.width}×{a.height}</figcaption></figure>)}</div>
+        <div className="max-w-3xl"><div className="flex items-center justify-between"><h3 className="font-semibold">Legenda</h3><Button variant="ghost" size="icon" aria-label="Copiar legenda Mobylette" title="Copiar legenda" onClick={()=>void navigator.clipboard.writeText(pilot.data.caption).then(()=>setFeedback('Legenda copiada.')).catch(()=>setFeedback('Selecione a legenda para copiar.'))}><Copy/></Button></div><p className="select-text whitespace-pre-wrap break-words text-sm">{pilot.data.caption}</p></div><p className="text-sm text-muted-foreground">Prévia privada · sem horário reservado · publicação desativada</p></>}
+    </section>
     {query.isPending&&<p role="status">Consultando posts…</p>}
     {query.isError&&<p role="alert" className="text-destructive">Não foi possível carregar a fila e o histórico. Tente atualizar.</p>}
     {data&&<>

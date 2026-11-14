@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Mobylette authenticated single pilot — 04:59 UTC
+- [x] Correct opt-in square/portrait covers using original continuous gradient and article-scale Inter; published article matrix untouched.
+- [x] Add real read-only admin pilot from published article/private original above history; no episode/jobs/data writes, preserve OUXI hold.
+- [x] Twenty focused tests, Deno check, automatic build, mock-auth desktop/390px and real privileged source-reader validation; isolated editorial-admin deploy confirmed.
+- [ ] Frontend publication belongs to Codex; real authenticated deployed endpoint/UI acceptance awaits owner login (requester's self-session mint found no matching account).
+
 # Single-pilot scope clarification — 04:46 UTC
 - [x] Reuse only existing Mobylette three-format visual pilot; archive remains metadata eligibility, no bulk jobs/images.
 - [x] Pure future planner caps preparation at one next-window post, zero AI calls/no backfill; occupied next window blocks further preparation.
