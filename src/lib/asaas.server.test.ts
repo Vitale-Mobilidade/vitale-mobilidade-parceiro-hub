@@ -61,33 +61,45 @@ describe("Asaas transport and financial evidence", () => {
       "PARTIALLY_REFUNDED",
       "CHARGEBACK_REQUESTED",
     ])
-      expect(paidAsaasCycle({ value: 150, billingType: "PIX", status })).toBe(
-        false,
-      );
+      expect(
+        paidAsaasCycle({ value: 150, billingType: "PIX", status }, 15000),
+      ).toBe(false);
     expect(
-      paidAsaasCycle({ value: 150, billingType: "PIX", status: "RECEIVED" }),
+      paidAsaasCycle(
+        { value: 150, billingType: "PIX", status: "RECEIVED" },
+        15000,
+      ),
     ).toBe(true);
     expect(
-      paidAsaasCycle({
-        value: 150,
-        billingType: "CREDIT_CARD",
-        status: "CONFIRMED",
-      }),
+      paidAsaasCycle(
+        {
+          value: 150,
+          billingType: "CREDIT_CARD",
+          status: "CONFIRMED",
+        },
+        15000,
+      ),
     ).toBe(true);
     expect(
-      paidAsaasCycle({
-        value: 1,
-        billingType: "CREDIT_CARD",
-        status: "CONFIRMED",
-      }),
+      paidAsaasCycle(
+        {
+          value: 1,
+          billingType: "CREDIT_CARD",
+          status: "CONFIRMED",
+        },
+        15000,
+      ),
     ).toBe(false);
     expect(
-      paidAsaasCycle({
-        value: 150,
-        billingType: "PIX",
-        status: "RECEIVED",
-        deleted: true,
-      }),
+      paidAsaasCycle(
+        {
+          value: 150,
+          billingType: "PIX",
+          status: "RECEIVED",
+          deleted: true,
+        },
+        15000,
+      ),
     ).toBe(false);
   });
   it("allows only HTTPS Asaas checkout destinations", () => {

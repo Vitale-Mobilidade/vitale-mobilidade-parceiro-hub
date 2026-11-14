@@ -68,6 +68,11 @@ describe("administrative member alerts", () => {
     expect(body.subject).toContain("anúncio publicado");
     expect(body.cc).toEqual(["lucasvitale@hotmail.com"]);
     expect(body.text).toContain("R$150,00");
+    const updatedBody = operationAlertMessage({
+      ...paid,
+      payload: { ...paid.payload, amountCents: 5000 },
+    });
+    expect(updatedBody.text).toContain("R$50,00");
     expect(body.text).toContain("03/02/2027, 22:30");
     expect(body.html).toContain("&lt;script&gt;");
     expect(body.text).toContain(

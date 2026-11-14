@@ -1,3 +1,4 @@
+import { classifiedsFeeLabel, isClassifiedsFee } from "./classifieds-price";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -14,7 +15,7 @@ const eventSchema = z.object({
     occurredAt: z.string().datetime({ offset: true }),
     listingId: z.string().uuid().optional(),
     title: z.string().min(1).max(100).optional(),
-    amountCents: z.literal(15000).optional(),
+    amountCents: z.number().refine(isClassifiedsFee).optional(),
     paidUntil: z.string().datetime({ offset: true }).optional(),
   }),
 });
@@ -44,7 +45,10 @@ export function operationAlertMessage(alert: Alert) {
   const paid = alert.event_kind === "paid_listing";
   if (
     paid &&
-    (!p.listingId || !p.title || p.amountCents !== 15000 || !p.paidUntil)
+    (!p.listingId ||
+      !p.title ||
+      !isClassifiedsFee(p.amountCents) ||
+      !p.paidUntil)
   )
     throw new Error("invalid_payload");
   const subject = paid
@@ -54,7 +58,7 @@ export function operationAlertMessage(alert: Alert) {
     ? [
         `Anunciante: ${p.name}`,
         `Bike: ${p.title}`,
-        "Pagamento confirmado: R$150,00 · pagamento único",
+        `Pagamento confirmado: ${classifiedsFeeLabel(p.amountCents, true)} · pagamento único`,
         `Exibição até: ${date(p.paidUntil!)}`,
       ]
     : [`Nome público: ${p.name}`, "Cadastro concluído na comunidade Vitale."];

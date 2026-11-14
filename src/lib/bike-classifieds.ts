@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const CLASSIFIEDS_FEE_CENTS = 15000;
+import { classifiedsFeeLabel, isClassifiedsFee } from "./classifieds-price";
 export const MEMBER_MEDIA_BUCKET = "member-media";
 export const MEMBER_IMAGE_MAX_MB = 15;
 export const MEMBER_IMAGE_MAX_BYTES = MEMBER_IMAGE_MAX_MB * 1024 * 1024;
@@ -130,7 +130,7 @@ export const listingSchema = listingInputSchema.extend({
   description: z.string(),
   id: z.string().uuid(),
   status: z.enum(["draft", "published", "sold", "archived"]),
-  feeCents: z.literal(15000),
+  feeCents: z.number().refine(isClassifiedsFee),
   feeStatus: z.enum(["pilot_exempt", "required", "paid", "courtesy"]),
   displayExpiresAt: z.string().nullable().optional(),
   channelWhatsapp: z.string().nullable().optional(),
@@ -190,8 +190,7 @@ export function classifiedsError(error: unknown): string {
       "Desative a bike que está usando este período antes de transferi-lo.",
     billing_pending:
       "Há um pagamento em andamento. Encerre a solicitação antes de editar a bike.",
-    billing_required:
-      "Confirme o pagamento único de R$150 para publicar por 90 dias.",
+    billing_required: `Confirme o pagamento único de ${classifiedsFeeLabel()} para publicar por 90 dias.`,
     classifieds_pilot_only:
       "A criação de anúncios não está disponível nesta conta. Confira seu perfil ou tente novamente.",
     listing_limit: "Você atingiu o limite de anúncios da sua conta.",

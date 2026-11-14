@@ -33,6 +33,7 @@ const order = {
   listing_id: "20000000-0000-4000-8000-000000000001",
   method: "hosted",
   billing_model: "one_time_90d",
+  amount_cents: 15000,
   checkout_id: "30000000-0000-4000-8000-000000000001",
   paid_at: null,
   display_started_at: null,
@@ -184,6 +185,7 @@ describe("anonymous hosted checkout", () => {
   const checkoutId = "30000000-0000-4000-8000-000000000001";
   const hosted = {
     ...order,
+    amount_cents: 5000,
     method: "hosted",
     checkout_id: checkoutId,
     customer_id: null,
@@ -199,6 +201,7 @@ describe("anonymous hosted checkout", () => {
         listingId: order.listing_id,
         contactConsent: true,
         purchaseAccepted: true,
+        expectedAmountCents: 5000,
         ...extra,
       }),
     });
@@ -223,11 +226,12 @@ describe("anonymous hosted checkout", () => {
       error: null,
     });
     expect((await memberListingBilling(request())).status).toBe(200);
-    expect(state.rpc).toHaveBeenCalledWith("member_billing_purchase", {
+    expect(state.rpc).toHaveBeenCalledWith("member_billing_purchase_at_price", {
       p_actor: owner,
       p_id: order.listing_id,
       p_contact: true,
       p_accepted: true,
+      p_expected_amount: 5000,
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
@@ -243,10 +247,21 @@ describe("anonymous hosted checkout", () => {
       expect((await memberListingBilling(request(extra))).status).toBe(400);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
+  it("rejects a stale offer or missing price before reserving a purchase", async () => {
+    for (const amount of [15000, undefined]) {
+      const response = await memberListingBilling(
+        request({ expectedAmountCents: amount }),
+      );
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: "billing_price_changed" });
+    }
+    expect(state.rpc).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
   it("creates one fixed one-time checkout with no payer/customer fields or customer API calls", async () => {
     state.rpc.mockImplementation(async (name: string) => ({
       data:
-        name === "member_billing_purchase"
+        name === "member_billing_purchase_at_price"
           ? { ...hosted, status: "creating", reserved: true }
           : null,
       error: null,
@@ -259,7 +274,7 @@ describe("anonymous hosted checkout", () => {
         chargeTypes: ["DETACHED"],
         minutesToExpire: 10,
         externalReference: id,
-        items: [{ quantity: 1, value: 150 }],
+        items: [{ quantity: 1, value: 50 }],
       });
       expect(body).not.toHaveProperty("customer");
       expect(body).not.toHaveProperty("customerData");
@@ -289,7 +304,7 @@ describe("anonymous hosted checkout", () => {
           customer: "cus_hosted",
           billingType: "CREDIT_CARD",
           status: "CONFIRMED",
-          value: 150,
+          value: 50,
           dueDate: "2026-11-04",
         },
       }),
@@ -368,6 +383,7 @@ describe("authoritative financial reconciliation", () => {
     for (const mismatch of [
       { customer: "cus_other" },
       { value: 1 },
+      { value: 50 },
       { subscription: "sub_other" },
       { installment: "ins_other" },
       { checkoutSession: "other_checkout" },

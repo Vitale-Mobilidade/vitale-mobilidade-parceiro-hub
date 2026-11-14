@@ -1,3 +1,4 @@
+import { classifiedsFeeLabel } from "@/lib/classifieds-price";
 import { FieldCounter } from "./FieldCounter";
 import { ListingBillingPanel } from "./ListingBillingPanel";
 import {
@@ -199,8 +200,8 @@ export function MemberListings({ startNew = false }: { startNew?: boolean }) {
           seu perfil ou tente novamente em alguns instantes.
         </p>
         <p className="mt-4">
-          O valor é de R$150 por 90 dias de exibição, em pagamento único. A
-          publicação exige e-mail e WhatsApp validados.
+          O valor é de {classifiedsFeeLabel()} por 90 dias de exibição, em
+          pagamento único. A publicação exige e-mail e WhatsApp validados.
         </p>
         <a href="/venda-sua-bike" className={`${button} mt-6`}>
           Ver bikes disponíveis
@@ -1276,7 +1277,7 @@ export function ListingEditor({
                     ? "Bike do canal · publicação institucional por 90 dias"
                     : listing.feeStatus === "courtesy"
                       ? "Cortesia · publicação por 90 dias"
-                      : "Publicação por 90 dias · pagamento único de R$150"}
+                      : `Publicação por 90 dias · pagamento único de ${classifiedsFeeLabel()}`}
                 </p>
               </div>
               {!publishReady && (
