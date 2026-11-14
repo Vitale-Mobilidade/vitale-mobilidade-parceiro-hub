@@ -256,10 +256,6 @@ function OffersGroupLanding() {
           <h2 id="campaign-catalog" className="text-2xl font-bold">
             Bikes no Radar
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-ink-foreground/90">
-            Toque em uma bike para abrir a oferta no Mercado Livre em outra aba
-            e seguir para o grupo nesta.
-          </p>
           {catalog?.bikes.length ? (
             <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {catalog.bikes.map((bike) => (

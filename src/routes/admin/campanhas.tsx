@@ -193,10 +193,10 @@ function Campaigns() {
                 {[
                   "Origem",
                   "Visitas",
-                  "Convite",
-                  "Ofertas no destaque",
-                  "Ofertas na grade",
-                  "Cliques no convite / visitas",
+                  "Botão do grupo",
+                  "Cards no destaque",
+                  "Cards na grade",
+                  "Cliques nos CTAs / visitas",
                 ].map((label) => (
                   <th scope="col" key={label} className="p-2">
                     {label}
@@ -219,23 +219,22 @@ function Campaigns() {
                   );
                   const views = total(rows, "offers_landing_view");
                   const cta = total(rows, "offers_cta_click");
+                  const highlight = total(rows, "offers_offer_click", "hero");
+                  const grid = total(rows, "offers_offer_click", "grid");
                   return (
                     <tr key={source.id} className="border-t border-line">
                       <th scope="row" className="p-2">
                         {source.label}
                       </th>
-                      {[
-                        views,
-                        cta,
-                        total(rows, "offers_offer_click", "hero"),
-                        total(rows, "offers_offer_click", "grid"),
-                      ].map((count, index) => (
+                      {[views, cta, highlight, grid].map((count, index) => (
                         <td key={index} className="p-2 tabular-nums">
                           {views > 0 || count > 0 ? numbers.format(count) : "—"}
                         </td>
                       ))}
                       <td className="p-2">
-                        {views > 0 ? percent.format(cta / views) : "—"}
+                        {views > 0
+                          ? percent.format((cta + highlight + grid) / views)
+                          : "—"}
                       </td>
                     </tr>
                   );
@@ -252,7 +251,7 @@ function Campaigns() {
         <div className="overflow-x-auto rounded-xl border border-line bg-white p-4">
           <table className="w-full text-left text-sm">
             <caption className="pb-3 text-left font-bold">
-              Cliques de oferta por modelo
+              Cliques nos cards por modelo
             </caption>
             <thead>
               <tr>
