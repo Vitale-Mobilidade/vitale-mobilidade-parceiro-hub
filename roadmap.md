@@ -3,7 +3,7 @@
 # Growth official reconciliation — 14 November 05:26 UTC
 - [x] Repeat official inspect; verify all thirteen applied hashes/timestamps, existing functions/hourly constraints/trigger/RLS and preserve extra ACL.
 - [x] Record daily views, bike/affiliate clicks, both heatmap stores and hourly counters; no production mutation or publication.
-- [ ] Reconciliation blocked: inspect has no plan_id; migration API exposes no preflight/atomic pending-file neutralization plus adoption batch. No blocker files were neutralized.
+- [x] Owner's 05:32 authorization accepts pre-transaction blocker commenting: official 0015 adoption succeeded; all sixteen database hashes/timestamps match, Growth bodies/ACL/trigger/constraints and totals unchanged. No Publish or Instagram/cron action.
 
 # Mobylette authenticated single pilot — 04:59 UTC
 - [x] Correct opt-in square/portrait covers using original continuous gradient and article-scale Inter; published article matrix untouched.
