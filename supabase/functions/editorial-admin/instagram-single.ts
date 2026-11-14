@@ -136,6 +136,7 @@ export async function readInstagramSingle(
   return {
     automationEnabled: settings.automation_enabled,
     pilotPending: pilot?.data?.state !== "published",
+    firstApprovalPending: !settings.pilot_id,
     counts: Object.fromEntries(
       states.map((state, i) => [state, totals[i].count ?? 0]),
     ),
@@ -223,8 +224,7 @@ export async function prepareInstagramSingle(
         subjects: [...MOBYLETTE_PILOT.evidence.subjects],
       }
     : original.frameEvidence;
-  if (!evidence || !Array.isArray(evidence.subjects))
-    throw Error("instagram_framing_review_required");
+
   const caption = singleInstagramCaption(
     article.data.summary ?? "",
     article.data.blocks,
@@ -233,17 +233,21 @@ export async function prepareInstagramSingle(
   const file = await db.storage.from(COVER_BUCKET).download(original.path);
   if (file.error || !file.data || file.data.size > 12 * 1024 * 1024)
     throw Error("instagram_original_missing");
-  const { composeFullBleedCover } =
+  const { composeFullBleedCover, composeUncroppedInstagramCover } =
     await import("../_shared/cover-renderer/index.ts");
-  const result = await composeFullBleedCover(
-    {
-      bytes: new Uint8Array(await file.data.arrayBuffer()),
-      mime: original.mime,
-    },
-    article.data.title,
-    "instagram",
-    evidence,
-  );
+  const background = {
+    bytes: new Uint8Array(await file.data.arrayBuffer()),
+    mime: original.mime as "image/png" | "image/jpeg",
+  };
+  const result =
+    evidence && Array.isArray(evidence.subjects)
+      ? await composeFullBleedCover(
+          background,
+          article.data.title,
+          "instagram",
+          evidence,
+        )
+      : await composeUncroppedInstagramCover(background, article.data.title);
   const dimensions = inspectJpeg(result.bytes);
   if (dimensions?.width !== 1080 || dimensions.height !== 1350)
     throw Error("instagram_dimensions_invalid");
@@ -297,6 +301,56 @@ export async function approveInstagramSingle(
   return { dueAt: scheduled.data };
 }
 
+/** Refill one slot per call. Admin and cron use the same lease-free preparation and serialized SQL reservation. */
+export async function queueNextInstagramSingle(db: SupabaseClient) {
+  const settings = await config(db);
+  if (!settings.automation_enabled || !settings.pilot_id)
+    return { status: "awaiting_review" };
+  const existing = await db
+    .from("instagram_single_posts")
+    .select("id,fingerprint,state")
+    .in("state", ["review", "scheduled", "publishing"])
+    .order("created_at")
+    .limit(3);
+  if (existing.error) throw Error("instagram_state_unavailable");
+  // A review draft can only come from a deliberate admin or this validated renderer.
+  const draft = existing.data?.find((row) => row.state === "review");
+  if ((existing.data?.length ?? 0) >= 3 && !draft)
+    return { status: "queue_full" };
+  if (!draft && !(await findSource(db))) return { status: "no_source" };
+  let next;
+  try {
+    next = draft ?? (await prepareInstagramSingle(db));
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (
+      ![
+        "instagram_source_missing",
+        "instagram_original_missing",
+        "single_image_scene_expansion_required",
+        "instagram_caption_evidence_missing",
+        "instagram_caption_incomplete",
+      ].includes(code)
+    )
+      throw error;
+    const saved = await db
+      .from("instagram_single_settings")
+      .update({ automation_issue: code })
+      .eq("singleton", true);
+    if (saved.error) throw Error("instagram_state_unavailable");
+    return { status: "source_requires_review" };
+  }
+  const reserved = await db.rpc("reserve_instagram_single", {
+    p_id: next.id,
+    p_fingerprint: next.fingerprint,
+    p_auto: true,
+  });
+  if (reserved.error) throw Error("instagram_reserve_failed");
+  return reserved.data
+    ? { status: "scheduled", dueAt: reserved.data }
+    : { status: "awaiting_review" };
+}
+
 export async function tickInstagramSingle(
   db: SupabaseClient,
   url: string,
@@ -307,54 +361,7 @@ export async function tickInstagramSingle(
   const claim = await db.rpc("claim_instagram_single_due");
   if (claim.error) throw Error("instagram_claim_failed");
   const post = claim.data?.[0];
-  if (!post) {
-    if (!settings.pilot_id) return { status: "awaiting_review" };
-    const [pilot, pending] = await Promise.all([
-      db
-        .from("instagram_single_posts")
-        .select("state")
-        .eq("id", settings.pilot_id)
-        .single(),
-      db
-        .from("instagram_single_posts")
-        .select("id")
-        .in("state", ["review", "scheduled", "publishing", "attention"])
-        .limit(1),
-    ]);
-    if (pilot.error || pending.error)
-      throw Error("instagram_state_unavailable");
-    if (pilot.data?.state !== "published" || pending.data?.length)
-      return { status: "idle" };
-    if (!(await findSource(db))) return { status: "no_source" };
-    let next;
-    try {
-      next = await prepareInstagramSingle(db);
-    } catch (error) {
-      const code = error instanceof Error ? error.message : "";
-      if (
-        ![
-          "instagram_framing_review_required",
-          "single_image_scene_expansion_required",
-          "instagram_caption_evidence_missing",
-          "instagram_original_missing",
-        ].includes(code)
-      )
-        throw error;
-      const saved = await db
-        .from("instagram_single_settings")
-        .update({ automation_issue: code })
-        .eq("singleton", true);
-      if (saved.error) throw Error("instagram_state_unavailable");
-      return { status: "source_requires_review" };
-    }
-    const reserved = await db.rpc("reserve_instagram_single", {
-      p_id: next.id,
-      p_fingerprint: next.fingerprint,
-      p_auto: true,
-    });
-    if (reserved.error) throw Error("instagram_reserve_failed");
-    return { status: reserved.data ? "scheduled" : "awaiting_review" };
-  }
+  if (!post) return queueNextInstagramSingle(db);
   const save = async (patch: Record<string, unknown>) => {
     const update = await db
       .from("instagram_single_posts")
@@ -438,6 +445,12 @@ export async function tickInstagramSingle(
       await save({ permalink: await meta.permalink(media) });
     } catch {
       /* The send was already confirmed. */
+    }
+    // Refill asynchronously inside the job, without changing the confirmed result on a preparation failure.
+    try {
+      await queueNextInstagramSingle(db);
+    } catch {
+      /* The next cron window can refill. */
     }
     return { status: "published" };
   } catch {

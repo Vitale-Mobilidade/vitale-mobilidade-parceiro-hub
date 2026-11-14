@@ -276,3 +276,39 @@ export async function containPublishedInstagramCover(bytes: Uint8Array) {
   if (encoded.length > COVER_MAX_BYTES) throw new Error("cover_output_too_large");
   return { bytes: encoded };
 }
+
+/** Without a verified crop, use the original photograph whole on a softened extension of itself. */
+export async function composeUncroppedInstagramCover(
+  background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" },
+  title: string,
+) {
+  const source = decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg");
+  const { instagramWholePhoto } = await import("../instagram-portrait-geometry.ts");
+  const W = 1080, H = 1350;
+  const {w,h,left,top} = instagramWholePhoto(source.width,source.height);
+  // Low-resolution scene extension is deliberately soft; only the original contains sharp detail.
+  const small=fitBackground(source,36,45);
+  const out=new Uint8Array(W*H*4);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const bx=x/30,by=y/30,ix=Math.floor(bx),iy=Math.floor(by);
+    const ix1=Math.min(35,ix+1),iy1=Math.min(44,iy+1),tx=bx-ix,ty=by-iy;
+    const inside=x>=left&&x<left+w&&y>=top&&y<top+h;
+    const sx=inside?Math.min(source.width-1,Math.floor((x-left)*source.width/w)):0;
+    const sy=inside?Math.min(source.height-1,Math.floor((y-top)*source.height/h)):0;
+    // Feather the join outside the photograph. All four borders of the photo itself are preserved.
+    const distance=Math.max(left-x, x-(left+w-1), top-y, y-(top+h-1),0);
+    const alpha=Math.max(0,1-distance/45);
+    const nx=Math.max(0,Math.min(source.width-1,Math.floor((x-left)*source.width/w)));
+    const ny=Math.max(0,Math.min(source.height-1,Math.floor((y-top)*source.height/h)));
+    const shade=Math.max(0,(y-630)/720)*.91;
+    for(let c=0;c<3;c++){
+      const topColor=small[(iy*36+ix)*4+c]*(1-tx)+small[(iy*36+ix1)*4+c]*tx;
+      const bottomColor=small[(iy1*36+ix)*4+c]*(1-tx)+small[(iy1*36+ix1)*4+c]*tx;
+      const soft=(topColor*(1-ty)+bottomColor*ty)*.84+[6,24,18][c]*.16;
+      const near=source.buffer[((inside?sy:ny)*source.width+(inside?sx:nx))*4+c];
+      out[(y*W+x)*4+c]=(near*alpha+soft*(1-alpha))*(1-shade)+[6,24,18][c]*shade;
+    }
+    out[(y*W+x)*4+3]=255;
+  }
+  return composeCover(source,title,false,true,out);
+}

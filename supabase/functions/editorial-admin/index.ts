@@ -2643,12 +2643,13 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
-    if (action === "instagram-single-list" || action === "instagram-single-prepare" || action === "instagram-single-approve") {
+    if (action === "instagram-single-list" || action === "instagram-single-prepare" || action === "instagram-single-approve" || action === "instagram-single-queue-next") {
       if (actor.role !== "admin") return json(req, {error:"Acesso restrito a administradores."}, 403);
       try {
         const single = await import("./instagram-single.ts");
         const result = action === "instagram-single-list" ? await single.readInstagramSingle(db, body)
           : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId)
+          : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db)
           : await single.approveInstagramSingle(db, body.id, body.fingerprint);
         const response = json(req, result);
         response.headers.set("Cache-Control", "private, no-store");
