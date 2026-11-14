@@ -1,5 +1,6 @@
 import { validateScript,type Job,type Asset } from './contract';
 import { normalizeFreshScript } from './normalize';
+import {scriptRejectionMessage} from './errors';
 import { ZodError } from 'zod';
 import { assetPath,scenePathPattern } from '../../../supabase/functions/_shared/instagram-render/contract';
 import type { RenderedAsset,Runtime } from './edge.server';
@@ -25,7 +26,7 @@ export async function prepare(job:Job,store:Store,studio:Studio,omitScene=false)
    // A complete response was received and rejected: no usable paid output exists, so an
    // explicit Resume may request again. If this checkpoint cannot be saved, it stays uncertain.
    const detail=rejectionDetail(error);
-   await save({state:'blocked',script_attempted:false,error_code:'instagram_script_rejected',error_message:`Roteiro recebido e reprovado na validação (${detail}). Use Retomar para pedir um novo roteiro.`});
+   await save({state:'blocked',script_attempted:false,error_code:'instagram_script_rejected',error_message:scriptRejectionMessage(detail)});
    throw new ScriptRejected(detail);
   }
   await save({script,state:'scene'});

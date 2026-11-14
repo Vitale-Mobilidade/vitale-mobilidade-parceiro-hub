@@ -65,9 +65,9 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
      await prepare(job,progressStore,edge(request.headers.get('X-Lovable-AIG-Run-ID')??undefined),data.omitScene===true);
      await save({lease_token:null,lease_until:null});emit({done:true,id:job.id});
     }catch(error){
-     const {safeErrorCode,instagramErrorMessage}=await import('./errors');const {ScriptRejected}=await import('./workflow.server');
+     const {safeErrorCode,instagramErrorMessage,scriptRejectionMessage}=await import('./errors');const {ScriptRejected}=await import('./workflow.server');
      const code=safeErrorCode(error instanceof Error?error.message:null);
-     const message=error instanceof EdgeAiError?error.safeMessage:error instanceof ScriptRejected?`Roteiro recebido e reprovado na validação (${error.detail}). Use Retomar para pedir um novo roteiro.`:instagramErrorMessage(code);
+     const message=error instanceof EdgeAiError?error.safeMessage:error instanceof ScriptRejected?scriptRejectionMessage(error.detail):instagramErrorMessage(code);
      const terminal=error instanceof EdgeAiError&&([402,403].includes(error.status)||error.providerDenial);
      if(terminal)await db.from('instagram_carousel_settings').update({paused_reason:code}).eq('singleton',true);
      await save({state:'blocked',error_code:code,error_message:message,lease_token:null,lease_until:null}).catch(()=>{});emit({error:message});

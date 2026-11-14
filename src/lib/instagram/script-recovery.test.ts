@@ -2,7 +2,7 @@ import { expect,it,vi } from 'vitest';
 import { prepare,type Store,type Studio } from './workflow.server';
 import { jobFixture } from './fixtures.test-support';
 import { previewScript,previewSource } from './editorial-system.fixture';
-import { normalizeFreshScript } from './normalize';
+import { normalizeFreshScript,INTERNAL_ENDING_QUESTION } from './normalize';
 import { validateScript } from './contract';
 import { instagramErrorMessage,safeErrorCode } from './errors';
 // Shape observed in the owner's capture of draft 0ff04355…: objects instead of arrays,
@@ -40,6 +40,39 @@ it('evidência inválida continua bloqueada e libera somente nova tentativa expl
  expect(f.studio.script).toHaveBeenCalledTimes(2);expect(f.job.state).toBe('review');
 });
 it('objeto de evidência incompleto não é convertido',()=>{const s=screenshotShape();s.captionEvidence={quote:'x'};expect((normalizeFreshScript(s) as any).captionEvidence).toEqual({quote:'x'});});
+it.each([undefined,'4'])('incidente sem versão ou string %s e CTA final: infere v4 e preserva fatos',async version=>{
+ const raw=screenshotShape();if(version===undefined)delete raw.artVersion;else raw.artVersion=version;
+ raw.endingQuestion='Saiba mais no link da Bio';
+ // Reproduce the exact conditional failure before this fix (normalization otherwise succeeds).
+ const before=normalizeFreshScript(screenshotShape()) as any;delete before.artVersion;before.endingQuestion=raw.endingQuestion;
+ expect(()=>validateScript(before,previewSource)).toThrow('instagram_ending_question_invalid');
+ const n=normalizeFreshScript(raw) as any;
+ expect(n.artVersion).toBe(4);expect(n.endingQuestion).toBe(INTERNAL_ENDING_QUESTION);
+ expect(n.endingTitle).toBe(raw.endingTitle);expect(n.endingBody).toBe(raw.endingBody);
+ expect(n.endingEvidence).toEqual([raw.endingEvidence]);
+ expect(n.slides.map((s:any)=>[s.title,s.body,s.evidence])).toEqual(raw.slides.map((s:any)=>[s.title,s.body,[s.evidence]]));
+ const f=setup(()=>raw);await prepare(f.job,f.store,f.studio);expect(f.job.state).toBe('review');expect(f.studio.script).toHaveBeenCalledTimes(1);
+});
+it.each([undefined,'','   ','x'.repeat(101),'https://example.com','Acesse o site','Leia o artigo','Ouça o podcast'])('v4: pergunta ausente/insegura %s recebe fallback não factual',question=>{
+ const s=screenshotShape();s.endingQuestion=question;const n=normalizeFreshScript(s) as any;
+ expect(n.endingQuestion).toBe('Qual é a sua dúvida?');expect(()=>validateScript(n,previewSource)).not.toThrow();
+});
+it('pergunta interna segura é preservada inclusive na inferência sem versão',()=>{
+ const before=normalizeFreshScript(screenshotShape()) as any;delete before.artVersion;
+ expect(()=>validateScript(before,previewSource)).toThrow('instagram_ending_question_invalid');
+ const s=screenshotShape();delete s.artVersion;const n=normalizeFreshScript(s) as any;
+ expect(n.endingQuestion).toBe(previewScript.endingQuestion);expect(()=>validateScript(n,previewSource)).not.toThrow();
+});
+it('não infere versões explícitas erradas/legadas ou estrutura ambígua',()=>{
+ for(const version of [1,2,3,5,'3','04',null]){const s=screenshotShape();s.artVersion=version;s.endingQuestion='Acesse o site';const n=normalizeFreshScript(s) as any;expect(n.artVersion).toBe(version);expect(n.endingQuestion).toBe(s.endingQuestion);}
+ for(const missing of ['master','verdict']){const s=screenshotShape();delete s.artVersion;if(missing==='master')delete s.slides[2].master;else delete s.endingBody;expect((normalizeFreshScript(s) as any).artVersion).toBeUndefined();}
+});
+it('fallback final não autoriza outro CTA nem evidência inválida',()=>{
+ const s=screenshotShape();delete s.artVersion;s.endingQuestion='Acesse o site';s.slides[1].body+=' Leia o artigo';
+ expect(()=>validateScript(normalizeFreshScript(s),previewSource)).toThrow('instagram_external_cta');
+ const bad=screenshotShape();delete bad.artVersion;bad.endingQuestion='Acesse o site';bad.endingEvidence.quote='uma evidência inventada';
+ expect(()=>validateScript(normalizeFreshScript(bad),previewSource)).toThrow('instagram_evidence_invalid');
+});
 it('normalização não toca versões antigas: módulo desconhecido v3 permanece',()=>{const s:any=screenshotShape();s.artVersion=3;expect((normalizeFreshScript(s) as any).slides[1].concept.module).toBe('performance');});
 it('falha ao gravar a rejeição não habilita retry',async()=>{
  const f=setup(()=>({topic:'x'}));vi.mocked(f.store.save).mockImplementation(async p=>{if(p.error_code==='instagram_script_rejected')throw Error('instagram_save_failed');});
@@ -54,6 +87,10 @@ it('timeout/transporte ou retorno incompleto nunca repete',async()=>{
 it('novo roteiro proibido se já existe arte, cenário ou publicação',async()=>{const f=setup();f.job.scene_attempted=true;await expect(prepare(f.job,f.store,f.studio)).rejects.toThrow('retry_unsafe');expect(f.studio.script).not.toHaveBeenCalled();});
 it('concluir sem cenário sem roteiro não marca omissão',async()=>{const f=setup(()=>({}));await expect(prepare(f.job,f.store,f.studio,true)).rejects.toThrow();expect(f.saves.some(p=>p.scene_omitted)).toBe(false);});
 it('UX: nunca mostra JSON cru e usa português',()=>{
+ const old='Roteiro recebido e reprovado na validação (instagram_ending_question_invalid). Use Retomar para pedir um novo roteiro.';
+ expect(instagramErrorMessage('instagram_script_rejected',old)).toContain('pergunta final tem versão incompatível ou convite externo');
+ expect(instagramErrorMessage('instagram_script_rejected',old)).toContain('Use Retomar');
+ expect(instagramErrorMessage('instagram_script_rejected','[{"payload":"segredo"}]')).not.toContain('segredo');
  expect(instagramErrorMessage('instagram_generation_failed','[{"code":"invalid_type"}]')).not.toMatch(/[[{]/);
  expect(instagramErrorMessage('instagram_script_uncertain_no_replay')).toMatch(/não será repetido/);
  expect(safeErrorCode('[{"x":1}]')).toBe('instagram_generation_failed');

@@ -13,9 +13,11 @@ export type State='queued'|'scripting'|'scene'|'rendering'|'review'|'approved'|'
 export type Job={id:string;video_id:string;article_id:string;state:State;revision:number;source:Source;script:Script|null;assets:Asset[];scene_path:string|null;scene_attempted:boolean;script_attempted:boolean;scene_omitted:boolean;approved_revision:number|null;approved_by:string|null;lease_token:string|null;lease_until:string|null;error_code:string|null;error_message:string|null;children:string[];album_id:string|null;publish_attempted:boolean;publish_attempted_at?:string|null;media_id:string|null;permalink:string|null;media_token_hash:string|null;media_expires_at:string|null;created_at:string};
 export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnabled:boolean;automationEnabled:boolean;schedulingEnabled?:boolean;schedules?:import('./schedule').InstagramSchedule[];source:Source|null;jobs:Job[]};
 const external=/https?:|www\.|link\s+(?:da|na)\s+bio|\b(?:acesse|leia|ouça)\b.*\b(?:podcast|site|artigo)\b/i;
+/** Shared detector: fresh-response normalization must use the validation policy. */
+export function hasExternalCta(text:string){return external.test(text);}
 export function validateScript(raw:unknown,source:Source):Script{
  const s=scriptSchema.parse(raw);
- if(s.endingQuestion&&(![3,4].includes(s.artVersion??0)||external.test(s.endingQuestion)))throw Error('instagram_ending_question_invalid');
+ if(s.endingQuestion&&(![3,4].includes(s.artVersion??0)||hasExternalCta(s.endingQuestion)))throw Error('instagram_ending_question_invalid');
  // Cover gets a real catalog photo when an eligible bike exists (Edge resolves the stored photo).
  if(s.slides[0]&&!s.slides[0].bikeIds.length&&source.bikeIds[0])s.slides[0].bikeIds=[source.bikeIds[0]];
  if(s.slides[0]?.layout!=='opening'||s.slides.at(-1)?.layout!=='conclusion')throw Error('instagram_narrative_incomplete');

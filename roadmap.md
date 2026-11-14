@@ -1,5 +1,9 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram ending-question incident — 14/11
+- [x] Fresh-only v4 inference and safe internal question, useful Portuguese rejection reason, 112 Instagram mock/regression tests and automatic build OK; release record updated, no production operations.
+- [ ] Codex/owner release and authenticated manual Resume: awaits separate release, no paid call or production state edit in this correction.
+
 # Instagram on-demand per video
 - [x] Footer breathing room JPEG in Files, inspected at 390px.
 - [x] Batch eligibility, explicit generation by selected video, exact draft URL, existing-pair reuse; 114 Vitest + 2 Deno tests passed, harness build OK.
