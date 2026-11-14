@@ -35,3 +35,31 @@ No further restoration migration attempt, CAS conversion, hold write, Meta reque
 Repeated official inspection confirms 0013/0014 still lack applied database rows and no repair plan is available. Platform migration rules prohibit rewriting existing `drizzle/migrations` SQL into a conditional adoption implementation. The only pending-blocker edit exception permits commenting out every statement while preserving its text and journal entry; that is not equivalent to the owner's requested validated adoption and was not used. Draft history repair is a different exception and does not apply to this main-project release.
 
 Stopped before editing either protected pending file. No conditional SQL or disposable adoption tests were created: such tests would not make a forbidden production migration-file rewrite safe or supported. No original hash/journal/snapshot/grant changed. New Admin Instagram remains intact at `2c8f60f9dd04a7d00d7cad345584d6c438a234d7`. Codex needs a platform-supported exact-object adoption mechanism or an explicit supported pending-file rewrite capability before implementing this proposal; unsupported manual journal repair remains excluded.
+
+## Authorized official reconciliation recheck — 14 November 2026, 05:26–05:28 UTC
+
+### Current history and catalog
+- Official `migration_history(inspect)` again returned **no plan_id** and `No unique historical migration tree matching all applied database rows is available.` Missing database rows remain only 0013/0014; missing snapshots remain 0006–0010 and 0013/0014. No snapshots were manufactured.
+- Compared the local SHA-256 and timestamp of every migration 0000–0012 against all thirteen live rows: all match. Latest applied timestamp remains `1794417868085`, hash `ce10c28c86724b146e86587d6fc99584c73caf1bf020016326c5725c5804792c`.
+- Re-read the three function bodies/signatures/ACL, hourly PK/CHECK and daily trigger: consistent with the prior audit. Hourly RLS remains enabled. Extra table grants to service_role and sandbox_exec remain present and untouched.
+
+### Available administrative interfaces and precise stopping condition
+- `migration_history` supports only `inspect` and `repair` with the exact returned plan_id. It explicitly does not adopt unrecorded migrations, replay SQL or manufacture applied rows. Calling repair without a genuine plan would not be supported.
+- `migration` accepts only `name` and complete SQL `query`. It creates one custom migration, checks the set and applies pending SQL through Drizzle; it manages the database transaction and rolls back a failed new migration. Its documented blocker exception allows commenting all statements in a failed pending file while retaining text and entries.
+- **That exception alone does not meet this request:** the API has no dry-run/verification-only option, multi-file change payload, or atomic operation encompassing neutralization of the two existing repository files plus validated additive adoption/clean-install replacement. Filesystem edits would precede the tool call and are not covered by its database rollback. A database transaction is not a verified atomic repository-and-database batch.
+- Therefore neither file was neutralized and no migration was submitted. No alternative exposed administrative tool supplies exact-version adoption or the requested verified atomic batch. A supported adoption plan or verified batch capability is needed; catalog parity and owner authorization do not add that API capability.
+
+### Read-only counter snapshot (05:27 UTC)
+| Store/event | Rows | Total | Most recent |
+|---|---:|---:|---|
+| Daily page_view | 1,618 | 12,188 | 2026-11-14 |
+| Daily bike_click | 1,229 | 2,515 | 2026-11-14 |
+| Daily affiliate_click | 645 | 1,470 | 2026-11-14 |
+| Hourly views | 9 | 270 | 2026-11-14 02:00 São Paulo |
+| Element click | 712 | 741 | 2026-11-13 |
+| Element scroll | 1,293 | 1,685 | 2026-11-13 |
+| Element view | 1,349 | 2,099 | 2026-11-14 |
+| Coordinate scroll | 2 | 2 | 2026-10-20 |
+| Coordinate view | 2 | 4 | 2026-10-20 |
+
+The coordinate store has no `kind=click` row in this snapshot; element clicks and both daily click event types remain populated. These are observed totals, not a synthetic collection test or a promise they cannot increase with real traffic. No daily/hourly counter, collection/query code, map, ACL, cron, Instagram state, SQL file, journal or snapshot was changed. No deployment, Publish, paid AI or production write occurred. Diff is documentation only; no behavior changed, so no broad test/build run was needed.
