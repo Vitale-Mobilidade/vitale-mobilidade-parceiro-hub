@@ -14,8 +14,9 @@ import ft03 from "@/assets/bikes/ft03.avif";
 import v20Ultra from "@/assets/bikes/v20-ultra-landing.webp";
 import {
   OFFERS_GROUP_LANDING_PATH,
-  trackOffersGroupCta,
+  handleOffersGroupCta,
 } from "@/lib/offers-group-landing";
+import { OffersAdsConsent } from "@/components/offers/OffersAdsConsent";
 import { OFFERS_GROUP_URL } from "@/lib/offers-group";
 import {
   canonicalUrl,
@@ -65,13 +66,8 @@ function GroupLink() {
     <a
       href={canonicalUrl(OFFERS_GROUP_URL)}
       rel="noreferrer"
-      onClick={(event) => {
-        if (event.nativeEvent.isTrusted) trackOffersGroupCta("hero");
-      }}
-      onAuxClick={(event) => {
-        if (event.button === 1 && event.nativeEvent.isTrusted)
-          trackOffersGroupCta("hero");
-      }}
+      onClick={(event) => handleOffersGroupCta(event, "hero")}
+      onAuxClick={(event) => handleOffersGroupCta(event, "hero")}
       className={`inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-mint px-4 py-3 text-center text-base leading-tight font-bold text-ink hover:bg-mint/90 sm:w-auto sm:px-6 ${focus}`}
     >
       <MessageCircle aria-hidden="true" className="size-5 shrink-0" />
@@ -154,14 +150,8 @@ function OffersCarousel() {
                 tabIndex={index === active ? 0 : -1}
                 aria-label={`Entrar no grupo no WhatsApp pela foto da ${bike.name}`}
                 draggable={false}
-                onClick={(event) => {
-                  if (event.nativeEvent.isTrusted)
-                    trackOffersGroupCta("carousel");
-                }}
-                onAuxClick={(event) => {
-                  if (event.button === 1 && event.nativeEvent.isTrusted)
-                    trackOffersGroupCta("carousel");
-                }}
+                onClick={(event) => handleOffersGroupCta(event, "carousel")}
+                onAuxClick={(event) => handleOffersGroupCta(event, "carousel")}
                 className="relative flex h-40 select-none items-center justify-center overflow-hidden rounded-2xl bg-white focus-visible:outline-2 focus-visible:-outline-offset-4 sm:h-64"
               >
                 <img
@@ -258,6 +248,7 @@ function OffersGroupLanding() {
             </p>
             <div className="mt-4 sm:mt-6">
               <GroupLink />
+              <OffersAdsConsent />
             </div>
           </div>
           <OffersCarousel />
