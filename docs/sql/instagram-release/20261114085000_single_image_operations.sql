@@ -116,7 +116,7 @@ CREATE FUNCTION public.dispatch_instagram_single_tick()
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE issued text; sig text; local_minute text := to_char(now() AT TIME ZONE 'America/Sao_Paulo','HH24:MI');
 BEGIN
- IF local_minute NOT IN ('06:15','06:17','06:19','11:45','11:47','11:49','17:45','17:47','17:49')
+ IF local_minute NOT IN ('06:15','11:45','17:45')
  OR NOT EXISTS (SELECT 1 FROM public.instagram_single_settings WHERE singleton AND automation_enabled) THEN RETURN NULL; END IF;
  issued := floor(extract(epoch FROM clock_timestamp()))::bigint::text;
  SELECT encode(extensions.hmac(convert_to(issued || ':instagram-single-tick','UTF8'),signing_key,'sha256'),'hex') INTO sig
@@ -130,4 +130,5 @@ REVOKE ALL ON FUNCTION public.stage_instagram_single(text,uuid,text,text,text,te
  public.authorize_instagram_single_tick(text,text), public.dispatch_instagram_single_tick() FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.stage_instagram_single(text,uuid,text,text,text,text), public.reserve_instagram_single(uuid,text,boolean), public.claim_instagram_single_due(),
  public.authorize_instagram_single_tick(text,text) TO service_role;
-SELECT cron.schedule('vitale-instagram-single','15,17,19,45,47,49 * * * *','SELECT public.dispatch_instagram_single_tick();');
+SELECT cron.schedule('vitale-instagram-single-morning','15 9 * * *','SELECT public.dispatch_instagram_single_tick();');
+SELECT cron.schedule('vitale-instagram-single-midday-evening','45 14,20 * * *','SELECT public.dispatch_instagram_single_tick();');

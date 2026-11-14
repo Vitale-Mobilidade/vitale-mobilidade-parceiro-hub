@@ -1450,6 +1450,90 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_single_posts: {
+        Row: {
+          article_id: string
+          asset_path: string
+          attempted_at: string | null
+          caption: string
+          container_id: string | null
+          created_at: string
+          due_at: string | null
+          error_code: string | null
+          fingerprint: string
+          id: string
+          lease: string | null
+          lease_until: string | null
+          media_id: string | null
+          permalink: string | null
+          published_at: string | null
+          state: string
+          title: string
+          video_id: string
+        }
+        Insert: {
+          article_id: string
+          asset_path: string
+          attempted_at?: string | null
+          caption: string
+          container_id?: string | null
+          created_at?: string
+          due_at?: string | null
+          error_code?: string | null
+          fingerprint: string
+          id?: string
+          lease?: string | null
+          lease_until?: string | null
+          media_id?: string | null
+          permalink?: string | null
+          published_at?: string | null
+          state?: string
+          title: string
+          video_id: string
+        }
+        Update: {
+          article_id?: string
+          asset_path?: string
+          attempted_at?: string | null
+          caption?: string
+          container_id?: string | null
+          created_at?: string
+          due_at?: string | null
+          error_code?: string | null
+          fingerprint?: string
+          id?: string
+          lease?: string | null
+          lease_until?: string | null
+          media_id?: string | null
+          permalink?: string | null
+          published_at?: string | null
+          state?: string
+          title?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
+      instagram_single_settings: {
+        Row: {
+          automation_enabled: boolean
+          automation_issue: string | null
+          pilot_id: string | null
+          singleton: boolean
+        }
+        Insert: {
+          automation_enabled?: boolean
+          automation_issue?: string | null
+          pilot_id?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          automation_enabled?: boolean
+          automation_issue?: string | null
+          pilot_id?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           attempt: number | null
@@ -4344,6 +4428,10 @@ export type Database = {
         }
         Returns: Json
       }
+      authorize_instagram_single_tick: {
+        Args: { p_issued_at: string; p_signature: string }
+        Returns: boolean
+      }
       authorize_podcast_tick: {
         Args: { p_issued_at: string; p_signature: string }
         Returns: string
@@ -4391,6 +4479,35 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "instagram_carousel_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_instagram_single_due: {
+        Args: never
+        Returns: {
+          article_id: string
+          asset_path: string
+          attempted_at: string | null
+          caption: string
+          container_id: string | null
+          created_at: string
+          due_at: string | null
+          error_code: string | null
+          fingerprint: string
+          id: string
+          lease: string | null
+          lease_until: string | null
+          media_id: string | null
+          permalink: string | null
+          published_at: string | null
+          state: string
+          title: string
+          video_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "instagram_single_posts"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -4467,6 +4584,7 @@ export type Database = {
       claim_youtube_editorial_publication: { Args: never; Returns: Json }
       claim_youtube_editorial_rewrite: { Args: never; Returns: Json }
       discover_instagram_carousels: { Args: never; Returns: number }
+      dispatch_instagram_single_tick: { Args: never; Returns: number }
       dispatch_podcast_instagram_schedule: { Args: never; Returns: number }
       dispatch_podcast_tick: { Args: never; Returns: number }
       dispatch_price_alert_hotpipe: { Args: never; Returns: number }
@@ -4983,9 +5101,27 @@ export type Database = {
         Args: { p_now?: string }
         Returns: string
       }
+      reserve_instagram_single: {
+        Args: { p_auto?: boolean; p_fingerprint: string; p_id: string }
+        Returns: string
+      }
       schedule_podcast_instagram_delivery: {
         Args: { p_episode_id: string; p_local_time: string }
         Returns: string
+      }
+      stage_instagram_single: {
+        Args: {
+          p_article: string
+          p_caption: string
+          p_fingerprint: string
+          p_path: string
+          p_title: string
+          p_video: string
+        }
+        Returns: {
+          fingerprint: string
+          id: string
+        }[]
       }
       track_quiz_funnel_session: {
         Args: {
