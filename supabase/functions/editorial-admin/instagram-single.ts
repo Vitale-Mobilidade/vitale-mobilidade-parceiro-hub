@@ -20,7 +20,7 @@ const states = ["review", "scheduled", "publishing", "published", "attention"];
 const framePath =
   /^[0-9a-f-]{36}\/backgrounds\/[0-9a-f-]{36}\.(?:png|jpg|jpeg)$/;
 
-async function findSource(db: SupabaseClient) {
+async function findSources(db: SupabaseClient, limit = 1): Promise<Source[]> {
   const [legacy, carousel, holds, existing] = await Promise.all([
     db
       .from("podcast_instagram_deliveries")
@@ -54,6 +54,7 @@ async function findSource(db: SupabaseClient) {
       (x) => x.article_id,
     ),
   );
+  const candidates: Source[] = [];
   for (let offset = 0; offset < 1000; offset += 50) {
     const result = await db
       .from("instagram_carousel_sources")
@@ -63,11 +64,14 @@ async function findSource(db: SupabaseClient) {
       .order("article_id", { ascending: false })
       .range(offset, offset + 49);
     if (result.error) throw Error("instagram_source_read_failed");
-    const row = result.data?.find(
-      (x) => !excluded.has(x.video_id) && !articles.has(x.article_id),
-    );
-    if (row) return row as Source;
-    if ((result.data?.length ?? 0) < 50) return null;
+    for (const row of result.data ?? []) {
+      if (excluded.has(row.video_id) || articles.has(row.article_id)) continue;
+      candidates.push(row as Source);
+      excluded.add(row.video_id);
+      articles.add(row.article_id);
+      if (candidates.length === limit) return candidates;
+    }
+    if ((result.data?.length ?? 0) < 50) return candidates;
   }
   throw Error("instagram_source_limit");
 }
@@ -108,7 +112,7 @@ export async function readInstagramSingle(
   }
   const [rows, source, pilot, ...totals] = await Promise.all([
     q,
-    findSource(db),
+    findSources(db).then((rows) => rows[0] ?? null),
     settings.pilot_id
       ? db
           .from("instagram_single_posts")
@@ -168,13 +172,16 @@ export async function prepareInstagramSingle(
   db: SupabaseClient,
   expectedVideo?: unknown,
 ) {
-  const source = await findSource(db);
+  const [source] = await findSources(db);
   if (
     !source ||
     (expectedVideo !== undefined && source.video_id !== expectedVideo)
   )
     throw Error("instagram_source_changed");
-  const s = source;
+  return prepareInstagramSource(db, source);
+}
+
+async function prepareInstagramSource(db: SupabaseClient, s: Source) {
   const [article, metadata, eligible] = await Promise.all([
     db
       .from("editorial_articles")
@@ -188,7 +195,7 @@ export async function prepareInstagramSingle(
       .select("background:capture->coverBackground")
       .eq("article_id", s.article_id)
       .eq("video_id", s.video_id)
-      .single(),
+      .maybeSingle(),
     db
       .from("instagram_carousel_sources")
       .select("transcript")
@@ -231,7 +238,8 @@ export async function prepareInstagramSingle(
     eligible.data.transcript,
   );
   const file = await db.storage.from(COVER_BUCKET).download(original.path);
-  if (file.error || !file.data || file.data.size > 12 * 1024 * 1024)
+  if (file.error || !file.data) throw Error("instagram_original_read_failed");
+  if (file.data.size > 12 * 1024 * 1024)
     throw Error("instagram_original_missing");
   const { composeFullBleedCover, composeUncroppedInstagramCover } =
     await import("../_shared/cover-renderer/index.ts");
@@ -317,28 +325,38 @@ export async function queueNextInstagramSingle(db: SupabaseClient) {
   const draft = existing.data?.find((row) => row.state === "review");
   if ((existing.data?.length ?? 0) >= 3 && !draft)
     return { status: "queue_full" };
-  if (!draft && !(await findSource(db))) return { status: "no_source" };
-  let next;
-  try {
-    next = draft ?? (await prepareInstagramSingle(db));
-  } catch (error) {
-    const code = error instanceof Error ? error.message : "";
-    if (
-      ![
-        "instagram_source_missing",
-        "instagram_original_missing",
-        "single_image_scene_expansion_required",
-        "instagram_caption_evidence_missing",
-        "instagram_caption_incomplete",
-      ].includes(code)
-    )
-      throw error;
-    const saved = await db
-      .from("instagram_single_settings")
-      .update({ automation_issue: code })
-      .eq("singleton", true);
-    if (saved.error) throw Error("instagram_state_unavailable");
-    return { status: "source_requires_review" };
+  let next = draft;
+  if (!next) {
+    const candidates = await findSources(db, 4);
+    if (!candidates.length) return { status: "no_source" };
+    let lastIssue = "";
+    for (const source of candidates) {
+      try {
+        next = await prepareInstagramSource(db, source);
+        break;
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "";
+        if (
+          ![
+            "instagram_original_missing",
+            "single_image_scene_expansion_required",
+            "instagram_caption_evidence_missing",
+            "instagram_caption_incomplete",
+          ].includes(code)
+        )
+          throw error;
+        lastIssue = code;
+        console.info("[instagram] source skipped", source.video_id, code);
+      }
+    }
+    if (!next) {
+      const saved = await db
+        .from("instagram_single_settings")
+        .update({ automation_issue: lastIssue })
+        .eq("singleton", true);
+      if (saved.error) throw Error("instagram_state_unavailable");
+      return { status: "source_requires_review" };
+    }
   }
   const reserved = await db.rpc("reserve_instagram_single", {
     p_id: next.id,
