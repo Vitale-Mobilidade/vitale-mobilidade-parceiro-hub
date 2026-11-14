@@ -16,7 +16,10 @@ export async function settings(db:SupabaseClient){const row=await db.from('insta
 export async function source(db:SupabaseClient):Promise<Source|null>{
  const row=await db.from('instagram_carousel_sources').select('*').order('video_date',{ascending:false}).order('video_id').order('article_id').limit(1).maybeSingle();
  if(row.error)throw Error('instagram_source_unavailable');const s=row.data;
- return s?{videoId:s.video_id,videoTitle:s.video_title,videoDate:s.video_date,transcript:s.transcript,articleId:s.article_id,articleTitle:s.article_title,articleSlug:s.article_slug,publishedAt:s.published_at,bikeIds:s.bike_ids,eligibleAt:s.eligible_at}:null;
+ if(!s)return null;
+ const article=await db.from('editorial_articles').select('blocks,summary,og_image_url').eq('id',s.article_id).eq('status','published').single();
+ if(article.error||!Array.isArray(article.data?.blocks))throw Error('instagram_full_article_unavailable');
+ return {videoId:s.video_id,videoTitle:s.video_title,videoDate:s.video_date,transcript:s.transcript,articleId:s.article_id,articleTitle:s.article_title,articleSlug:s.article_slug,publishedAt:s.published_at,bikeIds:s.bike_ids,eligibleAt:s.eligible_at,articleBlocks:article.data.blocks,articleSummary:article.data.summary,articleCoverUrl:article.data.og_image_url};
 }
 export async function claim(db:SupabaseClient,id:string,revision:number){const token=crypto.randomUUID();const result=await db.rpc('claim_instagram_carousel',{p_id:id,p_revision:revision,p_token:token});if(result.error)throw Error('instagram_claim_failed');const job=result.data?.[0] as Job|undefined;if(!job)throw Error('instagram_busy_or_changed');return job;}
 export function store(db:SupabaseClient,job:Job):Store{

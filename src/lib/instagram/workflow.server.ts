@@ -36,6 +36,7 @@ export async function prepare(job:Job,store:Store,studio:Studio,omitScene=false)
  await save({state:'review',error_code:null,error_message:null});
 }
 export function approvable(job:Job){
+ if(job.script?.artVersion===4&&job.assets.length<5)return false;
  return job.state==='review'&&!!job.script&&job.assets.length>=4&&job.assets.length<=7&&job.assets.length===job.script.slides.length+1&&job.assets.every((a,i)=>a.position===i+1&&a.path===assetPath(job.id,job.revision,i+1)&&/^[a-f0-9]{64}$/.test(a.sha256));
 }
 export type Publisher={account:()=>Promise<string>;access:(id:string)=>Promise<void>;child:(account:string,url:string,alt:string)=>Promise<string>;album:(account:string,children:string[],caption:string)=>Promise<string>;status:(id:string)=>Promise<unknown>;publish:(account:string,album:string)=>Promise<string>;permalink:(id:string)=>Promise<string|null>};

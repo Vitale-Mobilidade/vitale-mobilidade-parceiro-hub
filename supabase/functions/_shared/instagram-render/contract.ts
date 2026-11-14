@@ -5,7 +5,7 @@ export type Layout = "opening" | "review" | "comparison" | "numbers" | "diagram"
 export type Theme = "petroleum" | "deep" | "light" | "warm";
 export type GraphicModule = "cover" | "beam" | "load" | "route" | "battery" | "comparison" | "decision";
 export type Concept = { module: GraphicModule; intent: string; metric?: { value: string; label: string }; annotations?: { label: string; text: string }[] };
-export type RenderSlide = { title: string; body: string; layout: Layout; theme: Theme; bikeIds: string[]; scene: string | null; alt: string; concept?: Concept };
+export type RenderSlide = { title: string; body: string; layout: Layout; theme: Theme; bikeIds: string[]; scene: string | null; alt: string; concept?: Concept; master?: 'A'|'B'|'C'|'D'|'E'; editorialLabel?:string; emphasis?:string; cards?:import('./editorial-system.ts').EditorialCard[] };
 export const FINAL_ALT = "Curta, Compartilhe, Comente e Salve. @vitalemobilidade.";
 export function assetPath(jobId: string, revision: number, position: number) {
   return `${jobId}/r${revision}/${String(position).padStart(2, "0")}.jpg`;

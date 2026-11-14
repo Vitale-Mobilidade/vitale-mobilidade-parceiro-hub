@@ -1,0 +1,14 @@
+import {useEffect,useState} from 'react';
+import {ChevronLeft,ChevronRight,Grid2X2} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {adminHeaders} from '@/lib/instagram/api';
+type Asset={position:number;alt:string;sha256:string};
+export default function InstagramEditorialReview(){
+ const [assets,setAssets]=useState<Asset[]>([]),[urls,setUrls]=useState<string[]>([]),[current,setCurrent]=useState(0),[error,setError]=useState(''),[grid,setGrid]=useState(false);
+ useEffect(()=>{let active=true;const objects:string[]=[];void(async()=>{try{const headers=await adminHeaders(),r=await fetch('/api/admin/instagram/sandbox',{headers,cache:'no-store'});if(!r.ok)throw Error(r.status===404?'A prévia sandbox não está disponível neste ambiente.':'Acesso administrativo necessário.');const manifest=await r.json();
+  const loaded=await Promise.all(manifest.assets.map(async(a:Asset)=>{const r=await fetch(`/api/admin/instagram/sandbox?position=${a.position}`,{headers,cache:'no-store'});if(!r.ok)throw Error('Uma arte não carregou.');const u=URL.createObjectURL(await r.blob());objects.push(u);return u;}));if(active){setAssets(manifest.assets);setUrls(loaded);}
+ }catch(e){if(active)setError(e instanceof Error?e.message:'Prévia indisponível.');}})();return()=>{active=false;objects.forEach(URL.revokeObjectURL);};},[]);
+ return <section className="space-y-4 border-y border-border py-5"><header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">Editorial System 1.0</h2><p className="text-sm text-muted-foreground">V9 Max · revisão sandbox · não é o rascunho de produção</p></div><Button size="icon" variant="outline" title="Ver índice" aria-label="Ver índice" onClick={()=>setGrid(!grid)}><Grid2X2/></Button></header>
+ {error?<p role="alert" className="text-destructive">{error}</p>:!urls.length?<p role="status">Carregando artes privadas…</p>:grid?<ol className="grid grid-cols-2 gap-3 sm:grid-cols-3">{assets.map((a,i)=><li key={a.position}><Button variant="ghost" className="h-auto w-full p-0" aria-label={`Revisar arte ${a.position}`} onClick={()=>{setCurrent(i);setGrid(false);}}><img src={urls[i]} alt={a.alt} className="aspect-[4/5] w-full object-contain"/></Button></li>)}</ol>:<div className="mx-auto w-full max-w-[390px]"><img src={urls[current]} alt={assets[current]?.alt} className="aspect-[4/5] w-full object-contain"/><div className="mt-3 flex items-center justify-between"><Button size="icon" variant="outline" aria-label="Arte anterior" disabled={!current} onClick={()=>setCurrent(current-1)}><ChevronLeft/></Button><span>{current+1} / {assets.length}</span><Button size="icon" variant="outline" aria-label="Próxima arte" disabled={current===assets.length-1} onClick={()=>setCurrent(current+1)}><ChevronRight/></Button></div></div>}
+ </section>;
+}

@@ -1,0 +1,2 @@
+import {createFileRoute} from '@tanstack/react-router';
+export const Route=createFileRoute('/api/admin/instagram/sandbox')({server:{handlers:{GET:async({request})=>{const {instagramSandbox}=await import('@/lib/instagram/sandbox.server');return instagramSandbox(request);}}}});

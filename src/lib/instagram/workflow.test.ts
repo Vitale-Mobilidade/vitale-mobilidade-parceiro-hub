@@ -1,6 +1,7 @@
 import { expect,it,vi } from 'vitest';
 import { prepare,publish,approvable,publicationFailureState,type Store,type Studio,type Publisher } from './workflow.server';
 import { scriptFixture,jobFixture } from './fixtures.test-support';
+import {previewScript as systemScript} from './editorial-system.fixture';
 // Hub workflow only: Edge studio is mocked. JPEG/codec fixtures live in Deno tests (instagram-render/render_test.ts).
 function setup(){
  const job=jobFixture();const store:Store={save:vi.fn(async()=>{}),download:vi.fn(async()=>new Uint8Array())};
@@ -19,6 +20,11 @@ it('rejeita arte com caminho/hash divergente do Edge',async()=>{const f=setup();
 it('cenário incerto permite concluir sem cenário, sem nova geração',async()=>{const f=setup();f.job.script=structuredClone(scriptFixture);f.job.script.slides[1].scene='Rua vazia';f.job.scene_attempted=true;await prepare(f.job,f.store,f.studio,true);expect(f.job.state).toBe('review');expect(f.studio.scene).not.toHaveBeenCalled();});
 function publisher():Publisher{return {account:vi.fn(async()=> '12'),access:vi.fn(async()=>{}),child:vi.fn(async(_account,url)=>String(100+Number(url.split('/').at(-1)))),album:vi.fn(async()=> '200'),status:vi.fn(async()=> 'FINISHED'),publish:vi.fn(async()=> '300'),permalink:vi.fn(async()=> 'https://www.instagram.com/p/mock/')};}
 it('proíbe envio sem aprovação da revisão',async()=>{const f=setup(),meta=publisher();await expect(publish(f.job,async()=>{},meta,i=>`https://approved/${i}`)).rejects.toThrow('approval_required');expect(meta.child).not.toHaveBeenCalled();});
+it('v4 publishes six exact ordered assets only after final-revision approval and explicit command',async()=>{
+ const f=setup(),meta=publisher();f.job.script=structuredClone(systemScript);f.job.state='review';f.job.assets=Array.from({length:6},(_,i)=>({position:i+1,path:`${f.job.id}/r1/${String(i+1).padStart(2,'0')}.jpg`,sha256:'a'.repeat(64),alt:'Verified review',missingBikeIds:[]}));
+ expect(approvable(f.job)).toBe(true);await expect(publish(f.job,async()=>{},meta,i=>`https://approved/${i}`)).rejects.toThrow('approval_required');expect(meta.publish).not.toHaveBeenCalled();
+ Object.assign(f.job,{state:'approved',approved_revision:1,approved_by:'admin'});await publish(f.job,async()=>{},meta,i=>`https://approved/${i}`);expect(meta.album).toHaveBeenCalledWith('12',['101','102','103','104','105','106'],systemScript.caption);expect(meta.publish).toHaveBeenCalledTimes(1);
+});
 it('cria itens e álbum na ordem e publica somente após aprovação',async()=>{const f=setup(),meta=publisher();await prepare(f.job,f.store,f.studio);f.job.state='approved';f.job.approved_revision=1;f.job.approved_by='admin';await publish(f.job,async()=>{},meta,i=>`https://approved/${i}`);expect(meta.album).toHaveBeenCalledWith('12',['101','102','103','104'],scriptFixture.caption);expect(f.job.state).toBe('published');await publish(f.job,async()=>{},meta,i=>`https://approved/${i}`);expect(meta.publish).toHaveBeenCalledTimes(1);});
 it('timeout após media_publish exige reconciliação, nunca repost',async()=>{const f=setup(),meta=publisher();await prepare(f.job,f.store,f.studio);Object.assign(f.job,{state:'approved',approved_revision:1,approved_by:'admin'});vi.mocked(meta.publish).mockRejectedValue(Error('timeout'));await expect(publish(f.job,async()=>{},meta,i=>`https://approved/${i}`)).rejects.toThrow('timeout');expect(f.job.publish_attempted).toBe(true);await expect(publish(f.job,async()=>{},meta,i=>`https://approved/${i}`)).rejects.toThrow('reconcile_only');expect(meta.publish).toHaveBeenCalledTimes(1);});
 it('permalink failure preserves confirmed publication and never reposts',async()=>{

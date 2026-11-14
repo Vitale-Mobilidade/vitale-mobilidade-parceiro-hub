@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Instagram Editorial System 1.0 — preparation only
+- [ ] Fixed Inter/token/component masters A–F, versioned contract and source classification; preserve v1–v3/article/podcast.
+- [ ] Six real sandbox renders, private authenticated review and 390px visual evidence; no new art binaries in Git.
+- [ ] Focused auth/render/script/Meta mocks, validate, eight perspectives and rollback; commit.
+- [ ] Hosted activation requires owner-authorized Hub/Edge release; no deploy, production flags/draft writes or Meta in this round.
+
 # Instagram editorial direction revision 3 — no release
 - Resumed from 6207ec7: finish shared cover wiring, generic annotations and six local v3 JPEGs in this session; no real Gemini/Meta or production operations.
 - [x] Share article cover model/reference/payload without changing article behavior; mock parity tests.

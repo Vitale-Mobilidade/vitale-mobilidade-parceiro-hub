@@ -1,11 +1,13 @@
 import { z } from 'zod';
 export { WIDTH,HEIGHT,FINAL_ACTIONS } from '../../../supabase/functions/_shared/instagram-render/contract';
-const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0).optional(),kind:z.enum(['observation','estimate','measurement','context'])});
+const evidence=z.object({claim:z.string().min(1),quote:z.string().min(8),start:z.number().int().min(0).optional(),kind:z.enum(['observation','estimate','measurement','context','declaration','opinion']),origin:z.enum(['transcript','article']).optional(),blockIndex:z.number().int().min(0).optional()});
 const concept=z.object({module:z.enum(['cover','beam','load','route','battery','comparison','decision']),intent:z.string().trim().min(1).max(180),metric:z.object({value:z.string().trim().min(1).max(24),label:z.string().trim().min(1).max(80)}).strict().optional(),annotations:z.array(z.object({label:z.string().trim().min(1).max(40),text:z.string().trim().min(1).max(90)}).strict()).max(2).optional()}).strict();
-export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().max(650),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light','warm']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1),concept:concept.optional()}).strict();
-export const scriptSchema=z.object({artVersion:z.union([z.literal(2),z.literal(3)]).optional(),endingQuestion:z.string().trim().min(1).max(100).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
+const card=z.object({title:z.string().trim().min(1).max(55),text:z.string().trim().min(1).max(180),icon:z.enum(['sun','battery','weight','route','check','triangle-alert','arrow-right']),kind:z.enum(['information','positive','attention'])}).strict();
+export const slideSchema=z.object({title:z.string().trim().min(1).max(100),body:z.string().trim().max(650),layout:z.enum(['opening','review','comparison','numbers','diagram','conclusion']),theme:z.enum(['petroleum','deep','light','warm']),bikeIds:z.array(z.string()).max(2),scene:z.string().max(400).nullable(),alt:z.string().min(1).max(500),evidence:z.array(evidence).min(1),concept:concept.optional(),master:z.enum(['A','B','C','D','E']).optional(),editorialLabel:z.string().max(35).optional(),emphasis:z.string().max(45).optional(),cards:z.array(card).max(4).optional()}).strict();
+export const scriptSchema=z.object({artVersion:z.union([z.literal(2),z.literal(3),z.literal(4)]).optional(),endingQuestion:z.string().trim().min(1).max(100).optional(),endingTitle:z.string().trim().min(1).max(100).optional(),endingBody:z.string().trim().min(1).max(650).optional(),endingEvidence:z.array(evidence).optional(),divergences:z.array(z.object({articleQuote:z.string(),transcriptQuote:z.string(),resolution:z.string()})).optional(),topic:z.string().min(1).max(120),caption:z.string().min(1).max(2200),slides:z.array(slideSchema).min(3).max(6),captionEvidence:z.array(evidence).min(1)}).strict();
 export type Script=z.infer<typeof scriptSchema>; export type Slide=z.infer<typeof slideSchema>;
-export type Source={videoId:string;videoTitle:string;videoDate:string;transcript:string;articleId:string;articleTitle:string;articleSlug:string;publishedAt:string;bikeIds:string[];eligibleAt:string};
+export type ArticleBlock={type:string;heading?:string;text?:string;sourceExcerpt?:string;videoId?:string};
+export type Source={videoId:string;videoTitle:string;videoDate:string;transcript:string;articleId:string;articleTitle:string;articleSlug:string;publishedAt:string;bikeIds:string[];eligibleAt:string;articleBlocks?:ArticleBlock[];articleSummary?:string;articleCoverUrl?:string|null;thumbnailUrl?:string|null};
 export type Asset={position:number;path:string;alt:string;sha256:string;missingBikeIds:string[];photoHashes?:string[]};
 export type State='queued'|'scripting'|'scene'|'rendering'|'review'|'approved'|'publishing'|'uncertain'|'published'|'blocked';
 export type Job={id:string;video_id:string;article_id:string;state:State;revision:number;source:Source;script:Script|null;assets:Asset[];scene_path:string|null;scene_attempted:boolean;script_attempted:boolean;scene_omitted:boolean;approved_revision:number|null;approved_by:string|null;lease_token:string|null;lease_until:string|null;error_code:string|null;error_message:string|null;children:string[];album_id:string|null;publish_attempted:boolean;publish_attempted_at?:string|null;media_id:string|null;permalink:string|null;media_token_hash:string|null;media_expires_at:string|null;created_at:string};
@@ -13,12 +15,30 @@ export type Snapshot={available:boolean;generationEnabled:boolean;publishingEnab
 const external=/https?:|www\.|link\s+(?:da|na)\s+bio|\b(?:acesse|leia|ouça)\b.*\b(?:podcast|site|artigo)\b/i;
 export function validateScript(raw:unknown,source:Source):Script{
  const s=scriptSchema.parse(raw);
- if(s.endingQuestion&&(s.artVersion!==3||external.test(s.endingQuestion)))throw Error('instagram_ending_question_invalid');
+ if(s.endingQuestion&&(![3,4].includes(s.artVersion??0)||external.test(s.endingQuestion)))throw Error('instagram_ending_question_invalid');
  // Cover gets a real catalog photo when an eligible bike exists (Edge resolves the stored photo).
  if(s.slides[0]&&!s.slides[0].bikeIds.length&&source.bikeIds[0])s.slides[0].bikeIds=[source.bikeIds[0]];
  if(s.slides[0]?.layout!=='opening'||s.slides.at(-1)?.layout!=='conclusion')throw Error('instagram_narrative_incomplete');
  if(s.slides.filter(x=>x.scene).length>1)throw Error('instagram_scene_limit');
- if(s.artVersion===2||s.artVersion===3){
+ if(s.artVersion===4){
+  if(s.slides.length<4||s.slides.length>6)throw Error('instagram_slide_count');
+  if(!source.articleBlocks?.some(b=>b.type==='text'&&b.text))throw Error('instagram_full_article_required');
+  if(!s.endingTitle||!s.endingBody||!s.endingQuestion||!s.endingEvidence?.length)throw Error('instagram_verdict_required');
+  checkEvidence(s.endingEvidence,`${s.endingTitle} ${s.endingBody}`,source);
+  if(external.test(`${s.endingTitle} ${s.endingBody}`))throw Error('instagram_external_cta');
+  for(const [i,slide] of s.slides.entries()){
+   if(!slide.master||!slide.concept||i===0&&slide.master!=='A'||i>0&&slide.master==='A')throw Error('instagram_master_invalid');
+   if(slide.theme!=='deep'&&slide.theme!=='petroleum')throw Error('instagram_system_theme');
+   if(slide.emphasis&&!`${slide.title} ${slide.body}`.includes(slide.emphasis))throw Error('instagram_emphasis_unsupported');
+   if(slide.scene&&i!==0)throw Error('instagram_scene_limit');
+   if(slide.master==='D'&&slide.cards?.length!==2)throw Error('instagram_comparison_symmetry');
+   if(slide.master==='C'&&(slide.cards?.length??0)>3)throw Error('instagram_discovery_cards');
+   for(const c of slide.cards??[])if(!slide.body.includes(c.text))throw Error('instagram_card_unsupported');
+   if(/@vitalemobilidade/i.test(`${slide.title} ${slide.body}`))throw Error('instagram_signature_only_final');
+   if(slide.title.split(/\s+/).length>10||slide.body.split(/\s+/).length>80)throw Error('instagram_slide_density');
+  }
+  for(const d of s.divergences??[])if(!source.transcript.includes(d.transcriptQuote)||!source.articleBlocks.some(b=>b.text?.includes(d.articleQuote))||!d.resolution)throw Error('instagram_divergence_invalid');
+ }else if(s.artVersion===2||s.artVersion===3){
   const words=(text:string)=>text.trim()?text.trim().split(/\s+/).length:0;
   const photoIds=new Set<string>();
   for(const [i,slide] of s.slides.entries()){
@@ -45,7 +65,7 @@ export function validateScript(raw:unknown,source:Source):Script{
  for(const slide of s.slides){
   if(external.test(`${slide.title} ${slide.body}`))throw Error('instagram_external_cta');
   if(slide.bikeIds.some(id=>!source.bikeIds.includes(id)))throw Error('instagram_unrelated_bike');
-  checkEvidence(slide.evidence,`${slide.title} ${slide.body}`,source);
+  checkEvidence(slide.evidence,`${slide.title} ${slide.body} ${(slide.cards??[]).map(c=>`${c.title} ${c.text}`).join(' ')}`,source);
  }
  if(external.test(s.caption))throw Error('instagram_external_cta');
  checkEvidence(s.captionEvidence,s.caption,source);return s;
@@ -57,8 +77,13 @@ export function locateQuote(transcript:string,quote:string,hint?:number){
 }
 function checkEvidence(items:z.infer<typeof evidence>[],text:string,source:Source){
  for(const e of items){
-  const start=locateQuote(source.transcript,e.quote,e.start);
+  const article=e.origin==='article';
+  if(article&&(!['context','declaration'].includes(e.kind)||e.blockIndex===undefined))throw Error('instagram_article_not_test');
+  const textSource=article?source.articleBlocks?.[e.blockIndex??-1]?.text??'':source.transcript;
+  const start=locateQuote(textSource,e.quote,e.start);
   if(start<0||!text.includes(e.claim))throw Error('instagram_evidence_invalid');
+  if(e.kind==='opinion'&&!/relato|apresentador|opinião|criticad|segundo/i.test(text))throw Error('instagram_opinion_unattributed');
+  if(e.kind==='declaration'&&!/declarad|informad|fabricante|artigo/i.test(text))throw Error('instagram_declaration_unqualified');
   e.start=start;
   if(e.kind==='measurement'&&/estimad|até|aproximad/i.test(e.quote))throw Error('instagram_estimate_as_measurement');
   if(e.kind==='estimate'&&!/estimad|até|aproximad/i.test(e.claim))throw Error('instagram_estimate_unqualified');

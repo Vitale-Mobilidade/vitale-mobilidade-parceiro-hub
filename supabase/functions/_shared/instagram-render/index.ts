@@ -9,6 +9,7 @@ import { WIDTH, HEIGHT, FINAL_ACTIONS, type RenderSlide as Slide } from "./contr
 import decodeWebp, { init as initWebp } from "npm:@jsquash/webp@1.5.0/decode.js";
 import { webpDecoderBase64 } from "./webp-wasm.ts";
 import { renderArtV3 } from './art-v3.ts';
+import { renderArtV4 } from './art-v4.ts';
 import { renderArtV2 } from './art-v2.ts';
 export const palette={petroleum:[17,45,42],deep:[8,43,41],light:[248,252,250],warm:[251,249,248],mint:[55,230,163],action:[11,121,81]} as const;
 export type Raster={width:number;height:number;buffer:Uint8Array};
@@ -79,7 +80,8 @@ function font(_size:number){let f=fontCache.get(0);if(!f){fontBytes??=Uint8Array
 function layout(){return sharedLayout??=new Layout();}
 const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 function rgba(c:readonly number[]){return littleEndian?((255<<24)|(c[2]<<16)|(c[1]<<8)|c[0])>>>0:((c[0]<<24)|(c[1]<<16)|(c[2]<<8)|255)>>>0;}
-export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null,options:{artVersion?:2|3;articleOriginal?:Raster|null;endingQuestion?:string}={}){
+export function renderSlide(slide:Slide|null,photos:Raster[]=[],scene:Raster|null=null,options:{artVersion?:2|3|4;articleOriginal?:Raster|null;endingQuestion?:string;endingTitle?:string;endingBody?:string}={}){
+ if(options.artVersion===4){const r=encodeSlide(renderArtV4(slide,photos,options.articleOriginal??null,containPhoto,scene,{title:options.endingTitle??'O veredito',body:options.endingBody??'',question:options.endingQuestion??'O que faz diferença no seu trajeto?'}),slide);return {...r,actions:slide?[]:['Curta','Comente','Salve','Compartilhe']};}
  if(options.artVersion===3)return encodeSlide(renderArtV3(slide,photos,options.articleOriginal??null,containPhoto,scene,options.endingQuestion),slide);
  if(options.artVersion===2)return encodeSlide(renderArtV2(slide,photos,options.articleOriginal??null,containPhoto),slide);
  const theme=slide?.theme??'deep',color=palette[theme],ink=theme==='light'?palette.deep:palette.light;

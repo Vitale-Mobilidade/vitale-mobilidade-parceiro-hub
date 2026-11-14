@@ -15,8 +15,8 @@ type Env = { url: string; serviceKey: string; aiKey: string; releaseFlag: string
 type Asset = { position: number; missingBikeIds?: string[]; photoHashes?: string[] };
 type Job = {
   id: string; revision: number; state: string; lease_token: string | null; lease_until: string | null;
-  source: { transcript: string; articleId: string; articleTitle: string; bikeIds: string[]; videoId?:string };
-  script: { slides: RenderSlide[]; artVersion?:2|3; endingQuestion?:string } | null; assets: Asset[]; scene_path: string | null;
+  source: { transcript: string; articleId: string; articleTitle: string; bikeIds: string[]; videoId?:string;articleBlocks?:unknown[];articleSummary?:string };
+  script: { slides: RenderSlide[]; artVersion?:2|3|4; endingQuestion?:string;endingTitle?:string;endingBody?:string } | null; assets: Asset[]; scene_path: string | null;
   scene_attempted: boolean; script_attempted: boolean; scene_omitted: boolean;
 };
 const reply = (data: unknown, status = 200) =>
@@ -70,15 +70,24 @@ async function coverInputs(db:SupabaseClient,job:Job){
  if(!r.ok||!r.headers.get('content-type')?.startsWith('image/jpeg')||Number(r.headers.get('content-length')??0)>2_000_000)throw Error('instagram_cover_reference_missing');
  const thumb=new Uint8Array(await r.arrayBuffer()),dimensions=inspectJpeg(thumb);
  if(thumb.length>2_000_000||!dimensions||dimensions.width<480||dimensions.height<270)throw Error('instagram_cover_reference_missing');
- const id=job.script?.slides[0]?.bikeIds[0];
- if(!id||!job.source.bikeIds.includes(id))throw Error('instagram_cover_reference_missing');
+ const ids=job.source.bikeIds;
+ if(!ids.length)return {thumb,refs:[],articleCover:[]};
+ const refs=[];
+ for(const id of ids){
  const asset=await db.from('bike_assets').select('storage_path').eq('bike_id',id).eq('status','ready').maybeSingle();
- if(!asset.data?.storage_path)throw Error('instagram_cover_reference_missing');
+ if(!asset.data?.storage_path)continue;
  const file=await db.storage.from('bike-images').download(asset.data.storage_path);
- if(!file.data||file.data.size>2_000_000)throw Error('instagram_cover_reference_missing');
+ if(!file.data||file.data.size>2_000_000)continue;
  const bytes=new Uint8Array(await file.data.arrayBuffer());
  const {photoFormat,decodePhoto}=await decodeAndRender();await decodePhoto(bytes);
- return {thumb,refs:catalogCoverParts(id,id,true,bytes,photoFormat(bytes))};
+ refs.push(...catalogCoverParts(id,id,id===ids[0],bytes,photoFormat(bytes)));
+ }
+ const {articleCoverParts}=await import('../_shared/instagram-render/provenance.ts');
+ const article=await db.from('editorial_articles').select('og_image_url').eq('id',job.source.articleId).eq('status','published').maybeSingle();
+ const path=articleCoverParts(job.source.articleId,article.data?.og_image_url);
+ const articleCover=[];
+ if(path){const file=await db.storage.from('editorial-covers').download(path);if(file.data&&file.data.size<=2_000_000){const bytes=new Uint8Array(await file.data.arrayBuffer());const {photoFormat}=await decodeAndRender();const {coverDataUrl}=await import('../_shared/editorial-cover-payload.ts');articleCover.push({type:'text',text:'Published article cover: visual direction only, not facts. Ignore lettering; generate no lettering or bike.'},{type:'image_url',image_url:{url:coverDataUrl(bytes,photoFormat(bytes))}});}}
+ return {thumb,refs,articleCover};
 }
 
 export async function handleInstagramInternal(req: Request, db: SupabaseClient, body: Record<string, unknown>, env: Env) {
@@ -133,9 +142,9 @@ export async function handleInstagramInternal(req: Request, db: SupabaseClient, 
       if (job.state !== "scene" || !job.scene_attempted || job.scene_path || job.scene_omitted || !slide?.scene)
         return reply({ error: "instagram_checkpoint_mismatch" }, 409);
       let bytes:Uint8Array;
-      if(job.script?.artVersion===3){
-       const {thumb,refs}=await coverInputs(db,job);
-       bytes=await ai.cover(slide.title,slide.scene,thumb,refs);
+      if(job.script?.artVersion===3||job.script?.artVersion===4){
+       const {thumb,refs,articleCover}=await coverInputs(db,job);
+       bytes=refs.length?await ai.cover(slide.title,slide.scene,thumb,refs,job.script.artVersion===4?articleCover:undefined):await ai.scene(slide.scene);
       }else bytes=await ai.scene(slide.scene);
       const { decodePhoto, photoFormat } = await decodeAndRender();
       const mime = photoFormat(bytes);
@@ -185,7 +194,7 @@ export async function handleInstagramInternal(req: Request, db: SupabaseClient, 
       const path=trustedArticleOriginal(job.source.articleId,slide.bikeIds[0],source.data?.capture?.coverBackground);
       if(path){const file=await db.storage.from('editorial-covers').download(path);if(file.data&&file.data.size<=12*1024*1024)try{articleOriginal=await decodePhoto(new Uint8Array(await file.data.arrayBuffer()));}catch{/* Fail closed to the whole catalog photograph. */}}
     }
-    const rendered = renderSlide(slide, photos, slide?.scene ? scene : null,{artVersion:job.script?.artVersion,articleOriginal,endingQuestion:job.script?.endingQuestion});
+    const rendered = renderSlide(slide, photos, slide?.scene ? scene : null,{artVersion:job.script?.artVersion,articleOriginal,endingQuestion:job.script?.endingQuestion,endingTitle:job.script?.endingTitle,endingBody:job.script?.endingBody});
     const path = assetPath(job.id, job.revision, position);
     const up = await db.storage.from(BUCKET).upload(path, rendered.bytes, { contentType: "image/jpeg", upsert: true });
     if (up.error) return reply({ error: "instagram_asset_save_failed" }, 503);

@@ -1,4 +1,8 @@
 /** Association alone is insufficient: only explicit catalog-reference identity proof can unlock an original. */
+export function articleCoverParts(articleId:string,url:unknown):string|null{
+ if(typeof url!=='string'||!/^https:\/\//.test(url))return null;
+ try{const u=new URL(url);if(u.hostname!=='ipectfejftfcikvozoyu.supabase.co'||u.pathname!=='/functions/v1/bike-image'||u.searchParams.get('type')!=='editorial-cover')return null;const id=u.searchParams.get('id'),file=u.searchParams.get('file');if(id===articleId&&file&&/^[a-f0-9-]{36}$/.test(file))return `${articleId}/${file}.jpg`;const path=u.searchParams.get('path');if(!path||!new RegExp(`^${articleId}/[a-f0-9-]+\\.(jpg|png|webp)$`).test(path))return null;return path;}catch{return null;}
+}
 export function trustedArticleOriginal(articleId:string,bikeId:string,background:unknown):string|null{
  if(!background||typeof background!=='object')return null;
  const b=background as Record<string,unknown>,proof=b.identityProof as Record<string,unknown>|undefined;

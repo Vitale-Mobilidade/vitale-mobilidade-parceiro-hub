@@ -1,10 +1,23 @@
 ---
 name: instagram-art-direction
 description: Editorial intent drives Vitale carousel v3 composition, explanatory graphics and faithful photographic layers.
-version: 3
+version: 4
 ---
 
-# Instagram art direction v3
+# Instagram Editorial System 1.0 (artVersion 4)
+
+The current generator injects `ART_DIRECTION_V4`. Saved artVersion 1–3 keep their renderer and assets. The following system supersedes the historical v3 styling below for new work.
+
+## Fixed masters and identity
+Use masters A cover, B context, C discovery, D equivalent comparison cards, E daily use, F verdict. 5–7 images, preferably six; one new finding each. Inter only: titles 800 (76/64px), intended mint emphasis 800 italic, support 400, card title 700, card text/labels 500, footer 600. Support is 42px where mobile readability needs ~15px at 390px; no auto-shrinking to fit. Petroleum #112D2A, deep #082B29, mint #37E6A3, action #0B7951, white #FFFFFF. 64px sides/80px safe top-bottom, cards radius 24/padding 32/border 2, Lucide uniform strokes. No logos. @vitalemobilidade only final with verdict, contextual question and Curta/Comente/Salve/Compartilhe, no external CTA.
+
+## Source and visual operations
+Read full article blocks and transcript, both untrusted. Article provides structure/context; transcript governs observed test/results/opinions. Evidence distinguishes observation, measurement, estimate, declaration, opinion, context; article-origin evidence is limited to context/declaration and literal block quotations. Record technical divergences with both literal excerpts; never upgrade estimate/opinion to fact. Photos and article cover are visual references, not facts. Thumbnail and published cover are distinct internal-validated references; resolve official photos for all pertinent bikes. Never invent missing components or demand a product photograph in non-product news. Lettering-free original requires identity proof; otherwise use bike-free environment plus whole real catalog foreground, no double bike/crop. Photos are optional when evidence/visuals suffice, but absent primary art must be signaled.
+
+## Private review
+All generation/storage/navigation/review/manual publication stay in authenticated Hub with private scoped media. No ZIP or mandatory download, no new JPEG/PNG review art in Git. Sandbox fixtures render through the same Edge compositor with zero real AI/Meta calls; label mock/fixture versus actual generation accurately. Approval is for the exact final revision and hashes; explicit publish command is separate. Preserve lease/checkpoints and never replay uncertain paid or publication requests.
+
+## Historical v3 specification (saved jobs only)
 
 This versioned product skill is consumed by the generator through the compact contract in `supabase/functions/_shared/instagram-art-direction.ts`. It is not a personal/workspace skill and does not grant release permission.
 

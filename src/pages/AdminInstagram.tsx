@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { Button } from '@/components/ui/button';
 import { instagramCall,assetBlob } from '@/lib/instagram/api';
 import { type Snapshot,type Job,type Asset } from '@/lib/instagram/contract';
+import InstagramEditorialReview from '@/components/admin/InstagramEditorialReview';
 const labels:Record<string,string>={queued:'Na fila',scripting:'Roteiro em preparação',scene:'Ambientação',rendering:'Compondo artes',review:'Aguardando revisão',approved:'Aprovado',publishing:'Preparando álbum',uncertain:'Envio sem confirmação',published:'Publicado',blocked:'Requer atenção'};
 export default function AdminInstagram(){return <AdminShell>{role=>role==='admin'?<InstagramWorkspace/>:<p role="alert">Acesso restrito a administradores.</p>}</AdminShell>;}
 function PrivateImage({job,asset}:{job:Job;asset:Asset}){
@@ -14,7 +15,7 @@ function PrivateImage({job,asset}:{job:Job;asset:Asset}){
  return <div className="aspect-[4/5] w-full bg-muted">{url?<img src={url} alt={asset.alt} className="h-full w-full object-contain"/>:<p className="flex h-full items-center justify-center text-sm text-muted-foreground">{error||'Carregando arte…'}</p>}</div>;
 }
 export function InstagramWorkspace(){
- const [selected,setSelected]=useState<string|null>(null),[progress,setProgress]=useState(''),[reviewed,setReviewed]=useState(false),[feedback,setFeedback]=useState('');
+ const [selected,setSelected]=useState<string|null>(null),[progress,setProgress]=useState(''),[reviewed,setReviewed]=useState(false),[feedback,setFeedback]=useState(''),[sandbox,setSandbox]=useState(false);
  const query=useQuery({queryKey:['admin','instagram'],queryFn:()=>instagramCall<Snapshot>({action:'snapshot'}),retry:false,staleTime:15000});
  const data=query.data,job=data?.jobs.find(j=>j.id===selected)??data?.jobs[0];
  const mutation=useMutation({mutationFn:(input:Record<string,unknown>)=>instagramCall<{id?:string;status?:string}>(input,setProgress),onSuccess:async(result)=>{if(result.id)setSelected(result.id);setReviewed(false);setFeedback(result.status==='published'?'Publicado no Instagram.':'Estado atualizado.');await query.refetch();},onError:async(error)=>{setFeedback(error.message);await query.refetch();},onSettled:()=>setProgress('')});
@@ -23,6 +24,8 @@ export function InstagramWorkspace(){
  const act=(action:string,extra:Record<string,unknown>={})=>{if(job)mutation.mutate({action,id:job.id,revision:job.revision,...extra});};
  return <div className="space-y-6">
   <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs font-semibold uppercase text-primary">Conteúdo</p><h1 className="mt-1 text-3xl font-bold">Instagram</h1></div><div className="flex gap-2"><Button variant="outline" aria-label="Atualizar Instagram" title="Atualizar" disabled={busy||query.isFetching} onClick={()=>void query.refetch()}><RefreshCw/>Atualizar</Button>{data?.available&&<Button variant="outline" disabled={busy} onClick={()=>{if(window.confirm('Pausar geração e publicação do Instagram?'))mutation.mutate({action:'pause'});}}><Pause/>Pausar</Button>}</div></header>
+  <div className="flex gap-2"><Button variant={!sandbox?'secondary':'outline'} onClick={()=>setSandbox(false)}>Rascunhos</Button><Button variant={sandbox?'secondary':'outline'} onClick={()=>setSandbox(true)}>Revisão do sistema editorial</Button></div>
+  {sandbox&&<InstagramEditorialReview/>}
   {query.isPending&&<p role="status">Consultando fontes e rascunhos…</p>}
   {query.isError&&<p role="alert" className="text-destructive">{query.error.message}</p>}
   {data&&!data.available&&<section className="border-y border-border py-6"><h2 className="font-semibold">Release aguardando autorização</h2><p className="mt-2 text-sm text-muted-foreground">Geração, publicação e agendamento estão desligados.</p></section>}
