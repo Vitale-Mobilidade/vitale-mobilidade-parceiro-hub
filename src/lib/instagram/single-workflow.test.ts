@@ -1,0 +1,10 @@
+import {expect,it,vi} from 'vitest';
+import {publishSingle} from './single-workflow';
+import type {SingleDraft} from './single-image';
+const d:SingleDraft={id:'d',revision:1,state:'scheduled',reviewHold:false,caption:'Grounded',assetHash:'hash',approvedHash:'hash',dueAt:'2026-11-14T09:15:00Z',createAttempted:false,publishAttempted:false};
+const url='https://vitalemobilidade.com/api/public/instagram/single-media/d?token=private';
+const now=Date.parse(d.dueAt??'');
+function fixture(){return {account:vi.fn(async()=> 'account'),create:vi.fn(async(_account:string,_post:{image_url:string;caption:string})=> 'container'),status:vi.fn(async()=> 'FINISHED'),publish:vi.fn(async()=> 'media'),permalink:vi.fn(async()=> 'https://www.instagram.com/p/abc/')}};
+it('one single-image create follows durable marker and confirmation precedes permalink',async()=>{const meta=fixture(),patches:Record<string,unknown>[]=[];expect(await publishSingle(d,url,async p=>{patches.push(p)},meta,now,true)).toBe('published');expect(patches[0]).toEqual({state:'publishing',createAttempted:true});expect(meta.create).toHaveBeenCalledTimes(1);expect(meta.create.mock.calls[0][1]).not.toHaveProperty('children');expect(patches[3]).toEqual({state:'published',mediaId:'media'});});
+it('confirmed publication survives permalink failure',async()=>{const meta=fixture();meta.permalink.mockRejectedValue(Error('timeout'));const save=vi.fn(async()=>{});expect(await publishSingle(d,url,save,meta,now,true)).toBe('published');expect(save).toHaveBeenCalledWith({state:'published',mediaId:'media'});});
+it('uncertain create never publishes nor permits a second create',async()=>{const meta=fixture();meta.create.mockRejectedValue(Error('timeout'));expect(await publishSingle(d,url,async()=>{},meta,now,true)).toBe('reconcile');expect(meta.publish).not.toHaveBeenCalled();expect(await publishSingle({...d,createAttempted:true},url,async()=>{},meta,now,true)).toBe('reconcile');expect(meta.create).toHaveBeenCalledTimes(1);});

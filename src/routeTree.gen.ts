@@ -81,6 +81,7 @@ import { Route as ApiPublicPriceAlertOutboxRouteImport } from './routes/api/publ
 import { Route as PodcastAudioYoutubeIdRouteImport } from './routes/podcast/audio/$youtubeId'
 import { Route as PodcastCapasFileRouteImport } from './routes/podcast/capas/$file'
 import { Route as AdminConteudosIdPreviewRouteImport } from './routes/admin/conteudos/$id/preview'
+import { Route as ApiAdminInstagramPostsRouteImport } from './routes/api/admin/instagram/posts'
 import { Route as ApiAdminInstagramSandboxRouteImport } from './routes/api/admin/instagram/sandbox'
 import { Route as ApiPublicInstagramScheduledRouteImport } from './routes/api/public/instagram/scheduled'
 import { Route as ApiPublicInstagramTickRouteImport } from './routes/api/public/instagram/tick'
@@ -460,6 +461,11 @@ const AdminConteudosIdPreviewRoute = AdminConteudosIdPreviewRouteImport.update({
   path: '/preview',
   getParentRoute: () => AdminConteudosIdRoute,
 } as any)
+const ApiAdminInstagramPostsRoute = ApiAdminInstagramPostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => ApiAdminInstagramRoute,
+} as any)
 const ApiAdminInstagramSandboxRoute =
   ApiAdminInstagramSandboxRouteImport.update({
     id: '/sandbox',
@@ -563,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/admin/instagram/posts': typeof ApiAdminInstagramPostsRoute
   '/api/admin/instagram/sandbox': typeof ApiAdminInstagramSandboxRoute
   '/api/public/instagram/scheduled': typeof ApiPublicInstagramScheduledRoute
   '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
@@ -642,6 +649,7 @@ export interface FileRoutesByTo {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/admin/instagram/posts': typeof ApiAdminInstagramPostsRoute
   '/api/admin/instagram/sandbox': typeof ApiAdminInstagramSandboxRoute
   '/api/public/instagram/scheduled': typeof ApiPublicInstagramScheduledRoute
   '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
@@ -722,6 +730,7 @@ export interface FileRoutesById {
   '/podcast/capas/$file': typeof PodcastCapasFileRoute
   '/admin/conteudos/': typeof AdminConteudosIndexRoute
   '/admin/conteudos/$id/preview': typeof AdminConteudosIdPreviewRoute
+  '/api/admin/instagram/posts': typeof ApiAdminInstagramPostsRoute
   '/api/admin/instagram/sandbox': typeof ApiAdminInstagramSandboxRoute
   '/api/public/instagram/scheduled': typeof ApiPublicInstagramScheduledRoute
   '/api/public/instagram/tick': typeof ApiPublicInstagramTickRoute
@@ -803,6 +812,7 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
+    | '/api/admin/instagram/posts'
     | '/api/admin/instagram/sandbox'
     | '/api/public/instagram/scheduled'
     | '/api/public/instagram/tick'
@@ -882,6 +892,7 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos'
     | '/admin/conteudos/$id/preview'
+    | '/api/admin/instagram/posts'
     | '/api/admin/instagram/sandbox'
     | '/api/public/instagram/scheduled'
     | '/api/public/instagram/tick'
@@ -961,6 +972,7 @@ export interface FileRouteTypes {
     | '/podcast/capas/$file'
     | '/admin/conteudos/'
     | '/admin/conteudos/$id/preview'
+    | '/api/admin/instagram/posts'
     | '/api/admin/instagram/sandbox'
     | '/api/public/instagram/scheduled'
     | '/api/public/instagram/tick'
@@ -1551,6 +1563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConteudosIdPreviewRouteImport
       parentRoute: typeof AdminConteudosIdRoute
     }
+    '/api/admin/instagram/posts': {
+      id: '/api/admin/instagram/posts'
+      path: '/posts'
+      fullPath: '/api/admin/instagram/posts'
+      preLoaderRoute: typeof ApiAdminInstagramPostsRouteImport
+      parentRoute: typeof ApiAdminInstagramRoute
+    }
     '/api/admin/instagram/sandbox': {
       id: '/api/admin/instagram/sandbox'
       path: '/sandbox'
@@ -1601,11 +1620,13 @@ const AdminConteudosIdRouteWithChildren =
   AdminConteudosIdRoute._addFileChildren(AdminConteudosIdRouteChildren)
 
 interface ApiAdminInstagramRouteChildren {
+  ApiAdminInstagramPostsRoute: typeof ApiAdminInstagramPostsRoute
   ApiAdminInstagramSandboxRoute: typeof ApiAdminInstagramSandboxRoute
   ApiAdminInstagramIdPositionRoute: typeof ApiAdminInstagramIdPositionRoute
 }
 
 const ApiAdminInstagramRouteChildren: ApiAdminInstagramRouteChildren = {
+  ApiAdminInstagramPostsRoute: ApiAdminInstagramPostsRoute,
   ApiAdminInstagramSandboxRoute: ApiAdminInstagramSandboxRoute,
   ApiAdminInstagramIdPositionRoute: ApiAdminInstagramIdPositionRoute,
 }

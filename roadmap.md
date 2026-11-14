@@ -1,5 +1,11 @@
 # Ajuste estrito da Home e navegação
 
+# Independent single-image Instagram increment — owner 14 November 04:40 UTC
+- [x] Independent recent active-video/published-article/transcript source metadata selection with legacy both-path publication dedupe; retain OUXI hold/history, no podcast publish controls.
+- [x] Real local Mobylette original rendered full-bleed in three formats; comparative geometry rejection and private DEV gallery, zero AI.
+- [x] Staged schema/lease and pure single-image dispatch contract with off gates outside migration journals; 24 tests, disposable PostgreSQL, Deno and mock-auth desktop/mobile gallery pass; automatic build OK.
+- [ ] Actual draft generation/storage, full caption+asset approval fingerprint, independent Meta media adapter/signed scheduler and new-path dedupe await next increment plus official migration unblocking; real admin acceptance awaits session, no publication.
+
 # Isolated Instagram read release — 14 November 04:29 UTC authorization
 - [x] Official editorial-admin-only deploy succeeded, source SHA-256 4492d56fc2b20dd21bc454789fb45f543dec9045b84a288ee845a9fe0c02608d; no Growth migration executed.
 - [x] Exact-stub guarded update pauses only instagram_enabled; RSS/scheduler true, carousel publishing/automation false, six confirmed histories unchanged; real OUXI caption/hold and comparative caption verified.
