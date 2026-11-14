@@ -1,7 +1,4 @@
-import {
-  OFFERS_GROUP_LANDING_PATH,
-  type OffersSurface,
-} from "../../supabase/functions/_shared/site-analytics";
+import { OFFERS_GROUP_LANDING_PATH } from "../../supabase/functions/_shared/site-analytics";
 import { siteAnalytics } from "./site-analytics";
 
 export { OFFERS_GROUP_LANDING_PATH };
@@ -54,7 +51,7 @@ type LinkClick = {
   preventDefault(): void;
 };
 
-export function isPlainOfferClick(event: LinkClick) {
+function isPlainClick(event: LinkClick) {
   return (
     !event.defaultPrevented &&
     event.button === 0 &&
@@ -65,7 +62,7 @@ export function isPlainOfferClick(event: LinkClick) {
   );
 }
 
-export function openGroupInvite(href: string) {
+function openGroupInvite(href: string) {
   const invite = document.createElement("a");
   invite.href = href;
   invite.rel = "noreferrer";
@@ -74,13 +71,22 @@ export function openGroupInvite(href: string) {
 
 export function handleOffersGroupCta(
   event: LinkClick,
-  position: "hero" | "sticky" | "grid",
+  position: OffersGroupCtaPosition,
+  bikeId?: string,
 ) {
   if (!event.nativeEvent.isTrusted || event.defaultPrevented) return;
   if (event.button !== 0 && event.button !== 1) return;
-  siteAnalytics.offersCta(window.location.href);
+  if (bikeId) {
+    siteAnalytics.offersOffer(
+      window.location.href,
+      bikeId,
+      position === "carousel" ? "hero" : "grid",
+    );
+  } else {
+    siteAnalytics.offersCta(window.location.href);
+  }
   const href = event.currentTarget.href;
-  const canWait = adsConsent && isPlainOfferClick(event);
+  const canWait = adsConsent && isPlainClick(event);
   if (canWait) event.preventDefault();
   trackGroupInvite(position, canWait ? () => openGroupInvite(href) : undefined);
 }
@@ -115,8 +121,4 @@ export function trackGroupInvite(
     if (timer !== undefined) finish();
     else open?.();
   }
-}
-
-export function trackOffersGroupOffer(bikeId: string, position: OffersSurface) {
-  siteAnalytics.offersOffer(window.location.href, bikeId, position);
 }

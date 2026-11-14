@@ -9,7 +9,7 @@ export type CampaignBike = {
   id: string;
   name: string;
   image: string | null;
-  offer: { price: number; href: string; savingsPct: number | null } | null;
+  offer: { price: number; savingsPct: number | null } | null;
 };
 
 /** Accept canonical product links and the same Mercado Livre affiliate short links used in the Radar. */
@@ -68,7 +68,6 @@ export function buildCampaignCatalog(
     if (href && Number.isFinite(bike.currentPrice)) {
       record.offer = {
         price: bike.currentPrice,
-        href,
         savingsPct: bike.savingsPct,
       };
     }

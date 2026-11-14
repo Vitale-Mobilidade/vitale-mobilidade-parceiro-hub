@@ -37,3 +37,9 @@ O inventário da campanha recebido do Ads Manager registrou 4 anúncios Demand G
 Para liberar a coleta, aplicar o SQL dedicado no Supabase integrado, implantar `site-analytics` e `editorial-admin` e publicar a landing. Em seguida validar a rota e a leitura do Admin autenticado, inclusive ausência de dados antes do início. O rollback desativa a coleta por frontend/Edge e preserva a tabela e os totais. A versão publicada anterior é o PR #145.
 
 No GTM, validar a ação secundária Google Ads da conta 521-126-5158 com o mesmo ID e label verificados. Restringir o acionador à landing e às posições `^(hero|sticky|carousel|grid)$`. Em Tag Assistant deve haver zero conversões na visita e na recusa, e um único evento por clique que encaminha ao convite após consentimento. O rascunho anterior ainda lista `after_faq`. Verificar a origem de eventos da Meta antes de criar a conversão personalizada. Nenhuma entrada no grupo é inferida, e nenhuma conversão offline foi importada.
+
+### Convite como único destino dos cards
+
+O responsável substituiu o fluxo de duas abas pelo convite na aba atual. Produto e UX priorizam uma única ação. Arquitetura reutiliza o link HTML do convite. Segurança elimina a abertura de janelas e URLs de lojistas da landing. Operação mantém o convite administrado. Growth conserva as contagens por posição e modelo e o consentimento para Ads. QA verifica os destinos renderizados e o clique no navegador. IA não se aplica. O Radar continua fornecendo os dados de preço dos cards. Rollback por revert da revisão.
+
+Revisão posterior: Produto, Arquitetura, Segurança, UX, Operação, Growth e QA **Pass**. Todos os links de fotos e botões dos cards apontam ao mesmo convite, e o teste de navegador verificou foto do destaque, foto da grade e botão da grade com uma única aba. Os 22 testes de medição e os 69 testes do gate passaram, assim como TypeScript e build. IA **N/A**.
