@@ -9,7 +9,7 @@ import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
 import { VideoRelatedArticle } from "@/components/admin/VideoRelatedArticle";
 import { VideoPodcastAudio } from "@/components/admin/VideoPodcastAudio";
 import { VideoInstagramAction } from "@/components/admin/VideoInstagramAction";
-import { instagramPostCall } from "@/lib/instagram/api";
+import { instagramCall } from "@/lib/instagram/api";
 import { VIDEO_BATCH_LIMIT,videoIdPattern,type VideoEligibilityBatch } from "@/lib/instagram/video-selection";
 import { podcastCoverPath } from "@/lib/podcast-editorial";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -531,7 +531,7 @@ function Videos({ role }: { role: AdminRole }) {
   }, [sheet, stored, storedMap, articleMap, query, filter]);
   const instagramIds=useMemo(()=>[...new Set([...items.map(v=>v.videoId),...(selected?[selected.videoId]:[])])].filter(id=>videoIdPattern.test(id)).sort(),[items,selected]);
   const instagramEligibility=useQuery({queryKey:['admin','instagram','video-eligibility',instagramIds],enabled:role==='admin'&&instagramIds.length>0,retry:false,staleTime:15000,
-    queryFn:async()=>{const batches:VideoEligibilityBatch[]=[];for(let i=0;i<instagramIds.length;i+=VIDEO_BATCH_LIMIT)batches.push(await instagramPostCall<VideoEligibilityBatch>({action:'video-eligibility',videoIds:instagramIds.slice(i,i+VIDEO_BATCH_LIMIT)}));return {generationEnabled:batches.every(b=>b.generationEnabled),sources:batches.flatMap(b=>b.sources)};}});
+    queryFn:async()=>{const batches:VideoEligibilityBatch[]=[];for(let i=0;i<instagramIds.length;i+=VIDEO_BATCH_LIMIT)batches.push(await instagramCall<VideoEligibilityBatch>({action:'video-eligibility',videoIds:instagramIds.slice(i,i+VIDEO_BATCH_LIMIT)}));return {generationEnabled:batches.every(b=>b.generationEnabled),sources:batches.flatMap(b=>b.sources)};}});
   function select(v: VideoItem) {
     const saved = storedMap.get(v.videoId);
     setSelected(v);
@@ -649,7 +649,7 @@ function Videos({ role }: { role: AdminRole }) {
               )}
               <VideoRelatedArticle key={`article:${selected.videoId}`} article={articleMap.get(selected.videoId)} />
               {role==='admin'&&<VideoInstagramAction key={`instagram:${selected.videoId}`} source={instagramEligibility.data?.sources.find(s=>s.videoId===selected.videoId)} enabled={instagramEligibility.data?.generationEnabled===true} refresh={()=>instagramEligibility.refetch()}/>}
-              {role==='admin'&&instagramEligibility.error&&<p role="alert" className="text-sm text-destructive">Não foi possível consultar a elegibilidade do post.</p>}
+              {role==='admin'&&instagramEligibility.error&&<p role="alert" className="text-sm text-destructive">Não foi possível consultar a elegibilidade do carrossel.</p>}
               <label className="block text-sm font-medium">
                 Título
                 <input className={`${INPUT} mt-1`} value={title} onChange={(e) => setTitle(e.target.value)} required />

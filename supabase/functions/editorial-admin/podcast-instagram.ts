@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { InstagramRequestError, instagramPodcastPost, instagramPublisher, readInstagramSettings } from "../_shared/podcast-instagram.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
+import { preparePodcastInstagramArtwork } from "./podcast-instagram-artwork.ts";
 
 export async function verifyPodcastInstagramConnection() {
   const settings = readInstagramSettings((name) => Deno.env.get(name));
@@ -21,6 +22,8 @@ interface PodcastInstagramClaim {
   container_id: string | null;
   slot_at: string;
   scheduled_at?: string | null;
+  publish_attempted_at?: string | null;
+  error_code?: string | null;
 }
 
 export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { episodeId: string } | "scheduled") {
@@ -31,7 +34,12 @@ export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { epi
   if (error) throw new Error("podcast_instagram_claim_failed");
   if (!rawClaim) return { status: "unavailable" as const };
   const claim = rawClaim as PodcastInstagramClaim;
-  const slotClosed = () => !mode && Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000;
+  if (claim.publish_attempted_at || claim.error_code === "meta_create_uncertain") {
+    return { status: "unavailable" as const, code: "reconciliation_required" };
+  }
+  const slotClosed = () => mode === "scheduled"
+    ? !claim.scheduled_at || Date.now() >= Date.parse(claim.scheduled_at) + 15 * 60_000
+    : !mode && Date.now() >= Date.parse(claim.slot_at) + 5 * 60_000;
 
   async function save(values: Record<string, string | null>) {
     const { data, error: writeError } = await db.from("podcast_instagram_deliveries").update(values)
@@ -49,18 +57,24 @@ export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { epi
     const instagram = instagramPublisher(settings);
     const account = await instagram.account();
     let container: string | null = claim.container_id;
-    if (!container) {
+    if (container) {
       const episode = await db.from("podcast_episode_queue").select("prepared_instagram_post")
-        .eq("youtube_id", claim.youtube_id).not("released_at", "is", null).maybeSingle();
-      if (episode.error) throw new Error("podcast_instagram_article_read_failed");
-      const post = episode.data?.prepared_instagram_post as ReturnType<typeof instagramPodcastPost>;
+        .eq("youtube_id", claim.youtube_id).maybeSingle();
+      const post = episode.data?.prepared_instagram_post;
+      if (episode.error || !post || typeof post.image_url !== "string" || !post.image_url.includes(".ig4.jpg?layout=4&"))
+        throw new InstagramRequestError("podcast_instagram_legacy_container_reconcile", true);
+    }
+    if (!container) {
+      const post = await preparePodcastInstagramArtwork(db, claim.youtube_id);
       if (!post || typeof post.caption !== "string" || typeof post.image_url !== "string" ||
         !post.image_url.startsWith("https://vitalemobilidade.com/podcast/capas/")) {
         throw new InstagramRequestError("podcast_instagram_draft_missing", true);
       }
+      // Marker persists before paid/external side effect; uncertain create/save never replays.
+      await save({ error_code: "meta_create_uncertain" });
       container = await instagram.create(account, post);
       // Reuse this container if Meta takes longer than one tick or a response is lost.
-      await save({ container_id: container });
+      await save({ container_id: container, error_code: null });
     }
 
     const status = await instagram.status(container);
@@ -87,7 +101,12 @@ export async function publishPodcastOnInstagram(db: SupabaseClient, mode?: { epi
     await finish("published", { published_at: new Date().toISOString(), permalink, error_code: null });
     return { status: "published" as const };
   } catch (failure) {
-    const errorCode = failure instanceof InstagramRequestError ? failure.code : "request_unconfirmed";
+    const createUncertain = !claim.container_id && (
+      failure instanceof InstagramRequestError && /^meta_create_(transport|response)$|^meta_container_missing$/.test(failure.code)
+      || failure instanceof Error && failure.message === "podcast_instagram_record_failed"
+    );
+    const errorCode = createUncertain ? "meta_create_uncertain" : failure instanceof InstagramRequestError
+      ? failure.code : failure instanceof Error && /^podcast_instagram_/.test(failure.message) ? failure.message : "request_unconfirmed";
     const status = failure instanceof InstagramRequestError && failure.terminal ? "failed" : "pending";
     await finish(status, { error_code: errorCode });
     if (mode === "scheduled" || (status === "failed" && !mode)) {
@@ -112,7 +131,8 @@ async function claimInstagramRetry(db: SupabaseClient, episodeId: string) {
   return await db.from("podcast_instagram_deliveries")
     .update({ claim_token: crypto.randomUUID(), lease_until: new Date(now + 60_000).toISOString() })
     .eq("youtube_id", episodeId).eq("status", "pending").is("publish_attempted_at", null)
+    .or("error_code.is.null,error_code.neq.meta_create_uncertain")
     .lte("slot_at", new Date(now - 5 * 60_000).toISOString())
     .or(`lease_until.is.null,lease_until.lte.${new Date(now).toISOString()}`)
-    .select("youtube_id,claim_token,container_id,slot_at").maybeSingle();
+    .select("youtube_id,claim_token,container_id,slot_at,publish_attempted_at,error_code").maybeSingle();
 }

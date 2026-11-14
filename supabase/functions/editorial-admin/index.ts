@@ -1,4 +1,5 @@
-import { readPodcastDashboard } from "./podcast-dashboard.ts";
+import { publishPodcastOnInstagram, publishScheduledPodcastInstagram, verifyPodcastInstagramConnection } from "./podcast-instagram.ts";
+import { readPodcastDashboard, readPodcastInstagramDrafts } from "./podcast-dashboard.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
 import { runPodcastTick } from "./podcast-worker.ts";
 import { serveReleasedPodcastMedia } from "./podcast-media.ts";
@@ -2601,8 +2602,6 @@ Deno.serve(async (req) => {
     });
   }
   if (body.action === "podcast-tick") {
-    // Legacy social cron must never publish alongside independent carousels.
-    if (body.instagramOnly === true) return json(req, { error: "podcast_instagram_retired" }, 410);
     const { data: ownerId, error: authorizationError } = await db.rpc("authorize_podcast_tick", {
       p_signature: req.headers.get("x-podcast-worker-signature") ?? "",
       p_issued_at: req.headers.get("x-podcast-worker-issued-at") ?? "",
@@ -2618,6 +2617,7 @@ Deno.serve(async (req) => {
         await notifyPodcastError(db, "preparação", new Date().toISOString().slice(0, 10), "podcast_worker_not_configured");
         return json(req, { error: "podcast_worker_not_configured" }, 503);
       }
+      if (body.instagramOnly === true) return json(req, await publishScheduledPodcastInstagram(db));
       return json(req, await runPodcastTick(db, { id: ownerId, role: "admin" },
         async (id) => readYoutubePodcastDescription(id, await youtubeAccessToken())));
     } catch {
@@ -2629,8 +2629,31 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
-    if (action.startsWith("podcast-instagram-")) {
-      return json(req, { error: "podcast_instagram_retired" }, 410);
+    if (action === "podcast-instagram-connection") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      return json(req, await verifyPodcastInstagramConnection());
+    }
+    if (action === "podcast-instagram-retry") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      if (typeof body.youtubeId !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(body.youtubeId))
+        return json(req, { error: "Episódio inválido." }, 400);
+      return json(req, await publishPodcastOnInstagram(db, { episodeId: body.youtubeId }));
+    }
+    if (action === "podcast-instagram-schedule") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      if (typeof body.youtubeId !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(body.youtubeId)
+        || typeof body.localTime !== "string" || !/^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(body.localTime)) {
+        return json(req, { error: "Escolha um episódio e um horário válido." }, 400);
+      }
+      const scheduled = await db.rpc("schedule_podcast_instagram_delivery", {
+        p_episode_id: body.youtubeId, p_local_time: body.localTime,
+      });
+      if (scheduled.error) throw new Error("podcast_instagram_schedule_failed");
+      return json(req, scheduled.data ? { status: "scheduled", scheduledAt: scheduled.data } : { status: "unavailable" });
+    }
+    if (action === "podcast-instagram-drafts") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      return json(req, await readPodcastInstagramDrafts(db, body.page));
     }
     if (action === "podcast-dashboard") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);

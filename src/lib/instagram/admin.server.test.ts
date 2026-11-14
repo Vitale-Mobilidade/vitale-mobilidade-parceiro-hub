@@ -27,39 +27,18 @@ it('authenticated admin snapshot stays read-only and never imports render, AI or
 function request(body:unknown){return new Request('https://test.invalid/api/admin/instagram',{method:'POST',headers:{Authorization:'Bearer mock'},body:JSON.stringify(body)});}
 it('batch eligibility returns only bounded metadata and never imports generation',async()=>{
  f.createDb.mockReturnValue({});f.videoEligibility.mockResolvedValue([{videoId:sourceFixture.videoId,articleId:sourceFixture.articleId,jobId:null,revision:null,state:null}]);
- const r=await instagramAdmin(request({action:'video-eligibility',videoIds:[sourceFixture.videoId]}));expect(r.status).toBe(409);expect(f.videoEligibility).not.toHaveBeenCalled();expect(f.source).not.toHaveBeenCalled();
+ const r=await instagramAdmin(request({action:'video-eligibility',videoIds:[sourceFixture.videoId]}));const data=await r.json();expect(data.generationEnabled).toBe(false);expect(Object.keys(data.sources[0]).sort()).toEqual(['articleId','jobId','revision','state','videoId']);expect(f.source).not.toHaveBeenCalled();
 });
 it('invalid video id and oversized batches are rejected before any source read',async()=>{
  f.createDb.mockReturnValue({});
  for(const body of [{action:'generate',videoId:'bad'},{action:'video-eligibility',videoIds:Array(41).fill(sourceFixture.videoId)}])expect((await instagramAdmin(request(body))).status).toBe(409);
  expect(f.source).not.toHaveBeenCalled();expect(f.videoEligibility).not.toHaveBeenCalled();
 });
-it('generation gate stops chosen video before job creation',async()=>{
- f.createDb.mockReturnValue({});f.settings.mockResolvedValue({generation_enabled:false});
- const r=await instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId}));expect((await r.json()).error).toContain('somente leitura');expect(f.source).not.toHaveBeenCalled();
-});
-it('release and pause prevent generation without any source read',async()=>{
- f.createDb.mockReturnValue({});f.release.mockResolvedValue(false);expect((await instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId}))).status).toBe(409);
- f.release.mockResolvedValue(true);f.settings.mockResolvedValue({generation_enabled:true,paused_reason:'owner_pause'});expect((await (await instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId}))).json()).error).toContain('somente leitura');expect(f.source).not.toHaveBeenCalled();
-});
-it('ineligible source or mismatched article cannot create a job',async()=>{
- f.createDb.mockReturnValue({});f.source.mockResolvedValue(null);
- expect((await instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId}))).status).toBe(409);
- f.source.mockResolvedValue(sourceFixture);expect((await instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId,articleId:'00000000-0000-0000-0000-000000000009'}))).status).toBe(409);
-});
-it('older selected video reopens existing exact pair without AI or claims, including blocked/published',async()=>{
- const old={...sourceFixture,videoId:'olderVIDEO1',videoDate:'2025-01-01'};f.source.mockResolvedValue(old);
- for(const state of ['review','blocked','published']){
-  const existing={id:'00000000-0000-0000-0000-000000000002',revision:2,state};
-  const q:any={upsert:()=>q,select:()=>q,eq:()=>q,maybeSingle:async()=>({data:null}),single:async()=>({data:existing})};f.createDb.mockReturnValue({from:()=>q});
-  const r=await instagramAdmin(request({action:'generate',videoId:old.videoId,articleId:old.articleId}));expect(r.status).toBe(409);
-  expect(f.source).not.toHaveBeenCalled();
+it('every historical mutation is refused before settings, claims, AI or Meta',async()=>{
+ f.createDb.mockReturnValue({});
+ for(const action of ['generate','resume','approve','publish','discover','reconcile','pause','schedule','cancel-schedule']){
+  const r=await instagramAdmin(request({action,videoId:sourceFixture.videoId}));
+  expect(r.status).toBe(410);expect((await r.json()).error).toContain('somente leitura');
  }
- expect(f.claim).not.toHaveBeenCalled();
-});
-it('two concurrent requests for an existing pair both reopen without claims',async()=>{
- f.source.mockResolvedValue(sourceFixture);const existing={id:'00000000-0000-0000-0000-000000000002',revision:1,state:'rendering'};
- const q:any={upsert:()=>q,select:()=>q,eq:()=>q,maybeSingle:async()=>({data:null}),single:async()=>({data:existing})};f.createDb.mockReturnValue({from:()=>q});
- const replies=await Promise.all([instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId})),instagramAdmin(request({action:'generate',videoId:sourceFixture.videoId}))]);
- for(const r of replies)expect(r.status).toBe(409);expect(f.claim).not.toHaveBeenCalled();
+ expect(f.settings).not.toHaveBeenCalled();expect(f.claim).not.toHaveBeenCalled();expect(f.source).not.toHaveBeenCalled();
 });

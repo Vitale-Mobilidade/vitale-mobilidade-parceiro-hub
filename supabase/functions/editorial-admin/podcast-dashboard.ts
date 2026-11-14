@@ -17,17 +17,20 @@ export async function readPodcastInstagramDrafts(db: SupabaseClient, rawPage: un
   const offset = podcastHistoryPage(rawPage) * PODCAST_HISTORY_PAGE_SIZE;
   const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
   const { data, error, count } = await db.from("podcast_instagram_deliveries")
-    .select("youtube_id,scheduled_at,podcast_episode_queue!inner(title)", { count: "exact" })
-    .eq("status", "pending").is("publish_attempted_at", null).lte("slot_at", cutoff)
+    .select("youtube_id,scheduled_at,podcast_episode_queue!inner(title,prepared_instagram_post)", { count: "exact" })
+    .eq("status", "pending").is("publish_attempted_at", null)
+    .or("error_code.is.null,error_code.neq.meta_create_uncertain").lte("slot_at", cutoff)
     .not("podcast_episode_queue.released_at", "is", null)
     .not("podcast_episode_queue.prepared_instagram_post", "is", null)
     .order("scheduled_at", { ascending: true, nullsFirst: false })
     .order("slot_at", { ascending: false }).order("youtube_id")
     .range(offset, offset + PODCAST_HISTORY_PAGE_SIZE - 1);
   if (error) throw new Error("podcast_instagram_drafts_read_failed");
-  type DraftRow = { youtube_id: string; scheduled_at: string | null; podcast_episode_queue: { title: string } };
+  type DraftRow = { youtube_id: string; scheduled_at: string | null; podcast_episode_queue: { title: string; prepared_instagram_post?: { image_url?: string; caption?: string } } };
   const items: PodcastInstagramDraft[] = ((data ?? []) as unknown as DraftRow[]).map((row) => ({
     id: row.youtube_id, title: row.podcast_episode_queue.title, scheduledAt: row.scheduled_at,
+    imageUrl: row.podcast_episode_queue.prepared_instagram_post?.image_url ?? null,
+    caption: row.podcast_episode_queue.prepared_instagram_post?.caption ?? null,
   }));
   return { total: count ?? 0, items };
 }

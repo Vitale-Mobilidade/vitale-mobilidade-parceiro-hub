@@ -1,2 +1,0 @@
-import {createFileRoute} from '@tanstack/react-router';
-export const Route=createFileRoute('/api/admin/instagram/post-preview')({server:{handlers:{GET:async({request})=>{const {privatePostPreview}=await import('@/lib/instagram/post-preview.server');return privatePostPreview(request);}}}});

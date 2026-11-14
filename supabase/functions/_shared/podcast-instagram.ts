@@ -25,7 +25,7 @@ export function instagramPodcastPost(article: Parameters<typeof podcastCoverPath
   const excerpt = characters.length > available
     ? characters.slice(0, available - 1).join("").replace(/\s+\S*$/, "") + "…"
     : summary;
-  return { image_url: new URL(coverPath, "https://vitalemobilidade.com").href, caption: [excerpt, call].join("\n\n") };
+  return { image_url: new URL(coverPath.replace(".v3.jpg", ".ig4.jpg").replace("layout=3", "layout=4"), "https://vitalemobilidade.com").href, caption: [excerpt, call].join("\n\n") };
 }
 
 export type InstagramSettings = { token: string; version: string; accountId?: string };
@@ -49,13 +49,13 @@ export class InstagramRequestError extends Error {
 export function directInstagramCoverUrl(value: string): string | null {
   try {
     const url = new URL(value);
-    const match = /^\/podcast\/capas\/([a-z0-9]+(?:-[a-z0-9]+)*)\.v3\.jpg$/.exec(url.pathname);
+    const match = /^\/podcast\/capas\/([a-z0-9]+(?:-[a-z0-9]+)*)\.ig4\.jpg$/.exec(url.pathname);
     const version = url.searchParams.get("v");
     if (url.origin !== "https://vitalemobilidade.com" || url.username || url.password || url.hash ||
-      !match || match[1].length > 120 || url.searchParams.get("layout") !== "3" ||
+      !match || match[1].length > 120 || url.searchParams.get("layout") !== "4" ||
       !version || !/^\d{1,14}$/.test(version)) return null;
     const direct = new URL(PODCAST_ARTWORK_EDGE);
-    direct.search = new URLSearchParams({ type: "podcast-cover", slug: match[1], layout: "3", v: version }).toString();
+    direct.search = new URLSearchParams({ type: "podcast-cover", slug: match[1], layout: "4", v: version }).toString();
     return direct.href;
   } catch {
     return null;

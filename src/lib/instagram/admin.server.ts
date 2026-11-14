@@ -12,17 +12,16 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
  try{
   const db=dbFactory(),actor=verifiedSchedulerActor??await authorize(request,db);if(!actor)return reply({error:'Acesso restrito a administradores.'},403);
   const text=await request.text();if(text.length>4096)return reply({error:'Requisição inválida.'},413);const data=input.parse(JSON.parse(text));
-  // Historical carousels are immutable: neither admin nor old cron can resume/send them.
-  if(!['snapshot'].includes(data.action))return reply({error:'Carrosséis históricos são somente leitura. Use Post de imagem única.'},409);
+  if(!['snapshot','video-eligibility'].includes(data.action))return reply({error:'Carrosséis históricos são somente leitura. Use Posts do Instagram no painel de Podcasts.'},410);
   if(!await releaseEnabled())return data.action==='snapshot'?reply({available:false,generationEnabled:false,publishingEnabled:false,automationEnabled:false,source:null,jobs:[]} satisfies Snapshot):reply({error:'Release ainda não autorizado. Geração e publicação estão desligadas.'},409);
   const cfg=await settings(db);
-  if(data.action==='video-eligibility')return reply({generationEnabled:cfg.generation_enabled===true&&!cfg.paused_reason,sources:await videoEligibility(db,data.videoIds??[])});
+  if(data.action==='video-eligibility')return reply({generationEnabled:false,sources:await videoEligibility(db,data.videoIds??[])});
   if(data.action==='snapshot'){
    const [selected,jobs]=await Promise.all([source(db),db.from('instagram_carousel_jobs').select('*').order('created_at',{ascending:false}).limit(40)]);if(jobs.error)throw Error('instagram_jobs_unavailable');
    if(data.id&&!jobs.data?.some(j=>j.id===data.id)){const exact=await db.from('instagram_carousel_jobs').select('*').eq('id',data.id).maybeSingle();if(exact.error)throw Error('instagram_jobs_unavailable');if(exact.data)jobs.data=[...(jobs.data??[]),exact.data];}
    const schedules=cfg.scheduling_enabled!==undefined?await db.from('instagram_carousel_schedules').select('id,job_id,revision,fingerprint,due_at,state,actor_id,error_code').order('created_at',{ascending:false}).limit(40):{data:[],error:null};
    if(schedules.error)throw Error('instagram_schedules_unavailable');
-   return reply({available:true,generationEnabled:cfg.generation_enabled&&!cfg.paused_reason,publishingEnabled:cfg.publishing_enabled&&!cfg.paused_reason,automationEnabled:cfg.automation_enabled,schedulingEnabled:cfg.scheduling_enabled===true&&process.env.INSTAGRAM_SCHEDULING_ENABLED==='true'&&!cfg.paused_reason,schedules:schedules.data??[],source:selected,jobs:(jobs.data??[]).map(({media_token_hash,lease_token,...job})=>({...job,media_token_hash:null,lease_token:null}))});
+   return reply({available:true,generationEnabled:false,publishingEnabled:false,automationEnabled:false,schedulingEnabled:false,schedules:schedules.data??[],source:selected,jobs:(jobs.data??[]).map(({media_token_hash,lease_token,...job})=>({...job,media_token_hash:null,lease_token:null}))});
   }
   if(data.action==='pause'){const res=await db.from('instagram_carousel_settings').update({generation_enabled:false,publishing_enabled:false,automation_enabled:false,paused_reason:'owner_pause'}).eq('singleton',true);if(res.error)throw Error('instagram_pause_failed');return reply({status:'paused'});}
   if(data.action==='schedule'||data.action==='cancel-schedule'){
@@ -116,7 +115,6 @@ export async function instagramAdmin(request:Request,dbFactory=createDb,verified
  }catch(error){return reply({error:error instanceof Error?error.message:'instagram_unavailable'},409);}
 }
 export async function instagramAsset(request:Request,id:string,position:string,publicMedia=false,dbFactory=createDb){
- if(publicMedia)return new Response(null,{status:404,headers});
  if(!/^[a-f0-9-]{36}$/.test(id)||! /^[1-7]$/.test(position))return new Response(null,{status:404,headers});
  try{
   if(!await releaseEnabled())return new Response(null,{status:404,headers});const db=dbFactory();

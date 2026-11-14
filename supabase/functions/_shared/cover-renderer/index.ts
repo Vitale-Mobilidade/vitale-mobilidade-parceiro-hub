@@ -96,6 +96,20 @@ function fitBackground(source: Raster, W: number, H: number): Uint8Array {
     }
   return out;
 }
+function fitWholeInstagramPhoto(source: Raster, W: number, H: number): Uint8Array {
+  const out = new Uint8Array(W * H * 4);
+  for (let p = 0; p < out.length; p += 4) out.set([6, 24, 18, 255], p);
+  const boxHeight = 870;
+  const scale = Math.min(W / source.width, boxHeight / source.height);
+  const width = Math.round(source.width * scale), height = Math.round(source.height * scale);
+  const left = Math.floor((W - width) / 2), top = Math.floor((boxHeight - height) / 2);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const sx = Math.min(source.width - 1, Math.floor(x / scale));
+    const sy = Math.min(source.height - 1, Math.floor(y / scale));
+    out.set(source.buffer.subarray((sy * source.width + sx) * 4, (sy * source.width + sx) * 4 + 4), ((top + y) * W + left + x) * 4);
+  }
+  return out;
+}
 function composite(
   out: Uint8Array,
   text: Raster,
@@ -155,10 +169,10 @@ export async function composeSquarePodcastCover(
   return composeCover(source, title, true);
 }
 
-function composeCover(source: Raster, title: string, square: boolean) {
-  const W = square ? 1400 : COVER_WIDTH, H = square ? 1400 : COVER_HEIGHT;
-  const inset = square ? 100 : 64;
-  const bottom = square ? 108 : 64;
+function composeCover(source: Raster, title: string, square: boolean, portrait = false) {
+  const W = portrait ? 1080 : square ? 1400 : COVER_WIDTH, H = portrait ? 1350 : square ? 1400 : COVER_HEIGHT;
+  const inset = portrait ? 120 : square ? 100 : 64;
+  const bottom = portrait ? 100 : square ? 108 : 64;
   const top = square ? 88 : 56;
   if (!title.trim() || title.length > 200)
     throw new Error("cover_title_invalid");
@@ -169,7 +183,9 @@ function composeCover(source: Raster, title: string, square: boolean) {
   const fonts = new Map<number, InstanceType<typeof Font>>();
   const font = (size: number) => {
     if (!fonts.has(size)) fonts.set(size, new Font(size, fontData));
-    return fonts.get(size)!;
+    const value = fonts.get(size);
+    if (!value) throw new Error("cover_font_missing");
+    return value;
   };
   try {
     for (const char of title)
@@ -179,21 +195,21 @@ function composeCover(source: Raster, title: string, square: boolean) {
     const measure = (text: string, size: number) => Array.from(text).reduce((total, char) => {
       const key = `${size}:${char}`;
       if (!advances.has(key)) advances.set(key, font(size).metrics(char, size).advance_width);
-      return total + advances.get(key)!;
+      return total + (advances.get(key) ?? 0);
     }, 0);
     let sizes = [ ...(square ? [112, 104, 96, 88, 82] : []), 76, 72, 68, 64, 60, 56, 52, 48, 44, 40, 36];
     let fit: ReturnType<typeof fitTitle> = null;
     let lines: Raster[] = [];
     // Glyph advances can under-estimate the final raster bounds. Validate actual lines and shrink without cutting text.
     while (sizes.length) {
-      const candidate = fitTitle(title, measure, W - 2 * inset, square ? 4 : 3, sizes);
+      const candidate = fitTitle(title, measure, W - 2 * inset, portrait ? 4 : square ? 4 : 3, sizes);
       if (!candidate) break;
       const rendered = candidate.lines.map(line => rasterText(font(candidate.size), line, candidate.size));
       if (rendered.every(line => line.width <= W - 2 * inset)) { fit = candidate; lines = rendered; break; }
       sizes = sizes.filter(size => size < candidate.size);
     }
     if (!fit) throw new Error("cover_title_does_not_fit");
-    const out = fitBackground(source, W, H);
+    const out = portrait ? fitWholeInstagramPhoto(source, W, H) : fitBackground(source, W, H);
     const brandSize = square ? 34 : 26;
     const brand = rasterText(font(brandSize), square ? "VITALE MOBILIDADE" : "Vitale Mobilidade", brandSize);
     const pillWidth = brand.width + 44;
@@ -223,36 +239,7 @@ function composeCover(source: Raster, title: string, square: boolean) {
   }
 }
 
-/** Instagram-only 4:5: whole source photograph above separate typography. No crop/stretch. */
-export async function composeInstagramPostCover(background: {bytes:Uint8Array;mime:'image/png'|'image/jpeg'}, title:string, wholeCover=false){
-  const source=decode(background.bytes,background.mime==='image/png'?'png':'jpeg');
-  const W=1080,H=1350,inset=64;
-  const out=new Uint8Array(W*H*4);
-  for(let p=0;p<out.length;p+=4)out.set([6,24,18,255],p);
-  const boxHeight=wholeCover?H:850;
-  const scale=Math.min(W/source.width,boxHeight/source.height);
-  const width=Math.round(source.width*scale),height=Math.round(source.height*scale);
-  const left=Math.floor((W-width)/2),top=Math.floor((boxHeight-height)/2);
-  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-    const sx=Math.min(source.width-1,Math.floor(x/scale)),sy=Math.min(source.height-1,Math.floor(y/scale));
-    out.set(source.buffer.subarray((sy*source.width+sx)*4,(sy*source.width+sx)*4+4),((top+y)*W+left+x)*4);
-  }
-  let lines:string[]=[];
-  if(!wholeCover){
-    if(!title.trim()||title.length>200)throw Error('cover_title_invalid');
-    fontBytes??=Uint8Array.from(atob(interFontBase64),c=>c.charCodeAt(0));
-    const font=new Font(76,fontBytes);
-    try{
-      const measure=(text:string,size:number)=>Array.from(text).reduce((total,c)=>total+font.metrics(c,size).advance_width,0);
-      let sizes=[76,72,68,64,60,56,52,48,44,40,36],rasters:Raster[]=[],fit:ReturnType<typeof fitTitle>=null;
-      while(sizes.length){fit=fitTitle(title,measure,W-2*inset,5,sizes);if(!fit)break;rasters=fit.lines.map(line=>rasterText(font,line,fit?.size??36));if(rasters.every(r=>r.width<=W-2*inset)&&rasters.length*Math.round(fit.size*1.15)<=340)break;sizes=sizes.filter(n=>n<(fit?.size??0));fit=null;}
-      if(!fit)throw Error('cover_title_does_not_fit');lines=fit.lines;
-      const brand=rasterText(font,'VITALE MOBILIDADE',28);
-      for(let y=884;y<940;y++)for(let x=inset;x<Math.min(W-inset,inset+brand.width+44);x++)out.set([4,120,87,255],(y*W+x)*4);
-      composite(out,brand,inset+22,898,W,H);
-      for(const [i,line] of rasters.entries()){const y=980+i*Math.round(fit.size*1.15);composite(out,line,inset+2,y+3,W,H,true);composite(out,line,inset,y,W,H);}
-    }finally{font.free();}
-  }
-  for(const quality of [88,80,70,60]){const bytes=jpeg.encode(out,W,H,quality);if(bytes.length<=COVER_MAX_BYTES)return {bytes,title,lines,wholeCover};}
-  throw Error('cover_output_too_large');
+/** Same legacy typography/brand, Instagram-only whole-photo 4:5 with grid-safe sides. */
+export async function composeInstagramPostCover(background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" }, title: string) {
+  return composeCover(decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg"), title, false, true);
 }

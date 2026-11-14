@@ -1,6 +1,6 @@
 import { createDb,releaseEnabled } from './repository.server';
 import { instagramAdmin } from './admin.server';
-export async function verifyInstagramTick(request:Request,purpose:'instagram-discover'|'instagram-publish'|'instagram-post-publish'){
+export async function verifyInstagramTick(request:Request,purpose:'instagram-discover'|'instagram-publish'){
  if(!await releaseEnabled())return null;
  const key=process.env.INSTAGRAM_SCHEDULER_SIGNING_KEY,owner=process.env.INSTAGRAM_SCHEDULER_OWNER_ID;
  const issued=request.headers.get('x-instagram-issued-at'),signature=request.headers.get('x-instagram-signature');

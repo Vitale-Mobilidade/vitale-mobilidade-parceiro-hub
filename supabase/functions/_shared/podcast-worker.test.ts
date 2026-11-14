@@ -36,7 +36,7 @@ it("publica a fila pronta na janela sem tentar preparar o conteúdo no mesmo hor
   const db = { rpc } as never;
   await expect(runPodcastTick(db, actor, description)).resolves.toEqual({ status: "released" });
   expect(rpc).toHaveBeenCalledWith("release_next_podcast_episode");
-  expect(fake.publish).not.toHaveBeenCalled();
+  expect(fake.publish).toHaveBeenCalledExactlyOnceWith(db);
   expect(fake.verify).not.toHaveBeenCalled();
   expect(fake.fill).not.toHaveBeenCalled();
   expect(fake.alert).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ it("repõe a fila RSS sem depender de confirmação da Meta", async () => {
     }),
   } as never;
   await expect(runPodcastTick(db, actor, description)).resolves.toEqual({ status: "prepared", ready: 6 });
-  expect(fake.alert).not.toHaveBeenCalled();
+  expect(fake.alert).toHaveBeenCalledWith(db, "Instagram", slot, "podcast_instagram_unconfirmed");
   expect(fake.fill).toHaveBeenCalledExactlyOnceWith(db, actor, description, false);
   expect(fake.publish).not.toHaveBeenCalled();
   expect(rpc).not.toHaveBeenCalledWith("release_next_podcast_episode");

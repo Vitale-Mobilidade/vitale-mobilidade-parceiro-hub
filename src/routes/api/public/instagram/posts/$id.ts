@@ -1,2 +1,0 @@
-import {createFileRoute} from '@tanstack/react-router';
-export const Route=createFileRoute('/api/public/instagram/posts/$id')({server:{handlers:{GET:async({request,params})=>{const {postAsset}=await import('@/lib/instagram/post-admin.server');return postAsset(request,params.id,true);}}}});

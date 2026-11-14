@@ -1,14 +1,17 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
-import { podcastArticleSlug, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
+import { podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
 
 export async function servePodcastCover(req: Request, params: URLSearchParams, db: SupabaseClient) {
+  const portrait = params.get("layout") === "4";
   const slug = params.get("slug") ?? "";
   if (slug.length > 120 || !podcastArticleSlug.test(slug)) return new Response(null, { status: 404 });
-  const { data: article, error } = await db.from("editorial_articles").select("id,video_id,title")
+  const { data: article, error } = await db.from("editorial_articles").select("id,video_id,title,updated_at")
     .eq("slug", slug).eq("status", "published").maybeSingle();
   if (error) return new Response(null, { status: 503 });
   if (!article || !isCoverUuid(article.id)) return new Response(null, { status: 404 });
+  if (portrait && params.get("v") !== String(Date.parse(article.updated_at)))
+    return new Response(null, { status: 409, headers: { "X-Media-Error": "podcast_instagram_article_version_changed" } });
 
   const headers = new Headers({
     "Content-Type": "image/jpeg",
@@ -18,7 +21,7 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
   if (params.get("download") === "1") headers.set("Content-Disposition", `attachment; filename="${slug}-capa-quadrada.jpg"`);
   if (req.method === "HEAD") return new Response(null, { headers });
   try {
-    const preparedPath = params.get("layout") === "3"
+    const preparedPath = portrait ? preparedPodcastInstagramPath(article.id, params.get("v") ?? "") : params.get("layout") === "3"
       ? preparedPodcastCoverPath(article.id, params.get("v") ?? "") : null;
     if (preparedPath) {
       const { data: prepared } = await db.storage.from(COVER_BUCKET).download(preparedPath);
@@ -48,8 +51,11 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
         }
       }
     }
-    const { composeSquarePodcastCover } = await import("../_shared/cover-renderer/index.ts");
-    const { bytes } = await composeSquarePodcastCover(background, article.title.normalize("NFC"));
+    if (portrait && !background) return new Response(null, { status: 422, headers: { "X-Media-Error": "podcast_instagram_original_missing" } });
+    const { composeSquarePodcastCover, composeInstagramPostCover } = await import("../_shared/cover-renderer/index.ts");
+    const { bytes } = portrait && background
+      ? await composeInstagramPostCover(background, article.title.normalize("NFC"))
+      : await composeSquarePodcastCover(background, article.title.normalize("NFC"));
     headers.set("Content-Length", String(bytes.byteLength));
     return new Response(Uint8Array.from(bytes), { headers });
   } catch {

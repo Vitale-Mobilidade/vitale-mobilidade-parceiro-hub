@@ -34,3 +34,8 @@ export function podcastCoverPath(article: { slug: string | null; og_image_url: s
   if (download) params.set("download", "1");
   return params.size ? `${path}?${params}` : path;
 }
+
+export function preparedPodcastInstagramPath(articleId: string, version: string) {
+  return isCoverUuid(articleId) && /^\d{1,14}$/.test(version)
+    ? `${articleId}/podcast-instagram/v4-${version}.jpg` : null;
+}

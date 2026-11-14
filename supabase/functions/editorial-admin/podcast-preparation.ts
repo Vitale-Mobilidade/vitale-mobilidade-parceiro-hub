@@ -3,6 +3,7 @@ import { COVER_BUCKET, inspectJpeg } from "../_shared/editorial-cover.ts";
 import { PODCAST_ARTWORK_EDGE, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
 import { PODCAST_AUDIO_BUCKET } from "../_shared/podcast-audio-contract.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
+import { preparePodcastInstagramArtwork } from "./podcast-instagram-artwork.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
 
 const QUEUE_TARGET = 6;
@@ -46,6 +47,10 @@ export async function preparePodcastDraft(db: SupabaseClient, youtubeId: string)
     prepared_article_version: article.data.updated_at, prepared_cover_path: path,
   }).eq("youtube_id", youtubeId).is("released_at", null);
   if (updated.error) throw new Error("podcast_queue_write_failed");
+  // Social preparation must never prevent RSS readiness. Existing square remains unchanged.
+  await preparePodcastInstagramArtwork(db, youtubeId).catch(async (error: unknown) => {
+    await notifyPodcastError(db, "Instagram", youtubeId, error);
+  });
 }
 
 export async function fillPreparedPodcastQueue(

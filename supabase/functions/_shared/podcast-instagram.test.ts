@@ -8,7 +8,7 @@ const article = {
 
 it("reuses the RSS cover and episode summary, respecting the caption limit", () => {
   const post = instagramPodcastPost({ ...article, summary: "Resumo ".repeat(1000) });
-  expect(post?.image_url).toContain("https://vitalemobilidade.com/podcast/capas/teste-ft07.v3.jpg?layout=3&v=");
+  expect(post?.image_url).toContain("https://vitalemobilidade.com/podcast/capas/teste-ft07.ig4.jpg?layout=4&v=");
   expect(post?.caption).toMatch(/^Resumo(?: Resumo)*…\n\nSaiba mais no link da Bio$/);
   expect([...post!.caption].length).toBeLessThanOrEqual(2200);
   expect(instagramPodcastPost({ ...article, og_image_url: null })).toBeNull();
@@ -37,7 +37,7 @@ it("uses the authorized account and publishes a single image container", async (
   expect(String(fetcher.mock.calls[1][0])).toBe("https://graph.instagram.com/v25.0/123/media");
   const imageRequest = new URLSearchParams(fetcher.mock.calls[1][1]?.body as URLSearchParams);
   expect(imageRequest.get("image_url")).toBe(
-    "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=podcast-cover&slug=teste-ft07&layout=3&v=1794427200000",
+    "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image?type=podcast-cover&slug=teste-ft07&layout=4&v=1794427200000",
   );
   expect(imageRequest.get("caption")).toBe(post.caption);
   expect(String(fetcher.mock.calls[3][0])).toBe("https://graph.instagram.com/v25.0/123/media_publish");

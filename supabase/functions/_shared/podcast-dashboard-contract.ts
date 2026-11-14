@@ -6,6 +6,8 @@ export type PodcastInstagramDraft = {
   id: string;
   title: string;
   scheduledAt: string | null;
+  imageUrl?: string | null;
+  caption?: string | null;
 };
 
 export type PodcastDashboardItem = {

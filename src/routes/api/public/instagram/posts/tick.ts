@@ -1,2 +1,0 @@
-import {createFileRoute} from '@tanstack/react-router';
-export const Route=createFileRoute('/api/public/instagram/posts/tick')({server:{handlers:{POST:async({request})=>{const {postTick}=await import('@/lib/instagram/post-scheduler.server');return postTick(request);}}}});
