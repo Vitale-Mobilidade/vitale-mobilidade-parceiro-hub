@@ -107,6 +107,15 @@ Deno.serve(async (req) => {
       return respond(error ? 503 : 204);
     }
     if (!hit) return respond(400);
+    if ("origin" in hit) {
+      const { error } = await db.rpc("record_offers_group_funnel", {
+        p_event_name: hit.event,
+        p_origin: hit.origin,
+        p_surface: hit.event === "offers_offer_click" ? hit.position : "",
+        p_bike_id: hit.event === "offers_offer_click" ? hit.bikeId : "",
+      });
+      return respond(error ? 503 : 204);
+    }
     const { error } = await db.rpc("record_site_analytics", {
       p_event_name: hit.event,
       p_source_path: hit.sourcePath,

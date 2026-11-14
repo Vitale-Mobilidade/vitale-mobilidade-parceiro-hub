@@ -2815,6 +2815,18 @@ Deno.serve(async (req) => {
       if (error) return json(req, { error: "Mapa indisponível; confira migration e ativação." }, 503);
       return json(req, { bins: data ?? [], layout: HEATMAP_LAYOUT, sample: 0.25 });
     }
+    if (action === "offers-campaigns") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      let range;
+      try { range = growthRange(body); }
+      catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
+      const { data, error } = await db.rpc("admin_offers_group_funnel", {
+        p_start: range.startDate,
+        p_end: range.endDate,
+      });
+      if (error || !data) return json(req, { error: "Medição de campanhas indisponível." }, 503);
+      return json(req, { ...data, startDate: range.startDate, endDate: range.endDate });
+    }
     if (action === "growth") {
       if (actor.role !== "admin")
         return json(

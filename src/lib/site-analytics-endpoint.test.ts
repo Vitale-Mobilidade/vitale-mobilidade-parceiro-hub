@@ -92,6 +92,21 @@ describe("site analytics collector", () => {
     });
   });
 
+  it("grava a origem e a etapa do Grupo de Ofertas na contagem agregada", async () => {
+    const { handler, rpc } = harness();
+    const sourcePath = "/entrenogrupodeofertas";
+    const hit = { event: "offers_cta_click", sourcePath, origin: "meta" };
+    expect((await handler(post(hit))).status).toBe(204);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("record_offers_group_funnel", {
+      p_event_name: "offers_cta_click",
+      p_surface: "",
+      p_bike_id: "",
+      p_origin: "meta",
+    });
+    expect((await handler(post({ ...hit, email: "private@example.com" }))).status).toBe(400);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it("rejeita origem externa, método e campo pessoal extra", async () => {
     const h = harness();
     expect(

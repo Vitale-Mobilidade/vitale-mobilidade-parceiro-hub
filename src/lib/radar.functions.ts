@@ -1,3 +1,5 @@
+import { buildCampaignCatalog } from "./offers-catalog";
+import type { RadarBike } from "./radar-rankings";
 import { createServerFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import { fetchBikeHistory, fetchRankedTrackerSplit } from "./radar-repository.server";
@@ -14,6 +16,13 @@ export const getRadarCatalog = createServerFn({ method: "GET" }).handler(async (
         archived: JSON.parse(JSON.stringify(r.data.archived)) as Json[],
       }
     : { ok: false as const };
+});
+
+export const getOffersCampaignCatalog = createServerFn({ method: "GET" }).handler(async () => {
+  const result = await fetchRankedTrackerSplit({ includeUnobserved: true });
+  return result.ok
+    ? buildCampaignCatalog(result.data.active as RadarBike[], result.data.archived as RadarBike[])
+    : null;
 });
 
 export const getRadarBike = createServerFn({ method: "GET" })

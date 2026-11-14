@@ -32,9 +32,14 @@ function PrivacyPage() {
         <p className="mt-5 leading-relaxed">
           Você pode usar o site, consultar o Radar, fazer o Quiz e abrir links de ofertas sem um aviso de aceite de
           cookies. Usamos Google Analytics para medir o uso das páginas, com cookies analíticos e sem publicidade ou
-          remarketing. Não carregamos Google Ads, Meta Pixel ou Zoho SalesIQ para rastrear sua navegação.
+          remarketing. A preferência para a medição de anúncios do grupo de ofertas é independente.
         </p>
         <div className="mt-8 space-y-6 leading-relaxed">
+          <section id="medicao-google-ofertas">
+            <h2 className="text-xl font-bold">Medição do grupo de ofertas</h2>
+            <p>Contamos visitas e cliques em totais por dia, origem da campanha e, para as ofertas, modelo e posição na página. Os totais ficam no painel de administradores.</p>
+            <p className="mt-3">Se você permitir a medição de anúncios na página do grupo, o Google Ads poderá associar a abertura do convite a um anúncio. Você pode recusar ou retirar sua permissão na mesma página. Sua escolha vale nesta aba e o convite funciona com qualquer escolha.</p>
+          </section>
           {newsletterReferralsEnabled && <section>
             <h2 className="text-xl font-bold">Convites para a comunidade</h2>
             <p>Cada membro pode compartilhar um convite pessoal. Contamos acessos agregados, que podem incluir mais de uma visita da mesma pessoa. Um novo membro só conta como indicação depois de criar sua conta e concluir a adesão à comunidade. O indicador acompanha totais e resultados por dia, sem nomes ou e-mails dos convidados.</p>
@@ -126,6 +131,11 @@ function PrivacyPage() {
               recebido pela infraestrutura é transformado imediatamente em uma chave não reversível, mantida em memória
               por até um minuto e nunca gravada nos totais. Os totais antigos são removidos na próxima gravação após 365
               dias. Registros técnicos da infraestrutura seguem as políticas dos provedores.
+            </p>
+            <p className="mt-3">
+              Na página do Grupo de Ofertas, também contamos visualizações e cliques no botão do WhatsApp.
+              Os totais de visitas, cliques no convite e cliques nas ofertas são separados por campanha e origem. Para ofertas, guardamos também a posição e o modelo. Guardamos apenas a
+              categoria da origem, sem parâmetros completos do anúncio ou dados do WhatsApp.
             </p>
           </section>
           <section>

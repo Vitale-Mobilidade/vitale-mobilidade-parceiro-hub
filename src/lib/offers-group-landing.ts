@@ -1,4 +1,10 @@
-export const OFFERS_GROUP_LANDING_PATH = "/entrenogrupodeofertas";
+import {
+  OFFERS_GROUP_LANDING_PATH,
+  type OffersSurface,
+} from "../../supabase/functions/_shared/site-analytics";
+import { siteAnalytics } from "./site-analytics";
+
+export { OFFERS_GROUP_LANDING_PATH };
 
 export function isOffersGroupLanding(path: string): boolean {
   return path.replace(/\/$/, "") === OFFERS_GROUP_LANDING_PATH;
@@ -27,20 +33,90 @@ export function offersGroupCampaign(search: string): CampaignValues {
   return values;
 }
 
-export type OffersGroupCtaPosition = "hero" | "carousel";
+export type OffersGroupCtaPosition = "hero" | "carousel" | "grid" | "sticky";
 
-export function trackOffersGroupCta(position: OffersGroupCtaPosition): void {
+let adsConsent = false;
+const MAX_ADS_WAIT_MS = 500;
+
+export function setOffersGroupAdsEventConsent(granted: boolean) {
+  adsConsent = granted;
+}
+
+type LinkClick = {
+  currentTarget: HTMLAnchorElement;
+  defaultPrevented: boolean;
+  nativeEvent: { isTrusted: boolean };
+  button: number;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  preventDefault(): void;
+};
+
+export function isPlainOfferClick(event: LinkClick) {
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+export function openGroupInvite(href: string) {
+  const invite = document.createElement("a");
+  invite.href = href;
+  invite.rel = "noreferrer";
+  invite.click();
+}
+
+export function handleOffersGroupCta(
+  event: LinkClick,
+  position: "hero" | "sticky" | "grid",
+) {
+  if (!event.nativeEvent.isTrusted || event.defaultPrevented) return;
+  if (event.button !== 0 && event.button !== 1) return;
+  siteAnalytics.offersCta(window.location.href);
+  const href = event.currentTarget.href;
+  const canWait = adsConsent && isPlainOfferClick(event);
+  if (canWait) event.preventDefault();
+  trackGroupInvite(position, canWait ? () => openGroupInvite(href) : undefined);
+}
+
+export function trackGroupInvite(
+  position: OffersGroupCtaPosition,
+  open?: () => void,
+) {
+  let timer: number | undefined;
+  const finish = () => {
+    if (timer === undefined) return;
+    window.clearTimeout(timer);
+    timer = undefined;
+    open?.();
+  };
   try {
     const url = new URL(window.location.href);
-    if (!isOffersGroupLanding(url.pathname)) return;
+    if (!isOffersGroupLanding(url.pathname) || !adsConsent) {
+      open?.();
+      return;
+    }
     const w = window as Window & { dataLayer?: unknown[] };
+    if (open) timer = window.setTimeout(finish, MAX_ADS_WAIT_MS);
     (w.dataLayer ??= []).push({
       event: "offers_group_cta_click",
       page_path: OFFERS_GROUP_LANDING_PATH,
       cta_position: position,
-      ...offersGroupCampaign(url.search),
+      vitale_offers_google_ads: true,
+      ...(open ? { eventCallback: finish, eventTimeout: MAX_ADS_WAIT_MS } : {}),
     });
   } catch {
-    // Measurement is best effort; the browser always follows the anchor.
+    if (timer !== undefined) finish();
+    else open?.();
   }
+}
+
+export function trackOffersGroupOffer(bikeId: string, position: OffersSurface) {
+  siteAnalytics.offersOffer(window.location.href, bikeId, position);
 }
