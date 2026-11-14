@@ -32,6 +32,7 @@ import {
   hasCommunityConsent,
 } from "@/lib/community-membership";
 import {
+  classifiedsResumeId,
   displayNameSchema,
   memberError,
   memberProfileSchema,
@@ -152,6 +153,12 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
       setRecoveryReturn(rememberedMemberReturn(returnTo));
   }, [initialMode, returnTo]);
   const destination = initialMode === "senha" ? recoveryReturn : returnTo;
+  const [returnPath, returnQuery] = destination.split("?");
+  const returningToListing =
+    returnPath === "/conta/anuncios" &&
+    Boolean(
+      classifiedsResumeId(new URLSearchParams(returnQuery).get("anuncio")),
+    );
   useEffect(() => {
     if (
       session &&
@@ -827,6 +834,11 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
               key={userId}
               embedded
               email={session?.user.email ?? ""}
+              onVerified={
+                returningToListing
+                  ? () => window.location.replace(destination)
+                  : undefined
+              }
             />
           </Suspense>
         )}
@@ -896,7 +908,7 @@ function AccountWorkspace({ returnTo, initialMode, invitationCode }: Props) {
             href={destination}
             className="mt-5 inline-flex min-h-11 items-center font-semibold underline"
           >
-            Voltar
+            {returningToListing ? "Voltar ao anúncio" : "Voltar"}
           </a>
         )}
         {editing && (
