@@ -120,6 +120,13 @@
       "when": 1794636076298,
       "tag": "0016_instagram_single_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794677482123,
+      "tag": "0017_instagram_three_slots",
+      "breakpoints": true
     }
   ]
 }
