@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  offersMetaAvailable,
+  setOffersMetaConsent,
+} from "@/lib/offers-meta-pixel";
 import { loadVitaleGtm, prepareVitaleGtm } from "@/lib/gtm-script";
 import {
   isOffersGroupLanding,
@@ -6,7 +10,8 @@ import {
   setOffersGroupAdsEventConsent,
 } from "@/lib/offers-group-landing";
 
-const STORAGE_KEY = "vitale_offers_google_ads_session_v2";
+const GOOGLE_STORAGE_KEY = "vitale_offers_google_ads_session_v2";
+const JOINT_STORAGE_KEY = "vitale_offers_ads_session_v3";
 type Choice = "granted" | "denied";
 
 function onProductionLanding() {
@@ -25,9 +30,9 @@ function privacySignalEnabled() {
   );
 }
 
-function restoreChoice(): Choice | null {
+function restoreChoice(key: string): Choice | null {
   try {
-    const saved = window.sessionStorage.getItem(STORAGE_KEY);
+    const saved = window.sessionStorage.getItem(key);
     return saved === "granted" || saved === "denied" ? saved : null;
   } catch {
     return null;
@@ -65,24 +70,38 @@ function updateGoogleConsent(granted: boolean) {
 export function OffersAdsConsent() {
   const [choice, setChoice] = useState<Choice | null>(null);
   const [ready, setReady] = useState(false);
+  const [includesMeta, setIncludesMeta] = useState(false);
   useEffect(() => {
     if (!onProductionLanding()) return;
-    const saved = restoreChoice();
+    const meta = offersMetaAvailable();
+    setIncludesMeta(meta);
+    const saved = restoreChoice(meta ? JOINT_STORAGE_KEY : GOOGLE_STORAGE_KEY);
     const blocked = privacySignalEnabled();
-    if (saved === "granted" && !blocked) updateGoogleConsent(true);
+    if (saved === "granted" && !blocked) {
+      updateGoogleConsent(true);
+      if (meta) setOffersMetaConsent(true);
+    }
     setChoice(blocked ? "denied" : saved);
     setReady(!blocked);
-    return () => updateGoogleConsent(false);
+    return () => {
+      updateGoogleConsent(false);
+      setOffersMetaConsent(false);
+    };
   }, []);
 
   function save(next: Choice) {
     if (!onProductionLanding() || privacySignalEnabled()) return;
     try {
-      window.sessionStorage.setItem(STORAGE_KEY, next);
+      window.sessionStorage.setItem(
+        includesMeta ? JOINT_STORAGE_KEY : GOOGLE_STORAGE_KEY,
+        next,
+      );
+      if (includesMeta) window.sessionStorage.removeItem(GOOGLE_STORAGE_KEY);
     } catch {
       // The visitor can still choose for this page when storage is unavailable.
     }
     updateGoogleConsent(next === "granted");
+    setOffersMetaConsent(includesMeta && next === "granted");
     setChoice(next);
   }
 
@@ -94,8 +113,11 @@ export function OffersAdsConsent() {
         Medição de anúncios
       </summary>
       <p>
-        Com sua permissão, o Google Ads pode associar a abertura do convite a um
-        anúncio. Sua escolha vale nesta aba.{" "}
+        Com sua permissão,{" "}
+        {includesMeta
+          ? "Google Ads e Meta (Facebook e Instagram) podem"
+          : "o Google Ads pode"}{" "}
+        associar a abertura do convite a um anúncio. Sua escolha vale nesta aba.{" "}
         <a
           href="/privacidade#medicao-google-ofertas"
           className="underline underline-offset-2"

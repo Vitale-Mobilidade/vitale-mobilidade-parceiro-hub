@@ -38,7 +38,7 @@ function PrivacyPage() {
           <section id="medicao-google-ofertas">
             <h2 className="text-xl font-bold">Medição do grupo de ofertas</h2>
             <p>Contamos visitas e cliques em totais por dia, origem da campanha e, para as ofertas, modelo e posição na página. Os totais ficam no painel de administradores.</p>
-            <p className="mt-3">Se você permitir a medição de anúncios na página do grupo, o Google Ads poderá associar a abertura do convite a um anúncio. Você pode recusar ou retirar sua permissão na mesma página. Sua escolha vale nesta aba e o convite funciona com qualquer escolha.</p>
+            <p className="mt-3">Se você permitir a medição de anúncios na página do grupo, Google Ads e Meta (Facebook e Instagram) podem associar a abertura do convite a um anúncio, conforme a escolha exibida na página. Você pode recusar ou retirar sua permissão na mesma página. Sua escolha vale nesta aba e o convite funciona com qualquer escolha.</p>
           </section>
           {newsletterReferralsEnabled && <section>
             <h2 className="text-xl font-bold">Convites para a comunidade</h2>
