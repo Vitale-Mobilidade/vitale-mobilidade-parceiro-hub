@@ -21,6 +21,7 @@ type AnalyticsWindow = Window & {
   gtag?: (...args: unknown[]) => void;
   "ga-disable-G-LXMH4RWQHV"?: boolean;
   __vitaleGa4OptOut?: boolean;
+  __vitaleGtmStarted?: boolean;
   __vitaleGa4?: { lastPath: string | null; previousUrl: string };
 };
 
@@ -67,6 +68,43 @@ export function setGoogleAnalyticsDisabled(disabled: boolean): void {
   }
   // Unload any already-running Google code after a preference change.
   if (persisted) window.location.reload();
+}
+
+export function prepareVitaleGtm() {
+  const w = window as AnalyticsWindow;
+  if (w.gtag && w.__vitaleGtmStarted) return w.gtag;
+
+  const layer = (w.dataLayer ??= []);
+  const gtag =
+    (w.gtag ??= function () {
+      // eslint-disable-next-line prefer-rest-params
+      layer.push(arguments);
+    });
+  const analyticsDisabled = googleAnalyticsDisabled();
+  w["ga-disable-G-LXMH4RWQHV"] = analyticsDisabled;
+  gtag("consent", "default", {
+    analytics_storage: analyticsDisabled ? "denied" : "granted",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+    personalization_storage: "denied",
+    functionality_storage: "granted",
+    security_storage: "granted",
+  });
+  gtag("set", "ads_data_redaction", true);
+  return gtag;
+}
+
+export function loadVitaleGtm() {
+  const w = window as AnalyticsWindow;
+  if (w.__vitaleGtmStarted) return;
+  const layer = (w.dataLayer ??= []);
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
+  layer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+  document.head.appendChild(script);
+  w.__vitaleGtmStarted = true;
 }
 
 function referrerOrigin(value: string): string {
@@ -121,39 +159,14 @@ export function trackGooglePageView(href: string): void {
       }
     }
 
-    const layer = (w.dataLayer = w.dataLayer || []);
-    w.gtag =
-      w.gtag ||
-      function () {
-        // Match Google's documented gtag command queue representation.
-        // eslint-disable-next-line prefer-rest-params
-        layer.push(arguments);
-      };
+    const gtag = prepareVitaleGtm();
+    gtag("set", settings);
     if (!w.__vitaleGa4) {
-      w.gtag("consent", "default", {
-        analytics_storage: "granted",
-        ad_storage: "denied",
-        ad_user_data: "denied",
-        ad_personalization: "denied",
-        personalization_storage: "denied",
-        functionality_storage: "granted",
-        security_storage: "granted",
-      });
-      w.gtag("set", "ads_data_redaction", true);
-    }
-    w.gtag("set", settings);
-    if (!w.__vitaleGa4) {
-      // Register the destination before the first event, even while GTM loads.
-      // Both this config and the GTM base inherit send_page_view=false.
-      w.gtag("config", GA4_ID, settings);
-      const script = document.createElement("script");
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
-      layer.push({ "gtm.start": Date.now(), event: "gtm.js" });
-      document.head.appendChild(script);
+      gtag("config", GA4_ID, settings);
+      loadVitaleGtm();
       w.__vitaleGa4 = { lastPath: null, previousUrl: referrer };
     }
-    w.gtag("event", "page_view", {
+    gtag("event", "page_view", {
       send_to: GA4_ID,
       page_location: pageLocation,
       page_referrer: referrer,
