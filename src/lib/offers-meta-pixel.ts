@@ -65,6 +65,8 @@ export function setOffersMetaConsent(granted: boolean) {
     queue("set", "autoConfig", false, PIXEL_ID);
     queue("optOut", PIXEL_ID, "AutomaticMatching");
     queue("optOut", PIXEL_ID, "ESTRuleEngine");
+    queue("skipOpenbridge", PIXEL_ID);
+    queue("optOut", PIXEL_ID, "AutomaticMatchingForPartnerIntegrations");
     queue("init", PIXEL_ID);
     const sdk = document.createElement("script");
     sdk.async = true;
