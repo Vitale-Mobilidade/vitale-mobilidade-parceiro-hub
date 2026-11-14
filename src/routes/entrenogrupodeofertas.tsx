@@ -80,17 +80,11 @@ function GroupLink() {
   );
 }
 
-// Public Radar snapshot of the full historical range, checked on 13/11/2026.
 const bikes = [
-  { name: "V9 Max", image: v9Max, high: 7890, low: 5888 },
-  { name: "GT2000", image: gt2000, high: 10087, low: 9375 },
-  { name: "FT03", image: ft03, high: 8399, low: 5609 },
-  {
-    name: "V20 Ultra",
-    image: v20Ultra,
-    high: 7799,
-    low: 7019,
-  },
+  { name: "V9 Max", image: v9Max, badge: "25% mais barato" },
+  { name: "GT2000", image: gt2000, badge: "11% mais barato" },
+  { name: "FT03", image: ft03, badge: "33% mais barato" },
+  { name: "V20 Ultra", image: v20Ultra, badge: "14% mais barato" },
 ];
 
 function OffersCarousel() {
@@ -181,8 +175,7 @@ function OffersCarousel() {
                   className="h-full w-full object-contain p-2"
                 />
                 <span className="absolute top-2 left-2 rounded-lg bg-mint px-2.5 py-1.5 text-sm font-bold text-ink">
-                  {Math.floor(((bike.high - bike.low) / bike.high) * 100)}% mais
-                  barato no histórico
+                  {bike.badge}
                 </span>
               </a>
               <h2 className="px-2 pt-3 text-lg font-bold">{bike.name}</h2>
