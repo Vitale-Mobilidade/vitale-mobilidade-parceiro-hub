@@ -1,7 +1,7 @@
 # Ajuste estrito da Home e navegação
 
 # Authorized native Instagram cover correction — 15 November
-- [ ] Apply exact six-file patch, targeted tests, Deno check, commit and official editorial-admin-only deploy; preserve auth and all reservations.
+- [x] Exact six-file patch matches supplied blob IDs; 20 targeted tests, Deno check and automatic build passed. Code commit 06d1a84; official editorial-admin-only deploy confirmed 15:10 UTC, source SHA-256 6cf71ca2a363021591ef54f0bfb0bf21f11504d45fc5832ad297f9d4930ebaf7; auth/config and all three reservations unchanged.
 - [ ] Privately inspect and render three exact reserved originals, immutable Storage upload/readback and caption-bound fingerprints; blocked until a real authorized private Storage session is available. No CAS, sending, AI or frontend publication.
 
 # Growth official reconciliation — 14 November 05:26 UTC
