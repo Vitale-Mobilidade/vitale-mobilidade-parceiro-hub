@@ -105,14 +105,30 @@ export const COVER_PROMPT = [
   COVER_REFERENCE_PROMPT,
   "Create a NEW, original editorial background image in 16:9 landscape format for an electric-bike article.",
   COVER_NO_TEXT,
-  "Keep the lower third calm and slightly darker so a title can be overlaid later. Realistic, natural light, clean composition.",
+  "Place the complete bike above the title area with comfortable margins. If a person appears, leave their head in the frame. Keep the lower third calm and slightly darker so a title can be overlaid later. Realistic, natural light, clean composition.",
 ].join(" ");
 
-export const SHARED_PORTRAIT_COVER_PROMPT = [
+export const INSTAGRAM_POST_COVER_PROMPT = [
   COVER_REFERENCE_PROMPT,
   COVER_NO_TEXT,
   "Create a native 4:5 portrait editorial photograph from the start. A single continuous scene must fill the entire frame from edge to edge, with natural perspective, lighting and ground from top to bottom.",
   "Never place a smaller landscape photo inside the portrait. No blurred bars, smeared or duplicated margins, mirrored fill, collage, borders or empty panels. Keep the ground and surroundings visible under the future headline.",
-  "Make the complete bicycle the large central subject. Show both wheels, frame and handlebars, with breathing room on all sides. Compose around the middle: keep all essential parts within the middle 44% of the image height so the central 16:9 article crop can still show the whole bike. Keep the subject inside the middle 88% of the image width so it remains visible in the Instagram profile grid.",
+  "Make the complete bicycle the large central subject. Show both wheels, frame and handlebars, with breathing room on all sides. Place the entire bike above the headline area in the lower quarter, with comfortable margins. Keep the subject inside the middle 88% of the image width so it remains visible in the Instagram profile grid.",
   "Leave calm photographic space near the upper left for the brand badge and across the bottom quarter for the later white headline overlay. Do not draw either; the renderer adds them over the photo.",
 ].join(" ");
+
+
+export const PODCAST_COVER_PROMPT = [
+  COVER_REFERENCE_PROMPT,
+  COVER_NO_TEXT,
+  "Compose one continuous native square 1:1 photo for a podcast episode. Use a clear, centered subject with enough space around every edge; keep the whole bike and any person in frame.",
+  "Keep the lower third calm for an exact title overlay and the upper left clear for the brand. Do not draw lettering, a badge, a frame or a composite. The image must read clearly as a small square thumbnail.",
+].join(" ");
+
+export function readGeneratedCoverBackground(background: unknown) {
+  const match = typeof background === "string" &&
+    /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(background);
+  if (!match || match[2].length > 12_000_000) throw new Error("cover_background_invalid");
+  const mime = match[1] === "jpeg" ? "image/jpeg" as const : "image/png" as const;
+  return { mime, bytes: Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0)) };
+}

@@ -98,29 +98,6 @@ export function InstagramWorkspace() {
       refresh();
     },
   });
-  const enqueue = useMutation({
-    mutationFn: () =>
-      adminCall<{ status: string; dueAt?: string }>(
-        "instagram-single-queue-next",
-      ),
-    onSuccess: (result) => {
-      const issues: Record<string, string> = {
-        queue_full: "As três próximas janelas já estão reservadas.",
-        source_requires_review: "A próxima fonte precisa de revisão editorial.",
-        no_source: "Não há outro vídeo elegível e inédito.",
-        awaiting_review: "A primeira publicação ainda não foi aprovada.",
-      };
-      setFeedback(
-        result.dueAt
-          ? "Post agendado para " +
-              formatPodcastDateTime(result.dueAt) +
-              " — São Paulo."
-          : (issues[result.status] ??
-              "Atualize a fila para conferir o estado."),
-      );
-      refresh();
-    },
-  });
   const connection = useMutation({
     mutationFn: () =>
       adminCall<{ status: string }>("podcast-instagram-connection"),
@@ -138,7 +115,7 @@ export function InstagramWorkspace() {
   }));
   const total = config?.total ?? 0;
   const item = items.find((x) => x.id === selected) ?? items[0];
-  const error = prepare.error ?? approve.error ?? enqueue.error;
+  const error = prepare.error ?? approve.error;
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -242,26 +219,20 @@ export function InstagramWorkspace() {
             <h2 className="font-semibold">Vídeo elegível mais recente</h2>
             <p className="text-sm">{config.source.article_title}</p>
           </div>
-          {config.automationEnabled && !config.firstApprovalPending ? (
-            <Button
-              disabled={
-                enqueue.isPending ||
+          <Button
+            disabled={
+              prepare.isPending ||
+              (config.counts.review ?? 0) +
                 (config.counts.scheduled ?? 0) +
-                  (config.counts.publishing ?? 0) >=
-                  3
-              }
-              onClick={() => enqueue.mutate()}
-            >
-              {enqueue.isPending ? "Preparando…" : "Colocar na fila"}
-            </Button>
-          ) : (
-            <Button
-              disabled={prepare.isPending || (config.counts.review ?? 0) > 0}
-              onClick={() => prepare.mutate(config.source!.video_id)}
-            >
-              {prepare.isPending ? "Preparando…" : "Preparar rascunho"}
-            </Button>
-          )}
+                (config.counts.publishing ?? 0) >=
+                3
+            }
+            onClick={() => prepare.mutate(config.source!.video_id)}
+          >
+            {prepare.isPending
+              ? "Gerando capa no Lovable…"
+              : "Gerar capa e preparar rascunho"}
+          </Button>
         </section>
       )}
       <div className="flex flex-wrap gap-3">

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import * as contract from "../../supabase/functions/_shared/editorial-contract";
 import * as foundation from "../../supabase/functions/_shared/editorial-foundation";
 import * as automation from "../../supabase/functions/_shared/editorial-automation";
+import * as coverPayload from "../../supabase/functions/_shared/editorial-cover-payload";
 import * as cover from "../../supabase/functions/_shared/editorial-cover";
 import * as backlog from "../../supabase/functions/_shared/youtube-backlog";
 import * as videoCatalog from "../../supabase/functions/_shared/video-catalog";
@@ -65,6 +66,14 @@ runInNewContext(code, {
         createClient: vi.fn(() => requestDatabase),
       },
       "./podcast-audio.ts": { handlePodcastAudio: vi.fn() },
+      "./podcast-instagram.ts": {},
+      "./podcast-dashboard.ts": {},
+      "./podcast-alert.ts": {},
+      "./podcast-worker.ts": {},
+      "./podcast-media.ts": {},
+      "./podcast-queue.ts": {},
+      "./podcast-workdrive.ts": {},
+      "./instagram-internal.ts": {},
       "../_shared/growth-range.ts": growthRangeModule,
       "../_shared/editorial-alert.ts": { EDITORIAL_ALERT_RECIPIENT: "guilherme@hotpipe.com.br", sendEditorialAlert: offlineAlert },
       "../_shared/site-analytics.ts": siteAnalytics,
@@ -74,6 +83,7 @@ runInNewContext(code, {
       "../_shared/editorial-foundation.ts": foundation,
       "../_shared/editorial-automation.ts": automation,
       "../_shared/editorial-cover.ts": cover,
+      "../_shared/editorial-cover-payload.ts": coverPayload,
       "../_shared/editorial-create-input.ts": input,
       "../_shared/heatmap-elements.ts": heatmapElements,
       "../_shared/heatmap.ts": heatmap,
@@ -1029,7 +1039,8 @@ it("persists the paid background and original captions before composition, leavi
   try {
     const response = await exports.finishQueuedCover!(new Request("http://localhost"), db, { id: "actor" }, { article_id: "draft", video_id: article.video_id });
     expect(await response.json()).toMatchObject({ status: "cover_render_pending", stage: "cover_background" });
-    expect(generate).toHaveBeenCalledTimes(1); expect(upload).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledExactlyOnceWith(expect.any(Request), db, { id: "actor" }, article, "article");
+    expect(upload).toHaveBeenCalledTimes(1);
     expect(apply).not.toHaveBeenCalled(); expect(offlineCompose.mock.calls.length).toBe(before);
     expect(writes[0].capture).toMatchObject(capture);
     expect(writes[0]).toMatchObject({ state: "cover_render_pending" });

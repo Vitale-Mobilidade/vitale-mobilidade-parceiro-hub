@@ -127,13 +127,12 @@ import {
   youtubeThumbnailUrl,
   type BikeCandidate,
 } from "../_shared/editorial-automation.ts";
-import { COVER_MODEL, coverPayload, catalogCoverParts, validatedCoverReference } from "../_shared/editorial-cover-payload.ts";
+import { COVER_MODEL, coverPayload, catalogCoverParts, validatedCoverReference, type CoverPurpose } from "../_shared/editorial-cover-payload.ts";
 import { SHEET_NAME_ALIASES } from "../_shared/bike-sheet.ts";
 import {
   COVER_BUCKET,
   COVER_HEIGHT,
   COVER_MAX_BYTES,
-  COVER_PROMPT,
   COVER_WIDTH,
   articleReferencesCover,
   coverObjectPath,
@@ -141,6 +140,7 @@ import {
   decodeBase64Jpeg,
   inspectJpeg,
   isAllowedCoverThumbnail,
+  readGeneratedCoverBackground,
 } from "../_shared/editorial-cover.ts";
 
 import { buildStrictVideoCatalog, VIDEO_SHEET_CSV_URL } from "../_shared/video-catalog.ts";
@@ -2023,7 +2023,7 @@ async function coverGenerate(
   db: SupabaseClient,
   actor: Actor,
   article: EditorialArticle,
-  sharedPortrait = false,
+  purpose: Exclude<CoverPurpose, "carousel-environment"> = "article",
 ): Promise<Response> {
   if (!AI_KEY) return json(req, { error: "IA de imagem não configurada no servidor." }, 503);
   const thumb = await coverReference(db, article);
@@ -2096,7 +2096,7 @@ async function coverGenerate(
           Authorization: `Bearer ${AI_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(coverPayload(str(article.title, 200), str(article.summary, 1500), thumbBytes, bikeReferences, sharedPortrait ? "shared-portrait" : false)),
+        body: JSON.stringify(coverPayload(str(article.title, 200), str(article.summary, 1500), thumbBytes, bikeReferences, purpose)),
       },
       COVER_TIMEOUT_MS,
     );
@@ -2158,6 +2158,7 @@ async function coverGenerate(
   await log(db, actor, "cover_generated", "article", article.id, {
     model: COVER_MODEL,
     reference: thumbBytes ? thumb : null,
+    purpose,
     referenceMode: thumbBytes ? "youtube_and_catalog" : bikeIds.length ? "catalog_only" : "editorial_subject",
     revision: article.revision,
   });
@@ -2252,7 +2253,7 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
     const article = await articleById(db, lease.article_id);
     if (!article || article.video_id !== lease.video_id || article.status !== "draft" || !article.blocks?.length)
       throw new Error("cover_queue_article_invalid");
-    const result = await coverGenerate(req, db, actor, article, true);
+    const result = await coverGenerate(req, db, actor, article, "article");
     if (!result.ok) throw new Error(result.status === 402 ? "ai_http_402" : "automatic_cover_generation_failed");
     const payload = await result.json();
     const match = typeof payload.background === "string" ? /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(payload.background) : null;
@@ -2657,7 +2658,7 @@ Deno.serve(async (req) => {
         const { INSTAGRAM_CAPTION_END } = await import("../_shared/instagram-single-caption.ts");
         const result = await changeInstagramSingle(
           db, mode, body,
-          (article) => coverGenerate(req, db, actor, article, true),
+          (article) => coverGenerate(req, db, actor, article, "instagram"),
           (title, groundedCaption) => aiStructured(
             "Reescreva uma legenda editorial da Vitale Mobilidade em português brasileiro, com a voz direta de quem conhece a bike. Use exclusivamente os fatos da legenda de referência. Mantenha nomes, números, ressalvas e a distinção entre ficha técnica e observação. Sem preço vigente, links, Markdown, hashtags ou chamadas no fim. Retorne apenas o corpo, em parágrafos curtos. O sistema acrescenta o rodapé.",
             JSON.stringify({ title, reference: groundedCaption.replace(INSTAGRAM_CAPTION_END, "").trim() }),
@@ -2677,7 +2678,7 @@ Deno.serve(async (req) => {
           return json(req, { error: "O post mudou ou o envio está próximo. Atualize a lista antes de editar." }, 409);
         if (code === "instagram_caption_invalid")
           return json(req, { error: "A legenda precisa ter de 1 a 2.200 caracteres." }, 422);
-        if (code === "instagram_framing_review_required")
+        if (code === "instagram_cover_ratio_invalid")
           return json(req, { error: "A IA devolveu uma foto fora do formato 4:5. Gere outra capa." }, 422);
         return json(req, { error: "Não foi possível concluir esta alteração. Confira e tente novamente." }, 422);
       }
@@ -2687,7 +2688,7 @@ Deno.serve(async (req) => {
       try {
         const single = await import("./instagram-single.ts");
         const result = action === "instagram-single-list" ? await single.readInstagramSingle(db, body)
-          : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId)
+          : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId, (article) => coverGenerate(req, db, actor, article, "instagram"))
           : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db)
           : await single.approveInstagramSingle(db, body.id, body.fingerprint);
         const response = json(req, result);
@@ -2696,12 +2697,14 @@ Deno.serve(async (req) => {
         return response;
       } catch (error) {
         const code = error instanceof Error ? error.message : "";
-        return json(req, {error:["instagram_framing_review_required", "single_image_scene_expansion_required",
-          "single_image_framing_evidence_required", "single_image_framing_invalid"].includes(code)
-          ? "A capa original precisa de uma foto vertical ou de um recorte verificado que preserve a bike inteira."
-          : code === "instagram_review_changed_or_slot_busy"
-            ? "A revisão mudou ou já há um post reservado. Atualize a lista e confira a fila."
-            : "Não foi possível concluir a operação do Instagram."}, 409);
+        if (code === "instagram_ai_credits")
+          return json(req, { error: "Os créditos de IA do Lovable acabaram." }, 402);
+        const messages: Record<string, string> = {
+          instagram_cover_ratio_invalid: "A IA devolveu uma foto fora do formato 4:5. Gere a capa novamente.",
+          instagram_queue_full: "As três posições da fila estão ocupadas.",
+          instagram_review_changed_or_slot_busy: "A revisão mudou ou já há um post reservado. Atualize a lista e confira a fila.",
+        };
+        return json(req, { error: messages[code] ?? "Não foi possível concluir a operação do Instagram." }, 409);
       }
     }
     if (action === "instagram-mobylette-pilot") {
@@ -3163,6 +3166,42 @@ Deno.serve(async (req) => {
     if (action === "generate" || action === "generate-from-sheet") {
       if (!canContent(actor)) return json(req, { error: "Sem permissão editorial." }, 403);
       return generateStream(req, db, actor, body);
+    }
+    if (action === "podcast-cover-generate" || action === "podcast-cover-apply") {
+      if (actor.role !== "admin" || !uuid(body.id) || !Number.isInteger(body.revision))
+        return json(req, { error: "Acesso restrito a administradores." }, 403);
+      const article = await articleById(db, body.id);
+      if (!article || article.status !== "published" || article.revision !== body.revision)
+        return json(req, { error: "O artigo foi alterado. Atualize a página e tente novamente." }, 409);
+      const { independentPodcastCoverPath } = await import("../_shared/podcast-artwork-contract.ts");
+      const path = independentPodcastCoverPath(article.id);
+      if (!path) return json(req, { error: "Artigo inválido." }, 400);
+      if (action === "podcast-cover-generate") {
+        const response = await coverGenerate(req, db, actor, article, "podcast");
+        if (!response.ok) return response;
+        try {
+          const { background } = await response.json();
+          const { composeNativeCover } = await import("../_shared/cover-renderer/index.ts");
+          const { bytes } = await composeNativeCover(
+            readGeneratedCoverBackground(background), article.title.normalize("NFC"), "podcast",
+          );
+          const generated = json(req, { image: `data:image/jpeg;base64,${toBase64(bytes)}` });
+          generated.headers.set("Cache-Control", "private, no-store");
+          return generated;
+        } catch {
+          return json(req, { error: "A IA não devolveu uma capa quadrada válida. Gere outra prévia." }, 422);
+        }
+      }
+      const bytes = decodeBase64Jpeg(body.image, COVER_MAX_BYTES);
+      const dimensions = bytes && inspectJpeg(bytes);
+      if (!bytes || dimensions?.width !== 1400 || dimensions.height !== 1400)
+        return json(req, { error: "A capa precisa ser um JPEG quadrado de 1400 × 1400." }, 422);
+      const uploaded = await db.storage.from(COVER_BUCKET).upload(path, bytes, {
+        contentType: "image/jpeg", cacheControl: "300", upsert: true,
+      });
+      if (uploaded.error) throw new Error("podcast_cover_save_failed");
+      await log(db, actor, "podcast_cover_applied", "article", article.id, { path });
+      return json(req, { ok: true });
     }
     if (action === "cover-preview") {
       // actorFor already verified the session and active editorial membership, as for article-get.

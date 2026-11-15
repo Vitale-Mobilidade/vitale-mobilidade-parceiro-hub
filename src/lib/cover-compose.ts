@@ -3,6 +3,7 @@ export const COVER_W = 1280;
 export const COVER_H = 720;
 export const COVER_MAX_BYTES = 4 * 1024 * 1024;
 
+import { isNativeCoverRatio } from "../../supabase/functions/_shared/cover-framing.ts";
 import { fitTitle } from "../../supabase/functions/_shared/cover-title.ts";
 export { fitTitle, wrapTitle } from "../../supabase/functions/_shared/cover-title.ts";
 
@@ -24,10 +25,9 @@ export async function composeCover(background: string, title: string): Promise<{
   canvas.width = COVER_W; canvas.height = COVER_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas indisponível neste navegador.");
-  // Cover-fit crop of the AI background.
-  const scale = Math.max(COVER_W / img.naturalWidth, COVER_H / img.naturalHeight);
-  const w = img.naturalWidth * scale; const h = img.naturalHeight * scale;
-  ctx.drawImage(img, (COVER_W - w) / 2, (COVER_H - h) / 2, w, h);
+  if (!isNativeCoverRatio(img.naturalWidth, img.naturalHeight, "article"))
+    throw new Error("A imagem gerada não está em 16:9. Gere outra capa para preservar o enquadramento.");
+  ctx.drawImage(img, 0, 0, COVER_W, COVER_H);
   // Legibility gradient (canvas pixels, not UI tokens).
   const grad = ctx.createLinearGradient(0, COVER_H * 0.35, 0, COVER_H);
   grad.addColorStop(0, "rgba(6, 24, 18, 0)");

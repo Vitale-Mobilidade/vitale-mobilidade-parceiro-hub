@@ -6,6 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PainelBikes from "@/pages/PainelBikes";
 import { EditorActionMenu } from "@/components/admin/EditorActionMenu";
+import { PodcastCoverEditor } from "@/components/admin/PodcastCoverEditor";
 import { VideoRelatedArticle } from "@/components/admin/VideoRelatedArticle";
 import { VideoPodcastAudio } from "@/components/admin/VideoPodcastAudio";
 import { VideoInstagramAction } from "@/components/admin/VideoInstagramAction";
@@ -1554,7 +1555,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
           {(articleReady(article, brief) || status === "published") && (
             <EditorActionMenu
               id="article-cover-menu"
-              label="Capa"
+              label="Capa do artigo"
               open={openMenu === "cover"}
               onOpenChange={(open) => setOpenMenu(open ? "cover" : null)}
               disabled={Boolean(busy)}
@@ -1580,7 +1581,7 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
                   download={`${article.slug}-capa-quadrada.jpg`}
                   onClick={() => setOpenMenu(null)}
                 >
-                  Baixar capa quadrada para podcast e Instagram
+                  Baixar capa quadrada do podcast
                 </a>
               )}
               {draft && (
@@ -1592,6 +1593,9 @@ function ArticleAdmin({ id, role }: { id: string; role: AdminRole }) {
                 Gerar com IA usa créditos. Adicionar imagem não usa IA.
               </p>
             </EditorActionMenu>
+          )}
+          {role === "admin" && status === "published" && !draft && (
+            <PodcastCoverEditor id={article.id} revision={article.revision} title={article.title} />
           )}
           <EditorActionMenu
             id="article-more-menu"

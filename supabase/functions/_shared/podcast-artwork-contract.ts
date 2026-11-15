@@ -8,6 +8,10 @@ export function preparedPodcastCoverPath(articleId: string, version: string) {
     ? `${articleId}/podcast-covers/v3-${version}.jpg` : null;
 }
 
+export function independentPodcastCoverPath(articleId: string) {
+  return isCoverUuid(articleId) ? `${articleId}/podcast-covers/independent.jpg` : null;
+}
+
 export function podcastArticleCoverSource(value: string | null): URL | null {
   if (!value) return null;
   try {
@@ -26,7 +30,7 @@ export function podcastArticleCoverSource(value: string | null): URL | null {
 
 export function podcastCoverPath(article: { slug: string | null; og_image_url: string | null; updated_at: string }, download = false) {
   if (!article.slug || article.slug.length > 120 || !podcastArticleSlug.test(article.slug)
-    || !podcastArticleCoverSource(article.og_image_url)) return null;
+   ) return null;
   const version = Date.parse(article.updated_at);
   const path = `/podcast/capas/${article.slug}.v3.jpg`;
   const params = new URLSearchParams({ layout: "3" });

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { articleReferencesCover, coverObjectPath, COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
-import { podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
+import { independentPodcastCoverPath, podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
 
 export async function servePodcastCover(req: Request, params: URLSearchParams, db: SupabaseClient) {
   const portrait = params.get("layout") === "4";
@@ -15,20 +15,49 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
 
   const headers = new Headers({
     "Content-Type": "image/jpeg",
-    "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    "Cache-Control": portrait ? "public, max-age=3600, s-maxage=86400" : "public, max-age=300, s-maxage=300",
     "X-Content-Type-Options": "nosniff",
   });
   if (params.get("download") === "1") headers.set("Content-Disposition", `attachment; filename="${slug}-capa-quadrada.jpg"`);
   if (req.method === "HEAD") return new Response(null, { headers });
   try {
-    const preparedPath = portrait ? preparedPodcastInstagramPath(article.id, params.get("v") ?? "") : params.get("layout") === "3"
-      ? preparedPodcastCoverPath(article.id, params.get("v") ?? "") : null;
-    if (preparedPath) {
-      const { data: prepared } = await db.storage.from(COVER_BUCKET).download(preparedPath);
-      if (prepared && prepared.size <= 8 * 1024 * 1024) {
-        headers.set("Content-Length", String(prepared.size));
-        return new Response(prepared, { headers });
+    const bucket = db.storage.from(COVER_BUCKET);
+    async function stored(path: string | null) {
+      if (!path) return null;
+      const { data } = await bucket.download(path);
+      return data && data.size <= 8 * 1024 * 1024 ? data : null;
+    }
+    if (!portrait) {
+      const independent = await stored(independentPodcastCoverPath(article.id));
+      if (independent) {
+        headers.set("Content-Length", String(independent.size));
+        return new Response(independent, { headers });
       }
+      const byVersion = params.get("layout") === "3"
+        ? preparedPodcastCoverPath(article.id, params.get("v") ?? "") : null;
+      let legacy = await stored(byVersion);
+      if (!legacy && article.video_id) {
+        const { data, error: queueError } = await db.from("podcast_episode_queue")
+          .select("prepared_cover_path").eq("youtube_id", article.video_id).maybeSingle();
+        if (queueError) return new Response(null, { status: 503 });
+        const saved = data?.prepared_cover_path;
+        const version = typeof saved === "string" ? /\/v3-(\d{1,14})\.jpg$/.exec(saved)?.[1] : undefined;
+        if (version && saved !== byVersion && preparedPodcastCoverPath(article.id, version) === saved)
+          legacy = await stored(saved);
+      }
+      if (legacy) {
+        headers.set("Content-Length", String(legacy.size));
+        return new Response(legacy, { headers });
+      }
+      const { composeSquarePodcastCover } = await import("../_shared/cover-renderer/index.ts");
+      const { bytes } = await composeSquarePodcastCover(null, article.title.normalize("NFC"));
+      headers.set("Content-Length", String(bytes.byteLength));
+      return new Response(Uint8Array.from(bytes), { headers });
+    }
+    const legacyInstagram = await stored(preparedPodcastInstagramPath(article.id, params.get("v") ?? ""));
+    if (legacyInstagram) {
+      headers.set("Content-Length", String(legacyInstagram.size));
+      return new Response(legacyInstagram, { headers });
     }
     let background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" } | null = null;
     if (article.video_id) {
@@ -48,11 +77,10 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
           const { data: file, error: fileError } = await db.storage.from(COVER_BUCKET).download(path);
           if (file && !fileError && file.size <= 12 * 1024 * 1024)
             background = { bytes: new Uint8Array(await file.arrayBuffer()), mime };
-          else if (!portrait) return new Response(null, { status: 503 });
         }
       }
     }
-    if (portrait && !background) {
+    if (!background) {
       // Never fetch arbitrary URLs: exact published cover identity, same origin, private Storage only.
       let fileId: string | null = null;
       try { fileId = new URL(article.og_image_url).searchParams.get("file"); } catch { /* fail closed */ }
@@ -66,10 +94,8 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
       headers.set("Content-Length", String(bytes.byteLength));
       return new Response(Uint8Array.from(bytes), { headers });
     }
-    const { composeSquarePodcastCover, composeInstagramPostCover } = await import("../_shared/cover-renderer/index.ts");
-    const { bytes } = portrait && background
-      ? await composeInstagramPostCover(background, article.title.normalize("NFC"))
-      : await composeSquarePodcastCover(background, article.title.normalize("NFC"));
+    const { composeInstagramPostCover } = await import("../_shared/cover-renderer/index.ts");
+    const { bytes } = await composeInstagramPostCover(background, article.title.normalize("NFC"));
     headers.set("Content-Length", String(bytes.byteLength));
     return new Response(Uint8Array.from(bytes), { headers });
   } catch {

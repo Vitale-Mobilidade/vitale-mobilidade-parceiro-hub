@@ -3,7 +3,7 @@ import * as jpeg from "./vendor/jpeg.js";
 import * as png from "./vendor/png.js";
 import { Font, Layout } from "./vendor/font.js";
 import { fitTitle } from "../cover-title.ts";
-import { fullBleedFrame, SINGLE_IMAGE_FORMATS, type FrameEvidence } from "../cover-framing.ts";
+import { fullBleedFrame, isNativeCoverRatio, SINGLE_IMAGE_FORMATS, type FrameEvidence, type NativeCoverFormat } from "../cover-framing.ts";
 import {
   inspectJpeg,
   COVER_MAX_BYTES,
@@ -159,7 +159,7 @@ export async function composeServerCover(background: string, title: string) {
   if (!match || match[2].length > Math.ceil(MAX_INPUT / 3) * 4)
     throw new Error("cover_background_invalid");
   const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
-  return composeCover(decode(bytes, match[1] === "png" ? "png" : "jpeg"), title, false);
+  return composeNativeCover({ bytes, mime: match[1] === "png" ? "image/png" : "image/jpeg" }, title, "article");
 }
 
 export async function composeSquarePodcastCover(
@@ -279,16 +279,22 @@ export async function containPublishedInstagramCover(bytes: Uint8Array) {
   return { bytes: encoded };
 }
 
-/** A native 4:5 photograph can fill the canvas without dropping any part of the scene. */
-export async function composeNativeInstagramCover(
+export async function composeNativeCover(
+  background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" },
+  title: string,
+  format: NativeCoverFormat,
+) {
+  const source = decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg");
+  if (!isNativeCoverRatio(source.width, source.height, format))
+    throw new Error(`${format}_cover_ratio_invalid`);
+  const [width, height] = SINGLE_IMAGE_FORMATS[format];
+  return composeCover(source, title, format === "podcast", format === "instagram",
+    fitBackground(source, width, height, true));
+}
+
+export function composeNativeInstagramCover(
   background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" },
   title: string,
 ) {
-  const source = decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg");
-  const [W, H] = SINGLE_IMAGE_FORMATS.instagram;
-  // The provider rounds its 4:5 raster dimensions (for example, 928 × 1152).
-  // Normalize up to 1% on that axis, preserving every edge. Other ratios need crop evidence.
-  if (Math.abs((source.width * H) / (source.height * W) - 1) > 0.01)
-    throw new Error("instagram_framing_review_required");
-  return composeCover(source, title, false, true, fitBackground(source, W, H, true));
+  return composeNativeCover(background, title, "instagram");
 }

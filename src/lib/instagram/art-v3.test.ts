@@ -4,16 +4,19 @@ import {COVER_PROMPT} from '../../../supabase/functions/_shared/editorial-cover'
 import {gateway} from '../../../supabase/functions/_shared/instagram-gateway';
 import {validateScript} from './contract';
 import {previewScript,previewSource} from './art-v3.fixture';
-it('shared article payload preserves exact model, direction, input order and non-streaming default',()=>{
+it('article payload requests a native landscape with the existing model and product references',()=>{
  const thumb=new Uint8Array([1,2,3]),refs=catalogCoverParts('bike','Official',true,new Uint8Array([4,5,6]),'image/webp');
- expect(coverPayload('Title','Context',thumb,refs)).toEqual({model:'google/gemini-3.1-flash-image',modalities:['image','text'],messages:[{role:'user',content:[{type:'text',text:`${COVER_PROMPT}\n<untrusted_editorial_subject>{"title":"Title","summary":"Context"}</untrusted_editorial_subject>`},{type:'image_url',image_url:{url:'data:image/jpeg;base64,AQID'}},...refs]}]});
+ expect(coverPayload('Title','Context',thumb,refs)).toEqual({model:'google/gemini-3.1-flash-image',modalities:['image','text'],messages:[{role:'user',content:[{type:'text',text:`${COVER_PROMPT}\n<untrusted_editorial_subject>{"title":"Title","summary":"Context"}</untrusted_editorial_subject>`},{type:'image_url',image_url:{url:'data:image/jpeg;base64,AQID'}},...refs]}],image_config:{aspect_ratio:'16:9'}});
 });
-it('shared portrait requests native 4:5 with full bike geometry and no streaming',()=>{
- const payload=coverPayload('Title','Context',null,[], 'shared-portrait');
- expect(payload.image_config).toEqual({aspect_ratio:'4:5'});
- expect(payload).not.toHaveProperty('stream');
- expect(payload.messages[0].content[0].text).toContain('middle 44%');
- expect(payload.messages[0].content[0].text).toContain('both wheels, frame and handlebars');
+it('requests separate native cover formats and asks for the matching composition',()=>{
+ const instagram=coverPayload('Title','Context',null,[], 'instagram');
+ const podcast=coverPayload('Title','Context',null,[], 'podcast');
+ expect(instagram.image_config).toEqual({aspect_ratio:'4:5'});
+ expect(instagram).not.toHaveProperty('stream');
+ expect(instagram.messages[0].content[0].text).not.toContain('16:9');
+ expect(instagram.messages[0].content[0].text).toContain('both wheels, frame and handlebars');
+ expect(podcast.image_config).toEqual({aspect_ratio:'1:1'});
+ expect(podcast.messages[0].content[0].text).toContain('native square');
 });
 it('Instagram cover mock uses exact shared model, thumbnail and official catalog with portrait environment-only direction',async()=>{
  let payload:ReturnType<typeof coverPayload>|undefined;

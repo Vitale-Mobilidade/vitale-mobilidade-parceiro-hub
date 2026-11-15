@@ -4,23 +4,43 @@ import {
   COVER_MAX_BYTES,
   inspectJpeg,
   isCoverUuid,
+  readGeneratedCoverBackground,
 } from "../_shared/editorial-cover.ts";
-import { MOBYLETTE_PILOT } from "../_shared/mobylette-pilot.ts";
-import { INSTAGRAM_CAPTION_END, singleInstagramCaption } from "../_shared/instagram-single-caption.ts";
+import {
+  INSTAGRAM_CAPTION_END,
+  singleInstagramCaption,
+} from "../_shared/instagram-single-caption.ts";
 import type { EditorialArticle } from "../_shared/editorial-contract.ts";
 import {
   instagramPublisher,
   readInstagramSettings,
 } from "../_shared/podcast-instagram.ts";
-import type { FrameEvidence } from "../_shared/cover-framing.ts";
 import type { InstagramSingleDashboard } from "../_shared/instagram-single-contract.ts";
 
 type Source = NonNullable<InstagramSingleDashboard["source"]>;
 const pick =
   "id,title,caption,state,due_at,published_at,created_at,fingerprint,asset_path,permalink,error_code";
 const states = ["review", "scheduled", "publishing", "published", "attention"];
-const framePath =
-  /^[0-9a-f-]{36}\/backgrounds\/[0-9a-f-]{36}\.(?:png|jpg|jpeg)$/;
+type GenerateCover = (article: EditorialArticle) => Promise<Response>;
+
+async function generateInstagramArtwork(
+  article: EditorialArticle,
+  generate: GenerateCover,
+  title: string,
+) {
+  const response = await generate(article);
+  if (response.status === 402) throw Error("instagram_ai_credits");
+  if (!response.ok) throw Error("instagram_cover_generation_failed");
+  const { background } = await response.json();
+  const { composeNativeInstagramCover } =
+    await import("../_shared/cover-renderer/index.ts");
+  const { bytes } = await composeNativeInstagramCover(
+    readGeneratedCoverBackground(background),
+    title,
+  );
+  assertInstagramJpeg(bytes);
+  return bytes;
+}
 
 async function findSources(db: SupabaseClient, limit = 1): Promise<Source[]> {
   const [legacy, carousel, holds, existing] = await Promise.all([
@@ -194,7 +214,7 @@ export async function changeInstagramSingle(
   db: SupabaseClient,
   action: "caption" | "cover" | "save",
   body: Record<string, unknown>,
-  generateCover: (article: EditorialArticle) => Promise<Response>,
+  generateCover: GenerateCover,
   generateCaption: (title: string, groundedCaption: string) => Promise<unknown>,
 ) {
   if (!isCoverUuid(body.id) || typeof body.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(body.fingerprint))
@@ -213,18 +233,7 @@ export async function changeInstagramSingle(
     const { data: article, error: missing } = await db.from("editorial_articles").select("*")
       .eq("id", post.article_id).eq("video_id", post.video_id).eq("status", "published").single();
     if (missing || !article || article.title !== post.title) throw Error("instagram_source_missing");
-    const response = await generateCover(article as EditorialArticle);
-    if (response.status === 402) throw Error("instagram_ai_credits");
-    if (!response.ok) throw Error("instagram_cover_generation_failed");
-    const { background } = await response.json();
-    const match = typeof background === "string" && /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(background);
-    if (!match || match[2].length > 12_000_000) throw Error("instagram_cover_generation_failed");
-    const { composeNativeInstagramCover } = await import("../_shared/cover-renderer/index.ts");
-    const { bytes } = await composeNativeInstagramCover({
-      bytes: Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0)),
-      mime: match[1] === "jpeg" ? "image/jpeg" : "image/png",
-    }, post.title);
-    assertInstagramJpeg(bytes);
+    const bytes = await generateInstagramArtwork(article as EditorialArticle, generateCover, post.title);
     const previewId = crypto.randomUUID();
     const path = `${previewPrefix}/${previewId}.jpg`;
     const upload = await bucket.upload(path, bytes, { contentType: "image/jpeg", upsert: false });
@@ -269,32 +278,38 @@ ${INSTAGRAM_CAPTION_END}`;
 
 export async function prepareInstagramSingle(
   db: SupabaseClient,
-  expectedVideo?: unknown,
+  expectedVideo: unknown,
+  generate: GenerateCover,
 ) {
-  const [source] = await findSources(db);
-  if (
-    !source ||
-    (expectedVideo !== undefined && source.video_id !== expectedVideo)
-  )
+  const [sources, active] = await Promise.all([
+    findSources(db),
+    db
+      .from("instagram_single_posts")
+      .select("id", { count: "exact", head: true })
+      .in("state", ["review", "scheduled", "publishing"]),
+  ]);
+  if (active.error || active.count === null)
+    throw Error("instagram_state_unavailable");
+  if (active.count >= 3) throw Error("instagram_queue_full");
+  const [source] = sources;
+  if (!source || source.video_id !== expectedVideo)
     throw Error("instagram_source_changed");
-  return prepareInstagramSource(db, source);
+  return prepareInstagramSource(db, source, generate);
 }
 
-async function prepareInstagramSource(db: SupabaseClient, s: Source) {
-  const [article, metadata, eligible] = await Promise.all([
+async function prepareInstagramSource(
+  db: SupabaseClient,
+  s: Source,
+  generate: GenerateCover,
+) {
+  const [article, eligible] = await Promise.all([
     db
       .from("editorial_articles")
-      .select("title,summary,blocks")
+      .select("*")
       .eq("id", s.article_id)
       .eq("video_id", s.video_id)
       .eq("status", "published")
       .single(),
-    db
-      .from("youtube_editorial_sources")
-      .select("background:capture->coverBackground")
-      .eq("article_id", s.article_id)
-      .eq("video_id", s.video_id)
-      .maybeSingle(),
     db
       .from("instagram_carousel_sources")
       .select("transcript")
@@ -304,64 +319,25 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
   ]);
   if (
     article.error ||
-    metadata.error ||
     eligible.error ||
     !article.data ||
     typeof eligible.data?.transcript !== "string"
   )
     throw Error("instagram_source_missing");
-  const original = metadata.data?.background;
-  if (
-    !original ||
-    typeof original !== "object" ||
-    Array.isArray(original) ||
-    !isCoverUuid(s.article_id) ||
-    typeof original.path !== "string" ||
-    !original.path.startsWith(s.article_id + "/") ||
-    !framePath.test(original.path) ||
-    typeof original.mime !== "string" ||
-    !["image/png", "image/jpeg"].includes(original.mime) ||
-    original.title !== article.data.title
-  )
-    throw Error("instagram_original_missing");
-  const pilot =
-    s.article_id === MOBYLETTE_PILOT.articleId &&
-    original.path === MOBYLETTE_PILOT.path;
-  const evidence: FrameEvidence | undefined = pilot
-    ? {
-        focus: MOBYLETTE_PILOT.evidence.focus,
-        subjects: [...MOBYLETTE_PILOT.evidence.subjects],
-      }
-    : (original.frameEvidence as FrameEvidence | undefined);
-
   const caption = singleInstagramCaption(
     article.data.summary ?? "",
     article.data.blocks,
     eligible.data.transcript,
   );
-  const file = await db.storage.from(COVER_BUCKET).download(original.path);
-  if (file.error || !file.data) throw Error("instagram_original_read_failed");
-  if (file.data.size > 12 * 1024 * 1024)
-    throw Error("instagram_original_missing");
-  const { composeFullBleedCover, composeNativeInstagramCover } =
-    await import("../_shared/cover-renderer/index.ts");
-  const background = {
-    bytes: new Uint8Array(await file.data.arrayBuffer()),
-    mime: original.mime as "image/png" | "image/jpeg",
-  };
-  const result =
-    evidence && Array.isArray(evidence.subjects)
-      ? await composeFullBleedCover(
-          background,
-          article.data.title,
-          "instagram",
-          evidence,
-        )
-      : await composeNativeInstagramCover(background, article.data.title);
+  const bytes = await generateInstagramArtwork(
+    article.data as EditorialArticle,
+    generate,
+    article.data.title,
+  );
   const { fingerprint, path } = await storeInstagramAsset(
     db,
     s.article_id,
-    result.bytes,
+    bytes,
     caption,
   );
   const item = await db.rpc("stage_instagram_single", {
@@ -397,67 +373,19 @@ export async function approveInstagramSingle(
   return { dueAt: scheduled.data };
 }
 
-/** Refill one slot per call. Admin and cron use the same lease-free preparation and serialized SQL reservation. */
+/** The sender only dispatches reserved posts. Preparing an original is an explicit Admin action. */
 export async function queueNextInstagramSingle(db: SupabaseClient) {
-  const settings = await config(db);
-  if (!settings.automation_enabled || !settings.pilot_id)
-    return { status: "awaiting_review" };
   const existing = await db
     .from("instagram_single_posts")
-    .select("id,fingerprint,state")
+    .select("state")
     .in("state", ["review", "scheduled", "publishing"])
-    .order("created_at")
     .limit(3);
   if (existing.error) throw Error("instagram_state_unavailable");
-  // A review draft can only come from a deliberate admin or this validated renderer.
-  const draft = existing.data?.find((row) => row.state === "review");
-  if ((existing.data?.length ?? 0) >= 3 && !draft)
-    return { status: "queue_full" };
-  let next = draft;
-  if (!next) {
-    const candidates = await findSources(db, 4);
-    if (!candidates.length) return { status: "no_source" };
-    let lastIssue = "";
-    for (const source of candidates) {
-      try {
-        next = await prepareInstagramSource(db, source);
-        break;
-      } catch (error) {
-        const code = error instanceof Error ? error.message : "";
-        if (
-          ![
-            "instagram_original_missing",
-            "single_image_scene_expansion_required",
-            "instagram_framing_review_required",
-            "single_image_framing_evidence_required",
-            "single_image_framing_invalid",
-            "instagram_caption_evidence_missing",
-            "instagram_caption_incomplete",
-          ].includes(code)
-        )
-          throw error;
-        lastIssue = code;
-        console.info("[instagram] source skipped", source.video_id, code);
-      }
-    }
-    if (!next) {
-      const saved = await db
-        .from("instagram_single_settings")
-        .update({ automation_issue: lastIssue })
-        .eq("singleton", true);
-      if (saved.error) throw Error("instagram_state_unavailable");
-      return { status: "source_requires_review" };
-    }
-  }
-  const reserved = await db.rpc("reserve_instagram_single", {
-    p_id: next.id,
-    p_fingerprint: next.fingerprint,
-    p_auto: true,
-  });
-  if (reserved.error) throw Error("instagram_reserve_failed");
-  return reserved.data
-    ? { status: "scheduled", dueAt: reserved.data }
-    : { status: "awaiting_review" };
+  if ((existing.data ?? []).some((post) => post.state === "review"))
+    return { status: "awaiting_review" };
+  if ((existing.data?.length ?? 0) >= 3) return { status: "queue_full" };
+  const [source] = await findSources(db);
+  return { status: source ? "cover_requires_preparation" : "no_source" };
 }
 
 export async function tickInstagramSingle(

@@ -14,11 +14,13 @@ const pixels = new Uint8Array(40 * 20 * 4);
 for (let i = 0; i < 40 * 20; i++) pixels.set(i % 40 < 20 ? [240,10,20,255] : [10,20,240,255], i * 4);
 const source = new Uint8Array(jpeg.encode({data:pixels,width:40,height:20},100).data);
 
-function fixture(original = false, og = coverPublicUrl(origin,articleId,fileId)) {
+function fixture(original = false, og = coverPublicUrl(origin,articleId,fileId), square = false) {
   const reads: string[] = [];
   const db = createClient(origin, "mock", {global:{fetch: async (input) => {
     const url = new URL(String(input)); reads.push(url.pathname);
     if (url.pathname.endsWith("editorial_articles")) return Response.json([{id:articleId,video_id:"abcdefghijk",title,updated_at:version,og_image_url:og}]);
+    if (url.pathname.endsWith("podcast_episode_queue")) return Response.json([]);
+    if (square && url.pathname.endsWith("/podcast-covers/independent.jpg")) return new Response(source);
     if (url.pathname.endsWith("youtube_editorial_sources")) return Response.json([{cover_background:original ? {path:`${articleId}/backgrounds/${fileId}.jpg`,mime:"image/jpeg"}:null}]);
     if (url.pathname.includes("/backgrounds/") || url.pathname.endsWith(`/${articleId}/${fileId}.jpg`)) return new Response(source,{headers:{"Content-Type":"image/jpeg"}});
     return Response.json({message:"missing"},{status:404});
@@ -59,4 +61,22 @@ it("wrong article revision cannot serve or compose any media", async () => {
   const f = fixture(); f.params.set("v","123");
   const response = await servePodcastCover(f.request,f.params,f.db);
   expect(response.status).toBe(409); expect(f.reads).toHaveLength(1);
+});
+
+it("serves a stored independent square without looking up the article background", async () => {
+  const f = fixture(true, undefined, true);
+  f.params.set("layout", "3");
+  const response = await servePodcastCover(f.request, f.params, f.db);
+  expect(response.status).toBe(200);
+  expect(new Uint8Array(await response.arrayBuffer())).toEqual(source);
+  expect(f.reads.some(path => path.endsWith("youtube_editorial_sources"))).toBe(false);
+});
+
+it("uses a square brand cover when new podcast artwork is pending, even with a linked landscape", async () => {
+  const f = fixture(true);
+  f.params.set("layout", "3");
+  const response = await servePodcastCover(f.request, f.params, f.db);
+  expect(response.status).toBe(200);
+  expect(inspectJpeg(new Uint8Array(await response.arrayBuffer()))).toEqual({ width: 1400, height: 1400 });
+  expect(f.reads.some(path => path.endsWith("youtube_editorial_sources") || path.includes("/backgrounds/"))).toBe(false);
 });

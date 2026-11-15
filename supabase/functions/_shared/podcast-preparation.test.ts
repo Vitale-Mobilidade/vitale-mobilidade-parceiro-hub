@@ -2,9 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 import { afterEach, expect, it, vi } from "vitest";
 import { preparePodcastDraft } from "../editorial-admin/podcast-preparation";
 import { notifyPodcastError } from "../editorial-admin/podcast-alert";
-const social = vi.hoisted(() => ({ prepare: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../editorial-admin/podcast-instagram-artwork.ts", () => ({ preparePodcastInstagramArtwork: social.prepare }));
-
 afterEach(() => vi.unstubAllGlobals());
 
 const articleId = "11223344-1234-1234-1234-123456789abc";
@@ -49,7 +46,7 @@ function fixture(width: number) {
   return { db: db as never, writes, bytes };
 }
 
-it("salva RSS 1400×1400 intacto e prepara Instagram separadamente", async () => {
+it("prepara só o RSS quadrado, sem gravar um post de Instagram", async () => {
   const f = fixture(1400);
   await preparePodcastDraft(f.db, video);
   expect(f.writes[1]).toMatchObject({
@@ -61,7 +58,6 @@ it("salva RSS 1400×1400 intacto e prepara Instagram separadamente", async () =>
     prepared_cover_path: `${articleId}/podcast-covers/v3-${Date.parse(articleVersion)}.jpg`,
   });
   expect(f.writes[2]?.body).not.toHaveProperty("prepared_instagram_post");
-  expect(social.prepare).toHaveBeenCalledWith(f.db, video);
 });
 
 it("mantém o episódio fora da fila preparada se o render devolver proporção errada", async () => {

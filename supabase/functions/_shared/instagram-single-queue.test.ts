@@ -1,157 +1,123 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { queueNextInstagramSingle } from "../editorial-admin/instagram-single.ts";
+import { describe, expect, it, vi } from "vitest";
+import {
+  prepareInstagramSingle,
+  queueNextInstagramSingle,
+} from "../editorial-admin/instagram-single.ts";
 
 vi.mock("./instagram-single-caption.ts", () => ({
   singleInstagramCaption: () => "Legenda com evidência",
 }));
-vi.mock("./cover-renderer/index.ts", () => {
-  const render = async () => ({ bytes: new Uint8Array([1, 2, 3]) });
-  return {
-    composeFullBleedCover: render,
-    composeNativeInstagramCover: render,
-  };
-});
+vi.mock("./cover-renderer/index.ts", () => ({
+  composeNativeInstagramCover: async () => ({
+    bytes: new Uint8Array([1, 2, 3]),
+  }),
+}));
 vi.mock("./editorial-cover.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./editorial-cover.ts")>()),
   inspectJpeg: () => ({ width: 1080, height: 1350 }),
 }));
 
-const first = {
-  video_id: "first",
+const source = {
+  video_id: "testVideo01",
   article_id: "65a38b00-727c-4f19-86a6-0926c8de930d",
+  article_title: "Teste",
 };
-const second = {
-  video_id: "second",
-  article_id: "17faaee7-7b5c-4377-bba3-dd97f8c3d340",
+const article = {
+  id: source.article_id,
+  video_id: source.video_id,
+  title: "Teste",
+  blocks: [],
 };
-const dueAt = "2026-11-15T20:45:00Z";
 
-function createDb({ missingOriginals = false, downloadFails = false } = {}) {
-  const lookup = vi.fn((table, column, video) => {
-    if (table === "instagram_single_settings") {
-      return { automation_enabled: true, pilot_id: "pilot" };
-    }
-    if (table === "editorial_articles") return { title: "Teste", blocks: [] };
-    if (table === "youtube_editorial_sources") {
-      return !missingOriginals && (video === second.video_id || downloadFails)
-        ? {
-            background: {
-              path: `${video === second.video_id ? second.article_id : first.article_id}/backgrounds/858042d4-bd96-4d6a-8d43-b863afbff043.png`,
-              mime: "image/png",
-              title: "Teste",
-            },
-          }
-        : null;
-    }
-    if (table === "instagram_carousel_sources") {
-      return column === "transcript"
-        ? { transcript: "Transcrição original" }
-        : [first, second];
-    }
-    if (table === "instagram_single_posts" && column.includes("fingerprint")) {
-      return [{ state: "scheduled" }, { state: "scheduled" }];
-    }
-    return [];
-  });
-  const update = vi.fn();
-  const rpc = vi.fn(async (name) =>
-    name === "stage_instagram_single"
-      ? { data: [{ id: "prepared", fingerprint: "fingerprint" }] }
-      : { data: dueAt },
+function fixture(states = ["scheduled"]) {
+  const rpc = vi.fn(async () => ({ data: [{ id: "prepared" }] }));
+  const upload = vi.fn(async () => ({ error: null }));
+  const generate = vi.fn(async () =>
+    Response.json({ background: "data:image/jpeg;base64,AQID" }),
   );
+  const from = vi.fn((table: string) => {
+    let columns = "";
+    let active = false;
+    const q = {
+      select(value: string) {
+        columns = value;
+        return q;
+      },
+      in() {
+        active = true;
+        return q;
+      },
+      eq: () => q,
+      filter: () => q,
+      limit: () => q,
+      order: () => q,
+      range: () => q,
+      single: () => q,
+      then(resolve: (v: object) => void) {
+        if (table === "editorial_articles") return resolve({ data: article });
+        if (table === "instagram_carousel_sources")
+          return resolve({
+            data:
+              columns === "transcript"
+                ? { transcript: "Fonte original" }
+                : [source],
+          });
+        if (table === "instagram_single_posts" && active)
+          return resolve({
+            data: states.map((state) => ({ state })),
+            count: states.length,
+          });
+        return resolve({ data: [] });
+      },
+    };
+    return q;
+  });
   const db = {
-    from(table: string) {
-      let columns = "";
-      let video: string | undefined;
-      const query = {
-        select(value: string) {
-          columns = value;
-          return query;
-        },
-        eq(key: string, value: string) {
-          if (key === "video_id") video = value;
-          return query;
-        },
-        update(value: unknown) {
-          update(value);
-          return query;
-        },
-        filter: () => query,
-        in: () => query,
-        limit: () => query,
-        order: () => query,
-        range: () => query,
-        single: () => query,
-        maybeSingle: () => query,
-        then(resolve: (result: { data: unknown }) => void) {
-          resolve({ data: lookup(table, columns, video) });
-        },
-      };
-      return query;
-    },
+    from,
     rpc,
-    storage: {
-      from: () => ({
-        download: async () =>
-          downloadFails
-            ? { data: null, error: new Error("storage unavailable") }
-            : { data: new Blob(["original"]) },
-        upload: async () => ({ error: null }),
-      }),
-    },
-  };
-  return {
-    db: db as unknown as Parameters<typeof queueNextInstagramSingle>[0],
-    rpc,
-    update,
-    lookup,
-  };
+    storage: { from: () => ({ upload }) },
+  } as unknown as Parameters<typeof prepareInstagramSingle>[0];
+  return { db, from, rpc, upload, generate };
 }
 
-afterEach(() => vi.restoreAllMocks());
-
-describe("Instagram single-post replenishment", () => {
-  it("skips a missing original and reserves the next source", async () => {
-    const { db, rpc, update } = createDb();
-    await expect(queueNextInstagramSingle(db)).resolves.toEqual({
-      status: "scheduled",
-      dueAt,
-    });
-    expect(rpc).toHaveBeenNthCalledWith(
-      1,
+describe("Independent Instagram artwork", () => {
+  it("creates a dedicated review draft without reading or modifying an article cover", async () => {
+    const f = fixture();
+    await expect(
+      prepareInstagramSingle(f.db, source.video_id, f.generate),
+    ).resolves.toEqual({ id: "prepared" });
+    expect(f.from).not.toHaveBeenCalledWith("youtube_editorial_sources");
+    expect(f.generate).toHaveBeenCalledExactlyOnceWith(article);
+    expect(f.upload).toHaveBeenCalledWith(
+      expect.stringContaining("/instagram-single/"),
+      expect.any(Uint8Array),
+      expect.any(Object),
+    );
+    expect(f.rpc).toHaveBeenCalledExactlyOnceWith(
       "stage_instagram_single",
-      expect.objectContaining({ p_video: second.video_id }),
+      expect.objectContaining({ p_article: source.article_id }),
     );
-    expect(rpc).toHaveBeenNthCalledWith(2, "reserve_instagram_single", {
-      p_id: "prepared",
-      p_fingerprint: "fingerprint",
-      p_auto: true,
-    });
-    expect(update).not.toHaveBeenCalled();
   });
 
-  it("records an issue when each candidate needs editorial review", async () => {
-    const { db, rpc, update } = createDb({ missingOriginals: true });
-    await expect(queueNextInstagramSingle(db)).resolves.toEqual({
-      status: "source_requires_review",
-    });
-    expect(update).toHaveBeenCalledWith({
-      automation_issue: "instagram_original_missing",
-    });
-    expect(rpc).not.toHaveBeenCalled();
+  it("does not spend on art when all three slots already hold posts", async () => {
+    const f = fixture(["scheduled", "scheduled", "scheduled"]);
+    await expect(
+      prepareInstagramSingle(f.db, source.video_id, f.generate),
+    ).rejects.toThrow("instagram_queue_full");
+    expect(f.generate).not.toHaveBeenCalled();
   });
 
-  it("stops and preserves priority on a temporary storage failure", async () => {
-    const { db, lookup, rpc, update } = createDb({ downloadFails: true });
-    await expect(queueNextInstagramSingle(db)).rejects.toThrow(
-      "instagram_original_read_failed",
-    );
-    expect(lookup).not.toHaveBeenCalledWith(
-      "youtube_editorial_sources",
-      expect.any(String),
-      second.video_id,
-    );
-    expect(update).not.toHaveBeenCalled();
-    expect(rpc).not.toHaveBeenCalled();
+  it("does not reserve an AI draft without review or copy an article cover during a tick", async () => {
+    const draft = fixture(["review"]);
+    await expect(queueNextInstagramSingle(draft.db)).resolves.toEqual({
+      status: "awaiting_review",
+    });
+    expect(draft.rpc).not.toHaveBeenCalled();
+    const empty = fixture([]);
+    await expect(queueNextInstagramSingle(empty.db)).resolves.toEqual({
+      status: "cover_requires_preparation",
+    });
+    expect(empty.from).not.toHaveBeenCalledWith("editorial_articles");
+    expect(empty.upload).not.toHaveBeenCalled();
   });
 });

@@ -10,3 +10,11 @@ export function fullBleedFrame(width:number,height:number,targetWidth:number,tar
  if(evidence.subjects.some(s=>s.left*width<x||s.right*width>x+cw||s.top*height<y||s.bottom*height>y+ch))throw Error('single_image_scene_expansion_required');
  return {x,y,width:cw,height:ch,scale};
 }
+export type NativeCoverFormat = keyof typeof SINGLE_IMAGE_FORMATS;
+
+export function isNativeCoverRatio(width: number, height: number, format: NativeCoverFormat) {
+  const [targetWidth, targetHeight] = SINGLE_IMAGE_FORMATS[format];
+  // Normalize the small rounding difference from the image provider without trimming edges.
+  return Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0 &&
+    Math.abs((width * targetHeight) / (height * targetWidth) - 1) <= 0.01;
+}
