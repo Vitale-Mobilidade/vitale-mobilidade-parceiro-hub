@@ -2023,6 +2023,7 @@ async function coverGenerate(
   db: SupabaseClient,
   actor: Actor,
   article: EditorialArticle,
+  sharedPortrait = false,
 ): Promise<Response> {
   if (!AI_KEY) return json(req, { error: "IA de imagem não configurada no servidor." }, 503);
   const thumb = await coverReference(db, article);
@@ -2095,7 +2096,7 @@ async function coverGenerate(
           Authorization: `Bearer ${AI_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(coverPayload(str(article.title, 200), str(article.summary, 1500), thumbBytes, bikeReferences)),
+        body: JSON.stringify(coverPayload(str(article.title, 200), str(article.summary, 1500), thumbBytes, bikeReferences, sharedPortrait ? "shared-portrait" : false)),
       },
       COVER_TIMEOUT_MS,
     );
@@ -2251,7 +2252,7 @@ async function finishQueuedCover(req: Request, db: SupabaseClient, actor: Actor,
     const article = await articleById(db, lease.article_id);
     if (!article || article.video_id !== lease.video_id || article.status !== "draft" || !article.blocks?.length)
       throw new Error("cover_queue_article_invalid");
-    const result = await coverGenerate(req, db, actor, article);
+    const result = await coverGenerate(req, db, actor, article, true);
     if (!result.ok) throw new Error(result.status === 402 ? "ai_http_402" : "automatic_cover_generation_failed");
     const payload = await result.json();
     const match = typeof payload.background === "string" ? /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(payload.background) : null;
@@ -2657,8 +2658,9 @@ Deno.serve(async (req) => {
         return response;
       } catch (error) {
         const code = error instanceof Error ? error.message : "";
-        return json(req, {error:code === "instagram_framing_review_required"
-          ? "A capa original ainda precisa de enquadramento para Instagram."
+        return json(req, {error:["instagram_framing_review_required", "single_image_scene_expansion_required",
+          "single_image_framing_evidence_required", "single_image_framing_invalid"].includes(code)
+          ? "A capa original precisa de uma foto vertical ou de um recorte verificado que preserve a bike inteira."
           : code === "instagram_review_changed_or_slot_busy"
             ? "A revisão mudou ou já há um post reservado. Atualize a lista e confira a fila."
             : "Não foi possível concluir a operação do Instagram."}, 409);

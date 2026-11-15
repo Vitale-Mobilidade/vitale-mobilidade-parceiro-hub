@@ -1,5 +1,9 @@
 # Ajuste estrito da Home e navegação
 
+# Authorized native Instagram cover correction — 15 November
+- [ ] Apply exact six-file patch, targeted tests, Deno check, commit and official editorial-admin-only deploy; preserve auth and all reservations.
+- [ ] Privately inspect and render three exact reserved originals, immutable Storage upload/readback and caption-bound fingerprints; blocked until a real authorized private Storage session is available. No CAS, sending, AI or frontend publication.
+
 # Growth official reconciliation — 14 November 05:26 UTC
 - [x] Repeat official inspect; verify all thirteen applied hashes/timestamps, existing functions/hourly constraints/trigger/RLS and preserve extra ACL.
 - [x] Record daily views, bike/affiliate clicks, both heatmap stores and hourly counters; no production mutation or publication.

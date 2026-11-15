@@ -8,7 +8,7 @@ vi.mock("./cover-renderer/index.ts", () => {
   const render = async () => ({ bytes: new Uint8Array([1, 2, 3]) });
   return {
     composeFullBleedCover: render,
-    composeUncroppedInstagramCover: render,
+    composeNativeInstagramCover: render,
   };
 });
 vi.mock("./editorial-cover.ts", async (importOriginal) => ({

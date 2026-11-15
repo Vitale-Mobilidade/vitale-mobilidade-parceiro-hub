@@ -61,20 +61,22 @@ function decode(bytes: Uint8Array, format: "png" | "jpeg"): Raster {
   }
   return { width: image.width, height: image.height, buffer };
 }
-function fitBackground(source: Raster, W: number, H: number): Uint8Array {
+function fitBackground(source: Raster, W: number, H: number, preserveEdges = false): Uint8Array {
   const out = new Uint8Array(W * H * 4);
   const scale = Math.max(W / source.width, H / source.height);
-  const ox = (source.width - W / scale) / 2,
-    oy = (source.height - H / scale) / 2;
+  const scaleX = preserveEdges ? W / source.width : scale;
+  const scaleY = preserveEdges ? H / source.height : scale;
+  const ox = (source.width - W / scaleX) / 2,
+    oy = (source.height - H / scaleY) / 2;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const sx = Math.max(
         0,
-        Math.min(source.width - 1, ox + (x + 0.5) / scale - 0.5),
+        Math.min(source.width - 1, ox + (x + 0.5) / scaleX - 0.5),
       );
       const sy = Math.max(
         0,
-        Math.min(source.height - 1, oy + (y + 0.5) / scale - 0.5),
+        Math.min(source.height - 1, oy + (y + 0.5) / scaleY - 0.5),
       );
       const x0 = Math.floor(sx),
         y0 = Math.floor(sy),
@@ -277,38 +279,16 @@ export async function containPublishedInstagramCover(bytes: Uint8Array) {
   return { bytes: encoded };
 }
 
-/** Without a verified crop, use the original photograph whole on a softened extension of itself. */
-export async function composeUncroppedInstagramCover(
+/** A native 4:5 photograph can fill the canvas without dropping any part of the scene. */
+export async function composeNativeInstagramCover(
   background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" },
   title: string,
 ) {
   const source = decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg");
-  const { instagramWholePhoto } = await import("../instagram-portrait-geometry.ts");
-  const W = 1080, H = 1350;
-  const {w,h,left,top} = instagramWholePhoto(source.width,source.height);
-  // Low-resolution scene extension is deliberately soft; only the original contains sharp detail.
-  const small=fitBackground(source,36,45);
-  const out=new Uint8Array(W*H*4);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    const bx=x/30,by=y/30,ix=Math.floor(bx),iy=Math.floor(by);
-    const ix1=Math.min(35,ix+1),iy1=Math.min(44,iy+1),tx=bx-ix,ty=by-iy;
-    const inside=x>=left&&x<left+w&&y>=top&&y<top+h;
-    const sx=inside?Math.min(source.width-1,Math.floor((x-left)*source.width/w)):0;
-    const sy=inside?Math.min(source.height-1,Math.floor((y-top)*source.height/h)):0;
-    // Feather the join outside the photograph. All four borders of the photo itself are preserved.
-    const distance=Math.max(left-x, x-(left+w-1), top-y, y-(top+h-1),0);
-    const alpha=Math.max(0,1-distance/45);
-    const nx=Math.max(0,Math.min(source.width-1,Math.floor((x-left)*source.width/w)));
-    const ny=Math.max(0,Math.min(source.height-1,Math.floor((y-top)*source.height/h)));
-    const shade=Math.max(0,(y-630)/720)*.91;
-    for(let c=0;c<3;c++){
-      const topColor=small[(iy*36+ix)*4+c]*(1-tx)+small[(iy*36+ix1)*4+c]*tx;
-      const bottomColor=small[(iy1*36+ix)*4+c]*(1-tx)+small[(iy1*36+ix1)*4+c]*tx;
-      const soft=(topColor*(1-ty)+bottomColor*ty)*.84+[6,24,18][c]*.16;
-      const near=source.buffer[((inside?sy:ny)*source.width+(inside?sx:nx))*4+c];
-      out[(y*W+x)*4+c]=(near*alpha+soft*(1-alpha))*(1-shade)+[6,24,18][c]*shade;
-    }
-    out[(y*W+x)*4+3]=255;
-  }
-  return composeCover(source,title,false,true,out);
+  const [W, H] = SINGLE_IMAGE_FORMATS.instagram;
+  // The provider rounds its 4:5 raster dimensions (for example, 928 × 1152).
+  // Normalize up to 1% on that axis, preserving every edge. Other ratios need crop evidence.
+  if (Math.abs((source.width * H) / (source.height * W) - 1) > 0.01)
+    throw new Error("instagram_framing_review_required");
+  return composeCover(source, title, false, true, fitBackground(source, W, H, true));
 }

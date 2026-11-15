@@ -22,3 +22,4 @@ Normalize only fresh Instagram responses: infer v4 solely from unambiguous maste
 
 Instagram scheduled publication uses a separate private exact-revision/fingerprint queue, atomic claims, purpose-bound HMAC and independent off-by-default gates; crashed or uncertain runs require reconciliation rather than replay because Meta is not a scheduled-timestamp or idempotent publish API.
 On-demand video carousel generation uses the existing eligibility view filtered by chosen video, latest published article with ID tie-break, bounded metadata-only batches and unique-pair insert/lease; existing pairs reopen rather than replay AI, and draft URLs select exact authorized jobs even outside the recent list.
+New queued editorial backgrounds request shared native portrait composition; single-image Instagram accepts at most 1% native-ratio normalization or verified whole-bike crop evidence, never softened scene extensions, so unsafe originals remain review-blocked.

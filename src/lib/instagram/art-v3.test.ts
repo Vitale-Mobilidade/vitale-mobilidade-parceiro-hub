@@ -8,6 +8,13 @@ it('shared article payload preserves exact model, direction, input order and non
  const thumb=new Uint8Array([1,2,3]),refs=catalogCoverParts('bike','Official',true,new Uint8Array([4,5,6]),'image/webp');
  expect(coverPayload('Title','Context',thumb,refs)).toEqual({model:'google/gemini-3.1-flash-image',modalities:['image','text'],messages:[{role:'user',content:[{type:'text',text:`${COVER_PROMPT}\n<untrusted_editorial_subject>{"title":"Title","summary":"Context"}</untrusted_editorial_subject>`},{type:'image_url',image_url:{url:'data:image/jpeg;base64,AQID'}},...refs]}]});
 });
+it('shared portrait requests native 4:5 with full bike geometry and no streaming',()=>{
+ const payload=coverPayload('Title','Context',null,[], 'shared-portrait');
+ expect(payload.image_config).toEqual({aspect_ratio:'4:5'});
+ expect(payload).not.toHaveProperty('stream');
+ expect(payload.messages[0].content[0].text).toContain('middle 44%');
+ expect(payload.messages[0].content[0].text).toContain('both wheels, frame and handlebars');
+});
 it('Instagram cover mock uses exact shared model, thumbnail and official catalog with portrait environment-only direction',async()=>{
  let payload:ReturnType<typeof coverPayload>|undefined;
  const send=vi.fn(async(_url:unknown,init:RequestInit)=>{payload=JSON.parse(String(init.body));return new Response('data: {"type":"image_generation.completed","b64_json":"AQID"}\n\n');});

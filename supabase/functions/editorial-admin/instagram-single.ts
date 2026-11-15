@@ -244,7 +244,7 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
   if (file.error || !file.data) throw Error("instagram_original_read_failed");
   if (file.data.size > 12 * 1024 * 1024)
     throw Error("instagram_original_missing");
-  const { composeFullBleedCover, composeUncroppedInstagramCover } =
+  const { composeFullBleedCover, composeNativeInstagramCover } =
     await import("../_shared/cover-renderer/index.ts");
   const background = {
     bytes: new Uint8Array(await file.data.arrayBuffer()),
@@ -258,7 +258,7 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
           "instagram",
           evidence,
         )
-      : await composeUncroppedInstagramCover(background, article.data.title);
+      : await composeNativeInstagramCover(background, article.data.title);
   const dimensions = inspectJpeg(result.bytes);
   if (dimensions?.width !== 1080 || dimensions.height !== 1350)
     throw Error("instagram_dimensions_invalid");
@@ -343,6 +343,9 @@ export async function queueNextInstagramSingle(db: SupabaseClient) {
           ![
             "instagram_original_missing",
             "single_image_scene_expansion_required",
+            "instagram_framing_review_required",
+            "single_image_framing_evidence_required",
+            "single_image_framing_invalid",
             "instagram_caption_evidence_missing",
             "instagram_caption_incomplete",
           ].includes(code)
