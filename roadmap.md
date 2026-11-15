@@ -1,7 +1,7 @@
 # Ajuste estrito da Home e navegação
 
 # Authorized Instagram post editor — 15 November
-- [x] Supplied editor/UI/Edge behavior applied without compatibility changes; 15 edit tests plus nine regressions, Deno check and automatic preview build passed. Official editorial-admin-only deploy/connected commit pending confirmation; no live AI or post edits exercised.
+- [x] Supplied editor/UI/Edge behavior applied without compatibility changes (formatting only); 15 edit tests plus nine regressions, Deno check and automatic preview build passed. Code commit 18e8ed0; official editorial-admin-only deploy confirmed 15:16 UTC, source SHA-256 9d958730a513b8c46604c29f37fa8441ecf5161607e403ae5d10f16eb8099f0b; auth/config preserved. No live AI or post edits exercised.
 - [ ] Owner/Codex publishes frontend and exercises paid generation and real post edits; no AI/database/queue/Meta operations in this delivery.
 
 # Authorized native Instagram cover correction — 15 November
