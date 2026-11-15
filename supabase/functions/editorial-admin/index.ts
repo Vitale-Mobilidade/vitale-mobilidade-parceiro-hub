@@ -2772,6 +2772,35 @@ Deno.serve(async (req) => {
       }
       return json(req, await previewPodcastQueue(db));
     }
+    if (action === "podcast-audio-catalog") {
+      if (actor.role !== "admin")
+        return json(req, { error: "Acesso restrito a administradores." }, 403);
+      const videoIds: string[] = [];
+      const pageSize = 500;
+      let after: string | undefined;
+      do {
+        const page = db
+          .from("podcast_video_audio")
+          .select("youtube_id")
+          .order("youtube_id")
+          .limit(pageSize);
+        const { data, error } = await (after
+          ? page.gt("youtube_id", after)
+          : page);
+        if (error || !data)
+          return json(
+            req,
+            { error: "Não foi possível verificar os áudios anexados." },
+            503,
+          );
+        videoIds.push(...data.map((row) => row.youtube_id));
+        after =
+          data.length === pageSize
+            ? data[data.length - 1].youtube_id
+            : undefined;
+      } while (after);
+      return json(req, { videoIds });
+    }
     if (action.startsWith("podcast-audio-")) {
       const settings = actor.role === "admin"
         ? await db.from("podcast_audio_settings").select("enabled").eq("singleton", true).maybeSingle()

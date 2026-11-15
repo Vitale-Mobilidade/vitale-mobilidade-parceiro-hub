@@ -17,6 +17,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import {
   adminCall,
   adminStream,
+  podcastAudioCatalogKey,
   type AdminBike,
   type AdminOffer,
   type AdminOverview,
@@ -406,6 +407,7 @@ export function AdminVideosPage() {
   );
 }
 function PodcastQueuePanel() {
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const queue = useQuery({
@@ -432,6 +434,10 @@ function PodcastQueuePanel() {
     } catch (failure) {
       setMessage(failure instanceof Error ? failure.message : "Não foi possível criar o rascunho.");
     } finally {
+      if (consultWorkDrive)
+        void queryClient.invalidateQueries({
+          queryKey: podcastAudioCatalogKey,
+        });
       await queue.refetch();
       setBusy(false);
     }
@@ -496,6 +502,15 @@ function Videos({ role }: { role: AdminRole }) {
   const [contentType, setContentType] = useState("test");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const filterByAudio = role === "admin" && filter === "no-audio";
+  const audioCatalog = useQuery({
+    queryKey: podcastAudioCatalogKey,
+    queryFn: () => adminCall<{ videoIds: string[] }>("podcast-audio-catalog"),
+    select: ({ videoIds }) => new Set(videoIds),
+    enabled: filterByAudio,
+    retry: false,
+  });
+  const attachedVideoIds = audioCatalog.isError ? undefined : audioCatalog.data;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -521,6 +536,8 @@ function Videos({ role }: { role: AdminRole }) {
         });
     return merged.filter((v) => {
       if (!`${v.title} ${v.videoId}`.toLowerCase().includes(query.toLowerCase())) return false;
+      if (filterByAudio)
+        return !!attachedVideoIds && !attachedVideoIds.has(v.videoId);
       const saved = storedMap.get(v.videoId),
         article = articleMap.get(v.videoId);
       if (filter === "no-transcript") return !saved?.transcript;
@@ -529,7 +546,16 @@ function Videos({ role }: { role: AdminRole }) {
       if (filter === "processed") return !!article;
       return true;
     });
-  }, [sheet, stored, storedMap, articleMap, query, filter]);
+  }, [
+    sheet,
+    stored,
+    storedMap,
+    articleMap,
+    query,
+    filter,
+    filterByAudio,
+    attachedVideoIds,
+  ]);
   const instagramIds=useMemo(()=>[...new Set([...items.map(v=>v.videoId),...(selected?[selected.videoId]:[])])].filter(id=>videoIdPattern.test(id)).sort(),[items,selected]);
   const instagramEligibility=useQuery({queryKey:['admin','instagram','video-eligibility',instagramIds],enabled:role==='admin'&&instagramIds.length>0,retry:false,staleTime:15000,
     queryFn:async()=>{const batches:VideoEligibilityBatch[]=[];for(let i=0;i<instagramIds.length;i+=VIDEO_BATCH_LIMIT)batches.push(await instagramCall<VideoEligibilityBatch>({action:'video-eligibility',videoIds:instagramIds.slice(i,i+VIDEO_BATCH_LIMIT)}));return {generationEnabled:batches.every(b=>b.generationEnabled),sources:batches.flatMap(b=>b.sources)};}});
@@ -602,6 +628,7 @@ function Videos({ role }: { role: AdminRole }) {
           onChange={(e) => setFilter(e.target.value)}
         >
           <option value="all">Todos</option>
+          {role === "admin" && <option value="no-audio">Sem áudio</option>}
           <option value="no-transcript">Sem transcrição</option>
           <option value="no-article">Sem artigo</option>
           <option value="no-bike">Sem bike relacionada</option>
@@ -610,7 +637,24 @@ function Videos({ role }: { role: AdminRole }) {
       </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className={PANEL}>
-          <p className="mb-3 text-sm text-muted-foreground">{items.length} vídeos encontrados</p>
+          {filterByAudio && audioCatalog.isPending ? (
+            <p className="text-sm" role="status">
+              Verificando os áudios anexados…
+            </p>
+          ) : filterByAudio && audioCatalog.isError ? (
+            <Notice danger>
+              Não foi possível verificar os áudios anexados.
+            </Notice>
+          ) : (
+            <p className="mb-3 text-sm text-muted-foreground" role="status">
+              {filterByAudio &&
+              items.length === 0 &&
+              !sheetQuery.isPending &&
+              !workspaceQuery.isPending
+                ? "Nenhum vídeo sem áudio encontrado."
+                : `${items.length} vídeos encontrados`}
+            </p>
+          )}
           <div className="max-h-[70vh] divide-y divide-line overflow-y-auto">
             {items.map((v) => {
               const saved = storedMap.get(v.videoId),

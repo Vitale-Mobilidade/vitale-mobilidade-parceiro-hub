@@ -189,6 +189,10 @@ export async function adminCall<T>(
 }
 
 export type AdminVideoList = { videos: EditorialVideo[] };
+export const podcastAudioCatalogKey = [
+  "admin",
+  "podcast-audio-catalog",
+] as const;
 export type AdminArticleList = { articles: ArticleRow[] };
 export type AdminBriefSummary = {
   article_id: string;

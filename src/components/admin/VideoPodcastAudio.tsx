@@ -1,7 +1,11 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { adminCall, type ArticleRow } from "@/lib/admin-api";
+import {
+  adminCall,
+  podcastAudioCatalogKey,
+  type ArticleRow,
+} from "@/lib/admin-api";
 import { getReleasedSpotifyEpisode } from "@/lib/editorial.functions";
 import { podcastArticleEpisodeUrl } from "@/lib/podcast-editorial";
 import {
@@ -126,6 +130,7 @@ export function VideoPodcastAudio({ videoId, article }: {
         size: file.size,
       });
       void client.invalidateQueries({ queryKey });
+      void client.invalidateQueries({ queryKey: podcastAudioCatalogKey });
       transferred.current = null;
       setPreviewUrl(null);
       setFile(null);
@@ -184,8 +189,13 @@ export function VideoPodcastAudio({ videoId, article }: {
         audio_missing: "A pasta ainda não tem MP3.",
         review: "Confira a pasta e deixe um único MP3 final compatível.",
       }[result.status]);
-      if (result.status === "imported" || result.status === "already_attached")
+      if (
+        result.status === "imported" ||
+        result.status === "already_attached"
+      ) {
+        void client.invalidateQueries({ queryKey: podcastAudioCatalogKey });
         await client.invalidateQueries({ queryKey });
+      }
     } catch (failure) {
       setCandidate(null);
       setError(failure instanceof Error ? failure.message : "Não foi possível consultar o WorkDrive.");

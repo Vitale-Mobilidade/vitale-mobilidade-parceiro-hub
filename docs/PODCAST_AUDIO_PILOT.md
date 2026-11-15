@@ -49,3 +49,37 @@ O impacto para Produto e UX é manter a mesma ação de anexar. Arquitetura e Se
 Estado em 09/11/2026. Implementado na branch `codex/podcast-mp3-upload`, baseada no commit operacional `38553b7`. O responsável autorizou a publicação da opção e pediu arrastar e soltar. A leitura de produção confirmou a ausência inicial do bucket e da tabela. Backup diário listado em 09/11 às 04:28:33 UTC e nova exportação solicitada antes da mudança.
 
 Antes do piloto real, conferir a folga de créditos e o backup restaurável. Aplicar a migration com o recurso desligado, implantar a Edge Function e publicar a versão do Admin. Verificar os privilégios e habilitar `podcast_audio_settings.enabled`. A primeira solicitação de um administrador provisiona no Storage integrado o bucket privado `podcast-audio`, com limite de 52.428.800 bytes e apenas `audio/mpeg`. O administrador escolhe o primeiro áudio e faz o upload. Conferir reprodução, respostas parciais do Storage e ausência de acesso público. Se houver falha, desabilitar a flag e preservar os objetos privados. Rascunhos não vinculados por falha e versões substituídas devem ser reconciliados antes de ampliar o volume.
+
+## Filtro Sem áudio no Admin
+
+### Revisão pré-implementação
+
+Classificação estrutural por acrescentar uma leitura de metadados do Supabase. O objetivo é identificar na Biblioteca de vídeos os itens que aguardam anexo de MP3.
+
+| Perspectiva | Impacto, risco, dependência e recomendação |
+| --- | --- |
+| Produto e Estratégia | Facilita completar o acervo. Usar o vínculo do MP3 como critério para incluir também vídeos sem artigo publicado. |
+| CTO e Arquitetura | Consultar os IDs em `podcast_video_audio` pela Edge Function existente. Paginar para evitar falsos pendentes em caso de truncamento. Ler sob demanda para preservar a carga dos outros filtros. |
+| IA e Agent Engineering | N/A. O filtro consulta metadados determinísticos. |
+| Segurança | Restringir ação ao papel Admin e retornar somente IDs de YouTube. Aplicar a autorização antes da leitura. |
+| UX/UI | Usar o seletor atual e combinar com a busca. Distinguir consulta em andamento, falha e lista vazia. Manter a ficha selecionada para exibir a confirmação do anexo. |
+| CX e Operação | Atualizar a lista após o envio manual, a importação do WorkDrive ou o preparo pela fila. Uma busca do WorkDrive pode detectar um MP3 antes da confirmação do vínculo. |
+| Growth e CRO | N/A. Escopo restrito à biblioteca privada. |
+| PMO e QA | Verificar presença e ausência de vínculo, falha de leitura e atualização após anexar. Validar o frontend e a ação da Edge Function. |
+
+A consulta é separada do carregamento editorial para que falhas na verificação de áudio afetem somente este filtro. A ausência de um ID só conta como pendência após uma leitura bem-sucedida. O filtro reutiliza a busca, a lista e a ficha atuais. O uso do WorkDrive e o preparo da fila mantêm os fluxos existentes. O rollback é reverter o diff do frontend e da Edge Function. A publicação depende da disponibilidade da ação na Edge Function antes da interface e de autorização explícita.
+
+### Revisão pós-implementação
+
+| Perspectiva | Resultado e evidência |
+| --- | --- |
+| Produto e Estratégia | Pass. O filtro mostrou os pendentes, incluindo vídeo presente apenas no catálogo. |
+| CTO e Arquitetura | Pass. Consulta sob demanda na ação administrativa. Ensaio com banco simulado recuperou 1.001 IDs em três páginas e recusou resposta parcial quando uma leitura falhou. |
+| IA e Agent Engineering | N/A. Sem uso de IA. |
+| Segurança | Pass. O ensaio retornou 403 para o perfil editorial antes de consultar a tabela. A resposta contém apenas IDs de YouTube. |
+| UX/UI | Pass. Chrome local em desktop e mobile validou seletor, busca, lista vazia e erro. A ficha ficou aberta ao confirmar o anexo. |
+| CX e Operação | Pass. Upload manual e importação do WorkDrive com dados simulados removeram o vídeo da lista após a confirmação. O preparo pelo painel invalida a mesma consulta. |
+| Growth e CRO | N/A. Sem mudança nas superfícies públicas ou na distribuição. |
+| PMO e QA | Pass no escopo local. `pnpm validate` passou com 69 testes, typecheck e build. Nove testes direcionados passaram. O lint ainda reporta formatação e avisos preexistentes nos arquivos alterados. |
+
+Sem divergência material na revisão. A lista representa o vínculo registrado e pode ficar desatualizada durante a consulta de atualização. Implementação pronta em branch local. O release depende de autorização, conferência da versão em produção e publicação da ação de leitura antes da interface. A confirmação no ambiente publicado deve usar apenas a consulta e os anexos existentes.
