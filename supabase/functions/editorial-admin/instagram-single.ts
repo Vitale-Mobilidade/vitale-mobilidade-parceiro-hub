@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import {
   COVER_BUCKET,
+  COVER_MAX_BYTES,
   inspectJpeg,
   isCoverUuid,
 } from "../_shared/editorial-cover.ts";
 import { MOBYLETTE_PILOT } from "../_shared/mobylette-pilot.ts";
-import { singleInstagramCaption } from "../_shared/instagram-single-caption.ts";
+import { INSTAGRAM_CAPTION_END, singleInstagramCaption } from "../_shared/instagram-single-caption.ts";
+import type { EditorialArticle } from "../_shared/editorial-contract.ts";
 import {
   instagramPublisher,
   readInstagramSettings,
@@ -168,6 +170,103 @@ async function digest(bytes: Uint8Array, caption: string) {
   ).join("");
 }
 
+function assertInstagramJpeg(bytes: Uint8Array) {
+  const dimensions = inspectJpeg(bytes);
+  if (bytes.length > COVER_MAX_BYTES || dimensions?.width !== 1080 || dimensions.height !== 1350)
+    throw Error("instagram_dimensions_invalid");
+}
+async function storeInstagramAsset(db: SupabaseClient, articleId: string, bytes: Uint8Array, caption: string) {
+  assertInstagramJpeg(bytes);
+  const fingerprint = await digest(bytes, caption);
+  const path = `${articleId}/instagram-single/${fingerprint}.jpg`;
+  const bucket = db.storage.from(COVER_BUCKET);
+  const saved = await bucket.upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+  if (saved.error) {
+    const prior = await bucket.download(path);
+    if (prior.error || !prior.data || (await digest(new Uint8Array(await prior.data.arrayBuffer()), caption)) !== fingerprint)
+      throw Error("instagram_asset_write_failed");
+  }
+  return { fingerprint, path };
+}
+const EDIT_MARGIN_MS = 120_000;
+const captionLimit = 2200;
+export async function changeInstagramSingle(
+  db: SupabaseClient,
+  action: "caption" | "cover" | "save",
+  body: Record<string, unknown>,
+  generateCover: (article: EditorialArticle) => Promise<Response>,
+  generateCaption: (title: string, groundedCaption: string) => Promise<unknown>,
+) {
+  if (!isCoverUuid(body.id) || typeof body.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(body.fingerprint))
+    throw Error("instagram_edit_conflict");
+  const { data: post, error } = await db.from("instagram_single_posts")
+    .select("id,article_id,video_id,title,caption,fingerprint,asset_path,state,due_at,attempted_at,lease,lease_until")
+    .eq("id", body.id).eq("fingerprint", body.fingerprint).maybeSingle();
+  if (error) throw Error("instagram_edit_read_failed");
+  if (!post || post.attempted_at || post.lease || post.lease_until ||
+      (post.state !== "review" && (post.state !== "scheduled" || !post.due_at || Date.parse(post.due_at) <= Date.now() + EDIT_MARGIN_MS)))
+    throw Error("instagram_edit_conflict");
+  if (!isCoverUuid(post.article_id)) throw Error("instagram_edit_read_failed");
+  const bucket = db.storage.from(COVER_BUCKET);
+  const previewPrefix = `${post.article_id}/instagram-previews/${post.id}/${post.fingerprint}`;
+  if (action === "cover") {
+    const { data: article, error: missing } = await db.from("editorial_articles").select("*")
+      .eq("id", post.article_id).eq("video_id", post.video_id).eq("status", "published").single();
+    if (missing || !article || article.title !== post.title) throw Error("instagram_source_missing");
+    const response = await generateCover(article as EditorialArticle);
+    if (response.status === 402) throw Error("instagram_ai_credits");
+    if (!response.ok) throw Error("instagram_cover_generation_failed");
+    const { background } = await response.json();
+    const match = typeof background === "string" && /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(background);
+    if (!match || match[2].length > 12_000_000) throw Error("instagram_cover_generation_failed");
+    const { composeNativeInstagramCover } = await import("../_shared/cover-renderer/index.ts");
+    const { bytes } = await composeNativeInstagramCover({
+      bytes: Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0)),
+      mime: match[1] === "jpeg" ? "image/jpeg" : "image/png",
+    }, post.title);
+    assertInstagramJpeg(bytes);
+    const previewId = crypto.randomUUID();
+    const path = `${previewPrefix}/${previewId}.jpg`;
+    const upload = await bucket.upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+    if (upload.error) throw Error("instagram_asset_write_failed");
+    const signed = await bucket.createSignedUrl(path, 900);
+    if (signed.error || !signed.data?.signedUrl) throw Error("instagram_asset_read_failed");
+    return { previewId, imageUrl: signed.data.signedUrl };
+  }
+  if (action === "caption") {
+    const [article, source] = await Promise.all([
+      db.from("editorial_articles").select("summary,blocks").eq("id", post.article_id).eq("video_id", post.video_id).eq("status", "published").single(),
+      db.from("instagram_carousel_sources").select("transcript").eq("article_id", post.article_id).eq("video_id", post.video_id).single(),
+    ]);
+    if (article.error || source.error || !article.data || typeof source.data?.transcript !== "string") throw Error("instagram_source_missing");
+    const grounded = singleInstagramCaption(article.data.summary ?? "", article.data.blocks, source.data.transcript);
+    const result = (await generateCaption(post.title, grounded)) as { caption?: unknown } | null;
+    if (typeof result?.caption !== "string" || !result.caption.trim()) throw Error("instagram_caption_invalid");
+    const caption = `${result.caption.trim()}
+
+${INSTAGRAM_CAPTION_END}`;
+    if (caption.length > captionLimit) throw Error("instagram_caption_invalid");
+    return { caption };
+  }
+  const caption = body.caption === undefined ? post.caption : body.caption;
+  if (typeof caption !== "string" || !caption.trim() || caption.length > captionLimit || caption.includes("\0")) throw Error("instagram_caption_invalid");
+  if (body.previewId !== undefined && !isCoverUuid(body.previewId)) throw Error("instagram_edit_conflict");
+  const imagePath = body.previewId ? `${previewPrefix}/${body.previewId}.jpg` : post.asset_path;
+  const file = await bucket.download(imagePath);
+  if (file.error || !file.data || file.data.size > COVER_MAX_BYTES) throw Error("instagram_asset_read_failed");
+  const bytes = new Uint8Array(await file.data.arrayBuffer());
+  if (!body.previewId && (await digest(bytes, post.caption)) !== post.fingerprint) throw Error("instagram_asset_read_failed");
+  const { fingerprint, path } = await storeInstagramAsset(db, post.article_id, bytes, caption);
+  let update = db.from("instagram_single_posts").update({ caption, asset_path: path, fingerprint })
+    .eq("id", post.id).eq("fingerprint", post.fingerprint).eq("state", post.state)
+    .is("lease", null).is("lease_until", null).is("attempted_at", null);
+  if (post.state === "scheduled") update = update.eq("due_at", post.due_at).gt("due_at", new Date(Date.now() + EDIT_MARGIN_MS).toISOString());
+  const saved = await update.select("id,fingerprint").maybeSingle();
+  if (saved.error) throw Error("instagram_edit_write_failed");
+  if (!saved.data) throw Error("instagram_edit_conflict");
+  return saved.data;
+}
+
 export async function prepareInstagramSingle(
   db: SupabaseClient,
   expectedVideo?: unknown,
@@ -233,7 +332,7 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
         focus: MOBYLETTE_PILOT.evidence.focus,
         subjects: [...MOBYLETTE_PILOT.evidence.subjects],
       }
-    : original.frameEvidence as FrameEvidence | undefined;
+    : (original.frameEvidence as FrameEvidence | undefined);
 
   const caption = singleInstagramCaption(
     article.data.summary ?? "",
@@ -259,26 +358,12 @@ async function prepareInstagramSource(db: SupabaseClient, s: Source) {
           evidence,
         )
       : await composeNativeInstagramCover(background, article.data.title);
-  const dimensions = inspectJpeg(result.bytes);
-  if (dimensions?.width !== 1080 || dimensions.height !== 1350)
-    throw Error("instagram_dimensions_invalid");
-  const fingerprint = await digest(result.bytes, caption),
-    path = `${s.article_id}/instagram-single/${fingerprint}.jpg`;
-  const saved = await db.storage
-    .from(COVER_BUCKET)
-    .upload(path, result.bytes, { contentType: "image/jpeg", upsert: false });
-  if (saved.error) {
-    const prior = await db.storage.from(COVER_BUCKET).download(path);
-    if (
-      prior.error ||
-      !prior.data ||
-      (await digest(
-        new Uint8Array(await prior.data.arrayBuffer()),
-        caption,
-      )) !== fingerprint
-    )
-      throw Error("instagram_asset_write_failed");
-  }
+  const { fingerprint, path } = await storeInstagramAsset(
+    db,
+    s.article_id,
+    result.bytes,
+    caption,
+  );
   const item = await db.rpc("stage_instagram_single", {
     p_video: s.video_id,
     p_article: s.article_id,

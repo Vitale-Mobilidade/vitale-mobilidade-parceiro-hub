@@ -2644,6 +2644,44 @@ Deno.serve(async (req) => {
   const action = str(body.action, 40);
   try {
     if (action === "session") return json(req, { role: actor.role, email: actor.email });
+    if (
+      action === "instagram-single-edit-caption" ||
+      action === "instagram-single-edit-cover" ||
+      action === "instagram-single-edit-save"
+    ) {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      const mode = action === "instagram-single-edit-caption" ? "caption"
+        : action === "instagram-single-edit-cover" ? "cover" : "save";
+      try {
+        const { changeInstagramSingle } = await import("./instagram-single.ts");
+        const { INSTAGRAM_CAPTION_END } = await import("../_shared/instagram-single-caption.ts");
+        const result = await changeInstagramSingle(
+          db, mode, body,
+          (article) => coverGenerate(req, db, actor, article, true),
+          (title, groundedCaption) => aiStructured(
+            "Reescreva uma legenda editorial da Vitale Mobilidade em português brasileiro, com a voz direta de quem conhece a bike. Use exclusivamente os fatos da legenda de referência. Mantenha nomes, números, ressalvas e a distinção entre ficha técnica e observação. Sem preço vigente, links, Markdown, hashtags ou chamadas no fim. Retorne apenas o corpo, em parágrafos curtos. O sistema acrescenta o rodapé.",
+            JSON.stringify({ title, reference: groundedCaption.replace(INSTAGRAM_CAPTION_END, "").trim() }),
+            "vitale_instagram_caption_edit",
+            { type: "object", properties: { caption: { type: "string" } }, required: ["caption"], additionalProperties: false },
+          ),
+        );
+        const response = json(req, result);
+        response.headers.set("Cache-Control", "private, no-store");
+        response.headers.set("Vary", "Origin, Authorization");
+        return response;
+      } catch (error) {
+        const code = errorMessage(error);
+        if (code === "instagram_ai_credits" || code === "ai_http_402")
+          return json(req, { error: "Os créditos de IA do Lovable acabaram." }, 402);
+        if (code === "instagram_edit_conflict")
+          return json(req, { error: "O post mudou ou o envio está próximo. Atualize a lista antes de editar." }, 409);
+        if (code === "instagram_caption_invalid")
+          return json(req, { error: "A legenda precisa ter de 1 a 2.200 caracteres." }, 422);
+        if (code === "instagram_framing_review_required")
+          return json(req, { error: "A IA devolveu uma foto fora do formato 4:5. Gere outra capa." }, 422);
+        return json(req, { error: "Não foi possível concluir esta alteração. Confira e tente novamente." }, 422);
+      }
+    }
     if (action === "instagram-single-list" || action === "instagram-single-prepare" || action === "instagram-single-approve" || action === "instagram-single-queue-next") {
       if (actor.role !== "admin") return json(req, {error:"Acesso restrito a administradores."}, 403);
       try {

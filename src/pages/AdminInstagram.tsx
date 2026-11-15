@@ -2,6 +2,7 @@ import { useDeferredValue, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { InstagramPostEditor } from "@/components/admin/InstagramPostEditor";
 import { Button } from "@/components/ui/button";
 import { adminCall } from "@/lib/admin-api";
 import {
@@ -522,6 +523,17 @@ export function InstagramWorkspace() {
                 {item.caption || "Legenda indisponível."}
               </p>
             </div>
+            {item.live &&
+              (item.status === "review" || item.status === "scheduled") && (
+                <InstagramPostEditor
+                  key={item.id}
+                  item={item.live}
+                  onSaved={() => {
+                    refresh();
+                    setFeedback("Post atualizado.");
+                  }}
+                />
+              )}
             {item.live &&
               item.image &&
               (item.status === "review" ||
