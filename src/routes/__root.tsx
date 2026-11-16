@@ -147,7 +147,11 @@ function RootComponent() {
   const href = useRouterState({ select: (s) => s.location.href });
   const privateAccount = isMemberPrivatePath(path);
   const offersLanding = isOffersGroupLanding(path);
-  const excluded = path.startsWith("/quiz") || privateAccount || offersLanding;
+  const hideAssistant =
+    /^\/admin(?:\/|$)/i.test(path) ||
+    path.startsWith("/quiz") ||
+    privateAccount ||
+    offersLanding;
   useEffect(
     () =>
       startHeatmap(
@@ -187,7 +191,7 @@ function RootComponent() {
         <Outlet />
       </div>
       {/* Launcher HotPipe: o script externo só é carregado após clique explícito. */}
-      {!excluded && (
+      {!hideAssistant && (
         <div data-heatmap-private>
           <HotPipeWidget />
         </div>
