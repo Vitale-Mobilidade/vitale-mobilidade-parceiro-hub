@@ -348,22 +348,27 @@ export function PublicTrafficChart({
   trafficHours?: TrafficHours | null;
   generatedAt: string;
 }) {
+  const showingHourly =
+    traffic?.days.length === 1 &&
+    trafficHours?.hours.some(
+      (point) => point.views !== null || point.previousViews !== null,
+    );
+
   return (
     <section
       aria-labelledby="public-traffic-title"
       className="min-w-0 rounded-xl border border-line bg-white p-3 shadow-sm sm:p-4"
     >
       <h2 id="public-traffic-title" className="text-base font-bold">
-        {traffic?.days.length === 1 &&
-        trafficHours?.hours.some(
-          (point) => point.views !== null || point.previousViews !== null,
-        )
+        {showingHourly
           ? "Visualizações públicas por hora"
           : "Visualizações públicas por dia"}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Aberturas de páginas públicas monitoradas, incluindo repetições e
-        excluindo o admin.
+        Os totais diários incluem aberturas repetidas e excluem o admin e as
+        duas páginas de campanha do Grupo de Ofertas.
+        {showingHourly &&
+          " A série e a variação por hora incluem essas páginas de campanha."}
       </p>
       {traffic ? (
         <TrafficSeries

@@ -127,6 +127,13 @@
       "when": 1794677482123,
       "tag": "0017_instagram_three_slots",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794862269475,
+      "tag": "0018_growth_exclude_offers_campaign",
+      "breakpoints": true
     }
   ]
 }

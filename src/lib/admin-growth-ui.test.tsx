@@ -194,6 +194,7 @@ describe("Public traffic comparison", () => {
       />,
     );
     expect(html).toContain("Visualizações públicas por dia");
+    expect(html).toMatch(/excluem o admin e as\s+duas páginas de campanha do Grupo de Ofertas/);
     expect(html).toContain("07/10/2026 a 08/10/2026");
     expect(html).toContain("05/10/2026 a 06/10/2026");
     expect(html).toContain("hoje parcial");
@@ -252,6 +253,7 @@ describe("Hourly public traffic", () => {
       />,
     );
     expect(html).toContain("Visualizações públicas por hora");
+    expect(html).toContain("A série e a variação por hora incluem essas páginas de campanha.");
     expect(html).toContain("+50%");
     expect(html).toContain("1 de 1 horas fechadas comparadas");
     expect(html).not.toContain("-75%");
