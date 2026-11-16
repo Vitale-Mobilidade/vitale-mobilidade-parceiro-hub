@@ -104,12 +104,12 @@ export function OffersAdsConsent({
     destination.current?.focus({ preventScroll: true });
   }, [isOpen]);
 
-  function close() {
-    moveFocus.current = true;
+  function close(fromKeyboard: boolean) {
+    moveFocus.current = fromKeyboard;
     setOpen(false);
   }
 
-  function save(next: Choice) {
+  function save(next: Choice, fromKeyboard: boolean) {
     if (!privacySignalEnabled() && next !== choice) {
       try {
         window.sessionStorage.setItem(JOINT_STORAGE_KEY, next);
@@ -123,7 +123,7 @@ export function OffersAdsConsent({
       }
       setChoice(next);
     }
-    close();
+    close(fromKeyboard);
   }
 
   return (
@@ -134,11 +134,11 @@ export function OffersAdsConsent({
             <button
               ref={preferences}
               type="button"
-              onClick={() => {
-                moveFocus.current = true;
+              onClick={(event) => {
+                moveFocus.current = event.detail === 0;
                 setOpen(true);
               }}
-              className="mt-1 min-h-11 text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="mt-1 block min-h-11 w-fit rounded-sm text-sm text-ink-foreground/80 underline underline-offset-2 hover:text-ink-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint"
             >
               Preferências de medição
             </button>
@@ -160,8 +160,8 @@ export function OffersAdsConsent({
               onKeyDown={(event) => {
                 if (event.key !== "Escape") return;
                 event.stopPropagation();
-                if (choice === null) save("denied");
-                else close();
+                if (choice === null) save("denied", true);
+                else close(true);
               }}
             >
               <div className="flex min-h-8 items-center justify-between gap-2">
@@ -180,14 +180,20 @@ export function OffersAdsConsent({
                       : "Fechar preferências"
                   }
                   className="-my-1.5 grid size-11 shrink-0 place-items-center rounded-md hover:bg-surface focus-visible:outline-2 focus-visible:outline-action"
-                  onClick={() => (choice === null ? save("denied") : close())}
+                  onClick={(event) => {
+                    const fromKeyboard = event.detail === 0;
+                    if (choice === null) save("denied", fromKeyboard);
+                    else close(fromKeyboard);
+                  }}
                 >
                   <X className="size-5" aria-hidden="true" />
                 </button>
               </div>
               <p className="mt-1 max-w-xl text-sm leading-snug">
-                Com sua permissão, Google Ads e Meta medem cliques no convite
-                nesta aba. O grupo abre com qualquer escolha.{" "}
+                {choice === "granted"
+                  ? "Google Ads e Meta podem medir cliques no convite nesta aba."
+                  : "Com sua permissão, Google Ads e Meta podem medir cliques no convite nesta aba."}{" "}
+                O grupo abre com qualquer escolha.{" "}
                 <a
                   href="/privacidade#medicao-google-ofertas"
                   className="text-action underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -195,21 +201,25 @@ export function OffersAdsConsent({
                   Privacidade
                 </a>
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:flex">
-                <button
-                  type="button"
-                  className={choiceButton}
-                  onClick={() => save("granted")}
-                >
-                  Permitir medição
-                </button>
-                <button
-                  type="button"
-                  className={choiceButton}
-                  onClick={() => save("denied")}
-                >
-                  {choice === "granted" ? "Retirar permissão" : "Recusar"}
-                </button>
+              <div className="mt-3 flex gap-2">
+                {choice !== "granted" && (
+                  <button
+                    type="button"
+                    className={choiceButton}
+                    onClick={(event) => save("granted", event.detail === 0)}
+                  >
+                    Permitir medição
+                  </button>
+                )}
+                {choice !== "denied" && (
+                  <button
+                    type="button"
+                    className={choiceButton}
+                    onClick={(event) => save("denied", event.detail === 0)}
+                  >
+                    {choice === "granted" ? "Retirar permissão" : "Recusar"}
+                  </button>
+                )}
               </div>
             </section>
           )}
