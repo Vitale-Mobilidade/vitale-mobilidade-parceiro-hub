@@ -206,3 +206,9 @@ Decisão: destacar e simplificar a escolha sem usar o clique de entrada como con
 | PMO/QA | Pass local | ESLint dirigido, `pnpm validate` (69 testes, TypeScript e build), 33 testes de consentimento e mensuração e smoke no Chrome. Rollback por revert e republicação. |
 
 Após publicação, acompanhar dias fechados no fuso de São Paulo. No Admin, usar a origem Google e manter CTA principal separado de cards. No Ads, usar `Todas as conversões` para a ação secundária de clique no CTA do grupo. Os relatórios e o status da ação confirmam recepção e atribuição de tráfego real. Entradas no WhatsApp só entram no relatório quando houver confirmação por outra fonte.
+
+### Ajuste visual das preferências após o aceite
+
+Revisão prévia de alteração localizada. Produto e Growth preservam a hierarquia do CTA e a ação medida. Arquitetura e Segurança mantêm a preferência por aba, o acesso à revogação e o contrato de consentimento das tags. UX e CX separam o controle secundário do botão de entrada e exibem somente as decisões disponíveis em cada estado. IA não se aplica. QA verifica posição, foco, revogação e recarga em desktop e celular. Rollback por revert da revisão.
+
+Revisão posterior aprovada para o PR. Produto/Growth, Arquitetura/Segurança e UX/CX passaram na revisão do diff e no teste de interação. O CTA segue para `/grupodeofertas`; as preferências aparecem abaixo, com foco devolvido na navegação por teclado. O painel oferece revogação após aceite e permite novo aceite após recusa ou revogação. IA permanece N/A. QA passou com ESLint direcionado, `pnpm validate` (69 testes, TypeScript e build) e Playwright local em 1440×900, 320×568 e 390×844. O teste local não envia eventos publicitários.
