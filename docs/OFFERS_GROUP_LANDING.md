@@ -174,3 +174,35 @@ Revisão posterior: Produto **Pass**, quatro selos na ordem aprovada; CTO **Pass
 ### Consentimento opcional para Google Ads
 
 Autorizado pelo responsável em 14/11/2026. Produto mantém o convite como ação principal. Arquitetura reutiliza GTM e aplica limite de 500 ms ao clique consentido. IA não se aplica. Segurança exige escolha própria, revogação e estado negado por padrão. UX inclui controle recolhido na landing. Operação preserva o destino administrado. Growth mede clique no convite como ação secundária. QA exige validação local e teste no Tag Assistant de visita, recusa e clique consentido. Rollback pela versão anterior do contêiner e pelo revert da página.
+
+### Revisão prévia — banner fixo de medição
+
+Mudança relevante na experiência e na adoção do consentimento publicitário. A análise do GTM público v17 confirmou a mesma ação de conversão, o vinculador após aceite e a cobertura das quatro posições (`hero`, `carousel`, `grid`, `sticky`).
+
+| Perspectiva | Impacto, risco e decisão |
+| --- | --- |
+| Produto | Exibir a escolha na primeira visita e manter a entrada no grupo como ação principal. |
+| CTO | Reutilizar armazenamento por aba, Consent Mode, Pixel e GTM. Mostrar a interface em preview sem acionar destinos de produção. |
+| IA | N/A. Sem agentes, modelos ou conteúdo gerado. |
+| Segurança | Começar sem permissão, honrar GPC/DNT, oferecer recusa com o mesmo destaque e manter revogação na página, sem novos tipos de dados. |
+| UX/UI | Banner inferior não modal, com CTA visível no mobile e navegação por teclado. Reservar espaço para o CTA fixo durante a rolagem. |
+| CX | A escolha é opcional. Fechar a primeira apresentação mantém a medição desativada. Convite funciona em qualquer estado. |
+| Growth | Manter a conversão como abertura do convite e observar cobertura de atribuição no Ads e cliques por origem no Admin. |
+| PMO/QA | Validar estados, dobra mobile, GTM e ausência de duplicação. Rollback pelo revert da mudança de código. |
+
+Decisão: destacar e simplificar a escolha sem usar o clique de entrada como consentimento. Preservar as tags, o grupo e os lances existentes. Comparar os dias completos de antes e depois em CTA por visualização no Admin e conversões secundárias registradas no Google Ads. As duas fontes têm coberturas distintas. A confirmação de ingresso exige outra fonte.
+
+### Revisão posterior — banner fixo de medição
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | CTA principal mantém o convite atual e pode ser acionado com o banner aberto. |
+| CTO | Pass | Reutiliza a escolha por aba, o contêiner v17, a tag de conversão e o destino existente. Sem mudança em SSR, schema ou configuração externa. |
+| IA | N/A | Sem integração ou processamento de IA. |
+| Segurança | Pass em teste | Decisão explícita, recusa e fechamento desligam a medição. GPC mantém o banner e a publicidade desativados. A escolha pode ser revista na página. |
+| UX/UI | Pass em teste | CTA principal inteiramente acima do banner a 320×568, 390×844 e 1440×900. Durante a rolagem no mobile, banner e botão fixo ficam empilhados. |
+| CX | Pass em teste | A rota do convite abre após aceite, recusa e GPC. Fechar, recarregar e retirar a permissão foram exercitados no preview. |
+| Growth | Pass em teste | O Chrome, com a versão pública v17 e requisições interceptadas, observou o vinculador guardar um GCLID fictício e uma solicitação com a ação correta ao clicar após aceite, inclusive logo após aceitar. Nenhuma solicitação de conversão após recusa ou com GPC. O teste não foi enviado para o relatório de produção e não confirma atribuição de tráfego real. |
+| PMO/QA | Pass local | ESLint dirigido, `pnpm validate` (69 testes, TypeScript e build), 33 testes de consentimento e mensuração e smoke no Chrome. Rollback por revert e republicação. |
+
+Após publicação, acompanhar dias fechados no fuso de São Paulo. No Admin, usar a origem Google e manter CTA principal separado de cards. No Ads, usar `Todas as conversões` para a ação secundária de clique no CTA do grupo. Os relatórios e o status da ação confirmam recepção e atribuição de tráfego real. Entradas no WhatsApp só entram no relatório quando houver confirmação por outra fonte.

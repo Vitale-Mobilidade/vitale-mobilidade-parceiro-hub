@@ -69,7 +69,7 @@ function GroupLink({ position = "hero" }: { position?: "hero" | "sticky" }) {
       rel="noreferrer"
       onClick={(event) => handleOffersGroupCta(event, position)}
       onAuxClick={(event) => handleOffersGroupCta(event, position)}
-      className={`inline-flex min-h-15 w-full items-center justify-center gap-2 rounded-xl bg-mint px-4 py-3 text-center text-lg leading-tight font-bold text-ink shadow-lg shadow-mint/20 hover:bg-mint/90 motion-safe:transition motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.98] sm:w-auto sm:px-7 ${focus}`}
+      className={`inline-flex min-h-15 w-full items-center justify-center gap-2 rounded-xl bg-mint px-4 py-3 text-center text-base leading-tight sm:text-lg font-bold text-ink shadow-lg shadow-mint/20 hover:bg-mint/90 motion-safe:transition motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.98] sm:w-auto sm:px-7 ${focus}`}
     >
       <MessageCircle aria-hidden="true" className="size-5 shrink-0" />
       Entrar no grupo no WhatsApp
@@ -214,8 +214,8 @@ function OffersGroupLanding() {
   return (
     <div className="offers-group-landing min-h-screen bg-ink text-ink-foreground">
       <header className="border-b border-white/15 bg-ink text-ink-foreground">
-        <div className="mx-auto max-w-6xl px-5 py-3 sm:px-8 sm:py-4">
-          <div className="flex h-11 w-32 items-center justify-center rounded-md bg-logo-surface p-1.5 sm:h-14 sm:w-40">
+        <div className="mx-auto max-w-6xl px-5 py-2 sm:px-8 sm:py-4">
+          <div className="flex h-10 w-32 items-center justify-center rounded-md bg-logo-surface p-1.5 sm:h-14 sm:w-40">
             <img
               src="/vitale-logo-464.avif"
               alt="Vitale Mobilidade"
@@ -228,7 +228,7 @@ function OffersGroupLanding() {
       </header>
 
       <main className="bg-ink pb-24 text-ink-foreground sm:pb-0">
-        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-6 sm:px-8 sm:py-10 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-10 lg:gap-14 lg:py-14">
+        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-4 sm:px-8 sm:py-10 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-10 lg:gap-14 lg:py-14">
           <div className="md:pt-6">
             <p className="text-xs font-bold tracking-widest text-mint uppercase sm:text-sm">
               Grupo de ofertas da Vitale
@@ -236,12 +236,20 @@ function OffersGroupLanding() {
             <h1 className="mt-3 text-[1.9rem] leading-[1.1] font-extrabold tracking-tight text-balance sm:text-5xl">
               {TITLE}
             </h1>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-ink-foreground/90 sm:text-lg">
+            <p className="mt-2 max-w-xl text-base leading-snug sm:mt-3 sm:leading-relaxed text-ink-foreground/90 sm:text-lg">
               {DESCRIPTION}
             </p>
             <div ref={primaryAction} className="mt-4 sm:mt-6">
               <GroupLink />
-              <OffersAdsConsent />
+              <OffersAdsConsent
+                stickyAction={
+                  showStickyAction ? (
+                    <div className="pointer-events-auto w-full border-t border-white/15 bg-ink px-5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden">
+                      <GroupLink position="sticky" />
+                    </div>
+                  ) : null
+                }
+              />
             </div>
           </div>
           {!!catalog?.highlights.length && (
@@ -273,12 +281,6 @@ function OffersGroupLanding() {
           )}
         </section>
       </main>
-
-      {showStickyAction && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-ink px-5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden">
-          <GroupLink position="sticky" />
-        </div>
-      )}
     </div>
   );
 }

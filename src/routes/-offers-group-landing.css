@@ -9,3 +9,14 @@
 .offers-group-landing {
   font-family: Inter, system-ui, sans-serif;
 }
+
+.offers-ads-consent {
+  max-height: 48dvh;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (width >= 40rem) {
+  .offers-ads-consent {
+    padding-bottom: 1rem;
+  }
+}
