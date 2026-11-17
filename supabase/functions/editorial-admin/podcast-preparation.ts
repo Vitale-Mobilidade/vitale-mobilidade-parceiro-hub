@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { COVER_BUCKET, inspectJpeg } from "../_shared/editorial-cover.ts";
-import { PODCAST_ARTWORK_EDGE, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
+import { PODCAST_ARTWORK_EDGE, PODCAST_PHOTO_LAYOUT, preparedPodcastCoverPath } from "../_shared/podcast-artwork-contract.ts";
 import { PODCAST_AUDIO_BUCKET } from "../_shared/podcast-audio-contract.ts";
 import { notifyPodcastError } from "./podcast-alert.ts";
 import { prepareNextPodcastEpisode, previewPodcastQueue, stageNextPodcastEpisode } from "./podcast-queue.ts";
@@ -20,13 +20,13 @@ export async function preparePodcastDraft(db: SupabaseClient, youtubeId: string)
   if (article.error || episode.error) throw new Error("podcast_queue_read_failed");
   if (!episode.data || !article.data) throw new Error("podcast_article_unavailable");
   const version = String(Date.parse(article.data.updated_at));
-  const path = preparedPodcastCoverPath(article.data.id, version);
+  const path = preparedPodcastCoverPath(article.data.id, version, PODCAST_PHOTO_LAYOUT);
   if (!article.data.slug || !path) throw new Error("podcast_cover_missing");
   const audio = await db.storage.from(PODCAST_AUDIO_BUCKET).info(episode.data.object_path);
   if (audio.error || !audio.data) throw new Error("podcast_queue_audio_missing");
 
   const url = new URL(PODCAST_ARTWORK_EDGE);
-  url.search = new URLSearchParams({ type: "podcast-cover", slug: article.data.slug, layout: "3", v: version }).toString();
+  url.search = new URLSearchParams({ type: "podcast-cover", slug: article.data.slug, layout: PODCAST_PHOTO_LAYOUT, v: version }).toString();
   const response = await fetch(url, { signal: AbortSignal.timeout(25_000), redirect: "error" })
     .catch(() => { throw new Error("podcast_cover_render_failed"); });
   const length = Number(response.headers.get("content-length"));
@@ -37,16 +37,20 @@ export async function preparePodcastDraft(db: SupabaseClient, youtubeId: string)
   const dimensions = inspectJpeg(bytes);
   if (bytes.length !== length || dimensions?.width !== 1400 || dimensions.height !== 1400)
     throw new Error("podcast_cover_render_failed");
-  const upload = await db.storage.from(COVER_BUCKET).upload(path, bytes, {
-    contentType: "image/jpeg", upsert: true,
-  });
-  if (upload.error) throw new Error("podcast_cover_save_failed");
+  const artwork = response.headers.get("X-Podcast-Artwork");
+  if (artwork !== "photo" && artwork !== "brand") throw new Error("podcast_cover_render_failed");
+  const hasPhoto = artwork === "photo";
+  if (hasPhoto) {
+    const upload = await db.storage.from(COVER_BUCKET).upload(path, bytes, {
+      contentType: "image/jpeg", upsert: true,
+    });
+    if (upload.error) throw new Error("podcast_cover_save_failed");
+  }
 
   const updated = await db.from("podcast_episode_queue").update({
-    prepared_article_version: article.data.updated_at, prepared_cover_path: path,
+    prepared_article_version: article.data.updated_at, prepared_cover_path: hasPhoto ? path : null,
   }).eq("youtube_id", youtubeId).is("released_at", null);
   if (updated.error) throw new Error("podcast_queue_write_failed");
-
 }
 
 export async function fillPreparedPodcastQueue(

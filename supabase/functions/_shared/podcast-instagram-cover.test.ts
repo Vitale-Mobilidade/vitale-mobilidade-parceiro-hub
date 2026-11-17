@@ -20,8 +20,9 @@ function fixture(original = false, og = coverPublicUrl(origin,articleId,fileId),
     const url = new URL(String(input)); reads.push(url.pathname);
     if (url.pathname.endsWith("editorial_articles")) return Response.json([{id:articleId,video_id:"abcdefghijk",title,updated_at:version,og_image_url:og}]);
     if (url.pathname.endsWith("podcast_episode_queue")) return Response.json([]);
+    if (url.pathname.includes("/podcast-covers/v3-")) return new Response("legacy brand placeholder");
     if (square && url.pathname.endsWith("/podcast-covers/independent.jpg")) return new Response(source);
-    if (url.pathname.endsWith("youtube_editorial_sources")) return Response.json([{cover_background:original ? {path:`${articleId}/backgrounds/${fileId}.jpg`,mime:"image/jpeg"}:null}]);
+    if (url.pathname.endsWith("youtube_editorial_sources")) return Response.json([{cover_background:original ? {path:`${articleId}/backgrounds/${fileId}.jpg`,mime:"image/jpeg",title}:null}]);
     if (url.pathname.includes("/backgrounds/") || url.pathname.endsWith(`/${articleId}/${fileId}.jpg`)) return new Response(source,{headers:{"Content-Type":"image/jpeg"}});
     return Response.json({message:"missing"},{status:404});
   }}});
@@ -72,11 +73,33 @@ it("serves a stored independent square without looking up the article background
   expect(f.reads.some(path => path.endsWith("youtube_editorial_sources"))).toBe(false);
 });
 
-it("uses a square brand cover when new podcast artwork is pending, even with a linked landscape", async () => {
+it("v5 bypasses the cached v3 and includes the original photograph at both edges", async () => {
   const f = fixture(true);
-  f.params.set("layout", "3");
+  f.params.set("layout", "5");
   const response = await servePodcastCover(f.request, f.params, f.db);
   expect(response.status).toBe(200);
+  expect(response.headers.get("X-Podcast-Artwork")).toBe("photo");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  expect(inspectJpeg(bytes)).toEqual({ width: 1400, height: 1400 });
+  const image = jpeg.decode(bytes);
+  expect(image.data[(300 * 1400 + 30) * 4]).toBeGreaterThan(180);
+  expect(image.data[(300 * 1400 + 1369) * 4 + 2]).toBeGreaterThan(180);
+  expect(f.reads.some(path => path.includes("/podcast-covers/v3-"))).toBe(false);
+});
+
+it("uses the complete published JPEG if no original exists", async () => {
+  const f = fixture(false);
+  f.params.set("layout", "5");
+  const response = await servePodcastCover(f.request, f.params, f.db);
+  const image = jpeg.decode(new Uint8Array(await response.arrayBuffer()));
+  expect(image.data[(600 * 1400 + 70) * 4]).toBeGreaterThan(180);
+  expect(image.data[(600 * 1400 + 1329) * 4 + 2]).toBeGreaterThan(180);
+});
+
+it("uses the brand only when there is no verified photo", async () => {
+  const f = fixture(false, "https://example.com/cover.jpg");
+  f.params.set("layout", "5");
+  const response = await servePodcastCover(f.request, f.params, f.db);
+  expect(response.headers.get("X-Podcast-Artwork")).toBe("brand");
   expect(inspectJpeg(new Uint8Array(await response.arrayBuffer()))).toEqual({ width: 1400, height: 1400 });
-  expect(f.reads.some(path => path.endsWith("youtube_editorial_sources") || path.includes("/backgrounds/"))).toBe(false);
 });

@@ -7,10 +7,9 @@ import {
 vi.mock("./instagram-single-caption.ts", () => ({
   singleInstagramCaption: () => "Legenda com evidência",
 }));
-vi.mock("./cover-renderer/index.ts", () => ({
-  composeNativeInstagramCover: async () => ({
-    bytes: new Uint8Array([1, 2, 3]),
-  }),
+vi.mock("./cover-renderer/index.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./cover-renderer/index.ts")>()),
+  composeNativeInstagramCover: async () => ({ bytes: new Uint8Array([1, 2, 3]) }),
 }));
 vi.mock("./editorial-cover.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./editorial-cover.ts")>()),
@@ -25,12 +24,15 @@ const source = {
 const article = {
   id: source.article_id,
   video_id: source.video_id,
+  og_image_url: null,
   title: "Teste",
   blocks: [],
 };
 
-function fixture(states = ["scheduled"]) {
-  const rpc = vi.fn(async () => ({ data: [{ id: "prepared" }] }));
+function fixture(states = ["scheduled"], photo = true) {
+  const rpc = vi.fn(async (name: string) => ({
+    data: name === "reserve_instagram_single" ? "2026-11-17T20:45:00Z" : [{ id: "prepared", fingerprint: "digest" }],
+  }));
   const upload = vi.fn(async () => ({ error: null }));
   const generate = vi.fn(async () =>
     Response.json({ background: "data:image/jpeg;base64,AQID" }),
@@ -53,7 +55,15 @@ function fixture(states = ["scheduled"]) {
       order: () => q,
       range: () => q,
       single: () => q,
+      maybeSingle: () => q,
+      update: () => q,
       then(resolve: (v: object) => void) {
+        if (table === "instagram_single_settings")
+          return resolve({ data: { automation_enabled: true, pilot_id: "pilot" } });
+        if (table === "youtube_editorial_sources") return resolve({ data: photo ? {
+          cover_background: { title: "Teste", mime: "image/jpeg",
+            path: `${source.article_id}/backgrounds/e1d0a523-e954-4d92-be7e-ed93c565ef0e.jpg` },
+        } : null });
         if (table === "editorial_articles") return resolve({ data: article });
         if (table === "instagram_carousel_sources")
           return resolve({
@@ -75,7 +85,7 @@ function fixture(states = ["scheduled"]) {
   const db = {
     from,
     rpc,
-    storage: { from: () => ({ upload }) },
+    storage: { from: () => ({ upload, download: async () => ({ data: new Blob(["photo"]) }) }) },
   } as unknown as Parameters<typeof prepareInstagramSingle>[0];
   return { db, from, rpc, upload, generate };
 }
@@ -85,7 +95,7 @@ describe("Independent Instagram artwork", () => {
     const f = fixture();
     await expect(
       prepareInstagramSingle(f.db, source.video_id, f.generate),
-    ).resolves.toEqual({ id: "prepared" });
+    ).resolves.toEqual({ id: "prepared", fingerprint: "digest" });
     expect(f.from).not.toHaveBeenCalledWith("youtube_editorial_sources");
     expect(f.generate).toHaveBeenCalledExactlyOnceWith(article);
     expect(f.upload).toHaveBeenCalledWith(
@@ -107,17 +117,23 @@ describe("Independent Instagram artwork", () => {
     expect(f.generate).not.toHaveBeenCalled();
   });
 
-  it("does not reserve an AI draft without review or copy an article cover during a tick", async () => {
-    const draft = fixture(["review"]);
-    await expect(queueNextInstagramSingle(draft.db)).resolves.toEqual({
-      status: "awaiting_review",
+  it("restocks from an exact published source without approving a manual draft or calling AI", async () => {
+    const f = fixture(["review"]);
+    await expect(queueNextInstagramSingle(f.db, "https://db.example")).resolves.toEqual({
+      status: "scheduled", dueAt: "2026-11-17T20:45:00Z",
     });
-    expect(draft.rpc).not.toHaveBeenCalled();
-    const empty = fixture([]);
-    await expect(queueNextInstagramSingle(empty.db)).resolves.toEqual({
-      status: "cover_requires_preparation",
+    expect(f.rpc).toHaveBeenNthCalledWith(2, "reserve_instagram_single", {
+      p_id: "prepared", p_fingerprint: "digest", p_auto: true,
     });
-    expect(empty.from).not.toHaveBeenCalledWith("editorial_articles");
-    expect(empty.upload).not.toHaveBeenCalled();
+    expect(f.generate).not.toHaveBeenCalled();
+  });
+
+  it("does not stage or reserve when no verified photograph is available", async () => {
+    const f = fixture([], false);
+    await expect(queueNextInstagramSingle(f.db, "https://db.example")).resolves.toEqual({
+      status: "source_requires_review",
+    });
+    expect(f.rpc).not.toHaveBeenCalled();
+    expect(f.upload).not.toHaveBeenCalled();
   });
 });

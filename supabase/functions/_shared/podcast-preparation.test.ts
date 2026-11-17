@@ -8,7 +8,7 @@ const articleId = "11223344-1234-1234-1234-123456789abc";
 const articleVersion = "2026-11-12T02:00:00.000Z";
 const video = "abcdefghijk";
 
-function fixture(width: number) {
+function fixture(width: number, brand = false) {
   const writes: { path: string; body: unknown }[] = [];
   const db = createClient("https://supabase.example", "test", {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -38,9 +38,9 @@ function fixture(width: number) {
   });
   const bytes = Uint8Array.of(255, 216, 255, 192, 0, 7, 8, 5, 120, width >> 8, width & 255, 255, 217);
   const render = vi.fn(async (url: URL) => {
-    expect(url.searchParams.get("layout")).toBe("3");
+    expect(url.searchParams.get("layout")).toBe("5");
     expect(url.searchParams.get("v")).toBe(String(Date.parse(articleVersion)));
-    return new Response(bytes, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(bytes.length) } });
+    return new Response(bytes, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(bytes.length), "X-Podcast-Artwork": brand ? "brand" : "photo" } });
   });
   vi.stubGlobal("fetch", render);
   return { db: db as never, writes, bytes };
@@ -50,14 +50,21 @@ it("prepara só o RSS quadrado, sem gravar um post de Instagram", async () => {
   const f = fixture(1400);
   await preparePodcastDraft(f.db, video);
   expect(f.writes[1]).toMatchObject({
-    path: `/storage/v1/object/editorial-covers/${articleId}/podcast-covers/v3-${Date.parse(articleVersion)}.jpg`,
+    path: `/storage/v1/object/editorial-covers/${articleId}/podcast-covers/v5-${Date.parse(articleVersion)}.jpg`,
     body: f.bytes,
   });
   expect(f.writes[2]?.body).toMatchObject({
     prepared_article_version: articleVersion,
-    prepared_cover_path: `${articleId}/podcast-covers/v3-${Date.parse(articleVersion)}.jpg`,
+    prepared_cover_path: `${articleId}/podcast-covers/v5-${Date.parse(articleVersion)}.jpg`,
   });
   expect(f.writes[2]?.body).not.toHaveProperty("prepared_instagram_post");
+});
+
+it("prepara o áudio sem salvar como definitiva uma capa sem foto", async () => {
+  const f = fixture(1400, true);
+  await preparePodcastDraft(f.db, video);
+  expect(f.writes).toHaveLength(2);
+  expect(f.writes[1]?.body).toMatchObject({ prepared_article_version: articleVersion, prepared_cover_path: null });
 });
 
 it("mantém o episódio fora da fila preparada se o render devolver proporção errada", async () => {

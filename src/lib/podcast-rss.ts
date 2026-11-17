@@ -1,3 +1,4 @@
+import { PODCAST_PHOTO_LAYOUT, PODCAST_PHOTO_RSS_FROM } from "../../supabase/functions/_shared/podcast-artwork-contract";
 import { PODCAST_SITE as base, podcastArticleSlug, podcastCoverPath, type PodcastArticle } from "./podcast-editorial";
 
 export type ReleasedPodcastEpisode = {
@@ -89,7 +90,8 @@ export function buildPodcastRss(
     const match = articles.get(id);
     const article = match && podcastArticleSlug.test(match.slug) && match.slug.length <= 120 ? match : undefined;
     const articleUrl = article ? `${base}/conteudos/${article.slug}` : null;
-    const art = article ? podcastCoverPath(article) : null;
+    const artworkLayout = Date.parse(episode.released_at) >= PODCAST_PHOTO_RSS_FROM ? PODCAST_PHOTO_LAYOUT : "3";
+    const art = article ? podcastCoverPath(article, false, artworkLayout) : null;
     const { quiz, intro, details } = arrangeEpisodeNotes(episode.original_description);
     const notes = [
       `<p>🧠 Quer ajuda para escolher a elétrica ideal pro seu perfil (sem jogar dinheiro fora)? 👉 <a href="${xml(quiz)}">Fazer o quiz</a></p>`,

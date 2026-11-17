@@ -1,11 +1,14 @@
 import { isCoverUuid } from "./editorial-cover.ts";
 
 export const PODCAST_ARTWORK_EDGE = "https://ipectfejftfcikvozoyu.supabase.co/functions/v1/bike-image";
+export const PODCAST_PHOTO_LAYOUT = "5";
+// The first episode with a cached title-only v3 cover after the 15/11 release.
+export const PODCAST_PHOTO_RSS_FROM = Date.parse("2026-11-16T09:15:00Z");
 export const podcastArticleSlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export function preparedPodcastCoverPath(articleId: string, version: string) {
+export function preparedPodcastCoverPath(articleId: string, version: string, layout: "3" | "5" = "3") {
   return isCoverUuid(articleId) && /^\d{1,14}$/.test(version)
-    ? `${articleId}/podcast-covers/v3-${version}.jpg` : null;
+    ? `${articleId}/podcast-covers/v${layout}-${version}.jpg` : null;
 }
 
 export function independentPodcastCoverPath(articleId: string) {
@@ -28,12 +31,12 @@ export function podcastArticleCoverSource(value: string | null): URL | null {
 }
 
 
-export function podcastCoverPath(article: { slug: string | null; og_image_url: string | null; updated_at: string }, download = false) {
+export function podcastCoverPath(article: { slug: string | null; og_image_url: string | null; updated_at: string }, download = false, layout: "3" | "5" = "3") {
   if (!article.slug || article.slug.length > 120 || !podcastArticleSlug.test(article.slug)
    ) return null;
   const version = Date.parse(article.updated_at);
-  const path = `/podcast/capas/${article.slug}.v3.jpg`;
-  const params = new URLSearchParams({ layout: "3" });
+  const path = `/podcast/capas/${article.slug}.v${layout}.jpg`;
+  const params = new URLSearchParams({ layout });
   if (Number.isFinite(version)) params.set("v", String(version));
   if (download) params.set("download", "1");
   return params.size ? `${path}?${params}` : path;

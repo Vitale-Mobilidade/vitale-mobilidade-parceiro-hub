@@ -2689,7 +2689,7 @@ Deno.serve(async (req) => {
         const single = await import("./instagram-single.ts");
         const result = action === "instagram-single-list" ? await single.readInstagramSingle(db, body)
           : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId, (article) => coverGenerate(req, db, actor, article, "instagram"))
-          : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db)
+          : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db, SUPABASE_URL)
           : await single.approveInstagramSingle(db, body.id, body.fingerprint);
         const response = json(req, result);
         response.headers.set("Cache-Control", "private, no-store");

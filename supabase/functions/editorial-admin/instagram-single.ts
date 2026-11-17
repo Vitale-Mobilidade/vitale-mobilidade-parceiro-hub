@@ -15,6 +15,7 @@ import {
   instagramPublisher,
   readInstagramSettings,
 } from "../_shared/podcast-instagram.ts";
+import { readPublishedCoverSource } from "../_shared/published-cover-source.ts";
 import type { InstagramSingleDashboard } from "../_shared/instagram-single-contract.ts";
 
 type Source = NonNullable<InstagramSingleDashboard["source"]>;
@@ -40,6 +41,24 @@ async function generateInstagramArtwork(
   );
   assertInstagramJpeg(bytes);
   return bytes;
+}
+
+async function composeAutomaticInstagramArtwork(db: SupabaseClient, origin: string, article: EditorialArticle) {
+  const source = await readPublishedCoverSource(db, origin, article);
+  if (!source) throw Error("instagram_original_missing");
+  const { composeNativeInstagramCover, composeInstagramPostCover, containPublishedInstagramCover } =
+    await import("../_shared/cover-renderer/index.ts");
+  try {
+    if (!source.original) return (await containPublishedInstagramCover(source.bytes)).bytes;
+    try {
+      return (await composeNativeInstagramCover(source, article.title)).bytes;
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "instagram_cover_ratio_invalid") throw error;
+      return (await composeInstagramPostCover(source, article.title)).bytes;
+    }
+  } catch {
+    throw Error("instagram_source_cover_invalid");
+  }
 }
 
 async function findSources(db: SupabaseClient, limit = 1): Promise<Source[]> {
@@ -294,13 +313,13 @@ export async function prepareInstagramSingle(
   const [source] = sources;
   if (!source || source.video_id !== expectedVideo)
     throw Error("instagram_source_changed");
-  return prepareInstagramSource(db, source, generate);
+  return prepareInstagramSource(db, source, (article) => generateInstagramArtwork(article, generate, article.title));
 }
 
 async function prepareInstagramSource(
   db: SupabaseClient,
   s: Source,
-  generate: GenerateCover,
+  render: (article: EditorialArticle) => Promise<Uint8Array>,
 ) {
   const [article, eligible] = await Promise.all([
     db
@@ -329,11 +348,7 @@ async function prepareInstagramSource(
     article.data.blocks,
     eligible.data.transcript,
   );
-  const bytes = await generateInstagramArtwork(
-    article.data as EditorialArticle,
-    generate,
-    article.data.title,
-  );
+  const bytes = await render(article.data as EditorialArticle);
   const { fingerprint, path } = await storeInstagramAsset(
     db,
     s.article_id,
@@ -348,8 +363,8 @@ async function prepareInstagramSource(
     p_path: path,
     p_fingerprint: fingerprint,
   });
-  if (item.error || !item.data?.[0])
-    throw Error("instagram_draft_write_failed");
+  if (item.error) throw Error("instagram_draft_write_failed");
+  if (!item.data?.[0]) throw Error("instagram_queue_changed");
   return item.data[0];
 }
 
@@ -373,19 +388,42 @@ export async function approveInstagramSingle(
   return { dueAt: scheduled.data };
 }
 
-/** The sender only dispatches reserved posts. Preparing an original is an explicit Admin action. */
-export async function queueNextInstagramSingle(db: SupabaseClient) {
-  const existing = await db
-    .from("instagram_single_posts")
-    .select("state")
-    .in("state", ["review", "scheduled", "publishing"])
-    .limit(3);
+/** Only reserve the draft produced by this call. Existing manual drafts need approval. */
+export async function queueNextInstagramSingle(db: SupabaseClient, origin: string) {
+  const settings = await config(db);
+  if (!settings.automation_enabled) return { status: "paused" };
+  if (!settings.pilot_id) return { status: "awaiting_review" };
+  const existing = await db.from("instagram_single_posts").select("state")
+    .in("state", ["review", "scheduled", "publishing"]).limit(3);
   if (existing.error) throw Error("instagram_state_unavailable");
-  if ((existing.data ?? []).some((post) => post.state === "review"))
-    return { status: "awaiting_review" };
   if ((existing.data?.length ?? 0) >= 3) return { status: "queue_full" };
-  const [source] = await findSources(db);
-  return { status: source ? "cover_requires_preparation" : "no_source" };
+  const candidates = await findSources(db, 4);
+  if (!candidates.length)
+    return { status: existing.data?.some((post) => post.state === "review") ? "awaiting_review" : "no_source" };
+  let lastIssue = "";
+  for (const source of candidates) {
+    let prepared;
+    try {
+      prepared = await prepareInstagramSource(db, source, (article) => composeAutomaticInstagramArtwork(db, origin, article));
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      if (code === "instagram_queue_changed") return { status: "queue_changed" };
+      if (!["instagram_original_missing", "instagram_source_cover_invalid",
+        "instagram_caption_evidence_missing", "instagram_caption_incomplete"].includes(code)) throw error;
+      lastIssue = code;
+      console.info("[instagram] source skipped", source.video_id, code);
+      continue;
+    }
+    const reserved = await db.rpc("reserve_instagram_single", {
+      p_id: prepared.id, p_fingerprint: prepared.fingerprint, p_auto: true,
+    });
+    if (reserved.error) throw Error("instagram_reserve_failed");
+    return reserved.data ? { status: "scheduled", dueAt: reserved.data } : { status: "awaiting_review" };
+  }
+  const saved = await db.from("instagram_single_settings")
+    .update({ automation_issue: lastIssue }).eq("singleton", true);
+  if (saved.error) throw Error("instagram_state_unavailable");
+  return { status: "source_requires_review" };
 }
 
 export async function tickInstagramSingle(
@@ -398,7 +436,7 @@ export async function tickInstagramSingle(
   const claim = await db.rpc("claim_instagram_single_due");
   if (claim.error) throw Error("instagram_claim_failed");
   const post = claim.data?.[0];
-  if (!post) return queueNextInstagramSingle(db);
+  if (!post) return queueNextInstagramSingle(db, url);
   const save = async (patch: Record<string, unknown>) => {
     const update = await db
       .from("instagram_single_posts")
@@ -485,7 +523,7 @@ export async function tickInstagramSingle(
     }
     // Refill asynchronously inside the job, without changing the confirmed result on a preparation failure.
     try {
-      await queueNextInstagramSingle(db);
+      await queueNextInstagramSingle(db, url);
     } catch {
       /* The next cron window can refill. */
     }

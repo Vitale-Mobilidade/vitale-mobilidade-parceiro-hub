@@ -99,10 +99,9 @@ function fitBackground(source: Raster, W: number, H: number, preserveEdges = fal
     }
   return out;
 }
-function fitWholeInstagramPhoto(source: Raster, W: number, H: number): Uint8Array {
+function fitWholeCoverPhoto(source: Raster, W: number, H: number, boxHeight: number): Uint8Array {
   const out = new Uint8Array(W * H * 4);
   for (let p = 0; p < out.length; p += 4) out.set([6, 24, 18, 255], p);
-  const boxHeight = 870;
   const scale = Math.min(W / source.width, boxHeight / source.height);
   const width = Math.round(source.width * scale), height = Math.round(source.height * scale);
   const left = Math.floor((W - width) / 2), top = Math.floor((boxHeight - height) / 2);
@@ -172,6 +171,11 @@ export async function composeSquarePodcastCover(
   return composeCover(source, title, true);
 }
 
+export function composePhotographicPodcastCover(background: { bytes: Uint8Array; mime: "image/png" | "image/jpeg" }, title: string) {
+  const source = decode(background.bytes, background.mime === "image/png" ? "png" : "jpeg");
+  return composeCover(source, title, true, false, fitWholeCoverPhoto(source, 1400, 1400, 880));
+}
+
 function composeCover(source: Raster, title: string, square: boolean, portrait = false, fullBleed?: Uint8Array) {
   const W = portrait ? 1080 : square ? 1400 : COVER_WIDTH, H = portrait ? 1350 : square ? 1400 : COVER_HEIGHT;
   const inset = portrait ? 120 : square ? 100 : 64;
@@ -212,7 +216,7 @@ function composeCover(source: Raster, title: string, square: boolean, portrait =
       sizes = sizes.filter(size => size < candidate.size);
     }
     if (!fit) throw new Error("cover_title_does_not_fit");
-    const out = fullBleed ?? (portrait ? fitWholeInstagramPhoto(source, W, H) : fitBackground(source, W, H));
+    const out = fullBleed ?? (portrait ? fitWholeCoverPhoto(source, W, H, 870) : fitBackground(source, W, H));
     const brandSize = square ? 34 : 26;
     const brand = rasterText(font(brandSize), square ? "VITALE MOBILIDADE" : "Vitale Mobilidade", brandSize);
     const pillWidth = brand.width + 44;
@@ -262,8 +266,15 @@ export async function composeInstagramPostCover(background: { bytes: Uint8Array;
 
 /** Safe fallback: entire published JPEG, including its existing title/brand, inside the grid. */
 export async function containPublishedInstagramCover(bytes: Uint8Array) {
+  return containPublishedCover(bytes, 1080, 1350, 120);
+}
+
+export function containPublishedPodcastCover(bytes: Uint8Array) {
+  return containPublishedCover(bytes, 1400, 1400, 60);
+}
+
+function containPublishedCover(bytes: Uint8Array, W: number, H: number, inset: number) {
   const source = decode(bytes, "jpeg");
-  const W = 1080, H = 1350, inset = 120;
   const out = new Uint8Array(W * H * 4);
   for (let p = 0; p < out.length; p += 4) out.set([6, 24, 18, 255], p);
   const scale = Math.min((W - 2 * inset) / source.width, (H - 2 * inset) / source.height);

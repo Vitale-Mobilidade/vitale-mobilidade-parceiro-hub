@@ -48,3 +48,13 @@ it("resolve o novo arquivo e encaminha a versão para o cache da função de ima
   expect(destination.searchParams.get("layout")).toBe("3");
   expect(destination.searchParams.get("download")).toBe("1");
 });
+
+it("redirects recovered episode artwork to layout 5 regardless of the inbound layout parameter", () => {
+  const file = "teste-ft07.v5.jpg";
+  const url = `https://vitalemobilidade.com/podcast/capas/${file}?layout=3&v=1794582612554`;
+  const response = servePodcastArtwork(new Request(url), file);
+  expect(response.status).toBe(307);
+  const location = new URL(response.headers.get("Location") ?? "");
+  expect(location.searchParams.get("layout")).toBe("5");
+  expect(location.searchParams.get("v")).toBe("1794582612554");
+});

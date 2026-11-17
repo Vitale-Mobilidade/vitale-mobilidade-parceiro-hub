@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { articleReferencesCover, coverObjectPath, COVER_BUCKET, isCoverUuid } from "../_shared/editorial-cover.ts";
-import { independentPodcastCoverPath, podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
+import { readPublishedCoverSource } from "../_shared/published-cover-source.ts";
+import { PODCAST_PHOTO_LAYOUT, independentPodcastCoverPath, podcastArticleSlug, preparedPodcastCoverPath, preparedPodcastInstagramPath } from "../_shared/podcast-artwork-contract.ts";
 
 export async function servePodcastCover(req: Request, params: URLSearchParams, db: SupabaseClient) {
   const portrait = params.get("layout") === "4";
+  const photographic = params.get("layout") === PODCAST_PHOTO_LAYOUT;
   const slug = params.get("slug") ?? "";
   if (slug.length > 120 || !podcastArticleSlug.test(slug)) return new Response(null, { status: 404 });
   const { data: article, error } = await db.from("editorial_articles").select("id,video_id,title,updated_at,og_image_url")
@@ -30,27 +32,48 @@ export async function servePodcastCover(req: Request, params: URLSearchParams, d
     if (!portrait) {
       const independent = await stored(independentPodcastCoverPath(article.id));
       if (independent) {
+        if (photographic) headers.set("X-Podcast-Artwork", "photo");
         headers.set("Content-Length", String(independent.size));
         return new Response(independent, { headers });
       }
-      const byVersion = params.get("layout") === "3"
-        ? preparedPodcastCoverPath(article.id, params.get("v") ?? "") : null;
-      let legacy = await stored(byVersion);
-      if (!legacy && article.video_id) {
+      // The new layout must never load a cached v3 title-only cover from the incident.
+      const byVersion = photographic || params.get("layout") === "3"
+        ? preparedPodcastCoverPath(article.id, params.get("v") ?? "", photographic ? PODCAST_PHOTO_LAYOUT : "3") : null;
+      let prepared = await stored(byVersion);
+      if (!prepared && !photographic && article.video_id) {
         const { data, error: queueError } = await db.from("podcast_episode_queue")
           .select("prepared_cover_path").eq("youtube_id", article.video_id).maybeSingle();
         if (queueError) return new Response(null, { status: 503 });
         const saved = data?.prepared_cover_path;
         const version = typeof saved === "string" ? /\/v3-(\d{1,14})\.jpg$/.exec(saved)?.[1] : undefined;
         if (version && saved !== byVersion && preparedPodcastCoverPath(article.id, version) === saved)
-          legacy = await stored(saved);
+          prepared = await stored(saved);
       }
-      if (legacy) {
-        headers.set("Content-Length", String(legacy.size));
-        return new Response(legacy, { headers });
+      if (prepared) {
+        if (photographic) headers.set("X-Podcast-Artwork", "photo");
+        headers.set("Content-Length", String(prepared.size));
+        return new Response(prepared, { headers });
       }
-      const { composeSquarePodcastCover } = await import("../_shared/cover-renderer/index.ts");
-      const { bytes } = await composeSquarePodcastCover(null, article.title.normalize("NFC"));
+      const { composeSquarePodcastCover, composePhotographicPodcastCover, containPublishedPodcastCover } =
+        await import("../_shared/cover-renderer/index.ts");
+      const title = article.title.normalize("NFC");
+      const origin = new URL(req.url).origin;
+      const source = await readPublishedCoverSource(db, origin, article);
+      let bytes: Uint8Array | undefined;
+      if (source?.original) {
+        try { ({ bytes } = composePhotographicPodcastCover(source, title)); }
+        catch { /* A malformed original can still have a valid published JPEG. */ }
+      }
+      if (!bytes) {
+        const published = source?.original ? await readPublishedCoverSource(db, origin, article, false) : source;
+        if (published) {
+          try { ({ bytes } = containPublishedPodcastCover(published.bytes)); }
+          catch { /* No valid photograph. Serve the brand artwork without freezing it in Storage. */ }
+        }
+      }
+      const hasPhoto = !!bytes;
+      if (!bytes) ({ bytes } = await composeSquarePodcastCover(null, title));
+      if (photographic) headers.set("X-Podcast-Artwork", hasPhoto ? "photo" : "brand");
       headers.set("Content-Length", String(bytes.byteLength));
       return new Response(Uint8Array.from(bytes), { headers });
     }

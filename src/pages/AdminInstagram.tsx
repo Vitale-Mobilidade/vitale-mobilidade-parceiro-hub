@@ -98,6 +98,23 @@ export function InstagramWorkspace() {
       refresh();
     },
   });
+  const refill = useMutation({
+    mutationFn: () => adminCall<{ status: string; dueAt?: string }>("instagram-single-queue-next"),
+    onSuccess: ({ status, dueAt }) => {
+      const messages: Record<string, string> = {
+        queue_full: "As três posições da fila estão ocupadas.",
+        no_source: "Nenhuma fonte elegível está disponível.",
+        awaiting_review: "Há um rascunho que precisa de aprovação.",
+        source_requires_review: "Nenhuma das próximas fontes tem capa e legenda prontas para envio automático.",
+        queue_changed: "A fila mudou. Confira o resumo atualizado.",
+        paused: "A agenda automática está pausada.",
+      };
+      setFeedback(dueAt
+        ? "Post reservado para " + formatPodcastDateTime(dueAt) + " — São Paulo."
+        : messages[status] ?? "Confira o estado atualizado da fila.");
+      refresh();
+    },
+  });
   const connection = useMutation({
     mutationFn: () =>
       adminCall<{ status: string }>("podcast-instagram-connection"),
@@ -115,7 +132,7 @@ export function InstagramWorkspace() {
   }));
   const total = config?.total ?? 0;
   const item = items.find((x) => x.id === selected) ?? items[0];
-  const error = prepare.error ?? approve.error;
+  const error = prepare.error ?? approve.error ?? refill.error;
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -173,6 +190,16 @@ export function InstagramWorkspace() {
           <p className="mt-2 text-sm">
             O primeiro envio depende da sua aprovação da capa e da legenda.
           </p>
+        )}
+        {config?.automationEnabled && (config.counts.scheduled ?? 0) === 0 && (
+          <p className="mt-2 text-sm">Nenhuma publicação reservada.</p>
+        )}
+        {config?.automationEnabled && !config.firstApprovalPending && (
+          <Button className="mt-3" variant="outline" onClick={() => refill.mutate()}
+            disabled={refill.isPending || prepare.isPending ||
+              (config.counts.review ?? 0) + (config.counts.scheduled ?? 0) + (config.counts.publishing ?? 0) >= 3}>
+            {refill.isPending ? "Abastecendo…" : "Abastecer próxima janela"}
+          </Button>
         )}
         {config?.issue && (
           <p className="mt-2 text-sm">

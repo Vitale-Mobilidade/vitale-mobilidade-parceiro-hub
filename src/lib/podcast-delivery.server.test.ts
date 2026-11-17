@@ -114,4 +114,10 @@ it("gives a released episode its published article, cover and readable show note
   expect(feed).toContain("&amp;lt;script&amp;gt;");
   expect(feed).toContain('<guid isPermaLink="false">vitale:youtube:qzaQ3G7PRl8</guid>');
   expect(feed).toContain('url="https://vitalemobilidade.com/podcast/audio/qzaQ3G7PRl8" length="23120427"');
+
+  fixture.episode.released_at = "2026-11-16T09:15:00Z";
+  const refreshed = await (await servePodcastFeed(false)).text();
+  expect(refreshed).toContain('itunes:image href="https://vitalemobilidade.com/podcast/capas/teste-ft07.v5.jpg?layout=5&amp;v=');
+  expect(refreshed).toContain('<guid isPermaLink="false">vitale:youtube:qzaQ3G7PRl8</guid>');
+  expect(refreshed).toContain('url="https://vitalemobilidade.com/podcast/audio/qzaQ3G7PRl8" length="23120427"');
 });
