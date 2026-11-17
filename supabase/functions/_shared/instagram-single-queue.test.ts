@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { composeNativeInstagramCover, composeFullBleedCover } from "./cover-renderer/index.ts";
 import {
   prepareInstagramSingle,
   queueNextInstagramSingle,
@@ -9,7 +10,8 @@ vi.mock("./instagram-single-caption.ts", () => ({
 }));
 vi.mock("./cover-renderer/index.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./cover-renderer/index.ts")>()),
-  composeNativeInstagramCover: async () => ({ bytes: new Uint8Array([1, 2, 3]) }),
+  composeNativeInstagramCover: vi.fn(async () => ({ bytes: new Uint8Array([1, 2, 3]) })),
+  composeFullBleedCover: vi.fn(async () => ({ bytes: new Uint8Array([1, 2, 3]) })),
 }));
 vi.mock("./editorial-cover.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./editorial-cover.ts")>()),
@@ -29,7 +31,7 @@ const article = {
   blocks: [],
 };
 
-function fixture(states = ["scheduled"], photo = true) {
+function fixture(states = ["scheduled"], photo = true, frameEvidence?: object) {
   const rpc = vi.fn(async (name: string) => ({
     data: name === "reserve_instagram_single" ? "2026-11-17T20:45:00Z" : [{ id: "prepared", fingerprint: "digest" }],
   }));
@@ -62,7 +64,7 @@ function fixture(states = ["scheduled"], photo = true) {
           return resolve({ data: { automation_enabled: true, pilot_id: "pilot" } });
         if (table === "youtube_editorial_sources") return resolve({ data: photo ? {
           cover_background: { title: "Teste", mime: "image/jpeg",
-            path: `${source.article_id}/backgrounds/e1d0a523-e954-4d92-be7e-ed93c565ef0e.jpg` },
+            path: `${source.article_id}/backgrounds/e1d0a523-e954-4d92-be7e-ed93c565ef0e.jpg`, frameEvidence },
         } : null });
         if (table === "editorial_articles") return resolve({ data: article });
         if (table === "instagram_carousel_sources")
@@ -125,6 +127,25 @@ describe("Independent Instagram artwork", () => {
     expect(f.rpc).toHaveBeenNthCalledWith(2, "reserve_instagram_single", {
       p_id: "prepared", p_fingerprint: "digest", p_auto: true,
     });
+    expect(f.generate).not.toHaveBeenCalled();
+  });
+
+  it("does not stage a landscape JPEG when no crop is verified", async () => {
+    const f = fixture([]);
+    vi.mocked(composeNativeInstagramCover).mockRejectedValueOnce(Error("instagram_cover_ratio_invalid"));
+    await expect(queueNextInstagramSingle(f.db, "https://db.example")).resolves.toEqual({
+      status: "source_requires_review",
+    });
+    expect(f.upload).not.toHaveBeenCalled();
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
+
+  it("uses the full-bleed renderer when the landscape crop has verified subject bounds", async () => {
+    const evidence = { focus: { x: 0.5, y: 0.5 }, subjects: [{ left: 0.32, top: 0.2, right: 0.68, bottom: 0.8 }] };
+    const f = fixture([], true, evidence);
+    vi.mocked(composeNativeInstagramCover).mockRejectedValueOnce(Error("instagram_cover_ratio_invalid"));
+    await expect(queueNextInstagramSingle(f.db, "https://db.example")).resolves.toMatchObject({ status: "scheduled" });
+    expect(composeFullBleedCover).toHaveBeenCalledWith(expect.any(Object), article.title, "instagram", evidence);
     expect(f.generate).not.toHaveBeenCalled();
   });
 

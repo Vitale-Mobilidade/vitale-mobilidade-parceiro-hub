@@ -15,6 +15,7 @@ import {
   instagramPublisher,
   readInstagramSettings,
 } from "../_shared/podcast-instagram.ts";
+import type { FrameEvidence } from "../_shared/cover-framing.ts";
 import { readPublishedCoverSource } from "../_shared/published-cover-source.ts";
 import type { InstagramSingleDashboard } from "../_shared/instagram-single-contract.ts";
 
@@ -45,19 +46,22 @@ async function generateInstagramArtwork(
 
 async function composeAutomaticInstagramArtwork(db: SupabaseClient, origin: string, article: EditorialArticle) {
   const source = await readPublishedCoverSource(db, origin, article);
-  if (!source) throw Error("instagram_original_missing");
-  const { composeNativeInstagramCover, composeInstagramPostCover, containPublishedInstagramCover } =
+  if (!source?.original) throw Error("instagram_original_missing");
+  const { composeNativeInstagramCover, composeFullBleedCover } =
     await import("../_shared/cover-renderer/index.ts");
   try {
-    if (!source.original) return (await containPublishedInstagramCover(source.bytes)).bytes;
-    try {
-      return (await composeNativeInstagramCover(source, article.title)).bytes;
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== "instagram_cover_ratio_invalid") throw error;
-      return (await composeInstagramPostCover(source, article.title)).bytes;
-    }
+    return (await composeNativeInstagramCover(source, article.title)).bytes;
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "instagram_cover_ratio_invalid")
+      throw Error("instagram_source_cover_invalid");
+  }
+
+  const framing = source.frameEvidence;
+  if (!framing) throw Error("instagram_framing_review_required");
+  try {
+    return (await composeFullBleedCover(source, article.title, "instagram", framing as FrameEvidence)).bytes;
   } catch {
-    throw Error("instagram_source_cover_invalid");
+    throw Error("instagram_framing_review_required");
   }
 }
 
@@ -408,7 +412,7 @@ export async function queueNextInstagramSingle(db: SupabaseClient, origin: strin
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
       if (code === "instagram_queue_changed") return { status: "queue_changed" };
-      if (!["instagram_original_missing", "instagram_source_cover_invalid",
+      if (!["instagram_original_missing", "instagram_source_cover_invalid", "instagram_framing_review_required",
         "instagram_caption_evidence_missing", "instagram_caption_incomplete"].includes(code)) throw error;
       lastIssue = code;
       console.info("[instagram] source skipped", source.video_id, code);
