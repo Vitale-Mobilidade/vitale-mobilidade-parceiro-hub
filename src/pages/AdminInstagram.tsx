@@ -1,3 +1,4 @@
+import { GT20_REMOVED_POST } from "../../supabase/functions/_shared/instagram-gt20-replacement";
 import { useDeferredValue, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, ExternalLink, RefreshCw } from "lucide-react";
@@ -99,8 +100,8 @@ export function InstagramWorkspace() {
     },
   });
   const refill = useMutation({
-    mutationFn: () => adminCall<{ status: string; dueAt?: string }>("instagram-single-queue-next"),
-    onSuccess: ({ status, dueAt }) => {
+    mutationFn: () => adminCall<{ status: string; dueAt?: string; reserved?: number; remaining?: string }>("instagram-single-queue-next"),
+    onSuccess: ({ status, dueAt, reserved, remaining }) => {
       const messages: Record<string, string> = {
         queue_full: "As três posições da fila estão ocupadas.",
         no_source: "Nenhuma fonte elegível está disponível.",
@@ -110,10 +111,13 @@ export function InstagramWorkspace() {
         paused: "A agenda automática está pausada.",
       };
       setFeedback(dueAt
-        ? "Post reservado para " + formatPodcastDateTime(dueAt) + " — São Paulo."
+        ? `${reserved === 1 ? "Uma publicação reservada" : `${reserved} publicações reservadas`}. Próxima janela: ${formatPodcastDateTime(dueAt)} — São Paulo.${remaining ? " " + (messages[remaining] ?? "") : ""}`
         : messages[status] ?? "Confira o estado atualizado da fila.");
       refresh();
     },
+  });
+  const replacement = useMutation({
+    mutationFn: () => adminCall<{ status: string; permalink: string | null }>("instagram-gt20-replacement"),
   });
   const connection = useMutation({
     mutationFn: () =>
@@ -132,7 +136,7 @@ export function InstagramWorkspace() {
   }));
   const total = config?.total ?? 0;
   const item = items.find((x) => x.id === selected) ?? items[0];
-  const error = prepare.error ?? approve.error ?? refill.error;
+  const error = prepare.error ?? approve.error ?? refill.error ?? replacement.error;
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -198,7 +202,7 @@ export function InstagramWorkspace() {
           <Button className="mt-3" variant="outline" onClick={() => refill.mutate()}
             disabled={refill.isPending || prepare.isPending ||
               (config.counts.review ?? 0) + (config.counts.scheduled ?? 0) + (config.counts.publishing ?? 0) >= 3}>
-            {refill.isPending ? "Abastecendo…" : "Abastecer próxima janela"}
+            {refill.isPending ? "Abastecendo…" : "Abastecer fila"}
           </Button>
         )}
         {config?.issue && (
@@ -453,6 +457,17 @@ export function InstagramWorkspace() {
                   Aprovar e agendar na próxima janela
                 </Button>
               )}
+            {item.id === GT20_REMOVED_POST && item.status === "published" &&
+              (replacement.isSuccess ? (
+                <p role="status" className="text-sm">
+                  Republicação confirmada.
+                  {replacement.data.permalink && <> <a className="underline" href={replacement.data.permalink}>Abrir novo post</a></>}
+                </p>
+              ) : (
+                <Button disabled={replacement.isPending} onClick={() => replacement.mutate()}>
+                  {replacement.isPending ? "Republicando GT20 Pro…" : "Republicar GT20 Pro agora"}
+                </Button>
+              ))}
             {item.link && (
               <Button asChild variant="outline">
                 <a href={item.link} target="_blank" rel="noopener noreferrer">

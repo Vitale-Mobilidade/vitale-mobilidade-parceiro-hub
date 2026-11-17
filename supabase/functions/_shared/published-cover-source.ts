@@ -25,7 +25,7 @@ export async function readPublishedCoverSource(db: SupabaseClient, origin: strin
         : name.endsWith(".jpg") && source.mime === "image/jpeg" ? "image/jpeg" : null;
       if (mime && isCoverUuid(name.slice(0, -4))) {
         const bytes = await read(source.path);
-        if (bytes) return { bytes, mime, original: true, frameEvidence: source.frameEvidence } as const;
+        if (bytes) return { bytes, mime, original: true, path: source.path, frameEvidence: source.frameEvidence } as const;
       }
     }
   }

@@ -400,18 +400,23 @@ export async function queueNextInstagramSingle(db: SupabaseClient, origin: strin
   const existing = await db.from("instagram_single_posts").select("state")
     .in("state", ["review", "scheduled", "publishing"]).limit(3);
   if (existing.error) throw Error("instagram_state_unavailable");
-  if ((existing.data?.length ?? 0) >= 3) return { status: "queue_full" };
+  const vacancies = 3 - (existing.data?.length ?? 0);
+  if (vacancies <= 0) return { status: "queue_full" };
   const candidates = await findSources(db, 4);
   if (!candidates.length)
     return { status: existing.data?.some((post) => post.state === "review") ? "awaiting_review" : "no_source" };
   let lastIssue = "";
+  const reservations: string[] = [];
+  const partial = (remaining: string) => reservations.length
+    ? { status: "scheduled", dueAt: reservations[0], reserved: reservations.length, remaining }
+    : { status: remaining };
   for (const source of candidates) {
     let prepared;
     try {
       prepared = await prepareInstagramSource(db, source, (article) => composeAutomaticInstagramArtwork(db, origin, article));
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
-      if (code === "instagram_queue_changed") return { status: "queue_changed" };
+      if (code === "instagram_queue_changed") return partial("queue_changed");
       if (!["instagram_original_missing", "instagram_source_cover_invalid", "instagram_framing_review_required",
         "instagram_caption_evidence_missing", "instagram_caption_incomplete"].includes(code)) throw error;
       lastIssue = code;
@@ -422,12 +427,16 @@ export async function queueNextInstagramSingle(db: SupabaseClient, origin: strin
       p_id: prepared.id, p_fingerprint: prepared.fingerprint, p_auto: true,
     });
     if (reserved.error) throw Error("instagram_reserve_failed");
-    return reserved.data ? { status: "scheduled", dueAt: reserved.data } : { status: "awaiting_review" };
+    if (!reserved.data) return partial("awaiting_review");
+    reservations.push(reserved.data);
+    if (reservations.length === vacancies)
+      return { status: "scheduled", dueAt: reservations[0], reserved: reservations.length };
   }
+  if (!lastIssue) return partial("no_source");
   const saved = await db.from("instagram_single_settings")
     .update({ automation_issue: lastIssue }).eq("singleton", true);
   if (saved.error) throw Error("instagram_state_unavailable");
-  return { status: "source_requires_review" };
+  return partial("source_requires_review");
 }
 
 export async function tickInstagramSingle(

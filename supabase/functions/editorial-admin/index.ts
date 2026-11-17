@@ -2683,6 +2683,21 @@ Deno.serve(async (req) => {
         return json(req, { error: "Não foi possível concluir esta alteração. Confira e tente novamente." }, 422);
       }
     }
+    if (action === "instagram-gt20-replacement") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      try {
+        const { publishGt20Replacement } = await import("./instagram-gt20-replacement.ts");
+        const result = await publishGt20Replacement(db, SUPABASE_URL, name => Deno.env.get(name), actor.id);
+        const response = json(req, result);
+        response.headers.set("Cache-Control", "private, no-store");
+        return response;
+      } catch (error) {
+        const code = errorMessage(error);
+        return json(req, { error: code === "instagram_replacement_claim_failed" || code === "instagram_replacement_unconfirmed"
+          ? "A publicação precisa ser conferida no Instagram e nos registros antes de qualquer nova tentativa."
+          : "Não foi possível preparar a republicação da GT20 Pro." }, 409);
+      }
+    }
     if (action === "instagram-single-list" || action === "instagram-single-prepare" || action === "instagram-single-approve" || action === "instagram-single-queue-next") {
       if (actor.role !== "admin") return json(req, {error:"Acesso restrito a administradores."}, 403);
       try {

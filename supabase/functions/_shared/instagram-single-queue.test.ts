@@ -31,7 +31,11 @@ const article = {
   blocks: [],
 };
 
-function fixture(states = ["scheduled"], photo = true, frameEvidence?: object) {
+function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, sourceCount = 1) {
+  const candidates = Array.from({length: sourceCount}, (_, index) => index === 0 ? source : {
+    ...source, video_id: `testVideo0${index + 1}`,
+    article_id: source.article_id.slice(0, -1) + String(index),
+  });
   const rpc = vi.fn(async (name: string) => ({
     data: name === "reserve_instagram_single" ? "2026-11-17T20:45:00Z" : [{ id: "prepared", fingerprint: "digest" }],
   }));
@@ -72,7 +76,7 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object) {
             data:
               columns === "transcript"
                 ? { transcript: "Fonte original" }
-                : [source],
+                : candidates,
           });
         if (table === "instagram_single_posts" && active)
           return resolve({
@@ -122,13 +126,26 @@ describe("Independent Instagram artwork", () => {
   it("restocks from an exact published source without approving a manual draft or calling AI", async () => {
     const f = fixture(["review"]);
     await expect(queueNextInstagramSingle(f.db, "https://db.example")).resolves.toEqual({
-      status: "scheduled", dueAt: "2026-11-17T20:45:00Z",
+      status: "scheduled", dueAt: "2026-11-17T20:45:00Z", reserved: 1, remaining: "no_source",
     });
     expect(f.rpc).toHaveBeenNthCalledWith(2, "reserve_instagram_single", {
       p_id: "prepared", p_fingerprint: "digest", p_auto: true,
     });
     expect(f.generate).not.toHaveBeenCalled();
   });
+
+  it.each([[[], 3], [["scheduled"], 2]] as const)(
+    "fills %j to three reservations in one run",
+    async (states, vacant) => {
+      const f = fixture([...states], true, undefined, 4);
+      await expect(queueNextInstagramSingle(f.db, "https://db.example"))
+        .resolves.toMatchObject({ status: "scheduled", reserved: vacant });
+      const attempts = f.rpc.mock.calls.filter(([name]) => name === "reserve_instagram_single");
+      expect(attempts).toHaveLength(vacant);
+      expect(f.upload).toHaveBeenCalledTimes(vacant);
+      expect(f.generate).not.toHaveBeenCalled();
+    },
+  );
 
   it("does not stage a landscape JPEG when no crop is verified", async () => {
     const f = fixture([]);
