@@ -4,30 +4,28 @@ export function RadarAlertMetrics({
 }: {
   overview: RadarAlertOverview;
 }) {
-  const { local, remote } = overview;
-  const confirmedDeliveries = remote.available
-    ? (remote.counts.receipt_delivered ?? 0) + (remote.counts.receipt_read ?? 0)
-    : null;
+  const { local } = overview;
+  const reconciliation = overview.reconciliation;
   const cards: Array<[string, number | null, string]> = [
-    ["Pessoas cadastradas", local?.people ?? null, "Cada pessoa conta uma vez"],
     [
-      "Alertas criados",
-      local?.totalAlerts ?? null,
-      "Uma pessoa pode acompanhar várias bikes",
-    ],
-    [
-      "Aguardando queda de preço",
-      remote.available
-        ? (remote.counts.active ?? 0) + (remote.counts.processing ?? 0)
-        : null,
+      "Aguardando preço",
+      reconciliation?.waiting ?? null,
       "Alertas em acompanhamento",
     ],
     [
-      "Avisos de preço enviados",
-      remote.available ? (remote.counts.sent ?? 0) : null,
-      confirmedDeliveries == null
-        ? "Entrega não consultada"
-        : `${confirmedDeliveries} com entrega confirmada`,
+      "Aviso entregue",
+      reconciliation?.delivered ?? null,
+      "Entrega confirmada no WhatsApp",
+    ],
+    [
+      "Entrega em andamento",
+      reconciliation?.inDelivery ?? null,
+      "Envio iniciado; entrega ainda não confirmada",
+    ],
+    [
+      "Com pendências",
+      reconciliation?.needsAttention ?? null,
+      "Cadastros ou envios que precisam de revisão",
     ],
   ];
   const maximum = Math.max(
@@ -39,6 +37,18 @@ export function RadarAlertMetrics({
       aria-label="Indicadores globais dos alertas"
       className="mb-6 space-y-4"
     >
+      <div>
+        <h2 className="text-lg font-bold">
+          {local?.totalAlerts ?? "—"} alertas cadastrados
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          De {local?.people ?? "—"} pessoas. Uma pessoa pode cadastrar alertas
+          para várias bikes.
+        </p>
+        <p className="mt-3 text-sm font-semibold">
+          Situação dos avisos de preço por WhatsApp
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map(([label, value, description]) => (
           <div
@@ -51,15 +61,32 @@ export function RadarAlertMetrics({
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Totais gerais. Os filtros abaixo alteram apenas a lista de cadastros.
-      </p>
-      {!remote.available && (
+      {reconciliation ? (
+        <div className="space-y-1 text-sm">
+          {reconciliation.closed > 0 && (
+            <p>
+              Encerrados ou sem autorização de contato: {reconciliation.closed}
+            </p>
+          )}
+          <p aria-label="Conferência do total de alertas">
+            {reconciliation.waiting} aguardando preço +{" "}
+            {reconciliation.delivered} entregues + {reconciliation.inDelivery}{" "}
+            em andamento + {reconciliation.needsAttention} com pendências
+            {reconciliation.closed > 0 &&
+              ` + ${reconciliation.closed} encerrados`}{" "}
+            = <strong>{reconciliation.total} alertas</strong>
+          </p>
+        </div>
+      ) : (
         <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm">
-          Não foi possível consultar o envio no WhatsApp. Nenhum total remoto
-          foi estimado.
+          Não foi possível conferir a situação de todos os alertas. Atualize
+          para consultar novamente. Nenhum total de situação foi estimado.
         </p>
       )}
+      <p className="text-xs text-muted-foreground">
+        Totais gerais. Cada alerta entra em uma única situação. Os filtros
+        abaixo alteram apenas a lista de cadastros.
+      </p>
       {local && (
         <>
           <details className="rounded-xl border border-line bg-white p-4" open>
@@ -119,20 +146,39 @@ export function RadarAlertMetrics({
               Ver pendências de envio
             </summary>
             <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+              {reconciliation && (
+                <>
+                  <p className="font-semibold text-foreground">
+                    {reconciliation.needsAttention} alertas com pendências:
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5">
+                    <li>
+                      {reconciliation.issues.notTracking} cadastros ainda sem
+                      acompanhamento confirmado.
+                    </li>
+                    <li>
+                      {reconciliation.issues.unconfirmed} envios que precisam de
+                      conferência para saber se a mensagem saiu.
+                    </li>
+                    <li>
+                      {reconciliation.issues.sendFailed} avisos com falha no
+                      envio.
+                    </li>
+                    <li>
+                      {reconciliation.issues.deliveryFailed} avisos enviados que
+                      não chegaram ao destinatário.
+                    </li>
+                  </ul>
+                  <p>
+                    Mensagens sem confirmação precisam de conferência antes de
+                    tentar novamente, para evitar duplicação.
+                  </p>
+                </>
+              )}
               <p>
-                Cadastro no acompanhamento: {local.export.pending} aguardando
-                sincronização e {local.export.failed} com falha de
-                sincronização.
-              </p>
-              <p>
-                WhatsApp: {remote.available ? (remote.counts.failed ?? 0) : "—"}{" "}
-                com falha e{" "}
-                {remote.available ? (remote.counts.uncertain ?? 0) : "—"} sem
-                confirmação de envio.
-              </p>
-              <p>
-                Envios sem confirmação precisam de conferência antes de tentar
-                novamente, para evitar mensagens duplicadas.
+                Sincronização: {local.export.pending} tentativas pendentes e{" "}
+                {local.export.failed} com falha. São eventos de integração e não
+                entram na soma dos alertas.
               </p>
               <p>
                 E-mails: {local.email.accepted ?? 0} aceitos,{" "}
