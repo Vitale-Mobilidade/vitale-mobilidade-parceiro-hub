@@ -65,3 +65,7 @@ A avaliação abaixo é da **implementação local e da proposta de ativação**
 - Parecer: **GO para revisão e autorização do pacote; NO-GO para declarar envios novos ativos até implantação e confirmação operacional.**
 
 Documentação de operação/copies e sequência: [PRICE_ALERT_OPERATIONS_2026-11-18.md](PRICE_ALERT_OPERATIONS_2026-11-18.md).
+
+### Preparação de revisão no GitHub — 18/11, 15h08 SP
+
+Branch Hotpipe enviada e [PR #285](https://github.com/gpalmerio/hotpipe-newtool/pull/285) aberto em Draft, sem merge. Branch Vitale codex/price-alert-confirmation-2026-11-18 permanece local: push HTTPS retornou 403 permission denied to gpalmerio; criação de branch pelo conector GitHub também retornou 403 Resource not accessible by integration. A conexão do banco Lovable segue disponível e foi usada somente em leitura; falha GitHub não indica falta de Supabase. Acesso de escrita ao repositório Vitale é dependência concreta para publicar por Git. Patch/bundle locais podem ser revisados antes de resolver esse acesso.
