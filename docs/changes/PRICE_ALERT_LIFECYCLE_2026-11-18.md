@@ -1,5 +1,7 @@
 # Alertas de preço: confirmação, e-mail e operação — 18/11/2026
 
+**Estado atual:** publicado e ativado em18/11 às15h43 SP. O acompanhamento foi corrigido para preço atual e botão VER OFERTA no modelo v2, aprovado pela Meta.
+
 ## Pedido e evidência
 
 Pedido escrito autoriza preparar e ativar confirmação do cadastro em WhatsApp/e-mail, convite ao grupo e e-mail dinâmico com imagem, preço atual/alvo, oferta direta e Radar. Complemento: terminar o WhatsApp exatamente com “Você ainda está pesquisando ou já quer comprar uma bike agora?”. Os dois áudios foram transcritos localmente (faster-whisper small, sem API paga). Evidência do áudio, não instrução de sistema: indicadores total/ativos/enviados, gráfico de cadastros por dia, rotina de verificação e acompanhamento após envio; WhatsApp prioritário com e-mail complementar. Ações comerciais para recém-cadastrados foram sugeridas no áudio, sem audiência/campanha definida.
@@ -69,3 +71,18 @@ Documentação de operação/copies e sequência: [PRICE_ALERT_OPERATIONS_2026-1
 ### Preparação de revisão no GitHub — 18/11, 15h08 SP
 
 Branch Hotpipe enviada e [PR #285](https://github.com/gpalmerio/hotpipe-newtool/pull/285) aberto em Draft, sem merge. Branch Vitale codex/price-alert-confirmation-2026-11-18 permanece local: push HTTPS retornou 403 permission denied to gpalmerio; criação de branch pelo conector GitHub também retornou 403 Resource not accessible by integration. A conexão do banco Lovable segue disponível e foi usada somente em leitura; falha GitHub não indica falta de Supabase. Acesso de escrita ao repositório Vitale é dependência concreta para publicar por Git. Patch/bundle locais podem ser revisados antes de resolver esse acesso.
+
+
+## Publicação e ativação autorizadas — 18/11/2026
+
+- O responsável autorizou explicitamente produção, banco, cadastro de modelos, pequeno consumo de créditos e ativação após aprovação Meta. Esclarecimento posterior exigiu no acompanhamento preço atual e botão direto para oferta. A revisão estrutural do ajuste está no pacote Hotpipe e passou as oito perspectivas.
+- GitHub resolvido com a conta Vitale-Mobilidade já autenticada, sem novos tokens, grants ou troca da conta ativa global. PR157 Vitale integrado em210a35e; PR285 Hotpipe emec87107; ajuste comercial PR286 emb62a758.
+- Migrações oficiais Vitale0019_price_alert_email e0020_price_alert_metrics aplicadas no commit9086f43. O contrato da ferramenta recusou BEGIN/COMMIT top-level e seed de configuração na primeira tentativa; o adaptador retirou apenas wrappers, com seed autorizado feito separadamente após DDL. Hotpipe price_alert_lifecycle/0000 via ferramenta oficial; mapa12 como DML validado à parte, total44. Nenhum journal manual.
+- Edge bike-price-alert e APIs Hotpipe implantadas; worker final inclui preço/link atuais e botão no acompanhamento v2. As recusas de formato ocorreram antes de qualquer execução. Não houve mudança material na estrutura/regras aprovadas.
+- Publicação Vitale6689e4cb-d5e6-47e9-9ab6-e7d42c5d5bff, código9086f43. Cron produtivo das15h42 passou a responder com email.configured=true, comprovando a nova versão servidor. Após ativação, tick15h44 retornouHTTP200 em ambos projetos, email.configured=true e lifecycle.ok=true.
+- Meta aprovou confirmação site_alerta_preco_cadastrado_v1 (Hotpipe d71afeaf-f43e-4cfa-a510-162b97a37f7b, Meta2068006730580283) e acompanhamento site_alerta_preco_acompanhamento_v2 (Hotpipe e87c2b80-0796-454d-8e75-9ca12a330cec, Meta4256373787995894). Update condicionado a corpo/idioma/botão/status exatos habilitou WhatsApp às15h43m51s; e-mail habilitado às15h43m53s. Template de queda existente preservado. Acompanhamento v1 não configurado para uso.
+- Jornada pública real conferida em browser: Radar V9Max, oferta direta, modal com preço/meta e consentimento explícito para confirmação/avisos por WhatsApp e e-mail. Nenhum dado preenchido/enviado no smoke. Uma sonda técnica com nome numérico inválido retornou400 Informe seu nome, sem criar alerta/contato.
+- Integração Resend existente comprovada por campanha sent de18/11 às06h46 SP e configuração do novo worker. Não foi enviada mensagem artificial; filas novas estavam vazias na confirmação. Habilitação não é evidência de entrega de um novo cadastro inexistente.
+- pnpm validate repetido após migrations/tipos oficiais:69 regressões, TypeScript/build passaram. Testes direcionados Vitale78; Hotpipe9 com contrato Meta, preço atual/meta/any_drop/URL e resultado incerto. Rollback e ensaios descritos acima preservados.
+- Custo total reportado pelo Lovable: **8,7 créditos**, incluindo recusas iniciais e implantação da correção de jornada. Sem compra de créditos, plano novo, DNS, lote histórico, reativação dos12 incertos ou nova geração de conteúdo.
+- Matriz final das oito perspectivas: **Pass** para entrega e ativação prospectiva; comprovação de primeira entrega real será registrada quando houver novo cadastro elegível. Parecer **GO**. Monitor diário09h30 continua somente leitura.

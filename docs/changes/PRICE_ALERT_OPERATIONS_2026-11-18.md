@@ -1,5 +1,7 @@
 # Operação dos alertas de preço
 
+**Estado em18/11/2026 às15h44 SP:** pacote publicado e novos envios habilitados. Modelos de confirmação v1 e acompanhamento v2 aprovados na Meta; cron dos dois projetos confirmado HTTP200. Sem mensagens artificiais ou lote retroativo.
+
 ## Cadastro e conversa
 
 O formulário grava o pedido e o consentimento. Uma outbox leva o pedido à Hotpipe; o aceite desse webhook só confirma a persistência. Confirmação de cadastro usa site_alerta_preco_cadastrado_v1, sem afirmar que houve queda. O e-mail usa a mesma Bike e dados vivos do Radar, resolvidos no backend. Falha de transporte não apaga o pedido.
@@ -20,15 +22,22 @@ O template aprovado de queda continua site_alerta_de_preco. O novo e-mail distin
 
 Pedido complementar escrito: manhã de D+1. Agendar 09h America/Sao_Paulo do dia seguinte ao aceite do aviso. A janela de recuperação termina às 19h desse mesmo dia. Não é uma promessa de exatamente 24 horas: um aviso às 16h resulta em follow-up devido às 09h do dia seguinte, conforme a preferência explicitada pelo responsável.
 
-Modelo site_alerta_preco_acompanhamento_v1:
+Modelo site_alerta_preco_acompanhamento_v2 (preço e anúncio reconsultados no envio):
 
-> Olá, {{nome}}! Te avisamos que a {{bike}} chegou ao preço do seu alerta. Você conseguiu comprar ou ainda está pesquisando?
+> Olá, {{nome}}! Ontem te avisamos sobre a oferta da {{bike}}. Você conseguiu comprar?
 >
-> Se ainda não comprou e quer continuar acompanhando, cadastre um novo alerta para essa bike: {{link_radar}}
+> **Preço atual: {{preco_atual}}**
+> Seu alerta: {{condicao_alerta}}.
 >
-> Participe também do nosso grupo de ofertas: https://vitalemobilidade.com/grupodeofertas
+> Quer conferir as condições e comprar? Toque em **VER OFERTA** abaixo. Confira preço, frete e disponibilidade no anúncio.
 >
-> Se precisar de ajuda para escolher, pode responder por aqui.
+> Se preferir esperar outro valor, cadastre um novo alerta: {{link_radar}}
+>
+> Grupo de ofertas: https://vitalemobilidade.com/grupodeofertas
+>
+> Ficou alguma dúvida sobre a bike? Pode me chamar por aqui.
+
+Botão **VER OFERTA** direto para a URL afiliada vigente da mesma Bike, via slug estrito no prefixo Meta https://meli.la/. Não reutilizar preço/link de ontem. Se o preço subir, mostrar o novo preço sem afirmar que ainda atende à meta. Se a oferta ficar inválida ou mudar antes do POST, adiar dentro da janela, preservando as demais pessoas na fila.
 
 Exigir entrega/lido do aviso original, nenhum novo inbound, ausência de opt-out, conversa com IA atendendo, sem humano e modelo Meta aprovado com corpo exato. Recadastro é ação explícita da pessoa; não reabrir pedido sent automaticamente. Quem já respondeu segue o Lucas existente e não recebe esse follow-up.
 
@@ -48,7 +57,7 @@ O e-mail usa reply-to operacional já configurado e informa que a pessoa pode re
 2. Publicar somente as branches desta entrega, sem alterações de outras tasks. Aplicar SQL aditivo de e-mail/métricas na Vitale e ciclo/mapa na Hotpipe, com os gates novos OFF. Usar ferramenta oficial de migration e registrar as versões; os arquivos em docs/sql são propostas, não histórico aplicado.
 3. Implantar api-price-alerts e price-alert-worker na Hotpipe; bike-price-alert na Vitale; publicar o frontend/server Vitale. São necessárias três Edge Functions. Este host não tem CLI Supabase nem token autenticado. O conector Lovable publica frontend, mas não expõe deploy de funções: agente Lovable somente para implantação exata, último recurso, consumo qualitativamente pequeno de créditos. Não usar para gerar/reimplementar o código.
 4. Cadastrar/submeter à Meta os dois modelos do JSON de revisão. Categoria MARKETING é proposta por conter convite ao grupo; classificação/aprovação efetivas pertencem à Meta. O modelo de queda já aprovado não é substituído. Salvar IDs aprovados nas configurações e conferir corpo/idioma/variáveis no runtime.
-5. Conferir domínio/remetente, credenciais existentes e cota Resend por canal seguro, sem trocar plano ou DNS. Habilitar e-mail e os novos gates WhatsApp somente com dependências atendidas. Pedido atual autoriza ativação prospectiva; confirmação separada do banco/modelos/implantação ainda será solicitada com o pacote concreto. Não importar os 59 cadastros, reenviar falhas ou recuperar os 12 incertos nesta operação.
+5. Conferir domínio/remetente, credenciais existentes e cota Resend por canal seguro, sem trocar plano ou DNS. Habilitar e-mail e os novos gates WhatsApp somente com dependências atendidas. Pedido atual autoriza ativação prospectiva; confirmação específica do banco/modelos/implantação foi recebida nesta conversa e executada. Não importar os 59 cadastros, reenviar falhas ou recuperar os 12 incertos nesta operação.
 6. Conferir estado e primeiras execuções normais. Ausência de cadastro novo não justifica disparo artificial para clientes. Homologação externa controlada pode ser proposta para um destinatário do responsável, sem disparo até autorização específica.
 
 ## Incidentes existentes
