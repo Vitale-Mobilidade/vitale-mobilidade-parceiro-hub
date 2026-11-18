@@ -3460,6 +3460,122 @@ export type Database = {
         }
         Relationships: []
       }
+      price_alert_email_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          occurred_at: string
+          provider_id: string
+          sender: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          occurred_at: string
+          provider_id: string
+          sender: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          occurred_at?: string
+          provider_id?: string
+          sender?: string
+        }
+        Relationships: []
+      }
+      price_alert_email_settings: {
+        Row: {
+          enabled: boolean
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      price_alert_emails: {
+        Row: {
+          accepted_at: string | null
+          alert_id: string
+          attempts: number
+          available_at: string
+          claimed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_from: string | null
+          delivery_to: string
+          failure_code: string | null
+          id: string
+          kind: string
+          last_price_check_at: string | null
+          lease_token: string | null
+          payload: Json | null
+          provider_id: string | null
+          reply_to: string | null
+          request_id: string
+          send_body: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          alert_id: string
+          attempts?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_from?: string | null
+          delivery_to: string
+          failure_code?: string | null
+          id?: string
+          kind: string
+          last_price_check_at?: string | null
+          lease_token?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          reply_to?: string | null
+          request_id: string
+          send_body?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          alert_id?: string
+          attempts?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_from?: string | null
+          delivery_to?: string
+          failure_code?: string | null
+          id?: string
+          kind?: string
+          last_price_check_at?: string | null
+          lease_token?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          reply_to?: string | null
+          request_id?: string
+          send_body?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alert_emails_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "bike_price_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_alert_hotpipe_outbox: {
         Row: {
           alert_id: string
@@ -4452,6 +4568,10 @@ export type Database = {
         Args: { p_since: string; p_until: string }
         Returns: Json
       }
+      apply_price_alert_email_receipt: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       attach_podcast_video_audio: {
         Args: {
           p_actor: string
@@ -4568,6 +4688,37 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_price_alert_emails: {
+        Args: never
+        Returns: {
+          accepted_at: string | null
+          alert_id: string
+          attempts: number
+          available_at: string
+          claimed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_from: string | null
+          delivery_to: string
+          failure_code: string | null
+          id: string
+          kind: string
+          last_price_check_at: string | null
+          lease_token: string | null
+          payload: Json | null
+          provider_id: string | null
+          reply_to: string | null
+          request_id: string
+          send_body: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "price_alert_emails"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_price_alert_hotpipe: {
         Args: never
         Returns: {
@@ -4625,6 +4776,16 @@ export type Database = {
       dispatch_youtube_editorial_tick: {
         Args: { tick_action: string }
         Returns: number
+      }
+      finish_price_alert_email: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_lease: string
+          p_provider: string
+          p_status: string
+        }
+        Returns: boolean
       }
       get_bike_price_history: {
         Args: { p_bike_id: string; p_days?: number }
@@ -5109,6 +5270,11 @@ export type Database = {
       podcast_release_slot: { Args: { p_now: string }; Returns: string }
       podcast_upcoming_windows: { Args: never; Returns: string[] }
       podcast_worker_windows: { Args: never; Returns: Json }
+      prepare_price_alert_email: {
+        Args: { p_body: string; p_id: string; p_lease: string }
+        Returns: string
+      }
+      price_alert_metrics: { Args: never; Returns: Json }
       project_bike_offers_from_snapshot: {
         Args: { p_rows: Json }
         Returns: Json
@@ -5143,6 +5309,16 @@ export type Database = {
           p_surface: string
         }
         Returns: undefined
+      }
+      record_price_alert_email_event: {
+        Args: {
+          p_event: string
+          p_from: string
+          p_occurred: string
+          p_provider: string
+          p_type: string
+        }
+        Returns: boolean
       }
       record_site_analytics: {
         Args: {

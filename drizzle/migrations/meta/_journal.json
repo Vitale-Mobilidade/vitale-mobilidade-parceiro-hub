@@ -134,6 +134,20 @@
       "when": 1794862269475,
       "tag": "0018_growth_exclude_offers_campaign",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795026907569,
+      "tag": "0019_price_alert_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795026938867,
+      "tag": "0020_price_alert_metrics",
+      "breakpoints": true
     }
   ]
 }
