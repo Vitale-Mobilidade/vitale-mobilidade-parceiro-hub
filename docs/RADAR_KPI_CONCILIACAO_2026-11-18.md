@@ -40,3 +40,13 @@ Aceite: categorias fecham total; 52 pessoas não entra na soma; 20 aceites não 
 
 Trade-off: as consultas locais não são uma transação única; se o total mudar entre as leituras, a divisão fica temporariamente indisponível e solicita atualização. Preferível a fabricar uma categoria por diferença. Limite preexistente de 1000 pedidos mantido também para a população local; excedê-lo não gera contagem parcial aparente.
 GO para publicação no Lovable já autorizado. Estado das integrações preservado; nenhuma tentativa automática/manual de reenvio neste ajuste.
+
+## Publicação e verificação real
+
+- PR [#159](https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/159), merge c3867fbc59cae0a987c92473e9d40f04337098cc.
+- Lovable sincronizado nesse commit e pronto antes do publish. Deployment 51a24153-3a2c-4ccd-9b41-6549ec0fae4e.
+- Painel produtivo consultado com sessão administrativa existente: 60 alertas cadastrados de 52 pessoas. Soma exibida: 17 aguardando preço + 14 entregues + 1 em andamento + 28 com pendências = 60.
+- Detalhe aberto confirmou 10 sem acompanhamento, 12 envios para conferência, 1 falha de envio e 5 falhas de entrega. Nenhum registro foi reenviado nem reclassificado no banco.
+- Evidência visual local: artifacts/radar-kpi-reconciliation-2026-11-18/production.jpg, fora do repositório; captura sem contatos da lista.
+- Check Vercel voltou a falhar no serviço externo ao hosting ativo; mesmo comportamento já registrado no release anterior. O projeto único operacional é Lovable (docs/LOVABLE.md do checkout de referência), cuja build pronta e execução produtiva foram verificadas. Nenhuma alteração de hosting externo neste ajuste.
+- Estado: alterado, validado e publicado. GO. Pendências históricas de envio preservadas e apresentadas, sem confundir correção da métrica com solução de entrega.
