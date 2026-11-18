@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type {
-  RadarAlertOverview,
-  PriceAlertRemote,
+import {
+  reconcilePriceAlerts,
+  type RadarAlertOverview,
+  type PriceAlertRemote,
 } from "./price-alert-metrics";
 const notification = z
   .object({ status: z.string().max(30), sent_at: z.string().nullable() })
@@ -38,11 +39,20 @@ export async function readPriceAlertOverview(
   const local = await db.rpc("price_alert_metrics");
   const overview: RadarAlertOverview = {
     local: local.error ? null : local.data,
+    reconciliation: null,
     remote: { available: false, counts: {}, checkedAt: null },
   };
   const statuses = new Map<string, PriceAlertRemote>();
   const key = process.env.HOTPIPE_PRICE_ALERT_API_KEY;
   if (!key || !/^hp_[a-f0-9]{48}$/.test(key)) return { overview, statuses };
+  const cohort = await db
+    .from("bike_price_alerts")
+    .select("id,status,consent")
+    .limit(1001);
+  if (cohort.error || !cohort.data || cohort.data.length > 1000)
+    return { overview, statuses };
+  const alertIds = new Set(cohort.data.map((alert) => alert.id));
+  if (alertIds.size !== cohort.data.length) return { overview, statuses };
   // Query only opaque IDs. Do not export the subscriber list to the browser or logs.
   const links = await db
     .from("price_alert_hotpipe_requests")
@@ -52,7 +62,9 @@ export async function readPriceAlertOverview(
     return { overview, statuses };
   try {
     const byRequest = new Map(
-      links.data.map((x) => [x.request_id, x.alert_id]),
+      links.data
+        .filter((x) => alertIds.has(x.alert_id))
+        .map((x) => [x.request_id, x.alert_id]),
     );
     const ids = [...byRequest.keys()];
     const counts: Record<string, number> = { not_received: 0 };
@@ -83,6 +95,9 @@ export async function readPriceAlertOverview(
             (counts[`receipt_${item.receipt}`] ?? 0) + 1;
       }
       counts.not_received += batch.length - seen.size;
+    }
+    if (overview.local?.totalAlerts === cohort.data.length) {
+      overview.reconciliation = reconcilePriceAlerts(cohort.data, statuses);
     }
     overview.remote = {
       available: true,
