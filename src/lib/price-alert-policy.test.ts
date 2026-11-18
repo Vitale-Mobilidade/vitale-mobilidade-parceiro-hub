@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { minimumAlertPrice, minimumAlertMessage } from "../../supabase/functions/_shared/price-alert-policy";
+import {
+  minimumAlertPrice,
+  minimumAlertMessage,
+} from "../../supabase/functions/_shared/price-alert-policy";
 describe("price alert minimum", () => {
   it("sets a 30% maximum reduction", () => {
     expect(minimumAlertPrice(7200)).toBe(5040);
@@ -11,9 +14,18 @@ describe("price alert minimum", () => {
     expect(minimumAlertPrice(7970)).toBe(5579);
   });
   it("rejects missing or invalid current prices", () => {
-    for (const value of [0, -1, NaN, Infinity]) expect(minimumAlertPrice(value)).toBeNaN();
+    for (const value of [0, -1, NaN, Infinity])
+      expect(minimumAlertPrice(value)).toBeNaN();
   });
   it("provides the requested minimum message", () => {
-    expect(minimumAlertMessage(7200).replace(/\u00a0/g, " ")).toBe("O valor mínimo para esta bike é R$ 5.040,00.");
+    expect(minimumAlertMessage(7200).replace(/\u00a0/g, " ")).toBe(
+      "O valor mínimo para esta bike é R$ 5.040,00.",
+    );
   });
+});
+
+import { normalizeAlertName } from "../../supabase/functions/_shared/price-alert-policy";
+it("rejects a numeric name before the receiver would reject the saved request", () => {
+  expect(normalizeAlertName("1234")).toBeNull();
+  expect(normalizeAlertName("  José   da Silva ")).toBe("José da Silva");
 });

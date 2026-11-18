@@ -1,3 +1,4 @@
+import { RadarAlertMetrics } from "@/components/admin/RadarAlertMetrics";
 import { useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -174,6 +175,41 @@ export function RadarAlertRow({ alert }: { alert: AdminRadarAlert }) {
               <dd className="mt-1">{alert.deliveryEnabled ? "Sim" : "Não"}</dd>
             </div>
           </dl>
+          {alert.delivery && (
+            <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-3">
+              <div>
+                <dt>Pedido atual na Hotpipe</dt>
+                <dd>
+                  {
+                    {
+                      active: "Aguardando preço",
+                      processing: "Em processamento",
+                      sent: "Aceito pelo provedor",
+                      failed: "Falha",
+                      uncertain: "Resultado incerto — conciliar",
+                      cancelled: "Cancelado",
+                    }[alert.delivery.status]
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Recibo WhatsApp</dt>
+                <dd>
+                  {alert.delivery.receipt === "read"
+                    ? "Lido"
+                    : alert.delivery.receipt === "delivered"
+                      ? "Entregue"
+                      : alert.delivery.receipt === "failed"
+                        ? "Falha de entrega"
+                        : "Sem recibo confirmado"}
+                </dd>
+              </div>
+              <div>
+                <dt>Confirmação de cadastro</dt>
+                <dd>{alert.delivery.registration?.status ?? "Sem registro"}</dd>
+              </div>
+            </dl>
+          )}
           <p className="mt-3 text-xs text-muted-foreground">
             Cadastro e preço atingido não confirmam envio de mensagem. Esta tela
             não dispara alertas nem altera o cadastro.
@@ -223,6 +259,7 @@ export function RadarAlertsPanel() {
           Atualizar
         </button>
       </div>
+      {data?.overview && <RadarAlertMetrics overview={data.overview} />}
       <form onSubmit={submit} className="mb-4 flex flex-wrap items-end gap-2">
         <label className="min-w-48 flex-1 text-sm">
           Buscar pessoa, contato ou bike
