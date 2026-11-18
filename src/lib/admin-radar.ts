@@ -6,6 +6,8 @@ export type RadarAlertFilter = {
   page: number;
   scope: "active" | "all";
   search: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 export type AdminRadarAlert = {
   delivery?: PriceAlertRemote;

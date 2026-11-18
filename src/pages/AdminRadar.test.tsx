@@ -82,6 +82,21 @@ describe("Radar admin people", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="radar-alert-fixture-1"');
     expect(html).not.toContain("6.000,00");
+    expect(html).toContain('dateTime="2026-10-15T12:00:00Z"');
+    expect(html).toContain("15/10/2026, 09:00");
+  });
+  it("offers registration dates as an inclusive period in São Paulo", () => {
+    const html = render();
+    expect(html.match(/type="date"/g)).toHaveLength(2);
+    expect(html).toContain("Data de cadastro");
+    expect(html).toContain("Período inclui as duas datas");
+    expect(html).toContain("Aplicar filtros");
+  });
+  it("uses the São Paulo calendar day for a registration close to UTC midnight", () => {
+    const html = renderToStaticMarkup(
+      <RadarAlertRow alert={{ ...alert, createdAt: "2026-11-19T02:30:00Z" }} />,
+    );
+    expect(html).toContain("18/11/2026, 23:30");
   });
   it.each(["operation", "content"])(
     "does not render any contact or query panel for %s",
