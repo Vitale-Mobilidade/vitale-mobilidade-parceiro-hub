@@ -42,3 +42,13 @@ Custo externo: desenvolvimento e testes locais; publicação determinística Lov
 A sintaxe de timezone é suportada pelo PostgreSQL: [Date/Time Types](https://www.postgresql.org/docs/current/datatype-datetime.html#DATATYPE-DATETIME-INPUT-TIMESTAMPS).
 Risco residual: o serviço externo pode continuar com envios sem confirmação; a tela preserva esse fato no detalhe operacional. Os totais principais são globais e não uma soma de etapas de um funil.
 Release: apto à publicação autorizada nesta conversa; rollback por reversão do commit. Smoke de produção será registrado após publicação.
+
+## Publicação e smoke
+
+- PR [#158](https://github.com/Vitale-Mobilidade/vitale-mobilidade-parceiro-hub/pull/158), merge `8244ee1de21c165589096ba4114810d8c2c0e2e2`.
+- Lovable sincronizado nesse SHA e pronto antes do publish. Deployment `bfd3b6cc-7e80-413a-9bbc-d50d0c2f8757`.
+- Produção verificada em `https://vitalemobilidade.com/admin/radar`, sessão administrativa existente, em 18/11/2026 às 16h04 de São Paulo: quatro indicadores, 51 pessoas, 59 alertas, 16 aguardando preço e 20 avisos enviados (14 entregas confirmadas).
+- Intervalo De=Até=18/11/2026: retornou 3 cadastros, com horários 12h39, 09h49 e 09h47. Datas anteriores ficaram fora. Limpar filtros restaurou 59 alertas e os campos vazios. Nenhum envio ou escrita de dados foi realizado.
+- Screenshots locais (fora do repositório público) em artifacts/radar-admin-clarity-2026-11-18: prévia com dados fictícios e painel em produção sem contatos visíveis.
+- Check externo Vercel reportou falha; Vercel não é o ambiente de hospedagem ativo definido em docs/LOVABLE.md do checkout de referência. Não houve mudança nesse serviço. A validação local e o publish/smoke do ambiente ativo Lovable passaram.
+- Concluído em produção. Riscos históricos de envio seguem no detalhe recolhido; nenhum novo risco material aberto neste ajuste.
