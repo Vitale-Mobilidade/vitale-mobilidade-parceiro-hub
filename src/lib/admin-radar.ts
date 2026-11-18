@@ -1,9 +1,14 @@
+import type {
+  RadarAlertOverview,
+  PriceAlertRemote,
+} from "./price-alert-metrics";
 export type RadarAlertFilter = {
   page: number;
   scope: "active" | "all";
   search: string;
 };
 export type AdminRadarAlert = {
+  delivery?: PriceAlertRemote;
   id: string;
   personName: string;
   phone: string;
@@ -22,6 +27,7 @@ export type AdminRadarAlert = {
   updatedAt: string;
 };
 export type AdminRadarAlerts = {
+  overview?: RadarAlertOverview;
   items: AdminRadarAlert[];
   page: number;
   pageSize: number;

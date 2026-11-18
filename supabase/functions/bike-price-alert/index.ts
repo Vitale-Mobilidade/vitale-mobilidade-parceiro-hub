@@ -1,19 +1,19 @@
 import { registerAlertNewsletter, COMBINED_CONSENT_TEXT } from "../_shared/alert-newsletter.ts";
 // Alerta de queda de preço do Radar Vitale.
-// Grava a preferência do usuário. NÃO envia nada nesta fase (delivery_enabled=false).
+// Persiste o pedido; outboxes independentes cuidam da entrega sem bloquear o cadastro.
 // Nunca registra nome ou telefone em log.
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-import { minimumAlertPrice, minimumAlertMessage } from "../_shared/price-alert-policy.ts";
+import { minimumAlertPrice, minimumAlertMessage, normalizeAlertName } from "../_shared/price-alert-policy.ts";
 
 const MAX_BODY_BYTES = 4000;
 const RATE_LIMIT = 8;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 const LEGACY_CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço e a me contatar sobre quedas de preço desta bike.";
-const CONSENT_VERSION = "v4";
+const CONSENT_VERSION = "v5";
 
 const GENERIC_OK = { ok: true, message: "Alerta registrado." };
 
@@ -22,13 +22,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-function cleanName(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const v = raw.trim().replace(/\s+/g, " ");
-  if (v.length < 2 || v.length > 80) return null;
-  return v;
 }
 
 function cleanEmail(raw: unknown): string | null {
@@ -104,7 +97,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const name = cleanName(body.name);
+    const name = normalizeAlertName(body.name);
     const phone = toE164BR(body.phone);
     const email = cleanEmail(body.email);
     const consent = body.consent === true;

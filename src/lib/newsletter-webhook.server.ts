@@ -92,6 +92,25 @@ export async function resendNewsletterWebhook(request: Request) {
     ].includes(event.type)
   )
     return Response.json({ ok: true, ignored: true });
+  // Persist signed transactional receipts before checking the current newsletter sender.
+  // A receipt can arrive before send finalization, or after the configured sender changes.
+  if (typeof event.data.email_id === "string" && !event.data.broadcast_id) {
+    const sender =
+      typeof event.data.from === "string"
+        ? event.data.from.match(/<?([^<>\s]+@[^<>\s]+)>?$/)?.[1].toLowerCase()
+        : null;
+    if (!sender) return new Response(null, { status: 400 });
+    const result = await db.rpc("record_price_alert_email_event", {
+      p_event: request.headers.get("svix-id"),
+      p_provider: event.data.email_id,
+      p_type: event.type,
+      p_occurred: event.created_at,
+      p_from: sender,
+    });
+    return result.error
+      ? new Response(null, { status: 503 })
+      : Response.json({ ok: true });
+  }
   const { data: s, error: readError } = await db
     .from("newsletter_settings")
     .select("from_email")

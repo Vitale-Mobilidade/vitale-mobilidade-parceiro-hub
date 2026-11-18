@@ -1,3 +1,4 @@
+import { readPriceAlertOverview } from "./price-alert-metrics.server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type {
@@ -184,7 +185,14 @@ export async function radarAlertsAdmin(
     }
     const parsed = filterSchema.safeParse(raw);
     if (!parsed.success) return reply({ error: "invalid_filter" }, 400);
-    return reply(await readRadarAlerts(db, parsed.data));
+    const result = await readRadarAlerts(db, parsed.data);
+    const { overview, statuses } = await readPriceAlertOverview(db);
+    result.overview = overview;
+    result.items = result.items.map((item) => ({
+      ...item,
+      delivery: statuses.get(item.id),
+    }));
+    return reply(result);
   } catch {
     // Do not log request bodies, tokens, contacts or database error payloads.
     return reply({ error: "radar_alerts_unavailable" }, 503);

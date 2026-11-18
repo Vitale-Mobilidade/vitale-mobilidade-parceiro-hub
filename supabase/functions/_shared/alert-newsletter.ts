@@ -1,4 +1,4 @@
-export const COMBINED_CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço, a me contatar sobre quedas de preço desta bike e a me inscrever na newsletter. Posso cancelar os alertas e me descadastrar da newsletter a qualquer momento.";
+export const COMBINED_CONSENT_TEXT = "Autorizo a Vitale Mobilidade a guardar meu nome, WhatsApp, e-mail e preferência de preço, a me enviar confirmação do cadastro e avisos sobre quedas de preço desta bike por WhatsApp e e-mail e a me inscrever na newsletter. Posso cancelar os alertas e me descadastrar da newsletter a qualquer momento.";
 
 /** Only insert: existing preferences and suppressions must never be overwritten. */
 export async function registerAlertNewsletter(
