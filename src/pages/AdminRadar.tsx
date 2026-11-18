@@ -50,6 +50,10 @@ export function RadarAlertRow({ alert }: { alert: AdminRadarAlert }) {
               <span className="font-normal">{expanded ? "▴" : "▾"}</span>
             </button>
           </h2>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Cadastro:{" "}
+            <time dateTime={alert.createdAt}>{date(alert.createdAt)}</time>
+          </p>
           <div className="space-y-1 text-sm">
             {phone && alert.consent ? (
               <a
@@ -155,10 +159,6 @@ export function RadarAlertRow({ alert }: { alert: AdminRadarAlert }) {
               <dd className="mt-1">{date(alert.priceVerifiedAt)}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Cadastrado em</dt>
-              <dd className="mt-1">{date(alert.createdAt)}</dd>
-            </div>
-            <div>
               <dt className="text-muted-foreground">Atualizado em</dt>
               <dd className="mt-1">{date(alert.updatedAt)}</dd>
             </div>
@@ -186,7 +186,7 @@ export function RadarAlertRow({ alert }: { alert: AdminRadarAlert }) {
                       processing: "Em processamento",
                       sent: "Aceito pelo provedor",
                       failed: "Falha",
-                      uncertain: "Resultado incerto — conciliar",
+                      uncertain: "Sem confirmação — conferir antes de reenviar",
                       cancelled: "Cancelado",
                     }[alert.delivery.status]
                   }
@@ -227,6 +227,9 @@ export function RadarAlertsPanel() {
     search: "",
   });
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const invalidPeriod = Boolean(dateFrom && dateTo && dateFrom > dateTo);
   const alerts = useQuery({
     queryKey: ["admin", "radar-alerts", filter],
     queryFn: () => getAdminRadarAlerts(filter),
@@ -238,7 +241,14 @@ export function RadarAlertsPanel() {
   const data = alerts.data;
   function submit(event: FormEvent) {
     event.preventDefault();
-    setFilter({ ...filter, page: 1, search: search.trim() });
+    if (invalidPeriod) return;
+    setFilter({
+      ...filter,
+      page: 1,
+      search: search.trim(),
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    });
   }
   return (
     <>
@@ -260,49 +270,102 @@ export function RadarAlertsPanel() {
         </button>
       </div>
       {data?.overview && <RadarAlertMetrics overview={data.overview} />}
-      <form onSubmit={submit} className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="min-w-48 flex-1 text-sm">
-          Buscar pessoa, contato ou bike
-          <input
-            type="search"
-            autoComplete="off"
-            maxLength={100}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`${input} mt-1 w-full`}
-            placeholder="Nome, WhatsApp, e-mail ou bike"
-          />
-        </label>
-        <label className="text-sm">
-          Mostrar
-          <select
-            className={`${input} mt-1 block`}
-            value={filter.scope}
-            onChange={(e) =>
-              setFilter({
-                ...filter,
-                scope: e.target.value as RadarAlertFilter["scope"],
-                page: 1,
-              })
-            }
+      <form onSubmit={submit} className="mb-4 space-y-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="min-w-48 flex-1 text-sm">
+            Buscar pessoa, contato ou bike
+            <input
+              type="search"
+              autoComplete="off"
+              maxLength={100}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={`${input} mt-1 w-full`}
+              placeholder="Nome, WhatsApp, e-mail ou bike"
+            />
+          </label>
+          <label className="text-sm">
+            Mostrar
+            <select
+              className={`${input} mt-1 block`}
+              value={filter.scope}
+              onChange={(e) =>
+                setFilter({
+                  ...filter,
+                  scope: e.target.value as RadarAlertFilter["scope"],
+                  page: 1,
+                })
+              }
+            >
+              <option value="active">Ativos com consentimento</option>
+              <option value="all">Todos os cadastros</option>
+            </select>
+          </label>
+        </div>
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold">
+            Data de cadastro
+          </legend>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-sm">
+              De
+              <input
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className={`${input} mt-1 block min-h-11`}
+                aria-describedby="radar-date-help"
+              />
+            </label>
+            <label className="text-sm">
+              Até
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+                className={`${input} mt-1 block min-h-11`}
+                aria-describedby="radar-date-help"
+              />
+            </label>
+            <button className={button} disabled={invalidPeriod}>
+              Aplicar filtros
+            </button>
+            {(search ||
+              dateFrom ||
+              dateTo ||
+              filter.search ||
+              filter.dateFrom ||
+              filter.dateTo ||
+              filter.scope !== "active") && (
+              <button
+                type="button"
+                className={button}
+                onClick={() => {
+                  setSearch("");
+                  setDateFrom("");
+                  setDateTo("");
+                  setFilter({ search: "", scope: "active", page: 1 });
+                }}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+          <p
+            id="radar-date-help"
+            className="mt-2 text-xs text-muted-foreground"
           >
-            <option value="active">Ativos com consentimento</option>
-            <option value="all">Todos os cadastros</option>
-          </select>
-        </label>
-        <button className={button}>Buscar</button>
-        {filter.search && (
-          <button
-            type="button"
-            className={button}
-            onClick={() => {
-              setSearch("");
-              setFilter({ ...filter, search: "", page: 1 });
-            }}
-          >
-            Limpar busca
-          </button>
-        )}
+            Período inclui as duas datas, no horário de São Paulo. Deixe em
+            branco para ver todas as datas.
+          </p>
+          {invalidPeriod && (
+            <p role="alert" className="mt-2 text-sm text-red-800">
+              A data inicial deve ser anterior ou igual à data final.
+            </p>
+          )}
+        </fieldset>
       </form>
       {alerts.isError && (
         <p
@@ -338,6 +401,10 @@ export function RadarAlertsPanel() {
               {filter.scope === "active"
                 ? "ativos com consentimento"
                 : "todos os cadastros"}{" "}
+              {filter.dateFrom &&
+                ` · a partir de ${filter.dateFrom.split("-").reverse().join("/")}`}
+              {filter.dateTo &&
+                ` · até ${filter.dateTo.split("-").reverse().join("/")}`}{" "}
               · Página {data.page}
             </p>
             <p>Consultado em {date(data.updatedAt)} · São Paulo</p>

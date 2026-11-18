@@ -180,12 +180,62 @@ describe("private Radar alerts", () => {
     expect(query.searchParams.get("or")).not.toContain("(" + "11" + ")");
   });
   it.each([
+    {
+      dateFrom: "2026-11-18",
+      dateTo: "2026-11-18",
+      expected: [
+        "gte.2026-11-18 00:00:00 America/Sao_Paulo",
+        "lt.2026-11-19 00:00:00 America/Sao_Paulo",
+      ],
+    },
+    {
+      dateFrom: "2026-12-31",
+      dateTo: "2026-12-31",
+      expected: [
+        "gte.2026-12-31 00:00:00 America/Sao_Paulo",
+        "lt.2027-01-01 00:00:00 America/Sao_Paulo",
+      ],
+    },
+    {
+      dateTo: "2028-02-29",
+      expected: ["lt.2028-03-01 00:00:00 America/Sao_Paulo"],
+    },
+    {
+      dateFrom: "2026-11-01",
+      expected: ["gte.2026-11-01 00:00:00 America/Sao_Paulo"],
+    },
+  ])(
+    "combines inclusive registration days with search, scope and pagination %#",
+    async ({ expected, ...period }) => {
+      const { db, urls } = setup();
+      const response = await radarAlertsAdmin(
+        request({ page: 2, scope: "active", search: "BW1", ...period }),
+        () => db,
+      );
+      expect(response.status).toBe(200);
+      const query = urls.find((url) =>
+        url.pathname.endsWith("/bike_price_alerts"),
+      )!;
+      expect(query.searchParams.getAll("created_at")).toEqual(expected);
+      expect(query.searchParams.get("offset")).toBe("25");
+      expect(query.searchParams.get("status")).toBe("eq.active");
+      expect(query.searchParams.get("or")).toContain("%BW1%");
+      expect((await response.json()).items[0].createdAt).toBe(row.created_at);
+    },
+  );
+  it.each([
     { page: 0 },
     { page: 1.5 },
     { scope: "admin" },
     { search: "x),consent.eq.false" },
     { search: "x".repeat(101) },
     { unexpected: true },
+    { dateFrom: "18/11/2026" },
+    { dateFrom: "2026-02-29" },
+    { dateTo: "2026-11-31" },
+    { dateFrom: "2026-11-19", dateTo: "2026-11-18" },
+    { dateTo: "2026-11-18T12:00:00Z" },
+    { dateFrom: "" },
   ])(
     "rejects malformed filters before reading private data %#",
     async (body) => {

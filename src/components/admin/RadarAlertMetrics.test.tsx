@@ -42,7 +42,13 @@ describe("Radar lifecycle indicators", () => {
     );
     expect(html).toContain("23");
     expect(html).toContain("21");
-    expect(html).toContain("Cadastros ativos no site");
+    expect(html).toContain("Pessoas cadastradas");
+    expect(html).toContain("Avisos de preço enviados");
+    expect(html).toContain("21 com entrega confirmada");
+    expect(html).not.toContain("resultado incerto");
+    expect(html).not.toContain("Cadastros ativos no site");
+    expect(html).toMatch(/<details[^>]*><summary[^>]*>Ver pendências de envio/);
+    expect(html).toContain("12 sem confirmação de envio");
     expect(html).toContain("Cadastros diários no fuso America/Sao_Paulo");
     expect(html).toContain("2026-11-18");
   });

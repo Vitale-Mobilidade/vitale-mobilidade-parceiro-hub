@@ -16,6 +16,8 @@ const HEADERS = {
 const filterSchema = z
   .object({
     page: z.number().int().min(1).max(10000).default(1),
+    dateFrom: z.string().date().optional(),
+    dateTo: z.string().date().optional(),
     scope: z.enum(["active", "all"]).default("active"),
     search: z
       .string()
@@ -28,7 +30,8 @@ const filterSchema = z
           /^[\p{L}\p{N}\s@.+_'-]*$/u.test(value),
       ),
   })
-  .strict();
+  .strict()
+  .refine(({ dateFrom, dateTo }) => !dateFrom || !dateTo || dateFrom <= dateTo);
 const positivePrice = (value: unknown) => {
   if (typeof value !== "number" && typeof value !== "string") return null;
   const n = Number(value);
@@ -75,6 +78,21 @@ export async function readRadarAlerts(
           .map((field) => `${field}.ilike."%${value}%"`)
           .join(","),
       );
+  }
+  // PostgreSQL resolves IANA timezone names, including historical DST. The
+  // exclusive next-day boundary includes every timestamp on the final day.
+  if (filter.dateFrom)
+    query = query.gte(
+      "created_at",
+      `${filter.dateFrom} 00:00:00 America/Sao_Paulo`,
+    );
+  if (filter.dateTo) {
+    const nextDay = new Date(`${filter.dateTo}T00:00:00Z`);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    query = query.lt(
+      "created_at",
+      `${nextDay.toISOString().slice(0, 10)} 00:00:00 America/Sao_Paulo`,
+    );
   }
   const { data, count, error } = await query.range(
     (filter.page - 1) * PAGE_SIZE,

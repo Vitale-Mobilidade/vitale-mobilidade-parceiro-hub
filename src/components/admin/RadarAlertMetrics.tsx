@@ -5,31 +5,29 @@ export function RadarAlertMetrics({
   overview: RadarAlertOverview;
 }) {
   const { local, remote } = overview;
-  const cards: Array<[string, number | null]> = [
-    ["Cadastros de alerta", local?.totalAlerts ?? null],
-    ["Pessoas únicas", local?.people ?? null],
-    ["Cadastros ativos no site", local?.activeRegistrations ?? null],
-    ["Cadastros nos últimos 7 dias", local?.recent7d ?? null],
+  const confirmedDeliveries = remote.available
+    ? (remote.counts.receipt_delivered ?? 0) + (remote.counts.receipt_read ?? 0)
+    : null;
+  const cards: Array<[string, number | null, string]> = [
+    ["Pessoas cadastradas", local?.people ?? null, "Cada pessoa conta uma vez"],
     [
-      "Aguardando preço na Hotpipe",
+      "Alertas criados",
+      local?.totalAlerts ?? null,
+      "Uma pessoa pode acompanhar várias bikes",
+    ],
+    [
+      "Aguardando queda de preço",
       remote.available
         ? (remote.counts.active ?? 0) + (remote.counts.processing ?? 0)
         : null,
+      "Alertas em acompanhamento",
     ],
     [
-      "Avisos aceitos pelo WhatsApp",
+      "Avisos de preço enviados",
       remote.available ? (remote.counts.sent ?? 0) : null,
-    ],
-    [
-      "Avisos entregues ou lidos",
-      remote.available
-        ? (remote.counts.receipt_delivered ?? 0) +
-          (remote.counts.receipt_read ?? 0)
-        : null,
-    ],
-    [
-      "Envios com resultado incerto",
-      remote.available ? (remote.counts.uncertain ?? 0) : null,
+      confirmedDeliveries == null
+        ? "Entrega não consultada"
+        : `${confirmedDeliveries} com entrega confirmada`,
     ],
   ];
   const maximum = Math.max(
@@ -42,20 +40,19 @@ export function RadarAlertMetrics({
       className="mb-6 space-y-4"
     >
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {cards.map(([label, value]) => (
+        {cards.map(([label, value, description]) => (
           <div
             key={label}
             className="rounded-xl border border-line bg-white p-4"
           >
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="mt-1 text-2xl font-bold">{value ?? "—"}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{description}</p>
           </div>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Indicadores globais, independentes da busca. Cadastros ativos no site
-        não confirmam acompanhamento ou envio. Os estados do WhatsApp
-        representam o pedido atual de cada cadastro; recibos vêm da Hotpipe.
+        Totais gerais. Os filtros abaixo alteram apenas a lista de cadastros.
       </p>
       {!remote.available && (
         <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm">
@@ -65,21 +62,14 @@ export function RadarAlertMetrics({
       )}
       {local && (
         <>
-          {(local.export.failed > 0 ||
-            local.export.pending > 0 ||
-            (remote.counts.failed ?? 0) > 0) && (
-            <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm">
-              Integração: {local.export.failed} evento(s) com falha;{" "}
-              {local.export.pending} pendente(s). Hotpipe:{" "}
-              {remote.available ? (remote.counts.failed ?? 0) : "—"} pedido(s)
-              com falha. Resultados incertos precisam de conciliação antes de
-              reenvio.
-            </p>
-          )}
           <details className="rounded-xl border border-line bg-white p-4" open>
             <summary className="min-h-11 cursor-pointer font-semibold">
-              Cadastros por dia · últimos 30 dias de São Paulo
+              Cadastros por dia · últimos 30 dias
             </summary>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {local.recent7d} novos alertas nos últimos 7 dias · horário de São
+              Paulo
+            </p>
             <div aria-hidden="true" className="mt-4 flex h-32 items-end gap-1">
               {local.daily.map((d) => (
                 <div
@@ -124,16 +114,41 @@ export function RadarAlertMetrics({
               </table>
             </details>
           </details>
-          <p className="text-xs text-muted-foreground">
-            E-mails: {local.email.accepted ?? 0} aceito(s),{" "}
-            {local.email.delivered ?? 0} entregue(s),{" "}
-            {local.email.uncertain ?? 0} incerto(s),{" "}
-            {(local.email.failed ?? 0) +
-              (local.email.bounced ?? 0) +
-              (local.email.complained ?? 0)}{" "}
-            com falha ou supressão. Cada cadastro pode gerar confirmação e aviso
-            de preço.
-          </p>
+          <details className="rounded-xl border border-line bg-white p-4">
+            <summary className="min-h-11 cursor-pointer text-sm font-semibold">
+              Ver pendências de envio
+            </summary>
+            <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+              <p>
+                Cadastro no acompanhamento: {local.export.pending} aguardando
+                sincronização e {local.export.failed} com falha de
+                sincronização.
+              </p>
+              <p>
+                WhatsApp: {remote.available ? (remote.counts.failed ?? 0) : "—"}{" "}
+                com falha e{" "}
+                {remote.available ? (remote.counts.uncertain ?? 0) : "—"} sem
+                confirmação de envio.
+              </p>
+              <p>
+                Envios sem confirmação precisam de conferência antes de tentar
+                novamente, para evitar mensagens duplicadas.
+              </p>
+              <p>
+                E-mails: {local.email.accepted ?? 0} aceitos,{" "}
+                {local.email.delivered ?? 0} entregues,{" "}
+                {local.email.uncertain ?? 0} sem confirmação de envio e{" "}
+                {(local.email.failed ?? 0) +
+                  (local.email.bounced ?? 0) +
+                  (local.email.complained ?? 0)}{" "}
+                com falha ou bloqueio.
+              </p>
+              <p>
+                Cada cadastro pode gerar confirmação e aviso de preço. As falhas
+                de sincronização são tentativas de integração, não pessoas.
+              </p>
+            </div>
+          </details>
         </>
       )}
       {!local && (
