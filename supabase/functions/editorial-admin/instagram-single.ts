@@ -408,8 +408,12 @@ export async function queueNextInstagramSingle(db: SupabaseClient, origin: strin
   const vacancies = 3 - (existing.data?.length ?? 0);
   if (vacancies <= 0) return { status: "queue_full" };
   const candidates = await findSources(db, 24);
+  let generatedThisRun = false;
   const generatedArtwork = generate
-    ? automaticInstagramArtwork(db, (article) => generateInstagramArtwork(article, generate, article.title))
+    ? automaticInstagramArtwork(db, (article) => {
+        generatedThisRun = true;
+        return generateInstagramArtwork(article, generate, article.title);
+      })
     : null;
   if (!candidates.length)
     return { status: existing.data?.some((post) => post.state === "review") ? "awaiting_review" : "no_source" };
@@ -454,6 +458,7 @@ export async function queueNextInstagramSingle(db: SupabaseClient, origin: strin
     reservations.push(reserved.data);
     if (reservations.length === vacancies)
       return { status: "scheduled", dueAt: reservations[0], reserved: reservations.length };
+    if (generatedThisRun) return partial("instagram_auto_generation_pending");
   }
   if (!lastIssue) return partial("no_source");
   const saved = await db.from("instagram_single_settings")
@@ -467,6 +472,7 @@ export async function tickInstagramSingle(
   url: string,
   env: (name: string) => string | undefined,
   generate?: GenerateCover,
+  background?: (task: Promise<unknown>) => void,
 ) {
   const settings = await config(db);
   if (!settings.automation_enabled) return { status: "paused" };
@@ -474,6 +480,21 @@ export async function tickInstagramSingle(
   if (claim.error) throw Error("instagram_claim_failed");
   const post = claim.data?.[0];
   if (!post) return queueNextInstagramSingle(db, url, generate);
+  return sendInstagramSingle(db, url, env, post, generate, background);
+}
+
+export type InstagramSingleClaim = {
+  id: string; lease: string; asset_path: string; caption: string; fingerprint: string;
+};
+
+export async function sendInstagramSingle(
+  db: SupabaseClient,
+  url: string,
+  env: (name: string) => string | undefined,
+  post: InstagramSingleClaim,
+  generate?: GenerateCover,
+  background?: (task: Promise<unknown>) => void,
+) {
   const save = async (patch: Record<string, unknown>) => {
     const update = await db
       .from("instagram_single_posts")
@@ -553,18 +574,18 @@ export async function tickInstagramSingle(
       media_id: media,
       published_at: new Date().toISOString(),
     });
+    let permalink: string | null = null;
     try {
-      await save({ permalink: await meta.permalink(media) });
+      permalink = await meta.permalink(media);
+      await save({ permalink });
     } catch {
       /* The send was already confirmed. */
     }
-    // Refill asynchronously inside the job, without changing the confirmed result on a preparation failure.
-    try {
-      await queueNextInstagramSingle(db, url, generate);
-    } catch {
-      /* The next cron window can refill. */
-    }
-    return { status: "published" };
+    const replenish = queueNextInstagramSingle(db, url, generate)
+      .catch((error) => console.error("[instagram] refill failed", error instanceof Error ? error.message : "unknown"));
+    if (background) background(replenish);
+    else await replenish;
+    return { status: "published", permalink };
   } catch {
     await save({ state: "attention", error_code: "shipment_unconfirmed" });
     return { status: "shipment_unconfirmed" };

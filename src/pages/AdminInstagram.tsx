@@ -4,6 +4,7 @@ import { useDeferredValue, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { InstagramDeliveryControls } from "@/components/admin/InstagramDeliveryControls";
 import { InstagramPostEditor } from "@/components/admin/InstagramPostEditor";
 import { Button } from "@/components/ui/button";
 import { adminCall } from "@/lib/admin-api";
@@ -69,6 +70,11 @@ export function InstagramWorkspace() {
       }),
     retry: false,
     staleTime: 20_000,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const preparing = !data?.issue || ["instagram_auto_generation_pending", "instagram_auto_generation_busy"].includes(data.issue);
+      return data?.automationEnabled && (data.counts.scheduled ?? 0) < 3 && preparing ? 15_000 : false;
+    },
   });
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["admin", "instagram-single"] });
@@ -444,6 +450,10 @@ export function InstagramWorkspace() {
                   setFeedback("Post atualizado.");
                 }}
               />
+            )}
+            {(item.status === "review" || item.status === "scheduled") && (
+              <InstagramDeliveryControls key={item.id + item.live.fingerprint + item.live.due_at}
+                item={item.live} onRefresh={refresh} onDone={(message) => setFeedback(message)} />
             )}
             {item.image &&
               (item.status === "review" ||

@@ -2603,6 +2603,10 @@ Deno.serve(async (req) => {
       releaseFlag: Deno.env.get("INSTAGRAM_CAROUSEL_RELEASE_ENABLED"),
     });
   }
+  const runtime = globalThis as unknown as { EdgeRuntime?: { waitUntil(task: Promise<unknown>): void } };
+  const background = runtime.EdgeRuntime
+    ? (task: Promise<unknown>) => runtime.EdgeRuntime!.waitUntil(task)
+    : undefined;
   if (body.action === "instagram-single-tick") {
     const verified = await db.rpc("authorize_instagram_single_tick", {
       p_signature: req.headers.get("x-instagram-single-signature") ?? "",
@@ -2612,14 +2616,9 @@ Deno.serve(async (req) => {
     try {
       const { tickInstagramSingle } = await import("./instagram-single.ts");
       return json(req, await tickInstagramSingle(db, SUPABASE_URL, name => Deno.env.get(name), async (article) => {
-        const credentials = await db.from("podcast_worker_credentials").select("actor_id").eq("singleton", true).single();
-        if (credentials.error || !credentials.data?.actor_id) throw Error("instagram_worker_actor_unavailable");
-        const membership = await db.from("editorial_admin_memberships").select("role,active")
-          .eq("user_id", credentials.data.actor_id).maybeSingle();
-        if (membership.error || !membership.data?.active || membership.data.role !== "admin")
-          throw Error("instagram_worker_actor_unavailable");
-        return coverGenerate(req, db, { id: credentials.data.actor_id, role: "admin", email: null }, article, "instagram");
-      }));
+        const { instagramWorkerActor } = await import("./instagram-worker-actor.ts");
+        return coverGenerate(req, db, await instagramWorkerActor(db), article, "instagram");
+      }, background));
     } catch (error) {
       const code = error instanceof Error && /^instagram_[a-z_]+$/.test(error.message) ? error.message : "instagram_worker_failed";
       return json(req, {error:code}, 503);
@@ -2689,6 +2688,27 @@ Deno.serve(async (req) => {
         if (code === "instagram_cover_ratio_invalid")
           return json(req, { error: "A IA devolveu uma foto fora do formato 4:5. Gere outra capa." }, 422);
         return json(req, { error: "Não foi possível concluir esta alteração. Confira e tente novamente." }, 422);
+      }
+    }
+    if (action === "instagram-single-post-now" || action === "instagram-single-reschedule") {
+      if (actor.role !== "admin") return json(req, {error: "Acesso restrito a administradores."}, 403);
+      try {
+        const { manageInstagramDelivery } = await import("./instagram-single-delivery.ts");
+        const mode = action === "instagram-single-post-now" ? "now" : "schedule";
+        const result = await manageInstagramDelivery(db, mode, body, SUPABASE_URL, name => Deno.env.get(name),
+          (article) => coverGenerate(req, db, actor, article, "instagram"), background);
+        await log(db, actor, mode === "now" ? "instagram_manual_send" : "instagram_manual_schedule", "instagram_post", String(body.id), result);
+        return json(req, result);
+      } catch (error) {
+        const messages: Record<string, string> = {
+          instagram_edit_conflict: "O post mudou ou o envio já começou. Atualize a lista.",
+          instagram_schedule_date_invalid: "Informe uma data e horário válidos.",
+          instagram_schedule_future_required: "Escolha um horário futuro em São Paulo.",
+          instagram_schedule_slot_busy: "Já existe um post nesse horário. Escolha outro minuto.",
+          instagram_delivery_paused: "A publicação do Instagram está pausada ou outra fila de envio está ativa.",
+          instagram_source_changed: "A fonte mudou ou está em revisão. Confira o post antes de enviar.",
+        };
+        return json(req, {error: messages[errorMessage(error)] ?? "Não foi possível alterar a entrega. Atualize a lista e confira o estado do post."}, 409);
       }
     }
     if (action === "instagram-gt20-replacement") {
