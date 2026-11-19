@@ -1,3 +1,4 @@
+import { instagramAutomationIssue } from "../../supabase/functions/_shared/instagram-automation-issues";
 import { GT20_REMOVED_POST } from "../../supabase/functions/_shared/instagram-gt20-replacement";
 import { useDeferredValue, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -111,8 +112,8 @@ export function InstagramWorkspace() {
         paused: "A agenda automática está pausada.",
       };
       setFeedback(dueAt
-        ? `${reserved === 1 ? "Uma publicação reservada" : `${reserved} publicações reservadas`}. Próxima janela: ${formatPodcastDateTime(dueAt)} — São Paulo.${remaining ? " " + (messages[remaining] ?? "") : ""}`
-        : messages[status] ?? "Confira o estado atualizado da fila.");
+        ? `${reserved === 1 ? "Uma publicação reservada" : `${reserved} publicações reservadas`}. Próxima janela: ${formatPodcastDateTime(dueAt)} — São Paulo.${remaining ? " " + (messages[remaining] ?? instagramAutomationIssue(remaining)) : ""}`
+        : messages[status] ?? instagramAutomationIssue(status));
       refresh();
     },
   });
@@ -207,8 +208,7 @@ export function InstagramWorkspace() {
         )}
         {config?.issue && (
           <p className="mt-2 text-sm">
-            A próxima fonte precisa de revisão de capa ou conteúdo antes de
-            entrar na fila.
+            {instagramAutomationIssue(config.issue)}
           </p>
         )}
       </section>

@@ -2611,7 +2611,15 @@ Deno.serve(async (req) => {
     if (verified.error || verified.data !== true) return json(req, {error:"unauthorized"}, 403);
     try {
       const { tickInstagramSingle } = await import("./instagram-single.ts");
-      return json(req, await tickInstagramSingle(db, SUPABASE_URL, name => Deno.env.get(name)));
+      return json(req, await tickInstagramSingle(db, SUPABASE_URL, name => Deno.env.get(name), async (article) => {
+        const credentials = await db.from("podcast_worker_credentials").select("actor_id").eq("singleton", true).single();
+        if (credentials.error || !credentials.data?.actor_id) throw Error("instagram_worker_actor_unavailable");
+        const membership = await db.from("editorial_admin_memberships").select("role,active")
+          .eq("user_id", credentials.data.actor_id).maybeSingle();
+        if (membership.error || !membership.data?.active || membership.data.role !== "admin")
+          throw Error("instagram_worker_actor_unavailable");
+        return coverGenerate(req, db, { id: credentials.data.actor_id, role: "admin", email: null }, article, "instagram");
+      }));
     } catch (error) {
       const code = error instanceof Error && /^instagram_[a-z_]+$/.test(error.message) ? error.message : "instagram_worker_failed";
       return json(req, {error:code}, 503);
@@ -2704,7 +2712,7 @@ Deno.serve(async (req) => {
         const single = await import("./instagram-single.ts");
         const result = action === "instagram-single-list" ? await single.readInstagramSingle(db, body)
           : action === "instagram-single-prepare" ? await single.prepareInstagramSingle(db, body.videoId, (article) => coverGenerate(req, db, actor, article, "instagram"))
-          : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db, SUPABASE_URL)
+          : action === "instagram-single-queue-next" ? await single.queueNextInstagramSingle(db, SUPABASE_URL, (article) => coverGenerate(req, db, actor, article, "instagram"))
           : await single.approveInstagramSingle(db, body.id, body.fingerprint);
         const response = json(req, result);
         response.headers.set("Cache-Control", "private, no-store");

@@ -28,6 +28,7 @@ const article = {
   video_id: source.video_id,
   og_image_url: null,
   title: "Teste",
+  revision: 1,
   blocks: [],
 };
 
@@ -36,16 +37,31 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, s
     ...source, video_id: `testVideo0${index + 1}`,
     article_id: source.article_id.slice(0, -1) + String(index),
   });
-  const rpc = vi.fn(async (name: string) => ({
-    data: name === "reserve_instagram_single" ? "2026-11-17T20:45:00Z" : [{ id: "prepared", fingerprint: "digest" }],
-  }));
-  const upload = vi.fn(async () => ({ error: null }));
+  const staged: Array<{id: string; fingerprint: string; video_id: string; article_id: string; state: string}> = [];
+  const rpc = vi.fn(async (name: string, args: Record<string, string>) => {
+    if (name === "reserve_instagram_single") {
+      const post = staged.find(post => post.id === args.p_id);
+      if (post) post.state = "scheduled";
+      return {data: "2026-11-17T20:45:00Z"};
+    }
+    const post = {id: staged.length ? `prepared${staged.length + 1}` : "prepared",
+      fingerprint: "digest", video_id: args.p_video, article_id: args.p_article, state: "review"};
+    staged.push(post);
+    return {data: [{id: post.id, fingerprint: post.fingerprint}]};
+  });
+  const cache = new Map<string, Blob>();
+  const upload = vi.fn(async (path: string, bytes: string | Uint8Array) => {
+    if (cache.has(path)) return { error: { statusCode: "409" } };
+    cache.set(path, new Blob([bytes]));
+    return { error: null };
+  });
   const generate = vi.fn(async () =>
     Response.json({ background: "data:image/jpeg;base64,AQID" }),
   );
   const from = vi.fn((table: string) => {
     let columns = "";
     let active = false;
+    let selectedId = source.article_id;
     const q = {
       select(value: string) {
         columns = value;
@@ -55,7 +71,10 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, s
         active = true;
         return q;
       },
-      eq: () => q,
+      eq(key: string, value: string) {
+        if (key === "id" || key === "article_id") selectedId = value;
+        return q;
+      },
       filter: () => q,
       limit: () => q,
       order: () => q,
@@ -68,9 +87,12 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, s
           return resolve({ data: { automation_enabled: true, pilot_id: "pilot" } });
         if (table === "youtube_editorial_sources") return resolve({ data: photo ? {
           cover_background: { title: "Teste", mime: "image/jpeg",
-            path: `${source.article_id}/backgrounds/e1d0a523-e954-4d92-be7e-ed93c565ef0e.jpg`, frameEvidence },
+            path: `${selectedId}/backgrounds/e1d0a523-e954-4d92-be7e-ed93c565ef0e.jpg`, frameEvidence },
         } : null });
-        if (table === "editorial_articles") return resolve({ data: article });
+        if (table === "editorial_articles") {
+          const candidate = candidates.find(item => item.article_id === selectedId) ?? source;
+          return resolve({ data: { ...article, id: selectedId, video_id: candidate.video_id } });
+        }
         if (table === "instagram_carousel_sources")
           return resolve({
             data:
@@ -80,9 +102,10 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, s
           });
         if (table === "instagram_single_posts" && active)
           return resolve({
-            data: states.map((state) => ({ state })),
-            count: states.length,
+            data: [...states.map((state) => ({state})), ...staged],
+            count: states.length + staged.length,
           });
+        if (table === "instagram_single_posts") return resolve({data: staged});
         return resolve({ data: [] });
       },
     };
@@ -91,9 +114,12 @@ function fixture(states = ["scheduled"], photo = true, frameEvidence?: object, s
   const db = {
     from,
     rpc,
-    storage: { from: () => ({ upload, download: async () => ({ data: new Blob(["photo"]) }) }) },
+    storage: { from: () => ({ upload, download: async (path: string) => {
+      if (path.includes("/backgrounds/")) return { data: new Blob(["photo"]) };
+      return cache.has(path) ? { data: cache.get(path) } : { error: { statusCode: "404" } };
+    } }) },
   } as unknown as Parameters<typeof prepareInstagramSingle>[0];
-  return { db, from, rpc, upload, generate };
+  return { db, from, rpc, upload, generate, staged };
 }
 
 describe("Independent Instagram artwork", () => {
@@ -146,6 +172,42 @@ describe("Independent Instagram artwork", () => {
       expect(f.generate).not.toHaveBeenCalled();
     },
   );
+
+  it("automatically generates a native portrait when no original exists, then leaves the next run to finish", async () => {
+    const f = fixture([], false, undefined, 4);
+    await expect(queueNextInstagramSingle(f.db, "https://db.example", f.generate)).resolves.toMatchObject({
+      status: "scheduled", reserved: 1, remaining: "instagram_auto_generation_pending",
+    });
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(f.rpc.mock.calls.filter(([name]) => name === "reserve_instagram_single")).toHaveLength(1);
+    expect(f.upload.mock.calls.some(([path]) => path.endsWith(".attempt.json"))).toBe(true);
+  });
+
+  it("bootstraps three future reservations over bounded preparation calls", async () => {
+    const f = fixture([], false, undefined, 4);
+    for (let run = 0; run < 3; run++) await queueNextInstagramSingle(f.db, "https://db.example", f.generate);
+    expect(f.staged).toHaveLength(3);
+    expect(new Set(f.staged.map(post => post.video_id)).size).toBe(3);
+    expect(f.staged.every(post => post.state === "scheduled")).toBe(true);
+    await expect(queueNextInstagramSingle(f.db, "https://db.example", f.generate)).resolves.toEqual({status: "queue_full"});
+    expect(f.generate).toHaveBeenCalledTimes(3);
+  });
+
+  it("automatically generates a portrait instead of framing a landscape inside green bars", async () => {
+    const f = fixture([], true);
+    vi.mocked(composeNativeInstagramCover).mockRejectedValueOnce(Error("instagram_cover_ratio_invalid"));
+    await expect(queueNextInstagramSingle(f.db, "https://db.example", f.generate)).resolves.toMatchObject({
+      status: "scheduled", reserved: 1,
+    });
+    expect(f.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("never generates a paid cover for a full queue", async () => {
+    const f = fixture(["scheduled", "scheduled", "scheduled"], false);
+    await expect(queueNextInstagramSingle(f.db, "https://db.example", f.generate)).resolves.toMatchObject({status: "queue_full"});
+    expect(f.generate).not.toHaveBeenCalled();
+    expect(f.upload).not.toHaveBeenCalled();
+  });
 
   it("does not stage a landscape JPEG when no crop is verified", async () => {
     const f = fixture([]);
