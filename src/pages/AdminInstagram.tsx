@@ -383,6 +383,7 @@ export function InstagramWorkspace() {
         {item && (
           <section
             aria-label="Detalhe do post"
+            onFocus={() => setSelected(item.id)}
             className="min-w-0 space-y-4 rounded-lg border bg-card p-4"
           >
             <header>
