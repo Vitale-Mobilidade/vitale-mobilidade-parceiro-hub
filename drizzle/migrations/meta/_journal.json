@@ -148,6 +148,13 @@
       "when": 1795026938867,
       "tag": "0020_price_alert_metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795103251934,
+      "tag": "0021_instagram_single_minute_worker",
+      "breakpoints": true
     }
   ]
 }
