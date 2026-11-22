@@ -90,3 +90,27 @@ O pedido de 20:29 UTC separou explicitamente preparação de publicação/ativa�
 - Limites: não há sessão real do solicitante para confirmar leitura autenticada integral, e a publicação/bundle produtivo final pertence à próxima etapa do responsável. Foi comprovado módulo cliente transformado + preview + build automático, não bundle publicado. SITE_ANALYTICS_ENABLED existente foi preservado sem escrita; seu valor não foi revelado e não é estabelecido apenas por um 204 da categoria desligada.
 - Custo de créditos de integração não disponível nas ferramentas; nenhuma chamada paga de IA, imagem ou conteúdo. Nenhum lead/assinatura, afiliado aberto, Meta/Ads externos, cron/job/sync, writer ou histórico alterado.
 - Próximos passos fora desta etapa: responsável revisa diff e faz deploy nativo; depois solicita gate servidor final e smoke autorizado. Rollback sem DROP/DELETE de histórico.
+
+## Publicação autorizada e validação real
+
+- Commit operacional `30550dcbdc2d9950d91ec2384cb61a055482abcd`; deploy nativo `3e472c89-dfa6-4d9c-a866-b3b4c0256a08`. Em 22/11/2026, a nova tela foi observada autenticada em `https://vitalemobilidade.com/admin/campanhas`, sem blocos/filtros de Ads, com oito destinos e 21 visualizações históricas. `pnpm validate` da versão integrada passou: tipos, 71 regressões e build cliente/SSR. Diff-check limpo.
+- Nova tabela com RLS e policy somente service_role, sem SELECT para anon/authenticated e sem EXECUTE de relatório para anon. Quatro hashes de funções antigas idênticos ao preflight. Migration 0023 é igual ao forward integrado, salvo a antecipação já documentada de GRANT em relação à proposta original.
+- Flag não secreta `LINKS_JOURNEY_ENABLED=true` salva pelo mecanismo oficial. A categoria passou de no-op204 a validação400 para payload inválido, sem gravação sintética; os valores alheios não foram alterados nem revelados. Nenhum redeploy necessário para carregar a flag. Custo final informado pelo conector: integração10 + ativação0,9 = 10,9 créditos.
+- Jornada real via navegador do responsável, sem formulário ou afiliado: landing `/links` às 17:41:02 de São Paulo, escolha Radar, navegação `/radar` e detalhe `v20_ultra_max`. Relatório autenticado e SQL privado confirmaram a mesma sessão, um clique e uma continuação; zero conversões. Visualizações agregadas passaram de21 para22 com esse acesso de QA; não são resultados orgânicos e não serão apagadas. Admin em390px sem overflow da página (tabela600px com rolagem local); viewport temporário restaurado.
+
+### Correção encontrada no smoke: rota anterior durante navegação cliente
+
+Evidência: a página Radar só foi enviada ao abrir o detalhe, e o detalhe só foi enviado após reload. A integração usava `window.location.pathname` dentro do efeito de rota; na navegação cliente observada, o estado do roteador se atualizou antes da URL do navegador. Decisão antes da correção: passar a rota pública selecionada pelo roteador, mantendo a mesma allowlist. Não alterar analytics/Growth herdados, eventos de conversão, banco, flags ou hrefs.
+
+| Perspectiva | Revisão da correção |
+| --- | --- |
+| Produto | Pass: a sequência solicitada precisa refletir a página efetivamente aberta. |
+| CTO | Pass: estado do roteador como fonte da navegação; extensão explícita do argumento, sem serviço novo. |
+| IA | N/A: nenhum modelo ou inferência. |
+| Segurança | Pass: rota ainda passa pela mesma allowlist; não amplia payload nem dados. |
+| UX/UI | Pass: nenhuma mudança visual; cronologia deixa de atrasar uma etapa. |
+| CX | Pass: sem writers, cadastros ou comunicações novos. |
+| Growth | Pass: altera somente a origem do path da nova jornada; métricas legadas intactas. |
+| PMO/QA | Pass local: regressão simula window na rota antiga enquanto o roteador passa pelas três páginas; 46 testes direcionados passaram. Publicação da correção depende do gate e smoke final. |
+
+Sem divergência material nova; trade-off mantido: os eventos são observações de melhor esforço e não identidade/compra. A correção e sua republicação estão dentro da autorização atual para ativar o funil. Rollback continua por flags e frontend/Edges anteriores, preservando dados.

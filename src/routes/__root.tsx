@@ -169,13 +169,13 @@ function RootComponent() {
   );
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
-    startLinksJourney(() => import.meta.env.PROD && import.meta.env.VITE_LINKS_JOURNEY_ENABLED === "true" && import.meta.env.VITE_SITE_ANALYTICS_ENABLED !== "false" && !googleAnalyticsDisabled());
+    startLinksJourney(() => import.meta.env.PROD && import.meta.env.VITE_LINKS_JOURNEY_ENABLED === "true" && import.meta.env.VITE_SITE_ANALYTICS_ENABLED !== "false" && !googleAnalyticsDisabled(), path);
     if (shouldCaptureQuizAttribution(window.location.pathname)) captureQuizAttribution();
     if (!isMemberPrivatePath(window.location.pathname)) {
       siteAnalytics.pageView(window.location.href);
       trackGooglePageView(window.location.href);
     }
-  }, [href]);
+  }, [href, path]);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest("a[href]") : null;

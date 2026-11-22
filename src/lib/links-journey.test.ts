@@ -36,6 +36,32 @@ function setup() {
   };
 }
 describe("anonymous bio journey", () => {
+  it("records the committed route even while the browser URL still points to the previous page", async () => {
+    vi.resetModules();
+    const { startLinksJourney, trackBioChoice } = await import("./links-journey");
+    const h = setup();
+    const send = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("window", { location: { pathname: "/links" }, sessionStorage: h.opts.storage });
+    vi.stubGlobal("crypto", { randomUUID: () => id });
+    vi.stubGlobal("fetch", send);
+    try {
+      startLinksJourney(() => true, "/links");
+      trackBioChoice("radar");
+      startLinksJourney(() => true, "/radar");
+      startLinksJourney(() => true, "/radar/v20_ultra_max");
+      expect(send.mock.calls.map((call) => {
+        const hit = JSON.parse(String(call[1]?.body));
+        return [hit.sequence, hit.stage, hit.path];
+      })).toEqual([
+        [0, "landing", "/links"],
+        [1, "button_click", "/links"],
+        [2, "page_view", "/radar"],
+        [3, "page_view", "/radar/v20_ultra_max"],
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("does not start outside the bio; survives document reload and links steps in sequence", () => {
     const h = setup();
     h.t.page("/quiz");

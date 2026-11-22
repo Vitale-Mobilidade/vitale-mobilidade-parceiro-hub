@@ -139,7 +139,7 @@ export function makeLinksJourney(options: Options) {
   };
 }
 let active: ReturnType<typeof makeLinksJourney> | undefined;
-export function startLinksJourney(allowed: () => boolean) {
+export function startLinksJourney(allowed: () => boolean, pathname: string) {
   if (typeof window === "undefined") return;
   try {
     if (!active)
@@ -160,7 +160,8 @@ export function startLinksJourney(allowed: () => boolean) {
             },
           ),
       });
-    active.page(window.location.pathname);
+    // Router state can commit before the browser URL changes during navigation.
+    active.page(pathname);
   } catch {
     /* SSR/storage/analytics cannot break navigation */
   }
