@@ -127,3 +127,16 @@ O ranking simples foi substituído localmente por uma visualização analítica 
 - não há ação “Abrir”: isso evita que a própria equipe contamine as métricas ao visitar uma página pública a partir do painel.
 
 Rollback: reverter apenas o componente, helper e testes desta seção. Banco, Edge Function, coleta e dados permanecem inalterados.
+
+## Filtro de períodos — 22/11/2026 (preparado localmente)
+
+O filtro Growth passa a oferecer **14 dias** (hoje e os 13 dias anteriores)
+e **Última semana** (segunda a domingo da semana anterior), no calendário de
+São Paulo. **7 dias** permanece o padrão móvel incluindo hoje.
+Os novos atalhos enviam datas explícitas pela consulta existente, sem alteração
+de backend. Implementação local e evidências em
+[GROWTH_PERIODS_2026-11-22.md](GROWTH_PERIODS_2026-11-22.md); publicação pendente.
+
+Ampliação na mesma entrega: **Este mês** vai do dia 1º até hoje;
+**Mês passado** cobre o mês anterior inteiro. Todos usam São Paulo e datas
+explícitas. Validação atualizada: 37 testes direcionados e pnpm validate aprovados.

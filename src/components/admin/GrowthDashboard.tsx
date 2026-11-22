@@ -4,6 +4,7 @@ import { TrafficPeakMap } from "./TrafficPeakMap";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { adminCall, type AdminGrowth } from "@/lib/admin-api";
 import { quizFunnelStages, safeRate } from "@/lib/admin-growth";
+import { growthPresetRequest } from "@/lib/admin-growth-period";
 import { buildPageRanking, pageLabel } from "@/lib/admin-page-analytics";
 import {
   growthRange,
@@ -72,21 +73,12 @@ export function Growth() {
   const [allOrigins, setAllOrigins] = useState(false);
   const [expandedBikeId, setExpandedBikeId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86400000)
-    .toISOString()
-    .slice(0, 10);
   const request =
-    preset === "custom"
-      ? applied
-      : preset === "yesterday"
-        ? { startDate: yesterday, endDate: yesterday }
-        : { rangeDays: Number(preset) };
+    preset === "custom" ? applied : growthPresetRequest(preset, today);
   const key =
-    preset === "custom"
-      ? `${applied.startDate}:${applied.endDate}`
-      : preset === "yesterday"
-        ? `yesterday:${yesterday}`
-        : Number(preset);
+    "rangeDays" in request
+      ? request.rangeDays
+      : `${preset}:${request.startDate}:${request.endDate}`;
   const growth = useQuery({
     queryKey: ["admin", "growth", key],
     queryFn: () => adminCall<AdminGrowth>("growth", request),
@@ -166,6 +158,10 @@ export function Growth() {
             <option value="1">Hoje</option>
             <option value="yesterday">Ontem</option>
             <option value="7">7 dias</option>
+            <option value="14">14 dias</option>
+            <option value="last-week">Última semana</option>
+            <option value="this-month">Este mês</option>
+            <option value="last-month">Mês passado</option>
             <option value="30">30 dias</option>
             <option value="90">90 dias</option>
             <option value="custom">Personalizado</option>

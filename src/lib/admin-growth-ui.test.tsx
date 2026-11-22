@@ -101,6 +101,10 @@ describe("Admin Growth v2 UI", () => {
     expect(html).toContain("4.0 cliques em oferta a cada 100 visualizações");
     expect(html).toContain("Hoje");
     expect(html).toContain("Ontem");
+    expect(html).toContain('<option value="14">14 dias</option>');
+    expect(html).toContain('<option value="last-week">Última semana</option>');
+    expect(html).toContain('<option value="this-month">Este mês</option>');
+    expect(html).toContain('<option value="last-month">Mês passado</option>');
     expect(html).toContain("Personalizado");
     expect(html).not.toContain("<table");
     expect(html).toContain("Página inicial");
