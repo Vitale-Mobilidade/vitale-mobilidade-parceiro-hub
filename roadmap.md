@@ -1,5 +1,12 @@
 # Ajuste estrito da Home e navegação
 
+# Authorized Links campaign release — 22 November
+- [x] Integrate supplied patch excluding generated route tree and using safe Instagram URL fallback; preserve exact five-card/three-social layout.
+- [x] Official 0022_links_campaign SQL equals forward.sql byte for byte; site-analytics/editorial-admin deployed, existing auth/ACL intact.
+- [x] 55 focused tests, Deno/ESLint/diff-check and automatic build passed; real desktop/390/320px SSR/navigation/keyboard checked without writes. Evidence in docs/INSTAGRAM_BIO_2026-11-22.md.
+- [ ] Authenticated real Campanhas readback: blocked because requester has no matching app session; no user creation or permission bypass authorized. Codex/owner verifies after review.
+- Frontend publication is excluded from this release and belongs to Codex after review.
+
 # Authorized Instagram post editor — 15 November
 - [x] Supplied editor/UI/Edge behavior applied without compatibility changes (formatting only); 15 edit tests plus nine regressions, Deno check and automatic preview build passed. Code commit 18e8ed0; official editorial-admin-only deploy confirmed 15:16 UTC, source SHA-256 9d958730a513b8c46604c29f37fa8441ecf5161607e403ae5d10f16eb8099f0b; auth/config preserved. No live AI or post edits exercised.
 - [ ] Owner/Codex publishes frontend and exercises paid generation and real post edits; no AI/database/queue/Meta operations in this delivery.

@@ -33,6 +33,7 @@ describe("fundação TanStack Start — rotas", () => {
     ["/videos", "/videos"],
     ["/sobre", "/sobre"],
     ["/newsletter", "/newsletter"],
+    ["/links", "/links"],
     ["/quiz", "/quiz"],
     ["/escolherbike", "/escolherbike"],
     ["/grupodeofertas", "/grupodeofertas"],
@@ -240,7 +241,7 @@ describe("UTMs sempre nas URLs internas", () => {
     expect(getRouter().options.stringifySearch).toBe(stringifyCampaignSearch);
   });
 
-  it.each(["/quiz", "/radar", "/conteudos", "/ferramentas", "/"])(
+  it.each(["/quiz", "/radar", "/conteudos", "/ferramentas", "/links", "/"])(
     "href SSR/cliente de %s mantém valores exatos",
     (to) => {
       const router = makeRouter(`/${query}`);

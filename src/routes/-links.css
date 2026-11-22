@@ -1,0 +1,234 @@
+.bio-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  background: hsl(var(--vt-dark));
+  color: hsl(var(--ink));
+  padding: 44px 24px 28px;
+}
+.bio-backdrop {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 100%;
+  overflow: hidden;
+  background: hsl(var(--vt-dark));
+  border-radius: 0;
+}
+.bio-backdrop span {
+  position: absolute;
+  width: 720px;
+  height: 720px;
+  border: 1px solid hsl(var(--mint) / 0.12);
+  border-radius: 50%;
+  top: -470px;
+  left: calc(50% + 100px);
+  box-shadow:
+    0 0 0 64px hsl(var(--mint) / 0.025),
+    0 0 0 128px hsl(var(--mint) / 0.02);
+}
+.bio-backdrop span + span {
+  top: 46%;
+  left: calc(50% - 1060px);
+}
+.bio-container {
+  position: relative;
+  width: min(100%, 620px);
+  margin-inline: auto;
+}
+.bio-header {
+  text-align: center;
+  color: white;
+  padding-bottom: 30px;
+}
+.bio-brand {
+  display: inline-flex;
+  background: var(--logo-surface);
+  border-radius: 14px;
+  padding: 12px 20px;
+  width: 216px;
+  box-shadow: 0 4px 20px #0000000d;
+}
+.bio-brand img {
+  width: 100%;
+  height: auto;
+}
+.bio-handle {
+  margin-top: 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: hsl(var(--mint));
+}
+.bio-actions {
+  display: grid;
+  gap: 12px;
+}
+.bio-link {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 96px;
+  padding: 20px 24px;
+  border: 1px solid hsl(var(--vt-line));
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 3px 8px #082b2905;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.bio-link-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: hsl(var(--vt-surface));
+  color: hsl(var(--vt-action));
+}
+.bio-link-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.8;
+}
+.bio-link-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.bio-link-title {
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.bio-link-subtitle {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #4c625b;
+}
+.bio-social {
+  margin-top: 34px;
+  text-align: center;
+}
+.bio-social h2 {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #d1e2dc;
+}
+.bio-social-links {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.bio-social-links > a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 96px;
+  padding: 14px 8px;
+  border-radius: 14px;
+  border: 1px solid hsl(var(--vt-line));
+  background: white;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 600;
+  text-decoration: none;
+}
+.bio-social-links svg {
+  width: 22px;
+  height: 22px;
+  color: hsl(var(--vt-action));
+}
+.bio-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 25px;
+  font-size: 0.875rem;
+  color: #d1e2dc;
+}
+.bio-footer a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.bio-page a:focus-visible {
+  outline: 3px solid hsl(var(--mint));
+  outline-offset: 4px;
+}
+.bio-header a:focus-visible {
+  outline-color: hsl(var(--mint));
+}
+@media (hover: hover) {
+  .bio-link:hover {
+    border-color: hsl(var(--vt-action));
+    box-shadow: 0 6px 18px #082b2910;
+    transform: translateY(-2px);
+  }
+  .bio-social-links a:hover {
+    border-color: hsl(var(--vt-action));
+    background: hsl(var(--vt-surface));
+  }
+}
+@media (min-width: 1024px) {
+  .bio-page {
+    padding-top: 48px;
+  }
+}
+@media (max-width: 480px) {
+  .bio-page {
+    padding: 28px 16px 20px;
+  }
+  .bio-brand {
+    width: 192px;
+    padding: 10px 16px;
+  }
+  .bio-header {
+    padding-bottom: 26px;
+  }
+  .bio-handle {
+    margin-top: 12px;
+  }
+  .bio-backdrop {
+    height: 100%;
+  }
+  .bio-link {
+    padding: 17px 16px;
+    gap: 13px;
+    min-height: 96px;
+  }
+  .bio-link-icon {
+    flex-basis: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .bio-link-title {
+    font-size: 1rem;
+  }
+  .bio-social {
+    margin-top: 28px;
+  }
+  .bio-social-links {
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bio-link {
+    transition: none;
+  }
+  .bio-link:hover {
+    transform: none;
+  }
+}

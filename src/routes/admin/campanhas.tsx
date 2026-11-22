@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
+import { LinksCampaignSummary } from "@/components/admin/LinksCampaignSummary";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { adminCall } from "@/lib/admin-api";
 import {
@@ -111,7 +112,9 @@ function Campaigns() {
     <section className="space-y-5 text-ink">
       <div>
         <h1 className="text-2xl font-bold">Campanhas</h1>
-        <p className="text-sm">Grupo de ofertas · datas de São Paulo</p>
+        <p className="text-sm">
+          Link da bio e grupo de ofertas · datas de São Paulo
+        </p>
       </div>
       <form
         onSubmit={submit}
@@ -140,7 +143,7 @@ function Campaigns() {
           />
         </label>
         <label>
-          Campanha
+          Campanha do grupo
           <select
             className={input}
             value={campaign}
@@ -152,7 +155,7 @@ function Campaigns() {
           </select>
         </label>
         <label>
-          Origem
+          Origem do grupo
           <select
             className={input}
             value={origin}
@@ -170,6 +173,8 @@ function Campaigns() {
           Aplicar datas
         </button>
       </form>
+      <LinksCampaignSummary startDate={startDate} endDate={endDate} />
+      <h2 className="text-xl font-bold">Grupo de ofertas</h2>
       {error && <p role="alert">{error}</p>}
       {report.isPending ? (
         <p role="status">Carregando campanhas…</p>

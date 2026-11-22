@@ -2930,6 +2930,23 @@ Deno.serve(async (req) => {
       if (error) return json(req, { error: "Mapa indisponível; confira migration e ativação." }, 503);
       return json(req, { bins: data ?? [], layout: HEATMAP_LAYOUT, sample: 0.25 });
     }
+    if (action === "links-campaign") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      let range;
+      try { range = growthRange(body); }
+      catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
+      const { data, error } = await db.from("site_analytics_daily")
+        .select("day,event_count")
+        .eq("event_name", "page_view").eq("source_path", "/links")
+        .gte("day", range.startDate).lte("day", range.endDate)
+        .order("day", { ascending: true }).limit(366);
+      if (error || !Array.isArray(data)) return json(req, { error: "Medição do link da bio indisponível." }, 503);
+      const days = data.map((row) => ({ date: row.day, views: Number(row.event_count) }));
+      if (days.some((row) => !Number.isSafeInteger(row.views) || row.views < 0)) return json(req, { error: "Contagem inválida." }, 503);
+      const views = days.reduce((sum, row) => sum + row.views, 0);
+      if (!Number.isSafeInteger(views)) return json(req, { error: "Contagem inválida." }, 503);
+      return json(req, { startDate: range.startDate, endDate: range.endDate, views, days });
+    }
     if (action === "offers-campaigns") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       let range;

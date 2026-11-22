@@ -63,6 +63,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   loader: ({ location }) =>
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/quiz") ||
+    /^\/links\/?$/.test(location.pathname) ||
     isOffersGroupLanding(location.pathname) ||
     isMemberPrivatePath(location.pathname)
       ? { footerVideos: [] }
@@ -147,11 +148,13 @@ function RootComponent() {
   const href = useRouterState({ select: (s) => s.location.href });
   const privateAccount = isMemberPrivatePath(path);
   const offersLanding = isOffersGroupLanding(path);
+  const bioPage = /^\/links\/?$/.test(path);
   const hideAssistant =
     /^\/admin(?:\/|$)/i.test(path) ||
     path.startsWith("/quiz") ||
     privateAccount ||
-    offersLanding;
+    offersLanding ||
+    bioPage;
   useEffect(
     () =>
       startHeatmap(
@@ -196,7 +199,7 @@ function RootComponent() {
           <HotPipeWidget />
         </div>
       )}
-      {!privateAccount && !offersLanding && <NewsletterExitPopup path={path} />}
+      {!privateAccount && !offersLanding && !bioPage && <NewsletterExitPopup path={path} />}
     </QueryClientProvider>
   );
 }

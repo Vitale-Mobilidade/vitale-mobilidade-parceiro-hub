@@ -53,6 +53,7 @@ const STATIC_PATHS = new Set([
   "/conteudos",
   "/ferramentas",
   "/privacidade",
+  "/links",
   "/grupodeofertas",
   OFFERS_GROUP_LANDING_PATH,
   "/bikes",
