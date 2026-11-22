@@ -184,6 +184,33 @@ describe("Admin Growth v2 UI", () => {
 });
 
 describe("Public traffic comparison", () => {
+  it.each([
+    [[100, 0, 51], "50,3", "3 dias no período"],
+    [[0, 0], "0", "2 dias no período"],
+    [[100, 10], "55", "2 dias no período · inclui hoje parcial"],
+    [[42], "42", "1 dia no período · inclui hoje parcial"],
+    [[100, null], "—", "Sem cobertura em todos os dias"],
+  ])("shows the selected period daily average %#", (views, expected, detail) => {
+    const today = detail.includes("hoje") ? `2026-11-${String(views.length).padStart(2, "0")}` : "2026-11-22";
+    const html = renderToStaticMarkup(
+      <PublicTrafficChart
+        generatedAt={`${today}T12:00:00Z`}
+        traffic={{
+          coverageSince: "2026-10-01",
+          days: views.map((value, index) => ({
+            date: `2026-11-${String(index + 1).padStart(2, "0")}`,
+            views: value,
+            previousDate: `2026-10-${String(index + 1).padStart(2, "0")}`,
+            previousViews: null,
+          })),
+        }}
+      />,
+    );
+    const average = html.slice(html.indexOf("Média de acessos por dia"), html.indexOf("</dl>"));
+    expect(average).toContain(`>${expected}</dd>`);
+    expect(average).toContain(detail);
+  });
+
   it("shows both periods and excludes today and its matching day from the change", () => {
     const html = renderToStaticMarkup(
       <PublicTrafficChart

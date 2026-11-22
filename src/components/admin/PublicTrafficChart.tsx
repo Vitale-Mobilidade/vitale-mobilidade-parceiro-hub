@@ -12,6 +12,9 @@ import type { PublicTraffic, TrafficHours } from "@/lib/admin-api";
 import { saoPauloDay } from "../../../supabase/functions/_shared/growth-range";
 
 const formatNumber = new Intl.NumberFormat("pt-BR");
+const formatAverage = new Intl.NumberFormat("pt-BR", {
+  maximumFractionDigits: 1,
+});
 const compactNumber = new Intl.NumberFormat("pt-BR", { notation: "compact" });
 const formatChange = new Intl.NumberFormat("pt-BR", {
   style: "percent",
@@ -90,6 +93,8 @@ function TrafficSeries({
   }
 
   const currentTotal = total(days.map((day) => day.views));
+  const dailyAverage =
+    currentTotal === null ? null : currentTotal / days.length;
   const previousTotal = total(days.map((day) => day.previousViews));
   const closedDays = days.filter((day) => day.date < today);
   const dailyComparison = coveredPairs(closedDays);
@@ -141,7 +146,7 @@ function TrafficSeries({
 
   return (
     <>
-      <dl className="mt-4 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-3">
+      <dl className="mt-4 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 xl:grid-cols-4">
         <div>
           <dt className="flex items-center gap-2 text-sm font-medium">
             <span
@@ -181,6 +186,17 @@ function TrafficSeries({
           </dt>
           <dd className="text-xl font-bold tabular-nums">{change}</dd>
           <dd className="text-xs text-muted-foreground">{comparisonDetail}</dd>
+        </div>
+        <div>
+          <dt className="text-sm font-medium">Média de acessos por dia</dt>
+          <dd className="text-xl font-bold text-emerald-800 tabular-nums">
+            {dailyAverage === null ? "—" : formatAverage.format(dailyAverage)}
+          </dd>
+          <dd className="text-xs text-muted-foreground">
+            {dailyAverage === null
+              ? "Sem cobertura em todos os dias"
+              : `${days.length} ${singleDay ? "dia" : "dias"} no período${includesToday ? " · inclui hoje parcial" : ""}`}
+          </dd>
         </div>
       </dl>
       {(currentTotal === null || previousTotal === null) && (

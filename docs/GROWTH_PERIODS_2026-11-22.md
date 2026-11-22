@@ -75,3 +75,16 @@ IA e Segurança N/A, com justificativas inalteradas. Testes mensais incluem dia 
 virada de ano, fevereiro comum/bissexto e divergência UTC/São Paulo.
 Autorização de integração/publicação concedida nesta conversa; nenhum backend
 ou dado produtivo será alterado. Publicação e smoke serão registrados a seguir.
+## Publicação verificada
+
+Os quatro atalhos foram salvos no repositório ativo em
+`26ab88e682cff90adf7e2498ba9c3ab988a71e6d`, com diff local equivalente (apenas
+newline final diferente em três arquivos). Build automático pronto, 37 testes
+aprovados no Lovable. Publicação `de57f8f2-08ce-4c28-ab50-b75c3a726628`.
+No domínio oficial autenticado, lista contém as quatro opções. Smoke conferiu
+14 dias = 09–22/11/2026, Última semana = 09–15/11/2026 e Este mês = 01–22/11/2026,
+com dados carregados. Mês passado presente na lista e limites validados em testes;
+a seleção manual desse último não foi concluída devido à interação concorrente
+com a janela. Sem backend, banco ou geração alterados. Git local e conector
+GitHub recusaram escrita (403); integração exata via Lovable consumiu 2,8 créditos.
+Estado: publicado e verificado, matriz de perspectivas permanece aprovada.
