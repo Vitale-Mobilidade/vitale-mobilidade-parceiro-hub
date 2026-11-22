@@ -1584,6 +1584,36 @@ export type Database = {
           },
         ]
       }
+      links_journey_events: {
+        Row: {
+          bike_id: string
+          choice: string
+          created_at: string
+          path: string
+          sequence: number
+          session_id: string
+          stage: string
+        }
+        Insert: {
+          bike_id?: string
+          choice?: string
+          created_at?: string
+          path: string
+          sequence: number
+          session_id: string
+          stage: string
+        }
+        Update: {
+          bike_id?: string
+          choice?: string
+          created_at?: string
+          path?: string
+          sequence?: number
+          session_id?: string
+          stage?: string
+        }
+        Relationships: []
+      }
       member_account_removals: {
         Row: {
           actor_id: string
@@ -4498,6 +4528,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_links_journeys: {
+        Args: { p_end: string; p_offset?: number; p_start: string }
+        Returns: Json
+      }
       admin_listing_summary: { Args: { p_id: string }; Returns: Json }
       admin_member_metrics: {
         Args: { p_actor: string; p_days?: number }
@@ -5298,6 +5332,17 @@ export type Database = {
           p_path: string
           p_screen: string
           p_viewport: number
+        }
+        Returns: undefined
+      }
+      record_links_journey: {
+        Args: {
+          p_bike_id: string
+          p_choice: string
+          p_path: string
+          p_sequence: number
+          p_session: string
+          p_stage: string
         }
         Returns: undefined
       }

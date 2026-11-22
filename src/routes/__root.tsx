@@ -20,7 +20,9 @@ import { NewsletterExitPopup } from "@/components/site/NewsletterExitPopup";
 import { HotPipeWidget } from "@/components/site/HotPipeWidget";
 import { siteAnalytics } from "@/lib/site-analytics";
 import { isOffersGroupLanding } from "@/lib/offers-group-landing";
-import { trackGooglePageView } from "@/lib/gtm-script";
+import { startLinksJourney, trackBioChoice, trackLinksConversion } from "@/lib/links-journey";
+import { BIO_CHOICES } from "../../supabase/functions/_shared/links-journey";
+import { googleAnalyticsDisabled, trackGooglePageView } from "@/lib/gtm-script";
 import { safeVideos } from "@/lib/videos.functions";
 import { SOCIAL_LINKS } from "@/lib/social-links";
 import { SITE_DESCRIPTION, SITE_FOUNDER, SITE_NAME, SITE_ORGANIZATION_ID, SITE_URL, canonicalUrl } from "@/lib/seo";
@@ -167,6 +169,7 @@ function RootComponent() {
   );
   // Captura na hidratação e quando a navegação cliente muda a URL de entrada.
   useEffect(() => {
+    startLinksJourney(() => import.meta.env.PROD && import.meta.env.VITE_LINKS_JOURNEY_ENABLED === "true" && import.meta.env.VITE_SITE_ANALYTICS_ENABLED !== "false" && !googleAnalyticsDisabled());
     if (shouldCaptureQuizAttribution(window.location.pathname)) captureQuizAttribution();
     if (!isMemberPrivatePath(window.location.pathname)) {
       siteAnalytics.pageView(window.location.href);
@@ -177,10 +180,22 @@ function RootComponent() {
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest("a[href]") : null;
       if (!(target instanceof HTMLAnchorElement)) return;
+      const choice = BIO_CHOICES.find(c => c.id === target.dataset.bioChoice);
+      if (event.isTrusted && choice) trackBioChoice(choice.id);
       siteAnalytics.bikeClick(window.location.href, target.href);
     };
+    const onAuxClick = (event: MouseEvent) => {
+      if (!event.isTrusted || event.button !== 1) return;
+      const target = event.target instanceof Element ? event.target.closest("a[data-bio-choice]") : null;
+      if (!(target instanceof HTMLAnchorElement)) return;
+      const choice = BIO_CHOICES.find(c => c.id === target.dataset.bioChoice);
+      if (choice) trackBioChoice(choice.id);
+    };
+    const onNewsletter = () => trackLinksConversion("newsletter_subscribed");
+    window.addEventListener("vitale-newsletter-subscribed", onNewsletter);
     document.addEventListener("click", onClick, { capture: true });
-    return () => document.removeEventListener("click", onClick, { capture: true });
+    document.addEventListener("auxclick", onAuxClick, { capture: true });
+    return () => { window.removeEventListener("vitale-newsletter-subscribed", onNewsletter); document.removeEventListener("click", onClick, { capture: true }); document.removeEventListener("auxclick", onAuxClick, { capture: true }); };
   }, []);
   return (
     <QueryClientProvider client={router.options.context.queryClient}>

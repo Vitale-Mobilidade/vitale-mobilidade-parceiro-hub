@@ -4,9 +4,10 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as elementContract from "../../supabase/functions/_shared/heatmap-elements";
 import * as heatmapContract from "../../supabase/functions/_shared/heatmap";
+import * as journeyContract from "../../supabase/functions/_shared/links-journey";
 import * as contract from "../../supabase/functions/_shared/site-analytics";
 
-function harness(enabled = true, rpcError = false, heatmapEnabled = false) {
+function harness(enabled = true, rpcError = false, heatmapEnabled = false, journeyEnabled = false) {
   let handler: (request: Request) => Promise<Response> = async () =>
     new Response(null, { status: 500 });
   const rpc = vi
@@ -30,13 +31,13 @@ function harness(enabled = true, rpcError = false, heatmapEnabled = false) {
   runInNewContext(compiled, {
     exports: {},
     require: (name: string) =>
-      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : name.includes("heatmap-elements")
+      name.startsWith("https:") ? { createClient: () => ({ rpc }) } : name.includes("links-journey") ? journeyContract : name.includes("heatmap-elements")
           ? elementContract
           : name.includes("heatmap") ? heatmapContract : contract,
     Deno: {
       env: {
         get: (name: string) =>
-          name === "SITE_ANALYTICS_ENABLED" ? String(enabled) : name === "HEATMAP_ENABLED" ? String(heatmapEnabled) : "server-only",
+          name === "LINKS_JOURNEY_ENABLED" ? String(journeyEnabled) : name === "SITE_ANALYTICS_ENABLED" ? String(enabled) : name === "HEATMAP_ENABLED" ? String(heatmapEnabled) : "server-only",
       },
       serve: (next: typeof handler) => {
         handler = next;
@@ -216,4 +217,23 @@ describe("element heatmap endpoint",()=>{
  const batch={event:"heatmap_elements",path:"/radar",screen:"mobile",viewport:390,layout:elementContract.ELEMENT_LAYOUT,bins:[{kind:"click",target:"h:1234abcd:0",x:25,y:50,count:1}]};
  it("keeps v2 disabled behind the existing server flag",async()=>{const h=harness();expect((await h.handler(post(batch))).status).toBe(204);expect(h.rpc).not.toHaveBeenCalled();});
  it("sends exact validated element aggregates to the new private RPC",async()=>{const h=harness(true,false,true);expect((await h.handler(post(batch))).status).toBe(204);expect(h.rpc).toHaveBeenCalledWith("record_heatmap_elements",{p_path:"/radar",p_screen:"mobile",p_viewport:390,p_layout:elementContract.ELEMENT_LAYOUT,p_bins:batch.bins});expect((await h.handler(post({...batch,html:"private"}))).status).toBe(400);});
+});
+
+describe("links journey collector", () => {
+  const hit = { event: "links_journey", session: "12345678-1234-4123-8123-123456789abc", sequence: 0, stage: "landing", path: "/links", choice: "", bikeId: "" };
+  it("is disabled by default and uses only its dedicated RPC when enabled", async () => {
+    const off = harness();
+    expect((await off.handler(post(hit))).status).toBe(204);
+    expect(off.rpc).not.toHaveBeenCalled();
+    const on = harness(true,false,false,true);
+    expect((await on.handler(post(hit))).status).toBe(204);
+    expect(on.rpc).toHaveBeenCalledExactlyOnceWith("record_links_journey", { p_session:hit.session,p_sequence:0,p_stage:"landing",p_path:"/links",p_choice:"",p_bike_id:"" });
+  });
+  it("rejects PII, arbitrary destinations and external origins", async () => {
+    const h = harness(true,false,false,true);
+    expect((await h.handler(post({...hit,email:"private@example.com"}))).status).toBe(400);
+    expect((await h.handler(post({...hit,path:"/admin"}))).status).toBe(400);
+    expect((await h.handler(post(hit,"https://outside.test"))).status).toBe(403);
+    expect(h.rpc).not.toHaveBeenCalled();
+  });
 });

@@ -2930,6 +2930,17 @@ Deno.serve(async (req) => {
       if (error) return json(req, { error: "Mapa indisponível; confira migration e ativação." }, 503);
       return json(req, { bins: data ?? [], layout: HEATMAP_LAYOUT, sample: 0.25 });
     }
+    if (action === "links-journeys") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      let range;
+      try { range = growthRange(body); }
+      catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
+      const offset = body.offset ?? 0;
+      if (!Number.isInteger(offset) || Number(offset) < 0 || Number(offset) > 10000 || Number(offset) % 20 !== 0) return json(req, { error: "Página inválida." }, 400);
+      const { data, error } = await db.rpc("admin_links_journeys", { p_start: range.startDate, p_end: range.endDate, p_offset: Number(offset) });
+      if (error || !data) return json(req, { error: "Jornadas indisponíveis." }, 503);
+      return json(req, { ...data, collectionEnabled: Deno.env.get("LINKS_JOURNEY_ENABLED") === "true" });
+    }
     if (action === "links-campaign") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       let range;

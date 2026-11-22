@@ -1,3 +1,4 @@
+import { trackLinksConversion } from "./links-journey";
 /**
  * Funil anônimo do Quiz (/quiz). Nunca carrega nome, telefone, respostas
  * nem leadId: apenas um session_id aleatório por aba e o estágio alcançado.
@@ -79,6 +80,7 @@ const defaultSender: Sender = (payload) => {
 export function trackQuizFunnel(event: FunnelEvent, step: number | null = null, ctx: FunnelContext = {}, send: Sender = defaultSender): FunnelPayload | null {
   try {
     if (typeof window === "undefined") return null;
+    if (event === "quiz_started" || event === "quiz_completed") trackLinksConversion(event);
     const payload = normalizeFunnelEvent(getFunnelSessionId(), event, step, ctx);
     if (!payload) return null;
     try {

@@ -8,6 +8,8 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   vite: {
+    // Public build constant only; the independent server collection gate stays off.
+    define: { "import.meta.env.VITE_LINKS_JOURNEY_ENABLED": JSON.stringify("true") },
     worker: { format: "es" },
     optimizeDeps: { exclude: ["@jsquash/webp"] },
   },

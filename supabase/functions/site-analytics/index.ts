@@ -1,3 +1,4 @@
+import { validateJourneyHit } from "../_shared/links-journey.ts";
 import { validateElementBatch } from "../_shared/heatmap-elements.ts";
 import { validateHeatmapBatch } from "../_shared/heatmap.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
@@ -83,8 +84,11 @@ Deno.serve(async (req) => {
     return respond(204);
   const elementBatch = elementMap ? validateElementBatch(input) : null;
   const batch = heatmap && !elementMap ? validateHeatmapBatch(input) : null;
-  const hit = heatmap ? null : validateSiteAnalyticsHit(input);
-  if (!hit && !batch && !elementBatch) return respond(400);
+  const journeyInput = (input as { event?: unknown } | null)?.event === "links_journey";
+  if (journeyInput && Deno.env.get("LINKS_JOURNEY_ENABLED") !== "true") return respond(204);
+  const journey = journeyInput ? validateJourneyHit(input) : null;
+  const hit = heatmap || journeyInput ? null : validateSiteAnalyticsHit(input);
+  if (!hit && !batch && !elementBatch && !journey) return respond(400);
   try {
     const db = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -93,6 +97,10 @@ Deno.serve(async (req) => {
         auth: { persistSession: false },
       },
     );
+    if (journey) {
+      const { error } = await db.rpc("record_links_journey", { p_session: journey.session, p_sequence: journey.sequence, p_stage: journey.stage, p_path: journey.path, p_choice: journey.choice, p_bike_id: journey.bikeId });
+      return respond(error ? 503 : 204);
+    }
     if (elementBatch) {
       const { error } = await db.rpc("record_heatmap_elements", { p_path: elementBatch.path, p_screen: elementBatch.screen, p_viewport: elementBatch.viewport, p_layout: elementBatch.layout, p_bins: elementBatch.bins });
       return respond(error ? 503 : 204);

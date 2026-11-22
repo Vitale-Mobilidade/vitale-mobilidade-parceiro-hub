@@ -76,7 +76,9 @@ function LinkContent({
 }
 
 function BioLinksPage() {
-  const instagramUrl = SOCIAL_LINKS.find((link) => link.label === "Instagram")?.url ?? "https://www.instagram.com/vitalemobilidade/";
+  const instagramUrl =
+    SOCIAL_LINKS.find((link) => link.label === "Instagram")?.url ??
+    "https://www.instagram.com/vitalemobilidade/";
   return (
     <div className="bio-page">
       <div className="bio-backdrop" aria-hidden="true">
@@ -104,6 +106,7 @@ function BioLinksPage() {
           <nav className="bio-actions" aria-label="Explore a Vitale">
             <a
               href={YOUTUBE_CHANNEL}
+              data-bio-choice="youtube_video"
               {...externalLinkProps(YOUTUBE_CHANNEL)}
               className="bio-link"
             >
@@ -113,28 +116,37 @@ function BioLinksPage() {
                 subtitle="Testes, comparativos e bikes na prática"
               />
             </a>
-            <Link to="/quiz" className="bio-link">
+            <Link to="/quiz" data-bio-choice="quiz" className="bio-link">
               <LinkContent
                 icon={<Bike />}
                 title="Faça o quiz e descubra a bike ideal"
                 subtitle="Encontre a bike que combina com você"
               />
             </Link>
-            <Link to="/grupodeofertas" className="bio-link" reloadDocument>
+            <Link
+              to="/grupodeofertas"
+              data-bio-choice="whatsapp"
+              className="bio-link"
+              reloadDocument
+            >
               <LinkContent
                 icon={<MessageCircle />}
                 title="Grupo de Ofertas no WhatsApp"
                 subtitle="Acompanhe as ofertas selecionadas pela Vitale"
               />
             </Link>
-            <Link to="/radar" className="bio-link">
+            <Link to="/radar" data-bio-choice="radar" className="bio-link">
               <LinkContent
                 icon={<Radar />}
                 title="Radar de Preços"
                 subtitle="Compare preços e consulte o histórico das bikes"
               />
             </Link>
-            <Link to="/newsletter" className="bio-link">
+            <Link
+              to="/newsletter"
+              data-bio-choice="newsletter"
+              className="bio-link"
+            >
               <LinkContent
                 icon={<Mail />}
                 title="Cadastre-se na newsletter"
@@ -145,15 +157,27 @@ function BioLinksPage() {
           <section className="bio-social" aria-labelledby="bio-social-heading">
             <h2 id="bio-social-heading">A Vitale também está aqui</h2>
             <div className="bio-social-links">
-              <a href={YOUTUBE_CHANNEL} {...externalLinkProps(YOUTUBE_CHANNEL)}>
+              <a
+                href={YOUTUBE_CHANNEL}
+                data-bio-choice="youtube_channel"
+                {...externalLinkProps(YOUTUBE_CHANNEL)}
+              >
                 <Youtube aria-hidden="true" />
                 <span>Canal do YouTube</span>
               </a>
-              <a href={instagramUrl} {...externalLinkProps(instagramUrl)}>
+              <a
+                href={instagramUrl}
+                data-bio-choice="instagram"
+                {...externalLinkProps(instagramUrl)}
+              >
                 <Instagram aria-hidden="true" />
                 <span>Instagram</span>
               </a>
-              <a href={spotifyUrl} {...externalLinkProps(spotifyUrl)}>
+              <a
+                href={spotifyUrl}
+                data-bio-choice="spotify"
+                {...externalLinkProps(spotifyUrl)}
+              >
                 <Headphones aria-hidden="true" />
                 <span>Spotify</span>
               </a>

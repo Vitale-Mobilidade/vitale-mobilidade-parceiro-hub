@@ -1,5 +1,13 @@
 # Ajuste estrito da Home e navegação
 
+# Authorized Instagram anonymous funnel staging — 22 November 20:29 UTC
+- [x] Exact base 4477a20 verified; supplied patch integrated mechanically, no generated route tree edits.
+- [x] Proportional private-schema/aggregate snapshot recorded; 21 /links views, new objects absent, existing DDL/ACL recoverable from base.
+- [x] Official 0023 forward SQL applied byte-exact after required GRANT ordering; only site-analytics/editorial-admin deployed, new server gate absent.
+- [x] Public Vite define flag true, 45 focused tests/Deno/lint/SQL sandbox/automatic build passed; real preview zero journey requests/storage, remote 204 confirmed zero events and 21 old views. Evidence in docs/LINKS_INSTAGRAM_FUNNEL_2026-11-22.md.
+- [ ] Authenticated real Campanhas readback and final published bundle: blocked until owner session/review/native frontend deployment; no account creation or Publish authorized in this stage.
+- Publication and server activation are excluded until the owner's next review.
+
 # Authorized Links campaign release — 22 November
 - [x] Integrate supplied patch excluding generated route tree and using safe Instagram URL fallback; preserve exact five-card/three-social layout.
 - [x] Official 0022_links_campaign SQL equals forward.sql byte for byte; site-analytics/editorial-admin deployed, existing auth/ACL intact.

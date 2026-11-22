@@ -1,3 +1,4 @@
+import { trackLinksConversion } from "./links-journey";
 /**
  * Contrato único de analytics de clique afiliado (dataLayer/GTM).
  * SEM PII: nunca envia nome, e-mail, telefone, texto livre ou URL completa.
@@ -89,6 +90,7 @@ export function trackAffiliateClick(input: AffiliateClickInput) {
     w.dataLayer.push(safe);
     // First-party aggregate is also fire-and-forget and never changes the direct href.
     siteAnalytics.affiliateClick(window.location.href, bikeId, position);
+    trackLinksConversion("offer_click", bikeId);
   } catch {
     /* analytics nunca quebra a página */
   }

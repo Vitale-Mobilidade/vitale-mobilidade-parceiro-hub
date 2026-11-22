@@ -1,3 +1,4 @@
+import { trackLinksConversion } from "@/lib/links-journey";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -970,6 +971,7 @@ export function ResultScreen({ answers, labels, recommendation, leadId, name, ph
     if (purchaseLink) window.open(purchaseLink, "_blank", "noopener,noreferrer");
     else console.error("[quiz] Sem link de compra disponível para", bike.id);
 
+    if (purchaseLink) trackLinksConversion("offer_click", bike.id);
     const eventName = position === "principal" ? "buy_button_clicked" : "secondary_option_clicked";
     const conversion_status = position === "principal" ? "clicou_recomendacao_principal" : "clicou_segunda_opcao";
 

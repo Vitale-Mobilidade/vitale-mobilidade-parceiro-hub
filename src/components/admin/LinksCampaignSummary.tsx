@@ -1,13 +1,15 @@
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { adminCall } from "@/lib/admin-api";
-
+import type { JourneyReport } from "../../../supabase/functions/_shared/links-journey";
+import { LinksInstagramFunnel } from "./LinksInstagramFunnel";
 export type LinksCampaignReport = {
   startDate: string;
   endDate: string;
   views: number;
   days: Array<{ date: string; views: number }>;
 };
-
 export function LinksCampaignSummary({
   startDate,
   endDate,
@@ -15,50 +17,52 @@ export function LinksCampaignSummary({
   startDate: string;
   endDate: string;
 }) {
-  const report = useQuery({
+  const [offset, setOffset] = useState(0);
+  const visits = useQuery({
     queryKey: ["admin", "links-campaign", startDate, endDate],
     queryFn: () =>
       adminCall<LinksCampaignReport>("links-campaign", { startDate, endDate }),
   });
+  const journeys = useQuery({
+    queryKey: ["admin", "links-journeys", startDate, endDate, offset],
+    queryFn: () =>
+      adminCall<JourneyReport>("links-journeys", {
+        startDate,
+        endDate,
+        offset,
+      }),
+  });
   return (
-    <section
-      aria-labelledby="links-campaign-heading"
-      className="rounded-xl border border-line bg-white p-5"
-    >
-      <h2 id="links-campaign-heading" className="text-xl font-bold">
-        Link da bio · /links
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Mesmo período selecionado acima. Estes acessos ficam fora de Growth.
-      </p>
-      {report.isPending ? (
-        <p role="status" className="mt-4">
-          Carregando acessos…
+    <div>
+      {(visits.isPending || journeys.isPending) && (
+        <p role="status" className="mb-4 text-sm">
+          Carregando funil…
         </p>
-      ) : report.isError ? (
-        <p role="alert" className="mt-4">
-          Medição indisponível.{" "}
-          <button
+      )}
+      {(visits.isError || journeys.isError) && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg border border-line bg-card p-4 text-sm"
+        >
+          Parte da medição está indisponível.{" "}
+          <Button variant="ghost"
             type="button"
-            onClick={() => void report.refetch()}
+            onClick={() => {
+              void visits.refetch();
+              void journeys.refetch();
+            }}
             className="underline"
           >
             Tentar novamente
-          </button>
+          </Button>
         </p>
-      ) : (
-        <dl className="mt-4">
-          <dt className="text-sm">Acessos à página</dt>
-          <dd className="mt-1 text-3xl font-bold tabular-nums">
-            {new Intl.NumberFormat("pt-BR").format(report.data.views)}
-          </dd>
-          <dd className="mt-2 text-sm text-muted-foreground">
-            {report.data.days.length
-              ? "Visualizações da página, incluindo visitas repetidas."
-              : "Nenhum acesso registrado neste período."}
-          </dd>
-        </dl>
       )}
-    </section>
+      <LinksInstagramFunnel
+        data={journeys.data}
+        views={visits.data?.views}
+        offset={offset}
+        onPage={setOffset}
+      />
+    </div>
   );
 }

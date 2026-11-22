@@ -139,6 +139,11 @@ function PrivacyPage() {
             </p>
           </section>
           <section>
+            <h2 className="text-xl font-bold">Jornada do link da bio</h2>
+            <p>Quando ativada, a medição do link da bio usa uma chave aleatória por aba para relacionar botões escolhidos, páginas públicas seguintes, resultado do Quiz, cadastro aceito da newsletter e cliques em ofertas. Essa chave não identifica uma pessoa, não é enviada a Google ou Meta e não é associada aos dados dos formulários. Não guardamos contatos, respostas, IP, parâmetros completos dos endereços ou referrer nesse funil.</p>
+            <p className="mt-3">A sessão expira após 30 minutos sem interação ou duas horas desde a entrada, com até 100 ações. Os eventos privados ficam por até 30 dias, com limpeza na próxima gravação. A preferência de desativar métricas e os sinais de privacidade do navegador também interrompem essa coleta. Não medimos o que acontece dentro do WhatsApp, YouTube ou Spotify.</p>
+          </section>
+          <section>
             <h2 className="text-xl font-bold">Mapa agregado de interação</h2>
             <p>
               Quando ativado, o mapa usa uma amostra aleatória de 25% das entradas em páginas da Home, Radar e
