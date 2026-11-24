@@ -66,3 +66,29 @@ Estado: **GO para autorização da publicação/migração e lote avulso; não d
 ## Autorização de release
 
 Em 24/11, o responsável respondeu “pode” à proposta concreta de publicação da correção, migração oficial, liberação dos dez avisos avulsos e monitoramento das 75 inscrições. Foram informados os oito outros pedidos elegíveis, risco médio, custos existentes/pequeno consumo eventual Lovable e rollback. Esta autorização pertence à mesma conversa e ao mesmo escopo. Execução/recibos serão registrados abaixo após confirmação.
+
+## Release e entrega confirmados — 24/11, 11h22 SP
+
+- PR160 integrado em `63c108f`; marcador privado de versão no PR161, integrado em `669bb3d`. Deployment solicitado uma única vez: `725eb0dd-4699-478d-af94-5e58ca0c6c0d`. A URL retornada em pending não foi usada como prova de sucesso; o cron real confirmou HTTP200, `build=dual-channel-email-v1` e `email.configured=true` às 11h16 e 11h17. GET/HEAD da rota continua405.
+- Migração oficial `0024_price_alert_email_2026_11_24`, commit `9a2a72458540df7a553d870931ea51a16154f489`. Arquivo registrado é exatamente o SQL aprovado sem os wrappers BEGIN/COMMIT. Cinco funções, security definer, constraint e gates foram reconferidos por consultas independentes. Nenhum journal manual ou grant/RLS alterado.
+- O Lovable foi usado somente como último recurso para a ferramenta oficial de migration e a conferência do deploy, ausentes no MCP. Custo final da execução reportado no metadata: **2,7 créditos**; a leitura parcial dentro do agente mostrava2,10 e não substitui o custo final. Nenhum segundo deploy, teste artificial ou envio do lote pelo agente.
+- O DML aprovado inseriu exatamente dez `price_update`, após conferir preço R$6.174, link, consentimento, request e dez endereços únicos. O worker existente foi acionado em ticks adicionais sequenciais, usando o dispatcher HMAC nativo, sem mudar o cron. Os dez obtiveram recibos de entrega, última às11h21m30s.
+- Fotografia SQL às11h22m28s: **18 mensagens, 18 endereços distintos e 18 inscrições; 17 entregues, 17 IDs distintos do provedor; uma incerta**. Todos têm exatamente uma tentativa. Nenhum pendente/processing da V9 Max; nenhum reenvio do incerto.
+- Gate email=true, Hotpipe=true e cron price-alert-hotpipe ativo a cada minuto. Anon não pode ler a fila nem executar claim; authenticated não pode executar prepare. O monitor permanente passou a capturar inscrições antigas e novas; as outras Bikes seguem suas condições originais, não o aviso avulso da V9 Max.
+- Validação final antes da publicação: `pnpm validate` passou novamente após o marcador de versão (TypeScript,71 regressões e build SSR); os13 testes do worker passaram após esse pequeno ajuste. Ensaio SQL completo/rollback e26 direcionados do pacote já aprovados. Diff limpo.
+- Check Vercel do PR160 registrou falha de deployment na integração de hospedagem externa; não foi tratado como aprovado. A referência operacional é o Lovable conforme docs/LOVABLE.md. Netlify preview ficou ready; a publicação do ambiente ativo foi confirmada diretamente no cron/HTTP e nos recibos. Não houve alteração em Vercel, Netlify, DNS ou hosting.
+
+### Revisão posterior produtiva
+
+| Perspectiva | Status | Evidência |
+| --- | --- | --- |
+| Produto | Pass | Regra nos dois canais ativa; rodada autorizada alcançou18 endereços sem alterar alvos. |
+| Arquitetura | Pass | Código compatível publicado antes da migration; cinco funções e ledger confirmados. |
+| IA/Agentes | N/A | Nenhuma alteração de agente, geração editorial ou conteúdo IA. |
+| Segurança | Pass | HMAC, gates, ACL e destinatários únicos; nenhuma PII/credencial exportada. |
+| UX/UI | Pass | Dez avisos atuais entregues com texto que não afirma alvo atingido e links diretos. |
+| CX/Operação | Pass | Dezessete recibos reais; incerto isolado sem repetição; cron operacional. |
+| Growth/CRO | Pass | Oferta real preservada e cobertura histórica corrigida, sem inscrição ou plano novo. |
+| PMO/QA | Pass | Validate, ensaios, rollback, publicação, migration e recibos documentados. |
+
+Estado: **correção publicada e rodada processada**. Pendência operacional delimitada: um e-mail incerto da primeira complementação, sem ID do provedor ou recibo conciliável; precisa de conferência no Resend antes de qualquer retry. Não afirmar que os18 foram entregues. Mensagens aceitas não são reversíveis.
