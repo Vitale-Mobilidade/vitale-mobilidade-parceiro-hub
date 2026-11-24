@@ -143,7 +143,7 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     ok: true,
     delivered,
     email,
-    build: "manual-v2",
+    build: "dual-channel-email-v1",
     ...(failures.length ? { failures } : {}),
   });
 }
