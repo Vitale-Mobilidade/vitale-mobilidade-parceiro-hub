@@ -169,6 +169,13 @@
       "when": 1795379533931,
       "tag": "0023_links_instagram_funnel",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795529877912,
+      "tag": "0024_price_alert_email_2026_11_24",
+      "breakpoints": true
     }
   ]
 }
