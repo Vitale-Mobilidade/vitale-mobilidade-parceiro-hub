@@ -10,7 +10,7 @@ const https = z
 export const priceAlertEmailSchema = z.object({
   id: z.string().uuid(),
   lease_token: z.string().uuid(),
-  kind: z.enum(["registered", "price_reached"]),
+  kind: z.enum(["registered", "price_reached", "price_update"]),
   delivery_from: z.string().email(),
   delivery_to: z.string().email(),
   reply_to: z.string().email(),
@@ -43,15 +43,20 @@ export function priceAlertEmailMessage(raw: unknown) {
   const alert = priceAlertEmailSchema.parse(raw),
     p = alert.payload;
   const reached = alert.kind === "price_reached";
+  const update = alert.kind === "price_update";
   const radar = `https://vitalemobilidade.com/radar/${p.bikeId}`;
   const title = reached
     ? `O preço da ${p.bikeName} chegou ao seu alerta!`
-    : `Seu alerta para a ${p.bikeName} foi registrado`;
+    : update
+      ? `Confira o preço atual da ${p.bikeName}`
+      : `Seu alerta para a ${p.bikeName} foi registrado`;
   const target =
     p.targetPrice == null ? "Qualquer queda de preço" : money(p.targetPrice);
   const intro = reached
     ? `Olá, ${p.name}! A oferta da ${p.bikeName} chegou a ${money(p.currentPrice)}, dentro da condição que você escolheu.`
-    : `Olá, ${p.name}! Seu alerta para a ${p.bikeName} foi registrado. ${p.targetPrice == null ? "Assim que identificarmos uma queda de preço" : `Assim que identificarmos uma oferta de até ${money(p.targetPrice)}`}, vamos te avisar por e-mail e WhatsApp.`;
+    : update
+      ? `Olá, ${p.name}! Você cadastrou interesse na ${p.bikeName}. A oferta atual está em ${money(p.currentPrice)}. Seu preço desejado continua sendo ${target}; este aviso não altera a condição que você escolheu.`
+      : `Olá, ${p.name}! Seu alerta para a ${p.bikeName} foi registrado. ${p.targetPrice == null ? "Assim que identificarmos uma queda de preço" : `Assim que identificarmos uma oferta de até ${money(p.targetPrice)}`}, vamos te avisar por e-mail e WhatsApp.`;
   const observed = new Date(p.observedAt).toLocaleString("pt-BR", {
     timeZone: "America/Sao_Paulo",
     dateStyle: "short",
