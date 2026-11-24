@@ -22,6 +22,23 @@ export const fixture = {
   },
 };
 describe("price alert lifecycle email", () => {
+  it("reports an authorized price update without pretending the selected target was reached", () => {
+    const message = priceAlertEmailMessage({
+      ...fixture,
+      kind: "price_update",
+      payload: { ...fixture.payload, currentPrice: 6174, targetPrice: 5900 },
+    });
+    expect(message.subject).toContain("preço atual da V9 Max");
+    expect(message.text).toContain("6.174,00");
+    expect(message.text).toContain("5.900,00");
+    expect(message.text).toContain("não altera a condição que você escolheu");
+    expect(message.text).not.toContain("dentro da condição");
+    expect(message.text).not.toContain("foi registrado");
+    expect(message.tags).toContainEqual({
+      name: "kind",
+      value: "price_update",
+    });
+  });
   it("uses actual bike, current/desired prices and direct links with escaped HTML", () => {
     const m = priceAlertEmailMessage(fixture);
     expect(m.html).toContain('src="https://cdn.example.test/bike.jpg"');

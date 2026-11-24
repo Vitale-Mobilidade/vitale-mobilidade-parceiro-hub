@@ -29,15 +29,21 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
   );
   if (authError || authorized !== true)
     return new Response(null, { status: 403 });
+  // Both channels share the authenticated tick, not each other's credentials/results.
+  const email = await deliverPriceAlertEmails(db).catch(() => ({
+    configured: Boolean(process.env.RESEND_API_KEY),
+    accepted: 0,
+    error: "email_worker_failed",
+  }));
   const apiKey = process.env["HOTPIPE_PRICE_ALERT_API_KEY"]?.trim();
   if (!apiKey)
     return new Response(
-      JSON.stringify({ ok: false, error: "integration_not_configured" }),
+      JSON.stringify({ ok: false, error: "integration_not_configured", email }),
       { status: 503 },
     );
   if (!/^hp_[a-f0-9]{48}$/.test(apiKey))
     return Response.json(
-      { ok: false, error: "integration_invalid_config" },
+      { ok: false, error: "integration_invalid_config", email },
       { status: 503 },
     );
   const { data: events, error: claimError } = await db.rpc(
@@ -133,7 +139,6 @@ export async function deliverPriceAlertOutbox(req: Request): Promise<Response> {
     if (error) return new Response(null, { status: 500 });
     if (accepted) delivered++;
   }
-  const email = await deliverPriceAlertEmails(db);
   return Response.json({
     ok: true,
     delivered,
