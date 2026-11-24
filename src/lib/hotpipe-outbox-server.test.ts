@@ -144,7 +144,7 @@ describe("Hotpipe server delivery with mocked services", () => {
     vi.mocked(fetch).mockRejectedValue(failure);
     const response = await deliverPriceAlertOutbox(signed());
     const body = await response.json();
-    expect(body.build).toBe("manual-v2");
+    expect(body.build).toBe("dual-channel-email-v1");
     expect(body.failures).toEqual([
       {
         event_id: "event",
