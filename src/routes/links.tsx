@@ -1,3 +1,4 @@
+import { WosiBanner } from "@/components/site/WosiBanner";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Bike,
@@ -184,6 +185,9 @@ function BioLinksPage() {
             </div>
           </section>
         </main>
+        <div className="responsive-container py-8">
+          <WosiBanner />
+        </div>
         <footer className="bio-footer">
           <Link to="/">Conheça o site da Vitale</Link>
           <span aria-hidden="true">·</span>

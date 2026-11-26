@@ -1,3 +1,4 @@
+import { WosiBanner } from "@/components/site/WosiBanner";
 import { AccountMenu } from "@/components/members/AccountMenu";
 import {
   memberAccountsEnabled,
@@ -136,6 +137,14 @@ export function SiteHeader() {
 /** Footer B2C único (sem copy de consultoria). */
 export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean }) {
   const { footerVideos } = useLoaderData({ from: "__root__" });
+  const bannerPath = useRouterState({
+    select: (state) => state.location.pathname.replace(/\/+$/, "") || "/",
+  });
+  const showWosi =
+    bannerPath !== "/" &&
+    !bannerPath.startsWith("/conteudos/") &&
+    !/^\/(admin|conta|painel-bikes)(?:\/|$)/.test(bannerPath) &&
+    bannerPath !== "/newsletter/confirmar";
   const showPromotions = useRouterState({ select: (state) => !state.location.pathname.startsWith("/quiz") });
   const cols: {
     title: string;
@@ -204,6 +213,11 @@ export function SiteFooter({ showNewsletter = true }: { showNewsletter?: boolean
         </div>
       </aside>}
       </>}
+      {showWosi && (
+        <div className="responsive-container py-8">
+          <WosiBanner />
+        </div>
+      )}
       <footer className="bg-vt-dark text-ink-foreground/80">
         <div className="responsive-container grid gap-10 py-14 text-sm sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           <div>

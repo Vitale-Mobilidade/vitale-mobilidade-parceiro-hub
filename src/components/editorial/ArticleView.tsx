@@ -1,3 +1,4 @@
+import { WosiBanner } from "@/components/site/WosiBanner";
 import { spotifyEpisodeId as isSpotifyEpisodeId } from "../../../supabase/functions/_shared/podcast-spotify";
 import { PODCAST_ARTICLE_ANCHOR } from "@/lib/podcast-editorial";
 import { type ReactNode } from "react";
@@ -704,6 +705,7 @@ export function ArticleView({
             )}
           </section>
         )}
+        {!preview && <WosiBanner article className="mt-10 lg:hidden" />}
       </article>
       <aside
         className="space-y-5 lg:sticky lg:top-28 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
@@ -753,6 +755,7 @@ export function ArticleView({
             </ul>
           </div>
         )}
+        {!preview && <WosiBanner article className="hidden lg:block" />}
       </aside>
     </div>
   );
