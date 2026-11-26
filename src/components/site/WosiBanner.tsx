@@ -1,8 +1,8 @@
+import { siteAnalytics } from "@/lib/site-analytics";
+import { WOSI_URL } from "../../../supabase/functions/_shared/wosi-campaign";
 import { useState } from "react";
 import { Pause, Play } from "lucide-react";
 
-const WOSI_URL =
-  "https://wosi.com.br/mobilidade-eletrica/multimarcas?cupom=VITALE";
 const ALT =
   "Seguro para sua bike elétrica em parceria com a Wosi. 5% de desconto com o cupom VITALE. Simular seguro (abre em nova aba).";
 
@@ -35,6 +35,19 @@ export function WosiBanner({
         )}
         <a
           href={WOSI_URL}
+          onClick={() =>
+            siteAnalytics.wosiClick(
+              window.location.href,
+              article ? "article" : "site",
+            )
+          }
+          onAuxClick={(event) => {
+            if (event.button === 1)
+              siteAnalytics.wosiClick(
+                window.location.href,
+                article ? "article" : "site",
+              );
+          }}
           target="_blank"
           rel="sponsored noopener noreferrer"
           className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action"

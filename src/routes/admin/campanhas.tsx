@@ -1,3 +1,4 @@
+import { WosiCampaignSummary } from "@/components/admin/WosiCampaignSummary";
 import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
@@ -11,10 +12,18 @@ import {
 export const Route = createFileRoute("/admin/campanhas")({
   head: () => ({
     meta: [
-      { title: "Instagram · Campanhas Vitale" },
-      { name: "description", content: "Funil anônimo do Instagram: escolhas na bio, próximos passos e ações observadas no site Vitale." },
-      { property: "og:title", content: "Instagram · Campanhas Vitale" },
-      { property: "og:description", content: "Jornadas anônimas, oito destinos e ações observadas da bio ao site Vitale." },
+      { title: "Campanhas Vitale" },
+      {
+        name: "description",
+        content:
+          "Resultados das campanhas Vitale: cliques no banner Wosi e jornadas anônimas do Instagram.",
+      },
+      { property: "og:title", content: "Campanhas Vitale" },
+      {
+        property: "og:description",
+        content:
+          "Jornadas anônimas, oito destinos e ações observadas da bio ao site Vitale.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },
@@ -56,13 +65,12 @@ function Campaigns() {
   return (
     <section className="space-y-6 text-ink">
       <header>
-        <p className="text-sm font-bold text-action">INSTAGRAM · LINK DA BIO</p>
+        <p className="text-sm font-bold text-action">CAMPANHAS VITALE</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          Da bio ao próximo passo.
+          Resultados das campanhas
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Entenda as escolhas em /links e o que acontece depois, em jornadas
-          anônimas.
+          Acompanhe os cliques da Wosi e as jornadas anônimas do link da bio.
         </p>
       </header>
       <form
@@ -91,16 +99,29 @@ function Campaigns() {
             className="mt-1 block min-h-11 w-full rounded-md border border-line px-3"
           />
         </label>
-        <Button size="lg" className="min-h-11 rounded-md bg-ink px-5 font-semibold text-background hover:bg-ink">
+        <Button
+          size="lg"
+          className="min-h-11 rounded-md bg-ink px-5 font-semibold text-background hover:bg-ink"
+        >
           Aplicar período
         </Button>
       </form>
       {error && <p role="alert">{error}</p>}
-      <LinksCampaignSummary
-        key={`${range.startDate}:${range.endDate}`}
+      <WosiCampaignSummary
+        key={`wosi:${range.startDate}:${range.endDate}`}
         startDate={range.startDate}
         endDate={range.endDate}
       />
+      <section aria-labelledby="instagram-campaign-heading">
+        <h2 id="instagram-campaign-heading" className="mb-4 text-2xl font-bold">
+          Instagram · Link da bio
+        </h2>
+        <LinksCampaignSummary
+          key={`${range.startDate}:${range.endDate}`}
+          startDate={range.startDate}
+          endDate={range.endDate}
+        />
+      </section>
     </section>
   );
 }

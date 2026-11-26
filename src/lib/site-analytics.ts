@@ -1,6 +1,7 @@
 import {
   OFFERS_GROUP_LANDING_PATH,
   publicAnalyticsPath,
+  wosiAnalyticsPath,
   OFFERS_CAMPAIGN,
   type OffersFunnelEvent,
   type OffersSurface,
@@ -68,6 +69,12 @@ export function makeSiteAnalytics(
   };
 
   return {
+    wosiClick(sourceHref: string, surface: "site" | "article") {
+      const url = productionUrl(sourceHref);
+      const sourcePath = url && wosiAnalyticsPath(url.pathname);
+      if (sourcePath && (surface === "site" || surface === "article"))
+        emit({ event: "banner_click", campaign: "wosi", sourcePath, surface });
+    },
     offersOffer(href: string, bikeId: string, position: OffersSurface) {
       const url = productionUrl(href);
       if (url) offersEvent(url, "offers_offer_click", { bikeId, position });

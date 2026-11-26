@@ -2941,6 +2941,15 @@ Deno.serve(async (req) => {
       if (error || !data) return json(req, { error: "Jornadas indisponíveis." }, 503);
       return json(req, { ...data, collectionEnabled: Deno.env.get("LINKS_JOURNEY_ENABLED") === "true" });
     }
+    if (action === "wosi-campaign") {
+      if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
+      let range;
+      try { range = growthRange(body); }
+      catch (error) { return json(req, { error: error instanceof Error ? error.message : "Período inválido" }, 400); }
+      const { data, error } = await db.rpc("admin_wosi_campaign", { p_start: range.startDate, p_end: range.endDate });
+      if (error || !data) return json(req, { error: "Medição da campanha Wosi indisponível." }, 503);
+      return json(req, data);
+    }
     if (action === "links-campaign") {
       if (actor.role !== "admin") return json(req, { error: "Acesso restrito a administradores." }, 403);
       let range;

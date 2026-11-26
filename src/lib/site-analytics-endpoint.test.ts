@@ -237,3 +237,12 @@ describe("links journey collector", () => {
     expect(h.rpc).not.toHaveBeenCalled();
   });
 });
+
+it("encaminha cliques Wosi para agregação separada sem contaminar Bikes/Growth", async () => {
+  const h = harness();
+  const hit = { event: "banner_click", campaign: "wosi", sourcePath: "/", surface: "site" };
+  expect((await h.handler(post(hit))).status).toBe(204);
+  expect(h.rpc).toHaveBeenCalledExactlyOnceWith("record_wosi_campaign_click", { p_source_path: "/", p_surface: "site" });
+  expect((await h.handler(post({ ...hit, contact: "private" }))).status).toBe(400);
+  expect(h.rpc).toHaveBeenCalledTimes(1);
+});
