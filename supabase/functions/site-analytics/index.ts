@@ -115,6 +115,12 @@ Deno.serve(async (req) => {
       return respond(error ? 503 : 204);
     }
     if (!hit) return respond(400);
+    if (hit.event === "banner_click") {
+      const { error } = await db.rpc("record_wosi_campaign_click", {
+        p_source_path: hit.sourcePath, p_surface: hit.surface,
+      });
+      return respond(error ? 503 : 204);
+    }
     if ("origin" in hit) {
       const { error } = await db.rpc("record_offers_group_funnel", {
         p_event_name: hit.event,

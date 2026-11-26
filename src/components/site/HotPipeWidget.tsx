@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
+import {
+  assistantInviteAllowed,
+  dismissAssistantInvite,
+  ASSISTANT_INVITE_MS,
+} from "@/lib/assistant-invite";
 import { setChatOpen } from "@/lib/lucas-chat-bus";
 
 const SCRIPT_SRC =
@@ -20,10 +25,14 @@ function loadHotPipeScript(): Promise<void> {
   if (window.hotpipeWidget) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
   scriptPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[data-hotpipe="true"]`);
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[data-hotpipe="true"]`,
+    );
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("load")), { once: true });
+      existing.addEventListener("error", () => reject(new Error("load")), {
+        once: true,
+      });
       return;
     }
     const s = document.createElement("script");
@@ -31,10 +40,14 @@ function loadHotPipeScript(): Promise<void> {
     s.async = true;
     s.dataset.hotpipe = "true";
     s.addEventListener("load", () => resolve(), { once: true });
-    s.addEventListener("error", () => {
-      scriptPromise = null;
-      reject(new Error("load"));
-    }, { once: true });
+    s.addEventListener(
+      "error",
+      () => {
+        scriptPromise = null;
+        reject(new Error("load"));
+      },
+      { once: true },
+    );
     document.body.appendChild(s);
   });
   return scriptPromise;
@@ -75,6 +88,38 @@ interface HotPipeWidgetProps {
  */
 export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
   const [open, setOpen] = useState(false);
+  const [invite, setInvite] = useState(false);
+  const inviteTimerRef = useRef<number | null>(null);
+  const dismissInvite = useCallback(() => {
+    setInvite(false);
+    if (inviteTimerRef.current !== null)
+      window.clearTimeout(inviteTimerRef.current);
+    let storage: Storage | null = null;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      /* Browser storage or vendor API may be unavailable. */
+    }
+    dismissAssistantInvite(storage);
+  }, []);
+  useEffect(() => {
+    let storage: Storage | null = null;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      /* Browser storage or vendor API may be unavailable. */
+    }
+    if (!assistantInviteAllowed(storage)) return;
+    setInvite(true);
+    inviteTimerRef.current = window.setTimeout(
+      dismissInvite,
+      ASSISTANT_INVITE_MS,
+    );
+    return () => {
+      if (inviteTimerRef.current !== null)
+        window.clearTimeout(inviteTimerRef.current);
+    };
+  }, [dismissInvite]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
@@ -84,6 +129,11 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
   // para evitar botão duplicado transitório.
   useEffect(() => {
     hideVendorButton();
+    try {
+      window.hotpipeWidget?.close?.();
+    } catch {
+      /* Browser storage or vendor API may be unavailable. */
+    }
   }, []);
 
   // Desmontagem: cancela prefill pendente e fecha o widget mesmo que o
@@ -96,7 +146,11 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
         window.clearTimeout(prefillTimerRef.current);
         prefillTimerRef.current = null;
       }
-      try { window.hotpipeWidget?.close?.(); } catch {}
+      try {
+        window.hotpipeWidget?.close?.();
+      } catch {
+        /* Browser storage or vendor API may be unavailable. */
+      }
       setChatOpen(false);
     };
   }, []);
@@ -116,6 +170,7 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
   }, [open]);
 
   const handleOpen = useCallback(async () => {
+    dismissInvite();
     setError(null);
     setLoading(true);
     try {
@@ -124,7 +179,11 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
       if (!mountedRef.current) return;
       window.hotpipeWidget?.open?.();
       if (!mountedRef.current) {
-        try { window.hotpipeWidget?.close?.(); } catch {}
+        try {
+          window.hotpipeWidget?.close?.();
+        } catch {
+          /* Browser storage or vendor API may be unavailable. */
+        }
         return;
       }
       setOpen(true);
@@ -139,20 +198,49 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
       }
     } catch {
       if (!mountedRef.current) return;
-      setError("Não foi possível carregar o assistente agora. Tente novamente.");
+      setError(
+        "Não foi possível carregar o assistente agora. Tente novamente.",
+      );
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [draftQuestion]);
+  }, [draftQuestion, dismissInvite]);
 
   const handleClose = useCallback(() => {
-    try { window.hotpipeWidget?.close?.(); } catch {}
+    try {
+      window.hotpipeWidget?.close?.();
+    } catch {
+      /* Browser storage or vendor API may be unavailable. */
+    }
     setOpen(false);
     setChatOpen(false);
   }, []);
 
   return (
     <div className="fixed bottom-5 right-4 z-50 flex flex-col items-end gap-2 sm:right-5">
+      {invite && !open && !loading && (
+        <div className="relative w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-card p-4 pr-12 text-sm text-ink shadow-xl">
+          <button
+            type="button"
+            onClick={dismissInvite}
+            aria-label="Fechar convite do assistente"
+            className="absolute right-1 top-1 grid h-11 w-11 place-items-center rounded-full text-muted-foreground focus-visible:ring-2 focus-visible:ring-action"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <p className="font-bold">Ficou com alguma dúvida?</p>
+          <p className="mt-1">
+            Tire suas dúvidas sobre bikes elétricas com o Assistente Vitale.
+          </p>
+          <button
+            type="button"
+            onClick={handleOpen}
+            className="mt-2 min-h-11 font-bold text-action underline underline-offset-2"
+          >
+            Tirar minha dúvida
+          </button>
+        </div>
+      )}
       {error && (
         <div
           role="alert"
@@ -173,10 +261,10 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
           type="button"
           onClick={handleClose}
           aria-label="Fechar Assistente Vitale"
-          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
+          className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-action font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2"
         >
           <X className="h-5 w-5" aria-hidden="true" />
-          <span className="max-sm:sr-only">Fechar</span>
+          <span className="sr-only">Fechar</span>
         </button>
       ) : (
         <button
@@ -184,10 +272,10 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
           onClick={handleOpen}
           disabled={loading}
           aria-label="Abrir Assistente Vitale"
-          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-action px-5 font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:opacity-70"
+          className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-action font-bold text-primary-foreground shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 disabled:opacity-70"
         >
           <MessageCircle className="h-5 w-5" aria-hidden="true" />
-          <span className="max-sm:sr-only">
+          <span className="sr-only">
             {loading ? "Carregando…" : "Assistente Vitale"}
           </span>
         </button>

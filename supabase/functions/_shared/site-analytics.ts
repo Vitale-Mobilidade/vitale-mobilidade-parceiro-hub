@@ -1,4 +1,5 @@
 export const SITE_ANALYTICS_EVENTS = [
+  "banner_click",
   "page_view",
   "bike_click",
   "affiliate_click",
@@ -17,6 +18,7 @@ export const OFFERS_CAMPAIGN = "vitale_grupo_ofertas";
 
 
 export type SiteAnalyticsHit =
+  | { event: "banner_click"; campaign: "wosi"; sourcePath: string; surface: "site" | "article" }
   | { event: "page_view"; sourcePath: string }
   | {
       event: OffersFunnelEvent;
@@ -88,6 +90,16 @@ export function publicAnalyticsPath(value: unknown): string | null {
   return null;
 }
 
+/** Campaign-only extension; does not change existing Growth/page-view coverage. */
+export function wosiAnalyticsPath(value: unknown): string | null {
+  const existing = publicAnalyticsPath(value);
+  if (existing) return existing;
+  if (typeof value !== "string" || value.length > 220) return null;
+  const path = value.replace(/\/+$/, "") || "/";
+  return ["/sobre", "/newsletter", "/venda-sua-bike", "/anuncie-sua-bike"].includes(path) ||
+    /^\/venda-sua-bike\/[a-f0-9-]{36}$/.test(path) ? path : null;
+}
+
 /** Inclusive calendar-day window in America/Sao_Paulo. */
 export function siteAnalyticsStartDay(now: Date, rangeDays: number): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -115,12 +127,17 @@ export function validateSiteAnalyticsHit(
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
   const event = input.event;
-  const sourcePath = publicAnalyticsPath(input.sourcePath);
+  const sourcePath = event === "banner_click" ? wosiAnalyticsPath(input.sourcePath) : publicAnalyticsPath(input.sourcePath);
   if (
     !sourcePath ||
     !SITE_ANALYTICS_EVENTS.includes(event as SiteAnalyticsEvent)
   )
     return null;
+  if (event === "banner_click") {
+    return input.campaign === "wosi" && (input.surface === "site" || input.surface === "article") &&
+      exactKeys(input, ["event", "campaign", "sourcePath", "surface"])
+      ? { event, campaign: "wosi", sourcePath, surface: input.surface } : null;
+  }
   if (event === "page_view") {
     return exactKeys(input, ["event", "sourcePath"])
       ? { event, sourcePath }
