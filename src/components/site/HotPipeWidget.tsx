@@ -217,9 +217,9 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
   }, []);
 
   return (
-    <div className="fixed bottom-5 right-4 z-50 flex flex-col items-end gap-2 sm:right-5">
+    <div className="fixed bottom-5 right-4 z-50 flex items-center gap-2 sm:right-5">
       {invite && !open && !loading && (
-        <div className="relative w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-card p-4 pr-12 text-sm text-ink shadow-xl">
+        <div className="relative w-60 max-w-[calc(100vw-6rem)] rounded-2xl border border-line bg-card p-3 pr-10 text-sm leading-snug text-ink shadow-xl">
           <button
             type="button"
             onClick={dismissInvite}
@@ -228,17 +228,7 @@ export function HotPipeWidget({ draftQuestion }: HotPipeWidgetProps) {
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
-          <p className="font-bold">Ficou com alguma dúvida?</p>
-          <p className="mt-1">
-            Tire suas dúvidas sobre bikes elétricas com o Assistente Vitale.
-          </p>
-          <button
-            type="button"
-            onClick={handleOpen}
-            className="mt-2 min-h-11 font-bold text-action underline underline-offset-2"
-          >
-            Tirar minha dúvida
-          </button>
+          <p>Dúvidas? Fale com o Assistente da Vitale</p>
         </div>
       )}
       {error && (
