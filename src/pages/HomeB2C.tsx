@@ -1,3 +1,4 @@
+import { WosiBanner } from "@/components/site/WosiBanner";
 import { memberPublicNavigationEnabled } from "@/lib/member-accounts-feature";
 import { BikeClassifiedsSection } from "@/components/classifieds/BikeClassifiedsSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -446,6 +447,7 @@ const HomeB2C = () => {
         <Shortcuts />
         <BikesRow cards={cards} />
         <div className="responsive-container space-y-14 py-14">
+          <WosiBanner />
           <div className="grid gap-5 lg:grid-cols-2">
             <RadarPanel total={total} card={cards[0]} />
             <CalculatorPanel />

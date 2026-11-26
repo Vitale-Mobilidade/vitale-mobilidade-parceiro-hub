@@ -1,3 +1,4 @@
+import { WosiBanner } from "@/components/site/WosiBanner";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -281,6 +282,9 @@ function OffersGroupLanding() {
           )}
         </section>
       </main>
+      <div className="responsive-container py-8">
+        <WosiBanner />
+      </div>
     </div>
   );
 }
