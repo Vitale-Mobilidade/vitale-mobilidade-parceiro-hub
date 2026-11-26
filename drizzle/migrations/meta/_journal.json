@@ -176,6 +176,13 @@
       "when": 1795529877912,
       "tag": "0024_price_alert_email_2026_11_24",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795696825949,
+      "tag": "0025_wosi_campaign_2026_11_26",
+      "breakpoints": true
     }
   ]
 }

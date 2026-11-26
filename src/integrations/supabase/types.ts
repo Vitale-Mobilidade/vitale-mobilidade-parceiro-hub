@@ -4281,6 +4281,27 @@ export type Database = {
         }
         Relationships: []
       }
+      wosi_campaign_clicks_daily: {
+        Row: {
+          clicks: number
+          day: string
+          source_path: string
+          surface: string
+        }
+        Insert: {
+          clicks?: number
+          day: string
+          source_path: string
+          surface: string
+        }
+        Update: {
+          clicks?: number
+          day?: string
+          source_path?: string
+          surface?: string
+        }
+        Relationships: []
+      }
       youtube_editorial_inventory: {
         Row: {
           created_at: string
@@ -4600,6 +4621,10 @@ export type Database = {
       admin_site_analytics_metrics: { Args: { p_since: string }; Returns: Json }
       admin_site_analytics_range: {
         Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
+      admin_wosi_campaign: {
+        Args: { p_end: string; p_start: string }
         Returns: Json
       }
       apply_price_alert_email_receipt: {
@@ -5373,6 +5398,10 @@ export type Database = {
           p_source_path: string
           p_target_path: string
         }
+        Returns: undefined
+      }
+      record_wosi_campaign_click: {
+        Args: { p_source_path: string; p_surface: string }
         Returns: undefined
       }
       release_next_podcast_episode: {
