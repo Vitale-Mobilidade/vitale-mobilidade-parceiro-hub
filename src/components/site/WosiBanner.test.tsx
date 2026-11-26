@@ -38,7 +38,9 @@ describe("publicidade Wosi", () => {
     expect(html).toContain("prefers-reduced-motion: reduce");
     expect(html).toContain("site-mobile.gif");
     expect(html).toContain("site-desktop.gif");
-    expect(html).toContain("Pausar animação");
+    expect(html).not.toContain("Publicidade · Wosi");
+    expect(html).not.toContain(">Pausar animação<");
+    expect(html).toContain('aria-label="Pausar animação"');
   });
   it.each([
     "/radar",
